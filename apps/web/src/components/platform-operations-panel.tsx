@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DataTable,
   EmptyState,
@@ -251,7 +251,9 @@ export function PlatformOperationsPanel({
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const activeSection = initialSection;
-  const showStatus = activeSection === "readiness" || activeSection === "incident-checklist";
+  const showReadiness = activeSection === "readiness";
+  const showIncidentChecklist = activeSection === "incident-checklist";
+  const needsStatusData = showReadiness || showIncidentChecklist;
   const showUsers = activeSection === "users";
   const showPayments = activeSection === "payments";
   const showBroadcasts = activeSection === "broadcasts";
@@ -273,7 +275,7 @@ export function PlatformOperationsPanel({
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>(
     {
       path: "/api/platform/provider-status",
-      enabled: showStatus,
+      enabled: needsStatusData,
     },
   );
   const usageState = useOperationalResource<{ usage: PlatformUsageRow[] }>({
@@ -313,8 +315,8 @@ export function PlatformOperationsPanel({
   );
 
   const organizations = organizationsState.data?.orgs ?? initialOrgs;
-  const providers = providersState.data?.providers ?? {};
-  const providerEntries = Object.entries(providers);
+  const providers = providersState.data?.providers;
+  const providerEntries = useMemo(() => Object.entries(providers ?? {}), [providers]);
   const usage = usageState.data?.usage ?? [];
   const flags = flagsState.data?.flags ?? initialFlags;
   const featureFlags = featureFlagsState.data?.flags ?? [];
@@ -324,22 +326,40 @@ export function PlatformOperationsPanel({
   const moderationFlags = moderationState.data?.flags ?? [];
   const impersonations = impersonationsState.data?.impersonations ?? [];
 
-  const misconfiguredProviders = providerEntries.filter(
-    ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
+  const misconfiguredProviders = useMemo(
+    () =>
+      providerEntries.filter(
+        ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
+      ),
+    [providerEntries],
   );
-  const readyProviders = providerEntries.filter(([, provider]) => provider.status === "ready");
-  const defaultProviders = providerEntries.filter(([, provider]) => provider.status === "default");
-  const suspendedOrganizations = organizations.filter((org) => org.status === "SUSPENDED");
-  const openFlags = flags.filter(
-    (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
+  const readyProviders = useMemo(
+    () => providerEntries.filter(([, provider]) => provider.status === "ready"),
+    [providerEntries],
   );
-  const trialRiskOrganizations = organizations.filter((org) => {
-    const trialEndAt = new Date(org.trialEndAt).getTime();
-    if (!Number.isFinite(trialEndAt) || org.status !== "ACTIVE") return false;
-    const daysLeft = Math.ceil((trialEndAt - Date.now()) / (1000 * 60 * 60 * 24));
-    return daysLeft >= 0 && daysLeft <= 7;
-  });
-  const cockpitItems = [
+  const defaultProviders = useMemo(
+    () => providerEntries.filter(([, provider]) => provider.status === "default"),
+    [providerEntries],
+  );
+  const suspendedOrganizations = useMemo(
+    () => organizations.filter((org) => org.status === "SUSPENDED"),
+    [organizations],
+  );
+  const openFlags = useMemo(
+    () => flags.filter((flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved"),
+    [flags],
+  );
+  const trialRiskOrganizations = useMemo(
+    () =>
+      organizations.filter((org) => {
+        const trialEndAt = new Date(org.trialEndAt).getTime();
+        if (!Number.isFinite(trialEndAt) || org.status !== "ACTIVE") return false;
+        const daysLeft = Math.ceil((trialEndAt - Date.now()) / (1000 * 60 * 60 * 24));
+        return daysLeft >= 0 && daysLeft <= 7;
+      }),
+    [organizations],
+  );
+  const cockpitItems = useMemo(() => [
     {
       label: "Ready providers",
       value: formatCompactNumber(readyProviders.length),
@@ -367,8 +387,8 @@ export function PlatformOperationsPanel({
       value: formatCompactNumber(openFlags.length),
       meta: "Needs platform decision",
     },
-  ];
-  const incidentChecklist = [
+  ], [misconfiguredProviders.length, openFlags.length, organizations, readyProviders.length, trialRiskOrganizations.length]);
+  const incidentChecklist = useMemo(() => [
     {
       step: "Confirm blast radius",
       owner: "Platform",
@@ -395,11 +415,7 @@ export function PlatformOperationsPanel({
         ? `${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} near conversion`
         : "No active trial expires this week",
     },
-  ];
-
-  useEffect(() => {
-    document.getElementById(initialSection)?.scrollIntoView({ block: "start" });
-  }, [initialSection]);
+  ], [misconfiguredProviders, openFlags.length, suspendedOrganizations.length, trialRiskOrganizations.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -698,7 +714,8 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
-      <GlassCard className={showStatus ? undefined : "hidden"}>
+      {showReadiness ? (
+      <GlassCard>
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
@@ -742,11 +759,10 @@ export function PlatformOperationsPanel({
           ))}
         </div>
       </GlassCard>
+      ) : null}
 
-      <div
-        id="support-console"
-        className={`scroll-mt-5 ${showUsers || showPayments ? "" : "hidden"}`}
-      >
+      {showUsers || showPayments ? (
+      <div id="support-console" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
             eyebrow="Support"
@@ -755,10 +771,8 @@ export function PlatformOperationsPanel({
             badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
           />
           <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
-            <div
-              id="users"
-              className={`scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4 ${showUsers ? "" : "hidden"}`}
-            >
+            {showUsers ? (
+            <div id="users" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
@@ -927,11 +941,10 @@ export function PlatformOperationsPanel({
                 </div>
               ) : null}
             </div>
+            ) : null}
 
-            <div
-              id="payments"
-              className={`scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4 ${showPayments ? "" : "hidden"}`}
-            >
+            {showPayments ? (
+            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment ledger"
@@ -1102,14 +1115,16 @@ export function PlatformOperationsPanel({
                 </div>
               ) : null}
             </div>
+            ) : null}
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
-      <div
-        className={`grid gap-4 ${showBroadcasts && showModeration ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}
-      >
-        <div id="broadcasts" className={`scroll-mt-5 ${showBroadcasts ? "" : "hidden"}`}>
+      {showBroadcasts || showModeration ? (
+      <div className={`grid gap-4 ${showBroadcasts && showModeration ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}>
+        {showBroadcasts ? (
+        <div id="broadcasts" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
               eyebrow="Broadcasts"
@@ -1191,8 +1206,10 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
 
-        <div id="moderation" className={`scroll-mt-5 ${showModeration ? "" : "hidden"}`}>
+        {showModeration ? (
+        <div id="moderation" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
               eyebrow="Moderation"
@@ -1256,9 +1273,12 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
       </div>
+      ) : null}
 
-      <div id="impersonations" className={`scroll-mt-5 ${showImpersonations ? "" : "hidden"}`}>
+      {showImpersonations ? (
+      <div id="impersonations" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
             eyebrow="Impersonations"
@@ -1307,15 +1327,16 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
+      {showFeatureFlags || showWebhooks || showAudit ? (
       <div
         className={`grid gap-4 ${
-          [showFeatureFlags, showWebhooks, showAudit].filter(Boolean).length > 1
-            ? "xl:grid-cols-3"
-            : ""
+          [showFeatureFlags, showWebhooks, showAudit].filter(Boolean).length > 1 ? "xl:grid-cols-3" : ""
         }`}
       >
-        <GlassCard id="feature-flags" className={showFeatureFlags ? undefined : "hidden"}>
+        {showFeatureFlags ? (
+        <GlassCard id="feature-flags">
           <SectionHeader eyebrow="Flags" title="Feature flags" />
           <div className="mt-5 grid gap-3">
             {featureFlags.slice(0, 8).map((flag) => (
@@ -1338,8 +1359,10 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
 
-        <GlassCard id="webhooks" className={showWebhooks ? undefined : "hidden"}>
+        {showWebhooks ? (
+        <GlassCard id="webhooks">
           <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
           <div className="mt-5 grid gap-3">
             {webhooks.slice(0, 8).map((attempt) => (
@@ -1357,8 +1380,10 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
 
-        <GlassCard id="audit" className={showAudit ? undefined : "hidden"}>
+        {showAudit ? (
+        <GlassCard id="audit">
           <SectionHeader eyebrow="Audit" title="Global audit" />
           <div className="mt-5 grid gap-3">
             {auditLogs.slice(0, 8).map((log) => (
@@ -1371,9 +1396,12 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
       </div>
+      ) : null}
 
-      <div id="readiness" className={`scroll-mt-5 ${showStatus ? "" : "hidden"}`}>
+      {showReadiness ? (
+      <div id="readiness" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
             eyebrow="System checks"
@@ -1473,8 +1501,10 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
-      <div id="incident-checklist" className={`scroll-mt-5 ${showStatus ? "" : "hidden"}`}>
+      {showIncidentChecklist ? (
+      <div id="incident-checklist" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
             eyebrow="Incident mode"
@@ -1505,9 +1535,11 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
+      {showOrganizations ? (
       <div className="grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
-        <div id="organizations" className={`scroll-mt-5 ${showOrganizations ? "" : "hidden"}`}>
+        <div id="organizations" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
               eyebrow="Organizations"
@@ -1755,7 +1787,7 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
 
-        <div className={`grid gap-4 ${showOrganizations ? "" : "hidden"}`}>
+        <div className="grid gap-4">
           <GlassCard>
             <SectionHeader
               eyebrow="Watchlist"
@@ -1805,7 +1837,9 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
       </div>
+      ) : null}
 
+      {showAssistant || showSubscriptions || showSafety ? (
       <div
         className={`grid gap-4 ${
           [showAssistant, showSubscriptions, showSafety].filter(Boolean).length > 1
@@ -1813,7 +1847,8 @@ export function PlatformOperationsPanel({
             : ""
         }`}
       >
-        <div id="ai-traffic" className={`scroll-mt-5 ${showAssistant ? "" : "hidden"}`}>
+        {showAssistant ? (
+        <div id="ai-traffic" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
               eyebrow="Assistant"
@@ -1876,10 +1911,12 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
 
         {showSubscriptions ? <PlatformSubscriptionsSection /> : null}
 
-        <div id="abuse-flags" className={`scroll-mt-5 ${showSafety ? "" : "hidden"}`}>
+        {showSafety ? (
+        <div id="abuse-flags" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
               eyebrow="Safety"
@@ -1939,7 +1976,9 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

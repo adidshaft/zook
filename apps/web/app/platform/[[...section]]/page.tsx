@@ -77,6 +77,23 @@ const platformSectionAnchors: Record<string, string> = {
   incidents: "incident-checklist",
 };
 
+const platformNavItems: Array<[string, string, string]> = [
+  ["Status", "/platform/status", "status"],
+  ["Users", "/platform/users", "users"],
+  ["Payments", "/platform/payments", "payments"],
+  ["Broadcasts", "/platform/broadcasts", "broadcasts"],
+  ["Moderation", "/platform/moderation", "moderation"],
+  ["Impersonations", "/platform/impersonations", "impersonations"],
+  ["Webhooks", "/platform/webhooks", "webhooks"],
+  ["Audit", "/platform/audit", "audit"],
+  ["Flags", "/platform/flags", "flags"],
+  ["Gyms", "/platform/gyms", "gyms"],
+  ["Subscriptions", "/platform/subscriptions", "subscriptions"],
+  ["Assistant", "/platform/assistant", "assistant"],
+  ["Safety", "/platform/safety", "safety"],
+  ["Incidents", "/platform/incidents", "incidents"],
+];
+
 export default async function PlatformPage({
   params,
 }: {
@@ -98,25 +115,28 @@ export default async function PlatformPage({
   ).length;
   const hasAlerts = suspendedCount > 0 || safetyReviewCount > 0;
 
+  const activeNavLabel =
+    platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Status";
+
   return (
-    <main className="min-h-screen px-5 py-5">
-      <div className="mx-auto grid max-w-[1500px] gap-5">
-        <GlassCard variant="strong">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+    <main className="min-h-screen px-4 py-4 md:px-6">
+      <div className="mx-auto grid max-w-[1440px] gap-4">
+        <GlassCard variant="strong" className="p-4 md:p-5">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
                 <Pill tone="amber">Platform team</Pill>
+                <Pill tone="blue">{activeNavLabel}</Pill>
               </div>
-              <div className="mt-4 flex items-center gap-3">
-                {hasAlerts ? <AlertTriangle className="text-amber-100" /> : null}
+              <div className="mt-3 flex items-center gap-3">
+                {hasAlerts ? <AlertTriangle className="h-5 w-5 text-amber-100" /> : null}
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                    Platform overview
+                  <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">
+                    Platform operations
                   </h1>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">
-                    Service status, gym accounts, assistant activity, and safety reviews in one
-                    place.
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-white/55">
+                    Fast lane for production health, support lookups, gym accounts, and risk queues.
                   </p>
                 </div>
               </div>
@@ -128,29 +148,16 @@ export default async function PlatformPage({
           </div>
         </GlassCard>
 
-        <nav className="flex gap-2 overflow-x-auto rounded-[28px] border border-white/10 bg-white/5 p-3">
-          {(
-            [
-              ["Status", "/platform/status", "status"],
-              ["Users", "/platform/users", "users"],
-              ["Payments", "/platform/payments", "payments"],
-              ["Broadcasts", "/platform/broadcasts", "broadcasts"],
-              ["Moderation", "/platform/moderation", "moderation"],
-              ["Impersonations", "/platform/impersonations", "impersonations"],
-              ["Webhooks", "/platform/webhooks", "webhooks"],
-              ["Audit", "/platform/audit", "audit"],
-              ["Flags", "/platform/flags", "flags"],
-              ["Gyms", "/platform/gyms", "gyms"],
-              ["Subscriptions", "/platform/subscriptions", "subscriptions"],
-              ["Assistant", "/platform/assistant", "assistant"],
-              ["Safety", "/platform/safety", "safety"],
-              ["Incidents", "/platform/incidents", "incidents"],
-            ] as Array<[string, string, string]>
-          ).map(([item, href, key]) => (
+        <nav className="sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/72 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+          {platformNavItems.map(([item, href, key]) => (
             <Link
               key={item}
               href={href}
-              className={`zook-focus shrink-0 rounded-full px-4 py-2 text-sm ${key === sectionKey ? "bg-lime-300 text-black" : "border border-white/10 text-white/70"}`}
+              className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-sm font-medium transition ${
+                key === sectionKey
+                  ? "bg-lime-300 text-black"
+                  : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
+              }`}
             >
               {item}
             </Link>

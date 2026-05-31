@@ -14,21 +14,20 @@ export function serializeUserForReadModel<T extends { id: string; email: string 
   };
 }
 
-export function serializeOrganizationForReadModel<
-  T extends { latitude?: unknown; longitude?: unknown } | null | undefined,
->(organization: T) {
+export function serializeOrganizationForReadModel<T extends object | null | undefined>(organization: T) {
   if (!organization) {
     return organization;
   }
+  const location = organization as { latitude?: unknown; longitude?: unknown };
   return {
     ...organization,
     latitude:
-      organization.latitude === null || organization.latitude === undefined
+      location.latitude === null || location.latitude === undefined
         ? null
-        : Number(organization.latitude),
+        : Number(location.latitude),
     longitude:
-      organization.longitude === null || organization.longitude === undefined
+      location.longitude === null || location.longitude === undefined
         ? null
-        : Number(organization.longitude),
+        : Number(location.longitude),
   };
 }

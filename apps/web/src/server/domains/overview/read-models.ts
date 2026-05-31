@@ -395,13 +395,31 @@ export async function getPlatformDashboardData() {
   monthStart.setHours(0, 0, 0, 0);
 
   const [orgs, aiUsageThisMonth, abuseFlags, statusGroups] = await Promise.all([
-    prisma.organization.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        city: true,
+        state: true,
+        status: true,
+        joinMode: true,
+        attendanceMode: true,
+        trialEndAt: true,
+        createdAt: true,
+        contactEmail: true,
+        contactPhone: true,
+      },
+      take: 20,
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.aIUsageLog.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.organizationAbuseFlag.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
     prisma.organization.groupBy({ by: ["status"], _count: { _all: true } }),
   ]);
 
   const counts = new Map(statusGroups.map((group) => [group.status, group._count._all]));
+  const totalOrgs = statusGroups.reduce((sum, group) => sum + group._count._all, 0);
 
   return {
     orgs: orgs.map(serializeOrganizationForReadModel),
@@ -410,7 +428,7 @@ export async function getPlatformDashboardData() {
     metrics: [
       {
         label: "Organizations",
-        value: String(orgs.length),
+        value: String(totalOrgs),
         delta: `${counts.get("ACTIVE") ?? 0} active`,
       },
       {
