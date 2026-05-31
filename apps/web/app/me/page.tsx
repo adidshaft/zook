@@ -5,6 +5,7 @@ import { CalendarDays, CreditCard, Dumbbell, MapPin } from "lucide-react";
 import type { AuthSessionSummary } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
+import { MemberContactCompletionPanel } from "@/components/member-contact-completion-panel";
 import { MemberPrivateLink } from "@/components/member-private-link";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
@@ -68,6 +69,8 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
             updates stay in the Zook app.
           </p>
         </GlassCard>
+
+        <MemberContactCompletionPanel email={session.user.email} phone={session.user.phone} />
 
         {subscriptions.length ? (
           <section className="grid gap-4">
