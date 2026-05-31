@@ -17,6 +17,8 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Reception desk retest continued in production Chrome: `reception@zook.local` opened `/desk/members`, searched `member@zook.local`, selected Nisha Menon, and the desk override action correctly refused a duplicate check-in with `Already checked in. Check out before checking in again.` This verifies the already-checked-in guard from the desk surface.
 - Reception offline payment flow was prepared but not submitted: `desk-test-member@zook.local` / Karan Desk Test was selected in the desk payment form, the form stayed on the offline/cash collection path with amount `1999`, and no Razorpay page opened. The final `Record payment` action is intentionally unclicked until explicit action-time approval because it creates a production demo payment record.
 - Reception QR display passed in production Chrome: `/desk/qr` generated a rolling server-signed attendance QR, showed a short entry code, countdown/expiry, replay/branch/membership validation checklist, live token metadata, and zero pending/flagged scans.
+- Reception Orders passed read-only in production Chrome: `/desk/orders` rendered the branch-scoped shop pickup surface, including an existing paid `Nisha Menon` order for `1 x Water Bottle, 1 x Protein Shake`, pickup code hidden, and verify/skip/fulfill controls. Fulfillment was intentionally not clicked because it mutates production order state.
+- Reception Payments route passed as a safe collection surface: `/desk/payments` rendered the offline desk payment form for membership/shop/other collections with cash mode default and did not open Razorpay. No payment was submitted without action-time approval.
 
 ## Ground Rules
 
