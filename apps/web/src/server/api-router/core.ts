@@ -2461,7 +2461,7 @@ async function listOrganizationPaymentsPage(orgId: string, request: NextRequest)
   const ctx = await getRequestContext(request, { orgId });
   const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
   const payments = await prisma.payment.findMany({
-    where: { orgId, ...(branchId ? { branchId } : {}) },
+    where: { orgId, ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}) },
     orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

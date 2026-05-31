@@ -239,6 +239,9 @@ export function PlatformOperationsPanel({
   const [userQuery, setUserQuery] = useState("");
   const [userRows, setUserRows] = useState<PlatformUserRow[]>([]);
   const [selectedUser, setSelectedUser] = useState<PlatformUserDetail | null>(null);
+  const [selectedOrganization, setSelectedOrganization] = useState<PlatformOrganization | null>(
+    null,
+  );
   const [userDetailBusyId, setUserDetailBusyId] = useState<string | null>(null);
   const [paymentQuery, setPaymentQuery] = useState("");
   const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
@@ -1538,6 +1541,13 @@ export function PlatformOperationsPanel({
                           </ZookButton>
                         ))}
                         <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => setSelectedOrganization(org)}
+                        >
+                          Details
+                        </ZookButton>
+                        <ZookButton
                           tone="danger"
                           size="sm"
                           onClick={() => void softDeleteOrganization(org.id)}
@@ -1603,6 +1613,73 @@ export function PlatformOperationsPanel({
                 empty="No organizations are currently available."
               />
             </div>
+            {selectedOrganization ? (
+              <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+                      Organization details
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {selectedOrganization.name}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/55">@{selectedOrganization.username}</p>
+                  </div>
+                  <ZookButton
+                    tone="ghost"
+                    size="sm"
+                    onClick={() => setSelectedOrganization(null)}
+                  >
+                    Close
+                  </ZookButton>
+                </div>
+                <ReadoutGrid
+                  className="mt-4"
+                  columns={3}
+                  items={[
+                    {
+                      label: "Status",
+                      value: formatEnumLabel(selectedOrganization.status),
+                      meta: "Current platform state",
+                    },
+                    {
+                      label: "Join mode",
+                      value: formatEnumLabel(selectedOrganization.joinMode),
+                      meta: "How members enter the gym",
+                    },
+                    {
+                      label: "Trial end",
+                      value: formatDate(selectedOrganization.trialEndAt),
+                      meta: trialRiskOrganizations.some((org) => org.id === selectedOrganization.id)
+                        ? "Needs renewal follow-up"
+                        : "No immediate trial risk",
+                    },
+                    {
+                      label: "Location",
+                      value: `${selectedOrganization.city}${
+                        selectedOrganization.state ? `, ${selectedOrganization.state}` : ""
+                      }`,
+                      meta: "Primary market",
+                    },
+                    {
+                      label: "Contact",
+                      value:
+                        selectedOrganization.contactEmail ??
+                        selectedOrganization.contactPhone ??
+                        "Not captured",
+                      meta: "Support handoff",
+                    },
+                    {
+                      label: "Created",
+                      value: formatDate(selectedOrganization.createdAt),
+                      meta: openFlags.some((flag) => flag.orgId === selectedOrganization.id)
+                        ? "Has open safety review"
+                        : "No open safety review",
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
           </GlassCard>
         </div>
 
