@@ -15,6 +15,8 @@ export const SEEDED_DEMO_ACCOUNT_EMAILS = [
   "reception@zook.local",
   "trainer@zook.local",
   "member@zook.local",
+  "member2@zook.local",
+  "desk-test-member@zook.local",
   "prospect@zook.local",
   "minor@zook.local",
 ] as const;
@@ -26,6 +28,8 @@ export const SEEDED_DEMO_ACCOUNT_PHONES = [
   "+919765432109",
   "+919123456780",
   "+919876543210",
+  "+919876543211",
+  "+919444000222",
   "+919555000111",
   "+919000012345",
 ] as const;

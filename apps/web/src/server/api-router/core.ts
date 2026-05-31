@@ -2360,13 +2360,38 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
 async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const scopedUserIds = branchId
-    ? (
-        await prisma.memberSubscription.findMany({
-          where: { orgId, branchId },
-          select: { memberUserId: true },
-          distinct: ["memberUserId"],
-        })
-      ).map((subscription) => subscription.memberUserId)
+    ? await (async () => {
+        const [branchSubscriptions, orgSubscriptions] = await Promise.all([
+          prisma.memberSubscription.findMany({
+            where: { orgId, branchId },
+            select: { memberUserId: true },
+            distinct: ["memberUserId"],
+          }),
+          prisma.memberSubscription.findMany({
+            where: { orgId },
+            select: { memberUserId: true },
+            distinct: ["memberUserId"],
+          }),
+        ]);
+        const memberIdsWithAnySubscription = new Set(
+          orgSubscriptions.map((subscription) => subscription.memberUserId),
+        );
+        const noSubscriptionProfiles = await prisma.memberProfile.findMany({
+          where: {
+            orgId,
+            ...(memberIdsWithAnySubscription.size
+              ? { userId: { notIn: Array.from(memberIdsWithAnySubscription) } }
+              : {}),
+          },
+          select: { userId: true },
+        });
+        return Array.from(
+          new Set([
+            ...branchSubscriptions.map((subscription) => subscription.memberUserId),
+            ...noSubscriptionProfiles.map((profile) => profile.userId),
+          ]),
+        );
+      })()
     : undefined;
   const profiles = await prisma.memberProfile.findMany({
     where: { orgId, ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}) },
