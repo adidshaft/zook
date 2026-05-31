@@ -2051,13 +2051,14 @@ function isAllBranchesRequest(branchId?: string | null) {
 }
 
 async function enrichAttendanceRecords<
-  T extends { id: string; branchId: string; subscriptionId?: string | null },
+  T extends { id: string; branchId: string; userId: string; subscriptionId?: string | null },
 >(records: T[]) {
   if (!records.length) {
     return [];
   }
 
   const branchIds = [...new Set(records.map((record) => record.branchId))];
+  const userIds = [...new Set(records.map((record) => record.userId))];
   const subscriptionIds = [
     ...new Set(
       records
@@ -2066,15 +2067,19 @@ async function enrichAttendanceRecords<
     ),
   ];
 
-  const [branches, subscriptions] = await Promise.all([
+  const [branches, users, subscriptions] = await Promise.all([
     prisma.branch.findMany({
       where: { id: { in: branchIds } },
       select: { id: true, name: true },
     }),
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, phone: true },
+    }),
     subscriptionIds.length
       ? prisma.memberSubscription.findMany({
           where: { id: { in: subscriptionIds } },
-          select: { id: true, planId: true },
+          select: { id: true, planId: true, endsAt: true, remainingVisits: true },
         })
       : Promise.resolve([]),
   ]);
@@ -2088,18 +2093,40 @@ async function enrichAttendanceRecords<
     : [];
 
   const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
-  const planIdsBySubscriptionId = new Map(
-    subscriptions.map((subscription) => [subscription.id, subscription.planId]),
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const subscriptionsById = new Map(
+    subscriptions.map((subscription) => [subscription.id, subscription]),
   );
   const planNamesById = new Map(plans.map((plan) => [plan.id, plan.name]));
 
-  return records.map((record) => ({
-    ...attendanceWithEntryCode(record),
-    branchName: branchNamesById.get(record.branchId) ?? null,
-    planName: record.subscriptionId
-      ? (planNamesById.get(planIdsBySubscriptionId.get(record.subscriptionId) ?? "") ?? null)
-      : null,
-  }));
+  return records.map((record) => {
+    const user = usersById.get(record.userId);
+    const subscription = record.subscriptionId
+      ? subscriptionsById.get(record.subscriptionId)
+      : undefined;
+    const planName = subscription ? (planNamesById.get(subscription.planId) ?? null) : null;
+
+    return {
+      ...attendanceWithEntryCode(record),
+      branchName: branchNamesById.get(record.branchId) ?? null,
+      planName,
+      user: user
+        ? {
+            id: user.id,
+            name: user.name,
+            email: publicUserEmail(user.email) ?? "",
+            phone: user.phone,
+          }
+        : null,
+      plan: planName ? { name: planName } : null,
+      subscription: subscription
+        ? {
+            endsAt: subscription.endsAt,
+            remainingVisits: subscription.remainingVisits,
+          }
+        : null,
+    };
+  });
 }
 
 async function findFileAssetOrThrow(fileId: string) {
