@@ -23,7 +23,26 @@ type CoachStats = {
   progressNotes: number;
 };
 
-export function CoachPage({ firstName, stats }: { firstName: string; stats: CoachStats }) {
+type CoachClient = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  goal: string;
+  profilePhotoUrl: string | null;
+  activePlans: number;
+  recentActivity: string;
+};
+
+export function CoachPage({
+  firstName,
+  stats,
+  clients,
+}: {
+  firstName: string;
+  stats: CoachStats;
+  clients: CoachClient[];
+}) {
   return (
     <>
       <SectionHero
@@ -87,7 +106,7 @@ export function CoachPage({ firstName, stats }: { firstName: string; stats: Coac
             the dashboard.
           </p>
           <div className="mt-4 grid gap-2">
-            {stats.assignedClients === 0 ? (
+            {clients.length === 0 ? (
               <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-4 text-sm text-[var(--text-secondary)]">
                 <PinIcon size={16} className="mt-0.5 shrink-0 text-[var(--text-tertiary)]" />
                 <span>
@@ -96,12 +115,16 @@ export function CoachPage({ firstName, stats }: { firstName: string; stats: Coac
                 </span>
               </div>
             ) : (
-              <ActivityRow
-                icon={Users}
-                iconTone="lime"
-                title="Pinned clients will appear here"
-                subtitle="One-tap access"
-              />
+              clients.slice(0, 4).map((client, index) => (
+                <ActivityRow
+                  key={client.id}
+                  icon={Users}
+                  iconTone={index === 0 ? "lime" : "sky"}
+                  title={client.name}
+                  subtitle={`${client.activePlans} active plan${client.activePlans === 1 ? "" : "s"} · ${client.recentActivity}`}
+                  index={index}
+                />
+              ))
             )}
           </div>
         </GlassCard>
