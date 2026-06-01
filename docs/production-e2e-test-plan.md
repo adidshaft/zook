@@ -54,6 +54,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Mobile workout completion bug found and fixed on 2026-06-01: before the fix, tapping `Complete Workout` left the native plan detail button stuck as `Completing...` for more than 20 seconds even though the production data later reflected completion. Root cause was the mutation awaiting active query invalidation/refetch promises inside `onSuccess`, keeping the mutation pending if a follow-up refetch was slow. The mobile mutation now fires the invalidations in the background so the completion action can settle immediately while data refreshes.
 - Expo/EAS production update shipped for the mobile workout completion fix on 2026-06-01: branch `production`, runtime `0.1.0`, update group `41a0c362-3934-4b76-8b68-945d2bf7be04`, Android update `019e81db-2a29-757e-a925-7f21eb8dbfb1`, iOS update `019e81db-2a29-71f5-9864-a39f662a6fcd`, message `Fix mobile workout completion settling`, commit `76cf8bed1639a217721c090ecfc9dbd5962b2e75`.
 - Dashboard/platform perceived-loading follow-up shipped on 2026-06-01: production deployment `https://zook-gym-aw4p89u42-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`, replaced the owner dashboard route fallback's anonymous black skeleton blocks with a recognizable Zook command-board shell, added a dedicated platform operations loading shell, and raised the fast owner dashboard shell cache from 10s to 60s while preserving mutation-driven cache invalidation. Local `@zook/web` typecheck, lint, and build passed. Production smoke returned `envProfile: "production"` from `https://app.zookfit.in/api/health`, unauthenticated `/dashboard` still redirects to login, and Chrome owner-session retest rendered the real `Today’s Command Board` / `ACTIVE MEMBERS` content with `.animate-pulse` count `0`; first post-deploy navigation still showed cold latency, while warm repeat settled in about `6.1s`.
+- Native iOS simulator minor/prospect checks continued on 2026-06-01 against production APIs. `minor@zook.local` accepted seeded OTP `000000` and loaded Ira's home, Membership, Plan, Scan, and Inbox screens; the Inbox showed the guardian approval pending state. The Scan screen opened with the server-authoritative QR frame and manual entry fallback, but actual camera QR recognition, haptic feedback, checkout re-scan, and geofence exit remain physical-device checks. `prospect@zook.local` initially accepted OTP `000000` but stayed on the verify screen with `Signed in.` instead of routing into discovery; this was fixed by sending authenticated no-organization users to `/gyms`. Retest on simulator showed the prospect landing on `Find your gym`, opening the public `Aarogya Strength` gym profile, and reaching membership plan selection. The flow was stopped before tapping `Choose plan` to avoid an unapproved production join/payment mutation.
 - Native iOS simulator production-backed smoke continued on 2026-05-31 using `com.zook.app` against `https://app.zookfit.in/api`: the app opened, showed both Mobile number and Email login modes, sent the seeded email OTP for `member@zook.local`, accepted OTP `000000`, and reached Nisha Menon's member home. Two simulator-only launch blockers were found and fixed during this check: the member floating tab bar no longer uses Reanimated UI worklets, and the shared `ZookButton` no longer wraps `Pressable` with Reanimated, avoiding the dev render error `You attempted to set the key current with the value undefined on an object that is meant to be immutable and has been frozen.`
 - Mobile member home/Plan/Scan evidence was captured after the fixes: home rendered Aarogya Strength/Nisha with real cards and no standalone Diet tab; the Plan route opened with workouts/schedule/history and a visible Diet Plan section; the Scan route opened with the server-authoritative scanner frame, camera-permission boundary, manual `Enter code` fallback, and scanner progress chips. Actual camera QR recognition, the moving laser over camera preview, haptic success feedback, geofence exit, and physical branch QR re-scan flows remain physical-device checks.
 - Expo/EAS production update shipped for the mobile fixes on 2026-05-31: branch `production`, runtime `0.1.0`, update group `ae87eff8-19b2-4cec-a609-92634a8bbaf4`, Android update `019e7f4a-86ef-7944-9d70-30112256707a`, iOS update `019e7f4a-86ef-7e96-90cf-7b93e4b76c81`, message `Fix mobile member launch blockers`, commit `dbdd6efb908c9bce8352c75d6100c1e8c3d9d6b7`.
@@ -232,19 +233,19 @@ Add these to the pass before signing off production:
 119. [x] [web] Open shop orders.
 120. [ ] [web] Confirm the `member@zook.local` mobile shop order appears.
 121. [x] [web] Log out.
-122. [ ] [mobile] Log in as `minor@zook.local` with OTP `000000`.
-123. [ ] [mobile] Confirm minor home loads.
-124. [ ] [mobile] Test membership screen.
+122. [x] [mobile] Log in as `minor@zook.local` with OTP `000000`.
+123. [x] [mobile] Confirm minor home loads.
+124. [x] [mobile] Test membership screen.
 125. [ ] [mobile] Test attendance/check-in.
-126. [ ] [mobile] Test assigned plans.
-127. [ ] [mobile] Confirm guardian consent surfaces behave as expected.
-128. [ ] [mobile] Log out.
-129. [ ] [mobile] Log in as `prospect@zook.local` with OTP `000000`.
-130. [ ] [mobile] Browse public gym discovery if available in mobile.
-131. [ ] [mobile] Open the demo gym page.
-132. [ ] [mobile] Start a join flow.
-133. [ ] [mobile] Confirm prospect can join only through intended flow.
-134. [ ] [mobile] Confirm payment remains demo/offline, or stop before live Razorpay confirmation.
+126. [x] [mobile] Test assigned plans.
+127. [x] [mobile] Confirm guardian consent surfaces behave as expected.
+128. [x] [mobile] Log out.
+129. [x] [mobile] Log in as `prospect@zook.local` with OTP `000000`.
+130. [x] [mobile] Browse public gym discovery if available in mobile.
+131. [x] [mobile] Open the demo gym page.
+132. [x] [mobile] Start a join flow.
+133. [x] [mobile] Confirm prospect can join only through intended flow.
+134. [x] [mobile] Confirm payment remains demo/offline, or stop before live Razorpay confirmation.
 135. [ ] [mobile] Log out.
 136. [ ] [web] Log in as `owner@zook.local`.
 137. [ ] [web] Confirm all mobile-created transactions appear in dashboard metrics.
