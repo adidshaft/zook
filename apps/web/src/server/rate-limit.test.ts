@@ -43,9 +43,9 @@ describe("rate limits", () => {
     );
   });
 
-  it("limits report exports to ten per actor per day", async () => {
+  it("allows a full report pack plus retries per actor per day", async () => {
     expect(defaultRateLimitRules.reportExportByActor).toMatchObject({
-      limit: 10,
+      limit: 50,
       windowMs: 24 * 60 * 60 * 1000,
     });
     for (let attempt = 0; attempt < defaultRateLimitRules.reportExportByActor.limit; attempt += 1) {

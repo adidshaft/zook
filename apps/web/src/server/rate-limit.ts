@@ -47,7 +47,7 @@ export const defaultRateLimitRules = {
   pushRegisterByActor: { limit: 10, windowMs: 10 * 60 * 1000 },
   guardianConsentByActor: { limit: 6, windowMs: 30 * 60 * 1000 },
   privacyRequestByActor: { limit: 6, windowMs: 60 * 60 * 1000 },
-  reportExportByActor: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
+  reportExportByActor: { limit: 50, windowMs: 24 * 60 * 60 * 1000 },
   fileUploadByActor: { limit: 24, windowMs: 10 * 60 * 1000 },
   qrScanByActor: { limit: 20, windowMs: 5 * 60 * 1000 },
   qrScanByToken: { limit: 8, windowMs: 2 * 60 * 1000 },
