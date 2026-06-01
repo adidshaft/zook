@@ -6,7 +6,7 @@
  * via framer-motion. They respect prefers-reduced-motion.
  */
 
-import { motion, useInView, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
@@ -50,7 +50,6 @@ export function AnimatedNumber({
 }) {
   const reduce = useReduceOrPaper();
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "0px 0px 100px 0px" });
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const display = useTransform(spring, (v) =>
@@ -62,8 +61,8 @@ export function AnimatedNumber({
       mv.set(value);
       return;
     }
-    if (inView) mv.set(value);
-  }, [inView, mv, reduce, value]);
+    mv.set(value);
+  }, [mv, reduce, value]);
 
   if (reduce) {
     return (
