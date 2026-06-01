@@ -122,6 +122,7 @@ export function CoachPage({
                   iconTone={index === 0 ? "lime" : "sky"}
                   title={client.name}
                   subtitle={`${client.activePlans} active plan${client.activePlans === 1 ? "" : "s"} · ${client.recentActivity}`}
+                  href={`/coach/clients/${client.id}`}
                   index={index}
                 />
               ))
@@ -136,8 +137,8 @@ export function CoachPage({
               icon={ClipboardList}
               iconTone="lime"
               title="Assign a new plan"
-              subtitle="Open the assigned-plans builder in the app"
-              href="/me"
+              subtitle="Create a trainer draft for an assigned client"
+              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
               index={0}
             />
             <ActivityRow
@@ -153,7 +154,7 @@ export function CoachPage({
               iconTone="amber"
               title="Log this week's progress"
               subtitle="Capture weights, reps, body comp"
-              href="/me"
+              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
               index={2}
             />
             <ActivityRow
