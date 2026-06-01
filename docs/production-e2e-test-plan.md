@@ -83,7 +83,7 @@ Add these to the pass before signing off production:
 - [x] [web] Seeded demo phone login with `+919876543210` accepts OTP `000000` and creates a member session.
 - [ ] [web] Real phone login sends SMS only to an owned/control number, and OTP verification creates a session.
 - [x] [web] Profile completion allows adding a missing phone or email later.
-- [ ] [mobile] Profile completion allows adding a missing phone or email later.
+- [x] [mobile] Profile completion allows adding a missing phone or email later.
 - [x] [web] Pricing page opens and shows four plans including the two-month free trial plan.
 - [x] [web] Pricing page first fold shows only main points.
 - [x] [web] Pricing page expands/collapses full plan details from More/Expand.
@@ -193,16 +193,16 @@ Add these to the pass before signing off production:
 86. [x] [mobile] Confirm the app points to production API.
 87. [x] [mobile] Log in as `member@zook.local` with OTP `000000`.
 88. [x] [mobile] Confirm member home loads.
-89. [ ] [mobile] Open membership screen.
-90. [ ] [mobile] Confirm active membership appears.
+89. [x] [mobile] Open membership screen.
+90. [x] [mobile] Confirm active membership appears.
 91. [x] [mobile] Open attendance/check-in area.
 92. [ ] [mobile] Confirm attendance history is visible.
 93. [x] [mobile] Open assigned plans.
 94. [ ] [mobile] Complete a workout/task if available.
 95. [ ] [mobile] Log progress.
-96. [ ] [mobile] Open notifications.
+96. [x] [mobile] Open notifications.
 97. [ ] [mobile] Confirm the web-sent notification appears if mobile receives it.
-98. [ ] [mobile] Open shop.
+98. [x] [mobile] Open shop.
 99. [ ] [mobile] Place a demo shop order.
 100. [ ] [mobile] Confirm checkout uses demo/offline money, or stop before live Razorpay confirmation.
 101. [ ] [mobile] Confirm order success appears.
@@ -263,6 +263,8 @@ Add these to the pass before signing off production:
 - 2026-05-31: Attempted to build and launch the native iOS app on the booted iPhone 17 Pro simulator via `Zook.xcworkspace` / `Zook` / `com.zook.app` with production API env. The build/run tool hit its 120s timeout and no `com.zook.app` install was present afterward, so native app checklist items remain unchecked.
 - 2026-05-31: Ran the Expo mobile web target on `http://localhost:8082/login` with `MOBILE_API_BASE_URL=https://app.zookfit.in/api`, `EXPO_PUBLIC_API_BASE_URL=https://app.zookfit.in/api`, and production env. The login UI showed both `Use mobile number` and `Use email`; switching to email changed the identifier field to the email path. Sending `member@zook.local` from localhost showed `We cannot connect right now`, while a direct production API request succeeded, so this appears to be a local web/CORS-style limitation rather than production API downtime.
 - 2026-05-31: Production API smoke for `member@zook.local` succeeded with seeded OTP `000000`. Read-only member data returned active org `Aarogya Strength`, active membership `ACTIVE`, `2` memberships, `3` attendance records, `1` assigned plan, `3` notifications, and `1` shop order. This verifies the backend data needed by mobile home/membership/attendance/plans/notifications/shop, but not the native rendering, camera scan, haptic, or geofence behavior.
+- 2026-06-01: Clean simulator `07CF6415-F04A-4D98-A32C-02C3AB5639EE` exposed a dev-client production-smoke issue: the native binary's baked `Constants.expoConfig.extra.mobileApiBaseUrl` overrode Metro's production `EXPO_PUBLIC_API_BASE_URL`, causing OTP send to show `We cannot connect right now` while testing against production. The mobile URL resolver now prefers runtime `EXPO_PUBLIC_API_BASE_URL` / `EXPO_PUBLIC_WEB_URL` over baked Expo config values. After relaunch with production env, `member@zook.local` accepted OTP `000000` and loaded Nisha Menon's real member home.
+- 2026-06-01: Native iOS simulator production-backed read-only mobile checks passed after the URL precedence fix: Membership opened with `1 active`, active `Monthly Unlimited`, `11 of 30 days left`, and `Membership ready`; Notifications opened with `4 unread`, recent security and attendance entries, and older gym updates; Shop opened with the Aarogya Strength desk pickup catalog and 4 items; Profile opened with Nisha Menon, `member@zook.local`, and editable profile/KYC fields. No shop order, notification send, membership pause, autopay, payment, camera scan, haptic, or geofence action was performed.
 
 ## Recommended Account Usage
 
