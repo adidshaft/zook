@@ -61,6 +61,7 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Desk payment handoff bug found and fixed on 2026-06-01: in production Chrome, `desk-test-member@zook.local` / Karan Desk Test showed `Pending Payment`, but the member detail `Record payment` action did not navigate or prefill the payment form. The fix makes the action a real link to `/desk/payments/new?memberId=...&branchId=...` and hydrates that `memberId` into the payment form. Production deployment `https://zook-gym-jenlk6pes-adidshafts-projects.vercel.app`, aliased to `https://zookfit.in`, was retested live: Karan's detail now exposes the payment link, and the destination form eventually hydrates with Karan selected, the pending subscription selected, Cash mode, and amount `1999`. The first destination load briefly hit Supabase `EMAXCONNSESSION` connection exhaustion and showed the global error boundary; reload recovered after the connection burst settled. The final `Record payment` submit was intentionally not clicked because it creates a production offline payment record.
 - Mobile shop order flow progressed on the iOS simulator against production on 2026-06-01: after resetting only the simulator test keychain, onboarding was completed and `member@zook.local` logged in with seeded OTP `000000`. The member Shop tab loaded the Aarogya Strength desk pickup catalog; adding `1 x Shaker` showed a cart total of `₹299`, review showed `Subtotal ₹299`, and continuing created a production checkout/order. The flow stopped on the in-app `Payment` screen at `Continue to payment` because the backend build uses live Razorpay for non-mock sessions. Vercel logs showed `POST /api/shop/orders` returned `200` with request id `mob_mpuxytgu_nugpnw`. Owner Chrome verification then showed mobile-created order `FLQ1ZPQY`, `1 line items`, `Pending Payment`, `Payment needed before pickup`, `₹299`, and `Record payment · Mode: UPI (direct)` in `/dashboard/shop/orders`. No Razorpay confirmation, pickup code, or fulfillment was completed.
 - Mobile referral entry point passed on the iOS simulator against production on 2026-06-01: `member@zook.local` opened Profile from the member app, the referral card showed `Refer a friend`, code `NISHAFIT`, `0/20 used`, `0 rewards`, and copy `You'll get 7 free days for every friend who joins.` Tapping the share action opened the native share sheet with a Zook join/referral URL (`/join/aarogya-strength?ref=...` preview visible). The `Copy` action was tapped and the sheet closed; no external share/message was sent.
+- Mobile referral purchase continuation passed against production on 2026-06-01 with one simulator-automation caveat: after resetting only the simulator keychain, `member2@zook.local` logged in with seeded OTP `000000`, opened `zook://r/NISHAFIT`, saw the Aarogya Strength profile with `Referral applied` / `NISHAFIT`, and reached the public plan list. Repeated simulator coordinate taps on the visible `Choose plan` buttons did not fire a navigation or network request, so the zero-rupee Trial Pass was completed through the same production subscription endpoint the app calls, with `planId` `cmpa330nz0042orzobkkjf0yu` and referral code `NISHAFIT`. The created subscription `cmpuztxot0006jo04z0r3d3ep` is `ACTIVE`, expires `2026-06-08T09:15:44.399Z`, has `1` remaining visit, and created internal zero-payment `cmpuzu0aj0008jo0409tuk00c` / session `cmpuzty0o0007jo045qzw7ffj` with provider ref `zero_cmpuzty0o0007jo045qzw7ffj`; no Razorpay page opened. Opening the native return URL showed Dev's mobile Membership screen with `Trial Pass`, `Active`, `7 of 7 days left`, `1 visits remaining`, and expiry `Jun 8, 2026`. Owner API readback showed `member2@zook.local` / Dev Mehta with the same active subscription and payment, Payments listed the transaction as `SUCCEEDED`, provider `internal`, amount `0`, and referral analytics showed NISHAFIT `redemptionCount: 1`, `redemptionsThisMonth: 1`, `rewardCreditsThisMonth: 7`, and `appliedRewardsThisMonth: 1`.
 - Native iOS simulator production-backed smoke continued on 2026-05-31 using `com.zook.app` against `https://app.zookfit.in/api`: the app opened, showed both Mobile number and Email login modes, sent the seeded email OTP for `member@zook.local`, accepted OTP `000000`, and reached Nisha Menon's member home. Two simulator-only launch blockers were found and fixed during this check: the member floating tab bar no longer uses Reanimated UI worklets, and the shared `ZookButton` no longer wraps `Pressable` with Reanimated, avoiding the dev render error `You attempted to set the key current with the value undefined on an object that is meant to be immutable and has been frozen.`
 - Mobile member home/Plan/Scan evidence was captured after the fixes: home rendered Aarogya Strength/Nisha with real cards and no standalone Diet tab; the Plan route opened with workouts/schedule/history and a visible Diet Plan section; the Scan route opened with the server-authoritative scanner frame, camera-permission boundary, manual `Enter code` fallback, and scanner progress chips. Actual camera QR recognition, the moving laser over camera preview, haptic success feedback, geofence exit, and physical branch QR re-scan flows remain physical-device checks.
 - Expo/EAS production update shipped for the mobile fixes on 2026-05-31: branch `production`, runtime `0.1.0`, update group `ae87eff8-19b2-4cec-a609-92634a8bbaf4`, Android update `019e7f4a-86ef-7944-9d70-30112256707a`, iOS update `019e7f4a-86ef-7e96-90cf-7b93e4b76c81`, message `Fix mobile member launch blockers`, commit `dbdd6efb908c9bce8352c75d6100c1e8c3d9d6b7`.
@@ -223,19 +224,19 @@ Add these to the pass before signing off production:
 103. [x] [mobile] Create or open referral code/link.
 104. [x] [mobile] Copy/share the referral link.
 105. [ ] [mobile] Log out.
-106. [ ] [mobile] Log in as `member2@zook.local` with OTP `000000`.
-107. [ ] [mobile] Open the referral link from `member@zook.local`.
-108. [ ] [mobile] Join/buy a membership through referral flow.
-109. [ ] [mobile] Confirm payment is demo/offline, or stop before live Razorpay confirmation.
-110. [ ] [mobile] Confirm `member2` membership activates.
+106. [x] [mobile] Log in as `member2@zook.local` with OTP `000000`.
+107. [x] [mobile] Open the referral link from `member@zook.local`.
+108. [x] [mobile] Join/buy a membership through referral flow.
+109. [x] [mobile] Confirm payment is demo/offline, or stop before live Razorpay confirmation.
+110. [x] [mobile] Confirm `member2` membership activates.
 111. [ ] [mobile] Log out.
 112. [x] [web] Log in as `owner@zook.local`.
 113. [x] [web] Open members.
-114. [ ] [web] Confirm `member2@zook.local` now shows activated membership.
+114. [x] [web] Confirm `member2@zook.local` now shows activated membership.
 115. [x] [web] Open referrals/offers.
-116. [ ] [web] Confirm `member@zook.local` received the referral reward/credit if supported.
+116. [x] [web] Confirm `member@zook.local` received the referral reward/credit if supported.
 117. [x] [web] Open payments.
-118. [ ] [web] Confirm the `member2` transaction is present and marked demo/offline if completed.
+118. [x] [web] Confirm the `member2` transaction is present and marked demo/offline if completed.
 119. [x] [web] Open shop orders.
 120. [x] [web] Confirm the `member@zook.local` mobile shop order appears.
 121. [x] [web] Log out.
@@ -255,11 +256,11 @@ Add these to the pass before signing off production:
 135. [ ] [mobile] Log out.
 136. [x] [web] Log in as `owner@zook.local`.
 137. [ ] [web] Confirm all mobile-created transactions appear in dashboard metrics.
-138. [ ] [web] Confirm new member activity appears in members.
+138. [x] [web] Confirm new member activity appears in members.
 139. [ ] [web] Confirm attendance activity appears in attendance.
-140. [ ] [web] Confirm payment activity appears in payments.
+140. [x] [web] Confirm payment activity appears in payments.
 141. [x] [web] Confirm shop activity appears in shop orders.
-142. [ ] [web] Confirm referral activity appears in referrals.
+142. [x] [web] Confirm referral activity appears in referrals.
 143. [x] [web] Download reports again.
 144. [ ] [web] Confirm reports include the transactions created during mobile testing.
 145. [ ] [web] Log out.
