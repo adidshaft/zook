@@ -22,10 +22,12 @@ export function useDeskWorkspace({
   orgId,
   branch,
   locale,
+  initialMemberUserId,
 }: {
   orgId: string;
   branch: BranchSummary | null;
   locale?: string | null | undefined;
+  initialMemberUserId?: string | null | undefined;
 }) {
   const router = useRouter();
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
@@ -112,6 +114,14 @@ export function useDeskWorkspace({
       setSelectedMember(nextSelectedMember);
     }
   }, [members, selectedMember]);
+
+  useEffect(() => {
+    if (!initialMemberUserId || paymentForm.memberUserId) return;
+    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
+    if (member) {
+      selectMember(member);
+    }
+  }, [initialMemberUserId, members, paymentForm.memberUserId]);
 
   function memberPaymentDefaults(member: MemberRow | null) {
     const subscription = member?.activeSubscription;
@@ -203,7 +213,9 @@ export function useDeskWorkspace({
 
   function handleMemberPayment(member: MemberRow) {
     selectMember(member);
-    router.push(withBranch("/desk/payments/new", branch));
+    const params = new URLSearchParams();
+    if (member.user?.id) params.set("memberId", member.user.id);
+    router.push(withBranch(`/desk/payments/new?${params.toString()}`, branch));
   }
 
   function jumpToShopPayment(order: ShopOrder) {
