@@ -2,7 +2,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
-import { ZookButton } from "../zook-button";
+import { ZookButton, ZookButtonLink } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
 import { ageLabel, memberLabel, phoneLast4 } from "./utils";
@@ -15,7 +15,7 @@ export function MemberTab({
   busyId,
   onMemberQueryChange,
   onSelectMember,
-  onRecordPayment,
+  getRecordPaymentHref,
   onOverrideEntry,
   onCheckOut,
   onSendMessage,
@@ -27,7 +27,7 @@ export function MemberTab({
   busyId: string;
   onMemberQueryChange: (value: string) => void;
   onSelectMember: (member: MemberRow) => void;
-  onRecordPayment: (member: MemberRow) => void;
+  getRecordPaymentHref: (member: MemberRow) => string;
   onOverrideEntry: (member: MemberRow) => void;
   onCheckOut: (member: MemberRow) => void;
   onSendMessage: (member: MemberRow) => void;
@@ -168,13 +168,12 @@ export function MemberTab({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <ZookButton
-                  type="button"
+                <ZookButtonLink
                   size="sm"
-                  onClick={() => onRecordPayment(selectedMember)}
+                  href={getRecordPaymentHref(selectedMember)}
                 >
                   {copy.recordPayment}
-                </ZookButton>
+                </ZookButtonLink>
                 <ZookButton
                   type="button"
                   tone="ghost"
