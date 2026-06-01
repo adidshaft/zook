@@ -54,7 +54,7 @@ export async function getOrganizationDashboardFastData(
 ) {
   return cachedJson(
     `org-dashboard-fast:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
-    10,
+    60,
     () => getOrganizationDashboardFastDataUncached(orgId, filters),
   );
 }
