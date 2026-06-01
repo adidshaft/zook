@@ -29,13 +29,7 @@ export function useDashboardSummary(
     if (!orgId) return;
 
     const delay = options.hydrateDelayMs ?? 3_500;
-    const scheduleHydration = () => setCanHydrateDetails(true);
-    if (typeof window.requestIdleCallback === "function") {
-      const idleId = window.requestIdleCallback(scheduleHydration, { timeout: delay + 1_500 });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = globalThis.setTimeout(scheduleHydration, delay);
+    const timeoutId = globalThis.setTimeout(() => setCanHydrateDetails(true), delay);
     return () => globalThis.clearTimeout(timeoutId);
   }, [orgId, branchId, options.hydrateDelayMs]);
 
