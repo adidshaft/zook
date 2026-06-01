@@ -50,6 +50,8 @@ Current live run is using Chrome against `zookfit.in` / `app.zookfit.in`; mobile
 - Owner notification history was rechecked read-only in production Chrome as `owner@zook.local`: `/dashboard/notifications/history` showed `0 messages` / `No messages match this view`, and `/dashboard/notifications` showed `Recent sends 0` plus `No notifications sent yet`. This proves no owner-composed in-app notification is currently recorded for the demo org after the run; it still does not prove MSG91/email provider-side logs, so the external SMS/email verification item remains open.
 - Member web contact completion shipped and verified in production Chrome on 2026-05-31: `member@zook.local` opened the private member page at `/m/09pyn5jn`, the new Account contact panel rendered `2/2 contacts`, `OTP verified`, email `member@zook.local`, phone `+919876543210`, and add/change OTP controls. The `Send code` action was intentionally not clicked because it would transmit a real email/SMS without action-time approval.
 - Owner notification send to a demo member passed on 2026-06-01: as `owner@zook.local`, sent `E2E in-app notice 2026-06-01 05:47` to only `member@zook.local` / Nisha Menon with `pushEnabled: false`. The first attempt was rejected before creation because metadata contained a boolean where the API expects string metadata; the retry without custom metadata returned `recipientCount: 1`, `scheduledRecipientCount: 0`, `status: SENT`, and owner notification history showed `Operational · Single Member`, `1 recipients`, `1 delivered`, `0 failed`. A separate member session read `/api/me/notifications` and confirmed the same notification at the top of the member inbox with `deliveryStatus: in_app`, `readAt: null`, and `pushEnabled: false`. This did not call SMS/email or Expo push, and does not satisfy the native mobile receive-screen checkbox.
+- Native iOS simulator production-backed mobile retest continued on 2026-06-01 on clean simulator `07CF6415-F04A-4D98-A32C-02C3AB5639EE` using `com.zook.app` against `https://app.zookfit.in/api`. After seeded email OTP login for `member@zook.local`, the native Inbox showed the owner-sent `E2E in-app notice 2026-06-01...` as the latest unread item, proving the web-sent in-app notification appears in the mobile app. A direct attendance-record open for `cmptmqnhw0000jm04ldft73g4` showed `Checked out`, entry code `ZK-5025`, check-in `3:51 PM`, check-out `3:52 PM`, `Duration 1m`, branch `Aarogya Strength Koregaon Park`, and status `Approved`, proving recorded attendance duration is visible later on mobile. The assigned `Starter Strength Week` workout was opened and completed from the mobile app; after the fix below and relaunch, the plan detail settled to `6 of 6 completed` / `100%`, and tracking history showed body progress plus the existing `Upper Body Strength` workout log.
+- Mobile workout completion bug found and fixed on 2026-06-01: before the fix, tapping `Complete Workout` left the native plan detail button stuck as `Completing...` for more than 20 seconds even though the production data later reflected completion. Root cause was the mutation awaiting active query invalidation/refetch promises inside `onSuccess`, keeping the mutation pending if a follow-up refetch was slow. The mobile mutation now fires the invalidations in the background so the completion action can settle immediately while data refreshes.
 - Native iOS simulator production-backed smoke continued on 2026-05-31 using `com.zook.app` against `https://app.zookfit.in/api`: the app opened, showed both Mobile number and Email login modes, sent the seeded email OTP for `member@zook.local`, accepted OTP `000000`, and reached Nisha Menon's member home. Two simulator-only launch blockers were found and fixed during this check: the member floating tab bar no longer uses Reanimated UI worklets, and the shared `ZookButton` no longer wraps `Pressable` with Reanimated, avoiding the dev render error `You attempted to set the key current with the value undefined on an object that is meant to be immutable and has been frozen.`
 - Mobile member home/Plan/Scan evidence was captured after the fixes: home rendered Aarogya Strength/Nisha with real cards and no standalone Diet tab; the Plan route opened with workouts/schedule/history and a visible Diet Plan section; the Scan route opened with the server-authoritative scanner frame, camera-permission boundary, manual `Enter code` fallback, and scanner progress chips. Actual camera QR recognition, the moving laser over camera preview, haptic success feedback, geofence exit, and physical branch QR re-scan flows remain physical-device checks.
 - Expo/EAS production update shipped for the mobile fixes on 2026-05-31: branch `production`, runtime `0.1.0`, update group `ae87eff8-19b2-4cec-a609-92634a8bbaf4`, Android update `019e7f4a-86ef-7944-9d70-30112256707a`, iOS update `019e7f4a-86ef-7e96-90cf-7b93e4b76c81`, message `Fix mobile member launch blockers`, commit `dbdd6efb908c9bce8352c75d6100c1e8c3d9d6b7`.
@@ -102,7 +104,7 @@ Add these to the pass before signing off production:
 - [ ] [mobile] Multi-branch check-in resolves the nearest branch from geolocation when QR is not involved.
 - [x] [web] Owner dashboard attendance count updates after member check-in without waiting for stale cache.
 - [x] [web] Owner dashboard attendance/history updates after member checkout.
-- [ ] [mobile] Member can view recorded attendance durations later.
+- [x] [mobile] Member can view recorded attendance durations later.
 - [ ] [mobile] QR verification success completes dynamically, shows the resolved verification state, and gives haptic feedback.
 
 ## Checklist
@@ -198,12 +200,12 @@ Add these to the pass before signing off production:
 89. [x] [mobile] Open membership screen.
 90. [x] [mobile] Confirm active membership appears.
 91. [x] [mobile] Open attendance/check-in area.
-92. [ ] [mobile] Confirm attendance history is visible.
+92. [x] [mobile] Confirm attendance history is visible.
 93. [x] [mobile] Open assigned plans.
-94. [ ] [mobile] Complete a workout/task if available.
-95. [ ] [mobile] Log progress.
+94. [x] [mobile] Complete a workout/task if available.
+95. [x] [mobile] Log progress.
 96. [x] [mobile] Open notifications.
-97. [ ] [mobile] Confirm the web-sent notification appears if mobile receives it.
+97. [x] [mobile] Confirm the web-sent notification appears if mobile receives it.
 98. [x] [mobile] Open shop.
 99. [ ] [mobile] Place a demo shop order.
 100. [ ] [mobile] Confirm checkout uses demo/offline money, or stop before live Razorpay confirmation.
