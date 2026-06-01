@@ -1,6 +1,7 @@
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import nextDynamic from "next/dynamic";
 import Link from "next/link";
+import { Suspense } from "react";
 import { MetricCard } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { requirePlatformSession } from "@/lib/server-auth";
@@ -95,6 +96,27 @@ const platformNavItems: Array<[string, string, string]> = [
   ["Incidents", "/platform/incidents", "incidents"],
 ];
 
+const platformNavGroups = [
+  {
+    label: "Health",
+    items: platformNavItems.filter(([, , key]) =>
+      ["status", "incidents", "webhooks", "audit"].includes(key),
+    ),
+  },
+  {
+    label: "Support",
+    items: platformNavItems.filter(([, , key]) =>
+      ["users", "payments", "gyms", "subscriptions"].includes(key),
+    ),
+  },
+  {
+    label: "Controls",
+    items: platformNavItems.filter(([, , key]) =>
+      ["broadcasts", "moderation", "impersonations", "flags", "assistant", "safety"].includes(key),
+    ),
+  },
+];
+
 const PlatformOperationsPanel = nextDynamic(
   () =>
     import("@/components/platform-operations-panel").then(
@@ -146,23 +168,6 @@ export default async function PlatformPage({
   const { section } = await params;
   const sectionKey = section?.[0] ?? "status";
   const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
-  const needsProviderDiagnostics =
-    activeAnchor === "readiness" || activeAnchor === "incident-checklist";
-  const [data, providerDiagnostics] = await Promise.all([
-    getPlatformDashboardShellData(),
-    needsProviderDiagnostics ? getPlatformProviderDiagnostics() : Promise.resolve(undefined),
-  ]);
-  const runtimeLabel = data.connected
-    ? "System online"
-    : data.fallbackMode === "demo"
-      ? "Demo data — production data unavailable"
-      : "Data unavailable";
-  const suspendedCount = data.orgs.filter((org) => org.status === "SUSPENDED").length;
-  const safetyReviewCount = data.platform.abuseFlags.filter(
-    (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
-  ).length;
-  const hasAlerts = suspendedCount > 0 || safetyReviewCount > 0;
-
   const activeNavLabel =
     platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Status";
 
@@ -177,55 +182,30 @@ export default async function PlatformPage({
                 <DashboardSignOutButton compact />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+                <Pill tone="lime">Production</Pill>
                 <Pill tone="blue">{activeNavLabel}</Pill>
               </div>
             </GlassCard>
-            <nav
-              aria-label="Platform sections"
-              className="rounded-2xl border border-white/10 bg-black/58 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
-            >
-              {platformNavItems.map(([item, href, key]) => {
-                const isActive = key === sectionKey;
-                return (
-                  <Link
-                    key={item}
-                    href={href}
-                    prefetch={false}
-                    className={`zook-focus mb-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition last:mb-0 ${
-                      isActive
-                        ? "bg-lime-300 text-black"
-                        : "text-white/66 hover:bg-white/8 hover:text-white"
-                    }`}
-                  >
-                    <span>{item}</span>
-                    {isActive ? <span className="h-2 w-2 rounded-full bg-black/70" /> : null}
-                  </Link>
-                );
-              })}
-            </nav>
+            <PlatformNavigation sectionKey={sectionKey} />
           </div>
         </aside>
 
-        <div className="grid min-w-0 gap-4">
+        <div className="grid min-w-0 content-start gap-4">
           <GlassCard variant="strong" className="rounded-2xl p-4 md:p-5">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 lg:hidden">
-                  <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+                  <Pill tone="lime">Production</Pill>
                   <Pill tone="amber">Platform team</Pill>
                   <Pill tone="blue">{activeNavLabel}</Pill>
                 </div>
-                <div className="mt-3 flex items-center gap-3 lg:mt-0">
-                  {hasAlerts ? <AlertTriangle className="h-5 w-5 shrink-0 text-amber-100" /> : null}
-                  <div className="min-w-0">
-                    <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-                      Platform operations
-                    </h1>
-                    <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
-                      Production health, support lookup, gym accounts, billing, and risk queues.
-                    </p>
-                  </div>
+                <div className="mt-3 min-w-0 lg:mt-0">
+                  <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+                    Platform operations
+                  </h1>
+                  <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
+                    Production health, support lookup, gym accounts, billing, and risk queues.
+                  </p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-3 lg:hidden">
@@ -255,10 +235,102 @@ export default async function PlatformPage({
             ))}
           </nav>
 
-          <section
-            aria-label="Platform metrics"
-            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
-          >
+          <Suspense fallback={<PlatformContentSkeleton />}>
+            <PlatformDashboardContent activeAnchor={activeAnchor} />
+          </Suspense>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function PlatformNavigation({ sectionKey }: { sectionKey: string }) {
+  return (
+    <nav
+      aria-label="Platform sections"
+      className="rounded-2xl border border-white/10 bg-black/58 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
+    >
+      {platformNavGroups.map((group) => (
+        <div key={group.label} className="mb-2 last:mb-0">
+          <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+            {group.label}
+          </p>
+          {group.items.map(([item, href, key]) => {
+            const isActive = key === sectionKey;
+            return (
+              <Link
+                key={item}
+                href={href}
+                prefetch={false}
+                className={`zook-focus mb-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition last:mb-0 ${
+                  isActive
+                    ? "bg-lime-300 text-black"
+                    : "text-white/66 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                <span>{item}</span>
+                {isActive ? <span className="h-2 w-2 rounded-full bg-black/70" /> : null}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function PlatformContentSkeleton() {
+  return (
+    <>
+      <section aria-label="Loading platform metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {["orgs", "trials", "suspended", "assistant", "safety"].map((item) => (
+          <GlassCard key={item} variant="strong" className="rounded-[18px] p-4">
+            <div className="h-3 w-24 rounded-full bg-white/10" />
+            <div className="mt-4 h-8 w-16 rounded-full bg-white/12" />
+            <div className="mt-3 h-3 w-32 rounded-full bg-white/8" />
+          </GlassCard>
+        ))}
+      </section>
+      <PlatformPanelSkeleton />
+    </>
+  );
+}
+
+async function PlatformDashboardContent({
+  activeAnchor,
+}: {
+  activeAnchor: string;
+}) {
+  const needsProviderDiagnostics =
+    activeAnchor === "readiness" || activeAnchor === "incident-checklist";
+  const [data, providerDiagnostics] = await Promise.all([
+    getPlatformDashboardShellData(),
+    needsProviderDiagnostics ? getPlatformProviderDiagnostics() : Promise.resolve(undefined),
+  ]);
+  const runtimeLabel = data.connected
+    ? "System online"
+    : data.fallbackMode === "demo"
+      ? "Demo data — production data unavailable"
+      : "Data unavailable";
+  const suspendedCount = data.orgs.filter((org) => org.status === "SUSPENDED").length;
+  const safetyReviewCount = data.platform.abuseFlags.filter(
+    (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
+  ).length;
+  const hasAlerts = suspendedCount > 0 || safetyReviewCount > 0;
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+        {hasAlerts ? (
+          <Pill tone="amber">
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+            Review needed
+          </Pill>
+        ) : null}
+      </div>
+
+      <section aria-label="Platform metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {data.metrics.map((metric) => (
               <MetricCard
                 key={metric.label}
@@ -276,7 +348,7 @@ export default async function PlatformPage({
                     <ShieldAlert size={18} className="text-amber-100" />
                   ) : undefined
                 }
-                className="rounded-[18px] p-4"
+                className="rounded-[18px] p-4 [&_.metric]:text-2xl md:[&_.metric]:text-3xl"
               />
             ))}
           </section>
@@ -287,8 +359,6 @@ export default async function PlatformPage({
             initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
             initialProviders={providerDiagnostics}
           />
-        </div>
-      </div>
-    </main>
+    </>
   );
 }
