@@ -1,4 +1,4 @@
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 import nextDynamic from "next/dynamic";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -126,6 +126,9 @@ const PlatformOperationsPanel = nextDynamic(
     loading: () => <PlatformPanelSkeleton />,
   },
 );
+
+type PlatformShellData = Awaited<ReturnType<typeof getPlatformDashboardShellData>>;
+type PlatformProviderStatus = ReturnType<typeof getPlatformProviderDiagnostics>;
 
 function PlatformPanelSkeleton() {
   return (
@@ -317,6 +320,7 @@ async function PlatformDashboardContent({
     (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
   ).length;
   const hasAlerts = suspendedCount > 0 || safetyReviewCount > 0;
+  const isStatusFirstFold = activeAnchor === "readiness";
 
   return (
     <>
@@ -353,12 +357,121 @@ async function PlatformDashboardContent({
             ))}
           </section>
 
-          <PlatformOperationsPanel
-            initialSection={activeAnchor}
-            initialOrgs={data.orgs.map(serializePlatformOrganization)}
-            initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
-            initialProviders={providerDiagnostics}
-          />
+          {isStatusFirstFold ? (
+            <PlatformStatusFirstFold
+              data={data}
+              providerDiagnostics={providerDiagnostics}
+              suspendedCount={suspendedCount}
+              safetyReviewCount={safetyReviewCount}
+            />
+          ) : (
+            <PlatformOperationsPanel
+              initialSection={activeAnchor}
+              initialOrgs={data.orgs.map(serializePlatformOrganization)}
+              initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
+              initialProviders={providerDiagnostics}
+            />
+          )}
     </>
+  );
+}
+
+function PlatformStatusFirstFold({
+  data,
+  providerDiagnostics,
+  suspendedCount,
+  safetyReviewCount,
+}: {
+  data: PlatformShellData;
+  providerDiagnostics: PlatformProviderStatus | undefined;
+  suspendedCount: number;
+  safetyReviewCount: number;
+}) {
+  const providerEntries = Object.entries(providerDiagnostics ?? {});
+  const providerGapCount = providerEntries.filter(([, provider]) =>
+    provider.status === "misconfigured" || provider.status === "unsupported",
+  ).length;
+  const readyProviderCount = providerEntries.filter(([, provider]) =>
+    provider.status === "ready" || provider.status === "default",
+  ).length;
+  const activeGyms = data.orgs.filter((org) => org.status === "ACTIVE").length;
+
+  const rows = [
+    {
+      label: "Provider setup",
+      value: providerGapCount ? `${providerGapCount} gap${providerGapCount === 1 ? "" : "s"}` : "Ready",
+      meta: providerGapCount
+        ? "Open Incidents or Webhooks for exact provider checks."
+        : `${readyProviderCount} providers are reporting usable defaults.`,
+      tone: providerGapCount ? "amber" : "lime",
+    },
+    {
+      label: "Gym accounts",
+      value: `${activeGyms} active`,
+      meta: `${data.orgs.length} recently loaded accounts in the platform queue.`,
+      tone: suspendedCount ? "amber" : "blue",
+    },
+    {
+      label: "Safety",
+      value: safetyReviewCount ? `${safetyReviewCount} open` : "Clear",
+      meta: safetyReviewCount
+        ? "Review unresolved safety reports before expanding traffic."
+        : "No unresolved safety reports in the loaded queue.",
+      tone: safetyReviewCount ? "amber" : "lime",
+    },
+  ] as const;
+
+  return (
+    <GlassCard className="overflow-hidden rounded-2xl p-0">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="p-5 md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/42">
+                Platform status
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">
+                Production command summary
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/58">
+                Fast view for provider health, tenant risk, and safety load. Open a focused section
+                from the left nav for deeper actions.
+              </p>
+            </div>
+            <Pill tone={providerGapCount || safetyReviewCount || suspendedCount ? "amber" : "lime"}>
+              {providerGapCount || safetyReviewCount || suspendedCount ? "Review needed" : "Healthy"}
+            </Pill>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {rows.map((row) => (
+              <div key={row.label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <Pill tone={row.tone}>{row.label}</Pill>
+                <p className="mt-4 text-2xl font-semibold text-white">{row.value}</p>
+                <p className="mt-2 text-sm leading-5 text-white/52">{row.meta}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 bg-white/[0.03] p-5 lg:border-l lg:border-t-0">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <CheckCircle2 className="h-4 w-4 text-lime-200" aria-hidden="true" />
+            First checks
+          </div>
+          <div className="mt-4 grid gap-3">
+            {[
+              `${providerEntries.length || 0} provider categories checked`,
+              `${suspendedCount} suspended gym${suspendedCount === 1 ? "" : "s"}`,
+              `${data.platform.aiUsageThisMonth} assistant event${data.platform.aiUsageThisMonth === 1 ? "" : "s"} this month`,
+            ].map((item) => (
+              <div key={item} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/62">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </GlassCard>
   );
 }
