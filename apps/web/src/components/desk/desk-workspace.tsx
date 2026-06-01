@@ -113,7 +113,7 @@ export function DeskWorkspace({
           busyId={state.busyId}
           onMemberQueryChange={actions.setMemberQuery}
           onSelectMember={actions.selectMember}
-          onRecordPayment={actions.handleMemberPayment}
+          getRecordPaymentHref={actions.getMemberPaymentHref}
           onOverrideEntry={(member) => void actions.overrideMemberEntry(member)}
           onCheckOut={(member) => void actions.checkOutMember(member)}
           onSendMessage={(member) => void actions.sendMemberMessage(member)}

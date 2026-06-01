@@ -213,9 +213,13 @@ export function useDeskWorkspace({
 
   function handleMemberPayment(member: MemberRow) {
     selectMember(member);
+    router.push(getMemberPaymentHref(member));
+  }
+
+  function getMemberPaymentHref(member: MemberRow) {
     const params = new URLSearchParams();
     if (member.user?.id) params.set("memberId", member.user.id);
-    router.push(withBranch(`/desk/payments/new?${params.toString()}`, branch));
+    return withBranch(`/desk/payments/new?${params.toString()}`, branch);
   }
 
   function jumpToShopPayment(order: ShopOrder) {
@@ -468,6 +472,7 @@ export function useDeskWorkspace({
       handlePaymentOrderChange,
       handlePaymentPlanChange,
       handleMemberPayment,
+      getMemberPaymentHref,
       jumpToShopPayment,
       skipPickupCode,
       overrideMemberEntry,
