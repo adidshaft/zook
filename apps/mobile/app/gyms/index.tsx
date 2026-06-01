@@ -2,7 +2,7 @@ import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
   GlassCard,
@@ -20,6 +20,7 @@ import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/domains";
+import { useAuth } from "@/lib/auth";
 import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 
 function normalizeMediaUrl(value?: string | null) {
@@ -41,6 +42,7 @@ function sanitizeReferralCode(value?: string | string[]) {
 export default function FindGyms() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { logout, session } = useAuth();
   const { t } = useI18n();
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = sanitizeReferralCode(routeParams.ref);
@@ -74,6 +76,13 @@ export default function FindGyms() {
     }
   };
 
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: () => void logout() },
+    ]);
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -106,6 +115,19 @@ export default function FindGyms() {
               >
                 <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
               </Pressable>
+            }
+            trailing={
+              session ? (
+                <Pressable
+                  testID="find-gyms-sign-out"
+                  onPress={confirmSignOut}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  style={styles.iconButton}
+                >
+                  <Ionicons name="log-out-outline" size={20} color={legacyColors.text} />
+                </Pressable>
+              ) : undefined
             }
             showProfileShortcut={false}
           />
