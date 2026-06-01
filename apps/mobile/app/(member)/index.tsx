@@ -35,6 +35,7 @@ import { useTheme } from "@/lib/theme/index";
 
 const DEFAULT_GEOFENCE_RADIUS_METERS = 150;
 const GEOFENCE_EXIT_READINGS_REQUIRED = 2;
+const GEOFENCE_POLL_INTERVAL_MS = 30_000;
 const configuredGeofenceRadiusMeters = Number(
   process.env.EXPO_PUBLIC_ATTENDANCE_GEOFENCE_METERS ?? DEFAULT_GEOFENCE_RADIUS_METERS,
 );
@@ -240,36 +241,67 @@ export default function HomeScreen() {
       return;
     }
     let subscription: Location.LocationSubscription | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
     let outsideReadings = 0;
+    let checkoutTriggered = false;
+
+    const handlePosition = (position: Location.LocationObject) => {
+      if (cancelled || checkoutTriggered) {
+        return;
+      }
+      const current = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      const distance = distanceMeters(current, geofenceTarget);
+      outsideReadings = distance > GEOFENCE_RADIUS_METERS ? outsideReadings + 1 : 0;
+      if (outsideReadings >= GEOFENCE_EXIT_READINGS_REQUIRED) {
+        checkoutTriggered = true;
+        subscription?.remove();
+        if (pollTimer) {
+          clearInterval(pollTimer);
+        }
+        void stopActiveCheckIn("geofence", current);
+      }
+    };
+
+    const pollLocation = async () => {
+      try {
+        handlePosition(
+          await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          }),
+        );
+      } catch {
+        // watchPositionAsync remains the primary signal; polling is best-effort.
+      }
+    };
+
     void (async () => {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (cancelled || permission.status !== "granted") {
         return;
       }
+      void pollLocation();
+      pollTimer = setInterval(() => {
+        void pollLocation();
+      }, GEOFENCE_POLL_INTERVAL_MS);
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
           distanceInterval: 50,
-          timeInterval: 30_000,
+          timeInterval: GEOFENCE_POLL_INTERVAL_MS,
         },
-        (position) => {
-          const current = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          const distance = distanceMeters(current, geofenceTarget);
-          outsideReadings = distance > GEOFENCE_RADIUS_METERS ? outsideReadings + 1 : 0;
-          if (outsideReadings >= GEOFENCE_EXIT_READINGS_REQUIRED) {
-            subscription?.remove();
-            void stopActiveCheckIn("geofence", current);
-          }
-        },
+        handlePosition,
       );
     })();
     return () => {
       cancelled = true;
       subscription?.remove();
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
     };
   }, [activeCheckIn, geofenceTarget, stopActiveCheckIn, token]);
 
