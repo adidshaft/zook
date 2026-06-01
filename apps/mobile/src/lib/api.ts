@@ -118,8 +118,8 @@ export function getMobileApiBaseUrl() {
         : "http://localhost:3000/api"
       : undefined;
   const configured =
-    platformLocalUrl(Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??
     platformLocalUrl(process.env.EXPO_PUBLIC_API_BASE_URL) ??
+    platformLocalUrl(Constants.expoConfig?.extra?.mobileApiBaseUrl as string | undefined) ??
     platformDefault;
 
   return ensureConfiguredUrl(configured, "API");
@@ -127,8 +127,8 @@ export function getMobileApiBaseUrl() {
 
 export function getMobileWebBaseUrl() {
   const configured =
-    platformLocalUrl(Constants.expoConfig?.extra?.webUrl as string | undefined) ??
     platformLocalUrl(process.env.EXPO_PUBLIC_WEB_URL) ??
+    platformLocalUrl(Constants.expoConfig?.extra?.webUrl as string | undefined) ??
     getMobileApiBaseUrl().replace(/\/api$/, "");
 
   return ensureConfiguredUrl(configured, "web");
