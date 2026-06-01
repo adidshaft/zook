@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,11 +42,16 @@ export function DashboardSignOutButton({
       disabled={!ready || signingOut}
       state={signingOut ? "loading" : "idle"}
       data-testid="dashboard-sign-out"
+      aria-label={compact ? (signingOut ? busyLabel : label) : undefined}
       onClick={() => void signOut()}
-      leadingIcon={<LogOut size={18} />}
-      {...(className ? { className } : {})}
+      leadingIcon={<LogOut size={compact ? 16 : 18} />}
+      className={clsx(compact ? "min-h-10 w-10 px-0" : undefined, className)}
     >
-      {signingOut ? busyLabel : label}
+      {compact ? (
+        <span className="sr-only">{signingOut ? busyLabel : label}</span>
+      ) : (
+        signingOut ? busyLabel : label
+      )}
     </ZookButton>
   );
 }
