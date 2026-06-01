@@ -1,8 +1,8 @@
 import { AlertTriangle, ShieldAlert } from "lucide-react";
+import nextDynamic from "next/dynamic";
 import Link from "next/link";
 import { MetricCard } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { PlatformOperationsPanel } from "@/components/platform-operations-panel";
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getPlatformDashboardShellData } from "@/lib/data";
@@ -95,6 +95,48 @@ const platformNavItems: Array<[string, string, string]> = [
   ["Incidents", "/platform/incidents", "incidents"],
 ];
 
+const PlatformOperationsPanel = nextDynamic(
+  () =>
+    import("@/components/platform-operations-panel").then(
+      (module) => module.PlatformOperationsPanel,
+    ),
+  {
+    loading: () => <PlatformPanelSkeleton />,
+  },
+);
+
+function PlatformPanelSkeleton() {
+  return (
+    <GlassCard className="overflow-hidden p-0">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="p-5 md:p-6">
+          <div className="h-3 w-24 rounded-full bg-white/10" />
+          <div className="mt-4 h-7 w-64 max-w-full rounded-full bg-white/12" />
+          <div className="mt-3 h-4 w-full max-w-xl rounded-full bg-white/8" />
+          <div className="mt-2 h-4 w-4/5 max-w-lg rounded-full bg-white/8" />
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {["one", "two", "three", "four"].map((item) => (
+              <div key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="h-3 w-20 rounded-full bg-white/10" />
+                <div className="mt-4 h-7 w-16 rounded-full bg-white/12" />
+                <div className="mt-3 h-3 w-32 rounded-full bg-white/8" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="hidden border-l border-white/10 bg-white/[0.03] p-5 lg:block">
+          <div className="h-3 w-28 rounded-full bg-white/10" />
+          <div className="mt-4 grid gap-3">
+            {["a", "b", "c", "d"].map((item) => (
+              <div key={item} className="h-16 rounded-2xl bg-black/20" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
 export default async function PlatformPage({
   params,
 }: {
@@ -104,9 +146,11 @@ export default async function PlatformPage({
   const { section } = await params;
   const sectionKey = section?.[0] ?? "status";
   const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
+  const needsProviderDiagnostics =
+    activeAnchor === "readiness" || activeAnchor === "incident-checklist";
   const [data, providerDiagnostics] = await Promise.all([
     getPlatformDashboardShellData(),
-    getPlatformProviderDiagnostics(),
+    needsProviderDiagnostics ? getPlatformProviderDiagnostics() : Promise.resolve(undefined),
   ]);
   const runtimeLabel = data.connected
     ? "System online"
@@ -124,83 +168,126 @@ export default async function PlatformPage({
 
   return (
     <main className="min-h-screen px-3 py-3 md:px-5">
-      <div className="mx-auto grid max-w-[1320px] gap-3 md:gap-4">
-        <GlassCard variant="strong" className="rounded-2xl p-4 md:p-5">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
+      <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[236px_minmax(0,1fr)]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-4 grid gap-3">
+            <GlassCard variant="strong" className="rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <ZookLogo />
+                <DashboardSignOutButton compact />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
-                <Pill tone="amber">Platform team</Pill>
                 <Pill tone="blue">{activeNavLabel}</Pill>
               </div>
-              <div className="mt-3 flex items-center gap-3">
-                {hasAlerts ? <AlertTriangle className="h-5 w-5 text-amber-100" /> : null}
-                <div>
-                  <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-                    Platform operations
-                  </h1>
-                  <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
-                    Fast lane for production health, support lookups, gym accounts, and risk queues.
-                  </p>
+            </GlassCard>
+            <nav
+              aria-label="Platform sections"
+              className="rounded-2xl border border-white/10 bg-black/58 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
+            >
+              {platformNavItems.map(([item, href, key]) => {
+                const isActive = key === sectionKey;
+                return (
+                  <Link
+                    key={item}
+                    href={href}
+                    prefetch={false}
+                    className={`zook-focus mb-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition last:mb-0 ${
+                      isActive
+                        ? "bg-lime-300 text-black"
+                        : "text-white/66 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    <span>{item}</span>
+                    {isActive ? <span className="h-2 w-2 rounded-full bg-black/70" /> : null}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        <div className="grid min-w-0 gap-4">
+          <GlassCard variant="strong" className="rounded-2xl p-4 md:p-5">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 lg:hidden">
+                  <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+                  <Pill tone="amber">Platform team</Pill>
+                  <Pill tone="blue">{activeNavLabel}</Pill>
+                </div>
+                <div className="mt-3 flex items-center gap-3 lg:mt-0">
+                  {hasAlerts ? <AlertTriangle className="h-5 w-5 shrink-0 text-amber-100" /> : null}
+                  <div className="min-w-0">
+                    <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+                      Platform operations
+                    </h1>
+                    <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
+                      Production health, support lookup, gym accounts, billing, and risk queues.
+                    </p>
+                  </div>
                 </div>
               </div>
+              <div className="flex flex-wrap items-center justify-end gap-3 lg:hidden">
+                <DashboardSignOutButton compact />
+                <ZookLogo />
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              <DashboardSignOutButton compact />
-              <ZookLogo />
-            </div>
-          </div>
-        </GlassCard>
+          </GlassCard>
 
-        <nav
-          aria-label="Platform sections"
-          className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/78 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl"
-        >
-          {platformNavItems.map(([item, href, key]) => (
-            <Link
-              key={item}
-              href={href}
-              prefetch={false}
-              className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
-                key === sectionKey
-                  ? "bg-lime-300 text-black"
-                  : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
-              }`}
-            >
-              {item}
-            </Link>
-          ))}
-        </nav>
+          <nav
+            aria-label="Platform sections"
+            className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden"
+          >
+            {platformNavItems.map(([item, href, key]) => (
+              <Link
+                key={item}
+                href={href}
+                prefetch={false}
+                className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
+                  key === sectionKey
+                    ? "bg-lime-300 text-black"
+                    : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                {item}
+              </Link>
+            ))}
+          </nav>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {data.metrics.map((metric) => (
-            <MetricCard
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              delta={metric.delta}
-              tone={
-                (metric.label.includes("Suspended") && suspendedCount > 0) ||
-                (metric.label.includes("Safety") && safetyReviewCount > 0)
-                  ? "amber"
-                  : "neutral"
-              }
-              icon={
-                metric.label.includes("Safety") && safetyReviewCount > 0 ? (
-                  <ShieldAlert size={18} className="text-amber-100" />
-                ) : undefined
-              }
-              className="rounded-[20px] p-4"
-            />
-          ))}
+          <section
+            aria-label="Platform metrics"
+            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+          >
+            {data.metrics.map((metric) => (
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                delta={metric.delta}
+                tone={
+                  (metric.label.includes("Suspended") && suspendedCount > 0) ||
+                  (metric.label.includes("Safety") && safetyReviewCount > 0)
+                    ? "amber"
+                    : "neutral"
+                }
+                icon={
+                  metric.label.includes("Safety") && safetyReviewCount > 0 ? (
+                    <ShieldAlert size={18} className="text-amber-100" />
+                  ) : undefined
+                }
+                className="rounded-[18px] p-4"
+              />
+            ))}
+          </section>
+
+          <PlatformOperationsPanel
+            initialSection={activeAnchor}
+            initialOrgs={data.orgs.map(serializePlatformOrganization)}
+            initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
+            initialProviders={providerDiagnostics}
+          />
         </div>
-
-        <PlatformOperationsPanel
-          initialSection={activeAnchor}
-          initialOrgs={data.orgs.map(serializePlatformOrganization)}
-          initialFlags={data.platform.abuseFlags.map(serializePlatformAbuseFlag)}
-          initialProviders={providerDiagnostics}
-        />
       </div>
     </main>
   );
