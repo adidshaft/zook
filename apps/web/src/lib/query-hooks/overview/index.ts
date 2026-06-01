@@ -61,7 +61,7 @@ export function useDashboardSummary(
   };
 
   if (hasInitialData) {
-    return useQuery<DashboardSummaryData>({ ...queryOptions, initialData });
+    return useQuery<DashboardSummaryData>({ ...queryOptions, initialData, initialDataUpdatedAt: 0 });
   }
 
   return useQuery<DashboardSummaryData>(queryOptions);
