@@ -83,6 +83,7 @@ async function getOrganizationDashboardFastDataUncached(
     aiUsageThisMonth,
     staffCount,
     plansCount,
+    planGroups,
   ] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
     prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
@@ -115,7 +116,28 @@ async function getOrganizationDashboardFastDataUncached(
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
     }),
     prisma.membershipPlan.count({ where: { orgId } }),
+    prisma.memberSubscription.groupBy({
+      by: ["planId"],
+      where: { orgId, status: "ACTIVE", ...branchWhere },
+      _count: { _all: true },
+    }),
   ]);
+
+  const topPlanGroups = [...planGroups].sort((a, b) => b._count._all - a._count._all).slice(0, 6);
+  const planIds = topPlanGroups.map((group) => group.planId);
+  const planRows = planIds.length
+    ? await prisma.membershipPlan.findMany({
+        where: { id: { in: planIds }, orgId },
+        select: { id: true, name: true },
+      })
+    : [];
+  const planNameById = new Map(planRows.map((plan) => [plan.id, plan.name]));
+  const planMixTones = ["lime", "sky", "amber", "violet", "lime", "sky"] as const;
+  const planMix = topPlanGroups.map((group, index) => ({
+    label: planNameById.get(group.planId) ?? "Unknown plan",
+    value: group._count._all,
+    tone: planMixTones[index % planMixTones.length] ?? "lime",
+  }));
 
   const trialDaysRemaining = Math.max(
     0,
@@ -164,7 +186,7 @@ async function getOrganizationDashboardFastDataUncached(
       revenue30d: [],
       attendance7d: [],
       memberGrowth30d: [],
-      planMix: [],
+      planMix,
       deltas: {
         revenue7d: 0,
         revenue30d: 0,
