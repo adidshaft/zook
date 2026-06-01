@@ -311,17 +311,15 @@ function LayoutContent() {
     }
 
     if ((session?.organizations.length ?? 0) === 0 && !session?.user.isPlatformAdmin) {
+      if (onboardingFlag !== ONBOARDING_COMPLETED) {
+        void setStoredValue(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED).then(() => {
+          setOnboardingFlag(ONBOARDING_COMPLETED);
+        });
+      }
       if (isPublicRoute) {
-        if (onboardingFlag !== ONBOARDING_COMPLETED) {
-          void setStoredValue(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED).then(() => {
-            setOnboardingFlag(ONBOARDING_COMPLETED);
-          });
-        }
         return;
       }
-      if (onboardingFlag !== ONBOARDING_COMPLETED && pathname !== "/onboarding/role-question") {
-        router.replace("/onboarding/role-question" as never);
-      }
+      router.replace("/gyms" as never);
       return;
     }
 
