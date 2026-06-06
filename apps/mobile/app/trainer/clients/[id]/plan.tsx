@@ -29,6 +29,22 @@ import { useTrainerClients } from "@/lib/domains";
 import { legacyColors, layout, spacing, typography } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
+function exerciseNameForTemplate(templateId: PlanTemplateId) {
+  switch (templateId) {
+    case "diet":
+      return "Nutrition check-in";
+    case "routine":
+      return "Weekly routine review";
+    case "machine":
+      return "Machine setup walkthrough";
+    case "recovery":
+      return "Recovery mobility flow";
+    case "workout":
+    default:
+      return "Goblet squat";
+  }
+}
+
 export default function TrainerClientPlanScreen() {
   const router = useRouter();
   const { id = "", focus } = useLocalSearchParams<{ id: string; focus?: string }>();
@@ -58,6 +74,7 @@ export default function TrainerClientPlanScreen() {
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
+    const starterExercise = exerciseNameForTemplate(template.id);
     return {
       title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
       type: "WORKOUT",
@@ -68,7 +85,15 @@ export default function TrainerClientPlanScreen() {
         goal: fitnessGoal,
         template: template.id,
         sections: [{ title: template.title, body: template.body }],
-        exercises: [],
+        exercises: [
+          {
+            name: starterExercise,
+            sets: 3,
+            reps: "8-12",
+            restSeconds: 90,
+            notes: template.body,
+          },
+        ],
       },
     };
   }

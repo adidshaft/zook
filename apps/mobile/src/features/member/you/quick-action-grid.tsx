@@ -20,8 +20,8 @@ export function QuickActionGrid({ gymHref = "/gyms", unreadCount }: { gymHref?: 
     { href: "/shop", icon: "storefront-outline", label: "Shop" },
     { href: "/assistant", icon: "sparkles-outline", label: "Assistant", testID: "more-assistant" },
     { href: gymHref, icon: "business-outline", label: "Gym profile" },
-    { href: "/profile", icon: "gift-outline", label: "Referral" },
-    { href: "/plan", icon: "pulse-outline", label: "Tracking history" },
+    { href: "/profile", icon: "gift-outline", label: "Referrals" },
+    { href: "/tracking-history", icon: "pulse-outline", label: "Tracking history" },
   ];
   return (
     <View style={styles.grid}>

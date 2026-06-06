@@ -67,6 +67,10 @@ type PlatformUserRow = {
   createdAt?: string | Date;
 };
 
+function typedConfirmation(prompt: string, expected: string) {
+  return window.prompt(`${prompt}\n\nType ${expected} to continue.`)?.trim() === expected;
+}
+
 type PlatformPaymentRow = {
   id: string;
   orgId?: string | null;
@@ -431,13 +435,17 @@ export function PlatformOperationsPanel({
   ], [misconfiguredProviders, openFlags.length, suspendedOrganizations.length, trialRiskOrganizations.length]);
 
   async function updateOrganizationStatus(
-    orgId: string,
+    org: PlatformOrganization,
     status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
   ) {
+    const expected = `${status} ${org.username}`;
+    if (!typedConfirmation(`Change ${org.name} to ${formatEnumLabel(status)}?`, expected)) {
+      return;
+    }
     try {
       setStatusError("");
-      setBusyOrgId(orgId);
-      await webApiFetch(`/api/platform/orgs/${orgId}/status`, {
+      setBusyOrgId(org.id);
+      await webApiFetch(`/api/platform/orgs/${org.id}/status`, {
         method: "PATCH",
         body: { status },
       });
@@ -451,13 +459,16 @@ export function PlatformOperationsPanel({
     }
   }
 
-  async function softDeleteOrganization(orgId: string) {
+  async function softDeleteOrganization(org: PlatformOrganization) {
+    if (!typedConfirmation(`Soft-delete ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     try {
       setStatusError("");
-      setBusyOrgId(orgId);
-      await webApiFetch(`/api/platform/orgs/${orgId}/soft-delete`, {
+      setBusyOrgId(org.id);
+      await webApiFetch(`/api/platform/orgs/${org.id}/soft-delete`, {
         method: "POST",
         body: { reason },
       });
@@ -581,6 +592,9 @@ export function PlatformOperationsPanel({
   }
 
   async function startImpersonation(userId: string) {
+    if (!typedConfirmation("Start a 15-minute impersonation session? Use only for support debugging.", "IMPERSONATE")) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     await webApiFetch(`/api/platform/users/${userId}/impersonate`, {
@@ -613,6 +627,9 @@ export function PlatformOperationsPanel({
   }
 
   async function refundPayment(paymentId: string) {
+    if (!typedConfirmation("Submit a refund for this payment?", "REFUND")) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     await webApiFetch(`/api/platform/payments/${paymentId}/refund`, {
@@ -1622,7 +1639,7 @@ export function PlatformOperationsPanel({
                           <ZookButton
                             tone="ghost"
                             size="sm"
-                            onClick={() => void updateOrganizationStatus(org.id, "ACTIVE")}
+                            onClick={() => void updateOrganizationStatus(org, "ACTIVE")}
                             disabled={busyOrgId === org.id}
                           >
                             Activate
@@ -1631,7 +1648,7 @@ export function PlatformOperationsPanel({
                           <ZookButton
                             tone="ghost"
                             size="sm"
-                            onClick={() => void updateOrganizationStatus(org.id, "SUSPENDED")}
+                            onClick={() => void updateOrganizationStatus(org, "SUSPENDED")}
                             disabled={busyOrgId === org.id}
                           >
                             Suspend
@@ -1722,7 +1739,7 @@ export function PlatformOperationsPanel({
                         key={nextStatus}
                         tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
                         size="sm"
-                        onClick={() => void updateOrganizationStatus(selectedOrganization.id, nextStatus)}
+                        onClick={() => void updateOrganizationStatus(selectedOrganization, nextStatus)}
                         disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === nextStatus}
                       >
                         {nextStatus === "ACTIVE"
@@ -1783,7 +1800,7 @@ export function PlatformOperationsPanel({
                     <ZookButton
                       tone="danger"
                       size="sm"
-                      onClick={() => void softDeleteOrganization(selectedOrganization.id)}
+                      onClick={() => void softDeleteOrganization(selectedOrganization)}
                       disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
                     >
                       Soft delete

@@ -104,7 +104,7 @@ export function CoachClientWorkspace({
   const [waistCm, setWaistCm] = useState("");
   const [bodyFatPercent, setBodyFatPercent] = useState("");
   const [measurementNote, setMeasurementNote] = useState("");
-  const [planTitle, setPlanTitle] = useState(`E2E trainer draft for ${clientName}`);
+  const [planTitle, setPlanTitle] = useState(`${clientName} starter strength plan`);
   const [exerciseName, setExerciseName] = useState("Goblet squat");
   const [planDescription, setPlanDescription] = useState("Draft created from the trainer web client workspace.");
 

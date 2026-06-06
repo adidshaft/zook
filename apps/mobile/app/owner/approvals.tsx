@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
-import { RefreshControl, StyleSheet } from "react-native";
+import { Alert, RefreshControl, StyleSheet } from "react-native";
+import { useState } from "react";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
@@ -23,6 +24,7 @@ export default function OwnerApprovalsScreen() {
   const approveAttendanceMutation = useApproveAttendance();
   const approveJoinRequestMutation = useApproveJoinRequest();
   const rejectJoinRequestMutation = useRejectJoinRequest();
+  const [batchApproving, setBatchApproving] = useState(false);
   const joinRequests = (joinRequestsQuery.data?.joinRequests ?? []).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
   const attentionAttempts = attentionQuery.data?.records ?? [];
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
@@ -43,15 +45,34 @@ export default function OwnerApprovalsScreen() {
 
   async function approveAllJoinRequests() {
     if (!token || !activeOrgId || !joinRequests.length) return;
-    const result = await ownerApi.approveJoinRequestsBatch<{ approved?: string[]; failed?: Array<{ id: string; message?: string }> }>({
-      token,
-      orgId: activeOrgId,
-      joinRequestIds: joinRequests.map((request) => request.id),
-    });
-    const approved = result.approved?.length ?? joinRequests.length;
-    const failed = result.failed?.length ?? 0;
-    showToast({ tone: failed ? "amber" : "success", haptic: failed ? "warning" : "success", message: failed ? `Approved ${approved} of ${joinRequests.length}.` : `Approved ${approved} join ${approved === 1 ? "request" : "requests"}.` });
-    await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
+    setBatchApproving(true);
+    try {
+      const result = await ownerApi.approveJoinRequestsBatch<{ approved?: string[]; failed?: Array<{ id: string; message?: string }> }>({
+        token,
+        orgId: activeOrgId,
+        joinRequestIds: joinRequests.map((request) => request.id),
+      });
+      const approved = result.approved?.length ?? joinRequests.length;
+      const failed = result.failed?.length ?? 0;
+      showToast({ tone: failed ? "amber" : "success", haptic: failed ? "warning" : "success", message: failed ? `Approved ${approved} of ${joinRequests.length}.` : `Approved ${approved} join ${approved === 1 ? "request" : "requests"}.` });
+      await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to approve join requests.";
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setBatchApproving(false);
+    }
+  }
+
+  function confirmApproveAllJoinRequests() {
+    Alert.alert(
+      "Approve all join requests?",
+      `${joinRequests.length} pending ${joinRequests.length === 1 ? "member" : "members"} will be added to this gym.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Approve all", onPress: () => void approveAllJoinRequests() },
+      ],
+    );
   }
 
   const onRefresh = async () => {
@@ -91,7 +112,7 @@ export default function OwnerApprovalsScreen() {
           ) : pendingApprovals === 0 ? (
             <GlassCard variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></GlassCard>
           ) : null}
-          <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton size="sm" disabled={approveJoinRequestMutation.isPending} onPress={() => void approveAllJoinRequests()}>Approve all</PrimaryButton> : undefined} />
+          <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton size="sm" disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton> : undefined} />
           <ApprovalQueue
             testID="pending-approvals-list"
             items={joinItems}
