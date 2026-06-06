@@ -8,7 +8,7 @@ import { ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { useAuth } from "@/lib/auth";
 import { useOrgMembers } from "@/lib/domains/owner";
-import { legacyColors, layout } from "@/lib/theme";
+import { layout } from "@/lib/theme";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
 
@@ -45,7 +45,7 @@ export default function OwnerMembersScreen() {
           (memberFilter === "expiring" && status === "active" && daysLeft !== null && daysLeft > 0 && daysLeft <= 30))
       );
     });
-  }, [memberFilter, memberSearch, membersQuery.data?.members]);
+  }, [debouncedMemberSearch, memberFilter, membersQuery.data?.members]);
   const memberItems = useMemo<MemberRowItem[]>(
     () =>
       filteredMembers.map((member) => {

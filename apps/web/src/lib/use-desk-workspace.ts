@@ -50,6 +50,7 @@ export function useDeskWorkspace({
   });
   const [verifiedOrderIds, setVerifiedOrderIds] = useState<string[]>([]);
   const [skippedCodeOrderIds, setSkippedCodeOrderIds] = useState<string[]>([]);
+  const [skippedCodeReasons, setSkippedCodeReasons] = useState<Record<string, string>>({});
   const [lastReceipt, setLastReceipt] = useState<ReceiptDetails | null>(null);
   const [messageDraft, setMessageDraft] = useState<{ member: MemberRow; body: string } | null>(
     null,
@@ -227,10 +228,11 @@ export function useDeskWorkspace({
     router.push(withBranch("/desk/payments/new", branch));
   }
 
-  function skipPickupCode(orderId: string) {
+  function skipPickupCode(orderId: string, reason: string) {
     setSkippedCodeOrderIds((current) =>
       current.includes(orderId) ? current : [...current, orderId],
     );
+    setSkippedCodeReasons((current) => ({ ...current, [orderId]: reason }));
   }
 
   async function overrideMemberEntry(member: MemberRow) {
@@ -427,7 +429,7 @@ export function useDeskWorkspace({
       await webApiFetch(`/api/orgs/${orgId}/shop/orders/${orderId}/fulfill`, {
         method: "POST",
         body: skipped
-          ? { pickupCodeSkipped: true, skipReason: "Skipped by reception at handover." }
+          ? { pickupCodeSkipped: true, skipReason: skippedCodeReasons[orderId] ?? "Skipped by reception at handover." }
           : {},
       });
       ordersState.reload();

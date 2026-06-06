@@ -92,6 +92,10 @@ function detailsForPlan(plan: SaasPlanDefinition) {
   ];
 }
 
+function startGymHrefForTier(tier: SaasTier, locale: ReturnType<typeof resolvePublicLocale>) {
+  return localizedPath("/start-gym", locale, { tier: tier.toLowerCase() });
+}
+
 export default async function PricingPage({
   searchParams,
 }: {
@@ -205,7 +209,7 @@ export default async function PricingPage({
               </details>
 
               <ZookButtonLink
-                href={localizedPath(plan.tier === "FREE" ? "/start-gym" : "/start-gym", locale)}
+                href={startGymHrefForTier(plan.tier, locale)}
                 className="mt-5 justify-center"
                 tone={plan.tier === "GROWTH" ? "lime" : "secondary"}
               >

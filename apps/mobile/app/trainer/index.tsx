@@ -135,7 +135,7 @@ export default function TrainerHomeScreen() {
           <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
           <GlassCard variant="compact" contentStyle={styles.stack}>
             {clientsNeedingPlans ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push("/trainer/plans" as never)}>
+              <Pressable accessibilityRole="button" onPress={() => router.push("/trainer/clients" as never)}>
                 <ListRow
                   title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
                   subtitle="Open Plan work and assign a starter template before the next session."

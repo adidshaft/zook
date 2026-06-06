@@ -1,24 +1,57 @@
 import { Stack } from "expo-router";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 
 import { GlassCard, MobileHeader, ZookButton, ZookScreen } from "@/components/primitives";
-import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
+import { showToast } from "@/lib/toast";
 
 export default function PrivacySettingsScreen() {
   const { token } = useAuth();
   const { palette } = useTheme();
+  const [exportBusy, setExportBusy] = useState(false);
+  const [deletionBusy, setDeletionBusy] = useState(false);
 
   async function requestExport() {
     if (!token) return;
-    await privacyApi.requestDataExport({ token }).catch((error) => console.warn(getApiErrorMessage(error)));
+    setExportBusy(true);
+    try {
+      await privacyApi.requestDataExport({ token });
+      showToast({ tone: "success", haptic: "success", message: "Data export requested." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to request data export.";
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setExportBusy(false);
+    }
   }
 
   async function requestDeletion() {
     if (!token) return;
-    await privacyApi.requestAccountDeletion({ token }).catch((error) => console.warn(getApiErrorMessage(error)));
+    setDeletionBusy(true);
+    try {
+      await privacyApi.requestAccountDeletion({ token });
+      showToast({ tone: "success", haptic: "success", message: "Account deletion request started." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to request account deletion.";
+      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+    } finally {
+      setDeletionBusy(false);
+    }
+  }
+
+  function confirmDeletionRequest() {
+    Alert.alert(
+      "Request account deletion?",
+      "Zook support will review this request before any account data is removed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Request deletion", style: "destructive", onPress: () => void requestDeletion() },
+      ],
+    );
   }
 
   return (
@@ -29,8 +62,8 @@ export default function PrivacySettingsScreen() {
           <MobileHeader title="Privacy" subtitle="Your data controls" showProfileShortcut={false} />
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <Text style={[styles.body, { color: palette.text.secondary }]}>Request a copy of your Zook data or start an account deletion request.</Text>
-            <ZookButton onPress={requestExport} tone="secondary">Request data export</ZookButton>
-            <ZookButton onPress={requestDeletion} tone="danger">Request account deletion</ZookButton>
+            <ZookButton onPress={() => void requestExport()} tone="secondary" disabled={exportBusy}>Request data export</ZookButton>
+            <ZookButton onPress={confirmDeletionRequest} tone="danger" disabled={deletionBusy}>Request account deletion</ZookButton>
           </GlassCard>
         </ScrollView>
       </ZookScreen>
