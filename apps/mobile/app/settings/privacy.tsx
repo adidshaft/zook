@@ -62,8 +62,8 @@ export default function PrivacySettingsScreen() {
           <MobileHeader title="Privacy" subtitle="Your data controls" showProfileShortcut={false} />
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <Text style={[styles.body, { color: palette.text.secondary }]}>Request a copy of your Zook data or start an account deletion request.</Text>
-            <ZookButton onPress={() => void requestExport()} tone="secondary" disabled={exportBusy}>Request data export</ZookButton>
-            <ZookButton onPress={confirmDeletionRequest} tone="danger" disabled={deletionBusy}>Request account deletion</ZookButton>
+            <ZookButton onPress={() => void requestExport()} variant="secondary" disabled={exportBusy}>Request data export</ZookButton>
+            <ZookButton onPress={confirmDeletionRequest} variant="destructive" disabled={deletionBusy}>Request account deletion</ZookButton>
           </GlassCard>
         </ScrollView>
       </ZookScreen>

@@ -160,7 +160,7 @@ export function ActiveMembershipCard({
       ) : null}
       <ZookButton
         testID="membership-pause-resume-button"
-        tone="secondary"
+        variant="secondary"
         disabled={actionBusy || (subscription.status !== "ACTIVE" && subscription.status !== "PAUSED")}
         onPress={() => onPauseOrResume(subscription)}
         icon={subscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}

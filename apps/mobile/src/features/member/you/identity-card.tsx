@@ -26,7 +26,7 @@ export function IdentityCard({
           {org?.name ?? "No gym selected"}
         </Text>
       </View>
-      <ZookButton onPress={onEdit} tone="secondary" size="sm">
+      <ZookButton onPress={onEdit} variant="secondary" size="sm">
         Edit
       </ZookButton>
     </GlassCard>

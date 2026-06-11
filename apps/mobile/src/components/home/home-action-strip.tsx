@@ -46,7 +46,7 @@ export function HomeActionStrip({
         <ZookButton
           href={expired ? "/membership" : "/scan"}
           icon={expired ? "refresh-outline" : "qr-code-outline"}
-          tone="secondary"
+          variant="secondary"
           style={styles.scanButton}
           textStyle={[styles.scanButtonText, { color: accentColor }]}
           accessibilityLabel={expired ? "Renew membership" : "Scan gym QR"}

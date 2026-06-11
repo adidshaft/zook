@@ -50,8 +50,7 @@ import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
-export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
 type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
@@ -266,11 +265,6 @@ function glassSurfaceColors(
     blurIntensity,
     blurTint,
   };
-}
-
-function variantFromTone(tone: ButtonTone): ButtonVariant {
-  if (tone === "lime") return "primary";
-  return tone;
 }
 
 export type HapticWeight = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error" | "none";
@@ -1040,8 +1034,7 @@ export function ZookButton({
   children,
   onPress,
   href,
-  tone = "lime",
-  variant,
+  variant = "primary",
   size = "md",
   fullWidth = false,
   disabled = false,
@@ -1058,7 +1051,6 @@ export function ZookButton({
   children: ReactNode;
   onPress?: PressHandler;
   href?: Href;
-  tone?: ButtonTone;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -1075,29 +1067,28 @@ export function ZookButton({
 }) {
   const { palette: themePalette, mode } = useTheme();
   const isDark = mode === "dark";
-  const resolvedVariant = variant ?? variantFromTone(tone);
 
   let btnBg = themePalette.accent.fill;
   let btnBorder = themePalette.accent.fill;
   let btnColor = themePalette.text.onAccent;
   let btnGlow: ViewStyle | null = null;
 
-  if (resolvedVariant === "primary") {
+  if (variant === "primary") {
     btnBg = themePalette.accent.fill;
     btnBorder = themePalette.accent.fill;
     btnColor = themePalette.text.onAccent;
     btnGlow = isDark ? shadows.glowLimeSoft : null;
-  } else if (resolvedVariant === "secondary") {
+  } else if (variant === "secondary") {
     btnBg = isDark ? themePalette.surface.raised : themePalette.surface.accentSoft;
     btnBorder = themePalette.border.default;
     btnColor = themePalette.text.primary;
     btnGlow = null;
-  } else if (resolvedVariant === "ghost") {
+  } else if (variant === "ghost") {
     btnBg = "transparent";
     btnBorder = themePalette.border.subtle;
     btnColor = themePalette.text.primary;
     btnGlow = null;
-  } else if (resolvedVariant === "danger") {
+  } else if (variant === "destructive") {
     btnBg = themePalette.surface.dangerSoft;
     btnBorder = themePalette.feedback.danger;
     btnColor = themePalette.feedback.danger;
@@ -1155,8 +1146,6 @@ export function ZookButton({
           ) : null}
           <Text
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}
             style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
           >
             {contentLabel}
@@ -1193,6 +1182,7 @@ export function ZookButton({
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)
       }
       accessibilityState={{ disabled: isDisabled, busy }}
+      android_ripple={{ color: themePalette.border.default, borderless: false }}
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
@@ -1215,8 +1205,6 @@ export function ZookButton({
       ) : null}
       <Text
         numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.72}
         style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
       >
         {contentLabel}
@@ -1231,41 +1219,29 @@ export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "var
   return <ZookButton {...props} />;
 }
 
-export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function SecondaryGlassButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="secondary" />;
+export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
+  return <ZookButton {...props} variant="destructive" />;
 }
 
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
-  return <ZookButton {...props} variant="danger" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="ghost" />;
-}
-
-export function DangerActionButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="danger" />;
 }
 
 export function PrimaryLink({
   href,
   children,
-  tone = "lime",
+  variant = "primary",
   style,
   textStyle,
   accessibilityLabel,
 }: {
   href: Href;
   children: ReactNode;
-  tone?: ButtonTone;
+  variant?: ButtonVariant;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
@@ -1273,7 +1249,7 @@ export function PrimaryLink({
   return (
     <ZookButton
       href={href}
-      tone={tone}
+      variant={variant}
       style={style}
       textStyle={textStyle}
       accessibilityLabel={accessibilityLabel}
@@ -1283,8 +1259,8 @@ export function PrimaryLink({
   );
 }
 
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "tone">) {
-  return <PrimaryLink {...props} tone="secondary" />;
+export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
+  return <PrimaryLink {...props} variant="secondary" />;
 }
 
 export function MetricTile({
@@ -3028,7 +3004,7 @@ export function QueryErrorState({
       body={message}
       action={
         onRetry ? (
-          <ZookButton tone="secondary" icon="refresh-outline" onPress={onRetry}>
+          <ZookButton variant="secondary" icon="refresh-outline" onPress={onRetry}>
             {retryLabel}
           </ZookButton>
         ) : undefined
@@ -3318,7 +3294,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 0.46,
+    opacity: 0.5,
   },
   chipGroup: {
     gap: spacing.sm,

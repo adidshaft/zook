@@ -109,7 +109,7 @@ export default function YouScreen() {
           <View style={styles.signOutContainer}>
             <ZookButton
               onPress={confirmSignOut}
-              tone="danger"
+              variant="destructive"
               icon="log-out-outline"
               fullWidth
               accessibilityLabel="Sign out"

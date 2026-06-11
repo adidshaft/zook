@@ -18,7 +18,7 @@ export function PlanRow({ client }: { client: TrainerClientRecord }) {
       <ZookButton
         testID={`trainer-client-detail-${client.memberUserId}`}
         onPress={() => router.push(`/trainer/clients/${client.memberUserId}/plan` as never)}
-        tone="secondary"
+        variant="secondary"
         icon="reader-outline"
       >
         Client Detail

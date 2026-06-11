@@ -529,7 +529,7 @@ export default function Login() {
                   testID="login-resend-code"
                   onPress={() => void requestCode(true)}
                   disabled={busy || accountLocked || resendCooldown > 0 || rateLimitCooldown > 0}
-                  tone="secondary"
+                  variant="secondary"
                   style={styles.otpAction}
                 >
                   {resendCooldown > 0
@@ -545,7 +545,7 @@ export default function Login() {
                     resetOtpState();
                   }}
                   disabled={busy}
-                  tone="secondary"
+                  variant="secondary"
                   style={styles.otpAction}
                 >
                   {t("auth.changeSignIn")}

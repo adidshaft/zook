@@ -120,7 +120,7 @@ function ActiveCheckInCard({
       <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
         Re-scan the branch QR to check out, or stop it here.
       </Text>
-      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" tone="secondary">
+      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary">
         {busy ? "Stopping..." : "Stop session"}
       </ZookButton>
     </GlassCard>

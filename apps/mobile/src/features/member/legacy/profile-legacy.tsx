@@ -583,7 +583,7 @@ export default function ProfileScreen() {
                     </ZookButton>
                     <ZookButton
                       href="/membership"
-                      tone="secondary"
+                      variant="secondary"
                       icon="time-outline"
                       size="sm"
                       style={styles.actionHalf}
@@ -598,7 +598,7 @@ export default function ProfileScreen() {
                   title="No active membership"
                   body="Your latest membership will appear here after a gym activates one."
                   action={
-                    <ZookButton href="/gyms" tone="secondary" icon="search-outline" size="sm">
+                    <ZookButton href="/gyms" variant="secondary" icon="search-outline" size="sm">
                       Find gyms
                     </ZookButton>
                   }
@@ -640,7 +640,7 @@ export default function ProfileScreen() {
             <View style={styles.quickGrid}>
               <ZookButton
                 testID="profile-switch-role"
-                tone="secondary"
+                variant="secondary"
                 icon="swap-horizontal-outline"
                 onPress={showRoleSwitcher}
                 style={styles.quickButton}
@@ -649,7 +649,7 @@ export default function ProfileScreen() {
               </ZookButton>
               <ZookButton
                 testID="profile-switch-gym"
-                tone="secondary"
+                variant="secondary"
                 icon="business-outline"
                 onPress={showGymSwitcher}
                 style={styles.quickButton}
@@ -658,7 +658,7 @@ export default function ProfileScreen() {
               </ZookButton>
               <ZookButton
                 testID="profile-biometric-toggle"
-                tone="secondary"
+                variant="secondary"
                 icon={biometricEnabled ? "lock-closed-outline" : "lock-open-outline"}
                 onPress={toggleBiometricUnlock}
                 style={styles.quickButton}
@@ -667,7 +667,7 @@ export default function ProfileScreen() {
               </ZookButton>
               <ZookButton
                 href="/settings"
-                tone="secondary"
+                variant="secondary"
                 icon="settings-outline"
                 style={styles.quickButton}
               >
@@ -675,7 +675,7 @@ export default function ProfileScreen() {
               </ZookButton>
               <ZookButton
                 testID="profile-sign-out"
-                tone="danger"
+                variant="destructive"
                 icon="log-out-outline"
                 onPress={confirmSignOut}
                 style={styles.quickButton}

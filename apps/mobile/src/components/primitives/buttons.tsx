@@ -17,8 +17,7 @@ import { radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
 
-export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -41,11 +40,6 @@ type ButtonPalette = {
   glow?: ViewStyle;
 };
 
-function variantFromTone(tone: ButtonTone): ButtonVariant {
-  if (tone === "lime") return "primary";
-  return tone;
-}
-
 function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPalette {
   if (variant === "primary") {
     return {
@@ -55,7 +49,7 @@ function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPale
       glow: { boxShadow: palette.shadow.sm } as ViewStyle,
     };
   }
-  if (variant === "danger") {
+  if (variant === "destructive") {
     return {
       backgroundColor: palette.surface.dangerSoft,
       borderColor: palette.feedback.danger,
@@ -131,8 +125,7 @@ export function ZookButton({
   children,
   onPress,
   href,
-  tone = "lime",
-  variant,
+  variant = "primary",
   size = "md",
   fullWidth = false,
   disabled = false,
@@ -149,7 +142,6 @@ export function ZookButton({
   children: ReactNode;
   onPress?: PressHandler;
   href?: Href;
-  tone?: ButtonTone;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -165,8 +157,7 @@ export function ZookButton({
   testID?: string;
 }) {
   const { palette } = useTheme();
-  const resolvedVariant = variant ?? variantFromTone(tone);
-  const buttonPalette = paletteForVariant(palette, resolvedVariant);
+  const buttonPalette = paletteForVariant(palette, variant);
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
@@ -190,8 +181,6 @@ export function ZookButton({
   const label = (
     <Text
       numberOfLines={1}
-      adjustsFontSizeToFit
-      minimumFontScale={0.72}
       style={[styles.buttonText, buttonTextSizeStyle, { color: resolvedTextColor }, textStyle]}
     >
       {contentLabel}
@@ -240,6 +229,7 @@ export function ZookButton({
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)
       }
       accessibilityState={{ disabled: isDisabled, busy }}
+      android_ripple={{ color: palette.border.default, borderless: false }}
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
@@ -264,41 +254,29 @@ export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "var
   return <ZookButton {...props} />;
 }
 
-export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function SecondaryGlassButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="secondary" />;
+export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
+  return <ZookButton {...props} variant="destructive" />;
 }
 
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
-  return <ZookButton {...props} variant="danger" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="ghost" />;
-}
-
-export function DangerActionButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="danger" />;
 }
 
 export function PrimaryLink({
   href,
   children,
-  tone = "lime",
+  variant = "primary",
   style,
   textStyle,
   accessibilityLabel,
 }: {
   href: Href;
   children: ReactNode;
-  tone?: ButtonTone;
+  variant?: ButtonVariant;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
@@ -306,7 +284,7 @@ export function PrimaryLink({
   return (
     <ZookButton
       href={href}
-      tone={tone}
+      variant={variant}
       style={style}
       textStyle={textStyle}
       accessibilityLabel={accessibilityLabel}
@@ -316,8 +294,8 @@ export function PrimaryLink({
   );
 }
 
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "tone">) {
-  return <PrimaryLink {...props} tone="secondary" />;
+export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
+  return <PrimaryLink {...props} variant="secondary" />;
 }
 
 const styles = StyleSheet.create({
@@ -343,6 +321,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 1,
+    opacity: 0.5,
   },
 });
+
+export const Button = ZookButton;

@@ -154,7 +154,7 @@ export default function AttendanceResultScreen() {
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
               <ZookButton
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                tone="secondary"
+                variant="secondary"
                 icon="chevron-back"
               >
                 Back
@@ -300,7 +300,7 @@ export default function AttendanceResultScreen() {
               >
                 {attendanceQuery.isFetching ? "Refreshing..." : "Refresh status"}
               </ZookButton>
-              <ZookButton href="/" tone="secondary" icon="home-outline">
+              <ZookButton href="/" variant="secondary" icon="home-outline">
                 Back to Home
               </ZookButton>
             </>
@@ -315,7 +315,7 @@ export default function AttendanceResultScreen() {
                   </Text>
                 </View>
               </GlassCard>
-              <ZookButton href="/scan" tone="secondary" icon="qr-code-outline">
+              <ZookButton href="/scan" variant="secondary" icon="qr-code-outline">
                 Try again
               </ZookButton>
             </>

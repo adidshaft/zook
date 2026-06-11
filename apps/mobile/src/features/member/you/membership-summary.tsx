@@ -26,7 +26,7 @@ export function MembershipSummary({
           {membership?.status ?? daysLeft}
         </Text>
       </View>
-      <ZookButton onPress={onViewDetail} tone="secondary" size="sm">
+      <ZookButton onPress={onViewDetail} variant="secondary" size="sm">
         View
       </ZookButton>
     </GlassCard>

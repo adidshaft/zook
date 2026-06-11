@@ -10,7 +10,8 @@ import {
   GlassCard,
   ListRow,
   MobileHeader,
-  PrimaryButton,
+  SecondaryButton,
+  DangerButton,
   ThemedSwitch,
   ZookScreen,
 } from "@/components/primitives";
@@ -352,22 +353,20 @@ export default function Settings() {
           >
             <AuditWarning>{t("settings.privacyWarning")}</AuditWarning>
             <View style={styles.actionRow}>
-              <PrimaryButton
+              <SecondaryButton
                 onPress={() => void requestPrivacyExport()}
-                tone="secondary"
                 style={styles.actionHalf}
                 disabled={busy === "privacy"}
               >
                 {t("settings.export")}
-              </PrimaryButton>
-              <PrimaryButton
+              </SecondaryButton>
+              <DangerButton
                 onPress={() => void requestPrivacyDeletion()}
-                tone="danger"
                 style={styles.actionHalf}
                 disabled={busy === "privacy"}
               >
                 {t("settings.delete")}
-              </PrimaryButton>
+              </DangerButton>
             </View>
             {privacyStatus ? <Text style={[styles.statusText, { color: palette.accent.base }]}>{privacyStatus}</Text> : null}
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>

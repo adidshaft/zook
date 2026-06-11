@@ -163,7 +163,7 @@ export default function Plans() {
                 <ZookButton
                   testID="plans-view-active"
                   onPress={() => openAssignment(selectedAssignment.id)}
-                  tone="secondary"
+                  variant="secondary"
                   style={styles.activePlanSecondaryAction}
                 >
                   View
@@ -600,7 +600,7 @@ export function PlanDetailScreen() {
               <ZookButton
                 testID="plan-detail-send-feedback"
                 onPress={openFeedbackSheet}
-                tone="secondary"
+                variant="secondary"
                 icon="send-outline"
                 style={styles.stickyActionHalf}
               >
