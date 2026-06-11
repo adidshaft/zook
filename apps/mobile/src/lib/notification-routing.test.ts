@@ -26,6 +26,15 @@ describe("parseDeepLinkUrl", () => {
     ).toBe("/plan/assign_1?notificationId=notif_1");
   });
 
+  it("canonicalizes legacy plan and tracking links", () => {
+    expect(parseDeepLinkUrl("https://zookfit.in/plans/assign_1?notificationId=notif_1")?.href).toBe(
+      "/plan/assign_1?notificationId=notif_1",
+    );
+    expect(parseDeepLinkUrl("zook://tracking?notificationId=notif_progress")?.href).toBe(
+      "/progress?notificationId=notif_progress",
+    );
+  });
+
   it("rejects untrusted hosts", () => {
     expect(parseDeepLinkUrl("https://example.com/plan/assign_1")).toBeNull();
   });
@@ -157,5 +166,17 @@ describe("mapNotificationPayloadToHref", () => {
         notificationId: "notif_workout",
       }),
     ).toBe("/plan?prefill=template_1");
+  });
+
+  it("routes workout reminders to the Progress tab when no template is provided", () => {
+    const mapped = parseHref(
+      mapNotificationPayloadToHref({
+        type: "ENGAGEMENT_WORKOUT_REMINDER",
+        notificationId: "notif_progress",
+      }),
+    );
+
+    expect(mapped.path).toBe("/progress");
+    expect(mapped.params).toEqual({ notificationId: "notif_progress" });
   });
 });

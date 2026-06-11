@@ -56,6 +56,21 @@ function encodePathSegment(value: string) {
 }
 
 function canonicalizeDiscoveryRoute(path: string, params: Record<string, string>) {
+  const plansMatch = path.match(/^\/plans(?:\/([^/]+))?$/);
+  if (plansMatch) {
+    return {
+      path: plansMatch[1] ? `/plan/${encodePathSegment(plansMatch[1])}` : "/plan",
+      params,
+    };
+  }
+
+  if (path === "/tracking") {
+    return {
+      path: "/progress",
+      params,
+    };
+  }
+
   const joinMatch = path.match(/^\/join\/([^/]+)$/);
   if (joinMatch) {
     return {
@@ -268,6 +283,13 @@ export function mapNotificationPayloadToHref(input: NotificationRouteInput) {
       (notificationType === "ENGAGEMENT" && /\bworkout\b.*\breminder\b/.test(messageText(input))))
   ) {
     return buildHref("/plan", { prefill: templateId });
+  }
+
+  if (
+    hasNotificationKind(notificationKinds, ["ENGAGEMENT_WORKOUT_REMINDER"]) ||
+    (notificationType === "ENGAGEMENT" && /\bworkout\b.*\breminder\b/.test(messageText(input)))
+  ) {
+    return buildHref("/progress", maybeAttachNotificationId(params, input));
   }
 
   if (targetType && targetId) {
