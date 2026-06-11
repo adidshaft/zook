@@ -19,7 +19,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Reanimated from "@/lib/reanimated-lite";
@@ -1059,6 +1059,16 @@ function VerificationResultModal() {
     if (!verificationResult) return;
     if (success) pulse();
     else shake();
+    AccessibilityInfo.announceForAccessibility(
+      [
+        success ? "Verification successful." : "Verification failed.",
+        verificationResult.message,
+        verificationResult.name,
+        verificationResult.detail,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
     const timer = setTimeout(dismissVerificationResult, 4000);
     return () => clearTimeout(timer);
   }, [dismissVerificationResult, pulse, shake, success, verificationResult]);

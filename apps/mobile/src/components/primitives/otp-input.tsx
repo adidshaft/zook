@@ -56,7 +56,8 @@ export const OtpInput = forwardRef<
       <Pressable
         testID={testID ? `${testID}-cells` : undefined}
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={`${accessibilityLabel}. ${value.length} of ${length} digits entered.`}
+        accessibilityValue={{ text: value ? value.split("").join(" ") : "No digits entered" }}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={() => inputRef.current?.focus()}
@@ -85,6 +86,8 @@ export const OtpInput = forwardRef<
       </Pressable>
       <TextInput
         testID={testID}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityValue={{ text: value ? value.split("").join(" ") : "No digits entered" }}
         ref={inputRef}
         value={value}
         onChangeText={handleChange}
