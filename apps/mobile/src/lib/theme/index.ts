@@ -5,7 +5,6 @@ export { darkPalette } from "./palettes/dark";
 export { lightPalette } from "./palettes/light";
 export {
   layout,
-  legacyColors,
   opacity,
   palettes,
   radii,

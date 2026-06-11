@@ -17,7 +17,7 @@ Apply the routing template from Plan #05 to the Owner role. Split `apps/mobile/a
 - The 5 views branch at: 460 (command), 558 (members), 693 (approvals), and the corresponding revenue/stock blocks. Read the file to confirm exact ranges.
 - Member detail already exists at `apps/mobile/app/owner/member/[id].tsx` (400 lines) — keep, integrate.
 - Bottom nav: `ownerTabs` at `apps/mobile/src/components/primitives/foundation.tsx:2125` (Home, Approvals, Revenue, Stock — no Members, despite there being a Members view).
-- `adminTabs` at `legacy.tsx:2159` (Home, Check in, Approvals, Stock — points at `/owner` for everything; effectively Owner with a Check-in tab).
+- `adminTabs` at `old.tsx:2159` (Home, Check in, Approvals, Stock — points at `/owner` for everything; effectively Owner with a Check-in tab).
 
 ## Architectural target
 
@@ -225,11 +225,11 @@ Update all matches.
 
 ### Step 5 — Admin role consolidation
 
-`adminTabs` at `legacy.tsx:2159` points at `/owner` for everything. After this plan, admin users hit `/owner/_layout.tsx` and see the same tabs. **The Admin/Owner distinction at the UI level becomes a no-op** — both roles get the same tab bar.
+`adminTabs` at `old.tsx:2159` points at `/owner` for everything. After this plan, admin users hit `/owner/_layout.tsx` and see the same tabs. **The Admin/Owner distinction at the UI level becomes a no-op** — both roles get the same tab bar.
 
 If permissions differ (e.g., ADMIN doesn't have `ORG_VIEW_REPORTS`), the revenue tab automatically hides via `href: canViewRevenue ? ... : null`. This is the right behavior.
 
-In `legacy.tsx`, mark `adminTabs` `@deprecated`. Plan #11 deletes it.
+In `old.tsx`, mark `adminTabs` `@deprecated`. Plan #11 deletes it.
 
 ### Step 6 — Bottom nav short-circuit
 

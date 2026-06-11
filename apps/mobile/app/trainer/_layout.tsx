@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 
-const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
+const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
   clients: "/trainer/clients",
   plans: "/trainer/plans",
 };
@@ -14,7 +14,7 @@ export default function TrainerLayout() {
 
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
-    const target = view ? legacyViewTargets[view] : undefined;
+    const target = view ? viewRedirectTargets[view] : undefined;
     if (target) router.replace(target as never);
   }, [params.view, router]);
 

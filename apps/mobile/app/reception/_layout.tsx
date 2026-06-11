@@ -6,7 +6,7 @@ import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 
-const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
+const viewRedirectTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",
   payments: "/reception/payments",
   orders: "/reception/orders",
@@ -26,7 +26,7 @@ export default function ReceptionLayout() {
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
     if (!rawView || pathname !== "/reception") return;
-    const target = legacyViewTargets[rawView];
+    const target = viewRedirectTargets[rawView];
     if (target) router.replace(target);
   }, [params.view, pathname, router]);
 

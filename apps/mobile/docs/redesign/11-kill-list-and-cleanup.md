@@ -2,7 +2,7 @@
 
 ## Goal
 
-After plans #01–#10 land, retire the deprecated code paths, delete the redirect stubs, collapse the discovery routes, remove the legacy primitives, and confirm the app has no remaining `?view=` mega-screen patterns.
+After plans #01–#10 land, retire the deprecated code paths, delete the redirect stubs, collapse the discovery routes, remove the old primitives, and confirm the app has no remaining `?view=` mega-screen patterns.
 
 ## Why
 
@@ -11,12 +11,12 @@ The strangler-fig migration leaves the old code in place at every step. This is 
 - `apps/mobile/src/components/primitives/foundation.tsx` (3,712 lines) still exists. Most of it should be deleted by now; the rest needs to be moved out.
 - Redirect stubs for `/tracking`, `/tracking-entry`, `/tracking-history`, `/plans/index`, `/more`, `/trainer/client/[id]`, `/trainer/client/[id]/ai-draft` accumulated through the rewrite. Confirm no callers and delete.
 - `apps/mobile/src/lib/query-hooks.ts` is now a re-export barrel — delete and migrate the remaining callers.
-- `apps/mobile/src/lib/theme/legacy.ts` (the back-compat color shim) blocks full re-theming for any code that imports `colors` statically. Migrate or delete.
+- `apps/mobile/src/lib/theme/old.ts` (the back-compat color shim) blocks full re-theming for any code that imports `colors` statically. Migrate or delete.
 - Discovery routes are duplicated: `find-gyms`, `gym/[username]`, `join/[username]`. Three routes for one job.
 - `dashboard.tsx` (64 lines) looks vestigial.
 - `assistant.tsx` (104 lines) — confirm whether it's a real feature or a stub; either commit or delete.
 - `platform.tsx` (115 lines) is a "go to web" stub; move to a build-time exclusion.
-- Role-keyed `BottomNav` in `legacy.tsx` is dead code after #05/#06/#07.
+- Role-keyed `BottomNav` in `old.tsx` is dead code after #05/#06/#07.
 - Various `@deprecated` aliases throughout the codebase.
 
 ## Prerequisites
@@ -30,10 +30,10 @@ The strangler-fig migration leaves the old code in place at every step. This is 
 Run the audit:
 
 ```bash
-# Count lines in legacy primitives
+# Count lines in old primitives
 wc -l apps/mobile/src/components/primitives/foundation.tsx
 
-# Count callers of legacy.tsx
+# Count callers of old.tsx
 git grep -l "from.*primitives/foundation" apps/mobile
 
 # Count callers of query-hooks
@@ -45,7 +45,7 @@ git grep -l "import .* { colors } from \"@/lib/theme\"" apps/mobile
 
 If counts are high, the prior plans are incomplete — fix those first, then return.
 
-### Step 2 — Migrate remaining `legacy.tsx` exports
+### Step 2 — Migrate remaining `old.tsx` exports
 
 `apps/mobile/src/components/primitives/foundation.tsx` contains:
 - `ZookScreen` (line 296)
@@ -76,15 +76,15 @@ for sym in ZookScreen MobileHeader AppHeader BottomNav DockTabItem; do
 done
 ```
 
-### Step 3 — Delete `legacy.tsx`
+### Step 3 — Delete `old.tsx`
 
-When the grep shows no callers outside `legacy.tsx` itself, delete the file:
+When the grep shows no callers outside `old.tsx` itself, delete the file:
 
 ```bash
 git rm apps/mobile/src/components/primitives/foundation.tsx
 ```
 
-Update `apps/mobile/src/components/primitives/index.tsx` to remove any `export * from "./legacy"` line if present.
+Update `apps/mobile/src/components/primitives/index.tsx` to remove any `export * from "./old"` line if present.
 
 ### Step 4 — Delete `query-hooks.ts`
 
@@ -135,12 +135,12 @@ function MyComponent() {
 }
 ```
 
-### Step 6 — Delete `theme/legacy.ts`
+### Step 6 — Delete `theme/old.ts`
 
 When no file imports `colors` statically:
 
 ```bash
-git rm apps/mobile/src/lib/theme/legacy.ts
+git rm apps/mobile/src/lib/theme/old.ts
 ```
 
 Update `apps/mobile/src/lib/theme.ts` to:
@@ -274,14 +274,14 @@ Run the full audit and confirm zero results:
 # No ?view= mega-screen pattern remains in route files
 git grep -n "view\s*===" apps/mobile/app
 
-# No legacy primitives imports
+# No old primitives imports
 git grep -n "primitives/foundation" apps/mobile
 
 # No query-hooks.ts imports (file should not exist)
 test ! -f apps/mobile/src/lib/query-hooks.ts && echo "OK: query-hooks.ts gone"
 
-# No theme/legacy.ts (file should not exist)
-test ! -f apps/mobile/src/lib/theme/legacy.ts && echo "OK: theme/legacy.ts gone"
+# No theme/old.ts (file should not exist)
+test ! -f apps/mobile/src/lib/theme/old.ts && echo "OK: theme/old.ts gone"
 
 # No @deprecated annotations remain
 git grep -n "@deprecated" apps/mobile/src apps/mobile/app
@@ -305,7 +305,7 @@ Each of these should return empty (or nothing over budget). If any are non-empty
 
 - `apps/mobile/src/components/primitives/foundation.tsx`
 - `apps/mobile/src/lib/query-hooks.ts`
-- `apps/mobile/src/lib/theme/legacy.ts`
+- `apps/mobile/src/lib/theme/old.ts`
 - `apps/mobile/src/lib/theme.ts` (if moved to barrel only)
 - `apps/mobile/app/tracking.tsx`, `tracking-entry.tsx`, `tracking-history.tsx`
 - `apps/mobile/app/plans/index.tsx` (the redirect stub)
@@ -321,14 +321,14 @@ Each of these should return empty (or nothing over budget). If any are non-empty
 
 ## Files created
 
-- `apps/mobile/src/components/primitives/header.tsx` (extracted from legacy)
+- `apps/mobile/src/components/primitives/header.tsx` (extracted from old)
 - `apps/mobile/app/gyms/index.tsx`
 - `apps/mobile/app/gyms/[username].tsx`
 
 ## Files modified
 
 - Many — every file that had a static `colors` import gets migrated to `useTheme()`.
-- `apps/mobile/src/components/primitives/index.tsx` (drops legacy re-export)
+- `apps/mobile/src/components/primitives/index.tsx` (drops old re-export)
 
 ## UI fixes shipped with this plan
 
@@ -343,7 +343,7 @@ Each of these should return empty (or nothing over budget). If any are non-empty
 - [ ] No file in `apps/mobile/app/` exceeds 400 lines.
 - [ ] `apps/mobile/src/components/primitives/foundation.tsx` does not exist.
 - [ ] `apps/mobile/src/lib/query-hooks.ts` does not exist.
-- [ ] `apps/mobile/src/lib/theme/legacy.ts` does not exist.
+- [ ] `apps/mobile/src/lib/theme/old.ts` does not exist.
 - [ ] App boots and renders correctly in light and dark mode for all roles (MEMBER, TRAINER, OWNER, RECEPTIONIST).
 - [ ] Cold-launch metric: app-launch time at parity or better than pre-redesign baseline (measure with Expo dev tools or React Native performance overlay).
 - [ ] Bundle size: production iOS bundle smaller than baseline (verify via `npx expo export`).
