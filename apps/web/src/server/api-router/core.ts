@@ -136,7 +136,6 @@ import { getPlatformProviderDiagnostics } from "../domains/overview";
 import { currentRequestId } from "../request-state";
 import { getClientIp } from "../security";
 import { buildGymDiscoveryResults } from "../gym-discovery";
-import { getHealthPayload, getReadinessPayload, getStatusPayload } from "../readiness";
 import {
   assertCanAccessFileAsset,
   assertCanServeLocalPublicFileAsset,
@@ -155,7 +154,6 @@ import {
 } from "../reports-service";
 import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment-runtime";
 import { deliverPushForNotification } from "../push-runtime";
-import { getErrorReporter } from "../error-reporter";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { getPublicCouponPreview } from "../public-gym-read-models";
 import { getOrganizationAttendanceToday, getOrganizationPendingAttendance } from "../domains/attendance";
@@ -1054,10 +1052,6 @@ const payoutMarkPaidSchema = z.object({
   method: z.string().trim().min(2).max(40),
   note: z.string().trim().max(240).optional(),
   proofFileAssetId: z.string().optional(),
-});
-
-const diagnosticsThrowSchema = z.object({
-  mode: z.enum(["handled", "unhandled"]).default("handled"),
 });
 
 const planAssignSchema = z.object({
@@ -9660,47 +9654,7 @@ export async function handleReports(request: NextRequest, path: string[]) {
   return undefined;
 }
 
-export async function handleHealthReadiness(request: NextRequest, path: string[]) {
-  if (request.method === "GET" && pathMatches(path, ["health"])) {
-    return ok(getHealthPayload());
-  }
-
-  if (request.method === "GET" && pathMatches(path, ["ready"])) {
-    const readiness = await getReadinessPayload();
-    return ok(readiness, { status: readiness.ready ? 200 : 503 });
-  }
-
-  if (request.method === "GET" && pathMatches(path, ["status"])) {
-    const statusPayload = await getStatusPayload();
-    return NextResponse.json(statusPayload, {
-      status: statusPayload.status === "down" ? 503 : 200,
-    });
-  }
-
-  if (request.method === "POST" && pathMatches(path, ["diagnostics", "throw"])) {
-    if (getAppEnv() !== "staging") {
-      throw forbiddenError("Diagnostics throw is available only when APP_ENV=staging.");
-    }
-    const ctx = await getRequestContext(request);
-    const userId = requirePlatformAdmin(ctx);
-    const body = diagnosticsThrowSchema.parse(await readJson(request).catch(() => ({})));
-    const error = new Error("Zook diagnostics throw test");
-    if (body.mode === "handled") {
-      getErrorReporter().captureException(error, {
-        method: request.method,
-        path: request.nextUrl.pathname,
-        userId,
-        metadata: {
-          email: "diagnostics-redaction@example.com",
-          phone: "+919999999999",
-          mode: body.mode,
-        },
-      });
-      return ok({ captured: true, mode: body.mode });
-    }
-    throw error;
-  }
-
+export async function handleCronJobs(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
     const cronSecret = process.env.CRON_SECRET?.trim();
     const authHeader = request.headers.get("authorization");

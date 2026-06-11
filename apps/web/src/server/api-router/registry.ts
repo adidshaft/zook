@@ -3,9 +3,9 @@ import {
   handleAiNotificationsShopPrivacyPlatform,
   handleAttendance,
   handleAuth,
+  handleCronJobs,
   handleCouponsReferrals,
   handleFiles,
-  handleHealthReadiness,
   handleMeData,
   handleMembershipPayments,
   handleOrganizations,
@@ -13,6 +13,7 @@ import {
   handleStaffPlansGoals,
   handleTracking,
 } from "./core";
+import { handleHealthReadiness } from "./health-readiness";
 
 export type ApiRouteHandler = (
   request: NextRequest,
@@ -21,6 +22,7 @@ export type ApiRouteHandler = (
 
 export const apiRouteHandlers: ApiRouteHandler[] = [
   handleHealthReadiness,
+  handleCronJobs,
   handleAuth,
   handleMeData,
   handleTracking,
