@@ -19,7 +19,7 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { layout, spacing, useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
   const { mode, palette } = useTheme();
@@ -68,9 +68,9 @@ export default function TrainerHomeScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <MobileHeader
-            eyebrow="Trainer"
-            title="Trainer home"
-            subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
+            eyebrow={`${clients.length} client${clients.length === 1 ? "" : "s"}`}
+            title="Trainer"
+            subtitle={session?.user.name ?? "Trainer"}
             chip={<StatusChip status="Trainer" tone="neutral" />}
             showProfileShortcut={false}
             trailing={
@@ -109,16 +109,49 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isLoading ? <TrainerClientsSkeleton /> : null}
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
-          {priorityClient ? (
-            <Card testID="trainer-client-row-first" variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
-              <ListRow
-                title={priorityClient.user?.name ?? "Client"}
-                subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
-                leading={<IconBubble icon="person-outline" tone="lime" />}
-                trailing={<StatusChip status="Priority client" tone="amber" />}
-              />
-            </Card>
-          ) : null}
+          <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
+          <Card variant="compact" contentStyle={styles.stack}>
+            {priorityClient ? (
+              <Pressable
+                testID="trainer-client-row-first"
+                accessibilityRole="button"
+                onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
+                <ListRow
+                  title={priorityClient.user?.name ?? "Client"}
+                  subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
+                  leading={<IconBubble icon="person-outline" tone="lime" />}
+                  trailing={<StatusChip status="Today" tone="amber" />}
+                />
+              </Pressable>
+            ) : (
+              <EmptyState title="No coaching actions today" body="Client sessions and follow-ups will appear here." />
+            )}
+          </Card>
+
+          <SectionHeader
+            title="Needs plan"
+            subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
+          />
+          <Card variant="compact" contentStyle={styles.stack}>
+            {clientsNeedingPlans ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/trainer/clients" as never)}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
+                <ListRow
+                  title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching`}
+                  subtitle="Create plan next."
+                  leading={<IconBubble icon="reader-outline" tone="amber" />}
+                  trailing={<StatusChip status="Create plan next" tone="amber" />}
+                />
+              </Pressable>
+            ) : (
+              <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
+            )}
+          </Card>
 
           <MetricGrid
             testID="trainer-view-home"
@@ -160,26 +193,6 @@ export default function TrainerHomeScreen() {
             />
           ) : null}
 
-          <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
-          <Card variant="compact" contentStyle={styles.stack}>
-            {clientsNeedingPlans ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push("/trainer/clients" as never)}
-                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
-              >
-                <ListRow
-                  title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
-                  subtitle="Open Plan work and assign a starter template before the next session."
-                  leading={<IconBubble icon="reader-outline" tone="amber" />}
-                  trailing={<StatusChip status="Next" tone="amber" />}
-                />
-              </Pressable>
-            ) : (
-              <EmptyState title="Coaching queue clear" body="No plan or feedback follow-up is waiting right now." />
-            )}
-          </Card>
-
           <SectionHeader title="Recent feedback" />
           <Card variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
@@ -201,6 +214,24 @@ export default function TrainerHomeScreen() {
             ) : (
               <EmptyState title="No recent feedback" body="Client notes and session feedback will appear here." />
             )}
+          </Card>
+
+          <SectionHeader title="AI draft" />
+          <Card
+            variant="compact"
+            pressable
+            onPress={() =>
+              priorityClient
+                ? router.push(`/trainer/clients/${priorityClient.memberUserId}/plan` as never)
+                : router.push("/trainer/clients" as never)
+            }
+          >
+            <ListRow
+              title="AI drafting is off"
+              subtitle="Create and edit plans manually."
+              leading={<IconBubble icon="sparkles-outline" tone="blue" />}
+              trailing={<StatusChip status="Manual" tone="neutral" />}
+            />
           </Card>
         </ScrollView>
       </ZookScreen>
@@ -234,6 +265,5 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
-  priorityClientCard: { gap: spacing.md },
   stack: { gap: 10 },
 });
