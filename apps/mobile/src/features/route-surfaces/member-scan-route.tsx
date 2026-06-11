@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  AccessibilityInfo,
   Linking,
   Animated as RNAnimated,
   Easing as RNEasing,
@@ -469,6 +470,16 @@ export default function Scan() {
   const hasCamera = cameraPermission.status?.granted;
   const cameraBlocked =
     cameraPermission.status && !cameraPermission.status.granted && cameraPermission.status.canAskAgain === false;
+
+  useEffect(() => {
+    if (scanMode !== "scan") return;
+    const message = cameraBlocked
+      ? "Camera access blocked. Open device settings to allow QR scanning."
+      : hasCamera
+        ? "Camera ready. Point the camera at your gym QR code."
+        : "Camera permission needed before scanning.";
+    AccessibilityInfo.announceForAccessibility(message);
+  }, [cameraBlocked, hasCamera, scanMode]);
   const needsProfilePhoto = /profile photo/i.test(errorMessage);
   const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
@@ -754,6 +765,7 @@ export default function Scan() {
                 {hasCamera ? (
                   <CameraView
                     testID="scanner-view"
+                    accessibilityLabel="QR scanner camera preview"
                     style={styles.camera}
                     facing="back"
                     onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
