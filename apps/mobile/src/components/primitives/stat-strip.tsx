@@ -24,7 +24,7 @@ export function StatStrip({
             <Text numberOfLines={1} style={[styles.value, { color: palette.text.primary }]}>
               {item.value}
             </Text>
-            <Text numberOfLines={1} style={[styles.label, { color: palette.text.secondary }]}>
+            <Text style={[styles.label, { color: palette.text.secondary }]}>
               {item.label}
             </Text>
           </View>
@@ -42,11 +42,13 @@ const styles = StyleSheet.create({
   },
   item: {
     flex: 1,
+    flexShrink: 1,
     minWidth: 0,
   },
   itemContent: {
     alignItems: "center",
     gap: spacing.xs,
+    minWidth: 0,
     paddingHorizontal: spacing.sm,
   },
   divider: {
@@ -62,6 +64,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.caption,
+    flexShrink: 1,
+    minWidth: 0,
     textAlign: "center",
   },
 });
