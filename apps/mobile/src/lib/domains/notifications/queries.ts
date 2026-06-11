@@ -5,15 +5,20 @@ import { queryKeys } from "@/lib/domains/shared/keys";
 import type { NotificationPreferenceRecord } from "@/lib/notification-preferences";
 import type { PushDeviceRecord } from "@/lib/domains/shared/types";
 
-export function useMyNotifications() {
+type MyNotificationsData = { notifications: Array<Record<string, unknown>> };
+
+export function useMyNotifications<TData = MyNotificationsData>(options?: {
+  select?: (data: MyNotificationsData) => TData;
+}) {
   const { status, token } = useAuth();
   return useQuery({
     queryKey: queryKeys.notifications.list(),
     queryFn: () =>
-      mobileApiFetch<{ notifications: Array<Record<string, unknown>> }>("/me/notifications", {
+      mobileApiFetch<MyNotificationsData>("/me/notifications", {
         token,
       }),
     enabled: status === "authenticated" && Boolean(token),
+    select: options?.select,
   });
 }
 

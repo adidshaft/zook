@@ -1,12 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RoleTabBarBackground } from "@/components/role-tab-bar-background";
+import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { createRoleTabBarStyle, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<
   string,
@@ -20,26 +18,19 @@ const legacyViewTargets: Record<
 };
 
 export default function OwnerLayout() {
-  const { palette, mode } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const insets = useSafeAreaInsets();
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
-  const approvalsQuery = useOrgJoinRequests();
-  const pendingCount =
-    approvalsQuery.data?.joinRequests.filter(
+  const approvalsQuery = useOrgJoinRequests(undefined, {
+    select: (data) =>
+      data.joinRequests.filter(
       (request) => String(request.status ?? "").toLowerCase() === "pending",
-    ).length ?? 0;
-  const tabBarStyle = createRoleTabBarStyle({
-    palette,
-    mode,
-    inset: 12,
-    bottomInset: insets.bottom,
-    height: 72,
+    ).length,
   });
+  const pendingCount = approvalsQuery.data ?? 0;
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
@@ -50,24 +41,9 @@ export default function OwnerLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <RoleTabBar {...props} badges={{ approvals: pendingCount }} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.accent.base,
-        tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarBackground: () => <RoleTabBarBackground mode={mode} />,
-        tabBarStyle,
-        tabBarLabelStyle: {
-          fontSize: 9,
-          fontFamily: "Inter_600SemiBold",
-        },
-        tabBarItemStyle: {
-          borderRadius: 14,
-        },
-        tabBarBadgeStyle: {
-          backgroundColor: palette.feedback.danger,
-          color: palette.text.onDanger,
-          fontFamily: "Inter_800ExtraBold",
-        },
       }}
     >
       <Tabs.Screen
@@ -75,8 +51,8 @@ export default function OwnerLayout() {
         options={{
           title: "Today",
           tabBarButtonTestID: "bottom-nav-command",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -94,10 +70,9 @@ export default function OwnerLayout() {
         name="approvals"
         options={{
           title: "Approvals",
-          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarButtonTestID: "bottom-nav-approvals",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={size} color={color} />
           ),
         }}
       />
