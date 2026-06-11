@@ -30,6 +30,7 @@ import {
   PrimaryButton,
   QueryErrorState,
   SectionHeader,
+  useRequestPermissionWithRationale,
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
@@ -39,6 +40,7 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
+import { usePushNotifications } from "@/lib/push-notifications";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -46,6 +48,8 @@ type PublicTrainer = NonNullable<GymProfileData["trainers"]>[number];
 
 export default function GymProfileScreen() {
   const router = useRouter();
+  const notificationPermission = useRequestPermissionWithRationale("notifications");
+  const { permissionState, requestEnablePush } = usePushNotifications();
   const params = useLocalSearchParams<{ username: string; ref?: string }>();
   const username = Array.isArray(params.username) ? params.username[0] : params.username;
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
@@ -177,6 +181,12 @@ export default function GymProfileScreen() {
         "Membership request submitted. The gym team can now review it from their dashboard.",
       );
       showToast({ tone: "success", haptic: "success", message: "Membership request submitted." });
+      if (permissionState !== "granted") {
+        const granted = await notificationPermission.requestPermission();
+        if (granted) {
+          await requestEnablePush();
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["gym", username] });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit membership request.";
@@ -760,6 +770,7 @@ export default function GymProfileScreen() {
           ) : null}
         </BottomSheetView>
       </BottomSheetModal>
+      {notificationPermission.permissionSheet}
     </ZookScreen>
   );
 }
