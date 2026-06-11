@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   AuditWarning,
   CollapsibleSection,
@@ -11,6 +11,7 @@ import {
   ListRow,
   MobileHeader,
   PrimaryButton,
+  ThemedSwitch,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
@@ -21,7 +22,7 @@ import { notificationsApi, privacyApi } from "@/lib/domain-api";
 import { useI18n, type LocalePreference, type TranslationKey } from "@/lib/i18n";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { useMyConsents, useMyNotificationPreferences } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme, type ThemePreference } from "@/lib/theme/index";
 
 type SettingsSection = "notifications" | "language" | "appearance" | "privacy" | "system";
@@ -203,8 +204,8 @@ export default function Settings() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.lime}
-                colors={[legacyColors.lime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -217,9 +218,13 @@ export default function Settings() {
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel={t("settings.goBack")}
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={20} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={20} color={palette.text.primary} />
               </Pressable>
             }
             showProfileShortcut={false}
@@ -257,7 +262,7 @@ export default function Settings() {
                 />
               ))}
             </GlassCard>
-            {preferenceStatus ? <Text style={styles.statusText}>{preferenceStatus}</Text> : null}
+            {preferenceStatus ? <Text style={[styles.statusText, { color: palette.accent.base }]}>{preferenceStatus}</Text> : null}
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -275,12 +280,19 @@ export default function Settings() {
                       onPress={() => void changeLocalePreference(option.value)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      style={[styles.languageButton, selected ? styles.languageButtonActive : null]}
+                      style={({ pressed }) => [
+                        styles.languageButton,
+                        {
+                          backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                          borderColor: selected ? palette.accent.strong : palette.border.default,
+                        },
+                        pressed ? styles.controlPressed : null,
+                      ]}
                     >
                       <Text
                         style={[
                           styles.languageButtonText,
-                          selected ? styles.languageButtonTextActive : null,
+                          { color: selected ? palette.accent.strong : palette.text.secondary },
                         ]}
                       >
                         {t(option.labelKey)}
@@ -307,7 +319,7 @@ export default function Settings() {
                       onPress={() => void setThemePreference(option.value)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      style={[
+                      style={({ pressed }) => [
                         styles.appearanceButton,
                         {
                           backgroundColor: selected
@@ -315,6 +327,7 @@ export default function Settings() {
                             : palette.surface.raised,
                           borderColor: selected ? palette.accent.strong : palette.border.default,
                         },
+                        pressed ? styles.controlPressed : null,
                       ]}
                     >
                       <Text
@@ -356,7 +369,7 @@ export default function Settings() {
                 {t("settings.delete")}
               </PrimaryButton>
             </View>
-            {privacyStatus ? <Text style={styles.statusText}>{privacyStatus}</Text> : null}
+            {privacyStatus ? <Text style={[styles.statusText, { color: palette.accent.base }]}>{privacyStatus}</Text> : null}
             <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
               <ListRow
                 title={t("settings.latestExport")}
@@ -421,9 +434,13 @@ export default function Settings() {
                     onPress={() => void copyInviteLink()}
                     accessibilityRole="button"
                     accessibilityLabel={t("settings.copy")}
-                    style={styles.copyButton}
+                    style={({ pressed }) => [
+                      styles.copyButton,
+                      { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus },
+                      pressed ? styles.controlPressed : null,
+                    ]}
                   >
-                    <Text style={styles.copyButtonText}>{t("settings.copy")}</Text>
+                    <Text style={[styles.copyButtonText, { color: palette.accent.base }]}>{t("settings.copy")}</Text>
                   </Pressable>
                 }
               />
@@ -446,7 +463,7 @@ export default function Settings() {
             accessibilityLabel={t("settings.logout")}
             style={({ pressed }) => [styles.logoutLink, pressed ? styles.logoutLinkPressed : null]}
           >
-            <Text style={styles.logoutLinkText}>{t("settings.logout")}</Text>
+            <Text style={[styles.logoutLinkText, { color: palette.feedback.danger }]}>{t("settings.logout")}</Text>
           </Pressable>
             </>
           ) : null}
@@ -469,18 +486,17 @@ function PreferenceToggle({
   title: string;
   value: boolean;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.preferenceRow}>
       <View style={styles.preferenceCopy}>
-        <Text style={styles.preferenceTitle}>{title}</Text>
-        <Text style={styles.preferenceSubtitle}>{subtitle}</Text>
+        <Text style={[styles.preferenceTitle, { color: palette.text.primary }]}>{title}</Text>
+        <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
       </View>
-      <Switch
+      <ThemedSwitch
         value={value}
         disabled={disabled}
         onValueChange={onValueChange}
-        trackColor={{ false: "rgba(255,255,255,0.14)", true: "rgba(185,244,85,0.35)" }}
-        thumbColor={value ? legacyColors.lime : legacyColors.muted}
       />
     </View>
   );
@@ -512,10 +528,12 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
+  },
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   actionRow: {
     flexDirection: "row",
@@ -534,11 +552,9 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   logoutLinkText: {
-    color: legacyColors.red,
     ...typography.caption,
   },
   statusText: {
-    color: legacyColors.lime,
     ...typography.small,
   },
   privacyStatusCard: {
@@ -564,47 +580,34 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   appearanceButton: {
-    minHeight: 38,
-    borderRadius: 999,
+    minHeight: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     justifyContent: "center",
   },
   appearanceButtonText: {
     ...typography.caption,
   },
   languageButton: {
-    minHeight: 38,
-    borderRadius: 999,
+    minHeight: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     justifyContent: "center",
   },
-  languageButtonActive: {
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.14)",
-  },
   languageButtonText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
-  languageButtonTextActive: {
-    color: legacyColors.lime,
-  },
   copyButton: {
-    minHeight: 36,
-    borderRadius: 18,
+    minHeight: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.12)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   copyButtonText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   preferenceRow: {
@@ -619,11 +622,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   preferenceTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   preferenceSubtitle: {
-    color: legacyColors.muted,
     ...typography.small,
   },
 });

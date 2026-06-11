@@ -1,9 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, MobileHeader, ZookScreen } from "@/components/primitives";
+import { GlassCard, MobileHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
@@ -70,7 +70,7 @@ function PreferenceRow({ disabled, onChange, title, value }: { disabled?: boolea
   return (
     <View style={styles.row}>
       <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
-      <Switch value={value} disabled={disabled} onValueChange={onChange} />
+      <ThemedSwitch value={value} disabled={disabled} onValueChange={onChange} />
     </View>
   );
 }

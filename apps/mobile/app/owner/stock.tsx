@@ -8,9 +8,10 @@ import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { legacyColors, layout, typography } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
+  const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const ordersQuery = useOrgActiveShopOrders();
   const lowStock = dashboardQuery.data?.products ?? [];
@@ -37,8 +38,8 @@ export default function OwnerStockScreen() {
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching || ordersQuery.isRefetching}
                 onRefresh={() => { void dashboardQuery.refetch(); void ordersQuery.refetch(); }}
-                tintColor={legacyColors.brandLime}
-                colors={[legacyColors.brandLime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -65,7 +66,11 @@ export default function OwnerStockScreen() {
                     title={order.user?.name ?? "Member pickup"}
                     subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                     leading={<IconBubble icon="bag-check-outline" tone="lime" />}
-                    trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
+                    trailing={
+                      <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                        {formatInr(order.totalPaise)}
+                      </Text>
+                    }
                   />
                 ))
               : null}
@@ -82,5 +87,5 @@ const styles = StyleSheet.create({
   stack: { gap: 12 },
   metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },
-  rowAmount: { color: legacyColors.textPrimary, ...typography.bodyStrong },
+  rowAmount: typography.bodyStrong,
 });

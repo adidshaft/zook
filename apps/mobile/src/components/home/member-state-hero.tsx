@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Circle } from "react-native-svg";
 import { GlassCard, ZookButton } from "@/components/primitives";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 function formatRenewalDate(value?: string | null) {
   if (!value) return "Renewal date pending";
@@ -49,7 +49,11 @@ export function MemberStateHero({
   visitLabel: string;
   visitLimit?: number | null;
 }) {
+  const { palette } = useTheme();
   const router = useRouter();
+  const accentColor = expired ? palette.feedback.warning : palette.accent.base;
+  const ringTrackColor = palette.border.subtle;
+  const ringFillColor = palette.surface.raised;
   const visitCountMatch = visitLabel.match(/^(\d+)/);
   const dayCountMatch = daysLeftLabel.match(/^(\d+)/);
   const ringValue = visitCountMatch?.[1] ?? dayCountMatch?.[1] ?? "-";
@@ -89,37 +93,37 @@ export function MemberStateHero({
       <View style={styles.premiumMemberTopRow}>
         <View style={styles.premiumMemberCopy}>
           <View style={styles.premiumMemberEyebrowRow}>
-            <Ionicons name="person-outline" size={21} color={legacyColors.lime} />
-            <Text style={styles.premiumMemberEyebrow}>
+            <Ionicons name="person-outline" size={21} color={accentColor} />
+            <Text style={[styles.premiumMemberEyebrow, { color: palette.text.secondary }]}>
               {expired ? "Renewal needed" : "Active Membership"}
             </Text>
           </View>
-          <Text numberOfLines={2} style={styles.premiumPlanName}>
+          <Text numberOfLines={2} style={[styles.premiumPlanName, { color: palette.text.primary }]}>
             {planName}
           </Text>
           {showSupplementalDaysLeft ? (
             <View style={styles.daysLeftRow}>
               {splitLabel ? (
                 <>
-                  <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
+                  <Text style={[styles.daysLeftText, { color: accentColor }]}>
                     {splitLabel[1]} {splitLabel[2]}
                   </Text>
                   <Ionicons
                     name="chevron-forward"
                     size={18}
-                    color={expired ? legacyColors.amber : legacyColors.lime}
+                    color={accentColor}
                   />
                 </>
               ) : (
-                <Text style={[styles.daysLeftText, expired ? styles.heroNumberUrgent : null]}>
+                <Text style={[styles.daysLeftText, { color: accentColor }]}>
                   {supplementalLabel}
                 </Text>
               )}
             </View>
           ) : null}
           <View style={styles.renewalRow}>
-            <Ionicons name="calendar-outline" size={15} color={legacyColors.muted} />
-            <Text numberOfLines={1} style={styles.renewalText}>
+            <Ionicons name="calendar-outline" size={15} color={palette.text.tertiary} />
+            <Text numberOfLines={1} style={[styles.renewalText, { color: palette.text.secondary }]}>
               {formatRenewalDate(renewalDate)}
             </Text>
           </View>
@@ -130,7 +134,7 @@ export function MemberStateHero({
               cx={ringSize / 2}
               cy={ringSize / 2}
               r={radius}
-              stroke="rgba(255,255,255,0.1)"
+              stroke={ringTrackColor}
               strokeWidth={strokeWidth}
               fill="none"
             />
@@ -138,7 +142,7 @@ export function MemberStateHero({
               cx={ringSize / 2}
               cy={ringSize / 2}
               r={radius}
-              stroke={expired ? legacyColors.amber : legacyColors.lime}
+              stroke={accentColor}
               strokeWidth={strokeWidth}
               fill="none"
               strokeLinecap="round"
@@ -147,21 +151,23 @@ export function MemberStateHero({
               opacity={expired ? 0.65 : 1}
             />
           </Svg>
-          <View style={styles.visitRingArc}>
-            <Text style={styles.visitRingValue}>{ringValue}</Text>
-            <Text style={styles.visitRingLabel}>{ringLabel[0]}</Text>
-            <Text style={styles.visitRingLabel}>{ringLabel[1]}</Text>
+          <View style={[styles.visitRingArc, { backgroundColor: ringFillColor }]}>
+            <Text style={[styles.visitRingValue, { color: palette.text.primary }]}>{ringValue}</Text>
+            <Text style={[styles.visitRingLabel, { color: palette.text.secondary }]}>{ringLabel[0]}</Text>
+            <Text style={[styles.visitRingLabel, { color: palette.text.secondary }]}>{ringLabel[1]}</Text>
           </View>
           {ringMetaLabel ? (
-            <Text numberOfLines={1} style={styles.visitRingMeta}>
+            <Text numberOfLines={1} style={[styles.visitRingMeta, { color: palette.text.tertiary }]}>
               {ringMetaLabel}
             </Text>
           ) : null}
         </View>
       </View>
-      <View style={styles.memberEncouragement}>
-        <Ionicons name="star-outline" size={17} color={legacyColors.lime} />
-        <Text style={styles.memberEncouragementText}>{encouragement}</Text>
+      <View style={[styles.memberEncouragement, { borderColor: palette.border.subtle }]}>
+        <Ionicons name="star-outline" size={17} color={accentColor} />
+        <Text style={[styles.memberEncouragementText, { color: palette.text.secondary }]}>
+          {encouragement}
+        </Text>
       </View>
       {showActions ? (
         <View style={styles.heroActions}>
@@ -223,12 +229,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   premiumMemberEyebrow: {
-    color: legacyColors.muted,
     fontSize: 15,
     lineHeight: 20,
   },
   premiumPlanName: {
-    color: legacyColors.text,
     fontSize: 20,
     lineHeight: 25,
     fontFamily: "Inter_700Bold",
@@ -239,13 +243,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   daysLeftText: {
-    color: legacyColors.lime,
     fontSize: 19,
     lineHeight: 24,
     fontFamily: "Inter_600SemiBold",
-  },
-  heroNumberUrgent: {
-    color: legacyColors.amber,
   },
   renewalRow: {
     flexDirection: "row",
@@ -254,7 +254,6 @@ const styles = StyleSheet.create({
   },
   renewalText: {
     flex: 1,
-    color: legacyColors.muted,
     ...typography.small,
   },
   visitRingOuter: {
@@ -273,24 +272,20 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 52,
-    backgroundColor: "rgba(0,0,0,0.22)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
   },
   visitRingValue: {
-    color: legacyColors.text,
     fontSize: 28,
     lineHeight: 32,
     fontFamily: "Inter_700Bold",
   },
   visitRingLabel: {
-    color: legacyColors.text,
     fontSize: 12,
     lineHeight: 15,
   },
   visitRingMeta: {
-    color: legacyColors.muted,
     fontSize: 10,
     lineHeight: 13,
     maxWidth: 122,
@@ -299,13 +294,11 @@ const styles = StyleSheet.create({
   memberEncouragement: {
     minHeight: 45,
     borderTopWidth: 1,
-    borderColor: legacyColors.divider,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
   },
   memberEncouragementText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   heroActions: {

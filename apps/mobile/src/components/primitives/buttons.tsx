@@ -99,11 +99,11 @@ export function pressWithHaptics(callback?: PressHandler, weight: HapticWeight =
 
 const buttonSizeStyles: Record<ButtonSize, ViewStyle> = {
   sm: {
-    minHeight: 32,
+    minHeight: 40,
     borderRadius: radii.button,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
   },
   md: {
     minHeight: 46,

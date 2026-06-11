@@ -343,8 +343,8 @@ export default function HomeScreen() {
                   onStop={() => void stopActiveCheckIn("manual")}
                 />
               ) : null}
-              <Banners home={home} />
               {renderHomeCard(state)}
+              <Banners home={home} />
             </>
           ) : null}
         </ScrollView>

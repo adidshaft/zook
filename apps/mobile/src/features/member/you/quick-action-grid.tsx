@@ -40,7 +40,11 @@ function QuickActionTile({ action }: { action: QuickAction }) {
       testID={action.testID}
       accessibilityRole="button"
       accessibilityLabel={action.label}
-      style={[styles.tile, { backgroundColor: palette.surface.default, borderColor: palette.border.default }]}
+      style={({ pressed }) => [
+        styles.tile,
+        { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+        pressed ? styles.tilePressed : null,
+      ]}
     >
       <IconBubble icon={action.icon} tone="neutral" size={36} />
       <Text style={[styles.label, { color: palette.text.primary }]}>{action.label}</Text>
@@ -59,6 +63,10 @@ const styles = StyleSheet.create({
     minHeight: 112,
     minWidth: "47%",
     padding: 14,
+  },
+  tilePressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.985 }],
   },
   label: typography.cardTitle,
   meta: typography.caption,

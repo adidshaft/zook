@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, spacing, typography, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 const DAY_MS = 86_400_000;
 
@@ -108,7 +108,19 @@ function Banner({
         {actionLabel}
       </ZookButton>
       {onDismiss ? (
-        <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={`Dismiss ${title}`} style={styles.dismiss}>
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel={`Dismiss ${title}`}
+          style={({ pressed }) => [
+            styles.dismiss,
+            {
+              borderColor: palette.border.subtle,
+              backgroundColor: palette.surface.raised,
+            },
+            pressed ? styles.dismissPressed : null,
+          ]}
+        >
           <Ionicons name="close" size={16} color={palette.text.tertiary} />
         </Pressable>
       ) : null}
@@ -120,7 +132,18 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   banner: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   copy: { flex: 1, gap: 2 },
-  title: { color: legacyColors.text, ...typography.cardTitle },
-  body: { color: legacyColors.muted, ...typography.small },
-  dismiss: { minHeight: 32, minWidth: 32, alignItems: "center", justifyContent: "center" },
+  title: { ...typography.cardTitle },
+  body: { ...typography.small },
+  dismiss: {
+    minHeight: 40,
+    minWidth: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dismissPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
 });

@@ -22,7 +22,13 @@ export default function SettingsIndexScreen() {
           <MobileHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
           <GlassCard variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
-              <Pressable key={section.href} onPress={() => router.push(section.href as never)} accessibilityRole="button" accessibilityLabel={section.title}>
+              <Pressable
+                key={section.href}
+                onPress={() => router.push(section.href as never)}
+                accessibilityRole="button"
+                accessibilityLabel={section.title}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
                 <ListRow title={section.title} subtitle={section.subtitle} icon={section.icon} />
               </Pressable>
             ))}
@@ -43,4 +49,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   list: { gap: 4 },
+  rowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
 });

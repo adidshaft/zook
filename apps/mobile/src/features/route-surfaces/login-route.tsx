@@ -29,7 +29,7 @@ import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-scre
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { getMobileReleaseProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme, type Palette } from "@/lib/theme";
 
 type BusyAction = "otp" | "apple" | "google" | null;
 type LoginMethod = "phone" | "email";
@@ -133,6 +133,7 @@ async function configureGoogleSignIn() {
 export default function Login() {
   const { requestOtp, signInWithApple, signInWithGoogle, verifyOtp } = useAuth();
   const { t } = useI18n();
+  const { palette } = useTheme();
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
   const { width } = useWindowDimensions();
   const heroFontSize = Math.min(54, width * 0.13);
@@ -396,22 +397,21 @@ export default function Login() {
         }}
       >
         <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.heroSection}>
-          <View style={styles.heroGlow} />
-          <Text style={styles.heroEyebrow}>{t("auth.heroEyebrow")}</Text>
+          <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>{t("auth.heroEyebrow")}</Text>
           <View style={styles.logoRow}>
             <BrandMark size="lg" />
-            <Text style={[styles.heroTitle, { fontSize: heroFontSize }]}>Zook</Text>
+            <Text style={[styles.heroTitle, { color: palette.text.primary, fontSize: heroFontSize }]}>Zook</Text>
           </View>
-          <Text style={styles.heroBody}>{t("auth.heroBody")}</Text>
+          <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{t("auth.heroBody")}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(250).duration(600)}>
           <GlassCard contentStyle={styles.formContent}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>
+              <Text style={[styles.formTitle, { color: palette.text.primary }]}>
                 {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
               </Text>
-              <Text style={styles.formSubtitle}>
+              <Text style={[styles.formSubtitle, { color: palette.text.secondary }]}>
                 {stage === "identifier"
                   ? t("auth.identifierSubtitle")
                   : t("auth.otpSubtitle")}
@@ -471,12 +471,18 @@ export default function Login() {
                             setMessage("");
                           }
                         }}
-                        style={[styles.methodTab, active ? styles.methodTabActive : null]}
+                        style={[
+                          styles.methodTab,
+                          {
+                            backgroundColor: active ? palette.surface.accentSoft : palette.surface.raised,
+                            borderColor: active ? palette.accent.base : palette.border.default,
+                          },
+                        ]}
                       >
                         <Text
                           style={[
                             styles.methodTabText,
-                            active ? styles.methodTabTextActive : null,
+                            { color: active ? palette.accent.base : palette.text.secondary },
                           ]}
                         >
                           {method === "phone" ? t("auth.mobileLabel") : t("auth.emailLabel")}
@@ -486,7 +492,7 @@ export default function Login() {
                   })}
                 </View>
                 {identifierInvalid ? (
-                  <Text style={styles.inlineError}>{identifierInvalidMessage}</Text>
+                  <Text style={[styles.inlineError, { color: palette.feedback.danger }]}>{identifierInvalidMessage}</Text>
                 ) : null}
               </>
             ) : (
@@ -548,9 +554,9 @@ export default function Login() {
             ) : (
               <>
                 <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>or continue with</Text>
-                  <View style={styles.dividerLine} />
+                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
+                  <Text style={[styles.dividerText, { color: palette.text.tertiary }]}>or continue with</Text>
+                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
                 </View>
                 <View style={styles.ssoRow}>
                   <SsoButton
@@ -559,6 +565,7 @@ export default function Login() {
                     mark="A"
                     busy={busyAction === "apple"}
                     disabled={busy}
+                    palette={palette}
                     onPress={() => void handleAppleSignIn()}
                   />
                   <SsoButton
@@ -567,16 +574,17 @@ export default function Login() {
                     mark="G"
                     busy={busyAction === "google"}
                     disabled={busy}
+                    palette={palette}
                     onPress={() => void handleGoogleSignIn()}
                   />
                 </View>
-                <Text style={styles.legalText}>
+                <Text style={[styles.legalText, { color: palette.text.tertiary }]}>
                   By continuing you agree to our{" "}
-                  <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+                  <Text style={[styles.legalLink, { color: palette.accent.base }]} onPress={() => void Linking.openURL(TERMS_URL)}>
                     Terms
                   </Text>{" "}
                   and{" "}
-                  <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+                  <Text style={[styles.legalLink, { color: palette.accent.base }]} onPress={() => void Linking.openURL(PRIVACY_URL)}>
                     Privacy Policy
                   </Text>
                   .
@@ -588,13 +596,16 @@ export default function Login() {
 
         {/* Local test OTP banner - only visible in __DEV__ */}
         {devOtp ? (
-          <View testID="login-dev-otp-banner" style={styles.devBanner}>
-            <Text style={styles.devBannerLabel}>{t("auth.testCode")}</Text>
-            <Text style={styles.devBannerCode}>{devOtp}</Text>
+          <View
+            testID="login-dev-otp-banner"
+            style={[styles.devBanner, { backgroundColor: palette.surface.warningSoft, borderColor: palette.feedback.warning }]}
+          >
+            <Text style={[styles.devBannerLabel, { color: palette.feedback.warning }]}>{t("auth.testCode")}</Text>
+            <Text style={[styles.devBannerCode, { color: palette.text.primary }]}>{devOtp}</Text>
           </View>
         ) : null}
 
-        {message ? <Text testID="login-message" style={styles.messageText}>{message}</Text> : null}
+        {message ? <Text testID="login-message" style={[styles.messageText, { color: palette.text.secondary }]}>{message}</Text> : null}
       </KeyboardAwareScreen>
     </ZookScreen>
   );
@@ -606,6 +617,7 @@ function SsoButton({
   label,
   mark,
   onPress,
+  palette,
   testID,
 }: {
   busy: boolean;
@@ -613,6 +625,7 @@ function SsoButton({
   label: string;
   mark: string;
   onPress: () => void;
+  palette: Palette;
   testID?: string;
 }) {
   return (
@@ -624,16 +637,17 @@ function SsoButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.ssoButton,
-        pressed && !disabled ? styles.ssoButtonPressed : null,
+        { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+        pressed && !disabled ? { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base } : null,
         disabled ? styles.ssoButtonDisabled : null,
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={legacyColors.text} />
+        <ActivityIndicator size="small" color={palette.text.primary} />
       ) : (
-        <Text style={styles.ssoMark}>{mark}</Text>
+        <Text style={[styles.ssoMark, { color: palette.text.primary }]}>{mark}</Text>
       )}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} style={styles.ssoLabel}>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} style={[styles.ssoLabel, { color: palette.text.primary }]}>
         {label}
       </Text>
     </Pressable>
@@ -652,17 +666,7 @@ const styles = StyleSheet.create({
     position: "relative",
     paddingVertical: 24,
   },
-  heroGlow: {
-    position: "absolute",
-    top: -20,
-    left: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(185,244,85,0.08)",
-  },
   heroEyebrow: {
-    color: legacyColors.lime,
     ...typography.eyebrow,
   },
   logoRow: {
@@ -672,12 +676,10 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   heroTitle: {
-    color: legacyColors.text,
     fontFamily: "Inter_900Black",
     lineHeight: 60,
   },
   heroBody: {
-    color: legacyColors.muted,
     ...typography.body,
     marginTop: 8,
   },
@@ -688,16 +690,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   formTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   formSubtitle: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   inlineError: {
     marginTop: -spacing.sm,
-    color: legacyColors.red,
     ...typography.caption,
   },
   methodTabs: {
@@ -712,19 +711,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-  },
-  methodTabActive: {
-    borderColor: "rgba(185,244,85,0.7)",
-    backgroundColor: "rgba(185,244,85,0.14)",
   },
   methodTabText: {
-    color: legacyColors.muted,
     ...typography.button,
-  },
-  methodTabTextActive: {
-    color: legacyColors.lime,
   },
   otpActions: {
     flexDirection: "row",
@@ -741,10 +730,8 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: legacyColors.border,
   },
   dividerText: {
-    color: legacyColors.subtle,
     ...typography.caption,
   },
   ssoRow: {
@@ -756,38 +743,29 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.06)",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
-  },
-  ssoButtonPressed: {
-    backgroundColor: legacyColors.accentPanel,
   },
   ssoButtonDisabled: {
     opacity: 0.6,
   },
   ssoMark: {
     width: 18,
-    color: legacyColors.text,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 16,
     lineHeight: 20,
     textAlign: "center",
   },
   ssoLabel: {
-    color: legacyColors.text,
     ...typography.button,
   },
   legalText: {
-    color: legacyColors.subtle,
     ...typography.caption,
     textAlign: "center",
   },
   legalLink: {
-    color: legacyColors.lime,
     fontFamily: "Inter_700Bold",
   },
   busyRow: {
@@ -796,7 +774,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   busyText: {
-    color: legacyColors.bg,
     ...typography.button,
   },
   devBanner: {
@@ -805,21 +782,16 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.4)",
-    backgroundColor: "rgba(242,201,76,0.1)",
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   devBannerLabel: {
-    color: legacyColors.amber,
     ...typography.eyebrow,
   },
   devBannerCode: {
-    color: legacyColors.text,
     ...typography.metric,
   },
   messageText: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },

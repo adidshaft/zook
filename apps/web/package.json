@@ -24,6 +24,7 @@
     "file-type": "^22.0.1",
     "framer-motion": "^12.38.0",
     "htmlparser2": "^12.0.0",
+    "ioredis": "^5.11.1",
     "lucide-react": "^0.468.0",
     "next": "^15.5.18",
     "next-intl": "^4.11.0",

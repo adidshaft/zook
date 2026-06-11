@@ -15,7 +15,7 @@ import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type RoleCombo = {
@@ -35,6 +35,7 @@ function titleCaseRole(role: Role) {
 }
 
 export function RoleSwitcherChip() {
+  const { mode, palette } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -131,10 +132,15 @@ export function RoleSwitcherChip() {
         accessibilityRole="button"
         accessibilityLabel={`Switch role. Current role: ${currentLabel}`}
         onPress={() => sheetRef.current?.present()}
+        hitSlop={6}
+        style={({ pressed }) => [
+          styles.roleTrigger,
+          pressed ? styles.roleTriggerPressed : null,
+        ]}
       >
         <View style={styles.interactiveChip}>
           {chip}
-          <Ionicons name="chevron-down" size={15} color={legacyColors.lime} />
+          <Ionicons name="chevron-down" size={15} color={palette.accent.base} />
         </View>
       </Pressable>
       <BottomSheetModal
@@ -142,12 +148,19 @@ export function RoleSwitcherChip() {
         backdropComponent={renderBackdrop}
         bottomInset={insets.bottom}
         enablePanDownToClose
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={StyleSheet.flatten([
+          styles.sheetHandle,
+          { backgroundColor: palette.border.strong },
+        ])}
         snapPoints={["CONTENT_HEIGHT"]}
       >
         <BottomSheetView style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Switch role</Text>
-            <Text style={styles.sheetSubtitle}>Choose the gym and role for this workspace.</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>Switch role</Text>
+            <Text style={[styles.sheetSubtitle, { color: palette.text.secondary }]}>
+              Choose the gym and role for this workspace.
+            </Text>
           </View>
           <View style={styles.optionStack}>
             {combos.map((combo) => {
@@ -163,7 +176,16 @@ export function RoleSwitcherChip() {
                   onPress={() => void chooseCombo(combo)}
                   style={({ pressed }) => [
                     styles.option,
-                    selected ? styles.optionSelected : null,
+                    selected
+                      ? [
+                          styles.optionSelected,
+                          {
+                            borderColor: palette.border.focus,
+                            backgroundColor: palette.surface.accentSoft,
+                          },
+                        ]
+                      : null,
+                    !selected ? { backgroundColor: palette.surface.default } : null,
                     pressed && !busyKey ? styles.optionPressed : null,
                   ]}
                 >
@@ -177,7 +199,14 @@ export function RoleSwitcherChip() {
                       />
                     }
                     trailing={
-                      <Text style={selected ? styles.currentText : styles.switchText}>
+                      <Text
+                        style={[
+                          selected ? styles.currentText : styles.switchText,
+                          {
+                            color: selected ? palette.accent.base : palette.text.secondary,
+                          },
+                        ]}
+                      >
                         {busy ? "Switching..." : selected ? "Active" : "Use"}
                       </Text>
                     }
@@ -199,6 +228,14 @@ const styles = StyleSheet.create({
   chipText: {
     flexShrink: 1,
   },
+  roleTrigger: {
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  roleTriggerPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
+  },
   interactiveChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -209,15 +246,22 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
+  sheetBackground: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+  },
   sheetHeader: {
     gap: 4,
   },
   sheetTitle: {
     ...typography.sectionTitle,
-    color: legacyColors.text,
   },
   sheetSubtitle: {
-    color: legacyColors.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -229,18 +273,15 @@ const styles = StyleSheet.create({
   },
   optionSelected: {
     borderWidth: 1,
-    borderColor: legacyColors.lime,
   },
   optionPressed: {
     opacity: 0.84,
   },
   currentText: {
-    color: legacyColors.lime,
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },
   switchText: {
-    color: legacyColors.muted,
     fontSize: 13,
     fontFamily: "Inter_700Bold",
   },

@@ -10,9 +10,10 @@ import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { legacyColors, layout, typography } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
+  const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const paymentsQuery = useOrgRecentPayments();
   const ordersQuery = useOrgActiveShopOrders();
@@ -32,8 +33,8 @@ export default function OwnerRevenueScreen() {
               <RefreshControl
                 refreshing={paymentsQuery.isRefetching || ordersQuery.isRefetching}
                 onRefresh={() => { void paymentsQuery.refetch(); void ordersQuery.refetch(); }}
-                tintColor={legacyColors.brandLime}
-                colors={[legacyColors.brandLime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -55,7 +56,11 @@ export default function OwnerRevenueScreen() {
                     title={payment.user?.name ?? titleCase(payment.purpose)}
                     subtitle={`${titleCase(payment.mode)} · ${titleCase(payment.status)}`}
                     leading={<IconBubble icon="card-outline" tone={payment.status === "SUCCEEDED" ? "lime" : "amber"} />}
-                    trailing={<Text style={styles.rowAmount}>{formatInr(payment.amountPaise)}</Text>}
+                    trailing={
+                      <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                        {formatInr(payment.amountPaise)}
+                      </Text>
+                    }
                   />
                 ))
               : null}
@@ -66,7 +71,11 @@ export default function OwnerRevenueScreen() {
                     title={order.user?.name ?? "Shop pickup order"}
                     subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                     leading={<IconBubble icon="bag-outline" tone="lime" />}
-                    trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
+                    trailing={
+                      <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                        {formatInr(order.totalPaise)}
+                      </Text>
+                    }
                   />
                 ))
               : null}
@@ -83,5 +92,5 @@ export default function OwnerRevenueScreen() {
 const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
   stack: { gap: 12 },
-  rowAmount: { color: legacyColors.textPrimary, ...typography.bodyStrong },
+  rowAmount: typography.bodyStrong,
 });

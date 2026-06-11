@@ -6,7 +6,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { DemoBanner } from "@/components/demo-banner";
 import { GlassCard, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
@@ -15,7 +14,7 @@ import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { legacyColors, layout, typography } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
@@ -24,6 +23,7 @@ export default function OwnerCommandScreen() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const billingQuery = useOwnerBillingSubscription();
   const prefetchOwnerWorkspace = usePrefetchOwnerWorkspace();
@@ -152,14 +152,15 @@ export default function OwnerCommandScreen() {
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.brandLime}
-                colors={[legacyColors.brandLime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
         >
-          <DemoBanner />
-          <Text style={styles.headerMeta}>{dashboard?.organization?.name ?? "Active gym"} · Owner command view</Text>
+          <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
+            {dashboard?.organization?.name ?? "Active gym"} · Owner command view
+          </Text>
           <RoleSwitcherChip />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
@@ -169,8 +170,8 @@ export default function OwnerCommandScreen() {
                 <GlassCard variant="warning" contentStyle={styles.billingCard}>
                   <View style={styles.billingHeader}>
                     <View style={styles.billingCopy}>
-                      <Text style={styles.billingTitle}>Billing setup required</Text>
-                      <Text style={styles.billingBody}>
+                      <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
+                      <Text style={[styles.billingBody, { color: palette.text.secondary }]}>
                         Trial access is on, but owner/admin writes need a SaaS mandate before the
                         gym can operate normally.
                       </Text>
@@ -207,7 +208,6 @@ const styles = StyleSheet.create({
     paddingBottom: 96,
   },
   headerMeta: {
-    color: legacyColors.textMuted,
     ...typography.caption,
   },
   billingCard: {
@@ -224,11 +224,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   billingTitle: {
-    color: legacyColors.textPrimary,
     ...typography.cardTitle,
   },
   billingBody: {
-    color: legacyColors.textMuted,
     ...typography.body,
   },
 });

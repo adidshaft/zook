@@ -54,12 +54,13 @@ export function MemberListFilters({
                 onPress={() => onFilterChange(item)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                style={[
+                style={({ pressed }) => [
                   styles.filterChip,
                   {
                     backgroundColor: selected ? palette.surface.accentSoft : palette.surface.default,
                     borderColor: selected ? palette.accent.strong : palette.border.default,
                   },
+                  pressed ? styles.filterChipPressed : null,
                 ]}
               >
                 <Text style={[styles.filterChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>
@@ -78,11 +79,15 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   filterChip: {
-    minHeight: 34,
-    borderRadius: 17,
+    alignItems: "center",
+    minHeight: 40,
+    borderRadius: 20,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     justifyContent: "center",
+  },
+  filterChipPressed: {
+    opacity: 0.84,
   },
   filterChipText: typography.caption,
 });

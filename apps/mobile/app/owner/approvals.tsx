@@ -12,12 +12,13 @@ import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
-import { legacyColors, layout } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function OwnerApprovalsScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const joinRequestsQuery = useOrgJoinRequests();
   const attentionQuery = useOrgAttendancePending();
@@ -88,7 +89,14 @@ export default function OwnerApprovalsScreen() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
-            refreshControl: <RefreshControl refreshing={joinRequestsQuery.isRefetching || attentionQuery.isRefetching} onRefresh={onRefresh} tintColor={legacyColors.brandLime} colors={[legacyColors.brandLime]} />,
+            refreshControl: (
+              <RefreshControl
+                refreshing={joinRequestsQuery.isRefetching || attentionQuery.isRefetching}
+                onRefresh={onRefresh}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
+              />
+            ),
           }}
         >
           <MetricGrid
@@ -112,7 +120,7 @@ export default function OwnerApprovalsScreen() {
           ) : pendingApprovals === 0 ? (
             <GlassCard variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></GlassCard>
           ) : null}
-          <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton size="sm" disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton> : undefined} />
+          <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton> : undefined} />
           <ApprovalQueue
             testID="pending-approvals-list"
             items={joinItems}

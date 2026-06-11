@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { GlassCard, Skeleton } from "@/components/primitives";
-import { legacyColors, spacing } from "@/lib/theme";
+import { spacing, useTheme } from "@/lib/theme";
 
 function CardCopySkeleton({
   titleWidth = "62%",
@@ -113,6 +113,7 @@ export function NotificationsSkeleton() {
 }
 
 export function OwnerDashboardSkeleton() {
+  const { palette } = useTheme();
   return (
     <View style={styles.stack}>
       <View style={styles.metricGrid}>
@@ -132,7 +133,7 @@ export function OwnerDashboardSkeleton() {
       {[0, 1].map((item) => (
         <GlassCard key={item} variant="compact" contentStyle={styles.listCard}>
           <RowSkeleton iconSize={34} action="chip" surface={false} />
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
           <RowSkeleton iconSize={34} action="chip" surface={false} />
         </GlassCard>
       ))}
@@ -200,6 +201,7 @@ export function FindGymsSkeleton() {
 }
 
 export function GymDetailSkeleton() {
+  const { palette } = useTheme();
   return (
     <View style={styles.stack}>
       <GlassCard contentStyle={styles.gymHeroSkeleton}>
@@ -212,7 +214,7 @@ export function GymDetailSkeleton() {
       </GlassCard>
       <GlassCard variant="compact" contentStyle={styles.listCard}>
         <RowSkeleton iconSize={34} action="chip" surface={false} />
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
         <RowSkeleton iconSize={34} action="chip" surface={false} />
       </GlassCard>
       {[0, 1].map((item) => (
@@ -223,12 +225,13 @@ export function GymDetailSkeleton() {
 }
 
 export function SettingsSkeleton() {
+  const { palette } = useTheme();
   return (
     <View style={styles.stack}>
       {[0, 1, 2].map((item) => (
         <GlassCard key={item} variant="compact" contentStyle={styles.listCard}>
           <RowSkeleton iconSize={34} action="chip" surface={false} />
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
           <RowSkeleton iconSize={34} action="chip" surface={false} />
         </GlassCard>
       ))}
@@ -328,6 +331,5 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: legacyColors.border,
   },
 });

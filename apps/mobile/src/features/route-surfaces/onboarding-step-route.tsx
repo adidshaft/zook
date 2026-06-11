@@ -21,7 +21,7 @@ import { ZookButton } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { setStoredValue } from "@/lib/storage";
 import { getMobileWebBaseUrl } from "@/lib/api";
-import { legacyColors, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -38,12 +38,12 @@ const permissionRows = [
   {
     icon: "camera-outline",
     title: "Camera",
-    body: "to check in",
+    body: "Scan QR codes for fast check-ins",
   },
   {
     icon: "location-outline",
     title: "Location",
-    body: "to find nearby gyms",
+    body: "Find nearby gyms during setup",
   },
 ] as const;
 
@@ -347,13 +347,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brand: {
-    color: legacyColors.text,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 32,
     lineHeight: 38,
   },
   kicker: {
-    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     lineHeight: 22,
@@ -367,16 +365,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 22,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
   valueNumber: {
-    color: legacyColors.lime,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 13,
   },
   valueCopy: {
-    color: legacyColors.text,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 28,
     lineHeight: 34,
@@ -393,11 +387,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: legacyColors.borderStrong,
-  },
-  dotActive: {
-    width: 22,
-    backgroundColor: legacyColors.lime,
   },
   permissionList: {
     gap: 12,
@@ -408,8 +397,6 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
   permissionIcon: {
     width: 46,
@@ -417,19 +404,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 23,
-    backgroundColor: legacyColors.accentPanel,
   },
   permissionCopy: {
     flex: 1,
     gap: 3,
   },
   permissionTitle: {
-    color: legacyColors.text,
     fontFamily: "Inter_700Bold",
     fontSize: 16,
   },
   permissionBody: {
-    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     lineHeight: 20,
@@ -441,7 +425,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   busyText: {
-    color: legacyColors.bg,
     fontFamily: "Inter_700Bold",
     fontSize: 14,
   },
@@ -455,12 +438,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
-  },
-  roleOptionPressed: {
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: legacyColors.accentPanel,
   },
   roleOptionCopy: {
     flex: 1,
@@ -472,15 +449,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: legacyColors.accentPanel,
   },
   roleLabel: {
-    color: legacyColors.text,
     fontFamily: "Inter_700Bold",
     fontSize: 16,
   },
   roleBody: {
-    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,

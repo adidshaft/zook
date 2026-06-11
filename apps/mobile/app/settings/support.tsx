@@ -21,7 +21,13 @@ export default function SupportSettingsScreen() {
           <MobileHeader title="Help & support" subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`} showProfileShortcut={false} />
           <GlassCard variant="compact" contentStyle={styles.list}>
             {supportRows.map((row) => (
-              <Pressable key={row.title} onPress={() => void Linking.openURL(row.url)} accessibilityRole="button" accessibilityLabel={row.title}>
+              <Pressable
+                key={row.title}
+                onPress={() => void Linking.openURL(row.url)}
+                accessibilityRole="button"
+                accessibilityLabel={row.title}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
                 <ListRow title={row.title} subtitle={row.subtitle} icon="help-circle-outline" style={styles.row} />
               </Pressable>
             ))}
@@ -36,4 +42,8 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
   list: { gap: 4 },
   row: {},
+  rowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
 });

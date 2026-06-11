@@ -7,11 +7,12 @@ import { EmptyState, GlassCard, IconBubble, MobileHeader, QueryErrorState, Secti
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type TrackingWorkout = Parameters<typeof workoutToEntry>[0];
 
 export default function TrackingScreen() {
+  const { palette } = useTheme();
   const router = useRouter();
   const summaryQuery = useMyTracking();
   const workoutsQuery = useMyTrackingWorkouts();
@@ -44,7 +45,7 @@ export default function TrackingScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <MobileHeader title="Tracking" subtitle="Workouts, body progress, and habits" showProfileShortcut={false} />
           <View style={styles.actions}>
@@ -77,8 +78,8 @@ export default function TrackingScreen() {
             ) : null}
           </View>
           <GlassCard variant="compact" contentStyle={styles.note}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={legacyColors.lime} />
-            <Text style={styles.noteText}>Private entries stay with you unless you choose trainer visibility.</Text>
+            <Ionicons name="shield-checkmark-outline" size={20} color={palette.accent.base} />
+            <Text style={[styles.noteText, { color: palette.text.secondary }]}>Private entries stay with you unless you choose trainer visibility.</Text>
           </GlassCard>
         </ScrollView>
       </ZookScreen>
@@ -94,5 +95,5 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   emptyCard: { alignItems: "center", gap: spacing.sm },
   note: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  noteText: { color: legacyColors.muted, flex: 1, ...typography.small },
+  noteText: { flex: 1, ...typography.small },
 });

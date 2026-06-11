@@ -3,9 +3,9 @@ import type { Permission, Role } from "@zook/core";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -32,8 +32,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { legacyColors } from "@/lib/theme";
-import { ThemeProvider, useTheme } from "@/lib/theme/index";
+import { spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -157,6 +156,7 @@ function LayoutContent() {
   const pathname = usePathname();
   const router = useRouter();
   const activeRole = roleContext?.role;
+  const isDemoMode = Boolean(roleContext?.isDemo);
   const activePermissions = roleContext?.permissions ?? EMPTY_PERMISSIONS;
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
@@ -392,9 +392,9 @@ function LayoutContent() {
 
   if (runtimeConfigError) {
     return (
-      <View style={styles.configError}>
-        <Text style={styles.configErrorTitle}>{t("app.configErrorTitle")}</Text>
-        <Text style={styles.configErrorBody}>{t("app.configErrorBody")}</Text>
+      <View style={[styles.configError, { backgroundColor: palette.bg.app }]}>
+        <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>{t("app.configErrorTitle")}</Text>
+        <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>{t("app.configErrorBody")}</Text>
       </View>
     );
   }
@@ -412,8 +412,12 @@ function LayoutContent() {
     <>
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <NetworkBanner />
-      {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
-      <DemoBanner />
+      {offlineBanner || isDemoMode ? (
+        <RuntimeBannerHost>
+          {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
+          <DemoBanner />
+        </RuntimeBannerHost>
+      ) : null}
       <Stack
         screenOptions={{
           headerShown: false,
@@ -444,6 +448,24 @@ function LayoutContent() {
       </Stack>
       <ToastHost />
     </>
+  );
+}
+
+function RuntimeBannerHost({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
+  return (
+    <View
+      style={[
+        styles.runtimeBannerHost,
+        {
+          paddingTop: Math.max(insets.top, spacing.xs),
+          backgroundColor: palette.bg.app,
+        },
+      ]}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -517,10 +539,11 @@ export default function Layout() {
 }
 
 function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.configError}>
-      <Text style={styles.configErrorTitle}>Something went wrong</Text>
-      <Text style={styles.configErrorBody}>
+    <View style={[styles.configError, { backgroundColor: palette.bg.app }]}>
+      <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>Something went wrong</Text>
+      <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>
         Zook hit an unexpected error and reported it to our team. Try again, or restart the app if
         the problem continues.
       </Text>
@@ -528,9 +551,9 @@ function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
         onPress={onRetry}
         accessibilityRole="button"
         accessibilityLabel="Try again"
-        style={styles.retryButton}
+        style={[styles.retryButton, { backgroundColor: palette.accent.base }]}
       >
-        <Text style={styles.retryButtonText}>Try again</Text>
+        <Text style={[styles.retryButtonText, { color: palette.text.onAccent }]}>Try again</Text>
       </Pressable>
     </View>
   );
@@ -542,43 +565,40 @@ const styles = StyleSheet.create({
   },
   loading: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
   },
   loadingText: {
-    color: legacyColors.text,
     fontSize: 14,
   },
   configError: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
     justifyContent: "center",
     padding: 24,
     gap: 12,
   },
   configErrorTitle: {
-    color: legacyColors.text,
     fontSize: 22,
     fontWeight: "800",
   },
   configErrorBody: {
-    color: legacyColors.muted,
     fontSize: 15,
     lineHeight: 22,
   },
   retryButton: {
     marginTop: 12,
     alignSelf: "flex-start",
-    backgroundColor: legacyColors.lime,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 999,
   },
   retryButtonText: {
-    color: "#050805",
     fontSize: 14,
     fontWeight: "700",
+  },
+  runtimeBannerHost: {
+    gap: 6,
+    paddingHorizontal: 0,
   },
 });

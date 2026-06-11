@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from "react-native";
 import { GlassCard, Pill, SectionHeader } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
 export function MembershipHistorySection({ subscriptions }: { subscriptions: MembershipRecord[] }) {
+  const { palette } = useTheme();
   if (subscriptions.length <= 1) {
     return null;
   }
@@ -17,10 +18,10 @@ export function MembershipHistorySection({ subscriptions }: { subscriptions: Mem
           <GlassCard key={subscription.id} variant="compact" contentStyle={styles.historyContent}>
             <View style={styles.historyRow}>
               <View style={styles.historyCopy}>
-                <Text numberOfLines={1} style={styles.historyTitle}>
+                <Text numberOfLines={1} style={[styles.historyTitle, { color: palette.text.primary }]}>
                   {subscription.plan?.name ?? "Membership"}
                 </Text>
-                <Text numberOfLines={1} style={styles.historyBody}>
+                <Text numberOfLines={1} style={[styles.historyBody, { color: palette.text.secondary }]}>
                   {subscription.organization?.name ?? "Gym"} ·{" "}
                   {subscription.endsAt ? formatLongDate(subscription.endsAt) : "No expiry"}
                 </Text>
@@ -54,11 +55,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   historyBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
 });

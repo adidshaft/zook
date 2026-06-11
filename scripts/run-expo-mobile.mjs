@@ -31,7 +31,7 @@ for (const fileName of orderedRootEnvFiles(process.env.NODE_ENV)) {
   }
 }
 
-if (process.env.MOBILE_API_MODE && !process.env.EXPO_PUBLIC_API_MODE) {
+if (process.env.MOBILE_API_MODE) {
   process.env.EXPO_PUBLIC_API_MODE = process.env.MOBILE_API_MODE;
 }
 

@@ -8,7 +8,7 @@ import {
   Skeleton,
 } from "@/components/primitives";
 import type { MemberBadgeRecord, MemberNextMilestone } from "@/lib/domains";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function ReferralCard({
   code,
@@ -25,12 +25,13 @@ export function ReferralCard({
   redemptions: number;
   rewardsCount: number;
 }) {
+  const { palette } = useTheme();
   return (
     <GlassCard variant="compact" contentStyle={styles.referralContent}>
       <IconBubble icon="gift-outline" tone="amber" size={38} />
       <View style={styles.referralCopy}>
-        <Text style={styles.secondaryActionTitle}>Refer a friend</Text>
-        <Text numberOfLines={1} style={styles.mutedSmall}>
+        <Text style={[styles.secondaryActionTitle, { color: palette.text.primary }]}>Refer a friend</Text>
+        <Text numberOfLines={1} style={[styles.mutedSmall, { color: palette.text.secondary }]}>
           {redemptions}/{maxUses ?? "unlimited"} used · {rewardsCount} reward
           {rewardsCount === 1 ? "" : "s"}
         </Text>
@@ -40,11 +41,12 @@ export function ReferralCard({
             accessibilityRole="button"
             accessibilityLabel={`Copy referral code ${code}`}
             hitSlop={6}
+            style={({ pressed }) => (pressed ? styles.referralCodePressed : null)}
           >
-            <Text style={styles.referralCode}>{code}</Text>
+            <Text style={[styles.referralCode, { color: palette.accent.base }]}>{code}</Text>
           </Pressable>
         ) : (
-          <Text selectable style={styles.referralCode}>
+          <Text selectable style={[styles.referralCode, { color: palette.accent.base }]}>
             {code}
           </Text>
         )}
@@ -53,9 +55,13 @@ export function ReferralCard({
         onPress={onShare}
         accessibilityRole="button"
         accessibilityLabel="Share referral code"
-        style={styles.referralShareButton}
+        style={({ pressed }) => [
+          styles.referralShareButton,
+          { backgroundColor: palette.accent.fill },
+          pressed ? styles.referralShareButtonPressed : null,
+        ]}
       >
-        <Ionicons name="share-outline" size={18} color={legacyColors.bg} />
+        <Ionicons name="share-outline" size={18} color={palette.text.onAccent} />
       </Pressable>
     </GlassCard>
   );
@@ -70,36 +76,41 @@ export function TodayPlanCard({
   planName: string;
   trainerName: string;
 }) {
+  const { palette } = useTheme();
   return (
     <Link href="/plan" asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel="Open today's plan">
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Open today's plan"
+        style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+      >
         <GlassCard variant="compact" contentStyle={styles.todayPlanContent}>
           <View style={styles.todayPlanHeader}>
-            <Ionicons name="clipboard-outline" size={22} color={legacyColors.lime} />
-            <Text style={styles.todayPlanEyebrow}>Today's Plan</Text>
+            <Ionicons name="clipboard-outline" size={22} color={palette.accent.base} />
+            <Text style={[styles.todayPlanEyebrow, { color: palette.text.secondary }]}>Today's Plan</Text>
           </View>
           <View style={styles.todayPlanBody}>
             <View style={styles.todayPlanCopy}>
-              <Text numberOfLines={2} style={styles.todayPlanTitle}>
+              <Text numberOfLines={2} style={[styles.todayPlanTitle, { color: palette.text.primary }]}>
                 {planName}
               </Text>
               <View style={styles.todayPlanMetaRow}>
-                <Text numberOfLines={1} style={styles.todayPlanMeta}>
+                <Text numberOfLines={1} style={[styles.todayPlanMeta, { color: palette.text.secondary }]}>
                   {assigned ? `6 exercises · ${trainerName}` : "Trainer will assign one"}
                 </Text>
-                <View style={styles.assignedChip}>
+                <View style={[styles.assignedChip, { backgroundColor: palette.surface.accentSoft }]}>
                   <Ionicons
                     name={assigned ? "checkmark-circle-outline" : "time-outline"}
                     size={14}
-                    color={legacyColors.lime}
+                    color={palette.accent.base}
                   />
-                  <Text style={styles.assignedChipText}>
+                  <Text style={[styles.assignedChipText, { color: palette.accent.base }]}>
                     {assigned ? "Assigned" : "Open"}
                   </Text>
                 </View>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={22} color={legacyColors.muted} />
+            <Ionicons name="chevron-forward" size={22} color={palette.text.tertiary} />
           </View>
         </GlassCard>
       </Pressable>
@@ -126,36 +137,39 @@ export function ActivityCard({
   streakDays: number;
   totalCheckIns: number;
 }) {
+  const { palette } = useTheme();
   const weeklyTarget = nextMilestone?.metric === "totalCheckIns" ? nextMilestone.remaining : 5;
   const weeklyGoalLabel = `${Math.min(totalCheckIns, 5)}/${Math.max(weeklyTarget, 3)}`;
   return (
     <GlassCard variant="compact" contentStyle={styles.activityContent}>
       <View style={styles.activityTitleRow}>
-        <Ionicons name="pulse-outline" size={21} color={legacyColors.lime} />
-        <Text style={styles.activityTitle}>Activity</Text>
+        <Ionicons name="pulse-outline" size={21} color={palette.accent.base} />
+        <Text style={[styles.activityTitle, { color: palette.text.secondary }]}>Activity</Text>
       </View>
       <View style={styles.activityStats}>
         <View style={styles.activityStat}>
-          <Ionicons name="flame-outline" size={27} color={legacyColors.lime} />
-          <Text style={styles.activityStatLabel}>Streak</Text>
-          <Text style={styles.activityStatValue}>{streakDays}</Text>
-          <Text style={styles.activityStatMeta}>days</Text>
+          <Ionicons name="flame-outline" size={27} color={palette.accent.base} />
+          <Text style={[styles.activityStatLabel, { color: palette.text.secondary }]}>Streak</Text>
+          <Text style={[styles.activityStatValue, { color: palette.text.primary }]}>{streakDays}</Text>
+          <Text style={[styles.activityStatMeta, { color: palette.text.secondary }]}>days</Text>
         </View>
-        <View style={styles.activityDivider} />
+        <View style={[styles.activityDivider, { backgroundColor: palette.border.subtle }]} />
         <View style={styles.activityStat}>
-          <Ionicons name="time-outline" size={27} color={legacyColors.lime} />
-          <Text style={styles.activityStatLabel}>Last check-in</Text>
-          <Text numberOfLines={1} style={styles.activityStatValueSmall}>
+          <Ionicons name="time-outline" size={27} color={palette.accent.base} />
+          <Text style={[styles.activityStatLabel, { color: palette.text.secondary }]}>Last check-in</Text>
+          <Text numberOfLines={1} style={[styles.activityStatValueSmall, { color: palette.text.primary }]}>
             {lastCheckIn}
           </Text>
-          <Text style={styles.activityStatMeta}>{latestBadge?.name ?? "Keep moving"}</Text>
+          <Text style={[styles.activityStatMeta, { color: palette.text.secondary }]}>
+            {latestBadge?.name ?? "Keep moving"}
+          </Text>
         </View>
-        <View style={styles.activityDivider} />
+        <View style={[styles.activityDivider, { backgroundColor: palette.border.subtle }]} />
         <View style={styles.activityStat}>
-          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={legacyColors.lime} />
-          <Text style={styles.activityStatLabel}>Weekly goal</Text>
-          <Text style={styles.activityStatValue}>{weeklyGoalLabel}</Text>
-          <Text style={styles.activityStatMeta}>check-ins</Text>
+          <Ionicons name={safeIconName(nextMilestone?.icon)} size={27} color={palette.accent.base} />
+          <Text style={[styles.activityStatLabel, { color: palette.text.secondary }]}>Weekly goal</Text>
+          <Text style={[styles.activityStatValue, { color: palette.text.primary }]}>{weeklyGoalLabel}</Text>
+          <Text style={[styles.activityStatMeta, { color: palette.text.secondary }]}>check-ins</Text>
         </View>
       </View>
     </GlassCard>
@@ -163,26 +177,39 @@ export function ActivityCard({
 }
 
 export function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
+  const { palette } = useTheme();
   return (
     <Link href="/profile" asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel="Complete profile for check-in">
-        <View style={styles.profilePrompt}>
-          <View style={styles.profilePromptIcon}>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Complete profile for check-in"
+        style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+      >
+        <View
+          style={[
+            styles.profilePrompt,
+            {
+              borderColor: palette.border.focus,
+              backgroundColor: palette.surface.accentSoft,
+            },
+          ]}
+        >
+          <View style={[styles.profilePromptIcon, { backgroundColor: palette.accent.fill }]}>
             <Ionicons
               name={needsPhoto ? "camera-outline" : "call-outline"}
               size={18}
-              color={legacyColors.bg}
+              color={palette.text.onAccent}
             />
           </View>
           <View style={styles.profilePromptCopy}>
-            <Text style={styles.profilePromptTitle}>Finish your check-in profile</Text>
-            <Text numberOfLines={2} style={styles.profilePromptBody}>
+            <Text style={[styles.profilePromptTitle, { color: palette.text.primary }]}>Finish your check-in profile</Text>
+            <Text numberOfLines={2} style={[styles.profilePromptBody, { color: palette.text.secondary }]}>
               {needsPhoto
                 ? "Add your photo so reception can verify you at entry."
                 : "Add your mobile number so the gym can reach you when needed."}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />
+          <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
         </View>
       </Pressable>
     </Link>
@@ -190,18 +217,23 @@ export function ProfileReadyPrompt({ needsPhoto }: { needsPhoto: boolean }) {
 }
 
 export function WorkoutLogCard() {
+  const { palette } = useTheme();
   return (
     <Link href="/plan" asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel="Log today's workout">
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="Log today's workout"
+        style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+      >
         <GlassCard contentStyle={styles.secondaryActionContent}>
           <IconBubble icon="pulse-outline" tone="neutral" size={38} />
           <View style={styles.secondaryActionCopy}>
-            <Text style={styles.secondaryActionTitle}>Log today's workout</Text>
-            <Text numberOfLines={1} style={styles.mutedSmall}>
+            <Text style={[styles.secondaryActionTitle, { color: palette.text.primary }]}>Log today's workout</Text>
+            <Text numberOfLines={1} style={[styles.mutedSmall, { color: palette.text.secondary }]}>
               Track sets, reps, and weights.
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={legacyColors.muted} />
+          <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
         </GlassCard>
       </Pressable>
     </Link>
@@ -240,6 +272,7 @@ export function FirstRunCard({
   state: "NO_GYM" | "NO_MEMBERSHIP" | "NEVER_CHECKED_IN";
   gymUsername?: string | null;
 }) {
+  const { palette } = useTheme();
   const copy = {
     NO_GYM: {
       icon: "search-outline" as const,
@@ -266,16 +299,20 @@ export function FirstRunCard({
 
   return (
     <Link href={copy.href} asChild>
-      <Pressable accessibilityRole="link" accessibilityLabel={copy.cta}>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={copy.cta}
+        style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+      >
         <GlassCard variant="compact" contentStyle={styles.firstRunContent}>
           <IconBubble icon={copy.icon} tone="lime" size={46} />
           <View style={styles.firstRunCopy}>
-            <Text style={styles.firstRunTitle}>{copy.title}</Text>
-            <Text style={styles.mutedBody}>{copy.body}</Text>
+            <Text style={[styles.firstRunTitle, { color: palette.text.primary }]}>{copy.title}</Text>
+            <Text style={[styles.mutedBody, { color: palette.text.secondary }]}>{copy.body}</Text>
           </View>
-          <View style={styles.checkInCta}>
-            <Text style={styles.checkInCtaText}>{copy.cta}</Text>
-            <Ionicons name="chevron-forward" size={16} color={legacyColors.bg} />
+          <View style={[styles.checkInCta, { backgroundColor: palette.accent.fill }]}>
+            <Text style={[styles.checkInCtaText, { color: palette.text.onAccent }]}>{copy.cta}</Text>
+            <Ionicons name="chevron-forward" size={16} color={palette.text.onAccent} />
           </View>
         </GlassCard>
       </Pressable>
@@ -284,6 +321,10 @@ export function FirstRunCard({
 }
 
 const styles = StyleSheet.create({
+  cardPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.992 }],
+  },
   referralContent: {
     minHeight: 112,
     flexDirection: "row",
@@ -296,16 +337,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   referralCode: {
-    color: legacyColors.lime,
     ...typography.h3,
   },
+  referralCodePressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.985 }],
+  },
   referralShareButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: legacyColors.lime,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+  },
+  referralShareButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   todayPlanContent: {
     padding: 18,
@@ -317,7 +364,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   todayPlanEyebrow: {
-    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 21,
   },
@@ -332,7 +378,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   todayPlanTitle: {
-    color: legacyColors.text,
     fontSize: 19,
     lineHeight: 24,
     fontFamily: "Inter_700Bold",
@@ -345,7 +390,6 @@ const styles = StyleSheet.create({
   todayPlanMeta: {
     flex: 1,
     minWidth: 0,
-    color: legacyColors.muted,
     fontSize: 14,
     lineHeight: 19,
   },
@@ -356,11 +400,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
-    backgroundColor: "rgba(185,244,85,0.14)",
     flexShrink: 0,
   },
   assignedChipText: {
-    color: legacyColors.lime,
     fontSize: 12,
     lineHeight: 16,
     fontFamily: "Inter_600SemiBold",
@@ -375,7 +417,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   activityTitle: {
-    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 21,
   },
@@ -392,27 +433,22 @@ const styles = StyleSheet.create({
   },
   activityDivider: {
     width: 1,
-    backgroundColor: legacyColors.divider,
   },
   activityStatLabel: {
-    color: legacyColors.muted,
     fontSize: 12,
     lineHeight: 16,
   },
   activityStatValue: {
-    color: legacyColors.text,
     fontSize: 27,
     lineHeight: 31,
     fontFamily: "Inter_700Bold",
   },
   activityStatValueSmall: {
-    color: legacyColors.text,
     fontSize: 21,
     lineHeight: 26,
     fontFamily: "Inter_700Bold",
   },
   activityStatMeta: {
-    color: legacyColors.muted,
     fontSize: 12,
     lineHeight: 15,
   },
@@ -420,8 +456,6 @@ const styles = StyleSheet.create({
     minHeight: 76,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.28)",
-    backgroundColor: "rgba(185,244,85,0.1)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -431,7 +465,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -440,11 +473,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   profilePromptTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   profilePromptBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   secondaryActionContent: {
@@ -459,15 +490,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   secondaryActionTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   mutedSmall: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   mutedBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   skeletonStack: {
@@ -498,20 +526,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   firstRunTitle: {
-    color: legacyColors.text,
     ...typography.h3,
   },
   checkInCta: {
-    minHeight: 36,
-    borderRadius: 18,
-    backgroundColor: legacyColors.lime,
+    minHeight: 40,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   checkInCtaText: {
-    color: legacyColors.bg,
     ...typography.caption,
   },
 });

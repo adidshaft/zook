@@ -1,7 +1,9 @@
-import { forwardRef, useImperativeHandle, useState, type ReactNode } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState, type ReactNode } from "react";
+import { BlurView } from "expo-blur";
 import {
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +13,7 @@ import {
   type DimensionValue,
   type ViewStyle,
 } from "react-native";
-import { legacyColors } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 
 export type BottomSheetBackdropProps = ViewProps & {
   appearsOnIndex?: number;
@@ -60,17 +62,52 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
     },
     ref,
   ) {
+    const { palette, mode } = useTheme();
     const [visible, setVisible] = useState(false);
+    const dismissNotifiedRef = useRef(false);
     const sheetHeight = resolveSnapPoint(snapPoints?.[0]);
     const safePaddingBottom = Math.max(bottomInset, 0);
+    const isDark = mode === "dark";
+    const sheetBackground =
+      Platform.OS === "ios"
+        ? "transparent"
+        : palette.bg.elevated;
+    const sheetScrim = palette.bg.overlay;
+    const sheetOverlay =
+      Platform.OS === "ios"
+        ? isDark
+          ? "rgba(18,20,19,0.58)"
+          : "rgba(255,255,255,0.54)"
+        : palette.bg.elevated;
+    const sheetChrome =
+      Platform.OS === "ios"
+        ? {
+            shadowColor: isDark ? palette.bg.sunken : palette.text.primary,
+            shadowOpacity: isDark ? 0.18 : 0.08,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: -8 },
+          }
+        : {
+            elevation: 1,
+          };
 
-    function close() {
-      setVisible(false);
+    const notifyDismiss = useCallback(() => {
+      if (dismissNotifiedRef.current) return;
+      dismissNotifiedRef.current = true;
       onDismiss?.();
-    }
+    }, [onDismiss]);
+
+    const close = useCallback(() => {
+      if (!visible) return;
+      setVisible(false);
+      notifyDismiss();
+    }, [notifyDismiss, visible]);
 
     useImperativeHandle(ref, () => ({
-      present: () => setVisible(true),
+      present: () => {
+        dismissNotifiedRef.current = false;
+        setVisible(true);
+      },
       dismiss: close,
     }));
 
@@ -90,26 +127,68 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
         transparent
         visible={visible}
         onRequestClose={close}
-        onDismiss={onDismiss}
+        onDismiss={notifyDismiss}
       >
-        <View style={styles.root}>
+        <View style={[styles.root, { backgroundColor: "transparent" }]}>
           {backdropComponent ? (
-            backdropComponent({ style: styles.backdrop, onTouchEnd: close })
+            backdropComponent({
+              style: [
+                styles.backdrop,
+                { backgroundColor: sheetScrim },
+              ],
+              onTouchEnd: close,
+            })
           ) : (
-            <Pressable accessibilityRole="button" style={styles.backdrop} onPress={close} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close sheet"
+              style={[
+                styles.backdrop,
+                { backgroundColor: sheetScrim },
+              ]}
+              onPress={close}
+            />
           )}
           <View
             {...panResponder.panHandlers}
             style={[
               styles.sheet,
+              {
+                backgroundColor: sheetBackground,
+                borderColor: palette.border.subtle,
+                borderCurve: "continuous",
+                borderWidth: Platform.OS === "ios" ? 1 : 0,
+              },
+              sheetChrome,
+              Platform.OS === "android" ? styles.androidSheet : null,
               sheetHeight ? { height: sheetHeight } : null,
               maxDynamicContentSize ? { maxHeight: maxDynamicContentSize } : null,
               safePaddingBottom ? { paddingBottom: safePaddingBottom } : null,
               backgroundStyle,
             ]}
           >
-            <View pointerEvents="none" style={styles.sheetSurface} />
-            <View style={[styles.handle, handleIndicatorStyle]} />
+            {Platform.OS === "ios" ? (
+              <BlurView
+                pointerEvents="none"
+                intensity={isDark ? 34 : 38}
+                tint={isDark ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : null}
+            <View
+              pointerEvents="none"
+              style={[
+                styles.sheetSurface,
+                { backgroundColor: sheetOverlay },
+              ]}
+            />
+            <View
+              style={[
+                styles.handle,
+                { backgroundColor: palette.border.strong },
+                handleIndicatorStyle,
+              ]}
+            />
             {children}
           </View>
         </View>
@@ -142,26 +221,27 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.58)",
   },
   sheet: {
     maxHeight: "86%",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: legacyColors.bgElevated,
-    paddingTop: 10,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderBottomWidth: 0,
+    paddingTop: 12,
     overflow: "hidden",
+  },
+  androidSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
   sheetSurface: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: legacyColors.bgElevated,
   },
   handle: {
     alignSelf: "center",
-    width: 44,
-    height: 4,
+    width: 42,
+    height: 5,
     borderRadius: 999,
-    marginBottom: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    marginBottom: 10,
   },
 });

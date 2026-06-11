@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   GlassCard,
@@ -8,6 +8,7 @@ import {
   ListRow,
   MobileHeader,
   OtpInput,
+  ThemedSwitch,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -52,7 +53,10 @@ export default function AccountSettingsScreen() {
           </GlassCard>
           <GlassCard variant="compact" contentStyle={styles.toggleRow}>
             <Text style={[styles.title, { color: palette.text.primary }]}>Biometric unlock</Text>
-            <Switch value={biometricEnabled} onValueChange={(value) => void setBiometricEnabled(value)} />
+            <ThemedSwitch
+              value={biometricEnabled}
+              onValueChange={(value) => void setBiometricEnabled(value)}
+            />
           </GlassCard>
         </ScrollView>
       </ZookScreen>

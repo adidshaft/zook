@@ -19,9 +19,10 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout, spacing } from "@/lib/theme";
+import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
+  const { mode, palette } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, logout, session } = useAuth();
@@ -41,6 +42,11 @@ export default function TrainerHomeScreen() {
     .sort((a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime())
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
+  const isDark = mode === "dark";
+  const headerButtonStyle = {
+    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+    borderColor: palette.border.default,
+  };
 
   async function onRefresh() {
     setRefreshing(true);
@@ -59,19 +65,41 @@ export default function TrainerHomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <MobileHeader
             eyebrow="Trainer mode"
             title="Trainer home"
             subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
+            showProfileShortcut={false}
             trailing={
               <View style={styles.headerActions}>
-                <Pressable onPress={() => router.push("/profile")} accessibilityRole="button" accessibilityLabel="Open profile" style={styles.iconButton}>
+                <Pressable
+                  onPress={() => router.push("/profile")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open profile"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    headerButtonStyle,
+                    pressed ? styles.controlPressed : null,
+                  ]}
+                >
                   <IconBubble icon="person-circle-outline" tone="blue" size={30} />
                 </Pressable>
-                <Pressable onPress={() => void logout()} accessibilityRole="button" accessibilityLabel="Sign out" style={[styles.iconButton, styles.signOutButton]}>
+                <Pressable
+                  onPress={() => void logout()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    {
+                      backgroundColor: palette.surface.dangerSoft,
+                      borderColor: palette.feedback.danger,
+                    },
+                    pressed ? styles.controlPressed : null,
+                  ]}
+                >
                   <IconBubble icon="log-out-outline" tone="red" size={30} />
                 </Pressable>
               </View>
@@ -135,7 +163,11 @@ export default function TrainerHomeScreen() {
           <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
           <GlassCard variant="compact" contentStyle={styles.stack}>
             {clientsNeedingPlans ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push("/trainer/clients" as never)}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/trainer/clients" as never)}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
                 <ListRow
                   title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
                   subtitle="Open Plan work and assign a starter template before the next session."
@@ -152,7 +184,12 @@ export default function TrainerHomeScreen() {
           <GlassCard variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
               recentFeedback.map((feedback) => (
-                <Pressable key={`${feedback.clientId}-${feedback.assignmentId}`} onPress={() => router.push(`/trainer/clients/${feedback.clientId}` as never)} accessibilityRole="button">
+                <Pressable
+                  key={`${feedback.clientId}-${feedback.assignmentId}`}
+                  onPress={() => router.push(`/trainer/clients/${feedback.clientId}` as never)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                >
                   <ListRow
                     title={feedback.clientName}
                     subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
@@ -183,17 +220,19 @@ const styles = StyleSheet.create({
   headerActions: { alignItems: "center", flexDirection: "row", gap: 8 },
   iconButton: {
     alignItems: "center",
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
     borderRadius: 14,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 44,
     minWidth: 44,
   },
-  signOutButton: {
-    backgroundColor: "rgba(255,90,61,0.08)",
-    borderColor: "rgba(255,90,61,0.28)",
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
+  },
+  rowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   priorityClientCard: { gap: spacing.md },
   stack: { gap: 10 },

@@ -1,4 +1,5 @@
 import { rateLimitedError } from "./errors";
+import Redis from "ioredis";
 
 export interface RateLimitRule {
   limit: number;
@@ -13,7 +14,7 @@ export interface RateLimitStore {
   ): Promise<{ allowed: boolean; count: number; resetAt: number }>;
 }
 
-export type RateLimitProvider = "memory" | "upstash" | "disabled";
+export type RateLimitProvider = "memory" | "upstash" | "redis" | "disabled";
 
 export type RateLimitDiagnostics = {
   selectedProvider: RateLimitProvider;
@@ -144,14 +145,59 @@ export class UpstashRateLimitStore implements RateLimitStore {
   }
 }
 
+export class RedisRateLimitStore implements RateLimitStore {
+  readonly providerName = "redis" as const;
+
+  private readonly redis: Redis;
+
+  constructor(private readonly input: { url: string; namespace?: string }) {
+    this.redis = new Redis(input.url, {
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+    });
+  }
+
+  async consume(key: string, rule: RateLimitRule) {
+    const redisKey = `${this.input.namespace ?? "zook"}:rate-limit:${key}`;
+    const result = await this.redis
+      .multi()
+      .set(redisKey, "0", "PX", rule.windowMs, "NX")
+      .incr(redisKey)
+      .pttl(redisKey)
+      .exec();
+
+    if (!result) {
+      throw new Error("Rate limit provider transaction failed.");
+    }
+    const providerError = result.find(([error]) => error)?.[0];
+    if (providerError) {
+      throw new Error("Rate limit provider command failed.");
+    }
+
+    const count = Number(result[1]?.[1] ?? 0);
+    const ttl = Number(result[2]?.[1] ?? rule.windowMs);
+    const resetAt = Date.now() + Math.max(ttl > 0 ? ttl : rule.windowMs, 1);
+
+    return {
+      allowed: count <= rule.limit,
+      count,
+      resetAt,
+    };
+  }
+}
+
 function normalizeRateLimitProvider(value?: string | null): RateLimitProvider | "unsupported" {
   switch (value?.trim().toLowerCase() || "memory") {
     case "memory":
     case "local":
       return "memory";
     case "upstash":
-    case "redis":
       return "upstash";
+    case "redis":
+    case "elasticache":
+    case "valkey":
+      return "redis";
     case "disabled":
     case "off":
       return "disabled";
@@ -211,6 +257,17 @@ export function getRateLimitDiagnostics(
       mode: "distributed",
     };
   }
+  if (selectedProvider === "redis") {
+    const missingEnv = ["REDIS_URL"].filter((key) => !env[key]?.trim());
+    return {
+      selectedProvider,
+      activeProvider: missingEnv.length ? null : "redis",
+      status: missingEnv.length ? "misconfigured" : "ready",
+      configured: missingEnv.length === 0,
+      missingEnv,
+      mode: "distributed",
+    };
+  }
   return {
     selectedProvider,
     activeProvider: "memory",
@@ -243,6 +300,12 @@ export function getRateLimitStore() {
     globalForRateLimit.zookRateLimitStore = new UpstashRateLimitStore({
       url: process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "",
       token: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "",
+      ...(namespace ? { namespace } : {}),
+    });
+  } else if (diagnostics.status === "ready" && diagnostics.selectedProvider === "redis") {
+    const namespace = process.env.RATE_LIMIT_NAMESPACE?.trim();
+    globalForRateLimit.zookRateLimitStore = new RedisRateLimitStore({
+      url: process.env.REDIS_URL?.trim() ?? "",
       ...(namespace ? { namespace } : {}),
     });
   } else {

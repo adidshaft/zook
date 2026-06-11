@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
@@ -29,8 +29,10 @@ export function ActiveMembershipCard({
   pauseResumesAt: Date;
   subscription: MembershipRecord;
 }) {
+  const { palette } = useTheme();
   const guidance = membershipStatusGuidance(subscription.status, daysLeft);
   const guidanceTone = toneForStatus(subscription.status);
+  const isWarning = daysLeft !== null && daysLeft <= 7;
   const durationDays = subscription.plan?.durationDays ?? subscription.plan?.validityDays ?? null;
   const daysProgress =
     daysLeft !== null && durationDays
@@ -53,8 +55,10 @@ export function ActiveMembershipCard({
       <View style={styles.featuredHeader}>
         <IconBubble icon="card-outline" tone={toneForStatus(subscription.status)} size={40} />
         <View style={styles.featuredCopy}>
-          <Text style={styles.featuredTitle}>{subscription.plan?.name ?? "Membership"}</Text>
-          <Text style={styles.featuredOrg}>
+          <Text style={[styles.featuredTitle, { color: palette.text.primary }]}>
+            {subscription.plan?.name ?? "Membership"}
+          </Text>
+          <Text style={[styles.featuredOrg, { color: palette.text.secondary }]}>
             {subscription.organization?.name ?? activeOrganizationName ?? "Gym"}
           </Text>
         </View>
@@ -65,20 +69,32 @@ export function ActiveMembershipCard({
 
       {daysLeft !== null ? (
         <View style={styles.progressSection}>
-          <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressBar,
+              {
+                backgroundColor: palette.bg.sunken,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.progressFill,
+                { backgroundColor: isWarning ? palette.feedback.warning : palette.accent.base },
                 { width: `${daysProgress}%` },
-                daysLeft <= 7 ? styles.progressFillWarning : null,
               ]}
             />
           </View>
           <View style={styles.progressLabels}>
-            <Text style={[styles.progressText, daysLeft <= 7 ? styles.progressTextWarning : null]}>
+            <Text
+              style={[
+                styles.progressText,
+                { color: isWarning ? palette.feedback.warning : palette.accent.base },
+              ]}
+            >
               {daysLeftLabel}
             </Text>
-            <Text style={styles.progressTextMuted}>
+            <Text style={[styles.progressTextMuted, { color: palette.text.secondary }]}>
               {subscription.endsAt ? formatLongDate(subscription.endsAt) : ""}
             </Text>
           </View>
@@ -87,18 +103,40 @@ export function ActiveMembershipCard({
 
       {subscription.remainingVisits !== null && subscription.remainingVisits !== undefined ? (
         <View style={styles.membershipMetaLine}>
-          <Ionicons name="walk-outline" size={14} color={legacyColors.lime} />
-          <Text style={styles.membershipMetaText}>
+          <Ionicons name="walk-outline" size={14} color={palette.accent.base} />
+          <Text style={[styles.membershipMetaText, { color: palette.text.secondary }]}>
             {subscription.remainingVisits} visits remaining
           </Text>
         </View>
       ) : null}
 
-      <View style={styles.guidanceCard}>
+      <View
+        style={[
+          styles.guidanceCard,
+          {
+            borderColor:
+              guidanceTone === "amber"
+                ? palette.feedback.warning
+                : guidanceTone === "red"
+                  ? palette.feedback.danger
+                  : palette.border.subtle,
+            backgroundColor:
+              guidanceTone === "amber"
+                ? palette.surface.warningSoft
+                : guidanceTone === "red"
+                  ? palette.surface.dangerSoft
+                  : palette.surface.default,
+          },
+        ]}
+      >
         <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
         <View style={styles.guidanceCopy}>
-          <Text style={styles.guidanceTitle}>{guidance.title}</Text>
-          <Text style={styles.guidanceBody}>{guidance.body}</Text>
+          <Text style={[styles.guidanceTitle, { color: palette.text.primary }]}>
+            {guidance.title}
+          </Text>
+          <Text style={[styles.guidanceBody, { color: palette.text.secondary }]}>
+            {guidance.body}
+          </Text>
         </View>
       </View>
 
@@ -134,7 +172,9 @@ export function ActiveMembershipCard({
               month: "short",
             })}`}
       </ZookButton>
-      {actionStatus ? <Text style={styles.statusMessage}>{actionStatus}</Text> : null}
+      {actionStatus ? (
+        <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
+      ) : null}
     </GlassCard>
   );
 }
@@ -153,11 +193,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   featuredTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   featuredOrg: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   progressSection: {
@@ -167,15 +205,10 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: legacyColors.lime,
-  },
-  progressFillWarning: {
-    backgroundColor: legacyColors.amber,
   },
   progressLabels: {
     flexDirection: "row",
@@ -183,14 +216,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressText: {
-    color: legacyColors.lime,
     ...typography.small,
   },
-  progressTextWarning: {
-    color: legacyColors.amber,
-  },
   progressTextMuted: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   membershipMetaLine: {
@@ -199,15 +227,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   membershipMetaText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   guidanceCard: {
     minHeight: 72,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(0,0,0,0.18)",
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
@@ -218,18 +243,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   guidanceTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   guidanceBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   pausePicker: {
     marginTop: -spacing.xs,
   },
   statusMessage: {
-    color: legacyColors.lime,
     ...typography.small,
   },
 });

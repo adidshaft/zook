@@ -14,11 +14,12 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, session } = useAuth();
+  const { palette } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
   const plannedClients = (clientsQuery.data?.clients ?? []).filter(
@@ -42,7 +43,14 @@ export default function TrainerPlansScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
+            />
+          }
         >
           <MobileHeader
             eyebrow="Trainer mode"

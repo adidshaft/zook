@@ -26,7 +26,7 @@ import {
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 function exerciseNameForTemplate(templateId: PlanTemplateId) {
@@ -51,6 +51,7 @@ export default function TrainerClientPlanScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
   const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
@@ -217,7 +218,20 @@ export default function TrainerClientPlanScreen() {
           <MobileHeader
             title="Client Detail"
             subtitle={clientName}
-            leading={<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))} accessibilityRole="button" accessibilityLabel="Back to clients" style={styles.iconButton}><Text style={styles.backIcon}>‹</Text></Pressable>}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
+                accessibilityRole="button"
+                accessibilityLabel="Back to clients"
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
+              >
+                <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
+              </Pressable>
+            }
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
@@ -228,9 +242,22 @@ export default function TrainerClientPlanScreen() {
               {planTemplates.map((template) => {
                 const selected = template.id === selectedTemplate;
                 return (
-                  <Pressable key={template.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setSelectedTemplate(template.id)} style={[styles.templateChip, selected ? styles.templateChipSelected : null]}>
-                    <Ionicons name={template.icon} size={15} color={selected ? legacyColors.lime : legacyColors.muted} />
-                    <Text style={[styles.templateChipText, selected ? styles.templateChipTextSelected : null]}>{template.label}</Text>
+                  <Pressable
+                    key={template.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setSelectedTemplate(template.id)}
+                    style={({ pressed }) => [
+                      styles.templateChip,
+                      {
+                        backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                        borderColor: selected ? palette.accent.base : palette.border.default,
+                      },
+                      pressed ? styles.controlPressed : null,
+                    ]}
+                  >
+                    <Ionicons name={template.icon} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
+                    <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.label}</Text>
                   </Pressable>
                 );
               })}
@@ -252,11 +279,11 @@ export default function TrainerClientPlanScreen() {
             <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
               <View style={styles.attentionHeader}>
                 <IconBubble icon="reader-outline" tone="amber" />
-                <Text style={styles.cardBody}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
+                <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
               </View>
             </GlassCard>
           ) : null}
-          {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{status}</Text></GlassCard> : null}
+          {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></GlassCard> : null}
           <GlassCard contentStyle={styles.stack}>
             <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
@@ -268,7 +295,7 @@ export default function TrainerClientPlanScreen() {
               Publish 4-meal diet
             </SecondaryButton>
           </GlassCard>
-          {dietStatus ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{dietStatus}</Text></GlassCard> : null}
+          {dietStatus ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></GlassCard> : null}
           <AiDraftPanel clientId={id} />
         </ScrollView>
       </ZookScreen>
@@ -278,19 +305,18 @@ export default function TrainerClientPlanScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+  backIcon: { fontSize: 26, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  templateChip: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderColor: legacyColors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 36, paddingHorizontal: 11 },
-  templateChipSelected: { backgroundColor: "rgba(185,244,85,0.13)", borderColor: legacyColors.lime },
-  templateChipText: { color: legacyColors.muted, ...typography.caption },
-  templateChipTextSelected: { color: legacyColors.lime },
+  templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },
+  templateChipText: { ...typography.caption },
   actionRow: { flexDirection: "row", gap: spacing.sm },
   actionHalf: { flex: 1 },
   stack: { gap: 10 },
   attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   draftPromptContent: { gap: 12 },
-  cardBody: { color: legacyColors.muted, ...typography.body },
+  cardBody: { ...typography.body },
   statusContent: { padding: 14 },
-  statusText: { color: legacyColors.lime, ...typography.bodyStrong },
+  statusText: { ...typography.bodyStrong },
 });
