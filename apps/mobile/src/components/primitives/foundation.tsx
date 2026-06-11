@@ -46,6 +46,7 @@ import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
 import { layout, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
+import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
@@ -75,7 +76,7 @@ const fallbackColors = {
   text: "#FFFFFF",
   muted: "#D4DDD0",
   subtle: "#99A595",
-  lime: "#B9F455",
+  lime: darkPalette.accent.base,
   limeBorder: "rgba(185,244,85,0.26)",
   amber: "#F2C94C",
   red: "#FF5A3D",

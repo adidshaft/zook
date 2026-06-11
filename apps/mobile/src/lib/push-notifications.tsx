@@ -21,10 +21,11 @@ import { mergeNotificationPreferences } from "./notification-preferences";
 import { mapNotificationPayloadToHref } from "./notification-routing";
 import { useMyNotificationPreferences } from "./domains";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
+import { darkPalette } from "@zook/tokens";
 
 const INSTALLATION_ID_STORAGE_KEY = "zook_mobile_installation_id";
 const REGISTERED_PUSH_TOKEN_STORAGE_KEY = "zook_registered_push_token";
-const notificationLightColor = "#B9F455";
+const notificationLightColor = darkPalette.accent.base;
 const isExpoGoEnvironment = Constants.executionEnvironment === "storeClient";
 const NativeNotifications = (() => {
   if (isExpoGoEnvironment) {

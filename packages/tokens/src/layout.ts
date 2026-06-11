@@ -1,0 +1,16 @@
+export const layout = {
+  mobileWidth: 390,
+  mobileHeight: 844,
+  screenPadding: 20,
+  contentWidth: 370,
+  topSectionGap: 24,
+  cardGap: 12,
+  cardPadding: 18,
+  formFieldGap: 12,
+  sectionGap: 24,
+  bottomNavHeight: 72,
+  bottomNavContentPadding: 120,
+  bottomNavHorizontalMargin: 18,
+  stickyActionHeight: 108,
+  demoStripHeight: 28,
+};
