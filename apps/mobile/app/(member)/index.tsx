@@ -1,7 +1,5 @@
 import { Stack } from "expo-router";
-import * as Haptics from "expo-haptics";
-import * as Location from "expo-location";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -10,7 +8,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
 
 import {
   Card,
@@ -26,24 +23,10 @@ import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
-import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains/member";
-import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { layout, spacing } from "@/lib/theme";
-import { showToast } from "@/lib/toast";
 import { useTheme } from "@/lib/theme/index";
-
-const DEFAULT_GEOFENCE_RADIUS_METERS = 150;
-const GEOFENCE_EXIT_READINGS_REQUIRED = 2;
-const GEOFENCE_POLL_INTERVAL_MS = 30_000;
-const configuredGeofenceRadiusMeters = Number(
-  process.env.EXPO_PUBLIC_ATTENDANCE_GEOFENCE_METERS ?? DEFAULT_GEOFENCE_RADIUS_METERS,
-);
-const GEOFENCE_RADIUS_METERS = Number.isFinite(configuredGeofenceRadiusMeters)
-  ? configuredGeofenceRadiusMeters
-  : DEFAULT_GEOFENCE_RADIUS_METERS;
-
-type ActiveCheckIn = NonNullable<MemberHomeData["activeCheckIn"]>;
 
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -61,22 +44,6 @@ function secondsSince(value: string) {
     return 0;
   }
   return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-}
-
-function distanceMeters(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-) {
-  const earthRadiusMeters = 6371000;
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-  const lat1 = toRadians(a.latitude);
-  const lat2 = toRadians(b.latitude);
-  const deltaLat = toRadians(b.latitude - a.latitude);
-  const deltaLng = toRadians(b.longitude - a.longitude);
-  const haversine =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
-  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
 function ActiveCheckInCard({
@@ -128,182 +95,13 @@ function ActiveCheckInCard({
 }
 
 export default function HomeScreen() {
-  const { activeOrgId, session, token } = useAuth();
+  const { session } = useAuth();
   const { palette } = useTheme();
-  const queryClient = useQueryClient();
   const homeQuery = useMemberHome();
   const home = homeQuery.data;
   const state = deriveHomeState(home);
   const firstName = session?.user.name?.trim().split(/\s+/)[0] || "Member";
-  const activeCheckIn = home?.activeCheckIn ?? null;
-  const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const checkoutStartedRef = useRef<string | null>(null);
-  const geofenceTarget = useMemo(() => {
-    if (
-      activeCheckIn?.branchLatitude == null ||
-      activeCheckIn.branchLongitude == null ||
-      activeCheckIn.checkedOutAt
-    ) {
-      return null;
-    }
-    return {
-      latitude: activeCheckIn.branchLatitude,
-      longitude: activeCheckIn.branchLongitude,
-    };
-  }, [activeCheckIn]);
-
-  const applyCheckoutToCache = useCallback(
-    (attendance: ActiveCheckIn) => {
-      const mergeHome = (current?: MemberHomeData) => {
-        if (!current) {
-          return current;
-        }
-        return {
-          ...current,
-          activeCheckIn: null,
-          recentAttendance: current.recentAttendance.map((record) =>
-            record.id === attendance.id
-              ? {
-                  ...record,
-                  checkedOutAt: attendance.checkedOutAt,
-                  checkoutReason: attendance.checkoutReason,
-                  durationSeconds: attendance.durationSeconds,
-                }
-              : record,
-          ),
-        };
-      };
-      queryClient.setQueryData<MemberHomeData>(["me", "home", activeOrgId ?? null], mergeHome);
-      queryClient.setQueryData<{ home: MemberHomeData }>(
-        ["me", "dashboard", activeOrgId ?? null],
-        (current) =>
-          current ? { ...current, home: mergeHome(current.home) ?? current.home } : current,
-      );
-    },
-    [activeOrgId, queryClient],
-  );
-
-  const stopActiveCheckIn = useCallback(
-    async (
-      reason: "manual" | "geofence" = "manual",
-      coordinates?: { latitude: number; longitude: number },
-    ) => {
-      if (!token || !activeCheckIn || checkoutStartedRef.current === activeCheckIn.id) {
-        return;
-      }
-      checkoutStartedRef.current = activeCheckIn.id;
-      setCheckoutBusy(true);
-      try {
-        const result = await attendanceApi.checkout<{ attendance: ActiveCheckIn }>({
-          token,
-          orgId: activeOrgId ?? undefined,
-          attendanceRecordId: activeCheckIn.id,
-          body: {
-            reason,
-            ...(coordinates
-              ? { latitude: coordinates.latitude, longitude: coordinates.longitude }
-              : {}),
-          },
-        });
-        applyCheckoutToCache(result.attendance);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
-          queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
-          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-        ]);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToast({
-          tone: "success",
-          title: reason === "geofence" ? "Checked out automatically" : "Session stopped",
-          message: "Your gym time was recorded.",
-        });
-      } catch (error) {
-        checkoutStartedRef.current = null;
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        showToast({
-          tone: "danger",
-          title: "Could not check out",
-          message: error instanceof Error ? error.message : "Try again in a moment.",
-        });
-      } finally {
-        setCheckoutBusy(false);
-      }
-    },
-    [activeCheckIn, activeOrgId, applyCheckoutToCache, queryClient, token],
-  );
-
-  useEffect(() => {
-    checkoutStartedRef.current = null;
-  }, [activeCheckIn?.id]);
-
-  useEffect(() => {
-    if (!activeCheckIn || !geofenceTarget || !token) {
-      return;
-    }
-    let subscription: Location.LocationSubscription | null = null;
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
-    let cancelled = false;
-    let outsideReadings = 0;
-    let checkoutTriggered = false;
-
-    const handlePosition = (position: Location.LocationObject) => {
-      if (cancelled || checkoutTriggered) {
-        return;
-      }
-      const current = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      };
-      const distance = distanceMeters(current, geofenceTarget);
-      outsideReadings = distance > GEOFENCE_RADIUS_METERS ? outsideReadings + 1 : 0;
-      if (outsideReadings >= GEOFENCE_EXIT_READINGS_REQUIRED) {
-        checkoutTriggered = true;
-        subscription?.remove();
-        if (pollTimer) {
-          clearInterval(pollTimer);
-        }
-        void stopActiveCheckIn("geofence", current);
-      }
-    };
-
-    const pollLocation = async () => {
-      try {
-        handlePosition(
-          await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          }),
-        );
-      } catch {
-        // watchPositionAsync remains the primary signal; polling is best-effort.
-      }
-    };
-
-    void (async () => {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (cancelled || permission.status !== "granted") {
-        return;
-      }
-      void pollLocation();
-      pollTimer = setInterval(() => {
-        void pollLocation();
-      }, GEOFENCE_POLL_INTERVAL_MS);
-      subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 50,
-          timeInterval: GEOFENCE_POLL_INTERVAL_MS,
-        },
-        handlePosition,
-      );
-    })();
-    return () => {
-      cancelled = true;
-      subscription?.remove();
-      if (pollTimer) {
-        clearInterval(pollTimer);
-      }
-    };
-  }, [activeCheckIn, geofenceTarget, stopActiveCheckIn, token]);
+  const { activeCheckIn, checkoutBusy, stopActiveCheckIn } = useManualCheckout();
 
   return (
     <>
