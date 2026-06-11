@@ -8,7 +8,6 @@ const sections = [
   { href: "/settings/account", title: "Account", subtitle: "Name, phone, email, and biometric unlock", icon: "person-outline" },
   { href: "/settings/appearance", title: "Appearance", subtitle: "Theme and default role", icon: "contrast-outline" },
   { href: "/settings/notifications", title: "Notifications", subtitle: "Push categories and reminders", icon: "notifications-outline" },
-  { href: "/settings/language", title: "Language", subtitle: "App language preference", icon: "language-outline" },
   { href: "/settings/privacy", title: "Privacy", subtitle: "Data export and account deletion", icon: "lock-closed-outline" },
   { href: "/settings/support", title: "Help & support", subtitle: "Contact, legal, and app version", icon: "help-circle-outline" },
 ] as const;
