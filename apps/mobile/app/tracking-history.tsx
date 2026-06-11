@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, GlassCard, MobileHeader, QueryErrorState, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, MobileHeader, QueryErrorState, ZookScreen } from "@/components/primitives";
 import { WorkoutLogCard } from "@/components/tracking";
 import { useMyBodyProgress, useMyTrackingWorkouts } from "@/lib/domains";
 import { workoutToEntry } from "@/lib/tracking-view";
@@ -26,7 +26,7 @@ export default function TrackingHistoryScreen() {
           {workoutsQuery.isError ? <QueryErrorState error={workoutsQuery.error} onRetry={() => void workoutsQuery.refetch()} /> : null}
           {bodyProgressQuery.isError ? <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} /> : null}
           <View style={styles.stack}>
-            <GlassCard variant="compact" contentStyle={styles.bodyCard}>
+            <Card variant="compact" contentStyle={styles.bodyCard}>
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Body progress</Text>
               {latest ? (
                 <>
@@ -58,14 +58,14 @@ export default function TrackingHistoryScreen() {
               ) : (
                 <EmptyState title="No body measurements" body="Weight and waist trends will appear after your first body log." />
               )}
-            </GlassCard>
+            </Card>
             {workouts.map((workout, index) => (
               <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} testID={index === 0 ? "tracking-history-workout-first" : undefined} />
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
-              <GlassCard variant="compact">
+              <Card variant="compact">
                 <EmptyState title="No workouts yet" body="Saved workouts will show here." />
-              </GlassCard>
+              </Card>
             ) : null}
           </View>
         </ScrollView>

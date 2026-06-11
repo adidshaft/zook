@@ -24,7 +24,7 @@ import {
   BranchSelectorChip,
   EmptyState,
   ErrorState,
-  GlassCard,
+  Card,
   ListRow,
   MobileHeader,
   ProductCard,
@@ -565,7 +565,7 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <GlassCard variant="success" contentStyle={styles.pickupContent}>
+        <Card variant="success" contentStyle={styles.pickupContent}>
           <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
           <Pressable
             onPress={async () => {
@@ -589,15 +589,15 @@ export default function Shop() {
             <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
-        </GlassCard>
+        </Card>
         {canShowPickupQr ? (
-          <GlassCard variant="compact" contentStyle={styles.pickupQrContent}>
+          <Card variant="compact" contentStyle={styles.pickupQrContent}>
             <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>Show this to collect your order</Text>
             <PickupQrCode value={pickupQrPayload(order)} />
             <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
-          </GlassCard>
+          </Card>
         ) : null}
-        <GlassCard variant="compact" contentStyle={styles.stack}>
+        <Card variant="compact" contentStyle={styles.stack}>
           {(order.items.length
             ? order.items
             : cartItems.map((item) => ({
@@ -618,7 +618,7 @@ export default function Shop() {
               />
             );
           })}
-        </GlassCard>
+        </Card>
         <ZookButton
           testID="shop-back-to-shop"
           onPress={() => {
@@ -662,7 +662,7 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <GlassCard contentStyle={styles.checkoutContent}>
+        <Card contentStyle={styles.checkoutContent}>
           <ListRow
             title={t("shop.paySecurely")}
             subtitle={t("shop.confirmOrder")}
@@ -682,7 +682,7 @@ export default function Shop() {
             <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
             <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(order.totalPaise)}</Text>
           </View>
-        </GlassCard>
+        </Card>
       </ShopShell>
     );
   }
@@ -719,7 +719,7 @@ export default function Shop() {
           }
           showProfileShortcut={false}
         />
-        <GlassCard variant="compact" contentStyle={styles.stack}>
+        <Card variant="compact" contentStyle={styles.stack}>
           {cartItems.length ? (
             cartItems.map((item) => (
               <ListRow
@@ -777,11 +777,11 @@ export default function Shop() {
           ) : (
             <EmptyState title={t("shop.yourCartEmpty")} body={t("shop.cartEmptyBody")} />
           )}
-        </GlassCard>
-        <GlassCard variant="compact" contentStyle={styles.totalRow}>
+        </Card>
+        <Card variant="compact" contentStyle={styles.totalRow}>
           <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.subtotal")}</Text>
           <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
-        </GlassCard>
+        </Card>
       </ShopShell>
     );
   }
@@ -957,7 +957,7 @@ export default function Shop() {
             />
 
             {productsQuery.isError ? (
-              <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
+              <Card variant="danger" contentStyle={styles.stateCardContent}>
                 <ErrorState
                   title={t("shop.shopCouldNotLoad")}
                   body={t("shop.shopCouldNotLoadBody")}
@@ -971,7 +971,7 @@ export default function Shop() {
                     </ZookButton>
                   }
                 />
-              </GlassCard>
+              </Card>
             ) : productsQuery.isLoading || !cartHydrated ? (
               <ShopSkeleton />
             ) : null}
@@ -999,7 +999,7 @@ function BrowserReturnCard({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
+    <Card variant="compact" contentStyle={styles.browserReturnContent}>
       <Ionicons name="open-outline" size={22} color={palette.feedback.warning} />
       <View style={styles.browserReturnCopy}>
         <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>
@@ -1017,7 +1017,7 @@ function BrowserReturnCard({
       >
         {checking ? "Checking..." : "Check status"}
       </ZookButton>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -1025,7 +1025,7 @@ function ShopSkeleton() {
   return (
     <View style={styles.productGrid}>
       {[0, 1, 2, 3].map((item) => (
-        <GlassCard
+        <Card
           key={item}
           variant="compact"
           contentStyle={styles.productSkeleton}
@@ -1038,7 +1038,7 @@ function ShopSkeleton() {
             <Skeleton width={58} height={18} borderRadius={9} />
             <Skeleton width={64} height={30} borderRadius={15} />
           </View>
-        </GlassCard>
+        </Card>
       ))}
     </View>
   );

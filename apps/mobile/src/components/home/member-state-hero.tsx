@@ -2,7 +2,7 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Circle } from "react-native-svg";
-import { GlassCard, ZookButton } from "@/components/primitives";
+import { Card, ZookButton } from "@/components/primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 function formatRenewalDate(value?: string | null) {
@@ -85,7 +85,7 @@ export function MemberStateHero({
     : baseEncouragement;
 
   return (
-    <GlassCard
+    <Card
       variant={expired ? "warning" : "selected"}
       glow={Platform.OS !== "android" && !expired}
       contentStyle={styles.premiumMemberCard}
@@ -204,7 +204,7 @@ export function MemberStateHero({
           ) : null}
         </View>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

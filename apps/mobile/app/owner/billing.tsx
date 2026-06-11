@@ -5,7 +5,7 @@ import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-na
 
 import {
   EmptyState,
-  GlassCard,
+  Card,
   ListRow,
   QueryErrorState,
   StatusChip,
@@ -155,7 +155,7 @@ export default function OwnerBillingScreen() {
 
           {data ? (
             <>
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
@@ -185,9 +185,9 @@ export default function OwnerBillingScreen() {
                   subtitle={`${data.activeMemberCount} members currently count toward SaaS limits`}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Mandate</Text>
@@ -214,9 +214,9 @@ export default function OwnerBillingScreen() {
                 >
                   {mandate?.checkoutUrl ? "Resume setup" : "Set up mandate"}
                 </ZookButton>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Upgrade plan</Text>
@@ -260,9 +260,9 @@ export default function OwnerBillingScreen() {
                     </View>
                   );
                 })}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Current plan limits</Text>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
                   Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.
@@ -300,9 +300,9 @@ export default function OwnerBillingScreen() {
                   Reports: {titleCaseFromCode(data.entitlements?.reports)} · Support:{" "}
                   {titleCaseFromCode(data.entitlements?.support)}
                 </Text>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Platform referral</Text>
                 <Text selectable style={[styles.referralCode, { color: palette.text.primary }]}>
                   {data.platformReferral?.code ?? "Not available"}
@@ -310,7 +310,7 @@ export default function OwnerBillingScreen() {
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
                   {data.platformReferral?.referredCount ?? 0} gym referral partnerships recorded.
                 </Text>
-              </GlassCard>
+              </Card>
 
               {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd ? (
                 <ZookButton

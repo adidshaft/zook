@@ -1,7 +1,7 @@
 import { Stack, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { GlassCard, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
 import { layout, spacing } from "@/lib/theme";
 
 const sections = [
@@ -20,7 +20,7 @@ export default function SettingsIndexScreen() {
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
               <Pressable
                 key={section.href}
@@ -32,7 +32,7 @@ export default function SettingsIndexScreen() {
                 <ListRow title={section.title} subtitle={section.subtitle} icon={section.icon} />
               </Pressable>
             ))}
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

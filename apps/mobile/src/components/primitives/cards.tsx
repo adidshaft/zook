@@ -5,7 +5,6 @@ export {
   ConfirmationRing,
   EntryCodeCard,
   FieldCard,
-  GlassCard,
   GlassPanel,
   KPIBox,
   MetricCard,

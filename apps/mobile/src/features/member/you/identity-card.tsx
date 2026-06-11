@@ -1,7 +1,7 @@
 import type { AuthOrganizationSummary, AuthSessionUser } from "@zook/core";
 import { StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, ZookButton } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
@@ -16,7 +16,7 @@ export function IdentityCard({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="selected" contentStyle={styles.card}>
+    <Card variant="selected" contentStyle={styles.card}>
       <IconBubble icon="person-outline" tone="lime" size={52} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
@@ -29,7 +29,7 @@ export function IdentityCard({
       <ZookButton onPress={onEdit} variant="secondary" size="sm">
         Edit
       </ZookButton>
-    </GlassCard>
+    </Card>
   );
 }
 

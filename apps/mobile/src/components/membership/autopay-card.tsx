@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { isAutopayLive } from "./helpers";
@@ -21,7 +21,7 @@ export function AutopayCard({
   const { palette } = useTheme();
   const live = isAutopayLive(subscription.autopay);
   return (
-    <GlassCard variant="compact" contentStyle={styles.autopayContent}>
+    <Card variant="compact" contentStyle={styles.autopayContent}>
       <View style={styles.autopayHeader}>
         <IconBubble icon="repeat-outline" tone={live ? "lime" : "blue"} size={36} />
         <View style={styles.autopayCopy}>
@@ -61,7 +61,7 @@ export function AutopayCard({
           {autopayBusy ? "Starting..." : "Enable autopay"}
         </ZookButton>
       )}
-    </GlassCard>
+    </Card>
   );
 }
 

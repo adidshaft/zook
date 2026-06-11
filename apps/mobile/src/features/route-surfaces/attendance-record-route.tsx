@@ -6,7 +6,7 @@ import { showToast } from "@/lib/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -127,11 +127,11 @@ export default function AttendanceResultScreen() {
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
             <MobileHeader title="Attendance" />
-            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+            <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
               <Skeleton width="38%" height={14} borderRadius={7} />
-            </GlassCard>
+            </Card>
           </ScrollView>
         </ZookScreen>
       </>
@@ -149,7 +149,7 @@ export default function AttendanceResultScreen() {
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
             <MobileHeader title="Attendance" />
-            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+            <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
               <ZookButton
@@ -159,7 +159,7 @@ export default function AttendanceResultScreen() {
               >
                 Back
               </ZookButton>
-            </GlassCard>
+            </Card>
           </ScrollView>
         </ZookScreen>
       </>
@@ -238,18 +238,18 @@ export default function AttendanceResultScreen() {
           </View>
 
           {approved && warning ? (
-            <GlassCard contentStyle={styles.warningContent}>
+            <Card contentStyle={styles.warningContent}>
               <IconBubble icon="person-circle-outline" tone="amber" size={42} />
               <View style={styles.warningCopy}>
                 <Text style={[styles.warningTitle, { color: palette.text.primary }]}>Profile photo recommended</Text>
                 <Text style={[styles.warningBody, { color: palette.text.secondary }]}>{warning}</Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {pending ? (
             <>
-              <GlassCard variant="warning" contentStyle={styles.pendingCodeContent}>
+              <Card variant="warning" contentStyle={styles.pendingCodeContent}>
                 <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                 {code ? (
                   <>
@@ -280,9 +280,9 @@ export default function AttendanceResultScreen() {
                     Entry code unavailable — please ask reception to check you in manually.
                   </Text>
                 )}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.reasonContent}>
+              <Card contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
                   <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Why confirmation?</Text>
@@ -291,7 +291,7 @@ export default function AttendanceResultScreen() {
                     approved.
                   </Text>
                 </View>
-              </GlassCard>
+              </Card>
 
               <ZookButton
                 onPress={() => void attendanceQuery.refetch()}
@@ -306,7 +306,7 @@ export default function AttendanceResultScreen() {
             </>
           ) : blocked ? (
             <>
-              <GlassCard variant="warning" contentStyle={styles.reasonContent}>
+              <Card variant="warning" contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
                   <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Check-in not approved</Text>
@@ -314,14 +314,14 @@ export default function AttendanceResultScreen() {
                     {record.reason || "The desk can help you complete this check-in."}
                   </Text>
                 </View>
-              </GlassCard>
+              </Card>
               <ZookButton href="/scan" variant="secondary" icon="qr-code-outline">
                 Try again
               </ZookButton>
             </>
           ) : (
             <>
-              <GlassCard glow contentStyle={styles.approvedCodeContent}>
+              <Card glow contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
                   <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                   {code ? (
@@ -360,9 +360,9 @@ export default function AttendanceResultScreen() {
                   icon="checkmark-circle-outline"
                   highlight
                 />
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.nextContent}>
+              <Card contentStyle={styles.nextContent}>
                 <IconBubble icon="barbell-outline" tone="lime" size={44} />
                 <View style={styles.nextCopy}>
                   <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
@@ -382,7 +382,7 @@ export default function AttendanceResultScreen() {
                     </ZookChip>
                   </Pressable>
                 </Link>
-              </GlassCard>
+              </Card>
               <ZookButton onPress={() => router.replace("/")} icon="home-outline">
                 Done
               </ZookButton>

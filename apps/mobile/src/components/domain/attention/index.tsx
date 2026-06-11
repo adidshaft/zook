@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-import { EmptyState, GlassCard, SectionHeader } from "@/components/primitives";
+import { EmptyState, Card, SectionHeader } from "@/components/primitives";
 import { spacing } from "@/lib/theme";
 import { AttentionListItem } from "./item";
 import type { AttentionCardProps } from "./types";
@@ -16,13 +16,13 @@ export function AttentionCard({
   return (
     <>
       <SectionHeader title={title} />
-      <GlassCard contentStyle={styles.stack}>
+      <Card contentStyle={styles.stack}>
         {items.length ? (
           items.map((item) => <AttentionListItem key={item.id} item={item} />)
         ) : (
           <EmptyState title={emptyState.title} body={emptyState.subtitle ?? ""} />
         )}
-      </GlassCard>
+      </Card>
     </>
   );
 }

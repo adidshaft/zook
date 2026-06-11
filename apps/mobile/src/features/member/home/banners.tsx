@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, ZookButton } from "@/components/primitives";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { spacing, typography, useTheme } from "@/lib/theme";
@@ -94,7 +94,7 @@ function Banner({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="compact" contentStyle={styles.banner}>
+    <Card variant="compact" contentStyle={styles.banner}>
       <IconBubble icon={icon} tone="neutral" size={34} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
@@ -124,7 +124,7 @@ function Banner({
           <Ionicons name="close" size={16} color={palette.text.tertiary} />
         </Pressable>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -55,7 +55,7 @@ export default function TrainerClientSessionsScreen() {
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="sessions" onChange={selectTab} />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <ListRow
               title="Adherence"
               subtitle={averageCompletion === null ? "Waiting for member feedback and workout logs." : `${averageCompletion}% average completion across recent plan feedback.`}
@@ -70,7 +70,7 @@ export default function TrainerClientSessionsScreen() {
               <ListRow title="Plan feedback" subtitle="No member feedback yet." trailing={<StatusChip status="Waiting" tone="neutral" />} />
             )}
             <ListRow title="Plans" subtitle={planCountLabel(activePlans)} trailing={<StatusChip status="Active" tone="lime" />} />
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

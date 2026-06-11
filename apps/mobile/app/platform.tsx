@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -113,7 +113,7 @@ export default function PlatformMobile() {
             Open Web Dashboard
           </ZookButton>
 
-          <GlassCard contentStyle={styles.heroContent}>
+          <Card contentStyle={styles.heroContent}>
             <IconBubble icon="shield-checkmark-outline" tone="amber" size={52} />
             <View style={styles.heroCopy}>
               <Text style={[styles.title, { color: palette.text.primary }]}>SaaS subscriptions are visible on mobile.</Text>
@@ -122,9 +122,9 @@ export default function PlatformMobile() {
                 credits, notes, and policy changes still open in the web console for full review.
               </Text>
             </View>
-          </GlassCard>
+          </Card>
 
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>SaaS health</Text>
               {subscriptionsQuery.isFetching ? (
@@ -160,9 +160,9 @@ export default function PlatformMobile() {
             ) : (
               <Text style={[styles.body, { color: palette.text.secondary }]}>Loading subscription health...</Text>
             )}
-          </GlassCard>
+          </Card>
 
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
               <StatusChip status={`${rows.length} shown`} tone="amber" />
@@ -187,7 +187,7 @@ export default function PlatformMobile() {
                 }
               />
             ))}
-          </GlassCard>
+          </Card>
 
           <SecondaryButton testID="platform-sign-out" icon="log-out-outline" onPress={() => void logout()}>
             Sign out

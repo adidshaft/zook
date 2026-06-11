@@ -13,7 +13,7 @@ import { InputAccessoryView, Keyboard, Platform, Pressable, RefreshControl, Styl
 import {
   EmptyState,
   ExerciseRow,
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   ProgressBar,
@@ -123,7 +123,7 @@ export default function Plans() {
           />
 
           {selectedAssignment ? (
-            <GlassCard variant="selected" glow contentStyle={styles.activePlanContent}>
+            <Card variant="selected" glow contentStyle={styles.activePlanContent}>
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
                   <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>
@@ -169,7 +169,7 @@ export default function Plans() {
                   View
                 </ZookButton>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           <SegmentedControl options={filters} value={filter} onChange={setFilter} />
@@ -183,22 +183,22 @@ export default function Plans() {
             ) : null}
             {plansQuery.isError ? (
               <View style={styles.fullWidth}>
-                <GlassCard variant="compact">
+                <Card variant="compact">
                   <QueryErrorState
                     error={plansQuery.error}
                     onRetry={() => void plansQuery.refetch()}
                   />
-                </GlassCard>
+                </Card>
               </View>
             ) : null}
             {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
-              <GlassCard variant="compact" style={styles.emptyPlanCard}>
+              <Card variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
                   icon="clipboard-outline"
                   title="No plan assigned"
                   body="Your trainer will create and assign a workout plan for you."
                 />
-              </GlassCard>
+              </Card>
             ) : null}
             {filteredPlans.map((assignment, index) => (
               <Pressable
@@ -545,7 +545,7 @@ export function PlanDetailScreen() {
               </Text>
             ) : null}
 
-            <GlassCard variant="selected" contentStyle={styles.progressContent}>
+            <Card variant="selected" contentStyle={styles.progressContent}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressCopy}>
                   <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
@@ -560,7 +560,7 @@ export function PlanDetailScreen() {
                 </Text>
               </View>
               <ProgressBar value={progress} label="Today" />
-            </GlassCard>
+            </Card>
 
             <SectionHeader title="Exercises" subtitle="Assigned by your coach" />
             <View style={styles.stack}>
@@ -568,20 +568,20 @@ export function PlanDetailScreen() {
                 <ExerciseListSkeleton />
               ) : null}
               {exercisesQuery.isError ? (
-                <GlassCard variant="compact">
+                <Card variant="compact">
                   <QueryErrorState
                     error={exercisesQuery.error}
                     onRetry={() => void exercisesQuery.refetch()}
                   />
-                </GlassCard>
+                </Card>
               ) : null}
               {!exercisesQuery.isLoading && !exercisesQuery.isError && !exercises.length ? (
-                <GlassCard variant="compact">
+                <Card variant="compact">
                   <EmptyState
                     title="No exercises yet"
                     body="Assigned exercise details will appear here once your coach publishes them."
                   />
-                </GlassCard>
+                </Card>
               ) : null}
               {exercises.map((exercise) => (
                 <ExerciseRow

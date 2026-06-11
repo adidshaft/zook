@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   Skeleton,
 } from "@/components/primitives";
@@ -27,7 +27,7 @@ export function ReferralCard({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="compact" contentStyle={styles.referralContent}>
+    <Card variant="compact" contentStyle={styles.referralContent}>
       <IconBubble icon="gift-outline" tone="amber" size={38} />
       <View style={styles.referralCopy}>
         <Text style={[styles.secondaryActionTitle, { color: palette.text.primary }]}>Refer a friend</Text>
@@ -63,7 +63,7 @@ export function ReferralCard({
       >
         <Ionicons name="share-outline" size={18} color={palette.text.onAccent} />
       </Pressable>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -84,7 +84,7 @@ export function TodayPlanCard({
         accessibilityLabel="Open today's plan"
         style={({ pressed }) => (pressed ? styles.cardPressed : null)}
       >
-        <GlassCard variant="compact" contentStyle={styles.todayPlanContent}>
+        <Card variant="compact" contentStyle={styles.todayPlanContent}>
           <View style={styles.todayPlanHeader}>
             <Ionicons name="clipboard-outline" size={22} color={palette.accent.base} />
             <Text style={[styles.todayPlanEyebrow, { color: palette.text.secondary }]}>Today's Plan</Text>
@@ -112,7 +112,7 @@ export function TodayPlanCard({
             </View>
             <Ionicons name="chevron-forward" size={22} color={palette.text.tertiary} />
           </View>
-        </GlassCard>
+        </Card>
       </Pressable>
     </Link>
   );
@@ -141,7 +141,7 @@ export function ActivityCard({
   const weeklyTarget = nextMilestone?.metric === "totalCheckIns" ? nextMilestone.remaining : 5;
   const weeklyGoalLabel = `${Math.min(totalCheckIns, 5)}/${Math.max(weeklyTarget, 3)}`;
   return (
-    <GlassCard variant="compact" contentStyle={styles.activityContent}>
+    <Card variant="compact" contentStyle={styles.activityContent}>
       <View style={styles.activityTitleRow}>
         <Ionicons name="pulse-outline" size={21} color={palette.accent.base} />
         <Text style={[styles.activityTitle, { color: palette.text.secondary }]}>Activity</Text>
@@ -172,7 +172,7 @@ export function ActivityCard({
           <Text style={[styles.activityStatMeta, { color: palette.text.secondary }]}>check-ins</Text>
         </View>
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -225,7 +225,7 @@ export function WorkoutLogCard() {
         accessibilityLabel="Log today's workout"
         style={({ pressed }) => (pressed ? styles.cardPressed : null)}
       >
-        <GlassCard contentStyle={styles.secondaryActionContent}>
+        <Card contentStyle={styles.secondaryActionContent}>
           <IconBubble icon="pulse-outline" tone="neutral" size={38} />
           <View style={styles.secondaryActionCopy}>
             <Text style={[styles.secondaryActionTitle, { color: palette.text.primary }]}>Log today's workout</Text>
@@ -234,7 +234,7 @@ export function WorkoutLogCard() {
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
-        </GlassCard>
+        </Card>
       </Pressable>
     </Link>
   );
@@ -243,24 +243,24 @@ export function WorkoutLogCard() {
 export function HomeSkeleton() {
   return (
     <View style={styles.skeletonStack}>
-      <GlassCard variant="compact" contentStyle={styles.skeletonHero}>
+      <Card variant="compact" contentStyle={styles.skeletonHero}>
         <Skeleton width={46} height={46} borderRadius={23} />
         <View style={styles.skeletonCopy}>
           <Skeleton width="58%" height={18} borderRadius={9} />
           <Skeleton width="82%" height={13} borderRadius={7} />
         </View>
         <Skeleton width={58} height={34} borderRadius={17} />
-      </GlassCard>
-      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
+      </Card>
+      <Card variant="compact" contentStyle={styles.skeletonMembership}>
         <Skeleton width="45%" height={14} borderRadius={7} />
         <Skeleton width="72%" height={24} borderRadius={12} />
         <Skeleton width="36%" height={14} borderRadius={7} />
-      </GlassCard>
-      <GlassCard variant="compact" contentStyle={styles.skeletonMembership}>
+      </Card>
+      <Card variant="compact" contentStyle={styles.skeletonMembership}>
         <Skeleton width="34%" height={14} borderRadius={7} />
         <Skeleton width="86%" height={18} borderRadius={9} />
         <Skeleton width="66%" height={14} borderRadius={7} />
-      </GlassCard>
+      </Card>
     </View>
   );
 }
@@ -304,7 +304,7 @@ export function FirstRunCard({
         accessibilityLabel={copy.cta}
         style={({ pressed }) => (pressed ? styles.cardPressed : null)}
       >
-        <GlassCard variant="compact" contentStyle={styles.firstRunContent}>
+        <Card variant="compact" contentStyle={styles.firstRunContent}>
           <IconBubble icon={copy.icon} tone="lime" size={46} />
           <View style={styles.firstRunCopy}>
             <Text style={[styles.firstRunTitle, { color: palette.text.primary }]}>{copy.title}</Text>
@@ -314,7 +314,7 @@ export function FirstRunCard({
             <Text style={[styles.checkInCtaText, { color: palette.text.onAccent }]}>{copy.cta}</Text>
             <Ionicons name="chevron-forward" size={16} color={palette.text.onAccent} />
           </View>
-        </GlassCard>
+        </Card>
       </Pressable>
     </Link>
   );

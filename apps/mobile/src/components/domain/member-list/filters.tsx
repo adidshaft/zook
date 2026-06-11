@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { GlassInput } from "@/components/primitives";
+import { Input } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberListFilter } from "./types";
@@ -36,7 +36,7 @@ export function MemberListFilters({
   return (
     <View style={styles.stack}>
       {onSearchChange ? (
-        <GlassInput
+        <Input
           testID={searchTestID}
           value={searchValue ?? ""}
           onChangeText={onSearchChange}

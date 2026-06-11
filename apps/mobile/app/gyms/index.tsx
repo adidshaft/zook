@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   Pill,
-  GlassInput,
+  Input,
   QueryErrorState,
   SectionHeader,
   ZookScreen,
@@ -149,7 +149,7 @@ export default function FindGyms() {
           />
 
           {referralCode ? (
-            <GlassCard variant="success" contentStyle={styles.referralContent}>
+            <Card variant="success" contentStyle={styles.referralContent}>
               <IconBubble icon="gift-outline" tone="lime" size={36} />
               <View style={styles.referralCopy}>
                 <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
@@ -159,25 +159,25 @@ export default function FindGyms() {
                   Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
                 </Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
-          <GlassCard contentStyle={styles.searchContent}>
-            <GlassInput
+          <Card contentStyle={styles.searchContent}>
+            <Input
               testID="find-gyms-query"
               label="Gym name or username"
               value={query}
               onChangeText={setQuery}
               placeholder={t("findGyms.searchPlaceholder")}
             />
-            <GlassInput
+            <Input
               testID="find-gyms-city"
               label="City"
               value={city}
               onChangeText={setCity}
               placeholder={t("findGyms.cityPlaceholder")}
             />
-          </GlassCard>
+          </Card>
 
           <SectionHeader
             title="Available gyms"
@@ -197,7 +197,7 @@ export default function FindGyms() {
           ) : null}
 
           {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
-            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <Card variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
@@ -207,7 +207,7 @@ export default function FindGyms() {
                   Try widening the city or clearing the search.
                 </Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           <View style={styles.results}>
@@ -229,7 +229,7 @@ export default function FindGyms() {
                   accessibilityLabel={`Open ${gym.name}`}
                   style={({ pressed }) => [pressed ? styles.pressed : null]}
                 >
-                  <GlassCard contentStyle={styles.gymContent}>
+                  <Card contentStyle={styles.gymContent}>
                     <View style={styles.gymHeader}>
                       {gym.coverImageUrl ? (
                         <Image
@@ -288,7 +288,7 @@ export default function FindGyms() {
                         <Ionicons name="chevron-forward" size={14} color={palette.accent.base} />
                       </View>
                     </View>
-                  </GlassCard>
+                  </Card>
                 </Pressable>
               </Link>
             ))}

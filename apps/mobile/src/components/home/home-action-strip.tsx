@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard, ZookButton } from "@/components/primitives";
+import { Card, ZookButton } from "@/components/primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeActionStrip({
@@ -21,7 +21,7 @@ export function HomeActionStrip({
   const accentColor = expired ? palette.feedback.warning : palette.accent.base;
   const tileSurface = isDark ? palette.bg.sunken : palette.surface.raised;
   return (
-    <GlassCard
+    <Card
       variant={expired ? "warning" : "selected"}
       glow={!expired}
       contentStyle={styles.content}
@@ -69,7 +69,7 @@ export function HomeActionStrip({
           {streakDays}-day streak · Last: {lastCheckIn}
         </Text>
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 

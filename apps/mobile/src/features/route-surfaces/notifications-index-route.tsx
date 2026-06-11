@@ -13,7 +13,7 @@ import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   QueryErrorState,
@@ -409,14 +409,14 @@ export default function NotificationsScreen() {
               />
 
               {routeParams.notificationId ? (
-                <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+                <Card variant="selected" contentStyle={styles.calloutContent}>
                   <IconBubble icon="notifications" tone="blue" size={36} />
                   <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
                       ? "Attendance alert received"
                       : "Opened from push notification"}
                   </Text>
-                </GlassCard>
+                </Card>
               ) : null}
 
               {notificationsQuery.isLoading ? (
@@ -428,7 +428,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+                <Card variant="compact" contentStyle={styles.emptyContent}>
                   <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
                   <View style={styles.emptyCopy}>
                     <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
@@ -438,7 +438,7 @@ export default function NotificationsScreen() {
                       You're all caught up.
                     </Text>
                   </View>
-                </GlassCard>
+                </Card>
               ) : null}
             </View>
           }
@@ -551,7 +551,7 @@ function NotificationRow({
       accessibilityState={{ busy }}
       style={({ pressed }) => [pressed ? styles.pressed : null]}
     >
-      <GlassCard
+      <Card
         variant={highlighted ? "selected" : unread ? "default" : "compact"}
         contentStyle={[
           styles.notificationContent,
@@ -586,7 +586,7 @@ function NotificationRow({
             color={opensRoute ? palette.text.secondary : palette.accent.base}
           />
         </View>
-      </GlassCard>
+      </Card>
     </Pressable>
   );
 }

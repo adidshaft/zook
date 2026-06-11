@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { RefreshControl, StyleSheet, Text } from "react-native";
 
-import { EmptyState, GlassCard, IconBubble, ListRow, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, ListRow, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 import { RevenueSummary } from "@/features/owner/components/revenue-summary";
@@ -42,7 +42,7 @@ export default function OwnerRevenueScreen() {
           <RevenueSummary revenuePaise={dashboardQuery.data?.summary?.revenuePaise ?? 0} payments={payments} />
           <OwnerDashboardCharts charts={dashboardQuery.data?.charts} />
           <SectionHeader title="Recent transactions" subtitle="Today" />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             {paymentsQuery.isError || ordersQuery.isError ? (
               <QueryErrorState
                 error={paymentsQuery.error ?? ordersQuery.error}
@@ -82,7 +82,7 @@ export default function OwnerRevenueScreen() {
             {!paymentsQuery.isError && !ordersQuery.isError && !payments.length && !orders.length ? (
               <EmptyState title="No payments yet" body="Desk collections and payment confirmations will appear here." />
             ) : null}
-          </GlassCard>
+          </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>

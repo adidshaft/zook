@@ -6,7 +6,7 @@ import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import {
   EmptyState,
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -110,14 +110,14 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
           {priorityClient ? (
-            <GlassCard testID="trainer-client-row-first" variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
+            <Card testID="trainer-client-row-first" variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
               <ListRow
                 title={priorityClient.user?.name ?? "Client"}
                 subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
                 leading={<IconBubble icon="person-outline" tone="lime" />}
                 trailing={<StatusChip status="Priority client" tone="amber" />}
               />
-            </GlassCard>
+            </Card>
           ) : null}
 
           <MetricGrid
@@ -161,7 +161,7 @@ export default function TrainerHomeScreen() {
           ) : null}
 
           <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             {clientsNeedingPlans ? (
               <Pressable
                 accessibilityRole="button"
@@ -178,10 +178,10 @@ export default function TrainerHomeScreen() {
             ) : (
               <EmptyState title="Coaching queue clear" body="No plan or feedback follow-up is waiting right now." />
             )}
-          </GlassCard>
+          </Card>
 
           <SectionHeader title="Recent feedback" />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
               recentFeedback.map((feedback) => (
                 <Pressable
@@ -201,7 +201,7 @@ export default function TrainerHomeScreen() {
             ) : (
               <EmptyState title="No recent feedback" body="Client notes and session feedback will appear here." />
             )}
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

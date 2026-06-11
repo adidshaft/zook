@@ -6,7 +6,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 
 import {
   EmptyState,
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -85,7 +85,7 @@ export default function MemberPlanScreen() {
 
           <SectionHeader title="Today's workout" />
           {todayPlan ? (
-            <GlassCard variant="selected" glow contentStyle={styles.todayCard}>
+            <Card variant="selected" glow contentStyle={styles.todayCard}>
               <View style={styles.todayTop}>
                 <IconBubble icon="barbell-outline" tone="lime" size={46} />
                 <View style={styles.todayCopy}>
@@ -97,11 +97,11 @@ export default function MemberPlanScreen() {
               <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
                 Start today
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : !plansQuery.isLoading ? (
-            <GlassCard variant="compact">
+            <Card variant="compact">
               <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign your first plan here." />
-            </GlassCard>
+            </Card>
           ) : null}
 
           <SectionHeader title="This week's schedule" />
@@ -114,38 +114,38 @@ export default function MemberPlanScreen() {
                 accessibilityRole="button"
                 style={({ pressed }) => (pressed ? styles.cardPressed : null)}
               >
-                <GlassCard variant="compact">
+                <Card variant="compact">
                   <ListRow
                     title={planTitle(assignment)}
                     subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
                     leading={<IconBubble icon="calendar-outline" tone="blue" />}
                     trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
                   />
-                </GlassCard>
+                </Card>
               </Pressable>
             ))}
             {!workoutPlans.length && !plansQuery.isLoading ? (
-              <GlassCard variant="compact">
+              <Card variant="compact">
                 <EmptyState title="Schedule empty" body="Assigned workout days will appear here." />
-              </GlassCard>
+              </Card>
             ) : null}
           </View>
 
           <SectionHeader title="Recent sessions" />
           <View style={styles.stack}>
             {recentWorkouts.slice(0, 3).map((workout, index) => (
-              <GlassCard key={workout.id ?? `${workout.title}-${index}`} variant="compact">
+              <Card key={workout.id ?? `${workout.title}-${index}`} variant="compact">
                 <ListRow
                   title={workout.title ?? "Workout"}
                   subtitle={`${workout.workoutType ?? "Training"} · ${workout.durationMinutes ?? 0} min`}
                   leading={<IconBubble icon="checkmark-done-outline" tone="lime" />}
                 />
-              </GlassCard>
+              </Card>
             ))}
             {!recentWorkouts.length && !workoutsQuery.isLoading ? (
-              <GlassCard variant="compact">
+              <Card variant="compact">
                 <EmptyState title="No sessions yet" body="Completed workouts and tracking history will appear here." />
-              </GlassCard>
+              </Card>
             ) : null}
           </View>
 
@@ -156,7 +156,7 @@ export default function MemberPlanScreen() {
             accessibilityRole="button"
             style={({ pressed }) => (pressed ? styles.cardPressed : null)}
           >
-            <GlassCard variant="compact">
+            <Card variant="compact">
               <ListRow
                 title={dietPlan?.title ?? "Meal logging"}
                 subtitle={
@@ -172,7 +172,7 @@ export default function MemberPlanScreen() {
                   </View>
                 }
               />
-            </GlassCard>
+            </Card>
           </Pressable>
 
           <SectionHeader title="Browse all plans" />

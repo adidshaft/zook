@@ -27,7 +27,7 @@ import { MetricGrid } from "@/components/domain/metric-grid";
 import {
   AuditWarning,
   FormField,
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   Pill,
@@ -822,7 +822,7 @@ export function ReceptionWorkspace({
         </Pressable>
 
         {showMemberContext ? (
-          <GlassCard variant="compact" padding={12} contentStyle={styles.memberContext}>
+          <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
             <IconBubble
               icon={state.member ? "person-outline" : "person-add-outline"}
               tone={state.member ? "lime" : "amber"}
@@ -847,7 +847,7 @@ export function ReceptionWorkspace({
                 <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
               </Pressable>
             ) : null}
-          </GlassCard>
+          </Card>
         ) : null}
         {children}
       </KeyboardAwareScreen>
@@ -912,7 +912,7 @@ export function ReceptionDeskBody() {
               ]}
             />
 
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+            <Card variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Verify Entry Code"
                 subtitle="Enter ZK code for attendance or pickup lookup without leaving the desk."
@@ -936,7 +936,7 @@ export function ReceptionDeskBody() {
               {verifyMessage ? (
                 <VerificationResult message={verifyMessage} user={verifiedUser} />
               ) : null}
-            </GlassCard>
+            </Card>
 
             <SectionHeader
               title="Live feed"
@@ -946,17 +946,17 @@ export function ReceptionDeskBody() {
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
+                <Card variant="compact" padding={14} contentStyle={styles.queueCard}>
                   <ListRow
                     title="No scans yet"
                     subtitle="Approved check-ins will appear here as members enter."
                     icon="radio-outline"
                     tone="neutral"
                   />
-                </GlassCard>
+                </Card>
               ) : null}
               {recentScans.map((scan) => (
-                <GlassCard
+                <Card
                   key={scan.id}
                   variant="compact"
                   padding={12}
@@ -979,7 +979,7 @@ export function ReceptionDeskBody() {
                   <Pill tone={scan.status === "APPROVED" ? "lime" : "amber"}>
                     {scan.status.replace(/_/g, " ")}
                   </Pill>
-                </GlassCard>
+                </Card>
               ))}
             </View>
 
@@ -1117,7 +1117,7 @@ export function ReceptionMembersBody() {
               ) : null}
             </View>
             {multiSelectMode && selectedMemberIds.size ? (
-              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+              <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
                   title={`${selectedMemberIds.size} member${selectedMemberIds.size === 1 ? "" : "s"} selected`}
                   subtitle="Record attendance for everyone in one tap."
@@ -1148,10 +1148,10 @@ export function ReceptionMembersBody() {
                     {bulkAttendanceStatus}
                   </Text>
                 ) : null}
-              </GlassCard>
+              </Card>
             ) : null}
             {!multiSelectMode && memberRecord ? (
-              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+              <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
                   title="Desk actions"
                   subtitle={
@@ -1202,7 +1202,7 @@ export function ReceptionMembersBody() {
                     {attendanceStatus}
                   </Text>
                 ) : null}
-              </GlassCard>
+              </Card>
             ) : null}
             <View style={styles.stack}>
               <MemberList
@@ -1287,7 +1287,7 @@ export function ReceptionPaymentsBody() {
                 },
               ]}
             />
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+            <Card variant="compact" padding={14} contentStyle={styles.stack}>
               <FormField
                 testID="reception-payment-amount"
                 label="Amount received"
@@ -1299,9 +1299,9 @@ export function ReceptionPaymentsBody() {
                 required
                 error={amountInvalid ? "Enter an amount greater than 0." : undefined}
               />
-            </GlassCard>
+            </Card>
             {!memberRecord ? (
-              <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+              <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
                   title="Find a member"
                   subtitle="Search to attach this payment to a member."
@@ -1365,9 +1365,9 @@ export function ReceptionPaymentsBody() {
                       ))}
                   </View>
                 ) : null}
-              </GlassCard>
+              </Card>
             ) : null}
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+            <Card variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Payment collection"
                 subtitle="Record only money received at the desk."
@@ -1506,7 +1506,7 @@ export function ReceptionPaymentsBody() {
                   {paymentStatus}
                 </Text>
               ) : null}
-            </GlassCard>
+            </Card>
     </>
   );
 }
@@ -1548,7 +1548,7 @@ export function ReceptionOrdersBody() {
                 },
               ]}
             />
-            <GlassCard variant="compact" padding={14} contentStyle={styles.stack}>
+            <Card variant="compact" padding={14} contentStyle={styles.stack}>
               <SectionHeader
                 title="Pickup Verification"
                 subtitle="Match the code and member before giving out the order."
@@ -1574,12 +1574,12 @@ export function ReceptionOrdersBody() {
               {verifyMessage ? (
                 <VerificationResult message={verifyMessage} user={verifiedUser} />
               ) : null}
-            </GlassCard>
+            </Card>
             <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
             <View style={styles.stack}>
               {readyOrders.length ? (
                 readyOrders.map((order, index) => (
-                  <GlassCard
+                  <Card
                     testID={
                       index === 0 ? "reception-order-row-first" : `reception-order-row-${order.id}`
                     }
@@ -1633,17 +1633,17 @@ export function ReceptionOrdersBody() {
                     >
                       Mark Picked Up
                     </PrimaryButton>
-                  </GlassCard>
+                  </Card>
                 ))
               ) : (
-                <GlassCard variant="compact" padding={14} contentStyle={styles.queueCard}>
+                <Card variant="compact" padding={14} contentStyle={styles.queueCard}>
                   <ListRow
                     title="No pickups waiting"
                     subtitle="Ready orders will appear here after payment."
                     icon="bag-check-outline"
                     tone="lime"
                   />
-                </GlassCard>
+                </Card>
               )}
             </View>
             {paymentStatus ? (
@@ -1819,7 +1819,7 @@ function VerificationResult({
   const photo = user?.profilePhotoUrl;
   return (
     <Reanimated.View style={success ? pulseStyle : shakeStyle}>
-      <GlassCard
+      <Card
         variant={success ? "success" : "warning"}
         padding={12}
         contentStyle={styles.verificationResult}
@@ -1839,7 +1839,7 @@ function VerificationResult({
           />
         )}
         <Text style={[styles.verificationText, { color: palette.text.primary }]}>{message}</Text>
-      </GlassCard>
+      </Card>
     </Reanimated.View>
   );
 }

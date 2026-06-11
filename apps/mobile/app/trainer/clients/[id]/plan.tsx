@@ -5,7 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   SecondaryButton,
@@ -235,7 +235,7 @@ export default function TrainerClientPlanScreen() {
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
             <FormField testID="trainer-plan-title" label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
             <View style={styles.chipRow}>
@@ -274,17 +274,17 @@ export default function TrainerClientPlanScreen() {
             >
               Publish to {clientName}
             </SecondaryButton>
-          </GlassCard>
+          </Card>
           {savedPlan ? (
-            <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
+            <Card variant="warning" contentStyle={styles.draftPromptContent}>
               <View style={styles.attentionHeader}>
                 <IconBubble icon="reader-outline" tone="amber" />
                 <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
-          {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></GlassCard> : null}
-          <GlassCard contentStyle={styles.stack}>
+          {status ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></Card> : null}
+          <Card contentStyle={styles.stack}>
             <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
             <View style={styles.actionRow}>
@@ -294,8 +294,8 @@ export default function TrainerClientPlanScreen() {
             <SecondaryButton testID="trainer-publish-diet-button" onPress={() => void publishDietPlan()} disabled={!client || savingPlan}>
               Publish 4-meal diet
             </SecondaryButton>
-          </GlassCard>
-          {dietStatus ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></GlassCard> : null}
+          </Card>
+          {dietStatus ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></Card> : null}
           <AiDraftPanel clientId={id} />
         </ScrollView>
       </ZookScreen>

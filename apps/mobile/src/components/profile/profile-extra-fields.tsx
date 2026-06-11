@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   DatePickerField,
-  GlassCard,
-  GlassInput,
+  Card,
+  Input,
   Pill,
   SegmentedControl,
   ThemedSwitch,
@@ -169,7 +169,7 @@ export function ProfileExtraFields() {
   }
 
   return (
-    <GlassCard contentStyle={styles.content}>
+    <Card contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
           <View style={styles.titleRow}>
@@ -221,7 +221,7 @@ export function ProfileExtraFields() {
 
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: palette.text.secondary }]}>Emergency contact</Text>
-        <GlassInput
+        <Input
           label="Name"
           value={emergencyName}
           onChangeText={setEmergencyName}
@@ -229,7 +229,7 @@ export function ProfileExtraFields() {
           editable={savingKey !== "emergencyContactName"}
           returnKeyType="next"
         />
-        <GlassInput
+        <Input
           label="Phone"
           value={emergencyPhone}
           onChangeText={setEmergencyPhone}
@@ -337,7 +337,7 @@ export function ProfileExtraFields() {
           {error}
         </Text>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

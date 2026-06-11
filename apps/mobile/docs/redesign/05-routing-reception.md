@@ -185,7 +185,7 @@ Lift only the desk-view rendering from current `reception.tsx` (lines 738–930 
 ```tsx
 import { Stack } from "expo-router";
 import { ScrollView, View, RefreshControl } from "react-native";
-import { ZookScreen, EmptyState, GlassCard } from "@/components/primitives";
+import { ZookScreen, EmptyState, Card } from "@/components/primitives";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveAttendance, useRejectAttendance } from "@/lib/domains/attendance";
 import { DeskHeader } from "@/features/reception/components/desk-header";

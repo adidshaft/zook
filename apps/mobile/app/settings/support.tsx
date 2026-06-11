@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import { Stack } from "expo-router";
 import { Linking, Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { GlassCard, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
 import { layout, spacing } from "@/lib/theme";
 
 const supportRows = [
@@ -19,7 +19,7 @@ export default function SupportSettingsScreen() {
       <ZookScreen testID="settings-support-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Help & support" subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`} showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <Card variant="compact" contentStyle={styles.list}>
             {supportRows.map((row) => (
               <Pressable
                 key={row.title}
@@ -31,7 +31,7 @@ export default function SupportSettingsScreen() {
                 <ListRow title={row.title} subtitle={row.subtitle} icon="help-circle-outline" style={styles.row} />
               </Pressable>
             ))}
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

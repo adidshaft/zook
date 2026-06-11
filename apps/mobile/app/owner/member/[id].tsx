@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   Pill,
@@ -191,37 +191,37 @@ export default function OwnerMemberDetail() {
           />
 
           {memberQuery.isLoading ? (
-            <GlassCard variant="compact" contentStyle={styles.stateContent}>
+            <Card variant="compact" contentStyle={styles.stateContent}>
               <Skeleton width={44} height={44} borderRadius={22} />
               <View style={styles.stateSkeletonCopy}>
                 <Skeleton width="72%" height={16} borderRadius={8} />
                 <Skeleton width="48%" height={12} borderRadius={6} />
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {!memberQuery.isLoading && !member ? (
-            <GlassCard variant="compact" contentStyle={styles.stateContent}>
+            <Card variant="compact" contentStyle={styles.stateContent}>
               <IconBubble icon="people-outline" tone="neutral" size={44} />
               <Text style={[styles.stateText, { color: palette.text.primary }]}>
                 Member not found
               </Text>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {memberQuery.isError ? (
-            <GlassCard variant="compact">
+            <Card variant="compact">
               <QueryErrorState
                 error={memberQuery.error}
                 onRetry={() => void memberQuery.refetch()}
                 title="Could not load member"
               />
-            </GlassCard>
+            </Card>
           ) : null}
 
           {member ? (
             <>
-              <GlassCard variant="success" contentStyle={styles.profileContent}>
+              <Card variant="success" contentStyle={styles.profileContent}>
                 <View style={[styles.largeAvatar, { backgroundColor: palette.accent.fill }]}>
                   <Text style={[styles.largeAvatarText, { color: palette.text.onAccent }]}>
                     {initialsFor(name, email)}
@@ -236,9 +236,9 @@ export default function OwnerMemberDetail() {
                   </Text>
                   <Pill tone="lime">{member.activeSubscription?.status ?? "Profile"}</Pill>
                 </View>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.sectionContent}>
+              <Card contentStyle={styles.sectionContent}>
                 <View style={styles.sectionRow}>
                   <IconBubble icon="barbell-outline" tone="lime" size={42} />
                   <View style={styles.sectionCopy}>
@@ -258,9 +258,9 @@ export default function OwnerMemberDetail() {
                     </Text>
                   </View>
                 ) : null}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.sectionContent}>
+              <Card contentStyle={styles.sectionContent}>
                 <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
                 {phone ? (
                   <View style={styles.contactRow}>
@@ -295,7 +295,7 @@ export default function OwnerMemberDetail() {
                     ) : null}
                   </View>
                 ) : null}
-              </GlassCard>
+              </Card>
             </>
           ) : null}
         </ScrollView>

@@ -3,7 +3,7 @@ import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, GlassCard, IconBubble, MobileHeader, QueryErrorState, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, MobileHeader, QueryErrorState, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
@@ -71,16 +71,16 @@ export default function TrackingScreen() {
               <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
-              <GlassCard variant="compact" contentStyle={styles.emptyCard}>
+              <Card variant="compact" contentStyle={styles.emptyCard}>
                 <IconBubble icon="barbell-outline" tone="lime" />
                 <EmptyState title="No workouts logged" body="Log your first session after training." />
-              </GlassCard>
+              </Card>
             ) : null}
           </View>
-          <GlassCard variant="compact" contentStyle={styles.note}>
+          <Card variant="compact" contentStyle={styles.note}>
             <Ionicons name="shield-checkmark-outline" size={20} color={palette.accent.base} />
             <Text style={[styles.noteText, { color: palette.text.secondary }]}>Private entries stay with you unless you choose trainer visibility.</Text>
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

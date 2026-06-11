@@ -19,7 +19,7 @@ import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
 import { ProfilePhotoControl } from "@/components/profile/profile-photo-control";
 import {
   EmptyState,
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   Pill,
@@ -489,7 +489,7 @@ export default function ProfileScreen() {
             </View>
           ) : null}
 
-          <GlassCard contentStyle={styles.identityCard}>
+          <Card contentStyle={styles.identityCard}>
             <ProfilePhotoControl
               token={token}
               orgId={activeOrgId}
@@ -539,14 +539,14 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-          </GlassCard>
+          </Card>
 
           <ProfileExtraFields />
 
           {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Membership</Text>
-            <GlassCard variant="compact" contentStyle={styles.membershipCard}>
+            <Card variant="compact" contentStyle={styles.membershipCard}>
               {membership ? (
                 <>
                   <View style={styles.membershipTop}>
@@ -604,13 +604,13 @@ export default function ProfileScreen() {
                   }
                 />
               )}
-            </GlassCard>
+            </Card>
           </View>
           )}
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent activity</Text>
-            <GlassCard variant="compact" contentStyle={styles.activityCard}>
+            <Card variant="compact" contentStyle={styles.activityCard}>
               {recentActivity.length ? (
                 recentActivity.map((item) => (
                   <View key={item.id} style={styles.activityRow}>
@@ -632,7 +632,7 @@ export default function ProfileScreen() {
                   body="Your last three check-ins and workouts will show here."
                 />
               )}
-            </GlassCard>
+            </Card>
           </View>
 
           <View style={styles.section}>
