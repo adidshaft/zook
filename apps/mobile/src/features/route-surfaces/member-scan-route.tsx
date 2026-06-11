@@ -1,12 +1,6 @@
 import { Stack, useRouter } from "expo-router";
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
+import { CameraView, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,9 +18,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
+  EmptyState,
   IconBubble,
   MobileHeader,
   ScannerFrame,
+  useRequestPermissionWithRationale,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -77,7 +73,6 @@ type AttendanceResultHref = {
   };
 };
 
-const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
 const SCAN_CONFIRMATION_VISIBLE_MS = 420;
 
@@ -256,7 +251,8 @@ export default function Scan() {
     await memberHomeQuery.refetch();
   }, [memberHomeQuery]);
   const { permissionState, requestEnablePush } = usePushNotifications();
-  const [permission, requestPermission] = useCameraPermissions();
+  const cameraPermission = useRequestPermissionWithRationale("camera");
+  const notificationPermission = useRequestPermissionWithRationale("notifications");
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
@@ -266,15 +262,9 @@ export default function Scan() {
   const [queuedScanCount, setQueuedScanCount] = useState(0);
   const [replayingQueue, setReplayingQueue] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
-    null,
-  );
   const completedRef = useRef(false);
-  const pushPromptClosingRef = useRef(false);
-  const pushPromptSheetRef = useRef<BottomSheetModal>(null);
   const codePrefixRef = useRef<TextInput>(null);
   const codeDigitsRef = useRef<TextInput>(null);
-  const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
@@ -402,31 +392,15 @@ export default function Scan() {
     router.push(href as never);
   }
 
-  async function maybeShowPushPrompt(href: AttendanceResultHref) {
+  async function maybeShowPushPrompt() {
     if (Platform.OS === "web" || permissionState === "granted") {
       return false;
     }
-    const prompted = await getStoredValue(PUSH_PROMPTED_STORAGE_KEY);
-    if (prompted) {
-      return false;
-    }
-    await setStoredValue(PUSH_PROMPTED_STORAGE_KEY, "1");
-    setPendingPushPromptHref(href);
-    setTimeout(() => pushPromptSheetRef.current?.present(), 0);
-    return true;
-  }
-
-  async function closePushPrompt(enable: boolean) {
-    const href = pendingPushPromptHref;
-    pushPromptClosingRef.current = true;
-    setPendingPushPromptHref(null);
-    pushPromptSheetRef.current?.dismiss();
-    if (enable) {
+    const granted = await notificationPermission.requestPermission();
+    if (granted) {
       await requestEnablePush();
     }
-    if (href) {
-      navigateToAttendance(href);
-    }
+    return false;
   }
 
   async function replayQueuedScans() {
@@ -492,8 +466,9 @@ export default function Scan() {
     }
   }, [deviceId, token]);
 
-  const hasCamera = permission?.granted;
-  const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
+  const hasCamera = cameraPermission.status?.granted;
+  const cameraBlocked =
+    cameraPermission.status && !cameraPermission.status.granted && cameraPermission.status.canAskAgain === false;
   const needsProfilePhoto = /profile photo/i.test(errorMessage);
   const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
@@ -544,18 +519,6 @@ export default function Scan() {
     ];
   }, [codeReady, hasCamera, scanMode, scanState]);
 
-  const renderPushPromptBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
-
   async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
       return;
@@ -598,8 +561,8 @@ export default function Scan() {
       if (!failed) {
         await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
       }
-      if (!failed && (await maybeShowPushPrompt(nextHref))) {
-        return;
+      if (!failed) {
+        await maybeShowPushPrompt();
       }
       navigateToAttendance(nextHref);
     } catch (error) {
@@ -798,24 +761,25 @@ export default function Scan() {
                   />
                 ) : (
                   <View style={styles.cameraFallback}>
-                    <Ionicons name="camera-outline" size={32} color={palette.accent.strong} />
-                    <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
-                      Camera needed
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cameraFallbackText,
-                        { color: palette.text.secondary, textAlign: "center" },
-                      ]}
-                    >
-                      {cameraBlocked
-                        ? "Camera access is blocked. Open device settings to allow scanning."
-                        : "Allow camera access to scan the gym QR."}
-                    </Text>
-                    <ZookButton
-                      onPress={() =>
-                        cameraBlocked ? void Linking.openSettings() : void requestPermission()
+                    <EmptyState
+                      icon="camera-outline"
+                      title={cameraBlocked ? "Camera access blocked" : "Enable camera"}
+                      body={
+                        cameraBlocked
+                          ? "Open device settings to allow QR scanning."
+                          : "Allow camera access when you are ready to scan the gym QR."
                       }
+                    />
+                    <ZookButton
+                      onPress={() => {
+                        if (cameraBlocked) {
+                          void Linking.openSettings();
+                          return;
+                        }
+                        void cameraPermission.requestPermission();
+                      }}
+                      disabled={cameraPermission.busy}
+                      busy={cameraPermission.busy}
                       variant="secondary"
                       style={styles.permissionButton}
                     >
@@ -1065,66 +1029,8 @@ export default function Scan() {
           ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
-      <BottomSheetModal
-        ref={pushPromptSheetRef}
-        snapPoints={pushPromptSnapPoints}
-        enablePanDownToClose
-        backdropComponent={renderPushPromptBackdrop}
-        backgroundStyle={StyleSheet.flatten([
-          styles.sheetBackground,
-          {
-            backgroundColor: palette.bg.elevated,
-            borderColor: palette.border.subtle,
-          },
-        ])}
-        handleIndicatorStyle={StyleSheet.flatten([
-          styles.sheetHandle,
-          {
-            backgroundColor: palette.border.strong,
-          },
-        ])}
-        onDismiss={() => {
-          if (pushPromptClosingRef.current) {
-            pushPromptClosingRef.current = false;
-            return;
-          }
-          if (pendingPushPromptHref) {
-            const href = pendingPushPromptHref;
-            setPendingPushPromptHref(null);
-            navigateToAttendance(href);
-          }
-        }}
-      >
-        <BottomSheetView style={styles.pushPromptSheet}>
-          <View style={styles.pushPromptHeader}>
-            <IconBubble icon="barbell-outline" tone="lime" size={42} />
-            <View style={styles.pushPromptCopy}>
-              <Text style={[styles.pushPromptTitle, { color: palette.text.primary }]}>
-                Get plan alerts
-              </Text>
-              <Text style={[styles.pushPromptBody, { color: palette.text.secondary }]}>
-                Get notified when your trainer publishes a new plan.
-              </Text>
-            </View>
-          </View>
-          <View style={styles.pushPromptActions}>
-            <ZookButton
-              onPress={() => void closePushPrompt(true)}
-              icon="notifications-outline"
-              style={styles.pushPromptAction}
-            >
-              Enable
-            </ZookButton>
-            <ZookButton
-              onPress={() => void closePushPrompt(false)}
-              variant="secondary"
-              style={styles.pushPromptAction}
-            >
-              Not now
-            </ZookButton>
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
+      {cameraPermission.permissionSheet}
+      {notificationPermission.permissionSheet}
     </>
   );
 }
@@ -1366,39 +1272,6 @@ const styles = StyleSheet.create({
   devLinkText: {
     textDecorationLine: "underline",
     ...typography.caption,
-  },
-  sheetBackground: {
-    borderWidth: 1,
-  },
-  sheetHandle: {},
-  pushPromptSheet: {
-    width: "100%",
-    maxWidth: layout.contentWidth,
-    alignSelf: "center",
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  pushPromptHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  pushPromptCopy: {
-    flex: 1,
-    gap: 5,
-  },
-  pushPromptTitle: {
-    ...typography.cardTitle,
-  },
-  pushPromptBody: {
-    ...typography.body,
-  },
-  pushPromptActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  pushPromptAction: {
-    flex: 1,
   },
   codeValidationHint: {
     fontSize: 12,
