@@ -9034,6 +9034,35 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       ),
     );
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "setup-status"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
+    const [
+      membershipPlanCount,
+      qrTokenCount,
+      attendanceCount,
+      staffCount,
+      memberCount,
+      shopProductCount,
+    ] = await Promise.all([
+      prisma.membershipPlan.count({ where: { orgId, active: true } }),
+      prisma.attendanceQrToken.count({ where: { orgId } }),
+      prisma.attendanceRecord.count({ where: { orgId } }),
+      prisma.organizationRoleAssignment.count({
+        where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
+      }),
+      prisma.memberProfile.count({ where: { orgId } }),
+      prisma.product.count({ where: { orgId, active: true } }),
+    ]);
+    return ok({
+      hasMembershipPlans: membershipPlanCount > 0,
+      hasQrDisplayed: qrTokenCount > 0 || attendanceCount > 0,
+      staffCount,
+      memberCount,
+      hasShopProducts: shopProductCount > 0,
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });

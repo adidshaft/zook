@@ -1,30 +1,33 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Linking, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { Card, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, QueryErrorState, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { useOwnerBillingSubscription, useOwnerDashboard, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
+import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import { layout, typography, useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { useRoleContext } from "@/lib/role-context";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const roleContext = useRoleContext();
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const billingQuery = useOwnerBillingSubscription();
+  const setupStatusQuery = useOwnerSetupStatus();
   const prefetchOwnerWorkspace = usePrefetchOwnerWorkspace();
   const attentionQuery = useOrgAttendancePending();
   const paymentsQuery = useOrgRecentPayments();
@@ -38,6 +41,40 @@ export default function OwnerCommandScreen() {
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
+  const setupStatus = setupStatusQuery.data;
+  const setupSteps = setupStatus
+    ? [
+        {
+          id: "plans",
+          label: "Create membership plans",
+          done: setupStatus.hasMembershipPlans,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/membership-plans"),
+        },
+        {
+          id: "qr",
+          label: "Display your check-in QR",
+          done: setupStatus.hasQrDisplayed,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/attendance/qr-display"),
+        },
+        {
+          id: "staff",
+          label: "Invite staff",
+          done: setupStatus.staffCount > 1,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/staff"),
+        },
+        {
+          id: "join",
+          label: "Share your join link",
+          done: setupStatus.memberCount > 1,
+          onPress: () => {
+            const username = roleContext?.org?.username;
+            const url = username ? `https://zookfit.in/g/${username}` : "https://zookfit.in";
+            void Share.share({ message: `Join my gym on Zook: ${url}`, url });
+          },
+        },
+      ]
+    : [];
+  const showSetupChecklist = setupSteps.length > 0 && setupSteps.some((step) => !step.done);
 
   useEffect(() => {
     prefetchOwnerWorkspace();
@@ -155,8 +192,11 @@ export default function OwnerCommandScreen() {
           <RoleSwitcherChip />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
-          {dashboard ? (
+              {dashboard ? (
             <>
+              {showSetupChecklist ? (
+                <SetupChecklist title="Finish gym setup" steps={setupSteps} />
+              ) : null}
               {!billingReady ? (
                 <Card variant="warning" contentStyle={styles.billingCard}>
                   <View style={styles.billingHeader}>
