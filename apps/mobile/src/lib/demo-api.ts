@@ -964,6 +964,39 @@ export async function demoMobileApiFetch<T>(
     return { records: zookDemoFixtures.attendanceAttempts } as T;
   }
 
+  if (pathname.endsWith("/reception/verify-code")) {
+    const body = init.body as { code?: string } | undefined;
+    const normalized = body?.code?.trim().toUpperCase();
+    const attendance = zookDemoFixtures.attendanceAttempts.find(
+      (attempt) => attempt.entryCode === normalized,
+    );
+    if (attendance) {
+      return {
+        match: {
+          type: "attendance",
+          valid: attendance.status === "APPROVED",
+          record: { status: attendance.status, entryCode: attendance.entryCode },
+          user: zookDemoFixtures.users.find((user) => user.id === attendance.memberUserId) ?? null,
+        },
+      } as T;
+    }
+
+    const order = demoShopOrders().find((candidate) => candidate.pickupCode === normalized);
+    if (order) {
+      return {
+        match: {
+          type: "pickup",
+          valid: order.status === "READY_FOR_PICKUP" || order.status === "PAID",
+          pickupCode: { status: order.status, code: order.pickupCode },
+          order: { status: order.status, totalPaise: order.totalPaise },
+          user: order.user,
+        },
+      } as T;
+    }
+
+    return { match: null } as T;
+  }
+
   if (pathname.endsWith("/payments/recent")) {
     return { payments: zookDemoFixtures.payments } as T;
   }

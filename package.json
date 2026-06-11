@@ -12,6 +12,7 @@
     "env:check": "tsx scripts/check-release-env.ts",
     "release:preflight": "tsx scripts/release-preflight.ts",
     "mobile:release:check": "tsx scripts/check-mobile-release-readiness.ts",
+    "screenshots:check": "tsx scripts/check-screenshot-variance.ts",
     "check:launch-gates": "tsx scripts/check-launch-gates.ts",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint && pnpm check:i18n && pnpm check:launch-gates",

@@ -28,14 +28,14 @@ describe("mobile runtime mode", () => {
     delete process.env.MOBILE_OFFLINE_DEMO;
   });
 
-  it("uses Expo config API mode when Metro injects app config extras", async () => {
+  it("lets explicit process env override Expo config API mode", async () => {
     expoConstants.expoConfig.extra = { apiMode: "offline-demo" };
     process.env.EXPO_PUBLIC_API_MODE = "backend";
 
     const { getMobileApiMode, isOfflineDemoMode } = await import("./runtime-mode");
 
-    expect(getMobileApiMode()).toBe("offline-demo");
-    expect(isOfflineDemoMode()).toBe(true);
+    expect(getMobileApiMode()).toBe("backend");
+    expect(isOfflineDemoMode()).toBe(false);
   });
 
   it("uses Expo config offlineDemo boolean as a fallback", async () => {

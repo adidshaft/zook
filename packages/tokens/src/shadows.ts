@@ -1,4 +1,4 @@
-import { darkPalette } from "./palette";
+import { darkPalette } from "./palette.ts";
 
 export const shadows = {
   glowLime: {
