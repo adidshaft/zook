@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Reanimated, {
   Easing,
@@ -19,6 +19,7 @@ export default function OnboardingSplash() {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
   const { palette } = useTheme();
+  const navigatedRef = useRef(false);
   const useStaticIntro = reduceMotion || Platform.OS === "android";
   const wordmarkOpacity = useSharedValue(useStaticIntro ? 1 : 0);
   const wordmarkScale = useSharedValue(useStaticIntro ? 1 : 0.96);
@@ -29,35 +30,41 @@ export default function OnboardingSplash() {
   }));
   const markStyle = useAnimatedStyle(() => ({ opacity: markOpacity.value }));
 
+  const navigateNext = useCallback(() => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+    router.push("/onboarding/language" as never);
+  }, [router]);
+
   useEffect(() => {
     if (!useStaticIntro) {
       wordmarkOpacity.value = withTiming(1, {
-        duration: 720,
+        duration: 480,
         easing: Easing.out(Easing.cubic),
       });
       wordmarkScale.value = withTiming(1, {
-        duration: 720,
+        duration: 480,
         easing: Easing.out(Easing.cubic),
       });
       markOpacity.value = withDelay(
-        720,
-        withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }),
+        480,
+        withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }),
       );
     }
 
     const timer = setTimeout(() => {
-      router.push("/onboarding/language" as never);
-    }, useStaticIntro ? 650 : 2000);
+      navigateNext();
+    }, useStaticIntro ? 1200 : 1400);
 
     return () => clearTimeout(timer);
-  }, [markOpacity, router, useStaticIntro, wordmarkOpacity, wordmarkScale]);
+  }, [markOpacity, navigateNext, useStaticIntro, wordmarkOpacity, wordmarkScale]);
 
   return (
     <Pressable
       testID="onboarding-intro-screen"
       accessibilityRole="button"
       accessibilityLabel="Skip intro"
-      onPress={() => router.push("/onboarding/language" as never)}
+      onPress={navigateNext}
       style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
     >
       <View style={styles.center}>
@@ -75,7 +82,6 @@ export default function OnboardingSplash() {
           <Text style={[styles.scanText, { color: palette.text.secondary }]}>scan to enter</Text>
         </Reanimated.View>
       </View>
-      <Text style={[styles.skipText, { color: palette.text.tertiary }]}>Tap to skip</Text>
     </Pressable>
   );
 }
@@ -142,9 +148,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     letterSpacing: 0,
-  },
-  skipText: {
-    fontFamily: "Inter_600SemiBold",
-    textAlign: "center",
   },
 });
