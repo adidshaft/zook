@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { SymbolView, type SFSymbol } from "expo-symbols";
+import * as ExpoSymbols from "expo-symbols";
+import type { SFSymbol } from "expo-symbols";
 import { Platform } from "react-native";
 
 export type AppIconName =
@@ -74,8 +75,8 @@ export function Icon({
   size?: number;
 }) {
   const icon = iconMap[name];
-  if (Platform.OS === "ios") {
-    return <SymbolView name={icon.ios} size={size} tintColor={color} />;
+  if (Platform.OS === "ios" && !__DEV__) {
+    return <ExpoSymbols.SymbolView name={icon.ios} size={size} tintColor={color} />;
   }
   return (
     <Ionicons

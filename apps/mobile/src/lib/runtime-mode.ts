@@ -77,10 +77,10 @@ function resolveAppEnv() {
 function resolveApiMode() {
   const expoExtra = getExpoConfigExtra();
   const candidates: Array<[string, string | undefined]> = [
-    ["EXPO_CONFIG_API_MODE", expoExtra.apiMode as string | undefined],
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
     ["MOBILE_API_MODE", process.env.MOBILE_API_MODE],
     ["API_MODE", process.env.API_MODE],
+    ["EXPO_CONFIG_API_MODE", expoExtra.apiMode as string | undefined],
   ];
   for (const [, value] of candidates) {
     const raw = value?.trim();
