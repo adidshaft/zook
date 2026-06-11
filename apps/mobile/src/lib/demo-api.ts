@@ -465,6 +465,7 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/auth/me") return session as T;
   if (pathname === "/auth/logout") return { ok: true } as T;
+  if (pathname === "/support/feedback") return { submitted: true } as T;
   if (pathname === "/me/orgs")
     return { organizations: session.organizations, activeOrgId: session.activeOrgId } as T;
   if (pathname === "/me/profile") return demoProfile() as T;
