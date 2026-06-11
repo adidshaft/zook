@@ -22,7 +22,7 @@ Split the 2,048-line `apps/mobile/app/reception.tsx` mega-screen into a `recepti
 - `apps/mobile/app/reception.tsx` — 2,048 lines. Component named `Reception`. Internal state machine on `view: DeskView = "desk" | "members" | "payments" | "orders"` (line 55).
 - Inline helpers at file top: `normalizeView` (89), `deskReasonCopy` (95), `redactPhone` (100), `ageLabel` (105), `phoneRevealStorageKey` (118), `paymentModes` (75), `reasonSuggestions` (83).
 - Inline `VerificationResult` component at line 1564.
-- `BottomNav` rendered at the bottom; uses role-based tab discovery from `legacy.tsx`.
+- `BottomNav` rendered at the bottom; uses role-based tab discovery from `old.tsx`.
 - The 4 "views" branch at lines 738 (desk), 932 (members), 1164 (payments), 1356 (orders).
 - Bottom nav definitions for reception live at `apps/mobile/src/components/primitives/foundation.tsx:2084` (`receptionTabs`).
 
@@ -52,7 +52,7 @@ apps/mobile/src/features/reception/   (new — extracted helpers + components)
 
 ## Bottom tab bar
 
-Instead of using the role-keyed `BottomNav` from `legacy.tsx`, build a **local tab bar** that lives in `reception/_layout.tsx` and uses Expo Router's `Tabs`:
+Instead of using the role-keyed `BottomNav` from `old.tsx`, build a **local tab bar** that lives in `reception/_layout.tsx` and uses Expo Router's `Tabs`:
 
 ```tsx
 // apps/mobile/app/reception/_layout.tsx
@@ -391,4 +391,4 @@ Every reception screen / component touched in this plan must:
 - Does not extract `MemberList` as a shared component yet (plan #08 — happens after Owner and Trainer also have member lists to compare with).
 - Does not change `attendanceApi` or `receptionApi`.
 - Does not redesign the visual layout — copy existing layout, just into new files.
-- Does not remove `legacy.tsx` `receptionTabs` (that's plan #11).
+- Does not remove `old.tsx` `receptionTabs` (that's plan #11).

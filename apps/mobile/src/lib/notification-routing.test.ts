@@ -26,7 +26,7 @@ describe("parseDeepLinkUrl", () => {
     ).toBe("/plan/assign_1?notificationId=notif_1");
   });
 
-  it("canonicalizes legacy plan and tracking links", () => {
+  it("canonicalizes old plan and tracking links", () => {
     expect(parseDeepLinkUrl("https://zookfit.in/plans/assign_1?notificationId=notif_1")?.href).toBe(
       "/plan/assign_1?notificationId=notif_1",
     );

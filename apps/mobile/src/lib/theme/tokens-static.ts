@@ -1,6 +1,5 @@
 export {
   layout,
-  legacyColors,
   opacity,
   palettes,
   radii,

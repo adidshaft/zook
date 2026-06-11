@@ -358,7 +358,7 @@ export function ZookScreen({
 export function Screen({ children, title }: { children: ReactNode; title?: string }) {
   return (
     <ZookScreen>
-      {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
+      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
       {children}
     </ZookScreen>
   );
@@ -388,7 +388,7 @@ export function ScreenShell({
   const contentPaddingBottom = bottomNav ? computedBottomPadding : stickyAction ? layout.stickyActionHeight + spacing.lg : spacing.xl;
   return (
     <ZookScreen ambient={ambient} style={style}>
-      {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
+      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
       {scroll ? (
         <ScrollView
           contentInsetAdjustmentBehavior="never"
@@ -3132,7 +3132,7 @@ const styles = StyleSheet.create({
     borderRadius: 130,
     opacity: 0.42,
   },
-  legacyTitle: {
+  shellTitle: {
     color: fallbackColors.text,
     ...typography.screenTitle,
     paddingHorizontal: layout.screenPadding,

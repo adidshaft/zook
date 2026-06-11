@@ -6,7 +6,7 @@ import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
 
-const legacyViewTargets: Record<
+const viewRedirectTargets: Record<
   string,
   "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing"
 > = {
@@ -33,7 +33,7 @@ export default function OwnerLayout() {
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
     if (!rawView || pathname !== "/owner") return;
-    const target = legacyViewTargets[rawView];
+    const target = viewRedirectTargets[rawView];
     if (target) router.replace(target as never);
   }, [params.view, pathname, router]);
 

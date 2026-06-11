@@ -68,7 +68,7 @@ function titleCaseStatus(status?: string | null) {
   return "Recorded";
 }
 
-const legacyDefaultBranchName = ["Default", "Branch"].join(" ");
+const fallbackDefaultBranchName = ["Default", "Branch"].join(" ");
 
 export default function AttendanceResultScreen() {
   useHideBottomNav();
@@ -173,7 +173,7 @@ export default function AttendanceResultScreen() {
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode?.trim() || null;
   const branchName =
-    record.branchName === legacyDefaultBranchName
+    record.branchName === fallbackDefaultBranchName
       ? "Main branch"
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";

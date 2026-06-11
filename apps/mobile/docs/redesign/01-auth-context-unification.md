@@ -110,7 +110,7 @@ A bottom sheet component:
 - On tap: call `switchRole` and/or `switchOrg`; close sheet; replace router to the new role's default route via `routeForRole`
 - If only one combo is available, the chip renders read-only (no tap target)
 
-Use existing primitives: `Sheet` or `expo-safe-bottom-sheet.tsx`, `ListRow` from `legacy.tsx`. Match visual treatment to the existing `MobileHeader`.
+Use existing primitives: `Sheet` or `expo-safe-bottom-sheet.tsx`, `ListRow` from `old.tsx`. Match visual treatment to the existing `MobileHeader`.
 
 ### Step 4 — Mount the switcher in the global header
 
