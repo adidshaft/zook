@@ -709,6 +709,30 @@ export const ownerApi = {
       body: { joinRequestIds: options.joinRequestIds },
     });
   },
+  sendMemberNotification<T = unknown>(
+    options: RequestOptions & {
+      memberUserId: string;
+      title: string;
+      body: string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/notifications`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: {
+        type: "OPERATIONAL",
+        audience: "single_member",
+        title: options.title,
+        body: options.body,
+        pushEnabled: true,
+        selectedUserIds: [],
+        singleUserId: options.memberUserId,
+        metadata: options.metadata ?? {},
+      },
+    });
+  },
 };
 
 export const notificationsApi = {
