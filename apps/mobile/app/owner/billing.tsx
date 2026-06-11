@@ -230,7 +230,7 @@ export default function OwnerBillingScreen() {
                     <ZookButton
                       key={item}
                       size="sm"
-                      tone={cycle === item ? "lime" : "secondary"}
+                      variant={cycle === item ? "primary" : "secondary"}
                       onPress={() => setCycle(item)}
                     >
                       {titleCaseFromCode(item)}
@@ -314,7 +314,7 @@ export default function OwnerBillingScreen() {
 
               {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd ? (
                 <ZookButton
-                  tone="danger"
+                  variant="destructive"
                   icon="close-circle-outline"
                   busy={cancel.isPending}
                   disabled={busy}

@@ -194,7 +194,7 @@ export function MemberStateHero({
           {showBillingAction && !expired ? (
             <ZookButton
               onPress={() => router.push("/membership")}
-              tone="secondary"
+              variant="secondary"
               icon="card-outline"
               style={styles.heroSecondaryAction}
               accessibilityLabel="View membership"

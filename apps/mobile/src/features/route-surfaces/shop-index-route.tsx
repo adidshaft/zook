@@ -964,7 +964,7 @@ export default function Shop() {
                   action={
                     <ZookButton
                       onPress={() => void productsQuery.refetch()}
-                      tone="secondary"
+                      variant="secondary"
                       icon="refresh-outline"
                     >
                       {t("shop.tryAgain")}
@@ -1010,7 +1010,7 @@ function BrowserReturnCard({
         </Text>
       </View>
       <ZookButton
-        tone="secondary"
+        variant="secondary"
         disabled={checking}
         onPress={onCheckStatus}
         icon="refresh-outline"

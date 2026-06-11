@@ -45,7 +45,7 @@ export function AutopayCard({
       </View>
       {live ? (
         <ZookButton
-          tone="secondary"
+          variant="secondary"
           disabled={autopayBusy}
           onPress={() => onCancel(subscription)}
           icon="close-circle-outline"

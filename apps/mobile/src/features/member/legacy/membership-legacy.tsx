@@ -574,7 +574,7 @@ export default function MembershipScreen() {
                 </Text>
               </View>
               <ZookButton
-                tone="secondary"
+                variant="secondary"
                 disabled={checkingCheckoutStatus}
                 onPress={() => void refreshMembershipAfterCheckout()}
                 icon="refresh-outline"
@@ -840,7 +840,7 @@ function RenewalSheet({
         <View style={styles.sheetActions}>
           <ZookButton
             testID="membership-renewal-cancel"
-            tone="secondary"
+            variant="secondary"
             onPress={onClose}
             style={styles.actionHalf}
           >
@@ -849,7 +849,7 @@ function RenewalSheet({
           {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
             <ZookButton
               testID="membership-switch-now"
-              tone="secondary"
+              variant="secondary"
               onPress={onSwitch}
               disabled={renewing}
               busy={renewing}

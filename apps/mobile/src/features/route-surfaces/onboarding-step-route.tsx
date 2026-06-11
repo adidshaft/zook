@@ -225,7 +225,7 @@ export function PermissionsStep() {
         </ZookButton>
         <ZookButton
           testID="onboarding-skip-permissions"
-          tone="secondary"
+          variant="secondary"
           onPress={async () => {
             try {
               await setStoredValue(ONBOARDING_STORAGE_KEY, INTRO_COMPLETE);

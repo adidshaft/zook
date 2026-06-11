@@ -177,7 +177,7 @@ function ContactVerifier({
         icon="send-outline"
         onPress={requestOtp}
         size="sm"
-        tone="secondary"
+        variant="secondary"
       >
         {currentValue ? `Update ${title}` : `Add ${title}`}
       </ZookButton>

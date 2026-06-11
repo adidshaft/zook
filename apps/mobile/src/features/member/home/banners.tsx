@@ -104,7 +104,7 @@ function Banner({
           {body}
         </Text>
       </View>
-      <ZookButton href={actionHref as never} tone="secondary" size="sm">
+      <ZookButton href={actionHref as never} variant="secondary" size="sm">
         {actionLabel}
       </ZookButton>
       {onDismiss ? (

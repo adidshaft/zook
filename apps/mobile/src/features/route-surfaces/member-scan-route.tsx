@@ -772,7 +772,7 @@ export default function Scan() {
               </View>
               <ZookButton
                 onPress={() => void Linking.openSettings()}
-                tone="secondary"
+                variant="secondary"
                 icon="settings-outline"
               >
                 Open settings
@@ -816,7 +816,7 @@ export default function Scan() {
                       onPress={() =>
                         cameraBlocked ? void Linking.openSettings() : void requestPermission()
                       }
-                      tone="secondary"
+                      variant="secondary"
                       style={styles.permissionButton}
                     >
                       {cameraBlocked ? "Open settings" : "Allow camera"}
@@ -1019,7 +1019,7 @@ export default function Scan() {
                   }
                   resetScan();
                 }}
-                tone="secondary"
+                variant="secondary"
                 icon={needsProfilePhoto ? "person-circle-outline" : "refresh-outline"}
                 style={styles.retryButton}
               >
@@ -1039,7 +1039,7 @@ export default function Scan() {
               </View>
               <ZookButton
                 onPress={() => void replayQueuedScans()}
-                tone="secondary"
+                variant="secondary"
                 icon="refresh-outline"
                 busy={replayingQueue}
                 busyLabel="Syncing"
@@ -1117,7 +1117,7 @@ export default function Scan() {
             </ZookButton>
             <ZookButton
               onPress={() => void closePushPrompt(false)}
-              tone="secondary"
+              variant="secondary"
               style={styles.pushPromptAction}
             >
               Not now

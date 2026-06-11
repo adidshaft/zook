@@ -129,7 +129,7 @@ export default function TrainerClientOverviewScreen() {
             <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="person-outline" tone="neutral" size={42} />
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
-              <ZookButton href="/trainer/clients" tone="secondary" icon="people-outline">Back to clients</ZookButton>
+              <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
             </GlassCard>
           ) : null}
 

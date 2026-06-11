@@ -52,7 +52,7 @@ export default function TrackingScreen() {
             <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
               Log workout
             </ZookButton>
-            <ZookButton tone="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
+            <ZookButton variant="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
               History
             </ZookButton>
           </View>
