@@ -1,4 +1,5 @@
 import { zookDemoFixtures } from "@zook/core/demo-fixtures";
+import { demoMemberHomePayload } from "./demo-member-home";
 import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
 
 function normalizePath(path: string) {
@@ -27,57 +28,6 @@ function activeTrainingPlan() {
     zookDemoFixtures.trainingPlans[0] ??
     null
   );
-}
-
-function demoMemberHomePayload() {
-  const org = activeOrg();
-  const membership = activeMembership();
-  const plan = activeTrainingPlan();
-  return {
-    activeOrganization: org
-      ? {
-          id: org.id,
-          name: org.name,
-          status: org.status,
-          city: org.city,
-          state: org.state,
-        }
-      : null,
-    activeMembership: membership
-      ? {
-          id: membership.id,
-          status: membership.status,
-          endsAt: null,
-          remainingVisits: membership.remainingVisits,
-          daysLeft: membership.daysLeft,
-          nextCheckInEstimate: "Available today",
-        }
-      : null,
-    activePlan: plan
-      ? {
-          id: plan.id,
-          name: plan.title,
-          type: plan.type,
-          durationDays: 30,
-          visitLimit: 12,
-        }
-      : null,
-    activeCheckIn: null,
-    recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
-      id: attempt.id,
-      checkedInAt: attempt.checkedInAt,
-      status: attempt.status,
-      source: "OFFLINE_DEMO",
-    })),
-    unreadNotifications: zookDemoFixtures.notifications.filter(
-      (notification) => !notification.readAt,
-    ).length,
-    activeGoals: 3,
-    assignedPlans: zookDemoFixtures.trainingPlans.length,
-    streakDays: membership?.streakDays ?? 0,
-    todayPlanName: plan?.title ?? null,
-    nextCheckInEstimate: "Available today",
-  };
 }
 
 function demoMemberEngagementPayload() {
@@ -431,8 +381,6 @@ export async function demoMobileApiFetch<T>(
   const method = (init.method ?? "GET").toUpperCase();
   const session = getOfflineDemoSession();
   const membership = activeMembership();
-  const plan = activeTrainingPlan();
-  const org = activeOrg();
 
   if (pathname === "/auth/request-otp") {
     return {
@@ -491,51 +439,7 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname === "/me/home") {
-    return {
-      activeOrganization: org
-        ? {
-            id: org.id,
-            name: org.name,
-            status: org.status,
-            city: org.city,
-            state: org.state,
-          }
-        : null,
-      activeMembership: membership
-        ? {
-            id: membership.id,
-            status: membership.status,
-            endsAt: null,
-            remainingVisits: membership.remainingVisits,
-            daysLeft: membership.daysLeft,
-            nextCheckInEstimate: "Available today",
-          }
-        : null,
-      activePlan: plan
-        ? {
-            id: plan.id,
-            name: plan.title,
-            type: plan.type,
-            durationDays: 30,
-            visitLimit: 12,
-          }
-        : null,
-      activeCheckIn: null,
-      recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
-        id: attempt.id,
-        checkedInAt: attempt.checkedInAt,
-        status: attempt.status,
-        source: "OFFLINE_DEMO",
-      })),
-      unreadNotifications: zookDemoFixtures.notifications.filter(
-        (notification) => !notification.readAt,
-      ).length,
-      activeGoals: 3,
-      assignedPlans: zookDemoFixtures.trainingPlans.length,
-      streakDays: membership?.streakDays ?? 0,
-      todayPlanName: plan?.title ?? null,
-      nextCheckInEstimate: "Available today",
-    } as T;
+    return demoMemberHomePayload() as T;
   }
 
   if (pathname === "/me/badges") {
