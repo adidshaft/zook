@@ -1,5 +1,4 @@
 import Constants from "expo-constants";
-import { Stack } from "expo-router";
 import { Linking, Pressable, ScrollView, StyleSheet } from "react-native";
 
 import { Card, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
@@ -15,7 +14,6 @@ const supportRows = [
 export default function SupportSettingsScreen() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-support-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Help & support" subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`} showProfileShortcut={false} />

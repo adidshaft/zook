@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -101,7 +101,6 @@ export default function TrainerClientOverviewScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
           <MobileHeader

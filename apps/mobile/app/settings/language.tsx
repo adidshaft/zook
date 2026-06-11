@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { MobileHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
@@ -19,7 +18,6 @@ export default function LanguageSettingsScreen() {
   const { palette } = useTheme();
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-language-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Language" subtitle="Choose app language" showProfileShortcut={false} />

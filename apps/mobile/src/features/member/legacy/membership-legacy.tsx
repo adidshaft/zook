@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -507,7 +507,6 @@ export default function MembershipScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="membership-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"

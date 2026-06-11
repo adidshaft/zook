@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
@@ -193,7 +193,6 @@ export default function Settings() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <KeyboardAwareScreen
           scrollViewProps={{

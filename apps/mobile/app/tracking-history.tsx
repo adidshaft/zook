@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { EmptyState, Card, MobileHeader, QueryErrorState, ZookScreen } from "@/components/primitives";
@@ -19,7 +18,6 @@ export default function TrackingHistoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="tracking-history-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Workout history" subtitle="Completed training logs" showProfileShortcut={false} />

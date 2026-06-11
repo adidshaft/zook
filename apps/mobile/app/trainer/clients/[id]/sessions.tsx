@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import {
   Card,
@@ -36,7 +36,6 @@ export default function TrainerClientSessionsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-client-sessions-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader

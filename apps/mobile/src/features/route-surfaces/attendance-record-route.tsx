@@ -1,4 +1,4 @@
-import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, type Href, useLocalSearchParams, useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -119,7 +119,6 @@ export default function AttendanceResultScreen() {
   if (attendanceQuery.isLoading && !recordFromApi) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
         <ZookScreen>
           <ScrollView
             contentInsetAdjustmentBehavior="never"
@@ -141,7 +140,6 @@ export default function AttendanceResultScreen() {
   if (!attendanceRecordId || !recordFromApi) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
         <ZookScreen>
           <ScrollView
             contentInsetAdjustmentBehavior="never"
@@ -184,7 +182,6 @@ export default function AttendanceResultScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
           contentInsetAdjustmentBehavior="never"

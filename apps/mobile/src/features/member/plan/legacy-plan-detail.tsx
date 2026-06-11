@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -98,7 +98,6 @@ export default function Plans() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="plans-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
@@ -474,7 +473,6 @@ export function PlanDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="plan-detail-screen">
         <KeyboardAwareScreen
           scrollViewProps={{

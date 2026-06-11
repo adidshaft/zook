@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 
@@ -56,7 +55,6 @@ export default function PrivacySettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-privacy-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Privacy" subtitle="Your data controls" showProfileShortcut={false} />

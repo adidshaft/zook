@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
@@ -27,7 +26,6 @@ export default function OwnerStockScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-stock-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
