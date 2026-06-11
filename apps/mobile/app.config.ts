@@ -1,4 +1,5 @@
 import type { ExpoConfig } from "expo/config";
+import { darkPalette } from "@zook/tokens";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobileApiMode = "backend" | "offline-demo";
@@ -99,7 +100,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
       "expo-notifications",
       {
         icon: "./assets/notification-icon.png",
-        color: "#B9F455",
+        color: darkPalette.accent.base,
       },
     ],
     "expo-secure-store",

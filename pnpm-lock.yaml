@@ -86,6 +86,9 @@ importers:
       '@zook/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@zook/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@zook/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -385,6 +388,10 @@ importers:
         version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3)
 
   packages/ui:
+    dependencies:
+      '@zook/tokens':
+        specifier: workspace:*
+        version: link:../tokens
     devDependencies:
       typescript:
         specifier: ^5.7.3
