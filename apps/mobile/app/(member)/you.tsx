@@ -15,7 +15,6 @@ const settingsRows = [
   { href: "/settings/account", title: "Account", icon: "person-outline" },
   { href: "/settings/appearance", title: "Appearance", icon: "contrast-outline" },
   { href: "/settings/notifications", title: "Notifications", icon: "notifications-outline" },
-  { href: "/settings/language", title: "Language", icon: "language-outline" },
   { href: "/settings/privacy", title: "Privacy", icon: "lock-closed-outline" },
   { href: "/settings/support", title: "Help & support", icon: "help-circle-outline" },
 ] as const;
