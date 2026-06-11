@@ -118,7 +118,7 @@ export default function OwnerCommandScreen() {
           subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
           tone: "blue",
           icon: "time-outline",
-          cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
+          cta: { label: "Open", onPress: () => router.push("/owner/members?filter=expiring" as never) },
         }
       : null,
   ];

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
@@ -7,15 +7,18 @@ import { MemberList, type MemberListFilter, type MemberRowItem } from "@/compone
 import { ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { useAuth } from "@/lib/auth";
+import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
 import { layout } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
 
 export default function OwnerMembersScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ filter?: string | string[] }>();
   const queryClient = useQueryClient();
-  const { activeOrgId } = useAuth();
+  const { activeOrgId, token } = useAuth();
   const membersQuery = useOrgMembers();
   const [memberSearch, setMemberSearch] = useState("");
   const [debouncedMemberSearch, setDebouncedMemberSearch] = useState("");
@@ -27,6 +30,36 @@ export default function OwnerMembersScreen() {
     }, 250);
     return () => clearTimeout(timer);
   }, [memberSearch]);
+
+  useEffect(() => {
+    const rawFilter = Array.isArray(params.filter) ? params.filter[0] : params.filter;
+    if (rawFilter === "expiring") {
+      setMemberFilter("expiring");
+    }
+  }, [params.filter]);
+
+  async function sendReminder(input: { memberUserId: string; name: string; endsAt?: string | null }) {
+    if (!token || !activeOrgId) return;
+    try {
+      const dateLabel = input.endsAt ? new Date(input.endsAt).toLocaleDateString() : "soon";
+      await ownerApi.sendMemberNotification({
+        token,
+        orgId: activeOrgId,
+        memberUserId: input.memberUserId,
+        title: "Membership expiring soon",
+        body: `Your membership ends on ${dateLabel}. Renew in the app.`,
+        metadata: { reason: "manual_expiring_membership_reminder", endsAt: input.endsAt },
+      });
+      showToast({ tone: "success", haptic: "success", message: `Reminder sent to ${input.name}.` });
+    } catch (error) {
+      showToast({
+        title: "Reminder not sent",
+        message: error instanceof Error ? error.message : "Try again.",
+        tone: "danger",
+        haptic: "error",
+      });
+    }
+  }
 
   const filteredMembers = useMemo(() => {
     const term = debouncedMemberSearch.trim().toLowerCase();
@@ -71,10 +104,25 @@ export default function OwnerMembersScreen() {
           phone: member.user?.phone,
           avatarUrl: member.user?.profilePhotoUrl ?? member.profile.profilePhotoUrl,
           status: normalizedStatus,
-          meta: member.user?.fitnessGoal ?? member.profile.fitnessGoal ?? undefined,
+          meta:
+            normalizedStatus === "expiring" && daysLeft !== null
+              ? `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`
+              : (member.user?.fitnessGoal ?? member.profile.fitnessGoal ?? undefined),
+          action:
+            normalizedStatus === "expiring"
+              ? {
+                  label: "Send reminder",
+                  onPress: () =>
+                    void sendReminder({
+                      memberUserId: member.profile.userId,
+                      name: member.user?.name ?? "Member",
+                      endsAt: member.activeSubscription?.endsAt,
+                    }),
+                }
+              : undefined,
         };
       }),
-    [filteredMembers],
+    [filteredMembers, activeOrgId, token],
   );
   const selectedFilter: MemberListFilter =
     memberFilter === "all" ? { kind: "all" } : { kind: "status", status: memberFilter };

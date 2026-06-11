@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card, Pill } from "@/components/primitives";
+import { Card, Pill, ZookButton } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
@@ -94,6 +94,15 @@ export function MemberListRow({
       </View>
       <View style={styles.trailing}>
         <Pill tone={statusTone(item.status)}>{item.status}</Pill>
+        {item.action ? (
+          <ZookButton
+            size="sm"
+            variant="secondary"
+            onPress={() => item.action?.onPress()}
+          >
+            {item.action.label}
+          </ZookButton>
+        ) : null}
         <Ionicons name="chevron-forward" size={17} color={palette.text.secondary} />
       </View>
     </Card>
@@ -133,7 +142,7 @@ const styles = StyleSheet.create({
   },
   revealText: typography.caption,
   trailing: {
-    width: 92,
+    width: 118,
     alignItems: "flex-end",
     justifyContent: "center",
     gap: spacing.sm,

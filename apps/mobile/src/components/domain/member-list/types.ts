@@ -12,6 +12,7 @@ export type MemberRowItem = {
   badges?: Array<{ label: string; tone: DomainTone }>;
   meta?: string;
   phoneRevealed?: boolean;
+  action?: { label: string; onPress: () => void };
 };
 
 export type MemberListFilter =
