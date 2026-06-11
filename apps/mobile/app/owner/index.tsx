@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { Card, QueryErrorState, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, EmptyState, QueryErrorState, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
@@ -80,42 +80,49 @@ export default function OwnerCommandScreen() {
     prefetchOwnerWorkspace();
   }, [prefetchOwnerWorkspace]);
 
-  const items: AttentionItem[] = [
-    {
-      id: "approvals",
-      title: "Approvals waiting",
-      subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
-      tone: pendingApprovals ? "amber" : "lime",
-      icon: "checkmark-done-outline",
-      cta: { label: pendingApprovals ? "Approvals" : "Open", onPress: () => router.push("/owner/approvals") },
-    },
-    {
-      id: "revenue",
-      title: "Payment exceptions",
-      subtitle: paymentExceptionCount
-        ? `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`
-        : "No transactions need review",
-      tone: paymentExceptionCount ? "amber" : "lime",
-      icon: "card-outline",
-      cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
-    },
-    {
-      id: "stock",
-      title: "Low stock",
-      subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
-      tone: lowStock.length ? "amber" : "lime",
-      icon: "cube-outline",
-      cta: { label: "Open", onPress: () => router.push("/owner/stock") },
-    },
-    {
-      id: "memberships",
-      title: "Expiring soon",
-      subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
-      tone: expiringSoon ? "blue" : "neutral",
-      icon: "time-outline",
-      cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
-    },
+  const maybeAttentionItems: Array<AttentionItem | null> = [
+    pendingApprovals > 0
+      ? {
+          id: "approvals",
+          title: "Approvals waiting",
+          subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
+          tone: "amber",
+          icon: "checkmark-done-outline",
+          cta: { label: "Approvals", onPress: () => router.push("/owner/approvals") },
+        }
+      : null,
+    paymentExceptionCount > 0
+      ? {
+          id: "revenue",
+          title: "Payment exceptions",
+          subtitle: `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`,
+          tone: "amber",
+          icon: "card-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
+        }
+      : null,
+    lowStock.length > 0
+      ? {
+          id: "stock",
+          title: "Low stock",
+          subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
+          tone: "amber",
+          icon: "cube-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/stock") },
+        }
+      : null,
+    expiringSoon > 0
+      ? {
+          id: "memberships",
+          title: "Expiring soon",
+          subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
+          tone: "blue",
+          icon: "time-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
+        }
+      : null,
   ];
+  const items = maybeAttentionItems.filter((item): item is AttentionItem => Boolean(item));
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
   const subscription = billingQuery.data?.subscription;
   const billingReady =
@@ -140,7 +147,10 @@ export default function OwnerCommandScreen() {
     {
       label: "Today check-ins",
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
-      hint: `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`,
+      hint:
+        (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
+          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`
+          : undefined,
       tone: "blue",
       icon: "qr-code-outline",
       onPress: () => router.push("/owner/approvals"),
@@ -156,7 +166,7 @@ export default function OwnerCommandScreen() {
     {
       label: "Approvals",
       value: pendingApprovals,
-      hint: "Needs attention",
+      hint: pendingApprovals > 0 ? "Needs attention" : undefined,
       tone: "violet",
       icon: "checkmark-done-outline",
       onPress: () => router.push("/owner/approvals"),
@@ -219,7 +229,17 @@ export default function OwnerCommandScreen() {
                 </Card>
               ) : null}
               <MetricGrid testID="owner-view-command" items={metrics} />
-              <AttentionCard items={items} />
+              {items.length ? (
+                <AttentionCard items={items} />
+              ) : (
+                <Card variant="compact">
+                  <EmptyState
+                    icon="checkmark-done-outline"
+                    title="All clear"
+                    body="Nothing needs your attention right now"
+                  />
+                </Card>
+              )}
               <OwnerDashboardCharts charts={dashboard.charts} />
             </>
           ) : null}
