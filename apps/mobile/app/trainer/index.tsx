@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import {
   EmptyState,
   Card,
@@ -71,7 +72,7 @@ export default function TrainerHomeScreen() {
             eyebrow={`${clients.length} client${clients.length === 1 ? "" : "s"}`}
             title="Trainer"
             subtitle={session?.user.name ?? "Trainer"}
-            chip={<StatusChip status="Trainer" tone="neutral" />}
+            chip={<RoleSwitcherChip />}
             showProfileShortcut={false}
             trailing={
               <View style={styles.headerActions}>
