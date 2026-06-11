@@ -133,9 +133,9 @@ const styles = StyleSheet.create({
   phoneText: typography.small,
   revealButton: {
     alignItems: "center",
-    minHeight: 40,
+    minHeight: 44,
     minWidth: 76,
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
     paddingHorizontal: 12,
     justifyContent: "center",

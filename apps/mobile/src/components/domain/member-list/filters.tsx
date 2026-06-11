@@ -80,8 +80,8 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   filterChip: {
     alignItems: "center",
-    minHeight: 40,
-    borderRadius: 20,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     justifyContent: "center",
