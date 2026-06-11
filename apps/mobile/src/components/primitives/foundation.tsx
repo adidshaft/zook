@@ -314,7 +314,7 @@ export function ZookScreen({
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
-  const { palette, mode } = useTheme();
+  const { palette } = useTheme();
   return (
     <View
       testID={testID}
@@ -799,7 +799,7 @@ export function MobileHeader({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { palette, mode } = useTheme();
+  const { palette } = useTheme();
 
   // Root tabs where we should not display a back button
   const isRootTab =
@@ -1023,7 +1023,6 @@ export function IconBubble({
   tone?: PillTone;
   size?: number;
 }) {
-  const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
   return (
     <View
@@ -2606,7 +2605,7 @@ function DockTabItem({
   slotStyle: StyleProp<ViewStyle>;
 }) {
   const router = useRouter();
-  const { palette, mode } = useTheme();
+  const { palette } = useTheme();
   const raised = isMemberNav && tab.raised;
   const showLabel = !(raised && tab.hideLabel);
   const translatedLabel = translatedNavLabel(tab.label, t);

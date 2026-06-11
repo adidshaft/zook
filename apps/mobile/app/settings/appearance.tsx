@@ -1,4 +1,3 @@
-import type { Role } from "@zook/core";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { MobileHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
