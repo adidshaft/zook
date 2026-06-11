@@ -1,12 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RoleTabBarBackground } from "@/components/role-tab-bar-background";
+import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { createRoleTabBarStyle, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",
@@ -15,18 +13,15 @@ const legacyViewTargets: Record<string, "/reception/members" | "/reception/payme
 };
 
 export default function ReceptionLayout() {
-  const { palette, mode } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
-  const insets = useSafeAreaInsets();
   const canRecordPayments = useHasPermission("PAYMENTS_RECORD_OFFLINE");
   const canFulfillOrders = useHasPermission("SHOP_FULFILL_ORDER");
   const pendingQuery = useOrgAttendancePending();
   const pendingCount =
     pendingQuery.data?.records.filter((record) => record.status === "PENDING_APPROVAL").length ??
     0;
-  const tabBarStyle = createRoleTabBarStyle({ palette, mode, bottomInset: insets.bottom });
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
@@ -37,24 +32,9 @@ export default function ReceptionLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <RoleTabBar {...props} badges={{ index: pendingCount }} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.accent.base,
-        tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarBackground: () => <RoleTabBarBackground mode={mode} />,
-        tabBarStyle,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: "Inter_600SemiBold",
-        },
-        tabBarItemStyle: {
-          borderRadius: 18,
-        },
-        tabBarBadgeStyle: {
-          backgroundColor: palette.feedback.danger,
-          color: palette.text.onDanger,
-          fontFamily: "Inter_800ExtraBold",
-        },
       }}
     >
       <Tabs.Screen
@@ -65,7 +45,6 @@ export default function ReceptionLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "desktop" : "desktop-outline"} size={22} color={color} />
           ),
-          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
         }}
       />
       <Tabs.Screen
