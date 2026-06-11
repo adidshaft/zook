@@ -1,7 +1,8 @@
 import { Stack } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,9 @@ import {
   Card,
   IconBubble,
   MobileHeader,
+  Pill,
   QueryErrorState,
+  StatStrip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -23,6 +26,7 @@ import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
+import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { layout, spacing } from "@/lib/theme";
@@ -95,13 +99,20 @@ function ActiveCheckInCard({
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const { palette } = useTheme();
   const homeQuery = useMemberHome();
+  const trackingQuery = useMyTracking();
   const home = homeQuery.data;
   const state = deriveHomeState(home);
   const firstName = session?.user.name?.trim().split(/\s+/)[0] || "Member";
   const { activeCheckIn, checkoutBusy, stopActiveCheckIn } = useManualCheckout();
+  const streakDays = home?.streakDays ?? 0;
+  const weeklyVisits = countThisWeek(home?.recentAttendance ?? []);
+  const activeMinutes = Math.round((trackingQuery.data?.summary.totalDuration ?? 0) / 60);
+  const workoutsLogged = trackingQuery.data?.summary.weeklyCount ?? 0;
+  const habitsDone = trackingQuery.data?.habits.length ?? 0;
 
   return (
     <>
@@ -124,7 +135,16 @@ export default function HomeScreen() {
             eyebrow={home?.activeOrganization?.name ?? "Member"}
             title={`Hello, ${firstName}`}
             subtitle="Today in your gym"
-            chip={<RoleSwitcherChip />}
+            chip={
+              <View style={styles.headerChips}>
+                <RoleSwitcherChip />
+                {streakDays > 0 ? (
+                  <Pill tone="amber" icon="flame">
+                    {streakDays}-day streak
+                  </Pill>
+                ) : null}
+              </View>
+            }
             showProfileShortcut={false}
           />
 
@@ -142,6 +162,21 @@ export default function HomeScreen() {
                 />
               ) : null}
               {renderHomeCard(state)}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open progress"
+                onPress={() => router.push("/progress" as never)}
+                style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
+              >
+                <StatStrip
+                  items={[
+                    { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
+                    { label: "Active time", value: formatMinutes(activeMinutes), icon: "time-outline" },
+                    { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
+                    { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
+                  ]}
+                />
+              </Pressable>
               <Banners home={home} />
             </>
           ) : null}
@@ -151,21 +186,30 @@ export default function HomeScreen() {
   );
 }
 
-function HomeLoading() {
-  const { palette } = useTheme();
+function startOfWeek() {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - diff);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
 
-  return (
-    <Card variant="compact" contentStyle={styles.loadingCard}>
-      <IconBubble icon="flash-outline" tone="lime" size={42} />
-      <View style={styles.loadingCopy}>
-        <Text style={[styles.loadingTitle, { color: palette.text.primary }]}>Loading today</Text>
-        <Text style={[styles.loadingBody, { color: palette.text.secondary }]}>
-          Getting your membership and plan status.
-        </Text>
-      </View>
-      <ActivityIndicator color={palette.accent.base} />
-    </Card>
-  );
+function countThisWeek(records: Array<{ checkedInAt?: string | null }>) {
+  const weekStart = startOfWeek();
+  return records.filter((record) => {
+    const timestamp = record.checkedInAt ? new Date(record.checkedInAt).getTime() : Number.NaN;
+    return Number.isFinite(timestamp) && timestamp >= weekStart;
+  }).length;
+}
+
+function formatMinutes(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining ? `${hours}h${remaining}m` : `${hours}h`;
 }
 
 const styles = StyleSheet.create({
@@ -177,15 +221,14 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     width: "100%",
   },
-  loadingCard: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    minHeight: 86,
+  headerChips: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
   },
-  loadingCopy: { flex: 1, gap: 3 },
-  loadingTitle: { fontFamily: "Inter_700Bold", fontSize: 16 },
-  loadingBody: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 18 },
+  statStripPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   activeSessionCard: {
     gap: spacing.md,
     padding: 16,
