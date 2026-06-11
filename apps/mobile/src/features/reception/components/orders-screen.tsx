@@ -4,7 +4,7 @@ import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, FormField, IconBubble, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
-import { useReceptionWorkspace, VerificationResult, receptionWorkspaceStyles as styles } from "../reception-workspace";
+import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
 export function ReceptionOrdersScreenBody() {
   const { palette } = useTheme();
@@ -16,11 +16,9 @@ export function ReceptionOrdersScreenBody() {
     handleVerifyCodeChange,
     paymentStatus,
     readyOrders,
-    verifiedUser,
     verifyingCode,
     verifyCode,
     verifyEntryCode,
-    verifyMessage,
   } = useReceptionWorkspace();
 
   return (
@@ -56,6 +54,7 @@ export function ReceptionOrdersScreenBody() {
                 autoCapitalize="characters"
                 returnKeyType="done"
                 blurOnSubmit
+                onSubmitEditing={() => verifyEntryCode()}
                 placeholder="Enter pickup code"
               />
               <PrimaryButton
@@ -66,9 +65,6 @@ export function ReceptionOrdersScreenBody() {
               >
                 {verifyingCode ? "Verifying..." : "Verify Pickup Code"}
               </PrimaryButton>
-              {verifyMessage ? (
-                <VerificationResult message={verifyMessage} user={verifiedUser} />
-              ) : null}
             </Card>
             <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
             <View style={styles.stack}>
@@ -152,4 +148,3 @@ export function ReceptionOrdersScreenBody() {
     </>
   );
 }
-

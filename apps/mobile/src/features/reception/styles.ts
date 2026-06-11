@@ -241,6 +241,67 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     flex: 1,
     ...typography.bodyStrong,
   },
+  verificationModalBackdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  verificationModalContent: {
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  verificationModalPhoto: {
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.72)",
+  },
+  verificationModalPhotoFallback: {
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  verificationModalEyebrow: {
+    ...typography.eyebrow,
+    textAlign: "center",
+  },
+  verificationModalTitle: {
+    ...typography.screenTitle,
+    textAlign: "center",
+  },
+  verificationModalName: {
+    ...typography.headerTitle,
+    textAlign: "center",
+  },
+  verificationModalDetail: {
+    ...typography.body,
+    textAlign: "center",
+  },
+  verificationModalDismiss: {
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+    paddingHorizontal: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verificationModalDismissPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
+  verificationModalDismissText: {
+    ...typography.caption,
+  },
   rowAmount: {
     ...typography.bodyStrong,
   },

@@ -18,8 +18,9 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Alert, Keyboard, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import Reanimated from "@/lib/reanimated-lite";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
@@ -74,6 +75,15 @@ type ReceptionCodeVerification = {
   };
 };
 
+type VerificationResultState = {
+  detail?: string;
+  message: string;
+  name?: string | null;
+  photoUrl?: string | null;
+  tone: "success" | "danger";
+  type?: "attendance" | "pickup";
+};
+
 type DomainMemberItem = ComponentProps<typeof MemberList>["items"][number];
 
 type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
@@ -108,11 +118,9 @@ function useReceptionWorkspaceState({
   const [selectedDecisionAttempt, setSelectedDecisionAttempt] =
     useState<ReceptionQueueRecord | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
-  const [verifyMessage, setVerifyMessage] = useState("");
-  const [verifiedUser, setVerifiedUser] = useState<{
-    name?: string | null;
-    profilePhotoUrl?: string | null;
-  } | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerificationResultState | null>(
+    null,
+  );
   const [memberSearch, setMemberSearch] = useState("");
   const [debouncedMemberSearch, setDebouncedMemberSearch] = useState("");
   const [paymentMode, setPaymentMode] = useState<DeskPaymentMode>("DIRECT_UPI");
@@ -142,6 +150,7 @@ function useReceptionWorkspaceState({
   const recordPaymentMutation = useRecordManualPayment();
   const fulfillOrderMutation = useFulfillShopOrder();
   const decisionSheetRef = useRef<BottomSheetModal>(null);
+  const lastAutoSubmittedCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (selectedMemberId) {
@@ -436,10 +445,31 @@ function useReceptionWorkspaceState({
     }
   }, [activeOrgId, queryClient]);
 
+  const presentVerificationResult = useCallback((result: VerificationResultState) => {
+    setVerificationResult(result);
+    void Haptics.notificationAsync(
+      result.tone === "success"
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Error,
+    );
+  }, []);
+
+  const dismissVerificationResult = useCallback(() => {
+    setVerificationResult(null);
+  }, []);
+
   function handleVerifyCodeChange(value: string) {
-    setVerifyCode(value.toUpperCase());
-    setVerifyMessage("");
-    setVerifiedUser(null);
+    const normalized = value.toUpperCase();
+    setVerifyCode(normalized);
+    setVerificationResult(null);
+    const compact = normalized.trim();
+    const isCompletePickupCode = /^[A-Z]{2}-PICK-\d{3}$/.test(compact);
+    if (isCompletePickupCode && compact !== lastAutoSubmittedCodeRef.current) {
+      lastAutoSubmittedCodeRef.current = compact;
+      setTimeout(() => {
+        void verifyEntryCode(compact);
+      }, 0);
+    }
   }
 
   async function approveAttendance(attemptId: string, approvalReason: string) {
@@ -476,19 +506,20 @@ function useReceptionWorkspaceState({
     }
   }
 
-  async function verifyEntryCode() {
+  async function verifyEntryCode(codeOverride?: string) {
     if (verifyingCode) return;
-    const normalized = verifyCode.trim().toUpperCase();
+    const normalized = (codeOverride ?? verifyCode).trim().toUpperCase();
     if (!normalized) {
-      setVerifyMessage("Enter a code first.");
-      setVerifiedUser(null);
+      const message = "Enter a code first.";
+      presentVerificationResult({ tone: "danger", message });
       return;
     }
     if (!token || !activeOrgId) {
-      setVerifyMessage("Sign in and select a gym before verifying.");
-      setVerifiedUser(null);
+      const message = "Sign in and select a gym before verifying.";
+      presentVerificationResult({ tone: "danger", message });
       return;
     }
+    setVerifyCode(normalized);
     setVerifyingCode(true);
     try {
       let result: ReceptionCodeVerification;
@@ -500,44 +531,64 @@ function useReceptionWorkspaceState({
         });
       } catch (error) {
         const message = getApiErrorMessage(error) || "Could not verify this code.";
-        setVerifyMessage(message);
-        setVerifiedUser(null);
+        presentVerificationResult({ tone: "danger", message });
         showToast({ tone: "danger", haptic: "error", title: "Verify failed", message });
         return;
       }
       if (!result.match) {
         const message = "No active entry or pickup code found.";
-        setVerifyMessage(message);
-        setVerifiedUser(null);
+        presentVerificationResult({ tone: "danger", message });
         showToast({ tone: "amber", haptic: "warning", message });
         return;
       }
-      setVerifiedUser(
-        result.match.user
-          ? { name: result.match.user.name, profilePhotoUrl: result.match.user.profilePhotoUrl }
-          : null,
-      );
       const name = result.match.user?.name ?? result.match.user?.email ?? "member";
       if (result.match.type === "attendance") {
         if (result.match.valid) {
-          const message = `Entry code verified for ${name}. Status: ${(result.match.record?.status ?? "approved").replace(/_/g, " ")}.`;
-          setVerifyMessage(message);
+          const status = (result.match.record?.status ?? "approved").replace(/_/g, " ");
+          presentVerificationResult({
+            tone: "success",
+            type: "attendance",
+            name,
+            photoUrl: result.match.user?.profilePhotoUrl,
+            message: "Check-in verified",
+            detail: `Status: ${status}`,
+          });
           showToast({ tone: "success", haptic: "success", message: `Verified ${name}` });
         } else {
           const message = `Entry code found for ${name}, but it is not valid for entry.`;
-          setVerifyMessage(message);
+          presentVerificationResult({
+            tone: "danger",
+            type: "attendance",
+            name,
+            photoUrl: result.match.user?.profilePhotoUrl,
+            message: "Check-in not valid",
+            detail: message,
+          });
           showToast({ tone: "amber", haptic: "warning", title: "Not valid for entry", message: name });
         }
         return;
       }
       if (result.match.valid) {
-        const message = `Pickup code verified for ${name}. Match the member before giving out the order.`;
-        setVerifyMessage(message);
+        presentVerificationResult({
+          tone: "success",
+          type: "pickup",
+          name,
+          photoUrl: result.match.user?.profilePhotoUrl,
+          message: "Pickup verified",
+          detail: `Order total: ${formatInr(result.match.order?.totalPaise ?? 0)}`,
+        });
         showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
       } else {
         const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
         const message = `Pickup code found for ${name}, but status is ${status}.`;
-        setVerifyMessage(message);
+        presentVerificationResult({
+          tone: "danger",
+          type: "pickup",
+          name,
+          photoUrl: result.match.user?.profilePhotoUrl,
+          message: "Pickup not ready",
+          detail: message,
+        });
         showToast({ tone: "amber", haptic: "warning", title: `Pickup ${status}`, message: name });
       }
     } finally {
@@ -706,10 +757,9 @@ function useReceptionWorkspaceState({
     todayCount,
     toggleMemberSelection,
     verifyCode,
-    verifiedUser,
+    verificationResult,
     verifyingCode,
     verifyEntryCode,
-    verifyMessage,
     visibleMembers,
     manualAttendanceMutation,
     renderDecisionBackdrop,
@@ -718,6 +768,7 @@ function useReceptionWorkspaceState({
     amountInvalid,
     referenceId,
     paymentModes,
+    dismissVerificationResult,
   };
 }
 
@@ -747,21 +798,21 @@ export function ReceptionWorkspace({
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
       <ZookScreen testID={testID} style={state.isDemo ? styles.demoScreen : undefined}>
-      <KeyboardAwareScreen
-        scrollViewProps={{
-          contentInsetAdjustmentBehavior: "never",
-          showsVerticalScrollIndicator: false,
-          contentContainerStyle: styles.content,
-          refreshControl: (
-            <RefreshControl
-              refreshing={state.refreshing}
-              onRefresh={state.onRefresh}
-              tintColor={palette.accent.base}
-              colors={[palette.accent.base]}
-            />
-          ),
-        }}
-      >
+        <KeyboardAwareScreen
+          scrollViewProps={{
+            contentInsetAdjustmentBehavior: "never",
+            showsVerticalScrollIndicator: false,
+            contentContainerStyle: styles.content,
+            refreshControl: (
+              <RefreshControl
+                refreshing={state.refreshing}
+                onRefresh={state.onRefresh}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
+              />
+            ),
+          }}
+        >
         <View style={styles.deskHeader}>
           <Pressable
             testID="reception-back"
@@ -845,10 +896,11 @@ export function ReceptionWorkspace({
             ) : null}
           </Card>
         ) : null}
-        {children}
-      </KeyboardAwareScreen>
-      <ApprovalDecisionSheet />
-    </ZookScreen>
+          {children}
+        </KeyboardAwareScreen>
+        <VerificationResultModal />
+        <ApprovalDecisionSheet />
+      </ZookScreen>
     </ReceptionWorkspaceContext.Provider>
   );
 }
@@ -995,46 +1047,86 @@ function ApprovalDecisionSheet() {
   );
 }
 
-export function VerificationResult({
-  message,
-  user,
-}: {
-  message: string;
-  user?: { name?: string | null; profilePhotoUrl?: string | null } | null;
-}) {
+function VerificationResultModal() {
   const { palette } = useTheme();
-  const success =
-    /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
+  const { dismissVerificationResult, verificationResult } = useReceptionWorkspace();
+  const success = verificationResult?.tone === "success";
   const { animatedStyle: pulseStyle, pulse } = useScalePulse();
   const { animatedStyle: shakeStyle, shake } = useShake();
   useEffect(() => {
+    if (!verificationResult) return;
     if (success) pulse();
     else shake();
-  }, [pulse, shake, success]);
-  const photo = user?.profilePhotoUrl;
+    const timer = setTimeout(dismissVerificationResult, 4000);
+    return () => clearTimeout(timer);
+  }, [dismissVerificationResult, pulse, shake, success, verificationResult]);
+  const photo = verificationResult?.photoUrl;
+  const backdropColor = success ? palette.feedback.success : palette.feedback.danger;
   return (
-    <Reanimated.View style={success ? pulseStyle : shakeStyle}>
-      <Card
-        variant={success ? "success" : "warning"}
-        padding={12}
-        contentStyle={styles.verificationResult}
+    <Modal
+      animationType="fade"
+      transparent
+      visible={Boolean(verificationResult)}
+      onRequestClose={dismissVerificationResult}
+    >
+      <View
+        style={[
+          styles.verificationModalBackdrop,
+          { backgroundColor: `${backdropColor}E6` },
+        ]}
       >
-        {photo ? (
-          <Image
-            source={{ uri: photo }}
-            contentFit="cover"
-            style={[styles.verificationPhoto, { backgroundColor: palette.surface.raised }]}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <IconBubble
-            icon={success ? "checkmark-circle-outline" : "alert-circle-outline"}
-            tone={success ? "lime" : "amber"}
-            size={34}
-          />
-        )}
-        <Text style={[styles.verificationText, { color: palette.text.primary }]}>{message}</Text>
-      </Card>
-    </Reanimated.View>
+        <Reanimated.View style={[styles.verificationModalContent, success ? pulseStyle : shakeStyle]}>
+          {photo ? (
+            <Image
+              source={{ uri: photo }}
+              contentFit="cover"
+              style={[
+                styles.verificationModalPhoto,
+                { backgroundColor: palette.surface.raised },
+              ]}
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <View
+              style={styles.verificationModalPhotoFallback}
+            >
+              <Ionicons
+                name={success ? "checkmark-circle-outline" : "alert-circle-outline"}
+                size={92}
+                color={palette.text.inverse}
+              />
+            </View>
+          )}
+          <Text style={[styles.verificationModalEyebrow, { color: palette.text.inverse }]}>
+            {verificationResult?.type === "pickup" ? "Pickup code" : "Entry code"}
+          </Text>
+          <Text style={[styles.verificationModalTitle, { color: palette.text.inverse }]}>
+            {verificationResult?.message}
+          </Text>
+          {verificationResult?.name ? (
+            <Text style={[styles.verificationModalName, { color: palette.text.inverse }]}>
+              {verificationResult.name}
+            </Text>
+          ) : null}
+          {verificationResult?.detail ? (
+            <Text style={[styles.verificationModalDetail, { color: palette.text.inverse }]}>
+              {verificationResult.detail}
+            </Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            onPress={dismissVerificationResult}
+            style={({ pressed }) => [
+              styles.verificationModalDismiss,
+              pressed ? styles.verificationModalDismissPressed : null,
+            ]}
+          >
+            <Text style={[styles.verificationModalDismissText, { color: palette.text.inverse }]}>
+              Dismiss
+            </Text>
+          </Pressable>
+        </Reanimated.View>
+      </View>
+    </Modal>
   );
 }

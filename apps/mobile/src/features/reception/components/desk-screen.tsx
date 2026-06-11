@@ -6,7 +6,7 @@ import { Card, FormField, IconBubble, ListRow, Pill, PrimaryButton, SectionHeade
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { formatDateTime } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
-import { useReceptionWorkspace, VerificationResult, receptionWorkspaceStyles as styles } from "../reception-workspace";
+import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
@@ -27,11 +27,9 @@ export function ReceptionDeskScreenBody() {
     showOwnerApprovalRequired,
     todayAttendanceQuery,
     todayCount,
-    verifiedUser,
     verifyingCode,
     verifyCode,
     verifyEntryCode,
-    verifyMessage,
   } = useReceptionWorkspace();
 
   return (
@@ -75,6 +73,9 @@ export function ReceptionDeskScreenBody() {
                 onChangeText={handleVerifyCodeChange}
                 placeholder="Enter code"
                 autoCapitalize="characters"
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={() => verifyEntryCode()}
               />
               <PrimaryButton
                 testID="reception-verify-code-button"
@@ -84,9 +85,6 @@ export function ReceptionDeskScreenBody() {
               >
                 {verifyingCode ? "Verifying..." : "Verify Code"}
               </PrimaryButton>
-              {verifyMessage ? (
-                <VerificationResult message={verifyMessage} user={verifiedUser} />
-              ) : null}
             </Card>
 
             <SectionHeader
