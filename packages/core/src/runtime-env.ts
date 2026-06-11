@@ -298,7 +298,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
       issues.push({
         level: "error",
         code: "PRODUCTION_MEMORY_RATE_LIMIT",
-        message: "RATE_LIMIT_PROVIDER=memory is not durable enough for production. Use upstash/redis.",
+        message: "RATE_LIMIT_PROVIDER=memory is not durable enough for production. Use upstash or redis.",
       });
     }
     if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "disabled") {
@@ -328,7 +328,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
       issues.push({
         level: "warning",
         code: "STAGING_IMPLICIT_RATE_LIMIT_PROVIDER",
-        message: "RATE_LIMIT_PROVIDER=memory is implicit in staging. Set RATE_LIMIT_PROVIDER=upstash for distributed checks or memory explicitly for a controlled pilot.",
+        message: "RATE_LIMIT_PROVIDER=memory is implicit in staging. Set RATE_LIMIT_PROVIDER=upstash or redis for distributed checks, or memory explicitly for a controlled pilot.",
       });
     }
   }

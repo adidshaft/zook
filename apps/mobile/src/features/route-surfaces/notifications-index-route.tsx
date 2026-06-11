@@ -26,7 +26,7 @@ import { formatRelativeDate } from "@/lib/formatting";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { mapNotificationPayloadToHref } from "@/lib/notification-routing";
 import { useMyNotifications } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 
@@ -108,6 +108,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const { t } = useI18n();
+  const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const notificationsQuery = useMyNotifications();
@@ -331,7 +332,9 @@ export default function NotificationsScreen() {
             />
           )}
           renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.dateGroupLabel}>{t(title)}</Text>
+            <Text style={[styles.dateGroupLabel, { color: palette.text.secondary }]}>
+              {t(title)}
+            </Text>
           )}
           renderSectionFooter={({ section }) => {
             if (section.title === "notifications.older" && section.originalCount > 3) {
@@ -340,9 +343,9 @@ export default function NotificationsScreen() {
                   onPress={() => setOlderExpanded((current) => !current)}
                   accessibilityRole="button"
                   accessibilityLabel={olderExpanded ? "Show fewer older notifications" : "Show older notifications"}
-                  style={styles.showOlderButton}
+                  style={({ pressed }) => [styles.showOlderButton, pressed ? styles.pressed : null]}
                 >
-                  <Text style={styles.showOlderText}>
+                  <Text style={[styles.showOlderText, { color: palette.accent.base }]}>
                     {olderExpanded ? "Show fewer" : `Show ${section.originalCount - 3} older`}
                   </Text>
                 </Pressable>
@@ -366,9 +369,16 @@ export default function NotificationsScreen() {
                     onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                     accessibilityRole="button"
                     accessibilityLabel="Back"
-                    style={styles.iconButton}
+                    style={({ pressed }) => [
+                      styles.iconButton,
+                      {
+                        borderColor: palette.border.subtle,
+                        backgroundColor: palette.surface.default,
+                      },
+                      pressed ? styles.pressed : null,
+                    ]}
                   >
-                    <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                    <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
                   </Pressable>
                 }
                 trailing={
@@ -380,10 +390,17 @@ export default function NotificationsScreen() {
                       accessibilityRole="button"
                       accessibilityLabel="Mark all read"
                       accessibilityState={{ busy: markAllBusy }}
-                      style={styles.markAllButton}
+                      style={({ pressed }) => [
+                        styles.markAllButton,
+                        {
+                          borderColor: palette.accent.base,
+                          backgroundColor: palette.surface.accentSoft,
+                        },
+                        pressed && !markAllBusy ? styles.pressed : null,
+                      ]}
                     >
-                      <Ionicons name="checkmark-done" size={18} color={legacyColors.lime} />
-                      <Text numberOfLines={1} style={styles.markAllText}>
+                      <Ionicons name="checkmark-done" size={18} color={palette.accent.base} />
+                      <Text numberOfLines={1} style={[styles.markAllText, { color: palette.accent.base }]}>
                         Mark all read
                       </Text>
                     </Pressable>
@@ -394,7 +411,7 @@ export default function NotificationsScreen() {
               {routeParams.notificationId ? (
                 <GlassCard variant="selected" contentStyle={styles.calloutContent}>
                   <IconBubble icon="notifications" tone="blue" size={36} />
-                  <Text style={styles.calloutText}>
+                  <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
                       ? "Attendance alert received"
                       : "Opened from push notification"}
@@ -414,8 +431,12 @@ export default function NotificationsScreen() {
                 <GlassCard variant="compact" contentStyle={styles.emptyContent}>
                   <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
                   <View style={styles.emptyCopy}>
-                    <Text style={styles.emptyTitle}>No notifications</Text>
-                    <Text style={styles.emptyBody}>You're all caught up.</Text>
+                    <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
+                      No notifications
+                    </Text>
+                    <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
+                      You're all caught up.
+                    </Text>
                   </View>
                 </GlassCard>
               ) : null}
@@ -427,8 +448,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={legacyColors.lime}
-              colors={[legacyColors.lime]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           }
           SectionSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -438,8 +459,19 @@ export default function NotificationsScreen() {
           snapPoints={detailSnapPoints}
           enablePanDownToClose
           backdropComponent={renderDetailBackdrop}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.sheetHandle}
+          backgroundStyle={StyleSheet.flatten([
+            styles.sheetBackground,
+            {
+              backgroundColor: palette.bg.elevated,
+              borderColor: palette.border.subtle,
+            },
+          ])}
+          handleIndicatorStyle={StyleSheet.flatten([
+            styles.sheetHandle,
+            {
+              backgroundColor: palette.border.strong,
+            },
+          ])}
           bottomInset={Math.max(insets.bottom, 12)}
         >
           <BottomSheetView style={styles.detailSheet}>
@@ -450,10 +482,10 @@ export default function NotificationsScreen() {
                 size={44}
               />
               <View style={styles.detailCopy}>
-                <Text style={styles.detailTitle}>
+                <Text style={[styles.detailTitle, { color: palette.text.primary }]}>
                   {focusedNotification?.notification?.title ?? "Notification"}
                 </Text>
-                <Text style={styles.detailTime}>
+                <Text style={[styles.detailTime, { color: palette.text.secondary }]}>
                   {focusedNotification?.notification?.createdAt
                     ? formatRelativeDate(focusedNotification.notification.createdAt)
                     : ""}
@@ -464,12 +496,19 @@ export default function NotificationsScreen() {
                 onPress={() => router.replace("/notifications" as never)}
                 accessibilityRole="button"
                 accessibilityLabel="Close notification details"
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    borderColor: palette.border.subtle,
+                    backgroundColor: palette.surface.default,
+                  },
+                  pressed ? styles.pressed : null,
+                ]}
               >
-                <Ionicons name="close" size={20} color={legacyColors.text} />
+                <Ionicons name="close" size={20} color={palette.text.primary} />
               </Pressable>
             </View>
-            <Text style={styles.detailBody}>
+            <Text style={[styles.detailBody, { color: palette.text.primary }]}>
               {focusedNotification?.notification?.body ?? "No details available."}
             </Text>
           </BottomSheetView>
@@ -492,6 +531,7 @@ function NotificationRow({
   highlighted: boolean;
   onPress: () => void;
 }) {
+  const { palette } = useTheme();
   const notification = item.notification;
   const unread = !item.readAt;
   const type = notification?.type;
@@ -513,26 +553,29 @@ function NotificationRow({
     >
       <GlassCard
         variant={highlighted ? "selected" : unread ? "default" : "compact"}
-        contentStyle={[styles.notificationContent, unread ? styles.notificationUnreadContent : styles.notificationReadContent]}
+        contentStyle={[
+          styles.notificationContent,
+          unread ? [styles.notificationUnreadContent, { borderLeftColor: palette.accent.base }] : styles.notificationReadContent,
+        ]}
       >
         <View style={styles.notificationRow}>
           <IconBubble icon={iconForType(type)} tone={toneForType(type)} size={40} />
           <View style={styles.notificationCopy}>
             <View style={styles.notificationTitleRow}>
-              <Text numberOfLines={1} style={styles.notificationTitle}>
+              <Text numberOfLines={2} style={[styles.notificationTitle, { color: palette.text.primary }]}>
                 {notification?.title ?? "Notification"}
               </Text>
               {unread ? (
                 <View
                   testID={first ? "unread-dot-first" : `unread-dot-${item.id}`}
-                  style={styles.unreadDot}
+                  style={[styles.unreadDot, { backgroundColor: palette.accent.base }]}
                 />
               ) : null}
             </View>
-            <Text numberOfLines={2} style={styles.notificationBody}>
+            <Text numberOfLines={2} style={[styles.notificationBody, { color: palette.text.secondary }]}>
               {notification?.body ?? "No details available."}
             </Text>
-            <Text style={styles.notificationTime}>
+            <Text style={[styles.notificationTime, { color: palette.text.tertiary }]}>
               {notification?.createdAt ? formatRelativeDate(notification.createdAt) : ""}
               {busy ? " · Opening..." : ` · ${opensRoute ? "Open linked screen" : "Mark read"}`}
             </Text>
@@ -540,7 +583,7 @@ function NotificationRow({
           <Ionicons
             name={opensRoute ? "chevron-forward" : "checkmark-circle-outline"}
             size={18}
-            color={opensRoute ? legacyColors.muted : legacyColors.lime}
+            color={opensRoute ? palette.text.secondary : palette.accent.base}
           />
         </View>
       </GlassCard>
@@ -562,8 +605,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -572,8 +613,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.3)",
-    backgroundColor: "rgba(185,244,85,0.08)",
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -581,7 +620,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   markAllText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   calloutContent: {
@@ -591,7 +629,6 @@ const styles = StyleSheet.create({
   },
   calloutText: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   loadingContent: {
@@ -601,7 +638,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   loadingText: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   emptyContent: {
@@ -614,11 +650,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
@@ -626,7 +660,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dateGroupLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
     paddingHorizontal: 4,
   },
@@ -643,7 +676,6 @@ const styles = StyleSheet.create({
   },
   notificationUnreadContent: {
     borderLeftWidth: 3,
-    borderLeftColor: legacyColors.lime,
   },
   notificationReadContent: {
     opacity: 0.78,
@@ -664,21 +696,17 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: legacyColors.lime,
   },
   notificationBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   notificationTime: {
-    color: legacyColors.subtle,
     ...typography.small,
     marginTop: 2,
   },
@@ -689,19 +717,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   showOlderText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   sheetBackground: {
-    backgroundColor: legacyColors.panel,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: 1,
-    borderColor: legacyColors.border,
   },
-  sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.24)",
-  },
+  sheetHandle: {},
   detailSheet: {
     gap: spacing.lg,
     padding: spacing.lg,
@@ -717,15 +740,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   detailTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   detailTime: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   detailBody: {
-    color: legacyColors.text,
     ...typography.body,
   },
 });

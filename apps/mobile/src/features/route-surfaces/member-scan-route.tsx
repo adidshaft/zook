@@ -45,7 +45,7 @@ import {
   removeQueuedAttendanceScan,
 } from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type ScanResult = {
@@ -95,6 +95,7 @@ function CameraActiveBottomNavHider() {
 function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
   const progress = useRef(new RNAnimated.Value(0)).current;
+  const isIOS = Platform.OS === "ios";
   // Sweep edge-to-edge within the frame with a small inset so the line never
   // clips the corner brackets. Derived from the real frame size instead of a
   // magic constant so it always spans the full scan window.
@@ -142,9 +143,20 @@ function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
 
   return (
     <RNAnimated.View
-      style={[styles.scanLineRail, { shadowColor: palette.accent.base }, animatedStyle]}
+      style={[
+        styles.scanLineRail,
+        isIOS
+          ? { shadowColor: palette.accent.base, shadowOpacity: 0.82 }
+          : styles.scanLineRailAndroid,
+        animatedStyle,
+      ]}
     >
-      <View style={[styles.scanLineGlow, { backgroundColor: palette.accent.base }]} />
+      <View
+        style={[
+          styles.scanLineGlow,
+          { backgroundColor: palette.accent.base, opacity: isIOS ? 0.34 : 0.18 },
+        ]}
+      />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
     </RNAnimated.View>
   );
@@ -209,6 +221,33 @@ function readScannedAttendancePayload(
 
 export default function Scan() {
   const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
+  const codePlaceholderColor = palette.text.tertiary;
+  const cameraBadgeSurface = isDark ? palette.bg.elevated : palette.surface.raised;
+  const getVerificationItemStyle = (state: VerificationStep["state"]) => {
+    if (state === "failed") {
+      return {
+        backgroundColor: palette.surface.dangerSoft,
+        borderColor: palette.feedback.danger,
+      };
+    }
+    if (state === "active") {
+      return {
+        backgroundColor: isDark ? palette.surface.raised : palette.bg.sunken,
+        borderColor: palette.feedback.info,
+      };
+    }
+    if (state === "complete") {
+      return {
+        backgroundColor: palette.surface.successSoft,
+        borderColor: palette.feedback.success,
+      };
+    }
+    return {
+      backgroundColor: palette.surface.default,
+      borderColor: palette.border.subtle,
+    };
+  };
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -789,9 +828,17 @@ export default function Scan() {
                     <AnimatedLaser frameSize={280} />
                   </ScannerFrame>
                 </View>
-                <View style={styles.cameraBadge}>
+                <View
+                  style={[
+                    styles.cameraBadge,
+                    {
+                      backgroundColor: cameraBadgeSurface,
+                      borderColor: palette.border.default,
+                    },
+                  ]}
+                >
                   <View style={[styles.liveDot, { backgroundColor: palette.accent.base }]} />
-                  <Text style={styles.cameraBadgeText}>
+                  <Text style={[styles.cameraBadgeText, { color: palette.text.primary }]}>
                     {busy ? "Checking code..." : "Searching for code..."}
                   </Text>
                 </View>
@@ -812,7 +859,7 @@ export default function Scan() {
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
                   accessibilityLabel="Enter manual check-in code"
-                  style={styles.manualCodeLink}
+                  style={({ pressed }) => [styles.manualCodeLink, pressed ? styles.linkPressed : null]}
                 >
                   <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
                     Enter code
@@ -841,9 +888,7 @@ export default function Scan() {
                   autoCorrect={false}
                   maxLength={2}
                   placeholder="AB"
-                  placeholderTextColor={
-                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
-                  }
+                  placeholderTextColor={codePlaceholderColor}
                   style={[
                     styles.codeInput,
                     styles.codePrefixInput,
@@ -865,9 +910,7 @@ export default function Scan() {
                   keyboardType="number-pad"
                   maxLength={4}
                   placeholder="1234"
-                  placeholderTextColor={
-                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
-                  }
+                  placeholderTextColor={codePlaceholderColor}
                   style={[
                     styles.codeInput,
                     styles.codeDigitsInput,
@@ -913,7 +956,7 @@ export default function Scan() {
                 onPress={() => setScanMode("scan")}
                 accessibilityRole="button"
                 accessibilityLabel="Return to QR scanner"
-                style={styles.backToScannerLink}
+                style={({ pressed }) => [styles.backToScannerLink, pressed ? styles.linkPressed : null]}
               >
                 <Ionicons name="qr-code-outline" size={15} color={palette.accent.strong} />
                 <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
@@ -929,40 +972,7 @@ export default function Scan() {
                 key={item.key}
                 style={[
                   styles.validationItem,
-                  {
-                    backgroundColor:
-                      item.state === "failed"
-                        ? mode === "dark"
-                          ? "rgba(255,90,61,0.12)"
-                          : "rgba(185,28,28,0.06)"
-                        : item.state === "active"
-                          ? mode === "dark"
-                            ? "rgba(125,211,252,0.12)"
-                            : "rgba(3,105,161,0.06)"
-                          : item.state === "complete"
-                            ? mode === "dark"
-                              ? "rgba(185,244,85,0.12)"
-                              : "rgba(30,63,32,0.06)"
-                            : mode === "dark"
-                              ? "rgba(255,255,255,0.06)"
-                              : "rgba(17,21,15,0.04)",
-                    borderColor:
-                      item.state === "failed"
-                        ? mode === "dark"
-                          ? "rgba(255,90,61,0.32)"
-                          : "rgba(185,28,28,0.16)"
-                        : item.state === "active"
-                          ? mode === "dark"
-                            ? "rgba(125,211,252,0.3)"
-                            : "rgba(3,105,161,0.16)"
-                          : item.state === "complete"
-                            ? mode === "dark"
-                              ? "rgba(185,244,85,0.28)"
-                              : "rgba(30,63,32,0.16)"
-                            : mode === "dark"
-                              ? "rgba(255,255,255,0.1)"
-                              : "rgba(17,21,15,0.08)",
-                  },
+                  getVerificationItemStyle(item.state),
                 ]}
               >
                 <Ionicons
@@ -1138,15 +1148,12 @@ const styles = StyleSheet.create({
     minHeight: 28,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.18)",
-    backgroundColor: "rgba(185,244,85,0.075)",
     paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
   validationText: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   cameraCard: {
@@ -1154,8 +1161,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: legacyColors.borderStrong,
-    backgroundColor: legacyColors.surfaceSolid,
   },
   camera: {
     flex: 1,
@@ -1168,15 +1173,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   cameraFallbackTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   cameraFallbackText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   permissionButton: {
-    minHeight: 38,
+    minHeight: 44,
     marginTop: spacing.xs,
   },
   blockedPermissionContent: {
@@ -1198,7 +1201,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.small,
   },
   retryButton: {
@@ -1220,7 +1222,6 @@ const styles = StyleSheet.create({
     bottom: 14,
     minHeight: 34,
     borderRadius: 17,
-    backgroundColor: "rgba(7,9,8,0.72)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1230,10 +1231,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: legacyColors.lime,
   },
   cameraBadgeText: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   scanLineRail: {
@@ -1241,10 +1240,12 @@ const styles = StyleSheet.create({
     height: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: legacyColors.lime,
-    shadowOpacity: 1,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 0 },
+  },
+  scanLineRailAndroid: {
+    elevation: 0,
+    shadowOpacity: 0,
   },
   scanLineGlow: {
     position: "absolute",
@@ -1252,7 +1253,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 18,
     borderRadius: 999,
-    opacity: 0.34,
   },
   scanLineCore: {
     width: "100%",
@@ -1271,30 +1271,29 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   helpTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   helpBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   manualCodeLink: {
-    minHeight: 38,
-    borderRadius: 19,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.24)",
-    backgroundColor: "rgba(185,244,85,0.08)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
   },
+  linkPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.98 }],
+  },
   manualCodeLinkText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   scanHint: {
-    color: legacyColors.muted,
     textAlign: "center",
     ...typography.small,
   },
@@ -1306,11 +1305,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   codeTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   codeHint: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   codeRow: {
@@ -1322,9 +1319,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(0,0,0,0.2)",
-    color: legacyColors.text,
     paddingHorizontal: 12,
     textAlign: "center",
     ...typography.bodyStrong,
@@ -1338,14 +1332,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   codeDivider: {
-    color: legacyColors.muted,
     ...typography.cardTitle,
   },
   codeButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1353,19 +1345,18 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   checkingText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
-  checkingDot: {
-    color: legacyColors.lime,
-  },
+  checkingDot: {},
   backToScannerLink: {
     alignSelf: "center",
-    minHeight: 34,
+    minHeight: 44,
+    borderRadius: 22,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
   },
   devLink: {
     alignSelf: "center",
@@ -1373,18 +1364,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   devLinkText: {
-    color: legacyColors.muted,
     textDecorationLine: "underline",
     ...typography.caption,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
-  sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
+  sheetHandle: {},
   pushPromptSheet: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -1402,11 +1388,9 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   pushPromptTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   pushPromptBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   pushPromptActions: {

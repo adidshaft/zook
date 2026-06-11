@@ -1,0 +1,303 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Low-cost AWS Mumbai runtime for Zook web/API.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: zook
+  InstanceType:
+    Type: String
+    Default: t4g.small
+    AllowedValues:
+      - t4g.micro
+      - t4g.small
+      - t4g.medium
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+  WebImageUri:
+    Type: String
+    Description: ECR image URI for the web/API container.
+  WebRepositoryArn:
+    Type: String
+    Description: ECR repository ARN that contains the web/API image.
+  EnvParameterName:
+    Type: String
+    Default: /zook/production/web-env
+    Description: SecureString parameter containing the production env file.
+  DomainNames:
+    Type: String
+    Default: zookfit.in app.zookfit.in dashboard.zookfit.in www.zookfit.in
+    Description: Space-separated domains Caddy should serve after DNS points to the instance.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  DbUsername:
+    Type: String
+    Default: zook
+  DbAllocatedStorageGb:
+    Type: Number
+    Default: 20
+    MinValue: 20
+    MaxValue: 100
+
+Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AppName}-uploads-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  DbPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "/${AppName}/production/db-password"
+      GenerateSecretString:
+        PasswordLength: 32
+        ExcludeCharacters: "\"@/\\"
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Zook web ingress
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Zook Postgres ingress from web host
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref WebSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub "${AppName}-production-postgres"
+      Engine: postgres
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: !Ref DbAllocatedStorageGb
+      StorageType: gp3
+      StorageEncrypted: true
+      PubliclyAccessible: false
+      MultiAZ: false
+      BackupRetentionPeriod: 7
+      DeletionProtection: true
+      AutoMinorVersionUpgrade: true
+      DBName: zook
+      MasterUsername: !Ref DbUsername
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DbPassword}:SecretString}}"
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroup
+
+  WebRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: zook-web-runtime
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource: !Ref WebRepositoryArn
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${EnvParameterName}"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref DbPassword
+              - Effect: Allow
+                Action:
+                  - s3:DeleteObject
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${UploadsBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt UploadsBucket.Arn
+
+  WebInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref WebRole
+
+  WebInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref WebInstanceProfile
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      MetadataOptions:
+        HttpTokens: required
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 24
+            VolumeType: gp3
+            Encrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-web"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+
+          dnf update -y
+          dnf install -y docker cronie awscli
+          systemctl enable --now docker crond
+          usermod -aG docker ec2-user
+          curl -fsSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
+          mkdir -p /opt/zook
+          aws ssm get-parameter --region ${AWS::Region} --name "${EnvParameterName}" --with-decryption --query Parameter.Value --output text > /opt/zook/web.env
+          {
+            echo "REDIS_URL=redis://redis:6379"
+            echo "RATE_LIMIT_PROVIDER=redis"
+            echo "SERVER_CACHE_PROVIDER=redis"
+            echo "S3_BUCKET=${UploadsBucket}"
+            echo "S3_REGION=${AWS::Region}"
+          } >> /opt/zook/web.env
+
+          cat >/opt/zook/Caddyfile <<'CADDY'
+          ${DomainNames} {
+            reverse_proxy web:3000
+          }
+          CADDY
+
+          cat >/opt/zook/docker-compose.yml <<'COMPOSE'
+          services:
+            web:
+              image: ${WebImageUri}
+              restart: unless-stopped
+              env_file:
+                - /opt/zook/web.env
+              environment:
+                NODE_ENV: production
+                PORT: "3000"
+                HOSTNAME: 0.0.0.0
+              depends_on:
+                - redis
+            redis:
+              image: redis:7-alpine
+              restart: unless-stopped
+              command: ["redis-server", "--save", "", "--appendonly", "no"]
+            caddy:
+              image: caddy:2-alpine
+              restart: unless-stopped
+              ports:
+                - "80:80"
+                - "443:443"
+              volumes:
+                - /opt/zook/Caddyfile:/etc/caddy/Caddyfile:ro
+                - caddy_data:/data
+                - caddy_config:/config
+              depends_on:
+                - web
+          volumes:
+            caddy_data:
+            caddy_config:
+          COMPOSE
+
+          aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          docker-compose -f /opt/zook/docker-compose.yml pull
+          docker-compose -f /opt/zook/docker-compose.yml up -d
+
+          cat >/opt/zook/run-cron.sh <<'CRONRUN'
+          #!/bin/sh
+          set -eu
+          secret="$(grep '^CRON_SECRET=' /opt/zook/web.env | head -n1 | cut -d= -f2- | sed 's/^"//;s/"$//')"
+          path="$1"
+          curl -fsS -X POST -H "Authorization: Bearer ${!secret}" "http://127.0.0.1/api/cron/${!path}" >/dev/null
+          CRONRUN
+          chmod +x /opt/zook/run-cron.sh
+
+          cat >/etc/cron.d/zook <<'CRON'
+          SHELL=/bin/sh
+          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          30 1 * * * root /opt/zook/run-cron.sh renewal-reminders
+          0 3 * * * root /opt/zook/run-cron.sh account-deletion-purge
+          */10 * * * * root /opt/zook/run-cron.sh refund-reconcile
+          1 0 1 * * root /opt/zook/run-cron.sh trainer-payouts-draft
+          CRON
+
+  WebElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  WebElasticIpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt WebElasticIp.AllocationId
+      InstanceId: !Ref WebInstance
+
+Outputs:
+  UploadsBucketName:
+    Value: !Ref UploadsBucket
+  DatabaseEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+  DatabaseName:
+    Value: zook
+  DatabaseUsername:
+    Value: !Ref DbUsername
+  DbPasswordSecretArn:
+    Value: !Ref DbPassword
+  WebElasticIp:
+    Value: !Ref WebElasticIp

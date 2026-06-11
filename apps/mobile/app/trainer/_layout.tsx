@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useTheme } from "@/lib/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { RoleTabBarBackground } from "@/components/role-tab-bar-background";
+import { createRoleTabBarStyle, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
   clients: "/trainer/clients",
@@ -9,9 +11,11 @@ const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> =
 };
 
 export default function TrainerLayout() {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const tabBarStyle = createRoleTabBarStyle({ palette, mode, bottomInset: insets.bottom });
 
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
@@ -25,9 +29,14 @@ export default function TrainerLayout() {
         headerShown: false,
         tabBarActiveTintColor: palette.accent.base,
         tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: palette.bg.elevated,
-          borderTopColor: palette.border.subtle,
+        tabBarBackground: () => <RoleTabBarBackground mode={mode} />,
+        tabBarStyle,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: "Inter_600SemiBold",
+        },
+        tabBarItemStyle: {
+          borderRadius: 18,
         },
       }}
     >

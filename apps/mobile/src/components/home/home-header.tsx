@@ -1,9 +1,9 @@
 import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { legacyColors, spacing } from "@/lib/theme";
+import { spacing, useTheme } from "@/lib/theme";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -27,26 +27,62 @@ export function HomeHeader({
   orgName: string;
   unreadCount: number;
 }) {
+  const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
+  const chromeSurface = palette.surface.raised;
+  const pressedSurface = isDark ? palette.surface.default : palette.bg.sunken;
+  const chromeShadow =
+    Platform.OS === "ios"
+      ? {
+          shadowColor: palette.bg.sunken,
+          shadowOpacity: isDark ? 0.18 : 0.07,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+        }
+      : { elevation: 0 };
+
   return (
     <>
       <View style={styles.premiumHeader}>
         <View style={styles.premiumGreetingBlock}>
-          <Text style={styles.premiumGreeting}>{getGreeting()},</Text>
-          <Text numberOfLines={1} style={styles.premiumName}>
+          <Text style={[styles.premiumGreeting, { color: palette.text.secondary }]}>
+            {getGreeting()},
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={[styles.premiumName, { color: palette.text.primary }]}
+          >
             {firstName}
           </Text>
           {contextSlot ? <View style={styles.contextSlot}>{contextSlot}</View> : null}
         </View>
         <Link href="/notifications" asChild>
           <Pressable
-            style={styles.premiumBell}
+            style={({ pressed }) => [
+              styles.premiumBell,
+              chromeShadow,
+              {
+                borderColor: palette.border.subtle,
+                backgroundColor: pressed ? pressedSurface : chromeSurface,
+              },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Open notifications"
           >
-            <Ionicons name="notifications-outline" size={27} color={legacyColors.text} />
+            <Ionicons name="notifications-outline" size={27} color={palette.text.primary} />
             {unreadCount > 0 ? (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+              <View
+                style={[
+                  styles.unreadBadge,
+                  {
+                    backgroundColor: palette.feedback.danger,
+                    borderColor: isDark ? palette.bg.app : palette.surface.raised,
+                  },
+                ]}
+              >
+                <Text style={[styles.unreadBadgeText, { color: palette.text.onDanger }]}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
               </View>
             ) : null}
           </Pressable>
@@ -57,14 +93,21 @@ export function HomeHeader({
         <Pressable
           accessibilityRole="link"
           accessibilityLabel="Open gym details"
-          style={styles.premiumGymSelector}
+          style={({ pressed }) => [
+            styles.premiumGymSelector,
+            chromeShadow,
+            {
+              borderColor: palette.border.subtle,
+              backgroundColor: pressed ? pressedSurface : chromeSurface,
+            },
+          ]}
         >
-          <Ionicons name="business-outline" size={24} color={legacyColors.text} />
-          <Text numberOfLines={1} style={styles.premiumGymText}>
+          <Ionicons name="business-outline" size={24} color={palette.text.primary} />
+          <Text numberOfLines={1} style={[styles.premiumGymText, { color: palette.text.primary }]}>
             {orgName}
             {city ? ` · ${city}` : ""}
           </Text>
-          <Ionicons name="chevron-down" size={19} color={legacyColors.muted} />
+          <Ionicons name="chevron-down" size={19} color={palette.text.tertiary} />
         </Pressable>
       </Link>
     </>
@@ -88,12 +131,10 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   premiumGreeting: {
-    color: legacyColors.muted,
     fontSize: 16,
     lineHeight: 22,
   },
   premiumName: {
-    color: legacyColors.text,
     fontSize: 34,
     lineHeight: 40,
     fontFamily: "Inter_700Bold",
@@ -103,16 +144,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.035)",
   },
   premiumGymSelector: {
     minHeight: 62,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.035)",
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
@@ -120,7 +159,6 @@ const styles = StyleSheet.create({
   },
   premiumGymText: {
     flex: 1,
-    color: legacyColors.text,
     fontSize: 17,
     lineHeight: 22,
     fontFamily: "Inter_600SemiBold",
@@ -132,13 +170,12 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: legacyColors.red,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
   },
   unreadBadgeText: {
-    color: legacyColors.text,
     fontSize: 9,
     fontWeight: "900",
     lineHeight: 12,

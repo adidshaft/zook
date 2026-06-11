@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { memo, useContext, useEffect, useRef } from "react";
-import { Animated as RNAnimated, View, Pressable, Text, StyleSheet } from "react-native";
+import { Animated as RNAnimated, View, Pressable, Text, StyleSheet, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -63,14 +64,16 @@ export default function MemberLayout() {
   );
 }
 
-// Static fade backdrop behind the floating tab bar. Memoized so the 15-segment
-// gradient is not rebuilt on every tab switch / unread-count change.
+// Static guard behind the floating tab bar so content remains readable near
+// gesture areas without hiding the scroll view under an opaque custom fade.
 const TabBarBackdrop = memo(function TabBarBackdrop({
   height,
   color,
+  mode,
 }: {
   height: number;
   color: string;
+  mode: "light" | "dark";
 }) {
   return (
     <View
@@ -81,34 +84,15 @@ const TabBarBackdrop = memo(function TabBarBackdrop({
         right: 0,
         bottom: 0,
         height,
-        backgroundColor: "transparent",
+        backgroundColor: color,
+        opacity: Platform.OS === "ios" ? (mode === "dark" ? 0.22 : 0.12) : 1,
       }}
-    >
-      {Array.from({ length: 15 }).map((_, i) => {
-        const opacity = (i / 14) ** 1.8; // Exponential scaling for a buttery smooth fade out
-        const top = (i / 15) * height;
-        const segmentHeight = height / 15 + 2;
-        return (
-          <View
-            key={i}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top,
-              height: segmentHeight,
-              backgroundColor: color,
-              opacity,
-            }}
-          />
-        );
-      })}
-    </View>
+    />
   );
 });
 
 function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
-  const { palette } = useTheme();
+  const { mode, palette } = useTheme();
   const insets = useSafeAreaInsets();
   const { visible } = useContext(BottomNavVisibilityContext);
   const backdropHeight = 100 + insets.bottom;
@@ -157,18 +141,36 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
       ]}
     >
       {/* Fading Opaque backdrop to hide scrolling content behind tab bar */}
-      <TabBarBackdrop height={backdropHeight} color={palette.bg.app} />
+      <TabBarBackdrop height={backdropHeight} color={palette.bg.app} mode={mode} />
 
       <View
         style={[
           styles.tabBarContainer,
+          Platform.OS === "android" ? styles.androidTabBarContainer : null,
           {
-            backgroundColor: palette.bg.elevated,
+            backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.elevated,
             borderColor: palette.border.subtle,
-            bottom: insets.bottom > 0 ? insets.bottom + 8 : 16,
+            bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? insets.bottom + 8 : 16) : 0,
+            shadowColor: mode === "dark" ? palette.bg.sunken : palette.text.primary,
+            shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.18 : 0.08) : 0,
+            elevation: Platform.OS === "android" ? 0 : 0,
           },
         ]}
       >
+        {Platform.OS === "ios" ? (
+          <BlurView
+            pointerEvents="none"
+            intensity={mode === "dark" ? 26 : 20}
+            tint={mode === "dark" ? "dark" : "light"}
+            style={[
+              StyleSheet.absoluteFillObject,
+              styles.tabBarMaterial,
+              {
+                backgroundColor: mode === "dark" ? palette.surface.default : palette.surface.raised,
+              },
+            ]}
+          />
+        ) : null}
         {visibleRoutes.map((route: any) => {
           const { options } = descriptors[route.key];
           const label =
@@ -217,13 +219,17 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
                   onLongPress={onLongPress}
                   style={[
                     styles.scanButton,
+                    Platform.OS === "android" ? styles.androidScanButton : null,
                     {
-                      backgroundColor: "#B9F455", // High-contrast raw lime green
-                      borderColor: palette.bg.app, // Match the page background for outline effect
+                      backgroundColor: palette.accent.base,
+                      borderColor: palette.bg.app,
+                      shadowColor: palette.accent.base,
+                      shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.24 : 0.12) : 0,
+                      elevation: Platform.OS === "android" ? 0 : 0,
                     },
                   ]}
                 >
-                  <Ionicons name="qr-code" size={26} color="#000000" />
+                  <Ionicons name="qr-code" size={26} color={palette.text.onAccent} />
                 </Pressable>
                 <Text
                   style={[
@@ -269,8 +275,10 @@ function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
                 ]}
               >
                 {route.name === "you" && unread > 0 ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unread}</Text>
+                  <View style={[styles.badge, { backgroundColor: palette.feedback.danger }]}>
+                    <Text style={[styles.badgeText, { color: palette.text.onDanger }]}>
+                      {unread}
+                    </Text>
                   </View>
                 ) : null}
                 <Ionicons
@@ -308,13 +316,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 8,
-    // Premium soft shadow to lift the capsule
-    shadowColor: "#000000",
-    shadowOpacity: 0.35,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
     borderWidth: 1.5,
+  },
+  androidTabBarContainer: {
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 64,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 4,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  tabBarMaterial: {
+    borderRadius: 36,
+    overflow: "hidden",
   },
   tabItem: {
     flex: 1,
@@ -350,11 +370,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: -36,
     borderWidth: 4,
-    shadowColor: "#B9F455",
-    shadowOpacity: 0.45,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  },
+  androidScanButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginTop: 0,
+    borderWidth: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
   scanLabel: {
     fontSize: 10,
@@ -365,7 +391,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 4,
     top: 0,
-    backgroundColor: "#FF5A3D",
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -375,7 +400,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   badgeText: {
-    color: "#FFFFFF",
     fontSize: 9,
     fontFamily: "Inter_700Bold",
     lineHeight: 11,

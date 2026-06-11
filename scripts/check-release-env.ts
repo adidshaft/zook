@@ -408,9 +408,9 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
 
   const rateLimitProvider = env("RATE_LIMIT_PROVIDER") ?? "memory";
   if (profile === "production" && rateLimitProvider === "memory") {
-    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=memory in production profile.", "Use RATE_LIMIT_PROVIDER=upstash with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN."));
+    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=memory in production profile.", "Use RATE_LIMIT_PROVIDER=upstash with UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN or RATE_LIMIT_PROVIDER=redis with REDIS_URL."));
   } else if (profile === "production" && rateLimitProvider === "disabled") {
-    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=disabled in production profile.", "Use RATE_LIMIT_PROVIDER=upstash for production deploys."));
+    results.push(fail("Production rate limiting", "RATE_LIMIT_PROVIDER=disabled in production profile.", "Use RATE_LIMIT_PROVIDER=upstash or RATE_LIMIT_PROVIDER=redis for production deploys."));
   } else if (rateLimitProvider === "upstash") {
     const missing = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"].filter((key) => !env(key));
     results.push(
@@ -418,10 +418,17 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
         ? fail("Distributed rate limiting", `RATE_LIMIT_PROVIDER=upstash is missing ${missing.join(", ")}.`, "Set the Upstash Redis REST URL and token.")
         : pass("Distributed rate limiting", "RATE_LIMIT_PROVIDER=upstash is configured.")
     );
+  } else if (rateLimitProvider === "redis") {
+    const missing = ["REDIS_URL"].filter((key) => !env(key));
+    results.push(
+      missing.length
+        ? fail("Distributed rate limiting", `RATE_LIMIT_PROVIDER=redis is missing ${missing.join(", ")}.`, "Set REDIS_URL to an AWS Redis/Valkey endpoint or the local Redis sidecar URL.")
+        : pass("Distributed rate limiting", "RATE_LIMIT_PROVIDER=redis is configured.")
+    );
   } else if (rateLimitProvider === "memory") {
     results.push(warn("Rate limiting", "RATE_LIMIT_PROVIDER=memory is active.", "This is acceptable for local development and single-process staging only."));
   } else {
-    results.push(warn("Rate limiting", `RATE_LIMIT_PROVIDER=${rateLimitProvider} is active.`, "Supported production value is upstash."));
+    results.push(warn("Rate limiting", `RATE_LIMIT_PROVIDER=${rateLimitProvider} is active.`, "Supported production values are upstash and redis."));
   }
 
   results.push(pass("Map provider status", `MAP_PROVIDER=${env("MAP_PROVIDER") ?? "mock"}.`));

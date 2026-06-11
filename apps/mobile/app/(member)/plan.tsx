@@ -20,7 +20,7 @@ import {
 import { PlansSkeleton } from "@/components/skeletons";
 import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
 import { useMyDiet } from "@/lib/domains/tracking/queries";
-import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type WorkoutRecord = {
   id?: string;
@@ -112,6 +112,7 @@ export default function MemberPlanScreen() {
                 testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
                 onPress={() => openAssignment(assignment.id)}
                 accessibilityRole="button"
+                style={({ pressed }) => (pressed ? styles.cardPressed : null)}
               >
                 <GlassCard variant="compact">
                   <ListRow
@@ -153,6 +154,7 @@ export default function MemberPlanScreen() {
             testID="plan-open-diet"
             onPress={() => router.push("/diet" as never)}
             accessibilityRole="button"
+            style={({ pressed }) => (pressed ? styles.cardPressed : null)}
           >
             <GlassCard variant="compact">
               <ListRow
@@ -176,7 +178,16 @@ export default function MemberPlanScreen() {
           <SectionHeader title="Browse all plans" />
           <View style={styles.planGrid}>
             {plans.map((assignment) => (
-              <Pressable key={assignment.id} onPress={() => openAssignment(assignment.id)} accessibilityRole="button" style={[styles.planTile, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}>
+              <Pressable
+                key={assignment.id}
+                onPress={() => openAssignment(assignment.id)}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.planTile,
+                  { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
+                  pressed ? styles.cardPressed : null,
+                ]}
+              >
                 <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
                 <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
                 <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
@@ -199,15 +210,17 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   stack: { gap: spacing.sm },
+  cardPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.985 }],
+  },
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },
-  todayTitle: { color: legacyColors.text, ...typography.title },
-  todayMeta: { color: legacyColors.muted, ...typography.small },
+  todayTitle: typography.title,
+  todayMeta: typography.small,
   planGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   planTile: {
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexGrow: 1,
@@ -216,7 +229,7 @@ const styles = StyleSheet.create({
     minWidth: "47%",
     padding: 14,
   },
-  planTileTitle: { color: legacyColors.text, ...typography.cardTitle },
-  planTileMeta: { color: legacyColors.muted, ...typography.caption },
+  planTileTitle: typography.cardTitle,
+  planTileMeta: typography.caption,
   dietTrailing: { alignItems: "center", flexDirection: "row", gap: 8 },
 });

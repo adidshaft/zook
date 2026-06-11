@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   InMemoryRateLimitStore,
+  RedisRateLimitStore,
   UpstashRateLimitStore,
   assertRateLimit,
   defaultRateLimitRules,
@@ -16,6 +17,7 @@ describe("rate limits", () => {
     process.env.RATE_LIMIT_PROVIDER = "memory";
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.REDIS_URL;
     const globalState = globalThis as unknown as {
       zookRateLimitStore?: InMemoryRateLimitStore;
       zookRateLimitProvider?: string;
@@ -88,6 +90,36 @@ describe("rate limits", () => {
     });
     expect(serialized).not.toContain("super-secret-token");
     expect(serialized).not.toContain("example.upstash.io");
+  });
+
+  it("exposes Redis diagnostics without leaking the endpoint", () => {
+    process.env.RATE_LIMIT_PROVIDER = "redis";
+    process.env.REDIS_URL = "redis://cache.internal:6379";
+
+    const diagnostics = getRateLimitDiagnostics();
+    const serialized = JSON.stringify(diagnostics);
+
+    expect(diagnostics).toMatchObject({
+      selectedProvider: "redis",
+      activeProvider: "redis",
+      status: "ready",
+      configured: true,
+      mode: "distributed",
+    });
+    expect(serialized).not.toContain("cache.internal");
+  });
+
+  it("uses the Redis provider when configured", () => {
+    process.env.RATE_LIMIT_PROVIDER = "redis";
+    process.env.REDIS_URL = "redis://cache.internal:6379";
+    const globalState = globalThis as unknown as {
+      zookRateLimitStore?: InMemoryRateLimitStore;
+      zookRateLimitProvider?: string;
+    };
+    delete globalState.zookRateLimitStore;
+    delete globalState.zookRateLimitProvider;
+
+    expect(getRateLimitStore()).toBeInstanceOf(RedisRateLimitStore);
   });
 
   it("uses the Upstash REST transaction provider when configured", async () => {

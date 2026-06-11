@@ -22,7 +22,7 @@ import {
   type FileUploadResponse,
   type ProfilePhotoSaveResponse,
 } from "@/lib/domain-api";
-import { legacyColors, typography } from "@/lib/theme";
+import { typography, useTheme } from "@/lib/theme";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
 
@@ -151,6 +151,7 @@ export function ProfilePhotoControl({
   onSaved,
   onError,
 }: ProfilePhotoControlProps) {
+  const { palette } = useTheme();
   const [committedUrl, setCommittedUrl] = useState(profilePhotoUrl ?? null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -300,6 +301,8 @@ export function ProfilePhotoControl({
           width: size,
           height: size,
           borderRadius: size / 2,
+          backgroundColor: palette.surface.raised,
+          borderColor: palette.border.focus,
           opacity: disabled ? 0.54 : 1,
         },
         pressed ? styles.pressed : null,
@@ -313,16 +316,30 @@ export function ProfilePhotoControl({
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.72}
-          style={[styles.initials, { fontSize: Math.max(18, size * 0.26) }]}
+          style={[
+            styles.initials,
+            {
+              color: palette.text.primary,
+              fontSize: Math.max(18, size * 0.26),
+            },
+          ]}
         >
           {initials}
         </Text>
       )}
-      <View style={styles.badge}>
+      <View
+        style={[
+          styles.badge,
+          {
+            backgroundColor: palette.accent.fill,
+            borderColor: palette.bg.app,
+          },
+        ]}
+      >
         {busy ? (
-          <ActivityIndicator color={legacyColors.ink} size="small" />
+          <ActivityIndicator color={palette.text.onAccent} size="small" />
         ) : (
-          <Ionicons name="camera" size={16} color={legacyColors.ink} />
+          <Ionicons name="camera" size={16} color={palette.text.onAccent} />
         )}
       </View>
     </Pressable>
@@ -336,9 +353,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
-    backgroundColor: legacyColors.panelStrong,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
   },
   image: {
     width: "100%",
@@ -347,7 +362,6 @@ const styles = StyleSheet.create({
   },
   initials: {
     ...typography.headerTitle,
-    color: legacyColors.textPrimary,
   },
   badge: {
     position: "absolute",
@@ -358,9 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: legacyColors.brandLime,
     borderWidth: 2,
-    borderColor: legacyColors.bgApp,
   },
   pressed: {
     transform: [{ scale: 0.98 }],

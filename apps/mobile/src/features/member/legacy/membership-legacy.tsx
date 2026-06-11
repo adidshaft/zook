@@ -54,7 +54,7 @@ import {
   type InvoiceRecord,
   type PublicPlanSummary,
 } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type MembershipRecord = {
@@ -179,6 +179,7 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
 
 export default function MembershipScreen() {
   const router = useRouter();
+  const { mode, palette } = useTheme();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -516,8 +517,8 @@ export default function MembershipScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={legacyColors.lime}
-              colors={[legacyColors.lime]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           }
         >
@@ -535,9 +536,15 @@ export default function MembershipScreen() {
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={styles.iconButton}
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                    borderColor: palette.border.default,
+                  },
+                ]}
               >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
             }
             showProfileShortcut={false}
@@ -547,8 +554,8 @@ export default function MembershipScreen() {
             <GlassCard variant="selected" contentStyle={styles.calloutContent}>
               <IconBubble icon="notifications" tone="blue" size={36} />
               <View style={styles.calloutCopy}>
-                <Text style={styles.calloutTitle}>Membership update</Text>
-                <Text style={styles.calloutBody}>
+                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>Membership update</Text>
+                <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
                   {routeParams.subscriptionId
                     ? "Your subscription has been updated."
                     : "Showing your current status."}
@@ -561,8 +568,8 @@ export default function MembershipScreen() {
             <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
               <IconBubble icon="open-outline" tone="amber" size={36} />
               <View style={styles.browserReturnCopy}>
-                <Text style={styles.browserReturnTitle}>Continuing in your browser</Text>
-                <Text style={styles.browserReturnBody}>
+                <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
+                <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
                   Return when done. We will refresh your membership as soon as you come back.
                 </Text>
               </View>
@@ -583,8 +590,8 @@ export default function MembershipScreen() {
             <GlassCard variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No memberships</Text>
-                <Text style={styles.emptyBody}>
+                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No memberships</Text>
+                <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                   Browse gyms and purchase a membership to get started.
                 </Text>
               </View>
@@ -680,6 +687,7 @@ function RenewalSheet({
   status: string;
 }) {
   const insets = useSafeAreaInsets();
+  const { mode, palette } = useTheme();
   const { height: screenHeight } = useWindowDimensions();
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["CONTENT_HEIGHT"], []);
@@ -715,8 +723,12 @@ function RenewalSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetHandle}
+      backgroundStyle={{
+        ...styles.sheetBackground,
+        backgroundColor: palette.bg.elevated,
+        borderColor: palette.border.default,
+      }}
+      handleIndicatorStyle={{ ...styles.sheetHandle, backgroundColor: palette.border.strong }}
       maxDynamicContentSize={screenHeight * 0.82}
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
@@ -726,11 +738,11 @@ function RenewalSheet({
       <BottomSheetView style={styles.sheet}>
         <View style={styles.sheetHeader}>
           <View style={styles.sheetTitleCopy}>
-            <Text style={styles.sheetEyebrow}>Renew membership</Text>
-            <Text style={styles.sheetTitle}>
+            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>Renew membership</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
               {selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}
             </Text>
-            <Text style={styles.sheetBody}>
+            <Text style={[styles.sheetBody, { color: palette.text.secondary }]}>
               Continue at {gymName} with the same plan or choose another available option.
             </Text>
           </View>
@@ -739,9 +751,13 @@ function RenewalSheet({
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="Close"
-            style={styles.closeButton}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
+              pressed ? styles.closeButtonPressed : null,
+            ]}
           >
-            <Ionicons name="close" size={18} color={legacyColors.text} />
+            <Ionicons name="close" size={18} color={palette.text.primary} />
           </Pressable>
         </View>
 
@@ -753,7 +769,7 @@ function RenewalSheet({
           >
             {loadingPlans ? <PlansSkeleton /> : null}
             {!loadingPlans && !plans.length ? (
-              <Text style={styles.emptyBody}>
+              <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                 No alternate plans are published yet. Same-plan renewal will be requested.
               </Text>
             ) : null}
@@ -769,30 +785,49 @@ function RenewalSheet({
                   accessibilityLabel={`Select ${plan.name}`}
                   accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
                   disabled={renewing}
-                  style={[styles.planOption, selected ? styles.planOptionSelected : null]}
+                  style={({ pressed }) => [
+                    styles.planOption,
+                    {
+                      backgroundColor: selected
+                        ? palette.surface.accentSoft
+                        : mode === "dark"
+                          ? palette.surface.raised
+                          : palette.bg.elevated,
+                      borderColor: selected ? palette.border.focus : palette.border.default,
+                    },
+                    pressed && !renewing ? styles.planOptionPressed : null,
+                  ]}
                 >
                   <View style={styles.planOptionCopy}>
-                    <Text style={styles.planOptionTitle}>{plan.name}</Text>
-                    <Text style={styles.planOptionMeta}>
+                    <Text style={[styles.planOptionTitle, { color: palette.text.primary }]}>{plan.name}</Text>
+                    <Text style={[styles.planOptionMeta, { color: palette.text.secondary }]}>
                       {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
                     </Text>
                   </View>
                   {selected && renewing ? (
-                    <ActivityIndicator size="small" color={legacyColors.lime} />
+                    <ActivityIndicator size="small" color={palette.accent.base} />
                   ) : selected ? (
-                    <Ionicons name="checkmark-circle" size={20} color={legacyColors.lime} />
+                    <Ionicons name="checkmark-circle" size={20} color={palette.accent.base} />
                   ) : null}
                 </Pressable>
               );
             })}
           </BottomSheetScrollView>
-          {plans.length > 3 ? <View pointerEvents="none" style={styles.planScrollHintBottom} /> : null}
+          {plans.length > 3 ? (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.planScrollHintBottom,
+                { backgroundColor: mode === "dark" ? palette.bg.overlay : palette.bg.elevated },
+              ]}
+            />
+          ) : null}
         </View>
 
         {selectedPlan ? (
           <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
-            <Text style={styles.summaryTitle}>Renewal summary</Text>
-            <Text style={styles.summaryBody}>
+            <Text style={[styles.summaryTitle, { color: palette.text.primary }]}>Renewal summary</Text>
+            <Text style={[styles.summaryBody, { color: palette.text.secondary }]}>
               {selectedPlan.durationDays
                 ? `${selectedPlan.durationDays} days`
                 : "Gym-defined validity"}
@@ -801,7 +836,7 @@ function RenewalSheet({
           </GlassCard>
         ) : null}
 
-        {status ? <Text style={styles.statusMessage}>{status}</Text> : null}
+        {status ? <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{status}</Text> : null}
         <View style={styles.sheetActions}>
           <ZookButton
             testID="membership-renewal-cancel"
@@ -856,8 +891,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -871,11 +904,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   calloutTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   calloutBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   pausePicker: {
@@ -887,7 +918,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   loadingText: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   browserReturnContent: {
@@ -902,11 +932,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   browserReturnTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   browserReturnBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   emptyContent: {
@@ -919,11 +947,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
@@ -940,11 +966,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   featuredTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   featuredOrg: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   progressSection: {
@@ -953,30 +977,24 @@ const styles = StyleSheet.create({
   progressBar: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.08)",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     borderRadius: 3,
-    backgroundColor: legacyColors.lime,
   },
   progressFillWarning: {
-    backgroundColor: legacyColors.amber,
   },
   progressLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   progressText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   progressTextWarning: {
-    color: legacyColors.amber,
   },
   progressTextMuted: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   membershipMetaLine: {
@@ -986,7 +1004,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   membershipMetaText: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   autopayContent: {
@@ -1002,15 +1019,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   autopayTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   autopayBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   autopayStatus: {
-    color: legacyColors.lime,
     ...typography.small,
   },
   stack: {
@@ -1030,11 +1044,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   historyBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   emptyPaymentContent: {
@@ -1063,15 +1075,12 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentAmount: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   paymentMetaRow: {
@@ -1082,7 +1091,6 @@ const styles = StyleSheet.create({
   },
   documentHint: {
     flexShrink: 1,
-    color: legacyColors.muted,
     ...typography.small,
   },
   documentActions: {
@@ -1092,26 +1100,24 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   documentButton: {
-    minHeight: 34,
+    minHeight: 40,
     minWidth: 96,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.08)",
     paddingHorizontal: 12,
   },
   documentButtonPressed: {
-    backgroundColor: "rgba(185,244,85,0.16)",
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   documentButtonDisabled: {
     opacity: 0.45,
   },
   documentButtonText: {
-    color: legacyColors.text,
     ...typography.small,
     fontWeight: "700",
   },
@@ -1128,11 +1134,8 @@ const styles = StyleSheet.create({
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
   sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
   },
   sheet: {
     width: "100%",
@@ -1151,25 +1154,25 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sheetEyebrow: {
-    color: legacyColors.lime,
     ...typography.eyebrow,
   },
   sheetTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   sheetBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: legacyColors.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+  closeButtonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
   },
   planSelector: {
     gap: spacing.sm,
@@ -1186,7 +1189,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 20,
-    backgroundColor: "rgba(7,9,8,0.42)",
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 18,
   },
@@ -1197,39 +1199,32 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
     padding: spacing.md,
   },
-  planOptionSelected: {
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.11)",
+  planOptionPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   planOptionCopy: {
     flex: 1,
     gap: 4,
   },
   planOptionTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   planOptionMeta: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   renewalSummary: {
     gap: 4,
   },
   summaryTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   summaryBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   statusMessage: {
-    color: legacyColors.lime,
     ...typography.small,
   },
   sheetActions: {

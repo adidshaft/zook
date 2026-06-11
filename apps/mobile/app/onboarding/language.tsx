@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { legacyColors, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -69,10 +69,11 @@ export default function OnboardingLanguageStep() {
               accessibilityState={{ selected: isSelected }}
               accessibilityLabel={option.label}
               onPress={() => setSelected(option.value)}
-              style={[
+              style={({ pressed }) => [
                 styles.option,
                 { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
                 isSelected ? { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft } : null,
+                pressed ? styles.optionPressed : null,
               ]}
             >
               <View style={styles.optionCopy}>
@@ -90,7 +91,7 @@ export default function OnboardingLanguageStep() {
       </View>
 
       <View style={styles.comingSoon}>
-        <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages — Coming Soon!</Text>
+        <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages on the way</Text>
         <View style={styles.comingSoonChips}>
           {comingSoonLanguages.map((name) => (
             <View
@@ -126,13 +127,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brand: {
-    color: legacyColors.text,
     fontFamily: "Inter_800ExtraBold",
     fontSize: 32,
     lineHeight: 38,
   },
   kicker: {
-    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     lineHeight: 22,
@@ -148,25 +147,21 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
-  optionSelected: {
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: legacyColors.accentPanel,
+  optionPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   optionCopy: {
     flex: 1,
     gap: 4,
   },
   optionLabel: {
-    color: legacyColors.text,
     fontFamily: "Inter_700Bold",
     fontSize: 17,
     lineHeight: 22,
   },
   optionCaption: {
-    color: legacyColors.muted,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { IconBubble, ListRow } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
-import { legacyColors, typography } from "@/lib/theme";
+import { typography, useTheme } from "@/lib/theme";
 
 export type LowStockProduct = {
   id: string;
@@ -19,6 +19,7 @@ export function StockRow({
   product: LowStockProduct;
   onReorder: () => void;
 }) {
+  const { palette } = useTheme();
   return (
     <ListRow
       title={product.name}
@@ -29,9 +30,16 @@ export function StockRow({
           onPress={onReorder}
           accessibilityRole="button"
           accessibilityLabel={`Reorder ${product.name}`}
-          style={styles.reorderButton}
+          style={({ pressed }) => [
+            styles.reorderButton,
+            {
+              borderColor: palette.feedback.warning,
+              backgroundColor: palette.surface.warningSoft,
+            },
+            pressed ? styles.reorderButtonPressed : null,
+          ]}
         >
-          <Text style={styles.reorderText}>Reorder</Text>
+          <Text style={[styles.reorderText, { color: palette.feedback.warning }]}>Reorder</Text>
         </Pressable>
       }
     />
@@ -40,16 +48,19 @@ export function StockRow({
 
 const styles = StyleSheet.create({
   reorderButton: {
-    minHeight: 32,
-    borderRadius: 16,
+    alignItems: "center",
+    minHeight: 44,
+    minWidth: 88,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.28)",
-    backgroundColor: "rgba(242,201,76,0.08)",
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     justifyContent: "center",
   },
+  reorderButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
+  },
   reorderText: {
-    color: legacyColors.warning,
     ...typography.caption,
   },
 });

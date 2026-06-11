@@ -14,7 +14,7 @@ import {
 } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type PlatformSubscriptionsPayload = {
   summary: {
@@ -69,6 +69,7 @@ function statusTone(status?: string | null) {
 
 export default function PlatformMobile() {
   const { logout, session, token } = useAuth();
+  const { palette } = useTheme();
   const platformEmail = encodeURIComponent(session?.user.email || "platform@zook.local");
   const platformWebUrl = toWebUrl(
     `/login?redirect=${encodeURIComponent("/platform")}&email=${platformEmail}`,
@@ -115,8 +116,8 @@ export default function PlatformMobile() {
           <GlassCard contentStyle={styles.heroContent}>
             <IconBubble icon="shield-checkmark-outline" tone="amber" size={52} />
             <View style={styles.heroCopy}>
-              <Text style={styles.title}>SaaS subscriptions are visible on mobile.</Text>
-              <Text style={styles.body}>
+              <Text style={[styles.title, { color: palette.text.primary }]}>SaaS subscriptions are visible on mobile.</Text>
+              <Text style={[styles.body, { color: palette.text.secondary }]}>
                 Use this screen for quick billing health checks. Pricing edits, trial extensions,
                 credits, notes, and policy changes still open in the web console for full review.
               </Text>
@@ -125,7 +126,7 @@ export default function PlatformMobile() {
 
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>SaaS health</Text>
+              <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>SaaS health</Text>
               {subscriptionsQuery.isFetching ? (
                 <StatusChip status="Refreshing" tone="amber" />
               ) : (
@@ -134,21 +135,21 @@ export default function PlatformMobile() {
             </View>
             {summary ? (
               <View style={styles.summaryGrid}>
-                <View style={styles.summaryCell}>
-                  <Text style={styles.metricValue}>{summary.totalOrgs}</Text>
-                  <Text style={styles.metricLabel}>gyms</Text>
+                <View style={[styles.summaryCell, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
+                  <Text style={[styles.metricValue, { color: palette.text.primary }]}>{summary.totalOrgs}</Text>
+                  <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>gyms</Text>
                 </View>
-                <View style={styles.summaryCell}>
-                  <Text style={styles.metricValue}>{summary.active}</Text>
-                  <Text style={styles.metricLabel}>paying</Text>
+                <View style={[styles.summaryCell, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
+                  <Text style={[styles.metricValue, { color: palette.text.primary }]}>{summary.active}</Text>
+                  <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>paying</Text>
                 </View>
-                <View style={styles.summaryCell}>
-                  <Text style={styles.metricValue}>{summary.onTrial}</Text>
-                  <Text style={styles.metricLabel}>trial</Text>
+                <View style={[styles.summaryCell, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
+                  <Text style={[styles.metricValue, { color: palette.text.primary }]}>{summary.onTrial}</Text>
+                  <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>trial</Text>
                 </View>
-                <View style={styles.summaryCell}>
-                  <Text style={styles.metricValue}>{summary.totalReferrals}</Text>
-                  <Text style={styles.metricLabel}>referrals</Text>
+                <View style={[styles.summaryCell, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
+                  <Text style={[styles.metricValue, { color: palette.text.primary }]}>{summary.totalReferrals}</Text>
+                  <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>referrals</Text>
                 </View>
               </View>
             ) : subscriptionsQuery.isError ? (
@@ -157,13 +158,13 @@ export default function PlatformMobile() {
                 onRetry={() => void subscriptionsQuery.refetch()}
               />
             ) : (
-              <Text style={styles.body}>Loading subscription health...</Text>
+              <Text style={[styles.body, { color: palette.text.secondary }]}>Loading subscription health...</Text>
             )}
           </GlassCard>
 
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent gyms</Text>
+              <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
               <StatusChip status={`${rows.length} shown`} tone="amber" />
             </View>
             {rows.map((row) => (
@@ -179,7 +180,7 @@ export default function PlatformMobile() {
                       status={row.subscriptionStatus ?? row.orgStatus}
                       tone={statusTone(row.subscriptionStatus ?? row.orgStatus)}
                     />
-                    <Text style={styles.rowMeta}>
+                    <Text style={[styles.rowMeta, { color: palette.text.secondary }]}>
                       Mandate {row.mandateStatus ?? "missing"} · {row.mandatePaidCount} paid
                     </Text>
                   </View>
@@ -216,11 +217,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    color: legacyColors.text,
     ...typography.screenTitle,
   },
   body: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   stack: {
@@ -233,7 +232,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionTitle: {
-    color: legacyColors.text,
     ...typography.sectionTitle,
   },
   summaryGrid: {
@@ -247,17 +245,13 @@ const styles = StyleSheet.create({
     minHeight: 82,
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.surface,
     padding: spacing.md,
     justifyContent: "center",
   },
   metricValue: {
-    color: legacyColors.text,
     ...typography.metric,
   },
   metricLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   rowStatus: {
@@ -266,7 +260,6 @@ const styles = StyleSheet.create({
     maxWidth: 132,
   },
   rowMeta: {
-    color: legacyColors.muted,
     textAlign: "right",
     ...typography.caption,
   },

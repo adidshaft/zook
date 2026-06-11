@@ -38,7 +38,7 @@ import {
   useMyPlans,
   useMyProfile,
 } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 type ActivityItem = {
@@ -152,6 +152,7 @@ function membershipProgressLabel(input: {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { mode, palette } = useTheme();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const {
     activeOrgId,
@@ -437,8 +438,8 @@ export default function ProfileScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => void refreshProfile()}
-              tintColor={legacyColors.lime}
-              colors={[legacyColors.lime]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           }
         >
@@ -457,9 +458,16 @@ export default function ProfileScreen() {
                     router.replace(routeForRole(activeRole));
                   }
                 }}
-                style={styles.backButton}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  {
+                    backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                    borderColor: palette.border.default,
+                  },
+                  pressed ? styles.backButtonPressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={22} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
               </Pressable>
             }
           />
@@ -474,10 +482,10 @@ export default function ProfileScreen() {
                 onShare={() => void shareReferral()}
                 onCopy={() => void copyReferral()}
               />
-              <Text style={styles.referralStat}>
+              <Text style={[styles.referralStat, { color: palette.text.primary }]}>
                 Your friends: {referralCode.redemptionCount ?? 0} joined, {pendingFriends} pending
               </Text>
-              <Text style={styles.referralBenefit}>{referralBenefit}</Text>
+              <Text style={[styles.referralBenefit, { color: palette.text.secondary }]}>{referralBenefit}</Text>
             </View>
           ) : null}
 
@@ -491,15 +499,15 @@ export default function ProfileScreen() {
               onSaved={() => void refreshProfile()}
             />
             <View style={styles.identityCopy}>
-              <Text numberOfLines={1} style={styles.name}>
+              <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
                 {userName}
               </Text>
               {userEmail ? (
-                <Text numberOfLines={1} style={styles.email}>
+                <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
                   {userEmail}
                 </Text>
               ) : null}
-              <Text numberOfLines={2} style={styles.gymLine}>
+              <Text numberOfLines={2} style={[styles.gymLine, { color: palette.text.primary }]}>
                 {formatOrgLocationLine(
                   activeOrganization?.name,
                   selectedBranch?.name,
@@ -537,16 +545,16 @@ export default function ProfileScreen() {
 
           {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Membership</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Membership</Text>
             <GlassCard variant="compact" contentStyle={styles.membershipCard}>
               {membership ? (
                 <>
                   <View style={styles.membershipTop}>
                     <View style={styles.membershipCopy}>
-                      <Text numberOfLines={1} style={styles.cardTitle}>
+                      <Text numberOfLines={1} style={[styles.cardTitle, { color: palette.text.primary }]}>
                         {planName}
                       </Text>
-                      <Text style={styles.cardSubtitle}>
+                      <Text style={[styles.cardSubtitle, { color: palette.text.secondary }]}>
                         Expires {formatDate(membership.endsAt)}
                       </Text>
                     </View>
@@ -601,17 +609,17 @@ export default function ProfileScreen() {
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent activity</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent activity</Text>
             <GlassCard variant="compact" contentStyle={styles.activityCard}>
               {recentActivity.length ? (
                 recentActivity.map((item) => (
                   <View key={item.id} style={styles.activityRow}>
                     <IconBubble icon={item.icon} tone="lime" size={36} />
                     <View style={styles.activityCopy}>
-                      <Text numberOfLines={1} style={styles.activityTitle}>
+                      <Text numberOfLines={1} style={[styles.activityTitle, { color: palette.text.primary }]}>
                         {item.title}
                       </Text>
-                      <Text numberOfLines={1} style={styles.activityMeta}>
+                      <Text numberOfLines={1} style={[styles.activityMeta, { color: palette.text.secondary }]}>
                         {item.meta}
                       </Text>
                     </View>
@@ -628,7 +636,7 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick actions</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Quick actions</Text>
             <View style={styles.quickGrid}>
               <ZookButton
                 testID="profile-switch-role"
@@ -691,13 +699,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderColor: legacyColors.border,
     borderRadius: 16,
     borderWidth: 1,
     height: 44,
     justifyContent: "center",
     width: 44,
+  },
+  backButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   identityCard: {
     alignItems: "center",
@@ -712,17 +722,14 @@ const styles = StyleSheet.create({
   },
   name: {
     ...typography.h1,
-    color: legacyColors.text,
     textAlign: "left",
   },
   email: {
     ...typography.body,
-    color: legacyColors.muted,
     textAlign: "left",
   },
   gymLine: {
     ...typography.bodyStrong,
-    color: legacyColors.text,
     marginTop: spacing.xs,
     textAlign: "left",
   },
@@ -738,15 +745,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.sectionTitle,
-    color: legacyColors.text,
   },
   referralStat: {
     ...typography.bodyStrong,
-    color: legacyColors.text,
   },
   referralBenefit: {
     ...typography.body,
-    color: legacyColors.muted,
   },
   membershipCard: {
     gap: spacing.md,
@@ -763,11 +767,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...typography.h3,
-    color: legacyColors.text,
   },
   cardSubtitle: {
     ...typography.body,
-    color: legacyColors.muted,
   },
   actionRow: {
     flexDirection: "row",
@@ -790,11 +792,9 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     ...typography.bodyStrong,
-    color: legacyColors.text,
   },
   activityMeta: {
     ...typography.small,
-    color: legacyColors.muted,
   },
   quickGrid: {
     flexDirection: "row",

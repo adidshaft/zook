@@ -759,8 +759,6 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
     const missingEnv = [
       bucket ? null : "S3_BUCKET",
       region ? null : "S3_REGION",
-      accessKeyId ? null : "S3_ACCESS_KEY_ID",
-      secretAccessKey ? null : "S3_SECRET_ACCESS_KEY",
     ].filter(Boolean) as string[];
 
     if (missingEnv.length) {
@@ -789,8 +787,12 @@ function resolveStorageProvider(): ProviderResolution<StorageProvider> {
         provider: "s3",
         bucket: bucket as string,
         region: region as string,
-        accessKeyId: accessKeyId as string,
-        secretAccessKey: secretAccessKey as string,
+        ...(accessKeyId && secretAccessKey
+          ? {
+              accessKeyId,
+              secretAccessKey,
+            }
+          : {}),
         ...(env(process.env.S3_ENDPOINT)
           ? { endpoint: env(process.env.S3_ENDPOINT) as string }
           : {}),

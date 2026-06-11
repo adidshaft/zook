@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { sanitizeOtpValue } from "@/lib/otp";
-import { legacyColors, radii, spacing, typography } from "@/lib/theme";
+import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
 export type OtpInputHandle = {
   focus: () => void;
@@ -33,7 +33,13 @@ export const OtpInput = forwardRef<
   },
   ref,
 ) {
+  const { palette } = useTheme();
   const inputRef = useRef<TextInput>(null);
+  const cellBackground = disabled
+    ? palette.bg.sunken
+    : palette.surface.raised;
+  const activeBackground = disabled ? cellBackground : palette.surface.accentSoft;
+  const cellOpacity = disabled ? 0.58 : 1;
   useImperativeHandle(ref, () => ({ focus: () => inputRef.current?.focus() }), []);
 
   function handleChange(nextValue: string) {
@@ -46,7 +52,7 @@ export const OtpInput = forwardRef<
 
   return (
     <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: palette.text.secondary }]}>{label}</Text>
       <Pressable
         testID={testID ? `${testID}-cells` : undefined}
         accessibilityRole="button"
@@ -60,8 +66,19 @@ export const OtpInput = forwardRef<
           const digit = value[index] ?? "";
           const active = !disabled && index === Math.min(value.length, length - 1);
           return (
-            <View key={index} style={[styles.cell, active ? styles.cellActive : null]}>
-              <Text style={styles.cellText}>{digit}</Text>
+            <View
+              key={index}
+              style={[
+                styles.cell,
+                {
+                  borderColor: active ? palette.border.focus : palette.border.default,
+                  backgroundColor: active ? activeBackground : cellBackground,
+                  opacity: cellOpacity,
+                },
+                active ? styles.cellActive : null,
+              ]}
+            >
+              <Text style={[styles.cellText, { color: palette.text.primary }]}>{digit}</Text>
             </View>
           );
         })}
@@ -89,7 +106,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   cells: {
@@ -101,17 +117,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
   cellActive: {
-    borderColor: legacyColors.lime,
-    backgroundColor: legacyColors.accentPanel,
   },
   cellText: {
-    color: legacyColors.text,
     fontSize: 20,
     fontWeight: "800",
   },

@@ -26,7 +26,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function TrainerClientOverviewScreen() {
@@ -34,6 +34,7 @@ export default function TrainerClientOverviewScreen() {
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
   const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
   const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
@@ -106,7 +107,20 @@ export default function TrainerClientOverviewScreen() {
           <MobileHeader
             title="Client Detail"
             subtitle=""
-            leading={<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))} accessibilityRole="button" accessibilityLabel="Back to clients" style={styles.iconButton}><Text style={styles.backIcon}>‹</Text></Pressable>}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
+                accessibilityRole="button"
+                accessibilityLabel="Back to clients"
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
+              >
+                <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
+              </Pressable>
+            }
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="overview" onChange={(tab) => router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never)} />
@@ -114,35 +128,35 @@ export default function TrainerClientOverviewScreen() {
           {!clientsQuery.isLoading && !client ? (
             <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="person-outline" tone="neutral" size={42} />
-              <Text style={styles.cardTitle}>Client not found</Text>
+              <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
               <ZookButton href="/trainer/clients" tone="secondary" icon="people-outline">Back to clients</ZookButton>
             </GlassCard>
           ) : null}
 
           <GlassCard variant="compact" contentStyle={styles.clientHeroContent}>
             <View style={styles.clientHeroTop}>
-              <View style={styles.clientAvatar}>
-                <Text style={styles.clientAvatarText}>{initialsFor(clientName)}</Text>
-                <View style={styles.clientAvatarDot} />
+              <View style={[styles.clientAvatar, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
+                <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{initialsFor(clientName)}</Text>
+                <View style={[styles.clientAvatarDot, { backgroundColor: palette.accent.base, borderColor: palette.bg.elevated }]} />
               </View>
               <View style={styles.clientHeroCopy}>
-                <Text numberOfLines={1} style={styles.clientHeroName}>{clientName}</Text>
+                <Text numberOfLines={1} style={[styles.clientHeroName, { color: palette.text.primary }]}>{clientName}</Text>
                 <View style={styles.clientStatusRow}>
-                  <Ionicons name="person-outline" size={21} color={legacyColors.lime} />
-                  <Text style={styles.clientStatusText}>{client?.active ? "Active member" : "Paused member"}</Text>
+                  <Ionicons name="person-outline" size={21} color={palette.accent.base} />
+                  <Text style={[styles.clientStatusText, { color: palette.accent.base }]}>{client?.active ? "Active member" : "Paused member"}</Text>
                 </View>
               </View>
             </View>
             <View style={styles.clientHeroMetrics}>
               <View style={styles.clientHeroMetric}>
-                <Ionicons name="navigate-circle-outline" size={22} color={legacyColors.lime} />
-                <Text style={styles.metricLabel}>Goal</Text>
-                <Text numberOfLines={1} style={styles.metricValue}>{fitnessGoal}</Text>
+                <Ionicons name="navigate-circle-outline" size={22} color={palette.accent.base} />
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Goal</Text>
+                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{fitnessGoal}</Text>
               </View>
               <View style={styles.clientHeroMetric}>
-                <Ionicons name="barbell-outline" size={22} color={legacyColors.lime} />
-                <Text style={styles.metricLabel}>PT pack</Text>
-                <Text numberOfLines={1} style={styles.metricValue}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
+                <Ionicons name="barbell-outline" size={22} color={palette.accent.base} />
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>PT pack</Text>
+                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
               </View>
             </View>
             <ZookButton testID="trainer-ai-draft-button" href={`/trainer/clients/${id}/plan` as never} icon="sparkles-outline" disabled={!client}>
@@ -178,22 +192,23 @@ export default function TrainerClientOverviewScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+  backIcon: { fontSize: 26, lineHeight: 28 },
   notFoundContent: { alignItems: "center", gap: spacing.md },
   clientHeroContent: { gap: 18, padding: 20 },
   clientHeroTop: { alignItems: "center", flexDirection: "row", gap: spacing.lg },
-  clientAvatar: { alignItems: "center", backgroundColor: "rgba(185,244,85,0.12)", borderColor: legacyColors.lime, borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
-  clientAvatarText: { color: legacyColors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
-  clientAvatarDot: { backgroundColor: legacyColors.lime, borderColor: legacyColors.bg, borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
+  clientAvatar: { alignItems: "center", borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
+  clientAvatarText: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientAvatarDot: { borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
   clientHeroCopy: { flex: 1, gap: 8, minWidth: 0 },
-  clientHeroName: { color: legacyColors.text, fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientHeroName: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  clientStatusText: { color: legacyColors.lime, fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
+  clientStatusText: { fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
   clientHeroMetrics: { flexDirection: "row", gap: spacing.lg },
   clientHeroMetric: { flex: 1, gap: 6 },
-  metricLabel: { color: legacyColors.muted, fontSize: 15, lineHeight: 20 },
-  metricValue: { color: legacyColors.text, fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
-  cardTitle: { color: legacyColors.text, ...typography.cardTitle },
+  metricLabel: { fontSize: 15, lineHeight: 20 },
+  metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
+  cardTitle: { ...typography.cardTitle },
   stack: { gap: 10 },
 });

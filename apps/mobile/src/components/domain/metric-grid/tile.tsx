@@ -26,7 +26,7 @@ export function DomainMetricTile({
       onPress={item.onPress}
       accessibilityRole="button"
       accessibilityLabel={item.accessibilityLabel ?? item.label}
-      style={[styles.pressable, slotStyle]}
+      style={({ pressed }) => [styles.pressable, slotStyle, pressed ? styles.pressablePressed : null]}
     >
       {tile}
     </Pressable>
@@ -35,4 +35,8 @@ export function DomainMetricTile({
 
 const styles = StyleSheet.create({
   pressable: { minWidth: 0 },
+  pressablePressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.985 }],
+  },
 });

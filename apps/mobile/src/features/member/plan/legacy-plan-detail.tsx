@@ -36,7 +36,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type PlanFilter = "workout" | "diet";
@@ -72,6 +72,7 @@ function exerciseFromApi(exercise: PlanExerciseRecord): PlanExercise {
 export default function Plans() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { mode, palette } = useTheme();
   const [filter, setFilter] = useState<PlanFilter>("workout");
   const [refreshing, setRefreshing] = useState(false);
   const plansQuery = useMyPlans();
@@ -109,8 +110,8 @@ export default function Plans() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.lime}
-                colors={[legacyColors.lime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -125,19 +126,25 @@ export default function Plans() {
             <GlassCard variant="selected" glow contentStyle={styles.activePlanContent}>
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
-                  <Text style={styles.eyebrow}>ACTIVE</Text>
-                  <Text numberOfLines={1} style={styles.activePlanTitle}>
+                  <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.activePlanTitle, { color: palette.text.primary }]}
+                  >
                     {planTitle(selectedAssignment)}
                   </Text>
-                  <Text numberOfLines={1} style={styles.activePlanMeta}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.activePlanMeta, { color: palette.text.secondary }]}
+                  >
                     {coachName} · {planKind(selectedAssignment)}
                   </Text>
                 </View>
                 <View style={styles.activePlanPercent}>
-                  <Text style={styles.activePlanPercentValue}>
+                  <Text style={[styles.activePlanPercentValue, { color: palette.accent.base }]}>
                     {selectedAssignment.progress?.completionPct ?? 0}
                   </Text>
-                  <Text style={styles.activePlanPercentSuffix}>%</Text>
+                  <Text style={[styles.activePlanPercentSuffix, { color: palette.text.secondary }]}>%</Text>
                 </View>
               </View>
               <ProgressBar
@@ -199,7 +206,13 @@ export default function Plans() {
                 key={assignment.id}
                 onPress={() => openAssignment(assignment.id)}
                 accessibilityRole="button"
-                style={styles.libraryCard}
+                style={[
+                  styles.libraryCard,
+                  {
+                    backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                    borderColor: palette.border.default,
+                  },
+                ]}
               >
                 <IconBubble
                   icon={
@@ -208,8 +221,10 @@ export default function Plans() {
                   tone={planKind(assignment).includes("diet") ? "blue" : "lime"}
                   size={42}
                 />
-                <Text style={styles.libraryTitle}>{planTitle(assignment)}</Text>
-                <Text style={styles.libraryDetail}>
+                <Text style={[styles.libraryTitle, { color: palette.text.primary }]}>
+                  {planTitle(assignment)}
+                </Text>
+                <Text style={[styles.libraryDetail, { color: palette.text.secondary }]}>
                   {assignment.progress?.completionPct ?? 0}% complete
                 </Text>
               </Pressable>
@@ -230,6 +245,7 @@ export function PlanDetailScreen() {
   }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { mode, palette } = useTheme();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(new Set<string>());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -469,8 +485,8 @@ export function PlanDetailScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.lime}
-                colors={[legacyColors.lime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -478,15 +494,21 @@ export function PlanDetailScreen() {
             <MobileHeader
               title={planTitle(selectedAssignment)}
               subtitle={coachName}
-              style={styles.stickyHeader}
+              style={[styles.stickyHeader, { backgroundColor: palette.bg.app }]}
               leading={
                 <Pressable
                   onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                   accessibilityRole="button"
                   accessibilityLabel="Back"
-                  style={styles.iconButton}
+                  style={[
+                    styles.iconButton,
+                    {
+                      backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                      borderColor: palette.border.default,
+                    },
+                  ]}
                 >
-                  <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                  <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
                 </Pressable>
               }
               trailing={
@@ -495,29 +517,47 @@ export function PlanDetailScreen() {
                   onPress={openFeedbackSheet}
                   accessibilityRole="button"
                   accessibilityLabel="Tell coach"
-                  style={[styles.iconButton, feedbackOpen ? styles.iconButtonActive : null]}
+                  style={[
+                    styles.iconButton,
+                    {
+                      backgroundColor: feedbackOpen
+                        ? palette.accent.base
+                        : mode === "dark"
+                          ? palette.surface.raised
+                          : palette.bg.elevated,
+                      borderColor: feedbackOpen ? palette.accent.strong : palette.border.default,
+                    },
+                  ]}
                 >
                   <Ionicons
                     name="information-outline"
                     size={22}
-                    color={feedbackOpen ? legacyColors.bg : legacyColors.text}
+                    color={feedbackOpen ? palette.text.onAccent : palette.text.primary}
                   />
                 </Pressable>
               }
               showProfileShortcut={false}
             />
 
-            {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
+            {feedbackStatus ? (
+              <Text style={[styles.inlineStatus, { color: palette.accent.base }]}>
+                {feedbackStatus}
+              </Text>
+            ) : null}
 
             <GlassCard variant="selected" contentStyle={styles.progressContent}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressCopy}>
-                  <Text style={styles.cardTitle}>Workout progress</Text>
-                  <Text style={styles.cardBody}>
+                  <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
+                    Workout progress
+                  </Text>
+                  <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
                     {completedCount} of {exercises.length} completed
                   </Text>
                 </View>
-                <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
+                <Text style={[styles.progressText, { color: palette.accent.base }]}>
+                  {Math.round(progress * 100)}%
+                </Text>
               </View>
               <ProgressBar value={progress} label="Today" />
             </GlassCard>
@@ -583,23 +623,29 @@ export function PlanDetailScreen() {
           snapPoints={feedbackSnapPoints}
           enablePanDownToClose
           backdropComponent={renderFeedbackBackdrop}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.sheetHandle}
+          backgroundStyle={{
+            ...styles.sheetBackground,
+            backgroundColor: palette.bg.elevated,
+            borderColor: palette.border.default,
+          }}
+          handleIndicatorStyle={{ ...styles.sheetHandle, backgroundColor: palette.border.strong }}
           onDismiss={() => setFeedbackOpen(false)}
         >
           <BottomSheetView style={styles.feedbackSheetContent}>
             <View style={styles.sheetHeader}>
               <View style={styles.sheetTitleCopy}>
-                <Text style={styles.cardTitle}>Tell coach</Text>
-                <Text style={styles.cardBody}>Send a quick note about this assignment.</Text>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Tell coach</Text>
+                <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
+                  Send a quick note about this assignment.
+                </Text>
               </View>
               <Pressable
                 onPress={closeFeedbackSheet}
                 accessibilityRole="button"
                 accessibilityLabel="Close feedback"
-                style={styles.sheetCloseButton}
+                style={[styles.sheetCloseButton, { borderColor: palette.border.default }]}
               >
-                <Ionicons name="close" size={18} color={legacyColors.text} />
+                <Ionicons name="close" size={18} color={palette.text.primary} />
               </Pressable>
             </View>
             <View style={styles.feedbackOptions}>
@@ -608,15 +654,24 @@ export function PlanDetailScreen() {
                   key={option}
                   onPress={() => setFeedbackNote(option)}
                   accessibilityRole="button"
-                  style={[
+                  style={({ pressed }) => [
                     styles.feedbackOption,
-                    feedbackNote === option ? styles.feedbackOptionActive : null,
+                    {
+                      backgroundColor:
+                        feedbackNote === option ? palette.surface.accentSoft : palette.surface.raised,
+                      borderColor:
+                        feedbackNote === option ? palette.accent.strong : palette.border.default,
+                    },
+                    pressed ? styles.feedbackOptionPressed : null,
                   ]}
                 >
                   <Text
                     style={[
                       styles.feedbackOptionText,
-                      feedbackNote === option ? styles.feedbackOptionTextActive : null,
+                      {
+                        color:
+                          feedbackNote === option ? palette.accent.strong : palette.text.secondary,
+                      },
                     ]}
                   >
                     {option}
@@ -641,12 +696,24 @@ export function PlanDetailScreen() {
               returnKeyType="send"
               maxLength={280}
               placeholder="Add a short note"
-              placeholderTextColor={legacyColors.muted}
-              style={styles.feedbackInput}
+              placeholderTextColor={palette.text.tertiary}
+              style={[
+                styles.feedbackInput,
+                {
+                  backgroundColor: mode === "dark" ? palette.bg.overlay : palette.bg.app,
+                  borderColor: palette.border.default,
+                  color: palette.text.primary,
+                },
+              ]}
             />
             {Platform.OS === "ios" ? (
               <InputAccessoryView nativeID={feedbackAccessoryId}>
-                <View style={styles.feedbackAccessory}>
+                <View
+                  style={[
+                    styles.feedbackAccessory,
+                    { backgroundColor: palette.bg.elevated, borderTopColor: palette.border.default },
+                  ]}
+                >
                   <ZookButton
                     testID="plan-detail-feedback-send"
                     onPress={() => void sendFeedback()}
@@ -658,7 +725,11 @@ export function PlanDetailScreen() {
                 </View>
               </InputAccessoryView>
             ) : null}
-            {feedbackStatus ? <Text style={styles.inlineStatus}>{feedbackStatus}</Text> : null}
+            {feedbackStatus ? (
+              <Text style={[styles.inlineStatus, { color: palette.accent.base }]}>
+                {feedbackStatus}
+              </Text>
+            ) : null}
           </BottomSheetView>
         </BottomSheetModal>
       </>
@@ -678,21 +749,14 @@ const styles = StyleSheet.create({
     marginHorizontal: -layout.screenPadding,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.sm,
-    backgroundColor: legacyColors.bg,
   },
   iconButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconButtonActive: {
-    borderColor: legacyColors.lime,
-    backgroundColor: legacyColors.lime,
   },
   detailHeader: {
     flexDirection: "row",
@@ -704,21 +768,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   detailTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   detailSubtitle: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
-  sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
+  sheetHandle: {},
   feedbackSheetContent: {
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -734,11 +792,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sheetCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -748,33 +805,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   feedbackOption: {
-    minHeight: 34,
-    borderRadius: 12,
+    minHeight: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  feedbackOptionActive: {
-    borderColor: legacyColors.lime,
-    backgroundColor: "rgba(185,244,85,0.14)",
+  feedbackOptionPressed: {
+    opacity: 0.84,
   },
   feedbackOptionText: {
-    color: legacyColors.muted,
     ...typography.caption,
-  },
-  feedbackOptionTextActive: {
-    color: legacyColors.lime,
   },
   feedbackInput: {
     minHeight: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(0,0,0,0.22)",
-    color: legacyColors.text,
     paddingHorizontal: 12,
     ...typography.body,
   },
@@ -783,8 +830,6 @@ const styles = StyleSheet.create({
     minWidth: 116,
   },
   feedbackAccessory: {
-    backgroundColor: legacyColors.panel,
-    borderTopColor: legacyColors.border,
     borderTopWidth: 1,
     padding: spacing.sm,
   },
@@ -792,7 +837,6 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   inlineStatus: {
-    color: legacyColors.lime,
     ...typography.caption,
     paddingHorizontal: 4,
   },
@@ -820,11 +864,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   activePlanTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   activePlanMeta: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   activePlanPercent: {
@@ -833,14 +875,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   activePlanPercentValue: {
-    color: legacyColors.lime,
     fontSize: 26,
     lineHeight: 30,
     fontFamily: "Inter_700Bold",
     fontVariant: ["tabular-nums"],
   },
   activePlanPercentSuffix: {
-    color: legacyColors.muted,
     ...typography.bodyStrong,
   },
   activePlanActions: {
@@ -867,15 +907,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   cardBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   progressText: {
-    color: legacyColors.lime,
     ...typography.metric,
   },
   featuredContent: {
@@ -888,7 +925,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   eyebrow: {
-    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   planMeta: {
@@ -898,7 +934,6 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   metaDot: {
-    color: legacyColors.subtle,
     ...typography.small,
   },
   libraryGrid: {
@@ -914,18 +949,14 @@ const styles = StyleSheet.create({
     minHeight: 112,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
     padding: 12,
     gap: 8,
     justifyContent: "center",
   },
   libraryTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   libraryDetail: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   emptyPlanCard: {

@@ -211,9 +211,12 @@ function createHttpTransport(): MobileApiTransport {
   };
 }
 
-const transport: MobileApiTransport = isOfflineDemoMode()
-  ? createDemoTransport()
-  : createHttpTransport();
+const demoTransport = createDemoTransport();
+const httpTransport = createHttpTransport();
+
+function currentTransport() {
+  return isOfflineDemoMode() ? demoTransport : httpTransport;
+}
 
 export async function mobileApiFetch<T>(
   path: string,
@@ -223,5 +226,5 @@ export async function mobileApiFetch<T>(
   if (configError) {
     throw new Error("Zook can’t open in this build. Please update the app or contact support.");
   }
-  return transport.request<T>(path, init);
+  return currentTransport().request<T>(path, init);
 }

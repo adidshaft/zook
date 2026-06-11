@@ -433,7 +433,7 @@ describe("provider registry", () => {
       storage: {
         status: "misconfigured",
         activeProvider: null,
-        missingEnv: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
+        missingEnv: ["S3_BUCKET", "S3_REGION"],
       },
       whatsapp: {
         status: "misconfigured",

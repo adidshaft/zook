@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 
@@ -21,7 +21,7 @@ const ThemeContext = createContext<{
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useColorScheme();
-  const [preference, setPreferenceState] = useState<ThemePreference>("light");
+  const [preference, setPreferenceState] = useState<ThemePreference>("system");
 
   useEffect(() => {
     let mounted = true;
@@ -43,6 +43,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const mode: ThemeMode =
     preference === "system" ? (systemScheme === "dark" ? "dark" : "light") : preference;
   const palette = mode === "dark" ? darkPalette : lightPalette;
+
+  useEffect(() => {
+    Appearance.setColorScheme(preference === "system" ? null : preference);
+    return () => {
+      Appearance.setColorScheme(null);
+    };
+  }, [preference]);
 
   const setPreference = async (nextPreference: ThemePreference) => {
     setPreferenceState(nextPreference);

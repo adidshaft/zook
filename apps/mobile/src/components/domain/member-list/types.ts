@@ -37,4 +37,5 @@ export type MemberListProps = {
   refreshing?: boolean;
   onRefresh?: () => void;
   header?: ReactNode;
+  scrollEnabled?: boolean;
 };

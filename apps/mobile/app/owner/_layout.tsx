@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { RoleTabBarBackground } from "@/components/role-tab-bar-background";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { useTheme } from "@/lib/theme";
+import { createRoleTabBarStyle, useTheme } from "@/lib/theme";
 
 const legacyViewTargets: Record<
   string,
@@ -18,10 +20,11 @@ const legacyViewTargets: Record<
 };
 
 export default function OwnerLayout() {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const insets = useSafeAreaInsets();
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
@@ -30,6 +33,13 @@ export default function OwnerLayout() {
     approvalsQuery.data?.joinRequests.filter(
       (request) => String(request.status ?? "").toLowerCase() === "pending",
     ).length ?? 0;
+  const tabBarStyle = createRoleTabBarStyle({
+    palette,
+    mode,
+    inset: 12,
+    bottomInset: insets.bottom,
+    height: 72,
+  });
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
@@ -44,19 +54,29 @@ export default function OwnerLayout() {
         headerShown: false,
         tabBarActiveTintColor: palette.accent.base,
         tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: palette.bg.elevated,
-          borderTopColor: palette.border.subtle,
+        tabBarBackground: () => <RoleTabBarBackground mode={mode} />,
+        tabBarStyle,
+        tabBarLabelStyle: {
+          fontSize: 9,
+          fontFamily: "Inter_600SemiBold",
+        },
+        tabBarItemStyle: {
+          borderRadius: 14,
+        },
+        tabBarBadgeStyle: {
+          backgroundColor: palette.feedback.danger,
+          color: palette.text.onDanger,
+          fontFamily: "Inter_800ExtraBold",
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Command",
+          title: "Cmd",
           tabBarButtonTestID: "bottom-nav-command",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={21} color={color} />
           ),
         }}
       />
@@ -66,18 +86,18 @@ export default function OwnerLayout() {
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "people" : "people-outline"} size={21} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="approvals"
         options={{
-          title: "Approvals",
+          title: "Review",
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarButtonTestID: "bottom-nav-approvals",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={21} color={color} />
           ),
         }}
       />
@@ -88,7 +108,7 @@ export default function OwnerLayout() {
           href: canViewRevenue ? "/owner/revenue" : null,
           tabBarButtonTestID: "bottom-nav-revenue",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={21} color={color} />
           ),
         }}
       />
@@ -99,7 +119,7 @@ export default function OwnerLayout() {
           href: canViewStock ? "/owner/stock" : null,
           tabBarButtonTestID: "bottom-nav-stock",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "cube" : "cube-outline"} size={21} color={color} />
           ),
         }}
       />
@@ -110,7 +130,7 @@ export default function OwnerLayout() {
           href: canManageBilling ? ("/owner/billing" as never) : null,
           tabBarButtonTestID: "bottom-nav-billing",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={22} color={color} />
+            <Ionicons name={focused ? "card" : "card-outline"} size={21} color={color} />
           ),
         }}
       />

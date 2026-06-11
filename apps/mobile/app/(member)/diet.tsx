@@ -19,12 +19,13 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { dietApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { useMyDiet } from "@/lib/domains/tracking/queries";
-import { layout, legacyColors, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function MemberDietScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const dietQuery = useMyDiet();
   const plan = dietQuery.data?.plan ?? null;
   const logs = dietQuery.data?.logs ?? [];
@@ -86,16 +87,25 @@ export default function MemberDietScreen() {
           <GlassCard variant="compact" contentStyle={styles.stack}>
             <View style={styles.rollupRow}>
               <View>
-                <Text style={styles.rollupLabel}>Today</Text>
-                <Text style={styles.rollupValue}>{loggedCalories} / {plan?.calorieTarget ?? "-"} kcal</Text>
+                <Text style={[styles.rollupLabel, { color: palette.text.secondary }]}>Today</Text>
+                <Text style={[styles.rollupValue, { color: palette.text.primary }]}>
+                  {loggedCalories} / {plan?.calorieTarget ?? "-"} kcal
+                </Text>
               </View>
               <StatusChip status={plan ? "Active plan" : "No plan"} tone={plan ? "lime" : "neutral"} />
             </View>
             {plan?.meals?.length ? (
               plan.meals.map((meal) => (
-                <View key={meal.id} style={styles.mealRow}>
-                  <Text style={styles.mealTitle}>{meal.name}</Text>
-                  <Text style={styles.mealMeta}>{meal.calories ?? 0} kcal · {meal.proteinG ?? 0}P/{meal.carbsG ?? 0}C/{meal.fatsG ?? 0}F</Text>
+                <View
+                  key={meal.id}
+                  style={[styles.mealRow, { borderTopColor: palette.border.subtle }]}
+                >
+                  <Text style={[styles.mealTitle, { color: palette.text.primary }]}>
+                    {meal.name}
+                  </Text>
+                  <Text style={[styles.mealMeta, { color: palette.text.secondary }]}>
+                    {meal.calories ?? 0} kcal · {meal.proteinG ?? 0}P/{meal.carbsG ?? 0}C/{meal.fatsG ?? 0}F
+                  </Text>
                 </View>
               ))
             ) : (
@@ -107,8 +117,21 @@ export default function MemberDietScreen() {
             <SectionHeader title="Log meal" subtitle="Use a preset or type a quick deviation." />
             <View style={styles.presetRow}>
               {indianMealPresets.slice(0, 5).map((preset) => (
-                <Pressable key={preset.id} accessibilityRole="button" onPress={() => applyPreset(preset)} style={styles.presetChip}>
-                  <Text style={styles.presetText}>{preset.label}</Text>
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  onPress={() => applyPreset(preset)}
+                  style={[
+                    styles.presetChip,
+                    {
+                      borderColor: palette.border.subtle,
+                      backgroundColor: palette.surface.default,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.presetText, { color: palette.text.primary }]}>
+                    {preset.label}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -131,14 +154,14 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
   stack: { gap: 12 },
   rollupRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
-  rollupLabel: { color: legacyColors.muted, ...typography.caption },
-  rollupValue: { color: legacyColors.text, ...typography.cardTitle },
-  mealRow: { borderTopColor: legacyColors.border, borderTopWidth: 1, gap: 3, paddingTop: 10 },
-  mealTitle: { color: legacyColors.text, ...typography.bodyStrong },
-  mealMeta: { color: legacyColors.muted, ...typography.caption },
+  rollupLabel: typography.caption,
+  rollupValue: typography.cardTitle,
+  mealRow: { borderTopWidth: 1, gap: 3, paddingTop: 10 },
+  mealTitle: typography.bodyStrong,
+  mealMeta: typography.caption,
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  presetChip: { borderColor: legacyColors.border, borderRadius: 18, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 8 },
-  presetText: { color: legacyColors.text, ...typography.caption },
+  presetChip: { borderRadius: 18, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 8 },
+  presetText: typography.caption,
   macroRow: { flexDirection: "row", gap: 8 },
   macroField: { flex: 1 },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { isAutopayLive } from "./helpers";
 import type { MembershipRecord } from "./types";
 
@@ -18,21 +18,26 @@ export function AutopayCard({
   onEnable: (subscription: MembershipRecord) => void;
   subscription: MembershipRecord;
 }) {
+  const { palette } = useTheme();
   const live = isAutopayLive(subscription.autopay);
   return (
     <GlassCard variant="compact" contentStyle={styles.autopayContent}>
       <View style={styles.autopayHeader}>
         <IconBubble icon="repeat-outline" tone={live ? "lime" : "blue"} size={36} />
         <View style={styles.autopayCopy}>
-          <Text style={styles.autopayTitle}>Autopay</Text>
-          <Text style={styles.autopayBody}>
+          <Text style={[styles.autopayTitle, { color: palette.text.primary }]}>Autopay</Text>
+          <Text style={[styles.autopayBody, { color: palette.text.secondary }]}>
             {live
               ? subscription.autopay?.nextChargeAt
                 ? `Next renewal ${formatLongDate(subscription.autopay.nextChargeAt)}`
                 : "Recurring renewal is enabled."
               : "Authorize automatic renewal to renew this plan automatically."}
           </Text>
-          {autopayStatus ? <Text style={styles.autopayStatus}>{autopayStatus}</Text> : null}
+          {autopayStatus ? (
+            <Text style={[styles.autopayStatus, { color: palette.accent.base }]}>
+              {autopayStatus}
+            </Text>
+          ) : null}
         </View>
         <Pill tone={live ? "lime" : "blue"}>
           {live ? titleCaseFromCode(subscription.autopay?.status ?? "ACTIVE") : "Off"}
@@ -74,15 +79,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   autopayTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   autopayBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   autopayStatus: {
-    color: legacyColors.lime,
     ...typography.small,
   },
 });

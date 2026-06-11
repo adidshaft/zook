@@ -37,7 +37,6 @@ import {
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherChip } from "@/components/role-switcher";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { formatDateTime, formatInr } from "@/lib/formatting";
@@ -58,7 +57,7 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
 import { useScalePulse, useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
@@ -102,6 +101,7 @@ function useReceptionWorkspaceState({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
+  const { palette } = useTheme();
   const roleContext = useRoleContext();
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
@@ -239,7 +239,7 @@ function useReceptionWorkspaceState({
           context: (
             <View style={styles.auditTrail}>
               {flags.slice(-3).map((item) => (
-                <Text key={item} style={styles.auditText}>
+                <Text key={item} style={[styles.auditText, { color: palette.text.secondary }]}>
                   {item}
                 </Text>
               ))}
@@ -247,7 +247,7 @@ function useReceptionWorkspaceState({
           ),
         };
       }),
-    [approvalQueue],
+    [approvalQueue, palette.text.secondary],
   );
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
@@ -259,6 +259,7 @@ function useReceptionWorkspaceState({
   const profile = memberRecord?.profile ?? null;
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const activeRole = roleContext?.role;
+  const isDemo = Boolean(roleContext?.isDemo);
   const canSwitchBranches = branches.length > 1;
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
@@ -658,6 +659,7 @@ function useReceptionWorkspaceState({
     gymSelectorLabel,
     handleVerifyCodeChange,
     hiddenMemberCount,
+    isDemo,
     member,
     memberRecord,
     memberSearch,
@@ -682,7 +684,6 @@ function useReceptionWorkspaceState({
     recordManualAttendance,
     recordPayment,
     recordPaymentMutation,
-    refreshControlTint: legacyColors.lime,
     refreshing,
     rejectAttendance,
     rejectAttendanceMutation,
@@ -740,10 +741,16 @@ export function ReceptionWorkspace({
   testID?: string;
 }) {
   const state = useReceptionWorkspaceState({ initialMemberId });
+  const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
+  const headerControlStyle = {
+    borderColor: palette.border.default,
+    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+  };
 
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
-      <ZookScreen testID={testID}>
+      <ZookScreen testID={testID} style={state.isDemo ? styles.demoScreen : undefined}>
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -753,8 +760,8 @@ export function ReceptionWorkspace({
             <RefreshControl
               refreshing={state.refreshing}
               onRefresh={state.onRefresh}
-              tintColor={state.refreshControlTint}
-              colors={[state.refreshControlTint]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           ),
         }}
@@ -774,15 +781,15 @@ export function ReceptionWorkspace({
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={12}
-            style={styles.backButton}
+            style={[styles.backButton, headerControlStyle]}
           >
-            <Ionicons name="chevron-back" size={22} color={legacyColors.text} />
+            <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
+            <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
+              {subtitle}
+            </Text>
           </View>
-          <RoleSwitcherChip />
         </View>
 
         <Pressable
@@ -793,15 +800,24 @@ export function ReceptionWorkspace({
           disabled={!state.canSwitchBranches}
           style={({ pressed }) => [
             styles.gymSelector,
+            {
+              borderColor: palette.border.default,
+              backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+            },
             pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
           ]}
         >
-          <Ionicons name="business-outline" size={22} color={legacyColors.text} />
-          <Text numberOfLines={1} style={styles.gymSelectorText}>
-            {state.gymSelectorLabel}
-          </Text>
+          <Ionicons name="business-outline" size={22} color={palette.text.primary} />
+          <View style={styles.gymSelectorCopy}>
+            <Text numberOfLines={1} style={[styles.gymSelectorText, { color: palette.text.primary }]}>
+              {state.gymSelectorLabel}
+            </Text>
+            <Text numberOfLines={1} style={[styles.headerMeta, { color: palette.text.secondary }]}>
+              {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
+            </Text>
+          </View>
           {state.canSwitchBranches ? (
-            <Ionicons name="chevron-down" size={18} color={legacyColors.muted} />
+            <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
           ) : null}
         </Pressable>
 
@@ -813,10 +829,10 @@ export function ReceptionWorkspace({
               size={34}
             />
             <View style={styles.memberContextCopy}>
-              <Text numberOfLines={1} style={styles.memberContextTitle}>
+              <Text numberOfLines={1} style={[styles.memberContextTitle, { color: palette.text.primary }]}>
                 {state.member?.name ?? "No member selected"}
               </Text>
-              <Text numberOfLines={2} style={styles.memberContextBody}>
+              <Text numberOfLines={2} style={[styles.memberContextBody, { color: palette.text.secondary }]}>
                 {state.member?.email ?? "Search members before recording payments or attendance"}
                 {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
               </Text>
@@ -826,9 +842,9 @@ export function ReceptionWorkspace({
                 onPress={() => state.setSelectedMemberId(null)}
                 accessibilityRole="button"
                 accessibilityLabel="Clear selected member"
-                style={styles.clearMemberButton}
+                style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
               >
-                <Text style={styles.clearMemberText}>Clear</Text>
+                <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
               </Pressable>
             ) : null}
           </GlassCard>
@@ -842,6 +858,7 @@ export function ReceptionWorkspace({
 }
 
 export function ReceptionDeskBody() {
+  const { palette } = useTheme();
   const {
     approvalItems,
     approvalQueue,
@@ -951,10 +968,10 @@ export function ReceptionDeskBody() {
                     size={34}
                   />
                   <View style={styles.liveFeedCopy}>
-                    <Text numberOfLines={1} style={styles.queueTitle}>
+                    <Text numberOfLines={1} style={[styles.queueTitle, { color: palette.text.primary }]}>
                       {scan.user?.name ?? scan.user?.email ?? "Member"}
                     </Text>
-                    <Text numberOfLines={1} style={styles.cardBody}>
+                    <Text numberOfLines={1} style={[styles.cardBody, { color: palette.text.secondary }]}>
                       {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
                       {scan.plan?.name ?? "Membership"}
                     </Text>
@@ -1006,6 +1023,7 @@ export function ReceptionDeskBody() {
 }
 
 export function ReceptionMembersBody() {
+  const { palette } = useTheme();
   const {
     attendanceReason,
     attendanceReasonInvalid,
@@ -1052,20 +1070,26 @@ export function ReceptionMembersBody() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: multiSelectMode }}
-                style={[
+                style={({ pressed }) => [
                   styles.membersToolbarChip,
-                  multiSelectMode ? styles.membersToolbarChipActive : null,
+                  {
+                    borderColor: multiSelectMode ? palette.border.focus : palette.border.default,
+                    backgroundColor: multiSelectMode
+                      ? palette.surface.accentSoft
+                      : palette.surface.raised,
+                  },
+                  pressed ? styles.membersToolbarChipPressed : null,
                 ]}
               >
                 <Ionicons
                   name={multiSelectMode ? "checkbox-outline" : "square-outline"}
                   size={16}
-                  color={multiSelectMode ? legacyColors.lime : legacyColors.muted}
+                  color={multiSelectMode ? palette.accent.base : palette.text.tertiary}
                 />
                 <Text
                   style={[
                     styles.membersToolbarText,
-                    multiSelectMode ? styles.membersToolbarTextActive : null,
+                    { color: multiSelectMode ? palette.accent.base : palette.text.secondary },
                   ]}
                 >
                   {multiSelectMode
@@ -1078,10 +1102,17 @@ export function ReceptionMembersBody() {
                   onPress={() => setSelectedMemberId(null)}
                   accessibilityRole="button"
                   accessibilityLabel="Clear selected member"
-                  style={styles.membersToolbarChip}
+                  style={({ pressed }) => [
+                    styles.membersToolbarChip,
+                    {
+                      borderColor: palette.border.default,
+                      backgroundColor: palette.surface.raised,
+                    },
+                    pressed ? styles.membersToolbarChipPressed : null,
+                  ]}
                 >
-                  <Ionicons name="close-outline" size={16} color={legacyColors.muted} />
-                  <Text style={styles.membersToolbarText}>Clear</Text>
+                  <Ionicons name="close-outline" size={16} color={palette.text.tertiary} />
+                  <Text style={[styles.membersToolbarText, { color: palette.text.secondary }]}>Clear</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -1113,7 +1144,9 @@ export function ReceptionMembersBody() {
                   {manualAttendanceMutation.isPending ? "Recording..." : "Record for all"}
                 </PrimaryButton>
                 {bulkAttendanceStatus ? (
-                  <Text style={styles.statusText}>{bulkAttendanceStatus}</Text>
+                  <Text style={[styles.statusText, { color: palette.accent.base }]}>
+                    {bulkAttendanceStatus}
+                  </Text>
                 ) : null}
               </GlassCard>
             ) : null}
@@ -1162,7 +1195,10 @@ export function ReceptionMembersBody() {
                   {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
                 </PrimaryButton>
                 {attendanceStatus ? (
-                  <Text testID="reception-attendance-status" style={styles.statusText}>
+                  <Text
+                    testID="reception-attendance-status"
+                    style={[styles.statusText, { color: palette.accent.base }]}
+                  >
                     {attendanceStatus}
                   </Text>
                 ) : null}
@@ -1188,9 +1224,10 @@ export function ReceptionMembersBody() {
                   }
                 }}
                 onRevealPhone={(user) => revealMemberPhone(user.id)}
+                scrollEnabled={false}
               />
               {hiddenMemberCount ? (
-                <Text style={styles.resultHint}>
+                <Text style={[styles.resultHint, { color: palette.text.tertiary }]}>
                   Showing {visibleMembers.length} of {filteredMembers.length} matches. Refine the search
                   to find a specific member faster.
                 </Text>
@@ -1201,6 +1238,7 @@ export function ReceptionMembersBody() {
 }
 
 export function ReceptionPaymentsBody() {
+  const { palette } = useTheme();
   const {
     amount,
     amountInvalid,
@@ -1294,14 +1332,27 @@ export function ReceptionPaymentsBody() {
                           }}
                           accessibilityRole="button"
                           accessibilityLabel={`Select ${record.user?.name ?? "member"}`}
-                          style={styles.paymentPersonRow}
+                          style={({ pressed }) => [
+                            styles.paymentPersonRow,
+                            {
+                              borderColor: palette.border.default,
+                              backgroundColor: palette.surface.raised,
+                            },
+                            pressed ? styles.paymentPersonRowPressed : null,
+                          ]}
                         >
                           <IconBubble icon="person-outline" tone="neutral" size={32} />
                           <View style={styles.paymentMemberCopy}>
-                            <Text numberOfLines={1} style={styles.paymentMemberName}>
+                            <Text
+                              numberOfLines={1}
+                              style={[styles.paymentMemberName, { color: palette.text.primary }]}
+                            >
                               {record.user?.name ?? "Member"}
                             </Text>
-                            <Text numberOfLines={1} style={styles.paymentMemberMeta}>
+                            <Text
+                              numberOfLines={1}
+                              style={[styles.paymentMemberMeta, { color: palette.text.secondary }]}
+                            >
                               {record.user?.email ?? record.user?.phone ?? "No contact"}
                             </Text>
                           </View>
@@ -1337,10 +1388,16 @@ export function ReceptionPaymentsBody() {
                     : "No membership selected"
                 }
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
-                trailing={<Text style={styles.rowAmount}>{formatInr(dueAmount)} due</Text>}
+                trailing={
+                  <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                    {formatInr(dueAmount)} due
+                  </Text>
+                }
               />
               <View style={styles.formStack}>
-                <Text style={styles.fieldGroupLabel}>Collection mode</Text>
+                <Text style={[styles.fieldGroupLabel, { color: palette.text.tertiary }]}>
+                  Collection mode
+                </Text>
                 <View style={styles.paymentModeGrid}>
                   {paymentModes.map((mode) => {
                     const selected = mode.value === paymentMode;
@@ -1350,7 +1407,16 @@ export function ReceptionPaymentsBody() {
                         onPress={() => setPaymentMode(mode.value)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
-                        style={[styles.paymentModeTile, selected ? styles.paymentModeTileActive : null]}
+                        style={({ pressed }) => [
+                          styles.paymentModeTile,
+                          {
+                            borderColor: selected ? palette.border.focus : palette.border.default,
+                            backgroundColor: selected
+                              ? palette.surface.accentSoft
+                              : palette.surface.raised,
+                          },
+                          pressed ? styles.paymentModeTilePressed : null,
+                        ]}
                       >
                         <Ionicons
                           name={
@@ -1365,9 +1431,17 @@ export function ReceptionPaymentsBody() {
                                     : "create-outline"
                           }
                           size={22}
-                          color={selected ? legacyColors.lime : legacyColors.muted}
+                          color={selected ? palette.accent.base : palette.text.tertiary}
                         />
-                        <Text style={[styles.paymentModeText, selected ? styles.paymentModeTextActive : null]}>
+                        <Text
+                          style={[
+                            styles.paymentModeText,
+                            {
+                              color: selected ? palette.accent.base : palette.text.secondary,
+                              fontFamily: selected ? "Inter_600SemiBold" : "Inter_400Regular",
+                            },
+                          ]}
+                        >
                           {mode.label}
                         </Text>
                       </Pressable>
@@ -1425,7 +1499,10 @@ export function ReceptionPaymentsBody() {
                 Record Payment
               </PrimaryButton>
               {paymentStatus ? (
-                <Text testID="reception-payment-status" style={styles.statusText}>
+                <Text
+                  testID="reception-payment-status"
+                  style={[styles.statusText, { color: palette.accent.base }]}
+                >
                   {paymentStatus}
                 </Text>
               ) : null}
@@ -1435,6 +1512,7 @@ export function ReceptionPaymentsBody() {
 }
 
 export function ReceptionOrdersBody() {
+  const { palette } = useTheme();
   const {
     canVerifyCode,
     fulfillOrder,
@@ -1513,8 +1591,10 @@ export function ReceptionOrdersBody() {
                     <View style={styles.queueHeader}>
                       <IconBubble icon="bag-handle-outline" tone="lime" size={38} />
                       <View style={styles.queueCopy}>
-                        <Text style={styles.queueTitle}>{order.user?.name ?? "Member pickup"}</Text>
-                        <Text style={styles.cardBody}>
+                        <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
+                          {order.user?.name ?? "Member pickup"}
+                        </Text>
+                        <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
                           {order.pickupCode ?? "Pickup pending"} · {formatInr(order.totalPaise)} ·{" "}
                           {order.items.length} items
                         </Text>
@@ -1525,9 +1605,20 @@ export function ReceptionOrdersBody() {
                       {order.items.map((item) => {
                         const product = item.product;
                         return (
-                          <View key={item.productId} style={styles.itemPill}>
-                            <Text style={styles.itemName}>{product?.name ?? item.productId}</Text>
-                            <Text style={styles.itemMeta}>
+                          <View
+                            key={item.productId}
+                            style={[
+                              styles.itemPill,
+                              {
+                                borderColor: palette.border.subtle,
+                                backgroundColor: palette.surface.raised,
+                              },
+                            ]}
+                          >
+                            <Text style={[styles.itemName, { color: palette.text.primary }]}>
+                              {product?.name ?? item.productId}
+                            </Text>
+                            <Text style={[styles.itemMeta, { color: palette.text.secondary }]}>
                               x{item.quantity} · {formatInr(item.quantity * item.unitPaise)}
                             </Text>
                           </View>
@@ -1556,7 +1647,10 @@ export function ReceptionOrdersBody() {
               )}
             </View>
             {paymentStatus ? (
-              <Text testID="reception-payment-status" style={styles.statusText}>
+              <Text
+                testID="reception-payment-status"
+                style={[styles.statusText, { color: palette.accent.base }]}
+              >
                 {paymentStatus}
               </Text>
             ) : null}
@@ -1565,6 +1659,8 @@ export function ReceptionOrdersBody() {
 }
 
 function ApprovalDecisionSheet() {
+  const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
   const {
     approveAttendance,
     approveAttendanceMutation,
@@ -1578,6 +1674,17 @@ function ApprovalDecisionSheet() {
     setDecisionReason,
     setSelectedDecisionAttempt,
   } = useReceptionWorkspace();
+  const sheetBackground = StyleSheet.flatten([
+    styles.sheetBackground,
+    {
+      borderColor: palette.border.default,
+      backgroundColor: isDark ? palette.bg.elevated : palette.surface.raised,
+    },
+  ]);
+  const sheetHandle = StyleSheet.flatten([
+    styles.sheetHandle,
+    { backgroundColor: palette.border.strong },
+  ]);
 
   return (
       <BottomSheetModal
@@ -1585,8 +1692,8 @@ function ApprovalDecisionSheet() {
         snapPoints={["48%"]}
         enablePanDownToClose
         backdropComponent={renderDecisionBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
+        backgroundStyle={sheetBackground}
+        handleIndicatorStyle={sheetHandle}
         onDismiss={() => {
           setSelectedDecisionAttempt(null);
           setDecisionReason("");
@@ -1595,13 +1702,13 @@ function ApprovalDecisionSheet() {
         <BottomSheetView style={styles.decisionSheetContent}>
           <View style={styles.sheetHeader}>
             <View style={styles.sheetTitleCopy}>
-              <Text style={styles.sheetEyebrow}>Decision reason</Text>
-              <Text style={styles.sheetTitle}>
+              <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>Decision reason</Text>
+              <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
                 {selectedDecisionAttempt?.user?.name ??
                   selectedDecisionAttempt?.user?.email ??
                   "Member check-in"}
               </Text>
-              <Text style={styles.cardBody}>
+              <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
                 Add the desk note before approving or rejecting this scan.
               </Text>
             </View>
@@ -1609,9 +1716,14 @@ function ApprovalDecisionSheet() {
               onPress={closeDecisionSheet}
               accessibilityRole="button"
               accessibilityLabel="Close decision sheet"
-              style={styles.sheetCloseButton}
+              style={({ pressed }) => [
+                styles.sheetCloseButton,
+                { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
+                pressed ? styles.sheetCloseButtonPressed : null,
+              ]}
             >
-              <Text style={styles.sheetCloseText}>Close</Text>
+              <Ionicons name="close-outline" size={16} color={palette.text.secondary} />
+              <Text style={[styles.sheetCloseText, { color: palette.text.secondary }]}>Close</Text>
             </Pressable>
           </View>
           <FormField
@@ -1626,15 +1738,28 @@ function ApprovalDecisionSheet() {
                 key={suggestion}
                 onPress={() => setDecisionReason(suggestion)}
                 accessibilityRole="button"
-                style={[
+                style={({ pressed }) => [
                   styles.suggestionChip,
-                  decisionReason === suggestion ? styles.suggestionChipSelected : null,
+                  {
+                    borderColor:
+                      decisionReason === suggestion ? palette.border.focus : palette.border.default,
+                    backgroundColor:
+                      decisionReason === suggestion
+                        ? palette.surface.accentSoft
+                        : palette.surface.raised,
+                  },
+                  pressed ? styles.suggestionChipPressed : null,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionText,
-                    decisionReason === suggestion ? styles.suggestionTextSelected : null,
+                    {
+                      color:
+                        decisionReason === suggestion
+                          ? palette.accent.base
+                          : palette.text.secondary,
+                    },
                   ]}
                 >
                   {suggestion}
@@ -1682,6 +1807,7 @@ function VerificationResult({
   message: string;
   user?: { name?: string | null; profilePhotoUrl?: string | null } | null;
 }) {
+  const { palette } = useTheme();
   const success =
     /verified|match/i.test(message) && !/not valid|no active|not ready/i.test(message);
   const { animatedStyle: pulseStyle, pulse } = useScalePulse();
@@ -1702,7 +1828,7 @@ function VerificationResult({
           <Image
             source={{ uri: photo }}
             contentFit="cover"
-            style={styles.verificationPhoto}
+            style={[styles.verificationPhoto, { backgroundColor: palette.surface.raised }]}
             accessibilityIgnoresInvertColors
           />
         ) : (
@@ -1712,11 +1838,23 @@ function VerificationResult({
             size={34}
           />
         )}
-        <Text style={styles.verificationText}>{message}</Text>
+        <Text style={[styles.verificationText, { color: palette.text.primary }]}>{message}</Text>
       </GlassCard>
     </Reanimated.View>
   );
 }
+
+const receptionColors = {
+  accent: "#1F3E24",
+  accentBorder: "rgba(31,62,36,0.26)",
+  border: "rgba(17,21,15,0.14)",
+  danger: "#B91C1C",
+  divider: "rgba(17,21,15,0.08)",
+  muted: "#3F463C",
+  panel: "#FFFFFF",
+  surface: "#FFFFFF",
+  text: "#11150F",
+};
 
 const styles = StyleSheet.create({
   content: {
@@ -1727,6 +1865,9 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding + 80,
   },
+  demoScreen: {
+    paddingTop: 0,
+  },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -1734,10 +1875,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   deskHeader: {
-    minHeight: 78,
+    minHeight: 64,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: spacing.md,
     paddingTop: 8,
   },
@@ -1746,79 +1886,33 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
   headerCopy: {
     flex: 1,
-    gap: 8,
-  },
-  roleChip: {
-    minHeight: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: 14,
-  },
-  roleChipText: {
-    color: legacyColors.lime,
-    ...typography.bodyStrong,
+    minWidth: 0,
+    gap: 3,
   },
   gymSelector: {
-    minHeight: 66,
+    minHeight: 70,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.035)",
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     paddingHorizontal: 17,
   },
-  gymSelectorText: {
+  gymSelectorCopy: {
     flex: 1,
-    color: legacyColors.text,
+    minWidth: 0,
+    gap: 3,
+  },
+  gymSelectorText: {
     ...typography.sectionTitle,
   },
   headerMeta: {
-    color: legacyColors.muted,
     ...typography.caption,
-  },
-  utilityRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  utilityPill: {
-    minHeight: 40,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    paddingLeft: 6,
-    paddingRight: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    flex: 1,
-  },
-  utilityText: {
-    color: legacyColors.text,
-    ...typography.bodyStrong,
-  },
-  signOutPill: {
-    borderColor: "rgba(255,90,61,0.28)",
-    backgroundColor: "rgba(255,90,61,0.08)",
-  },
-  signOutText: {
-    color: legacyColors.red,
   },
   memberContext: {
     minHeight: 62,
@@ -1831,33 +1925,28 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   memberContextTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   memberContextBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   clearMemberButton: {
     minHeight: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   clearMemberText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   title: {
-    color: legacyColors.text,
     ...typography.screenTitle,
+    flexShrink: 1,
   },
   subtitle: {
-    color: legacyColors.muted,
-    ...typography.body,
+    ...typography.small,
   },
   metricGrid: {
     flexDirection: "row",
@@ -1901,11 +1990,9 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   queueTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   cardBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   auditTrail: {
@@ -1914,7 +2001,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   auditText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   suggestionRow: {
@@ -1923,25 +2009,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   suggestionChip: {
-    minHeight: 32,
-    borderRadius: 16,
+    minHeight: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     justifyContent: "center",
   },
-  suggestionChipSelected: {
-    borderColor: legacyColors.lime,
-    backgroundColor: "rgba(185,244,85,0.14)",
+  suggestionChipPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   suggestionText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
-  suggestionTextSelected: {
-    color: legacyColors.lime,
-  },
+  suggestionTextSelected: {},
   formStack: {
     gap: spacing.md,
   },
@@ -1955,28 +2036,23 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.035)",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
     paddingHorizontal: 8,
   },
-  paymentModeTileActive: {
-    borderColor: legacyColors.lime,
-    backgroundColor: "rgba(185,244,85,0.12)",
+  paymentModeTilePressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   paymentModeText: {
-    color: legacyColors.muted,
     fontSize: 11,
     lineHeight: 14,
   },
   paymentModeTextActive: {
-    color: legacyColors.lime,
     fontFamily: "Inter_600SemiBold",
   },
   fieldGroupLabel: {
-    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   itemGrid: {
@@ -1984,18 +2060,14 @@ const styles = StyleSheet.create({
   },
   itemPill: {
     borderWidth: 1,
-    borderColor: legacyColors.divider,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "rgba(255,255,255,0.04)",
   },
   itemName: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   itemMeta: {
-    color: legacyColors.muted,
     marginTop: 3,
     ...typography.small,
   },
@@ -2007,7 +2079,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusText: {
-    color: legacyColors.lime,
     ...typography.bodyStrong,
   },
   verificationResult: {
@@ -2019,19 +2090,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: legacyColors.surface,
   },
   verificationText: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   rowAmount: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   resultHint: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   membersToolbar: {
@@ -2041,27 +2108,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   membersToolbarChip: {
-    minHeight: 36,
-    borderRadius: 18,
+    minHeight: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
   },
-  membersToolbarChipActive: {
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.12)",
+  membersToolbarChipPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   membersToolbarText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
-  membersToolbarTextActive: {
-    color: legacyColors.lime,
-  },
+  membersToolbarTextActive: {},
   paymentPersonRow: {
     minHeight: 56,
     flexDirection: "row",
@@ -2071,29 +2134,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.035)",
+  },
+  paymentPersonRowPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.99 }],
   },
   paymentMemberCopy: {
     flex: 1,
     gap: 3,
   },
   paymentMemberName: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   paymentMemberMeta: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
-  sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
+  sheetHandle: {},
   decisionSheetContent: {
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -2109,24 +2168,26 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sheetEyebrow: {
-    color: legacyColors.lime,
     ...typography.eyebrow,
   },
   sheetTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   sheetCloseButton: {
-    minHeight: 34,
-    borderRadius: 17,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 5,
+  },
+  sheetCloseButtonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
   },
   sheetCloseText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
 });

@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
 import type { InvoiceRecord, MembershipPaymentRecord, PaymentDocumentKind } from "./types";
 
@@ -19,6 +19,15 @@ export function PaymentsSection({
   onDownloadInvoice: (invoice: InvoiceRecord) => void;
   payments: MembershipPaymentRecord[];
 }) {
+  const { palette } = useTheme();
+  const documentButtonTheme = {
+    accentColor: palette.accent.base,
+    backgroundColor: palette.surface.accentSoft,
+    borderColor: palette.border.focus,
+    pressedBackgroundColor: palette.surface.raised,
+    textColor: palette.text.primary,
+  };
+
   return (
     <>
       <SectionHeader title="Payments" />
@@ -41,12 +50,14 @@ export function PaymentsSection({
                 </View>
                 <View style={styles.paymentCopy}>
                   <View style={styles.paymentHeader}>
-                    <Text numberOfLines={1} style={styles.paymentTitle}>
+                    <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
                       {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
                     </Text>
-                    <Text style={styles.paymentAmount}>{formatInr(payment.amountPaise)}</Text>
+                    <Text style={[styles.paymentAmount, { color: palette.text.primary }]}>
+                      {formatInr(payment.amountPaise)}
+                    </Text>
                   </View>
-                  <Text numberOfLines={1} style={styles.paymentBody}>
+                  <Text numberOfLines={1} style={[styles.paymentBody, { color: palette.text.secondary }]}>
                     {titleCaseFromCode(payment.mode ?? "ONLINE")} ·{" "}
                     {formatDateTime(payment.recordedAt ?? payment.createdAt)}
                   </Text>
@@ -56,7 +67,9 @@ export function PaymentsSection({
                     >
                       {titleCaseFromCode(payment.status ?? "CREATED")}
                     </Pill>
-                    <Text numberOfLines={2} style={styles.documentHint}>{documentHint}</Text>
+                    <Text numberOfLines={2} style={[styles.documentHint, { color: palette.text.secondary }]}>
+                      {documentHint}
+                    </Text>
                   </View>
                   <View style={styles.documentActions}>
                     <DocumentButton
@@ -65,6 +78,7 @@ export function PaymentsSection({
                       icon="document-text-outline"
                       label="Receipt"
                       onPress={() => onCreateDocument(payment, "receipt")}
+                      theme={documentButtonTheme}
                     />
                     <DocumentButton
                       busy={invoiceBusy}
@@ -72,6 +86,7 @@ export function PaymentsSection({
                       icon="newspaper-outline"
                       label="Invoice"
                       onPress={() => onCreateDocument(payment, "invoice")}
+                      theme={documentButtonTheme}
                     />
                   </View>
                 </View>
@@ -83,8 +98,10 @@ export function PaymentsSection({
         <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
           <IconBubble icon="receipt-outline" tone="neutral" size={36} />
           <View style={styles.emptyCopy}>
-            <Text style={styles.emptyTitle}>No payments yet</Text>
-            <Text style={styles.emptyBody}>Transaction history will appear here.</Text>
+            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments yet</Text>
+            <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
+              Transaction history will appear here.
+            </Text>
           </View>
         </GlassCard>
       )}
@@ -96,16 +113,16 @@ export function PaymentsSection({
               <GlassCard key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
                 <IconBubble icon="newspaper-outline" tone="blue" size={34} />
                 <View style={styles.invoiceCopy}>
-                  <Text numberOfLines={1} style={styles.paymentTitle}>
+                  <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
                     {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
                   </Text>
-                  <Text numberOfLines={1} style={styles.paymentBody}>
+                  <Text numberOfLines={1} style={[styles.paymentBody, { color: palette.text.secondary }]}>
                     {formatDateTime(invoice.issueDate ?? invoice.issuedAt)} ·{" "}
                     {titleCaseFromCode(invoice.invoiceStatus ?? invoice.status ?? "ISSUED")}
                   </Text>
                 </View>
                 <View style={styles.invoiceActions}>
-                  <Text style={styles.paymentAmount}>
+                  <Text style={[styles.paymentAmount, { color: palette.text.primary }]}>
                     {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
                   </Text>
                   {invoice.invoiceUrl ? (
@@ -115,11 +132,27 @@ export function PaymentsSection({
                       onPress={() => onDownloadInvoice(invoice)}
                       style={({ pressed }) => [
                         styles.documentButton,
-                        pressed ? styles.documentButtonPressed : null,
+                        {
+                          borderColor: documentButtonTheme.borderColor,
+                          backgroundColor: pressed
+                            ? documentButtonTheme.pressedBackgroundColor
+                            : documentButtonTheme.backgroundColor,
+                        },
                       ]}
                     >
-                      <Ionicons name="download-outline" size={14} color={legacyColors.lime} />
-                      <Text style={styles.documentButtonText}>Download invoice</Text>
+                      <Ionicons
+                        name="download-outline"
+                        size={14}
+                        color={documentButtonTheme.accentColor}
+                      />
+                      <Text
+                        style={[
+                          styles.documentButtonText,
+                          { color: documentButtonTheme.textColor },
+                        ]}
+                      >
+                        Download invoice
+                      </Text>
                     </Pressable>
                   ) : null}
                 </View>
@@ -138,12 +171,20 @@ function DocumentButton({
   icon,
   label,
   onPress,
+  theme,
 }: {
   busy: boolean;
   disabled: boolean;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
+  theme: {
+    accentColor: string;
+    backgroundColor: string;
+    borderColor: string;
+    pressedBackgroundColor: string;
+    textColor: string;
+  };
 }) {
   return (
     <Pressable
@@ -153,16 +194,19 @@ function DocumentButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.documentButton,
+        {
+          borderColor: theme.borderColor,
+          backgroundColor: pressed && !disabled ? theme.pressedBackgroundColor : theme.backgroundColor,
+        },
         disabled ? styles.documentButtonDisabled : null,
-        pressed && !disabled ? styles.documentButtonPressed : null,
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={legacyColors.lime} />
+        <ActivityIndicator size="small" color={theme.accentColor} />
       ) : (
-        <Ionicons name={icon} size={14} color={legacyColors.lime} />
+        <Ionicons name={icon} size={14} color={theme.accentColor} />
       )}
-      <Text style={styles.documentButtonText}>{label}</Text>
+      <Text style={[styles.documentButtonText, { color: theme.textColor }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -181,11 +225,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   paymentContent: {
@@ -209,15 +251,12 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentAmount: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   paymentBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   paymentMetaRow: {
@@ -228,7 +267,6 @@ const styles = StyleSheet.create({
   },
   documentHint: {
     flexShrink: 1,
-    color: legacyColors.muted,
     ...typography.small,
   },
   documentActions: {
@@ -250,18 +288,12 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.08)",
     paddingHorizontal: 12,
-  },
-  documentButtonPressed: {
-    backgroundColor: "rgba(185,244,85,0.16)",
   },
   documentButtonDisabled: {
     opacity: 0.45,
   },
   documentButtonText: {
-    color: legacyColors.text,
     ...typography.small,
     fontWeight: "700",
   },

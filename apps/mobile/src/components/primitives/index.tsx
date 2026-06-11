@@ -4,6 +4,7 @@ export * from "./feedback";
 export * from "./inputs";
 export * from "./layout";
 export * from "./nav";
+export * from "./switch";
 export * from "./bottom-nav-context";
 export * from "./keyboard-aware-screen";
 export * from "./pickup-qr";

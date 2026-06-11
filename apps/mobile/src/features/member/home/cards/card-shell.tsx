@@ -1,10 +1,10 @@
 import type { PropsWithChildren } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
 
 import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
-import { legacyColors, spacing, typography, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeCardShell({
   body,
@@ -30,8 +30,7 @@ export function HomeCardShell({
   return (
     <GlassCard
       testID={testID}
-      variant={Platform.OS === "android" ? "default" : "selected"}
-      glow
+      variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "default"}
       contentStyle={styles.card}
     >
       <View style={styles.header}>
@@ -58,7 +57,12 @@ export function HomeCardShell({
 export function StreakChip({ value }: { value: number }) {
   const { palette } = useTheme();
   return (
-    <View style={[styles.chip, { borderColor: palette.accent.soft, backgroundColor: palette.surface.accentSoft }]}>
+    <View
+      style={[
+        styles.chip,
+        { borderColor: palette.accent.soft, backgroundColor: palette.surface.accentSoft },
+      ]}
+    >
       <Text style={[styles.chipText, { color: palette.accent.base }]}>{value} day streak</Text>
     </View>
   );
@@ -73,16 +77,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   copy: { backgroundColor: "transparent", flex: 1, gap: 4 },
-  title: { backgroundColor: "transparent", color: legacyColors.text, ...typography.title },
-  body: { backgroundColor: "transparent", color: legacyColors.muted, ...typography.body },
+  title: { backgroundColor: "transparent", ...typography.title },
+  body: { backgroundColor: "transparent", ...typography.body },
   chip: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(188,255,0,0.10)",
-    borderColor: "rgba(188,255,0,0.24)",
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  chipText: { color: legacyColors.lime, ...typography.caption },
+  chipText: typography.caption,
 });
