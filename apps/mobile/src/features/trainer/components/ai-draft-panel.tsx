@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useRouter } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Card, SecondaryButton, ZookButton } from "@/components/primitives";
+import { Card, SecondaryButton } from "@/components/primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
   const { mode, palette } = useTheme();
-  const [status, setStatus] = useState("AI drafting is disabled in local E2E.");
+  const router = useRouter();
   const isDark = mode === "dark";
 
   return (
@@ -26,19 +26,14 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
       </View>
       <Text style={[styles.title, { color: palette.text.primary }]}>AI drafting is off</Text>
       <Text style={[styles.body, { color: palette.text.secondary }]}>
-        AI features are currently disabled. Trainers can still manage client {clientId ? "plans" : "plans"} manually.
+        Your gym owner can turn on AI plan drafting in settings. You can still create and edit plans manually.
       </Text>
-      <Text testID="trainer-ai-draft-status" style={[styles.status, { color: palette.accent.base }]}>
-        {status}
-      </Text>
-      <ZookButton testID="trainer-generate-ai-draft" icon="sparkles-outline" onPress={() => setStatus("Manual draft ready for trainer review.")}>
-        Generate draft
-      </ZookButton>
-      <SecondaryButton testID="trainer-save-ai-edits" onPress={() => setStatus("AI draft edits saved locally.")}>
-        Save edits
-      </SecondaryButton>
-      <SecondaryButton testID="trainer-assign-ai-plan" onPress={() => setStatus("Assigning AI plans stays disabled while AI is off.")}>
-        Assign plan
+      <SecondaryButton
+        testID="trainer-create-manual-plan"
+        icon="reader-outline"
+        onPress={() => router.push(`/trainer/clients/${clientId}/plan` as never)}
+      >
+        Create plan manually
       </SecondaryButton>
     </Card>
   );
@@ -67,10 +62,6 @@ const styles = StyleSheet.create({
   },
   body: {
     ...typography.body,
-    textAlign: "center",
-  },
-  status: {
-    ...typography.caption,
     textAlign: "center",
   },
 });
