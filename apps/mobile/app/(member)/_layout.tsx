@@ -57,7 +57,7 @@ export default function MemberLayout() {
       <Tabs.Screen
         name="you"
         options={{
-          title: "Profile",
+          title: "You",
         }}
       />
     </Tabs>

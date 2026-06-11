@@ -68,7 +68,7 @@ export default function TrainerHomeScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <MobileHeader
-            eyebrow="Trainer mode"
+            eyebrow="Trainer"
             title="Trainer home"
             subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
@@ -146,7 +146,7 @@ export default function TrainerHomeScreen() {
 
           {plannedClients.length ? (
             <AttentionCard
-              title="Plans in motion"
+              title="Active plan work"
               items={[
                 {
                   id: "active-plan-work",

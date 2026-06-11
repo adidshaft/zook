@@ -59,7 +59,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
       tone: pendingApprovals ? "amber" : "lime",
       icon: "checkmark-done-outline",
-      cta: { label: pendingApprovals ? "Review" : "Open", onPress: () => router.replace("/owner/approvals") },
+      cta: { label: pendingApprovals ? "Approvals" : "Open", onPress: () => router.replace("/owner/approvals") },
     },
     {
       id: "revenue",
@@ -69,7 +69,7 @@ export default function OwnerCommandScreen() {
         : "No transactions need review",
       tone: paymentExceptionCount ? "amber" : "lime",
       icon: "card-outline",
-      cta: { label: paymentExceptionCount ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
+      cta: { label: "Open", onPress: () => router.replace("/owner/revenue") },
     },
     {
       id: "stock",
@@ -77,7 +77,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
       tone: lowStock.length ? "amber" : "lime",
       icon: "cube-outline",
-      cta: { label: lowStock.length ? "Review" : "Open", onPress: () => router.replace("/owner/stock") },
+      cta: { label: "Open", onPress: () => router.replace("/owner/stock") },
     },
     {
       id: "memberships",
@@ -85,7 +85,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
       tone: expiringSoon ? "blue" : "neutral",
       icon: "time-outline",
-      cta: { label: expiringSoon ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
+      cta: { label: "Open", onPress: () => router.replace("/owner/revenue") },
     },
   ];
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
@@ -159,7 +159,7 @@ export default function OwnerCommandScreen() {
           }}
         >
           <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-            {dashboard?.organization?.name ?? "Active gym"} · Owner command view
+            {dashboard?.organization?.name ?? "Active gym"} · Today
           </Text>
           <RoleSwitcherChip />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}

@@ -2315,7 +2315,7 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Trainer: "nav.trainer",
   Clients: "nav.clients",
   Drafts: "nav.drafts",
-  Desk: "nav.desk",
+  "Front desk": "nav.desk",
   Members: "nav.members",
   Payments: "nav.payments",
   Orders: "nav.orders",
@@ -2324,8 +2324,8 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Approvals: "nav.approvals",
   Revenue: "nav.revenue",
   Stock: "nav.stock",
-  Command: "nav.command",
-  Profile: "nav.profile",
+  Today: "nav.command",
+  You: "nav.profile",
 };
 
 function translatedNavLabel(label: string, t: ReturnType<typeof useI18n>["t"]) {
@@ -2361,7 +2361,7 @@ const memberTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2402,7 +2402,7 @@ const trainerTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2413,7 +2413,7 @@ const trainerTabs: DockTab[] = [
 const receptionTabs: DockTab[] = [
   {
     href: "/reception",
-    label: "Desk",
+    label: "Front desk",
     icon: "desktop-outline",
     activeIcon: "desktop",
     matchPath: "/reception",
@@ -2444,7 +2444,7 @@ const receptionTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2770,7 +2770,7 @@ export function BottomNav({
     const badgeCount =
       unreadCount > 0 && tab.label === "Inbox"
         ? unreadCount
-        : receptionPendingCount > 0 && resolvedRole === "RECEPTIONIST" && tab.label === "Desk"
+        : receptionPendingCount > 0 && resolvedRole === "RECEPTIONIST" && tab.label === "Front desk"
           ? receptionPendingCount
           : 0;
 
