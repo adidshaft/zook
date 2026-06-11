@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 
+import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
@@ -50,7 +50,7 @@ export default function OwnerLayout() {
           title: "Today",
           tabBarButtonTestID: "bottom-nav-command",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={size} color={color} />
+            <Icon name="home" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -60,7 +60,7 @@ export default function OwnerLayout() {
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function OwnerLayout() {
           title: "Approvals",
           tabBarButtonTestID: "bottom-nav-approvals",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={size} color={color} />
+            <Icon name="approvals" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -81,7 +81,7 @@ export default function OwnerLayout() {
           href: canViewRevenue ? "/owner/revenue" : null,
           tabBarButtonTestID: "bottom-nav-revenue",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={size} color={color} />
+            <Icon name="revenue" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -91,7 +91,7 @@ export default function OwnerLayout() {
           title: "More",
           tabBarButtonTestID: "bottom-nav-more",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "ellipsis-horizontal" : "ellipsis-horizontal-outline"} size={size} color={color} />
+            <Icon name="more" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -102,7 +102,7 @@ export default function OwnerLayout() {
           href: null,
           tabBarButtonTestID: "bottom-nav-stock",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={size} color={color} />
+            <Icon name="stock" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -113,7 +113,7 @@ export default function OwnerLayout() {
           href: null,
           tabBarButtonTestID: "bottom-nav-billing",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={size} color={color} />
+            <Icon name="billing" focused={focused} size={size} color={color} />
           ),
         }}
       />

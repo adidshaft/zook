@@ -1,6 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
+import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 import { useMyNotifications } from "@/lib/domains/notifications";
 import { useGeofenceCheckout } from "@/lib/use-geofence-checkout";
@@ -32,7 +32,7 @@ export default function MemberLayout() {
           options={{
             title: "Home",
             tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+              <Icon name="home" focused={focused} size={size} color={color} />
             ),
           }}
         />
@@ -41,7 +41,7 @@ export default function MemberLayout() {
           options={{
             title: "Plan",
             tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons name={focused ? "barbell" : "barbell-outline"} size={size} color={color} />
+              <Icon name="plan" focused={focused} size={size} color={color} />
             ),
           }}
         />
@@ -50,7 +50,7 @@ export default function MemberLayout() {
           options={{
             title: "Scan",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="qr-code" size={size} color={color} />
+              <Icon name="scan" size={size} color={color} />
             ),
           }}
         />
@@ -59,7 +59,7 @@ export default function MemberLayout() {
           options={{
             title: "Progress",
             tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={size} color={color} />
+              <Icon name="progress" focused={focused} size={size} color={color} />
             ),
           }}
         />
@@ -75,7 +75,7 @@ export default function MemberLayout() {
           options={{
             title: "You",
             tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+              <Icon name="you" focused={focused} size={size} color={color} />
             ),
           }}
         />

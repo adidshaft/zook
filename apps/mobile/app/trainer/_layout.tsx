@@ -1,6 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
+import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 
 const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
@@ -30,7 +30,7 @@ export default function TrainerLayout() {
         options={{
           title: "Today",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+            <Icon name="home" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -39,7 +39,7 @@ export default function TrainerLayout() {
         options={{
           title: "Clients",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -48,7 +48,7 @@ export default function TrainerLayout() {
         options={{
           title: "Plans",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "reader" : "reader-outline"} size={size} color={color} />
+            <Icon name="plan" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -57,7 +57,7 @@ export default function TrainerLayout() {
         options={{
           title: "Payouts",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={size} color={color} />
+            <Icon name="payouts" focused={focused} size={size} color={color} />
           ),
         }}
       />
