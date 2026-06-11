@@ -35,7 +35,7 @@ function titleCaseRole(role: Role) {
 }
 
 export function RoleSwitcherChip() {
-  const { mode, palette } = useTheme();
+  const { palette } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);

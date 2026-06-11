@@ -6,6 +6,7 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -836,6 +837,7 @@ export function ReceptionWorkspace({
             <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
               {subtitle}
             </Text>
+            {testID === "reception-home-screen" ? <RoleSwitcherChip /> : null}
           </View>
         </View>
 

@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
-import { Alert, AppState } from "react-native";
+import { Alert, AppState, StyleSheet, Text, View } from "react-native";
 import { authClient } from "./domain-api";
 import {
   DEMO_AUTH_TOKEN,
@@ -23,6 +23,7 @@ import {
 } from "./demo-mode";
 import { applySessionLocalePreference } from "./i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
+import { typography, useTheme } from "./theme";
 
 const SESSION_STORAGE_KEY = "zook_session";
 const REFRESH_SESSION_STORAGE_KEY = "zook_refresh_session";
@@ -54,6 +55,15 @@ function sanitizeOtpCode(value: string) {
     .normalize("NFKC")
     .replace(/[^0-9]/g, "")
     .slice(0, 6);
+}
+
+function titleCaseRole(role: Role) {
+  return role
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 interface RequestOtpResult {
@@ -221,6 +231,7 @@ export async function setStoredBiometricUnlockEnabled(enabled: boolean) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { palette } = useTheme();
   const [status, setStatus] = useState<AuthContextValue["status"]>("loading");
   const [token, setToken] = useState<string | undefined>();
   const [session, setSession] = useState<AuthSessionSummary | undefined>();
@@ -241,6 +252,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<AuthSessionSummary | undefined>(undefined);
   const activeOrgIdRef = useRef<string | undefined>(undefined);
   const activeRoleRef = useRef<Role | undefined>(undefined);
+  const roleSwitchOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [roleSwitchMessage, setRoleSwitchMessage] = useState<string | null>(null);
   const defaultRolePreferenceRef = useRef<Role | undefined>(undefined);
 
   const hydrate = useCallback(
@@ -693,11 +706,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!isOrgRole(role) || !activeOrg?.roles.includes(role)) {
         throw new Error("Role not available in active org");
       }
-      await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
-      activeRoleRef.current = role;
-      setActiveRoleState(role);
-      await hydrate(tokenValue, currentOrgId, role);
-      await invalidateRoleScopedQueries();
+      if (roleSwitchOverlayTimerRef.current) {
+        clearTimeout(roleSwitchOverlayTimerRef.current);
+      }
+      setRoleSwitchMessage(`Switching to ${titleCaseRole(role)}...`);
+      try {
+        await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
+        activeRoleRef.current = role;
+        setActiveRoleState(role);
+        await hydrate(tokenValue, currentOrgId, role);
+        await invalidateRoleScopedQueries();
+      } catch (error) {
+        setRoleSwitchMessage(null);
+        throw error;
+      } finally {
+        roleSwitchOverlayTimerRef.current = setTimeout(() => {
+          setRoleSwitchMessage(null);
+          roleSwitchOverlayTimerRef.current = null;
+        }, 600);
+      }
     },
     [hydrate],
   );
@@ -801,7 +828,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {roleSwitchMessage ? (
+        <View
+          pointerEvents="auto"
+          style={[
+            styles.roleSwitchOverlay,
+            { backgroundColor: palette.bg.app },
+          ]}
+        >
+          <Text style={[styles.roleSwitchText, { color: palette.text.primary }]}>
+            {roleSwitchMessage}
+          </Text>
+        </View>
+      ) : null}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
@@ -823,6 +867,19 @@ export function useActivePermissions(): Set<Permission> {
   }, [activeOrgId, session?.activeOrganization, session?.organizations]);
   return useMemo(() => new Set(activeOrg?.permissions ?? []), [activeOrg?.permissions]);
 }
+
+const styles = StyleSheet.create({
+  roleSwitchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+  roleSwitchText: {
+    ...typography.h2,
+    textAlign: "center",
+  },
+});
 
 export function useHasPermission(permission: Permission): boolean {
   const permissions = useActivePermissions();
