@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
@@ -20,7 +20,6 @@ import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-char
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ view?: string | string[] }>();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
   const { palette } = useTheme();
@@ -44,14 +43,6 @@ export default function OwnerCommandScreen() {
     prefetchOwnerWorkspace();
   }, [prefetchOwnerWorkspace]);
 
-  useEffect(() => {
-    const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
-    if (rawView === "members") router.replace("/owner/members");
-    if (rawView === "approvals") router.replace("/owner/approvals");
-    if (rawView === "revenue") router.replace("/owner/revenue");
-    if (rawView === "stock") router.replace("/owner/stock");
-  }, [params.view, router]);
-
   const items: AttentionItem[] = [
     {
       id: "approvals",
@@ -59,7 +50,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
       tone: pendingApprovals ? "amber" : "lime",
       icon: "checkmark-done-outline",
-      cta: { label: pendingApprovals ? "Approvals" : "Open", onPress: () => router.replace("/owner/approvals") },
+      cta: { label: pendingApprovals ? "Approvals" : "Open", onPress: () => router.push("/owner/approvals") },
     },
     {
       id: "revenue",
@@ -69,7 +60,7 @@ export default function OwnerCommandScreen() {
         : "No transactions need review",
       tone: paymentExceptionCount ? "amber" : "lime",
       icon: "card-outline",
-      cta: { label: "Open", onPress: () => router.replace("/owner/revenue") },
+      cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
     },
     {
       id: "stock",
@@ -77,7 +68,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
       tone: lowStock.length ? "amber" : "lime",
       icon: "cube-outline",
-      cta: { label: "Open", onPress: () => router.replace("/owner/stock") },
+      cta: { label: "Open", onPress: () => router.push("/owner/stock") },
     },
     {
       id: "memberships",
@@ -85,7 +76,7 @@ export default function OwnerCommandScreen() {
       subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
       tone: expiringSoon ? "blue" : "neutral",
       icon: "time-outline",
-      cta: { label: "Open", onPress: () => router.replace("/owner/revenue") },
+      cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
     },
   ];
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
@@ -107,7 +98,7 @@ export default function OwnerCommandScreen() {
       hint: branchName,
       tone: "lime",
       icon: "people-outline",
-      onPress: () => router.replace("/owner/members"),
+      onPress: () => router.push("/owner/members"),
     },
     {
       label: "Today check-ins",
@@ -115,7 +106,7 @@ export default function OwnerCommandScreen() {
       hint: `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`,
       tone: "blue",
       icon: "qr-code-outline",
-      onPress: () => router.replace("/owner/approvals"),
+      onPress: () => router.push("/owner/approvals"),
     },
     {
       label: "Revenue",
@@ -123,7 +114,7 @@ export default function OwnerCommandScreen() {
       hint: "Collected + pickup",
       tone: "amber",
       icon: "trending-up-outline",
-      onPress: () => router.replace("/owner/revenue"),
+      onPress: () => router.push("/owner/revenue"),
     },
     {
       label: "Approvals",
@@ -131,7 +122,7 @@ export default function OwnerCommandScreen() {
       hint: "Needs attention",
       tone: "violet",
       icon: "checkmark-done-outline",
-      onPress: () => router.replace("/owner/approvals"),
+      onPress: () => router.push("/owner/approvals"),
     },
   ];
 
@@ -181,7 +172,7 @@ export default function OwnerCommandScreen() {
                   <ZookButton
                     size="sm"
                     icon="card-outline"
-                    onPress={() => router.replace("/owner/billing" as never)}
+                    onPress={() => router.push("/owner/billing" as never)}
                   >
                     Open billing
                   </ZookButton>

@@ -72,13 +72,6 @@ function canonicalizeDiscoveryRoute(path: string, params: Record<string, string>
     };
   }
 
-  if (path === "/find-gyms") {
-    return {
-      path: "/gyms",
-      params,
-    };
-  }
-
   return { path, params };
 }
 
