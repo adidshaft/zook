@@ -834,7 +834,7 @@ export function ReceptionWorkspace({
             <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
+            <Text style={[styles.title, { color: palette.text.primary }]}>
               {subtitle}
             </Text>
             {testID === "reception-home-screen" ? <RoleSwitcherChip /> : null}
@@ -858,10 +858,10 @@ export function ReceptionWorkspace({
         >
           <Ionicons name="business-outline" size={22} color={palette.text.primary} />
           <View style={styles.gymSelectorCopy}>
-            <Text numberOfLines={1} style={[styles.gymSelectorText, { color: palette.text.primary }]}>
+            <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
               {state.gymSelectorLabel}
             </Text>
-            <Text numberOfLines={1} style={[styles.headerMeta, { color: palette.text.secondary }]}>
+            <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
               {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
             </Text>
           </View>
@@ -878,10 +878,10 @@ export function ReceptionWorkspace({
               size={34}
             />
             <View style={styles.memberContextCopy}>
-              <Text numberOfLines={1} style={[styles.memberContextTitle, { color: palette.text.primary }]}>
+              <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
                 {state.member?.name ?? "No member selected"}
               </Text>
-              <Text numberOfLines={2} style={[styles.memberContextBody, { color: palette.text.secondary }]}>
+              <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
                 {state.member?.email ?? "Search members before recording payments or attendance"}
                 {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
               </Text>
