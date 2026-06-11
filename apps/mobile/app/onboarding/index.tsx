@@ -33,7 +33,7 @@ export default function OnboardingSplash() {
   const navigateNext = useCallback(() => {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
-    router.push("/onboarding/language" as never);
+    router.push("/onboarding/value-props" as never);
   }, [router]);
 
   useEffect(() => {
