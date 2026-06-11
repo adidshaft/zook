@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
-import { Linking, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 
 import { Card, ListRow, MobileHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useHasPermission } from "@/lib/auth";
-import { toWebUrl } from "@/lib/api";
 import { layout, spacing } from "@/lib/theme";
 
 type MoreRow = {
@@ -69,19 +69,7 @@ export default function OwnerMoreScreen() {
           <SectionHeader title="Manage on web" />
           <Card variant="compact" contentStyle={styles.list}>
             {webRows.map((row) => (
-              <Pressable
-                key={row.title}
-                accessibilityRole="link"
-                accessibilityLabel={`${row.title}, opens web dashboard`}
-                onPress={() => void Linking.openURL(toWebUrl(row.webPath ?? "/dashboard"))}
-              >
-                <ListRow
-                  title={row.title}
-                  subtitle="zookfit.in dashboard"
-                  icon={row.icon}
-                  trailing={<Ionicons name="chevron-up-outline" size={18} />}
-                />
-              </Pressable>
+              <WebHandoffRow key={row.title} title={row.title} path={row.webPath ?? "/dashboard"} />
             ))}
           </Card>
         </ScrollView>
