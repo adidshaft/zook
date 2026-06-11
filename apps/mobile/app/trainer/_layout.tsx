@@ -28,9 +28,9 @@ export default function TrainerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
+          title: "Today",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -38,8 +38,8 @@ export default function TrainerLayout() {
         name="clients/index"
         options={{
           title: "Clients",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -47,8 +47,8 @@ export default function TrainerLayout() {
         name="plans"
         options={{
           title: "Plans",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "reader" : "reader-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "reader" : "reader-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -56,8 +56,8 @@ export default function TrainerLayout() {
         name="payouts"
         options={{
           title: "Payouts",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={size} color={color} />
           ),
         }}
       />

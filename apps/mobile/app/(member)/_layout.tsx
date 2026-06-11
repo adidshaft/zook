@@ -43,13 +43,6 @@ export default function MemberLayout() {
         }}
       />
       <Tabs.Screen
-        name="diet"
-        options={{
-          title: "Diet",
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="scan"
         options={{
           title: "Scan",
@@ -59,12 +52,26 @@ export default function MemberLayout() {
         }}
       />
       <Tabs.Screen
+        name="progress"
+        options={{
+          title: "Progress",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="shop"
         options={{
           title: "Shop",
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "bag" : "bag-outline"} size={size} color={color} />
-          ),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="diet"
+        options={{
+          title: "Diet",
+          href: null,
         }}
       />
       <Tabs.Screen
