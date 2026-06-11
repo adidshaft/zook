@@ -118,34 +118,43 @@ export default function OwnerApprovalsScreen() {
           {joinRequestsQuery.isError || attentionQuery.isError ? (
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
-            <Card variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></Card>
+            <Card variant="compact">
+              <EmptyState
+                title="All caught up"
+                body="New join requests and scan reviews will appear here"
+              />
+            </Card>
           ) : null}
-          <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton> : undefined} />
-          <ApprovalQueue
-            testID="pending-approvals-list"
-            items={joinItems}
-            onApprove={(id) => approveJoinRequestMutation.mutate(id)}
-            onReject={(id) => rejectJoinRequestMutation.mutate(id)}
-            emptyState={{
-              title: "No join requests",
-              subtitle: "New public join requests will show up here for owner approval.",
-            }}
-          />
-          <SectionHeader title="Scan review queue" subtitle="Pending and flagged scans." />
-          <ApprovalQueue
-            items={attendanceItems}
-            onApprove={(id) => {
-              if (!canApproveAttendance) {
-                showToast({ title: "Owner approval required", tone: "amber" });
-                return;
-              }
-              approveAttendanceMutation.mutate(id);
-            }}
-            emptyState={{
-              title: "Attendance queue clear",
-              subtitle: "Pending and flagged scans will appear here when the desk needs help.",
-            }}
-          />
+          {joinRequests.length ? (
+            <>
+              <SectionHeader
+                title={`Request list (${joinRequests.length})`}
+                subtitle="Pending join decisions"
+                action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton>}
+              />
+              <ApprovalQueue
+                testID="pending-approvals-list"
+                items={joinItems}
+                onApprove={(id) => approveJoinRequestMutation.mutate(id)}
+                onReject={(id) => rejectJoinRequestMutation.mutate(id)}
+              />
+            </>
+          ) : null}
+          {attendanceItems.length ? (
+            <>
+              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} subtitle="Pending and flagged scans." />
+              <ApprovalQueue
+                items={attendanceItems}
+                onApprove={(id) => {
+                  if (!canApproveAttendance) {
+                    showToast({ title: "Owner approval required", tone: "amber" });
+                    return;
+                  }
+                  approveAttendanceMutation.mutate(id);
+                }}
+              />
+            </>
+          ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
     </>
