@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { resolvePlanName } from "@zook/ui";
-import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -13,13 +13,13 @@ import {
   ProgressBar,
   QueryErrorState,
   SectionHeader,
-  StatusChip,
+  SegmentedControl,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { PlansSkeleton } from "@/components/skeletons";
+import { DietPanel } from "@/features/member/plan/diet-panel";
 import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
-import { useMyDiet } from "@/lib/domains/tracking/queries";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type WorkoutRecord = {
@@ -40,23 +40,26 @@ function planKind(assignment?: MyPlanRecord | null) {
 
 export default function MemberPlanScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const plansQuery = useMyPlans();
   const workoutsQuery = useMyTrackingWorkouts();
-  const dietQuery = useMyDiet();
+  const [activeTab, setActiveTab] = useState<"workout" | "diet">("workout");
   const [refreshing, setRefreshing] = useState(false);
   const plans = plansQuery.data?.plans ?? [];
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
   const recentWorkouts = (workoutsQuery.data?.workouts ?? []) as WorkoutRecord[];
-  const dietPlan = dietQuery.data?.plan ?? null;
-  const dietLogs = dietQuery.data?.logs ?? [];
-  const loggedCalories = dietLogs.reduce((total, log) => total + (log.calories ?? 0), 0);
   const { palette } = useTheme();
+
+  useEffect(() => {
+    const rawTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+    setActiveTab(rawTab === "diet" ? "diet" : "workout");
+  }, [params.tab]);
 
   async function onRefresh() {
     setRefreshing(true);
     try {
-      await Promise.all([plansQuery.refetch(), workoutsQuery.refetch(), dietQuery.refetch()]);
+      await Promise.all([plansQuery.refetch(), workoutsQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
@@ -79,121 +82,109 @@ export default function MemberPlanScreen() {
           }
         >
           <MobileHeader title="Plan" subtitle="Workouts, schedule, and history" showProfileShortcut={false} />
+          <SegmentedControl
+            options={[
+              { label: "Workout", value: "workout" },
+              { label: "Diet", value: "diet" },
+            ]}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
 
-          {plansQuery.isLoading ? <PlansSkeleton /> : null}
-          {plansQuery.isError ? <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} /> : null}
+          {activeTab === "diet" ? (
+            <DietPanel />
+          ) : (
+            <>
+              {plansQuery.isLoading ? <PlansSkeleton /> : null}
+              {plansQuery.isError ? <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} /> : null}
 
-          <SectionHeader title="Today's workout" />
-          {todayPlan ? (
-            <Card variant="selected" glow contentStyle={styles.todayCard}>
-              <View style={styles.todayTop}>
-                <IconBubble icon="barbell-outline" tone="lime" size={46} />
-                <View style={styles.todayCopy}>
-                  <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
-                  <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
-                </View>
-              </View>
-              <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
-              <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
-                Start today
-              </ZookButton>
-            </Card>
-          ) : !plansQuery.isLoading ? (
-            <Card variant="compact">
-              <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign your first plan here." />
-            </Card>
-          ) : null}
-
-          <SectionHeader title="This week's schedule" />
-          <View style={styles.stack}>
-            {workoutPlans.slice(0, 4).map((assignment, index) => (
-              <Pressable
-                key={assignment.id}
-                testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
-                onPress={() => openAssignment(assignment.id)}
-                accessibilityRole="button"
-                style={({ pressed }) => (pressed ? styles.cardPressed : null)}
-              >
-                <Card variant="compact">
-                  <ListRow
-                    title={planTitle(assignment)}
-                    subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
-                    leading={<IconBubble icon="calendar-outline" tone="blue" />}
-                    trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
-                  />
-                </Card>
-              </Pressable>
-            ))}
-            {!workoutPlans.length && !plansQuery.isLoading ? (
-              <Card variant="compact">
-                <EmptyState title="Schedule empty" body="Assigned workout days will appear here." />
-              </Card>
-            ) : null}
-          </View>
-
-          <SectionHeader title="Recent sessions" />
-          <View style={styles.stack}>
-            {recentWorkouts.slice(0, 3).map((workout, index) => (
-              <Card key={workout.id ?? `${workout.title}-${index}`} variant="compact">
-                <ListRow
-                  title={workout.title ?? "Workout"}
-                  subtitle={`${workout.workoutType ?? "Training"} · ${workout.durationMinutes ?? 0} min`}
-                  leading={<IconBubble icon="checkmark-done-outline" tone="lime" />}
-                />
-              </Card>
-            ))}
-            {!recentWorkouts.length && !workoutsQuery.isLoading ? (
-              <Card variant="compact">
-                <EmptyState title="No sessions yet" body="Completed workouts and tracking history will appear here." />
-              </Card>
-            ) : null}
-          </View>
-
-          <SectionHeader title="Diet plan" subtitle="Meals now live inside Plan." />
-          <Pressable
-            testID="plan-open-diet"
-            onPress={() => router.push("/diet" as never)}
-            accessibilityRole="button"
-            style={({ pressed }) => (pressed ? styles.cardPressed : null)}
-          >
-            <Card variant="compact">
-              <ListRow
-                title={dietPlan?.title ?? "Meal logging"}
-                subtitle={
-                  dietPlan
-                    ? `${loggedCalories} / ${dietPlan.calorieTarget ?? "-"} kcal today`
-                    : "Open meal logging and trainer-published diet details"
-                }
-                leading={<IconBubble icon="nutrition-outline" tone="blue" />}
-                trailing={
-                  <View style={styles.dietTrailing}>
-                    <StatusChip status={dietPlan ? "Active" : "Open"} tone={dietPlan ? "lime" : "neutral"} />
-                    <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
+              <SectionHeader title="Today's workout" />
+              {todayPlan ? (
+                <Card variant="selected" glow contentStyle={styles.todayCard}>
+                  <View style={styles.todayTop}>
+                    <IconBubble icon="barbell-outline" tone="lime" size={46} />
+                    <View style={styles.todayCopy}>
+                      <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
+                      <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
+                    </View>
                   </View>
-                }
-              />
-            </Card>
-          </Pressable>
+                  <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
+                  <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
+                    Start today
+                  </ZookButton>
+                </Card>
+              ) : !plansQuery.isLoading ? (
+                <Card variant="compact">
+                  <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign your first plan here." />
+                </Card>
+              ) : null}
 
-          <SectionHeader title="Browse all plans" />
-          <View style={styles.planGrid}>
-            {plans.map((assignment) => (
-              <Pressable
-                key={assignment.id}
-                onPress={() => openAssignment(assignment.id)}
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.planTile,
-                  { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
-                  pressed ? styles.cardPressed : null,
-                ]}
-              >
-                <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
-                <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
-                <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
-              </Pressable>
-            ))}
-          </View>
+              <SectionHeader title="This week's schedule" />
+              <View style={styles.stack}>
+                {workoutPlans.slice(0, 4).map((assignment, index) => (
+                  <Pressable
+                    key={assignment.id}
+                    testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
+                    onPress={() => openAssignment(assignment.id)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+                  >
+                    <Card variant="compact">
+                      <ListRow
+                        title={planTitle(assignment)}
+                        subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
+                        leading={<IconBubble icon="calendar-outline" tone="blue" />}
+                        trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
+                      />
+                    </Card>
+                  </Pressable>
+                ))}
+                {!workoutPlans.length && !plansQuery.isLoading ? (
+                  <Card variant="compact">
+                    <EmptyState title="Schedule empty" body="Assigned workout days will appear here." />
+                  </Card>
+                ) : null}
+              </View>
+
+              <SectionHeader title="Recent sessions" />
+              <View style={styles.stack}>
+                {recentWorkouts.slice(0, 3).map((workout, index) => (
+                  <Card key={workout.id ?? `${workout.title}-${index}`} variant="compact">
+                    <ListRow
+                      title={workout.title ?? "Workout"}
+                      subtitle={`${workout.workoutType ?? "Training"} · ${workout.durationMinutes ?? 0} min`}
+                      leading={<IconBubble icon="checkmark-done-outline" tone="lime" />}
+                    />
+                  </Card>
+                ))}
+                {!recentWorkouts.length && !workoutsQuery.isLoading ? (
+                  <Card variant="compact">
+                    <EmptyState title="No sessions yet" body="Completed workouts and tracking history will appear here." />
+                  </Card>
+                ) : null}
+              </View>
+
+              <SectionHeader title="Browse all plans" />
+              <View style={styles.planGrid}>
+                {plans.map((assignment) => (
+                  <Pressable
+                    key={assignment.id}
+                    onPress={() => openAssignment(assignment.id)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.planTile,
+                      { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
+                      pressed ? styles.cardPressed : null,
+                    ]}
+                  >
+                    <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
+                    <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
+                    <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
         </ScrollView>
       </ZookScreen>
     </>
@@ -231,5 +222,4 @@ const styles = StyleSheet.create({
   },
   planTileTitle: typography.cardTitle,
   planTileMeta: typography.caption,
-  dietTrailing: { alignItems: "center", flexDirection: "row", gap: 8 },
 });
