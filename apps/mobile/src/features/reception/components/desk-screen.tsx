@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 
 import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { Card, FormField, IconBubble, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { formatDateTime } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
@@ -95,14 +95,7 @@ export function ReceptionDeskScreenBody() {
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <Card variant="compact" padding={14} contentStyle={styles.queueCard}>
-                  <ListRow
-                    title="No scans yet"
-                    subtitle="Approved check-ins will appear here as members enter."
-                    icon="radio-outline"
-                    tone="neutral"
-                  />
-                </Card>
+                <EmptyState title="No scans yet" body="Approved check-ins will appear here." />
               ) : null}
               {recentScans.map((scan) => (
                 <Card

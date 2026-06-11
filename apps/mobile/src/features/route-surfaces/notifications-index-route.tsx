@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
+  EmptyState,
   IconBubble,
   MobileHeader,
   QueryErrorState,
@@ -428,17 +429,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <Card variant="compact" contentStyle={styles.emptyContent}>
-                  <IconBubble icon="notifications-off-outline" tone="neutral" size={42} />
-                  <View style={styles.emptyCopy}>
-                    <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
-                      No notifications
-                    </Text>
-                    <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                      You're all caught up.
-                    </Text>
-                  </View>
-                </Card>
+                <EmptyState title="No notifications" body="You're all caught up." />
               ) : null}
             </View>
           }
@@ -639,22 +630,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...typography.body,
-  },
-  emptyContent: {
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.xxl,
-  },
-  emptyCopy: {
-    alignItems: "center",
-    gap: 4,
-  },
-  emptyTitle: {
-    ...typography.cardTitle,
-  },
-  emptyBody: {
-    ...typography.body,
-    textAlign: "center",
   },
   dateGroup: {
     gap: 8,

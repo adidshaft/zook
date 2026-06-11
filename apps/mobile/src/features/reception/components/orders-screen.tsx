@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { Card, FormField, IconBubble, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
@@ -127,14 +127,7 @@ export function ReceptionOrdersScreenBody() {
                   </Card>
                 ))
               ) : (
-                <Card variant="compact" padding={14} contentStyle={styles.queueCard}>
-                  <ListRow
-                    title="No pickups waiting"
-                    subtitle="Ready orders will appear here after payment."
-                    icon="bag-check-outline"
-                    tone="lime"
-                  />
-                </Card>
+                <EmptyState title="No pickups waiting" body="Ready orders will appear after payment." />
               )}
             </View>
             {paymentStatus ? (
