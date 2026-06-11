@@ -110,10 +110,10 @@ export function ReceptionDeskScreenBody() {
                     size={34}
                   />
                   <View style={styles.liveFeedCopy}>
-                    <Text numberOfLines={1} style={[styles.queueTitle, { color: palette.text.primary }]}>
+                    <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
                       {scan.user?.name ?? scan.user?.email ?? "Member"}
                     </Text>
-                    <Text numberOfLines={1} style={[styles.cardBody, { color: palette.text.secondary }]}>
+                    <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
                       {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
                       {scan.plan?.name ?? "Membership"}
                     </Text>

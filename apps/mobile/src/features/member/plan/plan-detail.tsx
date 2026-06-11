@@ -126,16 +126,10 @@ export default function Plans() {
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
                   <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.activePlanTitle, { color: palette.text.primary }]}
-                  >
+                  <Text style={[styles.activePlanTitle, { color: palette.text.primary }]}>
                     {planTitle(selectedAssignment)}
                   </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.activePlanMeta, { color: palette.text.secondary }]}
-                  >
+                  <Text style={[styles.activePlanMeta, { color: palette.text.secondary }]}>
                     {coachName} · {planKind(selectedAssignment)}
                   </Text>
                 </View>
