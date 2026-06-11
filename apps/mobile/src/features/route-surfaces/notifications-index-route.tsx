@@ -297,6 +297,11 @@ export default function NotificationsScreen() {
     }
   };
 
+  function closeNotificationDetails() {
+    detailSheetRef.current?.dismiss();
+    router.replace("/notifications" as never);
+  }
+
   const dateGroups = useMemo(() => {
     return groupByDate(notifications).map((group) => {
       const displayItems =
@@ -484,7 +489,7 @@ export default function NotificationsScreen() {
               </View>
               <Pressable
                 testID="notification-detail-close"
-                onPress={() => router.replace("/notifications" as never)}
+                onPress={closeNotificationDetails}
                 accessibilityRole="button"
                 accessibilityLabel="Close notification details"
                 style={({ pressed }) => [

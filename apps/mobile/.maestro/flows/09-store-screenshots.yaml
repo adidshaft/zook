@@ -8,6 +8,9 @@ tags:
     clearKeychain: true
 - runFlow:
     file: _helpers/complete-language-if-needed.yaml
+- openLink: zook:///
+- waitForAnimationToEnd:
+    timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "member-home-screen"
@@ -17,8 +20,9 @@ tags:
     optional: true
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-home.png
 
-- tapOn:
-    point: "25%,92%"
+- openLink: zook:///plan
+- waitForAnimationToEnd:
+    timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "member-plan-screen"
@@ -28,13 +32,9 @@ tags:
     optional: true
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-plan.png
 
-- tapOn:
-    point: "10%,13%"
-    optional: true
+- openLink: zook:///
 - waitForAnimationToEnd:
-    timeout: 1000
-- tapOn:
-    point: "13%,92%"
+    timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "member-home-screen"
@@ -47,8 +47,9 @@ tags:
     timeout: 15000
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-scan.png
 
-- tapOn:
-    point: "50%,92%"
+- openLink: zook:///progress
+- waitForAnimationToEnd:
+    timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "progress-screen"
@@ -61,8 +62,16 @@ tags:
 - tapOn:
     text: "Open"
     optional: true
+- tapOn:
+    id: "notification-detail-close"
+    optional: true
+- tapOn:
+    point: "50%,50%"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
 - extendedWaitUntil:
-    visible: "Notifications"
+    visible: "Inbox"
     timeout: 15000
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/notifications.png
 
