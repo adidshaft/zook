@@ -410,7 +410,10 @@ function LayoutContent() {
 
   return (
     <>
-      <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <StatusBar
+        style={mode === "dark" ? "light" : "dark"}
+        backgroundColor={palette.bg.app}
+      />
       <NetworkBanner />
       {offlineBanner || isDemoMode ? (
         <RuntimeBannerHost>

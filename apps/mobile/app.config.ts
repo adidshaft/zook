@@ -75,6 +75,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   android: {
     package: "com.zook.app",
     versionCode: 3,
+    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: true,
     intentFilters: [
       {
