@@ -22,8 +22,6 @@ export default function OwnerLayout() {
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
-  const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
-  const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const approvalsQuery = useOrgJoinRequests(undefined, {
     select: (data) =>
       data.joinRequests.filter(
@@ -61,8 +59,8 @@ export default function OwnerLayout() {
         options={{
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -82,8 +80,18 @@ export default function OwnerLayout() {
           title: "Revenue",
           href: canViewRevenue ? "/owner/revenue" : null,
           tabBarButtonTestID: "bottom-nav-revenue",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarButtonTestID: "bottom-nav-more",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "ellipsis-horizontal" : "ellipsis-horizontal-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -91,10 +99,10 @@ export default function OwnerLayout() {
         name="stock"
         options={{
           title: "Stock",
-          href: canViewStock ? "/owner/stock" : null,
+          href: null,
           tabBarButtonTestID: "bottom-nav-stock",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "cube" : "cube-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -102,10 +110,10 @@ export default function OwnerLayout() {
         name="billing"
         options={{
           title: "Billing",
-          href: canManageBilling ? ("/owner/billing" as never) : null,
+          href: null,
           tabBarButtonTestID: "bottom-nav-billing",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={21} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "card" : "card-outline"} size={size} color={color} />
           ),
         }}
       />

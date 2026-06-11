@@ -42,8 +42,8 @@ export default function ReceptionLayout() {
         options={{
           title: "Front desk",
           tabBarButtonTestID: "bottom-nav-desk",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "desktop" : "desktop-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "desktop" : "desktop-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -52,8 +52,8 @@ export default function ReceptionLayout() {
         options={{
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -63,8 +63,8 @@ export default function ReceptionLayout() {
           title: "Payments",
           href: canRecordPayments ? "/reception/payments" : null,
           tabBarButtonTestID: "bottom-nav-payments",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "card" : "card-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -81,8 +81,8 @@ export default function ReceptionLayout() {
           title: "Orders",
           href: canFulfillOrders ? "/reception/orders" : null,
           tabBarButtonTestID: "bottom-nav-orders",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? "cube" : "cube-outline"} size={size} color={color} />
           ),
         }}
       />
