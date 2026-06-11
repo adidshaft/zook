@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 
+import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
@@ -43,7 +43,7 @@ export default function ReceptionLayout() {
           title: "Front desk",
           tabBarButtonTestID: "bottom-nav-desk",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "desktop" : "desktop-outline"} size={size} color={color} />
+            <Icon name="desk" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -53,7 +53,7 @@ export default function ReceptionLayout() {
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -64,7 +64,7 @@ export default function ReceptionLayout() {
           href: canRecordPayments ? "/reception/payments" : null,
           tabBarButtonTestID: "bottom-nav-payments",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={size} color={color} />
+            <Icon name="payments" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -82,7 +82,7 @@ export default function ReceptionLayout() {
           href: canFulfillOrders ? "/reception/orders" : null,
           tabBarButtonTestID: "bottom-nav-orders",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={size} color={color} />
+            <Icon name="orders" focused={focused} size={size} color={color} />
           ),
         }}
       />

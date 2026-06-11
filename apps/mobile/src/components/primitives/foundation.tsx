@@ -48,6 +48,7 @@ import { layout, radii, shadows, spacing, typography, useTheme } from "@/lib/the
 import type { Palette } from "@/lib/theme";
 import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
+import { Icon } from "./icon";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
@@ -812,7 +813,7 @@ export function MobileHeader({
             },
           ]}
         >
-          <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+          <Icon name="back" size={22} color={palette.text.primary} />
         </Pressable>
       );
     } else if (!centered && showProfileShortcut) {
