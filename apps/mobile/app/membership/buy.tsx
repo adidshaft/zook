@@ -1,1 +1,1 @@
-export { default } from "@/features/member/legacy/membership-legacy";
+export { default } from "@/features/member/membership/membership-screen";
