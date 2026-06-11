@@ -1,3 +1,11 @@
+/*
+ * Brand accent pairing:
+ * - Dark mode uses lime for accent.base/accent.fill with black text.onAccent.
+ * - Light mode uses the safer deep green for accent.base/accent.fill with white text.onAccent.
+ * - Never use lime as a text or icon color on light backgrounds; consume palette.accent.base
+ *   from the active theme so light mode receives green automatically.
+ */
+
 export type Palette = {
   bg: {
     app: string;
