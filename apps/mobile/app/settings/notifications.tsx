@@ -1,5 +1,4 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -45,7 +44,6 @@ export default function NotificationSettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Notifications" subtitle="Choose what Zook can send" showProfileShortcut={false} />

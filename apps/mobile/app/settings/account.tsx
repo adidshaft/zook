@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -22,7 +21,6 @@ export default function AccountSettingsScreen() {
   const { palette } = useTheme();
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />

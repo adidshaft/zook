@@ -1,6 +1,6 @@
 import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -428,7 +428,6 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="profile-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"

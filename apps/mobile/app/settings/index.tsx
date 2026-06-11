@@ -1,4 +1,4 @@
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 
 import { Card, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
@@ -16,7 +16,6 @@ const sections = [
 export default function SettingsIndexScreen() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />

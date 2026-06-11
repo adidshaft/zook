@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -1069,7 +1069,6 @@ function ShopShell({
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID={`shop-${selectedPath.replace(/\W+/g, "-").replace(/^-|-$/g, "")}-screen`}>
         {noScroll ? (
           <View style={{ flex: 1, paddingHorizontal: layout.screenPadding, paddingTop: 20 }}>

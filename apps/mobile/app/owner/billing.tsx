@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
@@ -120,7 +119,6 @@ export default function OwnerBillingScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-billing-screen">
         <KeyboardAwareScreen
           scrollViewProps={{

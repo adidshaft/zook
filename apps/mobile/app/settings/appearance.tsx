@@ -1,5 +1,4 @@
 import type { Role } from "@zook/core";
-import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { MobileHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
@@ -26,7 +25,6 @@ export default function AppearanceSettingsScreen() {
   const selectedRole = defaultRolePreference ?? ctx?.role ?? roleOptions[0]?.value;
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-appearance-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Appearance" subtitle="Theme and default role" showProfileShortcut={false} />
