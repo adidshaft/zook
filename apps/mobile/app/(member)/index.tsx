@@ -171,7 +171,7 @@ export default function HomeScreen() {
                 <StatStrip
                   items={[
                     { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
-                    { label: "Active time", value: formatMinutes(activeMinutes), icon: "time-outline" },
+                    { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
                     { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
                     { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
                   ]}
