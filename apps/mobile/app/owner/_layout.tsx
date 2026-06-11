@@ -73,7 +73,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Cmd",
+          title: "Today",
           tabBarButtonTestID: "bottom-nav-command",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "pulse" : "pulse-outline"} size={21} color={color} />
@@ -93,7 +93,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="approvals"
         options={{
-          title: "Review",
+          title: "Approvals",
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarButtonTestID: "bottom-nav-approvals",
           tabBarIcon: ({ color, focused }) => (

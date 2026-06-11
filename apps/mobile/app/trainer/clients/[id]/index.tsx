@@ -169,7 +169,7 @@ export default function TrainerClientOverviewScreen() {
             <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
             <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
             <ListRow title="Last check-in" subtitle={recentWorkouts[0]?.startedAt ?? "Today 7:14 AM"} trailing={<StatusChip status="Tracked" tone="neutral" />} />
-            <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Review" : `${averageCompletion}%`} tone="amber" />} />
+            <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Needs feedback" : `${averageCompletion}%`} tone="amber" />} />
           </Card>
 
           <Card contentStyle={styles.stack}>

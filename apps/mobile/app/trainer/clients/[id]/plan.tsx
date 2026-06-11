@@ -264,7 +264,7 @@ export default function TrainerClientPlanScreen() {
             </View>
             <View style={styles.actionRow}>
               <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>Save draft</ZookButton>
-              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>Feature Locked</SecondaryButton>
+              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>AI drafting is off</SecondaryButton>
             </View>
             <SecondaryButton
               testID="trainer-publish-plan-button"

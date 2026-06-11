@@ -82,7 +82,7 @@ export default function TrainerClientsScreen() {
             header={
               <>
                 <MobileHeader
-                  eyebrow="Trainer mode"
+                  eyebrow="Trainer"
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
                   chip={<StatusChip status="Trainer" tone="neutral" />}

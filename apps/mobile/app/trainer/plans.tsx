@@ -53,7 +53,7 @@ export default function TrainerPlansScreen() {
           }
         >
           <MobileHeader
-            eyebrow="Trainer mode"
+            eyebrow="Trainer"
             title="Plan work"
             subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}
             chip={<StatusChip status="Trainer" tone="neutral" />}

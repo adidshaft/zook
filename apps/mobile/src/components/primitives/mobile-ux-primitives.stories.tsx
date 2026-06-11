@@ -93,7 +93,7 @@ export function MobileUxPrimitivesStory() {
               title: "Payment exception",
               subtitle: "One transaction needs review",
               tone: "amber",
-              cta: { label: "Review", onPress: () => undefined },
+              cta: { label: "Open", onPress: () => undefined },
             },
           ]}
         />

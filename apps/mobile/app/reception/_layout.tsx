@@ -60,7 +60,7 @@ export default function ReceptionLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Desk",
+          title: "Front desk",
           tabBarButtonTestID: "bottom-nav-desk",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "desktop" : "desktop-outline"} size={22} color={color} />

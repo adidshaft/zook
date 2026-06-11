@@ -24,7 +24,7 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
       >
         <Ionicons name="lock-closed-outline" size={28} color={palette.accent.base} />
       </View>
-      <Text style={[styles.title, { color: palette.text.primary }]}>Feature Locked</Text>
+      <Text style={[styles.title, { color: palette.text.primary }]}>AI drafting is off</Text>
       <Text style={[styles.body, { color: palette.text.secondary }]}>
         AI features are currently disabled. Trainers can still manage client {clientId ? "plans" : "plans"} manually.
       </Text>
