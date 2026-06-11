@@ -627,18 +627,22 @@ export function ZookChip({
   children,
   tone = "neutral",
   icon,
+  onPress,
+  accessibilityLabel,
   style,
   textStyle,
 }: {
   children: ReactNode;
   tone?: PillTone;
   icon?: IconName;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }) {
   const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
-  return (
+  const chip = (
     <View
       style={[
         styles.chip,
@@ -652,6 +656,18 @@ export function ZookChip({
       {icon ? <Ionicons name={icon} size={13} color={palette.color} /> : null}
       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.chipText, { color: palette.color }, textStyle]}>{children}</Text>
     </View>
+  );
+  if (!onPress) return chip;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+      android_ripple={{ color: themePalette.border.default, borderless: false }}
+      onPress={() => pressWithHaptics(onPress)}
+      style={({ pressed }) => [styles.chipPressable, pressed ? styles.pressed : null]}
+    >
+      {chip}
+    </Pressable>
   );
 }
 
@@ -1459,6 +1475,8 @@ export function ListRow({
   trailing,
   icon,
   tone = "neutral",
+  onPress,
+  accessibilityLabel,
   style,
 }: {
   title: string;
@@ -1467,10 +1485,12 @@ export function ListRow({
   trailing?: ReactNode;
   icon?: IconName;
   tone?: PillTone;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const { palette, mode } = useTheme();
-  return (
+  const row = (
     <View
       style={[
         styles.listRow,
@@ -1496,6 +1516,18 @@ export function ListRow({
         {trailing ?? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />}
       </View>
     </View>
+  );
+  if (!onPress) return row;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      android_ripple={{ color: palette.border.default, borderless: false }}
+      onPress={() => pressWithHaptics(onPress)}
+      style={({ pressed }) => (pressed ? styles.listRowPressed : null)}
+    >
+      {row}
+    </Pressable>
   );
 }
 
@@ -3190,6 +3222,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
   },
+  chipPressable: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignSelf: "flex-start",
+  },
   chipText: {
     ...typography.caption,
   },
@@ -3405,6 +3442,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  listRowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
   listRowCopy: {
     flex: 1,
