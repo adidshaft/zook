@@ -1,8 +1,8 @@
 import { Stack, router } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Card, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
@@ -26,15 +26,18 @@ export default function YouScreen() {
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
   const { palette, preference } = useTheme();
+  const signOutConfirm = useConfirmSheet();
   
   const nextRole = ctx?.availableRoles.find((role) => role !== ctx?.role);
   const gymHref = ctx?.org?.username ? `/gyms/${ctx.org.username}` : "/gyms";
 
   function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => void logout() },
-    ]);
+    signOutConfirm.confirm({
+      title: "Sign out?",
+      body: "You can sign back in with OTP any time.",
+      destructiveLabel: "Sign out",
+      onConfirm: () => void logout(),
+    });
   }
 
   const isOwnerAvailable = ctx?.availableRoles.includes("OWNER");
@@ -123,6 +126,7 @@ export default function YouScreen() {
           </Text>
         </ScrollView>
       </ZookScreen>
+      {signOutConfirm.sheet}
     </>
   );
 }
