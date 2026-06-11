@@ -446,7 +446,6 @@ function LayoutContent() {
         <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", title: "Membership history", headerLargeTitle: true }} />
         <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", title: "Checkout" }} />
         <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", title: "Receipt" }} />
-        <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="shop" options={{ animation: "none", title: "Shop" }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right", title: "AI assistant" }} />
         <Stack.Screen name="owner" options={{ animation: "none", headerShown: false }} />

@@ -178,7 +178,7 @@ export default function AttendanceResultScreen() {
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";
   const planTarget: Href =
-    activeRole === "TRAINER" ? ("/trainer/plans" as Href) : ("/plans?view=detail" as Href);
+    activeRole === "TRAINER" ? ("/trainer/plans" as Href) : ("/plan?view=detail" as Href);
 
   return (
     <>

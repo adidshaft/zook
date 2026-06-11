@@ -1,1 +1,5 @@
-export { default } from "@/features/member/plan/legacy-plan-detail";
+import { Redirect } from "expo-router";
+
+export default function PlansRedirect() {
+  return <Redirect href="/plan" />;
+}
