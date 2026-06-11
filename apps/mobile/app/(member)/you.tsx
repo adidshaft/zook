@@ -94,6 +94,11 @@ export default function YouScreen() {
               icon="business-outline"
               onPress={() => router.push(gymHref as never)}
             />
+            <PillActionRow
+              title="Gym shop"
+              icon="storefront-outline"
+              onPress={() => router.push("/shop" as never)}
+            />
           </Card>
 
           <SectionHeader title="Settings" />
