@@ -73,7 +73,7 @@ export const lightPalette: Palette = {
   text: {
     primary: "#11150F",
     secondary: "#3F463C",
-    tertiary: "#6F7769",
+    tertiary: "#687161",
     inverse: "#FFFFFF",
     onAccent: "#FFFFFF",
     onDanger: "#FFFFFF",
