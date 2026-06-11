@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { deriveHomeState } from "../features/member/home/state";
+import { demoMemberHomePayload } from "./demo-member-home";
 import type { MemberHomeData } from "./domains/shared/types";
 
 function home(overrides: Partial<MemberHomeData> & Record<string, unknown> = {}): MemberHomeData {
@@ -73,6 +74,23 @@ describe("deriveHomeState", () => {
     ).toMatchObject({
       kind: "workoutLoggedToday",
       nextPlanName: "Push",
+    });
+  });
+
+  it("derives the offline demo member home as today's workout", () => {
+    const demoHome = demoMemberHomePayload() as MemberHomeData;
+
+    expect(deriveHomeState(demoHome)).toMatchObject({
+      assignmentId: "plan-push-day",
+      kind: "todayWorkout",
+      planName: "Push Day",
+    });
+    expect(demoHome).toMatchObject({
+      activeMembership: { id: "membership-aarav-hybrid", status: "ACTIVE" },
+      activeOrganization: { name: "Aarogya Strength Club" },
+      streakDays: 5,
+      todayPlanAssignmentId: "plan-push-day",
+      todayPlanName: "Push Day",
     });
   });
 });
