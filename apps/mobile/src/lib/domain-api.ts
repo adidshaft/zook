@@ -794,6 +794,28 @@ export const privacyApi = {
   },
 };
 
+export const supportApi = {
+  submitFeedback(
+    options: RequestOptions & {
+      message: string;
+      appVersion: string;
+      role: Role;
+    },
+  ) {
+    return mobileApiFetch<{ submitted: boolean }>("/support/feedback", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        message: options.message,
+        appVersion: options.appVersion,
+        role: options.role,
+        ...(options.orgId ? { orgId: options.orgId } : {}),
+      },
+    });
+  },
+};
+
 export const aiApi = {
   chat<T = unknown>(options: RequestOptions & { prompt: string; role: Role }) {
     return mobileApiFetch<T>("/ai/chat", {
