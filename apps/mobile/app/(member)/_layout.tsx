@@ -71,13 +71,6 @@ export default function MemberLayout() {
           }}
         />
         <Tabs.Screen
-          name="diet"
-          options={{
-            title: "Diet",
-            href: null,
-          }}
-        />
-        <Tabs.Screen
           name="you"
           options={{
             title: "You",
