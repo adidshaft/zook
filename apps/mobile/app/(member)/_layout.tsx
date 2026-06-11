@@ -70,6 +70,7 @@ export default function MemberLayout() {
             href: null,
           }}
         />
+        <Tabs.Screen name="diet" options={{ href: null }} />
         <Tabs.Screen
           name="you"
           options={{
