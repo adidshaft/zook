@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard, SecondaryButton, ZookButton } from "@/components/primitives";
+import { Card, SecondaryButton, ZookButton } from "@/components/primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
@@ -10,7 +10,7 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
   const isDark = mode === "dark";
 
   return (
-    <GlassCard testID="trainer-ai-draft-screen" contentStyle={styles.lockedCard}>
+    <Card testID="trainer-ai-draft-screen" contentStyle={styles.lockedCard}>
       <View
         style={[
           styles.lockIcon,
@@ -40,7 +40,7 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
       <SecondaryButton testID="trainer-assign-ai-plan" onPress={() => setStatus("Assigning AI plans stays disabled while AI is off.")}>
         Assign plan
       </SecondaryButton>
-    </GlassCard>
+    </Card>
   );
 }
 

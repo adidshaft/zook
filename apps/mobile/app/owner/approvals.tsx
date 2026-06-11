@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { EmptyState, GlassCard, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
 import { useHasPermission, useAuth } from "@/lib/auth";
@@ -118,7 +118,7 @@ export default function OwnerApprovalsScreen() {
           {joinRequestsQuery.isError || attentionQuery.isError ? (
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
-            <GlassCard variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></GlassCard>
+            <Card variant="compact"><EmptyState title="All caught up" body="No pending join requests or scan reviews." /></Card>
           ) : null}
           <SectionHeader title="Request list" subtitle="Pending join decisions" action={joinRequests.length ? <PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton> : undefined} />
           <ApprovalQueue

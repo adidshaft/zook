@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import {
   EmptyState,
-  GlassCard,
+  Card,
   ListRow,
   MobileHeader,
   QueryErrorState,
@@ -29,13 +29,13 @@ export default function TrainerPayoutsScreen() {
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Payouts" subtitle="Live PT earnings and paid history" chip={<StatusChip status="Trainer" tone="neutral" />} />
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
-          <GlassCard variant="compact" contentStyle={styles.hero}>
+          <Card variant="compact" contentStyle={styles.hero}>
             <Text style={[styles.label, { color: palette.text.secondary }]}>This month accrued</Text>
             <Text style={[styles.total, { color: palette.text.primary }]}>{rupees(current?.totalPaise ?? 0)}</Text>
             <Text style={[styles.meta, { color: palette.text.secondary }]}>{current?.status ?? "draft"} · {current?.lines?.length ?? 0} earning lines</Text>
-          </GlassCard>
+          </Card>
           <SectionHeader title="Breakdown" />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             {current?.lines?.length ? (
               current.lines.map((line) => (
                 <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
@@ -43,7 +43,7 @@ export default function TrainerPayoutsScreen() {
             ) : (
               <EmptyState title="No earnings yet" body="PT commissions and session fees will appear as soon as owner records activity." />
             )}
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

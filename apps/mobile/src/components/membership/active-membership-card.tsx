@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DatePickerField, GlassCard, IconBubble, Pill, ZookButton } from "@/components/primitives";
+import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
@@ -48,7 +48,7 @@ export function ActiveMembershipCard({
         : "";
 
   return (
-    <GlassCard
+    <Card
       variant={subscription.status === "ACTIVE" ? "success" : "default"}
       contentStyle={styles.featuredContent}
     >
@@ -175,7 +175,7 @@ export function ActiveMembershipCard({
       {actionStatus ? (
         <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

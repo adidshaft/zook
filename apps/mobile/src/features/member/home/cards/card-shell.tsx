@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
 
-import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, ZookButton } from "@/components/primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeCardShell({
@@ -28,7 +28,7 @@ export function HomeCardShell({
   const { palette } = useTheme();
 
   return (
-    <GlassCard
+    <Card
       testID={testID}
       variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "default"}
       contentStyle={styles.card}
@@ -50,7 +50,7 @@ export function HomeCardShell({
           {ctaLabel}
         </ZookButton>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

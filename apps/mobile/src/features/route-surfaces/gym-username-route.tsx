@@ -23,7 +23,7 @@ import {
 import { Image } from "expo-image";
 import {
   EmptyState,
-  GlassCard,
+  Card,
   InfoRow,
   MobileHeader,
   Pill,
@@ -309,13 +309,13 @@ export default function GymProfileScreen() {
         {gymQuery.isLoading ? <GymDetailSkeleton /> : null}
 
         {gymQuery.isError ? (
-          <GlassCard variant="compact">
+          <Card variant="compact">
             <QueryErrorState
               error={gymQuery.error}
               onRetry={() => void gymQuery.refetch()}
               title="Could not load this gym"
             />
-          </GlassCard>
+          </Card>
         ) : null}
 
         {!gymQuery.isLoading && !gymQuery.isError && !gym ? (
@@ -328,7 +328,7 @@ export default function GymProfileScreen() {
 
         {gym ? (
           <>
-            <GlassCard contentStyle={styles.heroCard}>
+            <Card contentStyle={styles.heroCard}>
               <View style={styles.coverShell}>
                 <View style={[styles.coverPlaceholder, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
                   {gym.coverImageUrl ? (
@@ -404,7 +404,7 @@ export default function GymProfileScreen() {
                   />
                 ) : null}
               </View>
-            </GlassCard>
+            </Card>
 
             <SectionHeader
               eyebrow="Inside"
@@ -412,7 +412,7 @@ export default function GymProfileScreen() {
               subtitle="Facility, trainers, access, and location details."
             />
 
-            <GlassCard style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
+            <Card style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow
                 label="Address"
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
@@ -430,7 +430,7 @@ export default function GymProfileScreen() {
                   </View>
                 </View>
               ) : null}
-            </GlassCard>
+            </Card>
 
             {gallery.length ? (
               <ScrollView
@@ -467,7 +467,7 @@ export default function GymProfileScreen() {
                       accessibilityLabel={`Open ${trainer.name} profile`}
                       style={({ pressed }) => (pressed ? styles.cardPressed : null)}
                     >
-                      <GlassCard contentStyle={styles.trainerCard}>
+                      <Card contentStyle={styles.trainerCard}>
                         {trainer.profilePhotoUrl ? (
                           <Image
                             source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
@@ -499,7 +499,7 @@ export default function GymProfileScreen() {
                               ))}
                           </View>
                         </View>
-                      </GlassCard>
+                      </Card>
                     </Pressable>
                   ))
               ) : (
@@ -511,7 +511,7 @@ export default function GymProfileScreen() {
             </View>
 
             <View style={styles.metricRow}>
-              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
+              <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
                 <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Join flow</Text>
                 <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                   {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
@@ -523,8 +523,8 @@ export default function GymProfileScreen() {
                       ? "Referral or invite is required."
                       : "You can move straight to payment."}
                 </Text>
-              </GlassCard>
-              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
+              </Card>
+              <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
                 <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Membership state</Text>
                 <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                   {viewerState?.activeMembership
@@ -539,7 +539,7 @@ export default function GymProfileScreen() {
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
                     : "Choose a plan when you’re ready."}
                 </Text>
-              </GlassCard>
+              </Card>
             </View>
 
             <SectionHeader
@@ -548,7 +548,7 @@ export default function GymProfileScreen() {
               subtitle="Follow these steps to start your membership."
             />
 
-            <GlassCard contentStyle={styles.timelineCard}>
+            <Card contentStyle={styles.timelineCard}>
               {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
                 <View key={step.title} style={styles.timelineRow}>
                   <View style={[styles.timelineMarker, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
@@ -560,12 +560,12 @@ export default function GymProfileScreen() {
                   </View>
                 </View>
               ))}
-            </GlassCard>
+            </Card>
 
             {needsApproval &&
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
-              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
+              <Card variant="warning" contentStyle={styles.ctaCard}>
                 <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Request membership first</Text>
                 <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                   This gym reviews new members before payment. Submit your request and the owner can
@@ -577,11 +577,11 @@ export default function GymProfileScreen() {
                 >
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
                 </PrimaryButton>
-              </GlassCard>
+              </Card>
             ) : null}
 
             {inviteOnlyLocked ? (
-              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
+              <Card variant="warning" contentStyle={styles.ctaCard}>
                 <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Invite or referral required</Text>
                 <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
@@ -605,7 +605,7 @@ export default function GymProfileScreen() {
                   />
                   <PrimaryButton testID="gym-apply-invite-code" onPress={applyInviteCode}>Apply</PrimaryButton>
                 </View>
-              </GlassCard>
+              </Card>
             ) : null}
 
             <SectionHeader eyebrow="Plans" title="Membership options" />
@@ -638,7 +638,7 @@ export default function GymProfileScreen() {
                 ].filter((item): item is string => Boolean(item));
 
                 return (
-                <GlassCard
+                <Card
                   key={plan.id}
                   testID={`gym-plan-row-${plan.id}`}
                   contentStyle={styles.planCard}
@@ -696,15 +696,15 @@ export default function GymProfileScreen() {
                         ? "Choose plan"
                         : "Complete earlier step first"}
                   </PrimaryButton>
-                </GlassCard>
+                </Card>
                 );
               })}
             </View>
 
             {statusMessage ? (
-              <GlassCard testID="gym-status-message" variant="compact">
+              <Card testID="gym-status-message" variant="compact">
                 <Text style={[styles.statusMessage, { color: palette.text.primary }]}>{statusMessage}</Text>
-              </GlassCard>
+              </Card>
             ) : null}
           </>
         ) : null}

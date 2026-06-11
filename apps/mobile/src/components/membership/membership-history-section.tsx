@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { GlassCard, Pill, SectionHeader } from "@/components/primitives";
+import { Card, Pill, SectionHeader } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
@@ -15,7 +15,7 @@ export function MembershipHistorySection({ subscriptions }: { subscriptions: Mem
       <SectionHeader title="History" />
       <View style={styles.stack}>
         {subscriptions.slice(1).map((subscription) => (
-          <GlassCard key={subscription.id} variant="compact" contentStyle={styles.historyContent}>
+          <Card key={subscription.id} variant="compact" contentStyle={styles.historyContent}>
             <View style={styles.historyRow}>
               <View style={styles.historyCopy}>
                 <Text numberOfLines={1} style={[styles.historyTitle, { color: palette.text.primary }]}>
@@ -30,7 +30,7 @@ export function MembershipHistorySection({ subscriptions }: { subscriptions: Mem
                 {titleCaseFromCode(subscription.status ?? "ACTIVE")}
               </Pill>
             </View>
-          </GlassCard>
+          </Card>
         ))}
       </View>
     </>

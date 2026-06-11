@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, ZookButton } from "@/components/primitives";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
@@ -16,7 +16,7 @@ export function MembershipSummary({
   const daysLeft =
     typeof membership?.daysLeft === "number" ? `${membership.daysLeft} days left` : "Status pending";
   return (
-    <GlassCard variant="compact" contentStyle={styles.card}>
+    <Card variant="compact" contentStyle={styles.card}>
       <IconBubble icon="card-outline" tone={membership ? "lime" : "amber"} size={42} />
       <View style={styles.copy}>
         <Text style={[styles.title, { color: palette.text.primary }]}>
@@ -29,7 +29,7 @@ export function MembershipSummary({
       <ZookButton onPress={onViewDetail} variant="secondary" size="sm">
         View
       </ZookButton>
-    </GlassCard>
+    </Card>
   );
 }
 

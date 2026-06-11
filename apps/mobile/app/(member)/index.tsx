@@ -13,7 +13,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   QueryErrorState,
@@ -102,7 +102,7 @@ function ActiveCheckInCard({
   }, [activeCheckIn.checkedInAt]);
 
   return (
-    <GlassCard glow contentStyle={styles.activeSessionCard}>
+    <Card glow contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
         <IconBubble icon="time-outline" tone="lime" size={42} />
         <View style={styles.activeSessionCopy}>
@@ -123,7 +123,7 @@ function ActiveCheckInCard({
       <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary">
         {busy ? "Stopping..." : "Stop session"}
       </ZookButton>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -357,7 +357,7 @@ function HomeLoading() {
   const { palette } = useTheme();
 
   return (
-    <GlassCard variant="compact" contentStyle={styles.loadingCard}>
+    <Card variant="compact" contentStyle={styles.loadingCard}>
       <IconBubble icon="flash-outline" tone="lime" size={42} />
       <View style={styles.loadingCopy}>
         <Text style={[styles.loadingTitle, { color: palette.text.primary }]}>Loading today</Text>
@@ -366,7 +366,7 @@ function HomeLoading() {
         </Text>
       </View>
       <ActivityIndicator color={palette.accent.base} />
-    </GlassCard>
+    </Card>
   );
 }
 

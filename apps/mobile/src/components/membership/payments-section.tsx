@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard, IconBubble, Pill, SectionHeader } from "@/components/primitives";
+import { Card, IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { toneForStatus } from "./helpers";
@@ -44,7 +44,7 @@ export function PaymentsSection({
                 : "Receipt and invoice are available for confirmed payments."
               : `Documents unlock after payment succeeds. Current status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
             return (
-              <GlassCard key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
+              <Card key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>
                   <IconBubble icon="receipt-outline" tone="lime" size={34} />
                 </View>
@@ -90,12 +90,12 @@ export function PaymentsSection({
                     />
                   </View>
                 </View>
-              </GlassCard>
+              </Card>
             );
           })}
         </View>
       ) : (
-        <GlassCard variant="compact" contentStyle={styles.emptyPaymentContent}>
+        <Card variant="compact" contentStyle={styles.emptyPaymentContent}>
           <IconBubble icon="receipt-outline" tone="neutral" size={36} />
           <View style={styles.emptyCopy}>
             <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments yet</Text>
@@ -103,14 +103,14 @@ export function PaymentsSection({
               Transaction history will appear here.
             </Text>
           </View>
-        </GlassCard>
+        </Card>
       )}
       {invoices.length ? (
         <>
           <SectionHeader title="Invoices and receipts" />
           <View style={styles.stack}>
             {invoices.map((invoice) => (
-              <GlassCard key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
+              <Card key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
                 <IconBubble icon="newspaper-outline" tone="blue" size={34} />
                 <View style={styles.invoiceCopy}>
                   <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
@@ -156,7 +156,7 @@ export function PaymentsSection({
                     </Pressable>
                   ) : null}
                 </View>
-              </GlassCard>
+              </Card>
             ))}
           </View>
         </>

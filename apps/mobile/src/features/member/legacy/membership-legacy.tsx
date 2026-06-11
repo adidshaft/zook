@@ -25,7 +25,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   SectionHeader,
@@ -551,7 +551,7 @@ export default function MembershipScreen() {
           />
 
           {routeParams.focus === "membership" ? (
-            <GlassCard variant="selected" contentStyle={styles.calloutContent}>
+            <Card variant="selected" contentStyle={styles.calloutContent}>
               <IconBubble icon="notifications" tone="blue" size={36} />
               <View style={styles.calloutCopy}>
                 <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>Membership update</Text>
@@ -561,11 +561,11 @@ export default function MembershipScreen() {
                     : "Showing your current status."}
                 </Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {waitingCheckoutSessionId ? (
-            <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
+            <Card variant="compact" contentStyle={styles.browserReturnContent}>
               <IconBubble icon="open-outline" tone="amber" size={36} />
               <View style={styles.browserReturnCopy}>
                 <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
@@ -581,13 +581,13 @@ export default function MembershipScreen() {
               >
                 {checkingCheckoutStatus ? "Checking..." : "Check status"}
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {membershipsQuery.isLoading ? <MembershipSkeleton /> : null}
 
           {!membershipsQuery.isLoading && !memberships.length ? (
-            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <Card variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No memberships</Text>
@@ -598,7 +598,7 @@ export default function MembershipScreen() {
               <ZookButton testID="membership-find-gyms" href="/gyms" icon="search-outline">
                 Find gyms
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {latestSubscription ? (
@@ -825,7 +825,7 @@ function RenewalSheet({
         </View>
 
         {selectedPlan ? (
-          <GlassCard variant="compact" contentStyle={styles.renewalSummary}>
+          <Card variant="compact" contentStyle={styles.renewalSummary}>
             <Text style={[styles.summaryTitle, { color: palette.text.primary }]}>Renewal summary</Text>
             <Text style={[styles.summaryBody, { color: palette.text.secondary }]}>
               {selectedPlan.durationDays
@@ -833,7 +833,7 @@ function RenewalSheet({
                 : "Gym-defined validity"}
               {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
             </Text>
-          </GlassCard>
+          </Card>
         ) : null}
 
         {status ? <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{status}</Text> : null}

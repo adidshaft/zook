@@ -7,7 +7,7 @@ import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } fro
 import {
   AuditWarning,
   CollapsibleSection,
-  GlassCard,
+  Card,
   ListRow,
   MobileHeader,
   SecondaryButton,
@@ -244,7 +244,7 @@ export default function Settings() {
             })}
             {...sectionProps("notifications")}
           >
-            <GlassCard variant="compact" contentStyle={styles.preferenceStack}>
+            <Card variant="compact" contentStyle={styles.preferenceStack}>
               <PreferenceToggle
                 title={t("settings.pushNotifications")}
                 subtitle={t("settings.pushNotificationsSubtitle")}
@@ -262,7 +262,7 @@ export default function Settings() {
                   onValueChange={(value) => void updatePreference(row.key, value)}
                 />
               ))}
-            </GlassCard>
+            </Card>
             {preferenceStatus ? <Text style={[styles.statusText, { color: palette.accent.base }]}>{preferenceStatus}</Text> : null}
           </CollapsibleSection>
 
@@ -271,7 +271,7 @@ export default function Settings() {
             subtitle={t("settings.languageSubtitle")}
             {...sectionProps("language")}
           >
-            <GlassCard variant="compact" contentStyle={styles.languageContent}>
+            <Card variant="compact" contentStyle={styles.languageContent}>
               <View style={styles.languageRow}>
                 {localeOptions.map((option) => {
                   const selected = localePreference === option.value;
@@ -302,7 +302,7 @@ export default function Settings() {
                   );
                 })}
               </View>
-            </GlassCard>
+            </Card>
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -310,7 +310,7 @@ export default function Settings() {
             subtitle="Use your device setting or choose a fixed theme"
             {...sectionProps("appearance")}
           >
-            <GlassCard variant="compact" contentStyle={styles.appearanceContent}>
+            <Card variant="compact" contentStyle={styles.appearanceContent}>
               <View style={styles.appearanceRow}>
                 {themeOptions.map((option) => {
                   const selected = themePreference === option.value;
@@ -343,7 +343,7 @@ export default function Settings() {
                   );
                 })}
               </View>
-            </GlassCard>
+            </Card>
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -369,7 +369,7 @@ export default function Settings() {
               </DangerButton>
             </View>
             {privacyStatus ? <Text style={[styles.statusText, { color: palette.accent.base }]}>{privacyStatus}</Text> : null}
-            <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
+            <Card variant="compact" contentStyle={styles.privacyStatusCard}>
               <ListRow
                 title={t("settings.latestExport")}
                 subtitle={
@@ -396,7 +396,7 @@ export default function Settings() {
                 icon="trash-outline"
                 tone={latestDeletion ? "amber" : "neutral"}
               />
-            </GlassCard>
+            </Card>
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -404,7 +404,7 @@ export default function Settings() {
             subtitle={t("settings.systemSubtitle")}
             {...sectionProps("system")}
           >
-            <GlassCard variant="compact" contentStyle={styles.privacyStatusCard}>
+            <Card variant="compact" contentStyle={styles.privacyStatusCard}>
               <Pressable
                 onPress={() => void Linking.openURL("mailto:support@zookfit.in")}
                 accessibilityRole="button"
@@ -453,7 +453,7 @@ export default function Settings() {
                 icon="business-outline"
                 tone="neutral"
               />
-            </GlassCard>
+            </Card>
           </CollapsibleSection>
 
           <Pressable

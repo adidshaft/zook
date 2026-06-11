@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, MobileHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
+import { Card, MobileHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
@@ -49,15 +49,15 @@ export default function NotificationSettingsScreen() {
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Notifications" subtitle="Choose what Zook can send" showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <PreferenceRow title="Push notifications" value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
             {rows.map((row) => (
               <PreferenceRow key={row.key} title={row.title} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
             ))}
-          </GlassCard>
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          </Card>
+          <Card variant="compact" contentStyle={styles.stack}>
             <ComingSoonRow title="WhatsApp updates" />
-          </GlassCard>
+          </Card>
           <Text style={[styles.note, { color: palette.text.secondary }]}>Changes sync to your active gym when available.</Text>
         </ScrollView>
       </ZookScreen>

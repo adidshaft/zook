@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, GlassCard, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
 import { titleCase } from "@/features/owner/helpers";
@@ -49,15 +49,15 @@ export default function OwnerStockScreen() {
             <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
           </View>
           <SectionHeader title="Products to reorder" subtitle="Below threshold" />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
             {!dashboardQuery.isError && lowStock.length
               ? lowStock.map((product) => <StockRow key={product.id} product={product} onReorder={() => void reorderProduct(product)} />)
               : null}
             {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" body="No items below threshold." /> : null}
-          </GlassCard>
+          </Card>
           <SectionHeader title="Orders ready for pickup" />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
             {!ordersQuery.isError && orders.length
               ? orders.map((order) => (
@@ -75,7 +75,7 @@ export default function OwnerStockScreen() {
                 ))
               : null}
             {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." /> : null}
-          </GlassCard>
+          </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>

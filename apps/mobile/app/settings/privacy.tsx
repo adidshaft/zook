@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 
-import { GlassCard, MobileHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, MobileHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
 import { layout, spacing, typography } from "@/lib/theme";
@@ -60,11 +60,11 @@ export default function PrivacySettingsScreen() {
       <ZookScreen testID="settings-privacy-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <MobileHeader title="Privacy" subtitle="Your data controls" showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <Text style={[styles.body, { color: palette.text.secondary }]}>Request a copy of your Zook data or start an account deletion request.</Text>
             <ZookButton onPress={() => void requestExport()} variant="secondary" disabled={exportBusy}>Request data export</ZookButton>
             <ZookButton onPress={confirmDeletionRequest} variant="destructive" disabled={deletionBusy}>Request account deletion</ZookButton>
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

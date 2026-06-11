@@ -7,7 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   EmptyState,
   FormField,
-  GlassCard,
+  Card,
   MobileHeader,
   QueryErrorState,
   SectionHeader,
@@ -84,7 +84,7 @@ export default function MemberDietScreen() {
           <MobileHeader title="Diet" subtitle={plan?.title ?? "Meal logging"} showProfileShortcut={false} />
           {dietQuery.isError ? <QueryErrorState error={dietQuery.error} onRetry={() => void dietQuery.refetch()} /> : null}
 
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.rollupRow}>
               <View>
                 <Text style={[styles.rollupLabel, { color: palette.text.secondary }]}>Today</Text>
@@ -111,9 +111,9 @@ export default function MemberDietScreen() {
             ) : (
               <EmptyState title="No diet plan yet" body="Your trainer's published meals will appear here." />
             )}
-          </GlassCard>
+          </Card>
 
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             <SectionHeader title="Log meal" subtitle="Use a preset or type a quick deviation." />
             <View style={styles.presetRow}>
               {indianMealPresets.slice(0, 5).map((preset) => (
@@ -143,7 +143,7 @@ export default function MemberDietScreen() {
               <FormField label="Fats" value={fatsG} onChangeText={setFatsG} keyboardType="number-pad" placeholder="8" style={styles.macroField} />
             </View>
             <ZookButton testID="meal-log-save" onPress={() => void saveMeal()} busy={saving} busyLabel="Logging..." icon="restaurant-outline">Log meal</ZookButton>
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>

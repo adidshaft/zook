@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { EmptyState, GlassCard, QueryErrorState } from "@/components/primitives";
+import { EmptyState, Card, QueryErrorState } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { spacing } from "@/lib/theme";
 import { ApprovalQueueCard } from "./card";
@@ -26,9 +26,9 @@ export function ApprovalQueue({
       {isLoading ? <ReceptionQueueSkeleton /> : null}
       {isError ? <QueryErrorState error={new Error("Approvals could not load.")} onRetry={onRetry} /> : null}
       {!isLoading && !isError && !items.length ? (
-        <GlassCard variant="compact">
+        <Card variant="compact">
           <EmptyState title={emptyState.title} body={emptyState.subtitle ?? ""} />
-        </GlassCard>
+        </Card>
       ) : null}
       {!isLoading && !isError
         ? items.map((item, index) => (

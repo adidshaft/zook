@@ -52,9 +52,9 @@ import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-c
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
-type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
-type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
-type GlassCardSurface = "content" | "interactive" | "floating";
+type CardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
+type CardGlowTone = "lime" | "amber" | "red" | "success";
+type CardSurface = "content" | "interactive" | "floating";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 type ThemeMode = "light" | "dark";
@@ -182,7 +182,7 @@ const buttonTextSizeStyles: Record<ButtonSize, TextStyle> = {
   lg: { fontSize: 16, lineHeight: 21 },
 };
 
-const glassGlowStyles: Record<GlassCardGlowTone, ViewStyle> = {
+const glassGlowStyles: Record<CardGlowTone, ViewStyle> = {
   lime: shadows.glowLimeSoft,
   success: shadows.glowLimeSoft,
   amber: shadows.glowAmberSoft,
@@ -216,8 +216,8 @@ function platformSurfaceShadow(
 function glassSurfaceColors(
   mode: ThemeMode,
   palette: Palette,
-  variant: GlassCardVariant,
-  surface: GlassCardSurface,
+  variant: CardVariant,
+  surface: CardSurface,
 ): { backgroundColor: string; borderColor: string; blurIntensity: number; blurTint: "dark" | "light" } {
   const isDark = mode === "dark";
   const blurIntensity = variant === "compact" ? (isDark ? 18 : 12) : isDark ? 24 : 16;
@@ -487,7 +487,7 @@ export function ProfileShortcut({
   );
 }
 
-export function GlassCard({
+export function Card({
   children,
   style,
   contentStyle,
@@ -506,12 +506,12 @@ export function GlassCard({
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   glow?: boolean;
-  glowTone?: GlassCardGlowTone;
-  variant?: GlassCardVariant;
+  glowTone?: CardGlowTone;
+  variant?: CardVariant;
   padding?: number;
   radius?: number;
   pressable?: boolean;
-  surface?: GlassCardSurface;
+  surface?: CardSurface;
   disabled?: boolean;
   onPress?: PressHandler;
   testID?: string;
@@ -593,10 +593,6 @@ export function GlassCard({
       {inner}
     </View>
   );
-}
-
-export function Card(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard {...props} />;
 }
 
 export function GlassPanel({
@@ -952,12 +948,12 @@ export function AppHeader(props: Parameters<typeof MobileHeader>[0]) {
   return <MobileHeader {...props} />;
 }
 
-export function FieldCard(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard variant="compact" {...props} />;
+export function FieldCard(props: Parameters<typeof Card>[0]) {
+  return <Card variant="compact" {...props} />;
 }
 
-export function QueueCard(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard pressable {...props} />;
+export function QueueCard(props: Parameters<typeof Card>[0]) {
+  return <Card pressable {...props} />;
 }
 
 export function AlertCard({
@@ -974,7 +970,7 @@ export function AlertCard({
   action?: ReactNode;
 }) {
   return (
-    <GlassCard variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
+    <Card variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
       <View style={styles.alertCardRow}>
         <IconBubble icon={icon ?? "alert-circle-outline"} tone={tone} size={38} />
         <View style={styles.alertCardCopy}>
@@ -983,7 +979,7 @@ export function AlertCard({
         </View>
         {action}
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -1436,7 +1432,7 @@ export function EntryCodeCard({
   const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
   return (
-    <GlassCard
+    <Card
       glow={tone === "lime"}
       style={[styles.entryCodeCard, { borderColor: palette.borderColor }]}
       contentStyle={styles.entryCodeContent}
@@ -1451,7 +1447,7 @@ export function EntryCodeCard({
           {detail}
         </Text>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -1600,7 +1596,7 @@ export function TextField({
   );
 }
 
-export function GlassInput(props: Parameters<typeof TextField>[0]) {
+export function Input(props: Parameters<typeof TextField>[0]) {
   return <TextField {...props} />;
 }
 
@@ -1692,7 +1688,7 @@ export function ProductCard({
   const canDecrement = !disabled && Boolean(onDecrement);
   const addButtonDisabled = !canIncrement;
   return (
-    <GlassCard
+    <Card
       testID={testID}
       style={[styles.productCard, style]}
       contentStyle={[styles.productContent, compact ? styles.productContentCompact : null]}
@@ -1826,7 +1822,7 @@ export function ProductCard({
           </Pressable>
         )}
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -2249,7 +2245,7 @@ export function CollapsibleSection({
   }
 
   return (
-    <GlassCard contentStyle={styles.collapsibleContent}>
+    <Card contentStyle={styles.collapsibleContent}>
       <Pressable
         onPress={() => pressWithHaptics(toggleOpen)}
         accessibilityRole="button"
@@ -2287,7 +2283,7 @@ export function CollapsibleSection({
           {children}
         </View>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 

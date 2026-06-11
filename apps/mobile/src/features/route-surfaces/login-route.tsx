@@ -18,8 +18,8 @@ import {
 import Animated, { FadeInDown } from "@/lib/reanimated-lite";
 import {
   BrandMark,
-  GlassCard,
-  GlassInput,
+  Card,
+  Input,
   OtpInput,
   type OtpInputHandle,
   ZookButton,
@@ -406,7 +406,7 @@ export default function Login() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(250).duration(600)}>
-          <GlassCard contentStyle={styles.formContent}>
+          <Card contentStyle={styles.formContent}>
             <View style={styles.formHeader}>
               <Text style={[styles.formTitle, { color: palette.text.primary }]}>
                 {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
@@ -420,7 +420,7 @@ export default function Login() {
 
             {stage === "identifier" ? (
               <>
-                <GlassInput
+                <Input
                   testID={loginMethod === "email" ? "login-email" : "login-phone"}
                   label={identifierLabel}
                   value={identifierValue}
@@ -591,7 +591,7 @@ export default function Login() {
                 </Text>
               </>
             )}
-          </GlassCard>
+          </Card>
         </Animated.View>
 
         {/* Local test OTP banner - only visible in __DEV__ */}

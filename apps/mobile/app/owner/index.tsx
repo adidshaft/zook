@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { GlassCard, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
@@ -167,7 +167,7 @@ export default function OwnerCommandScreen() {
           {dashboard ? (
             <>
               {!billingReady ? (
-                <GlassCard variant="warning" contentStyle={styles.billingCard}>
+                <Card variant="warning" contentStyle={styles.billingCard}>
                   <View style={styles.billingHeader}>
                     <View style={styles.billingCopy}>
                       <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
@@ -185,7 +185,7 @@ export default function OwnerCommandScreen() {
                   >
                     Open billing
                   </ZookButton>
-                </GlassCard>
+                </Card>
               ) : null}
               <MetricGrid testID="owner-view-command" items={metrics} />
               <AttentionCard items={items} />

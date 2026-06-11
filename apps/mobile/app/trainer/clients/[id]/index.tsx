@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   AuditWarning,
   FormField,
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
   MobileHeader,
@@ -126,14 +126,14 @@ export default function TrainerClientOverviewScreen() {
           <SegmentedControl options={clientDetailTabs} value="overview" onChange={(tab) => router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never)} />
 
           {!clientsQuery.isLoading && !client ? (
-            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+            <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="person-outline" tone="neutral" size={42} />
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
               <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
-          <GlassCard variant="compact" contentStyle={styles.clientHeroContent}>
+          <Card variant="compact" contentStyle={styles.clientHeroContent}>
             <View style={styles.clientHeroTop}>
               <View style={[styles.clientAvatar, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
                 <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{initialsFor(clientName)}</Text>
@@ -162,28 +162,28 @@ export default function TrainerClientOverviewScreen() {
             <ZookButton testID="trainer-ai-draft-button" href={`/trainer/clients/${id}/plan` as never} icon="sparkles-outline" disabled={!client}>
               Open AI draft
             </ZookButton>
-          </GlassCard>
+          </Card>
 
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />} />
             <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
             <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
             <ListRow title="Last check-in" subtitle={recentWorkouts[0]?.startedAt ?? "Today 7:14 AM"} trailing={<StatusChip status="Tracked" tone="neutral" />} />
             <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Review" : `${averageCompletion}%`} tone="amber" />} />
-          </GlassCard>
+          </Card>
 
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             <FormField testID="trainer-note" label="Trainer note" value={noteText} onChangeText={setNoteText} multiline placeholder="Add coaching note for your own follow-up..." />
             <ZookButton testID="trainer-save-note-button" onPress={() => void saveNote()} disabled={!client} icon={noteSaved ? "checkmark-outline" : "save-outline"}>{noteSaved ? "Saved" : "Save note"}</ZookButton>
             <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
-          </GlassCard>
+          </Card>
 
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             <FormField testID="trainer-client-body-weight" label="Weight kg" value={bodyWeight} onChangeText={setBodyWeight} keyboardType="decimal-pad" placeholder="72.5" />
             <FormField label="Waist cm" value={bodyWaist} onChangeText={setBodyWaist} keyboardType="decimal-pad" placeholder="82" />
             <FormField label="Body fat %" value={bodyFat} onChangeText={setBodyFat} keyboardType="decimal-pad" placeholder="18" />
             <ZookButton testID="trainer-client-body-save" onPress={() => void saveBodyProgress()} disabled={!client} icon="analytics-outline">Record body progress</ZookButton>
-          </GlassCard>
+          </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>

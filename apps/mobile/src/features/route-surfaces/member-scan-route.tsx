@@ -23,7 +23,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   ScannerFrame,
@@ -760,7 +760,7 @@ export default function Scan() {
           />
 
           {cameraBlocked ? (
-            <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
+            <Card variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
               <View style={styles.blockedPermissionCopy}>
                 <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
@@ -777,7 +777,7 @@ export default function Scan() {
               >
                 Open settings
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {scanMode === "scan" ? (
@@ -844,7 +844,7 @@ export default function Scan() {
                 </View>
               </View>
 
-              <GlassCard variant="compact" contentStyle={styles.helpContent}>
+              <Card variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
                   <Text style={[styles.helpTitle, { color: palette.text.primary }]}>
@@ -866,10 +866,10 @@ export default function Scan() {
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={palette.accent.strong} />
                 </Pressable>
-              </GlassCard>
+              </Card>
             </>
           ) : (
-            <GlassCard variant="compact" contentStyle={styles.codeContent}>
+            <Card variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
                 <Text style={[styles.codeTitle, { color: palette.text.primary }]}>
                   Enter check-in code
@@ -963,10 +963,10 @@ export default function Scan() {
                   Back to camera scanner
                 </Text>
               </Pressable>
-            </GlassCard>
+            </Card>
           )}
 
-          <GlassCard variant="compact" contentStyle={styles.validationContent}>
+          <Card variant="compact" contentStyle={styles.validationContent}>
             {verificationSteps.map((item) => (
               <View
                 key={item.key}
@@ -1001,10 +1001,10 @@ export default function Scan() {
                 </Text>
               </View>
             ))}
-          </GlassCard>
+          </Card>
 
           {errorMessage ? (
-            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+            <Card variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="alert-circle-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
@@ -1025,11 +1025,11 @@ export default function Scan() {
               >
                 {needsProfilePhoto ? "Add photo" : "Scan again"}
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {queuedScanCount > 0 ? (
-            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+            <Card variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
@@ -1047,7 +1047,7 @@ export default function Scan() {
               >
                 Retry now
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {__DEV__ && getMobileAppEnv() === "local" ? (

@@ -2,7 +2,7 @@ import { Stack, router } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { GlassCard, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
@@ -69,7 +69,7 @@ export default function YouScreen() {
           />
 
           <SectionHeader title="Quick actions" />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <Card variant="compact" contentStyle={styles.list}>
             {showBackToOwner && (
               <PillActionRow
                 title="Back to Owner mode"
@@ -91,10 +91,10 @@ export default function YouScreen() {
               icon="business-outline"
               onPress={() => router.push(gymHref as never)}
             />
-          </GlassCard>
+          </Card>
 
           <SectionHeader title="Settings" />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <Card variant="compact" contentStyle={styles.list}>
             {settingsRows.map((row) => (
               <PillActionRow
                 key={row.href}
@@ -104,7 +104,7 @@ export default function YouScreen() {
                 onPress={() => router.push(row.href as never)}
               />
             ))}
-          </GlassCard>
+          </Card>
 
           <View style={styles.signOutContainer}>
             <ZookButton

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, Pill } from "@/components/primitives";
+import { Card, Pill } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
@@ -41,7 +41,7 @@ export function MemberListRow({
   const { palette } = useTheme();
   const showReveal = Boolean(item.phone && onRevealPhone && !item.phoneRevealed);
   return (
-    <GlassCard
+    <Card
       testID={testID}
       variant="compact"
       pressable
@@ -96,7 +96,7 @@ export function MemberListRow({
         <Pill tone={statusTone(item.status)}>{item.status}</Pill>
         <Ionicons name="chevron-forward" size={17} color={palette.text.secondary} />
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 

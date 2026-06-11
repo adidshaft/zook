@@ -17,7 +17,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   MobileHeader,
   ZookScreen,
@@ -258,7 +258,7 @@ export default function AssistantScreen() {
     return (
       <ZookScreen testID="assistant-unavailable-screen">
         <View style={styles.content}>
-          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+          <Card variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Plan assistant</Text>
@@ -266,7 +266,7 @@ export default function AssistantScreen() {
                 Owner and desk operations stay in the web dashboard.
               </Text>
             </View>
-          </GlassCard>
+          </Card>
         </View>
       </ZookScreen>
     );
@@ -323,7 +323,7 @@ export default function AssistantScreen() {
             }
             showProfileShortcut={false}
           />
-          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+          <Card variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
@@ -333,7 +333,7 @@ export default function AssistantScreen() {
                 Workouts, plans, and profile data stay available while we finish the assistant.
               </Text>
             </View>
-          </GlassCard>
+          </Card>
           <View style={styles.suggestionRow}>
             {suggestedPrompts.map((prompt) => (
               <View
@@ -482,7 +482,7 @@ export default function AssistantScreen() {
         ) : null}
 
         {attachSummary && contextSummary ? (
-          <GlassCard variant="compact" contentStyle={styles.contextContent}>
+          <Card variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
               <IconBubble icon="person-outline" tone="blue" size={32} />
               <Text style={[styles.contextLabel, { color: palette.feedback.info }]}>
@@ -492,7 +492,7 @@ export default function AssistantScreen() {
             <Text style={[styles.contextText, { color: palette.text.secondary }]}>
               {contextSummary}
             </Text>
-          </GlassCard>
+          </Card>
         ) : null}
 
         <View style={styles.chatStack}>
@@ -574,7 +574,7 @@ export default function AssistantScreen() {
           { bottom: composerBottom, transform: [{ translateY: composerTranslateY }] },
         ]}
       >
-        <GlassCard contentStyle={styles.composerContent}>
+        <Card contentStyle={styles.composerContent}>
           <TextInput
             testID="assistant-message-input"
             value={draft}
@@ -626,7 +626,7 @@ export default function AssistantScreen() {
               />
             </Pressable>
           </View>
-        </GlassCard>
+        </Card>
       </Animated.View>
     </ZookScreen>
   );
