@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard, ZookButton } from "@/components/primitives";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { Card, ZookButton } from "@/components/primitives";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeActionStrip({
   daysLeftLabel,
@@ -16,39 +16,60 @@ export function HomeActionStrip({
   planName: string;
   streakDays: number;
 }) {
+  const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
+  const accentColor = expired ? palette.feedback.warning : palette.accent.base;
+  const tileSurface = isDark ? palette.bg.sunken : palette.surface.raised;
   return (
-    <GlassCard
+    <Card
       variant={expired ? "warning" : "selected"}
       glow={!expired}
       contentStyle={styles.content}
     >
       <View style={styles.topRow}>
-        <View style={styles.statusTile}>
-          <Text numberOfLines={1} style={styles.statusValue}>
+        <View
+          style={[
+            styles.statusTile,
+            {
+              borderColor: expired ? palette.feedback.warning : palette.border.subtle,
+              backgroundColor: tileSurface,
+            },
+          ]}
+        >
+          <Text numberOfLines={1} style={[styles.statusValue, { color: palette.text.primary }]}>
             {expired ? "Renew" : daysLeftLabel}
           </Text>
-          <Text numberOfLines={1} style={styles.statusLabel}>
+          <Text numberOfLines={1} style={[styles.statusLabel, { color: palette.text.secondary }]}>
             {planName}
           </Text>
         </View>
         <ZookButton
           href={expired ? "/membership" : "/scan"}
           icon={expired ? "refresh-outline" : "qr-code-outline"}
-          tone="secondary"
+          variant="secondary"
           style={styles.scanButton}
-          textStyle={styles.scanButtonText}
+          textStyle={[styles.scanButtonText, { color: accentColor }]}
           accessibilityLabel={expired ? "Renew membership" : "Scan gym QR"}
         >
           {expired ? "Renew" : "Scan QR"}
         </ZookButton>
       </View>
       <View style={styles.streakRow}>
-        <Ionicons name="flame-outline" size={17} color={legacyColors.lime} />
-        <Text numberOfLines={1} style={styles.streakText}>
+        <View
+          style={[
+            styles.streakIcon,
+            {
+              backgroundColor: expired ? palette.surface.warningSoft : palette.surface.accentSoft,
+            },
+          ]}
+        >
+          <Ionicons name="flame-outline" size={15} color={accentColor} />
+        </View>
+        <Text numberOfLines={1} style={[styles.streakText, { color: palette.text.secondary }]}>
           {streakDays}-day streak · Last: {lastCheckIn}
         </Text>
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -67,18 +88,14 @@ const styles = StyleSheet.create({
     minHeight: 86,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(0,0,0,0.2)",
     justifyContent: "center",
     paddingHorizontal: 14,
     gap: 4,
   },
   statusValue: {
-    color: legacyColors.text,
     ...typography.h2,
   },
   statusLabel: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   scanButton: {
@@ -86,7 +103,6 @@ const styles = StyleSheet.create({
     minHeight: 86,
   },
   scanButtonText: {
-    color: legacyColors.lime,
   },
   streakRow: {
     minHeight: 28,
@@ -94,9 +110,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
+  streakIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   streakText: {
     flex: 1,
-    color: legacyColors.muted,
     ...typography.small,
   },
 });

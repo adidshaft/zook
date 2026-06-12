@@ -57,7 +57,6 @@ import {
   getPaymentProviderDiagnostics,
   getPushProvider,
   getPushProviderDiagnostics,
-  getProviderRegistryDiagnostics,
   getStorageProvider,
   getStorageProviderDiagnostics,
   getSmsProvider,
@@ -132,12 +131,12 @@ import { createUniqueMemberSlug } from "../member-slug";
 import { privateUserHandle } from "../private-user-handle";
 import { writeAuditLog } from "../audit";
 import { getDevOtpResponseValue } from "../auth-response";
-import { assertRateLimit, defaultRateLimitRules, getRateLimitDiagnostics } from "../rate-limit";
-import { getServerCacheDiagnostics } from "../server-cache";
+import { assertRateLimit, defaultRateLimitRules } from "../rate-limit";
+import { getPlatformProviderDiagnostics } from "../domains/overview";
+import { getErrorReporter } from "../error-reporter";
 import { currentRequestId } from "../request-state";
 import { getClientIp } from "../security";
 import { buildGymDiscoveryResults } from "../gym-discovery";
-import { getHealthPayload, getReadinessPayload, getStatusPayload } from "../readiness";
 import {
   assertCanAccessFileAsset,
   assertCanServeLocalPublicFileAsset,
@@ -156,7 +155,6 @@ import {
 } from "../reports-service";
 import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment-runtime";
 import { deliverPushForNotification } from "../push-runtime";
-import { getErrorReporter } from "../error-reporter";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { getPublicCouponPreview } from "../public-gym-read-models";
 import { getOrganizationAttendanceToday, getOrganizationPendingAttendance } from "../domains/attendance";
@@ -168,7 +166,10 @@ import {
   getOrganizationDashboardData,
   invalidateOrganizationDashboardCache,
 } from "../domains/overview";
-import { getOrganizationRecentPayments } from "../domains/payments";
+import {
+  getOrganizationPaymentsPage,
+  getOrganizationRecentPayments,
+} from "../domains/payments";
 import {
   pricingFromPlanCatalog,
   saasPlanCatalogFromSetting,
@@ -1054,10 +1055,6 @@ const payoutMarkPaidSchema = z.object({
   proofFileAssetId: z.string().optional(),
 });
 
-const diagnosticsThrowSchema = z.object({
-  mode: z.enum(["handled", "unhandled"]).default("handled"),
-});
-
 const planAssignSchema = z.object({
   assignedToUserId: z.string().optional(),
   audience: z.enum(["selected_member"]).default("selected_member"),
@@ -1118,6 +1115,13 @@ const aiChatSchema = z.object({
   prompt: z.string().trim().min(2).max(2_000),
   orgId: z.string().optional(),
   conversationId: z.string().optional(),
+});
+
+const supportFeedbackSchema = z.object({
+  message: z.string().trim().min(10).max(2_000),
+  appVersion: z.string().trim().max(80).optional(),
+  role: z.string().trim().max(80).optional(),
+  orgId: z.string().trim().optional(),
 });
 
 const aiGenerateSchema = z.object({
@@ -2051,13 +2055,14 @@ function isAllBranchesRequest(branchId?: string | null) {
 }
 
 async function enrichAttendanceRecords<
-  T extends { id: string; branchId: string; subscriptionId?: string | null },
+  T extends { id: string; branchId: string; userId: string; subscriptionId?: string | null },
 >(records: T[]) {
   if (!records.length) {
     return [];
   }
 
   const branchIds = [...new Set(records.map((record) => record.branchId))];
+  const userIds = [...new Set(records.map((record) => record.userId))];
   const subscriptionIds = [
     ...new Set(
       records
@@ -2066,15 +2071,19 @@ async function enrichAttendanceRecords<
     ),
   ];
 
-  const [branches, subscriptions] = await Promise.all([
+  const [branches, users, subscriptions] = await Promise.all([
     prisma.branch.findMany({
       where: { id: { in: branchIds } },
       select: { id: true, name: true },
     }),
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, phone: true },
+    }),
     subscriptionIds.length
       ? prisma.memberSubscription.findMany({
           where: { id: { in: subscriptionIds } },
-          select: { id: true, planId: true },
+          select: { id: true, planId: true, endsAt: true, remainingVisits: true },
         })
       : Promise.resolve([]),
   ]);
@@ -2088,18 +2097,40 @@ async function enrichAttendanceRecords<
     : [];
 
   const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
-  const planIdsBySubscriptionId = new Map(
-    subscriptions.map((subscription) => [subscription.id, subscription.planId]),
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const subscriptionsById = new Map(
+    subscriptions.map((subscription) => [subscription.id, subscription]),
   );
   const planNamesById = new Map(plans.map((plan) => [plan.id, plan.name]));
 
-  return records.map((record) => ({
-    ...attendanceWithEntryCode(record),
-    branchName: branchNamesById.get(record.branchId) ?? null,
-    planName: record.subscriptionId
-      ? (planNamesById.get(planIdsBySubscriptionId.get(record.subscriptionId) ?? "") ?? null)
-      : null,
-  }));
+  return records.map((record) => {
+    const user = usersById.get(record.userId);
+    const subscription = record.subscriptionId
+      ? subscriptionsById.get(record.subscriptionId)
+      : undefined;
+    const planName = subscription ? (planNamesById.get(subscription.planId) ?? null) : null;
+
+    return {
+      ...attendanceWithEntryCode(record),
+      branchName: branchNamesById.get(record.branchId) ?? null,
+      planName,
+      user: user
+        ? {
+            id: user.id,
+            name: user.name,
+            email: publicUserEmail(user.email) ?? "",
+            phone: user.phone,
+          }
+        : null,
+      plan: planName ? { name: planName } : null,
+      subscription: subscription
+        ? {
+            endsAt: subscription.endsAt,
+            remainingVisits: subscription.remainingVisits,
+          }
+        : null,
+    };
+  });
 }
 
 async function findFileAssetOrThrow(fileId: string) {
@@ -2330,43 +2361,191 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
   };
 }
 
+function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
+  const existing = map.get(key);
+  if (existing) {
+    existing.push(value);
+  } else {
+    map.set(key, [value]);
+  }
+}
+
 async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const scopedUserIds = branchId
-    ? (
-        await prisma.memberSubscription.findMany({
-          where: { orgId, branchId },
-          select: { memberUserId: true },
-          distinct: ["memberUserId"],
-        })
-      ).map((subscription) => subscription.memberUserId)
+    ? await (async () => {
+        const [branchSubscriptions, orgSubscriptions] = await Promise.all([
+          prisma.memberSubscription.findMany({
+            where: { orgId, branchId },
+            select: { memberUserId: true },
+            distinct: ["memberUserId"],
+          }),
+          prisma.memberSubscription.findMany({
+            where: { orgId },
+            select: { memberUserId: true },
+            distinct: ["memberUserId"],
+          }),
+        ]);
+        const memberIdsWithAnySubscription = new Set(
+          orgSubscriptions.map((subscription) => subscription.memberUserId),
+        );
+        const noSubscriptionProfiles = await prisma.memberProfile.findMany({
+          where: {
+            orgId,
+            ...(memberIdsWithAnySubscription.size
+              ? { userId: { notIn: Array.from(memberIdsWithAnySubscription) } }
+              : {}),
+          },
+          select: { userId: true },
+        });
+        return Array.from(
+          new Set([
+            ...branchSubscriptions.map((subscription) => subscription.memberUserId),
+            ...noSubscriptionProfiles.map((profile) => profile.userId),
+          ]),
+        );
+      })()
     : undefined;
   const profiles = await prisma.memberProfile.findMany({
     where: { orgId, ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}) },
     orderBy: { createdAt: "desc" },
     take: limit + 1,
+    select: {
+      id: true,
+      orgId: true,
+      userId: true,
+      profilePhotoUrl: true,
+      marketingOptIn: true,
+      publicVisibility: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
   const page = pageResult(profiles, limit);
   const memberUserIds = page.items.map((profile) => profile.userId);
-  const [users, subscriptions, attendance, payments] = await Promise.all([
-    prisma.user.findMany({ where: { id: { in: memberUserIds } } }),
+  const [users, subscriptions, recentAttendance, activeAttendance, payments] = await Promise.all([
+    memberUserIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: memberUserIds } },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            slug: true,
+            dateOfBirth: true,
+            profilePhotoUrl: true,
+            fitnessGoal: true,
+            marketingOptIn: true,
+            createdAt: true,
+          },
+        })
+      : Promise.resolve([]),
     prisma.memberSubscription.findMany({
       where: { orgId, memberUserId: { in: memberUserIds } },
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        memberUserId: true,
+        planId: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        remainingVisits: true,
+        paymentId: true,
+        pausedAt: true,
+        resumesAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     }),
     prisma.attendanceRecord.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: { checkedInAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        subscriptionId: true,
+        status: true,
+        source: true,
+        dateKey: true,
+        checkedInAt: true,
+        checkedOutAt: true,
+        checkoutReason: true,
+        durationSeconds: true,
+        suspiciousFlags: true,
+        createdAt: true,
+      },
       take: Math.max(memberUserIds.length * 3, 20),
+    }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        orgId,
+        userId: { in: memberUserIds },
+        checkedOutAt: null,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      orderBy: { checkedInAt: "desc" },
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        subscriptionId: true,
+        status: true,
+        source: true,
+        dateKey: true,
+        checkedInAt: true,
+        checkedOutAt: true,
+        checkoutReason: true,
+        durationSeconds: true,
+        suspiciousFlags: true,
+        createdAt: true,
+      },
     }),
     prisma.payment.findMany({
       where: { orgId, userId: { in: memberUserIds } },
       orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        orgId: true,
+        branchId: true,
+        userId: true,
+        purpose: true,
+        amountPaise: true,
+        currency: true,
+        status: true,
+        mode: true,
+        provider: true,
+        providerRef: true,
+        receiptNumber: true,
+        recordedAt: true,
+        createdAt: true,
+      },
       take: Math.max(memberUserIds.length * 3, 20),
     }),
   ]);
+  const attendanceById = new Map(
+    [...activeAttendance, ...recentAttendance].map((record) => [record.id, record]),
+  );
+  const attendance = Array.from(attendanceById.values()).sort(
+    (left, right) => right.checkedInAt.getTime() - left.checkedInAt.getTime(),
+  );
   const usersById = new Map(users.map((user) => [user.id, user]));
+  const branchIds = Array.from(new Set(attendance.map((record) => record.branchId)));
+  const branches = branchIds.length
+    ? await prisma.branch.findMany({
+        where: { id: { in: branchIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const branchNamesById = new Map(branches.map((branch) => [branch.id, branch.name]));
   const planIds = Array.from(new Set(subscriptions.map((subscription) => subscription.planId)));
   const plans = planIds.length
     ? await prisma.membershipPlan.findMany({
@@ -2375,25 +2554,61 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       })
     : [];
   const plansById = new Map(plans.map((plan) => [plan.id, plan]));
+  const subscriptionsByUserId = new Map<string, typeof subscriptions>();
+  for (const subscription of subscriptions) {
+    appendToMapList(subscriptionsByUserId, subscription.memberUserId, subscription);
+  }
+  const attendanceByUserId = new Map<string, typeof attendance>();
+  for (const record of attendance) {
+    appendToMapList(attendanceByUserId, record.userId, record);
+  }
+  const paymentsByUserId = new Map<string, typeof payments>();
+  for (const payment of payments) {
+    if (payment.userId) appendToMapList(paymentsByUserId, payment.userId, payment);
+  }
   return {
     members: page.items.map((profile) => {
       const user = usersById.get(profile.userId) ?? null;
+      const userSubscriptions = subscriptionsByUserId.get(profile.userId) ?? [];
+      const userAttendance = attendanceByUserId.get(profile.userId) ?? [];
       const activeSubscription =
-        subscriptions.find(
+        userSubscriptions.find(
           (subscription) =>
             subscription.memberUserId === profile.userId && subscription.status === "ACTIVE",
         ) ??
-        subscriptions.find((subscription) => subscription.memberUserId === profile.userId) ??
+        userSubscriptions[0] ??
         null;
       return {
         profile,
         user: user ? serializeUserForClient(user) : null,
-        lastCheckIn: attendance.find((record) => record.userId === profile.userId) ?? null,
-        recentCheckIns: attendance
-          .filter((record) => record.userId === profile.userId)
+        activeCheckIn:
+          userAttendance
+            .filter(
+              (record) =>
+                record.userId === profile.userId &&
+                !record.checkedOutAt &&
+                ["APPROVED", "PENDING_APPROVAL", "FLAGGED"].includes(record.status),
+            )
+            .map(attendanceWithEntryCode)
+            .map((record) => ({
+              ...record,
+              branchName: branchNamesById.get(record.branchId) ?? null,
+            }))[0] ?? null,
+        lastCheckIn:
+          userAttendance
+            .map(attendanceWithEntryCode)
+            .map((record) => ({
+              ...record,
+              branchName: branchNamesById.get(record.branchId) ?? null,
+            }))[0] ?? null,
+        recentCheckIns: userAttendance
           .slice(0, 3)
-          .map(attendanceWithEntryCode),
-        lastPayment: payments.find((payment) => payment.userId === profile.userId) ?? null,
+          .map(attendanceWithEntryCode)
+          .map((record) => ({
+            ...record,
+            branchName: branchNamesById.get(record.branchId) ?? null,
+          })),
+        lastPayment: paymentsByUserId.get(profile.userId)?.[0] ?? null,
         activeSubscription: activeSubscription
           ? { ...activeSubscription, plan: plansById.get(activeSubscription.planId) ?? null }
           : null,
@@ -2408,41 +2623,7 @@ async function listOrganizationPaymentsPage(orgId: string, request: NextRequest)
   const { limit, cursor } = parseCursorPagination(request, 50, 100);
   const ctx = await getRequestContext(request, { orgId });
   const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
-  const payments = await prisma.payment.findMany({
-    where: { orgId, ...(branchId ? { branchId } : {}) },
-    orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
-  const page = pageResult(payments, limit);
-  const users = await prisma.user.findMany({
-    where: {
-      id: { in: page.items.map((payment) => payment.userId).filter(Boolean) as string[] },
-    },
-  });
-  const refunds = page.items.length
-    ? await prisma.paymentRefund.findMany({
-        where: { orgId, paymentId: { in: page.items.map((payment) => payment.id) } },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
-  const usersById = new Map(users.map((user) => [user.id, user]));
-  return {
-    payments: page.items.map((payment) => {
-      const user = payment.userId ? usersById.get(payment.userId) : undefined;
-      const paymentRefunds = refunds.filter((refund) => refund.paymentId === payment.id);
-      return {
-        ...payment,
-        refunds: paymentRefunds,
-        refundedAmountPaise: paymentRefunds
-          .filter((refund) => !["FAILED", "CANCELLED"].includes(refund.status))
-          .reduce((total, refund) => total + refund.amountPaise, 0),
-        user: user ? { ...user, email: publicUserEmail(user.email) ?? "" } : null,
-      };
-    }),
-    nextCursor: page.nextCursor,
-    limit,
-  };
+  return getOrganizationPaymentsPage({ orgId, branchId, cursor: cursor ?? undefined, limit });
 }
 
 async function listOrganizationAttendancePage(orgId: string, request: NextRequest) {
@@ -8855,6 +9036,35 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       ),
     );
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "setup-status"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
+    const [
+      membershipPlanCount,
+      qrTokenCount,
+      attendanceCount,
+      staffCount,
+      memberCount,
+      shopProductCount,
+    ] = await Promise.all([
+      prisma.membershipPlan.count({ where: { orgId, active: true } }),
+      prisma.attendanceQrToken.count({ where: { orgId } }),
+      prisma.attendanceRecord.count({ where: { orgId } }),
+      prisma.organizationRoleAssignment.count({
+        where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
+      }),
+      prisma.memberProfile.count({ where: { orgId } }),
+      prisma.product.count({ where: { orgId, active: true } }),
+    ]);
+    return ok({
+      hasMembershipPlans: membershipPlanCount > 0,
+      hasQrDisplayed: qrTokenCount > 0 || attendanceCount > 0,
+      staffCount,
+      memberCount,
+      hasShopProducts: shopProductCount > 0,
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -8897,10 +9107,14 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       throw notFoundError("Member not found");
     }
     if (branchId) {
-      const branchSubscription = await prisma.memberSubscription.findFirst({
-        where: { orgId, branchId, memberUserId },
+      const subscriptionsForMember = await prisma.memberSubscription.findMany({
+        where: { orgId, memberUserId },
+        select: { branchId: true },
       });
-      if (!branchSubscription) {
+      const hasSubscriptionInBranch = subscriptionsForMember.some(
+        (subscription) => subscription.branchId === branchId,
+      );
+      if (subscriptionsForMember.length > 0 && !hasSubscriptionInBranch) {
         throw forbiddenError("This member belongs to another branch.");
       }
     }
@@ -9322,6 +9536,7 @@ export async function handleReports(request: NextRequest, path: string[]) {
     "payments.csv": "payments",
     "revenue.csv": "revenue",
     "manual-cash.csv": "manual-cash",
+    "membership-sales.csv": "membership-sales",
     "expiring-members.csv": "expiring-members",
     "invoices.csv": "invoices",
     "referrals.csv": "referrals",
@@ -9379,15 +9594,17 @@ export async function handleReports(request: NextRequest, path: string[]) {
               ? await reportsService.revenueReport(orgId, scopedFilters)
               : report === "manual-cash"
                 ? await reportsService.manualCashReport(orgId, scopedFilters)
-                : report === "expiring-members"
-                  ? await reportsService.membershipExpiryReport(orgId, scopedFilters)
-                  : report === "invoices"
-                    ? await reportsService.invoiceReport(orgId, scopedFilters)
-                    : report === "referrals"
-                      ? await reportsService.referralReport(orgId, scopedFilters)
-                      : report === "shop"
-                        ? await reportsService.shopReport(orgId, scopedFilters)
-                        : await reportsService.aiUsageReport(orgId, scopedFilters);
+                : report === "membership-sales"
+                  ? await reportsService.membershipSalesReport(orgId, scopedFilters)
+                  : report === "expiring-members"
+                    ? await reportsService.membershipExpiryReport(orgId, scopedFilters)
+                    : report === "invoices"
+                      ? await reportsService.invoiceReport(orgId, scopedFilters)
+                      : report === "referrals"
+                        ? await reportsService.referralReport(orgId, scopedFilters)
+                        : report === "shop"
+                          ? await reportsService.shopReport(orgId, scopedFilters)
+                          : await reportsService.aiUsageReport(orgId, scopedFilters);
 
     await writeAuditLog({
       request,
@@ -9445,47 +9662,7 @@ export async function handleReports(request: NextRequest, path: string[]) {
   return undefined;
 }
 
-export async function handleHealthReadiness(request: NextRequest, path: string[]) {
-  if (request.method === "GET" && pathMatches(path, ["health"])) {
-    return ok(getHealthPayload());
-  }
-
-  if (request.method === "GET" && pathMatches(path, ["ready"])) {
-    const readiness = await getReadinessPayload();
-    return ok(readiness, { status: readiness.ready ? 200 : 503 });
-  }
-
-  if (request.method === "GET" && pathMatches(path, ["status"])) {
-    const statusPayload = await getStatusPayload();
-    return NextResponse.json(statusPayload, {
-      status: statusPayload.status === "down" ? 503 : 200,
-    });
-  }
-
-  if (request.method === "POST" && pathMatches(path, ["diagnostics", "throw"])) {
-    if (getAppEnv() !== "staging") {
-      throw forbiddenError("Diagnostics throw is available only when APP_ENV=staging.");
-    }
-    const ctx = await getRequestContext(request);
-    const userId = requirePlatformAdmin(ctx);
-    const body = diagnosticsThrowSchema.parse(await readJson(request).catch(() => ({})));
-    const error = new Error("Zook diagnostics throw test");
-    if (body.mode === "handled") {
-      getErrorReporter().captureException(error, {
-        method: request.method,
-        path: request.nextUrl.pathname,
-        userId,
-        metadata: {
-          email: "diagnostics-redaction@example.com",
-          phone: "+919999999999",
-          mode: body.mode,
-        },
-      });
-      return ok({ captured: true, mode: body.mode });
-    }
-    throw error;
-  }
-
+export async function handleCronJobs(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
     const cronSecret = process.env.CRON_SECRET?.trim();
     const authHeader = request.headers.get("authorization");
@@ -12816,6 +12993,70 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
   }
   if (
     request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "checkout"])
+  ) {
+    const orgId = path[1]!;
+    const attendanceRecordId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, [
+      "ATTENDANCE_APPROVE",
+      "ATTENDANCE_MANUAL_OVERRIDE",
+    ]);
+    const body = attendanceCheckoutSchema.parse(await readJson(request));
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id: attendanceRecordId, orgId },
+    });
+    if (!record) {
+      throw notFoundError("Attendance record not found");
+    }
+    await assertBranchAccessForContext(ctx, orgId, record.branchId);
+    if (record.status === "REJECTED") {
+      throw conflictError("Rejected attendance records cannot be checked out.");
+    }
+    const openRecords = await prisma.attendanceRecord.findMany({
+      where: {
+        orgId,
+        userId: record.userId,
+        branchId: record.branchId,
+        checkedOutAt: null,
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      orderBy: { checkedInAt: "desc" },
+    });
+    const recordsToClose = openRecords.some((openRecord) => openRecord.id === record.id)
+      ? openRecords
+      : [record, ...openRecords];
+    const checkedOutRecords = await Promise.all(
+      recordsToClose.map((openRecord) => closeAttendanceSession(openRecord, body.reason)),
+    );
+    const checkedOutRecord =
+      checkedOutRecords.find((candidate) => candidate.id === record.id) ?? checkedOutRecords[0]!;
+    await invalidateOrganizationDashboardCache(orgId, { branchId: record.branchId });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.desk_checked_out",
+      entityType: "AttendanceRecord",
+      entityId: record.id,
+      metadata: clean({
+        memberUserId: record.userId,
+        branchId: record.branchId,
+        reason: body.reason,
+        closedRecordIds: recordsToClose.map((openRecord) => openRecord.id),
+        latitude: body.latitude,
+        longitude: body.longitude,
+      }),
+    });
+    const [attendance] = await enrichAttendanceRecords([checkedOutRecord]);
+    return ok({
+      attendance,
+      action: record.checkedOutAt ? "already_checked_out" : "checkout",
+      checkedOut: true,
+    });
+  }
+  if (
+    request.method === "POST" &&
     pathMatches(path, ["orgs", /.+/, "attendance", /.+/, "approve"])
   ) {
     const orgId = path[1]!;
@@ -14985,6 +15226,61 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   request: NextRequest,
   path: string[],
 ) {
+  if (request.method === "POST" && pathMatches(path, ["support", "feedback"])) {
+    const body = supportFeedbackSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, body.orgId);
+    const role = ctx.roles[0] ?? body.role ?? "MEMBER";
+    const orgId = ctx.orgId ?? body.orgId;
+    const requestId = currentRequestId();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true, phone: true },
+    });
+    const metadata = {
+      appVersion: body.appVersion ?? "unknown",
+      role,
+      orgId: orgId ?? "none",
+      userId,
+      requestId,
+    };
+    const title = `Zook app feedback from ${role}`;
+    const lines = [
+      body.message,
+      "",
+      `User: ${user?.name ?? "Unknown"} (${publicUserEmail(user?.email) ?? user?.phone ?? userId})`,
+      `Role: ${role}`,
+      `Organization: ${orgId ?? "none"}`,
+      `App version: ${body.appVersion ?? "unknown"}`,
+      `Request ID: ${requestId ?? "unknown"}`,
+    ];
+
+    getErrorReporter().captureMessage("support.feedback_submitted", {
+      ...(requestId ? { requestId } : {}),
+      method: request.method,
+      path: request.nextUrl.pathname,
+      userId,
+      ...(orgId ? { orgId } : {}),
+      metadata,
+    });
+    await getEmailProviderOrThrow().sendNotificationEmail({
+      to: "support@zookfit.in",
+      title,
+      body: lines.join("\n"),
+      ...(orgId ? { organizationName: orgId } : {}),
+      variant: "generic",
+    });
+    await writeAuditLog({
+      request,
+      ...(orgId ? { orgId } : {}),
+      actorUserId: userId,
+      action: "support.feedback_submitted",
+      entityType: "support_feedback",
+      metadata: { ...metadata, message: body.message },
+    });
+    return ok({ submitted: true });
+  }
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
     assertAiLaunchEnabled();
     const body = aiChatSchema.parse(await readJson(request));
@@ -17637,13 +17933,45 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    return ok({ orgs: await prisma.organization.findMany({ orderBy: { createdAt: "desc" } }) });
+    return ok({
+      orgs: await prisma.organization.findMany({
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          city: true,
+          state: true,
+          status: true,
+          joinMode: true,
+          trialEndAt: true,
+          createdAt: true,
+          contactEmail: true,
+          contactPhone: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "subscriptions"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
+    const orgs = await prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        status: true,
+        trialEndAt: true,
+        createdAt: true,
+        contactEmail: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const orgIds = orgs.map((org) => org.id);
+    const orgScope = { orgId: { in: orgIds } };
     const [
-      orgs,
       subscriptions,
       mandates,
       referrals,
@@ -17654,36 +17982,27 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       trainerGroups,
       productGroups,
     ] = await Promise.all([
-      prisma.organization.findMany({
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          status: true,
-          trialEndAt: true,
-          createdAt: true,
-          contactEmail: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 500,
-      }),
-      prisma.saaSSubscription.findMany(),
-      prisma.saaSBillingMandate.findMany(),
-      prisma.orgReferralPartnership.findMany(),
+      prisma.saaSSubscription.findMany({ where: orgScope }),
+      prisma.saaSBillingMandate.findMany({ where: orgScope }),
+      prisma.orgReferralPartnership.findMany({ where: { sourceOrgId: { in: orgIds } } }),
       getSaasPlanCatalog(),
-      prisma.memberProfile.groupBy({ by: ["orgId"], _count: { _all: true } }),
-      prisma.branch.groupBy({ by: ["orgId"], where: { active: true }, _count: { _all: true } }),
-      prisma.organizationRoleAssignment.groupBy({
+      prisma.memberProfile.groupBy({ by: ["orgId"], where: orgScope, _count: { _all: true } }),
+      prisma.branch.groupBy({
         by: ["orgId"],
-        where: { role: { not: "MEMBER" } },
+        where: { ...orgScope, active: true },
         _count: { _all: true },
       }),
       prisma.organizationRoleAssignment.groupBy({
         by: ["orgId"],
-        where: { role: "TRAINER" },
+        where: { ...orgScope, role: { not: "MEMBER" } },
         _count: { _all: true },
       }),
-      prisma.product.groupBy({ by: ["orgId"], _count: { _all: true } }),
+      prisma.organizationRoleAssignment.groupBy({
+        by: ["orgId"],
+        where: { ...orgScope, role: "TRAINER" },
+        _count: { _all: true },
+      }),
+      prisma.product.groupBy({ by: ["orgId"], where: orgScope, _count: { _all: true } }),
     ]);
     const subByOrg = new Map(subscriptions.map((sub) => [sub.orgId, sub]));
     const mandateByOrg = new Map(mandates.map((mandate) => [mandate.orgId, mandate]));
@@ -17775,62 +18094,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
-    const registry = getProviderRegistryDiagnostics();
-    const normalizeProviderDiagnostics = (name: string, value: unknown) => {
-      const record = value as {
-        selectedProvider?: unknown;
-        activeProvider?: unknown;
-        status?: unknown;
-        missingEnv?: unknown;
-        env?: unknown;
-        provider?: unknown;
-        mode?: unknown;
-        configured?: unknown;
-        lastCheckedAt?: unknown;
-        notes?: unknown;
-        metadata?: unknown;
-      };
-      const selectedProvider =
-        typeof record.selectedProvider === "string" ? record.selectedProvider : name;
-      const activeProvider =
-        typeof record.activeProvider === "string" ? record.activeProvider : null;
-      const missingEnv = Array.isArray(record.missingEnv)
-        ? record.missingEnv.filter((item): item is string => typeof item === "string")
-        : [];
-      return {
-        selectedProvider,
-        activeProvider,
-        status: typeof record.status === "string" ? record.status : "unknown",
-        configured: Boolean(record.configured),
-        missingEnv,
-        env:
-          record.env && typeof record.env === "object"
-            ? (record.env as Record<string, boolean>)
-            : {},
-        provider: typeof record.provider === "string" ? record.provider : selectedProvider,
-        mode: typeof record.mode === "string" ? record.mode : selectedProvider,
-        ...(typeof record.lastCheckedAt === "string"
-          ? { lastCheckedAt: record.lastCheckedAt }
-          : {}),
-        ...(typeof record.notes === "string" ? { notes: record.notes } : {}),
-        ...(record.metadata && typeof record.metadata === "object"
-          ? { metadata: record.metadata as Record<string, string | number | boolean | null> }
-          : {}),
-      };
-    };
-    const coarseProviders = Object.fromEntries(
-      Object.entries(registry).map(([name, value]) => [
-        name,
-        normalizeProviderDiagnostics(name, value),
-      ]),
-    );
-    return ok({
-      providers: {
-        ...coarseProviders,
-        rateLimit: normalizeProviderDiagnostics("rateLimit", getRateLimitDiagnostics()),
-        cache: normalizeProviderDiagnostics("cache", getServerCacheDiagnostics()),
-      },
-    });
+    return ok({ providers: getPlatformProviderDiagnostics() });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
     const ctx = await getRequestContext(request);

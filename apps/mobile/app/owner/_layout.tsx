@@ -1,12 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 
+import { Icon } from "@/components/primitives";
+import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
-import { useTheme } from "@/lib/theme";
 
-const legacyViewTargets: Record<
+const viewRedirectTargets: Record<
   string,
   "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing"
 > = {
@@ -18,45 +18,39 @@ const legacyViewTargets: Record<
 };
 
 export default function OwnerLayout() {
-  const { palette } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
-  const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
-  const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
-  const approvalsQuery = useOrgJoinRequests();
-  const pendingCount =
-    approvalsQuery.data?.joinRequests.filter(
+  const approvalsQuery = useOrgJoinRequests(undefined, {
+    select: (data) =>
+      data.joinRequests.filter(
       (request) => String(request.status ?? "").toLowerCase() === "pending",
-    ).length ?? 0;
+    ).length,
+  });
+  const pendingCount = approvalsQuery.data ?? 0;
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
     if (!rawView || pathname !== "/owner") return;
-    const target = legacyViewTargets[rawView];
+    const target = viewRedirectTargets[rawView];
     if (target) router.replace(target as never);
   }, [params.view, pathname, router]);
 
   return (
     <Tabs
+      tabBar={(props) => <RoleTabBar {...props} badges={{ approvals: pendingCount }} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.accent.base,
-        tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: palette.bg.elevated,
-          borderTopColor: palette.border.subtle,
-        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Command",
+          title: "Today",
           tabBarButtonTestID: "bottom-nav-command",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "pulse" : "pulse-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="home" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -65,8 +59,8 @@ export default function OwnerLayout() {
         options={{
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -74,10 +68,9 @@ export default function OwnerLayout() {
         name="approvals"
         options={{
           title: "Approvals",
-          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarButtonTestID: "bottom-nav-approvals",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "checkmark-done" : "checkmark-done-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="approvals" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -86,9 +79,20 @@ export default function OwnerLayout() {
         options={{
           title: "Revenue",
           href: canViewRevenue ? "/owner/revenue" : null,
+          tabBarItemStyle: canViewRevenue ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-revenue",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="revenue" focused={focused} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarButtonTestID: "bottom-nav-more",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="more" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -96,10 +100,11 @@ export default function OwnerLayout() {
         name="stock"
         options={{
           title: "Stock",
-          href: canViewStock ? "/owner/stock" : null,
+          href: null,
+          tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-stock",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="stock" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -107,14 +112,18 @@ export default function OwnerLayout() {
         name="billing"
         options={{
           title: "Billing",
-          href: canManageBilling ? ("/owner/billing" as never) : null,
+          href: null,
+          tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-billing",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="billing" focused={focused} size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen name="member/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="member/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

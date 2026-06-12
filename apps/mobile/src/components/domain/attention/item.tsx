@@ -33,7 +33,7 @@ export function AttentionListItem({ item }: { item: AttentionItem }) {
       onPress={item.cta.onPress}
       accessibilityRole="button"
       accessibilityLabel={item.cta.label}
-      style={styles.pressable}
+      style={({ pressed }) => [styles.pressable, pressed ? styles.pressablePressed : null]}
     >
       {content}
     </Pressable>
@@ -42,6 +42,10 @@ export function AttentionListItem({ item }: { item: AttentionItem }) {
 
 const styles = StyleSheet.create({
   pressable: { borderRadius: 16 },
+  pressablePressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   trailing: { flexDirection: "row", alignItems: "center", gap: 6 },
   cta: typography.caption,
 });

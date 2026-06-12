@@ -1,4 +1,4 @@
-import { EmptyState, GlassCard } from "@/components/primitives";
+import { EmptyState, Card } from "@/components/primitives";
 
 export function MemberListEmptyState({
   subtitle,
@@ -8,8 +8,8 @@ export function MemberListEmptyState({
   title: string;
 }) {
   return (
-    <GlassCard variant="compact">
+    <Card variant="compact">
       <EmptyState title={title} body={subtitle ?? ""} />
-    </GlassCard>
+    </Card>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Keyboard,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,9 +17,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  GlassCard,
+  Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -27,7 +28,7 @@ import { useRoleContext } from "@/lib/role-context";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/domains";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type ChatMessage = {
@@ -60,6 +61,11 @@ function starterMessage(isTrainer: boolean): ChatMessage {
 
 export default function AssistantScreen() {
   const router = useRouter();
+  const { palette, mode } = useTheme();
+  const isDark = mode === "dark";
+  const quietSurface = palette.surface.default;
+  const quietPressedSurface = isDark ? palette.surface.raised : palette.bg.sunken;
+  const chipSurface = palette.surface.default;
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
   const composerTranslateY = useRef(new Animated.Value(0)).current;
@@ -152,7 +158,9 @@ export default function AssistantScreen() {
   }, [messages, storageKey]);
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardWillShow", (event) => {
+    const keyboardShowEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const keyboardHideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(keyboardShowEvent, (event) => {
       const lift = Math.max(0, event.endCoordinates.height - insets.bottom);
       Animated.timing(composerTranslateY, {
         toValue: -lift,
@@ -160,7 +168,7 @@ export default function AssistantScreen() {
         useNativeDriver: true,
       }).start();
     });
-    const hideSubscription = Keyboard.addListener("keyboardWillHide", (event) => {
+    const hideSubscription = Keyboard.addListener(keyboardHideEvent, (event) => {
       Animated.timing(composerTranslateY, {
         toValue: 0,
         duration: event.duration ?? 250,
@@ -250,7 +258,7 @@ export default function AssistantScreen() {
     return (
       <ZookScreen testID="assistant-unavailable-screen">
         <View style={styles.content}>
-          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+          <Card variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Plan assistant</Text>
@@ -258,7 +266,7 @@ export default function AssistantScreen() {
                 Owner and desk operations stay in the web dashboard.
               </Text>
             </View>
-          </GlassCard>
+          </Card>
         </View>
       </ZookScreen>
     );
@@ -275,12 +283,12 @@ export default function AssistantScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={legacyColors.lime}
-              colors={[legacyColors.lime]}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
             />
           }
         >
-          <MobileHeader
+          <AppHeader
             eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
             title="AI Chat"
             subtitle="Training chat is being polished before it opens in the app."
@@ -289,31 +297,58 @@ export default function AssistantScreen() {
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={styles.iconButton}
-              >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+              style={({ pressed }) => [
+                styles.iconButton,
+                {
+                  borderColor: palette.border.subtle,
+                  backgroundColor: quietSurface,
+                },
+                pressed ? styles.controlPressed : null,
+              ]}
+            >
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
             }
             chip={
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonBadgeText}>Coming Soon!</Text>
+              <View
+                style={[
+                  styles.comingSoonBadge,
+                  { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
+                ]}
+              >
+                <Text style={[styles.comingSoonBadgeText, { color: palette.accent.base }]}>
+                  Coming Soon!
+                </Text>
               </View>
             }
             showProfileShortcut={false}
           />
-          <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+          <Card variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>AI Chat is coming soon</Text>
-              <Text style={styles.emptyBody}>
+              <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
+                AI Chat is coming soon
+              </Text>
+              <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                 Workouts, plans, and profile data stay available while we finish the assistant.
               </Text>
             </View>
-          </GlassCard>
+          </Card>
           <View style={styles.suggestionRow}>
             {suggestedPrompts.map((prompt) => (
-              <View key={prompt} style={styles.suggestionChipDisabled}>
-                <Text style={styles.suggestionText}>{prompt}</Text>
+              <View
+                key={prompt}
+                style={[
+                  styles.suggestionChipDisabled,
+                  {
+                    borderColor: palette.border.subtle,
+                    backgroundColor: chipSurface,
+                  },
+                ]}
+              >
+                <Text style={[styles.suggestionText, { color: palette.text.primary }]}>
+                  {prompt}
+                </Text>
               </View>
             ))}
           </View>
@@ -333,12 +368,12 @@ export default function AssistantScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={legacyColors.lime}
-            colors={[legacyColors.lime]}
+            tintColor={palette.accent.base}
+            colors={[palette.accent.base]}
           />
         }
       >
-        <MobileHeader
+        <AppHeader
           eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
           title={isTrainer ? "Coach with context" : "Talk through training"}
           subtitle={
@@ -351,14 +386,21 @@ export default function AssistantScreen() {
               onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
               accessibilityRole="button"
               accessibilityLabel="Back"
-              style={styles.iconButton}
+              style={({ pressed }) => [
+                styles.iconButton,
+                {
+                  borderColor: palette.border.subtle,
+                  backgroundColor: quietSurface,
+                },
+                pressed ? styles.controlPressed : null,
+              ]}
             >
-              <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+              <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
             </Pressable>
           }
           chip={
-            <View style={styles.aiMark}>
-              <Ionicons name="sparkles" size={18} color={legacyColors.bg} />
+            <View style={[styles.aiMark, { backgroundColor: palette.accent.fill }]}>
+              <Ionicons name="sparkles" size={18} color={palette.text.onAccent} />
             </View>
           }
           showProfileShortcut={false}
@@ -368,17 +410,29 @@ export default function AssistantScreen() {
           <Pressable
             testID="assistant-attach-summary"
             onPress={() => setAttachSummary((value) => !value)}
-            style={[styles.controlChip, attachSummary ? styles.controlChipActive : null]}
+            style={({ pressed }) => [
+              styles.controlChip,
+              {
+                borderColor: attachSummary ? palette.accent.base : palette.border.subtle,
+                backgroundColor: attachSummary
+                  ? palette.accent.fill
+                  : chipSurface,
+              },
+              pressed ? styles.controlPressed : null,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Attach summary"
           >
             <Ionicons
               name="document-text-outline"
               size={16}
-              color={attachSummary ? legacyColors.bg : legacyColors.muted}
+              color={attachSummary ? palette.text.onAccent : palette.text.secondary}
             />
             <Text
-              style={[styles.controlChipText, attachSummary ? styles.controlChipTextActive : null]}
+              style={[
+                styles.controlChipText,
+                { color: attachSummary ? palette.text.onAccent : palette.text.secondary },
+              ]}
             >
               {isTrainer ? "Client data" : "My profile"}
             </Text>
@@ -386,14 +440,21 @@ export default function AssistantScreen() {
           <Pressable
             testID="assistant-clear-conversation"
             onPress={resetConversation}
-            style={styles.controlChip}
+            style={({ pressed }) => [
+              styles.controlChip,
+              {
+                borderColor: palette.border.subtle,
+                backgroundColor: chipSurface,
+              },
+              pressed ? styles.controlPressed : null,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Clear conversation"
           >
-            <Ionicons name="refresh-outline" size={16} color={legacyColors.muted} />
-            <Text style={styles.controlChipText}>Clear</Text>
+            <Ionicons name="refresh-outline" size={16} color={palette.text.secondary} />
+            <Text style={[styles.controlChipText, { color: palette.text.secondary }]}>Clear</Text>
           </Pressable>
-          {copyStatus ? <Text style={styles.copyStatus}>{copyStatus}</Text> : null}
+          {copyStatus ? <Text style={[styles.copyStatus, { color: palette.accent.base }]}>{copyStatus}</Text> : null}
         </View>
 
         {messages.length <= 1 ? (
@@ -403,24 +464,35 @@ export default function AssistantScreen() {
                 key={prompt}
                 onPress={() => setDraft(prompt)}
                 accessibilityRole="button"
-                style={styles.suggestionChip}
+                style={({ pressed }) => [
+                  styles.suggestionChip,
+                  {
+                    borderColor: palette.border.subtle,
+                    backgroundColor: chipSurface,
+                  },
+                  pressed ? styles.controlPressed : null,
+                ]}
               >
-                <Text style={styles.suggestionText}>{prompt}</Text>
+                <Text style={[styles.suggestionText, { color: palette.text.primary }]}>
+                  {prompt}
+                </Text>
               </Pressable>
             ))}
           </View>
         ) : null}
 
         {attachSummary && contextSummary ? (
-          <GlassCard variant="compact" contentStyle={styles.contextContent}>
+          <Card variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
               <IconBubble icon="person-outline" tone="blue" size={32} />
-              <Text style={styles.contextLabel}>
+              <Text style={[styles.contextLabel, { color: palette.feedback.info }]}>
                 {isTrainer ? "Attached client data" : "Attached profile"}
               </Text>
             </View>
-            <Text style={styles.contextText}>{contextSummary}</Text>
-          </GlassCard>
+            <Text style={[styles.contextText, { color: palette.text.secondary }]}>
+              {contextSummary}
+            </Text>
+          </Card>
         ) : null}
 
         <View style={styles.chatStack}>
@@ -437,25 +509,61 @@ export default function AssistantScreen() {
               accessibilityHint={message.role === "assistant" ? "Long press to copy" : undefined}
               style={[
                 styles.messageBubble,
-                message.role === "user" ? styles.userBubble : styles.assistantBubble,
+                message.role === "user"
+                  ? [
+                      styles.userBubble,
+                      { backgroundColor: palette.accent.fill, borderColor: palette.accent.fill },
+                    ]
+                  : [
+                      styles.assistantBubble,
+                      {
+                        backgroundColor: palette.surface.default,
+                        borderColor: palette.border.subtle,
+                      },
+                    ],
               ]}
             >
               {message.role === "assistant" ? (
-                <View style={styles.assistantIcon}>
-                  <Ionicons name="sparkles" size={14} color={legacyColors.lime} />
+                <View
+                  style={[
+                    styles.assistantIcon,
+                    { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
+                  ]}
+                >
+                  <Ionicons name="sparkles" size={14} color={palette.accent.base} />
                 </View>
               ) : null}
-              <Text style={[styles.messageText, message.role === "user" ? styles.userText : null]}>
+              <Text
+                style={[
+                  styles.messageText,
+                  {
+                    color:
+                      message.role === "user" ? palette.text.onAccent : palette.text.primary,
+                  },
+                  message.role === "user" ? styles.userText : null,
+                ]}
+              >
                 {message.body}
               </Text>
             </Pressable>
           ))}
           {loading ? (
-            <View style={[styles.messageBubble, styles.assistantBubble]}>
-              <View style={styles.assistantIcon}>
-                <Ionicons name="sparkles" size={14} color={legacyColors.lime} />
+            <View
+              style={[
+                styles.messageBubble,
+                styles.assistantBubble,
+                { backgroundColor: palette.surface.default, borderColor: palette.border.subtle },
+              ]}
+            >
+              <View
+                style={[
+                  styles.assistantIcon,
+                  { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
+                ]}
+              >
+                <Ionicons name="sparkles" size={14} color={palette.accent.base} />
               </View>
-              <Text style={styles.typingText}>Thinking...</Text>
+              <Text style={[styles.typingText, { color: palette.text.secondary }]}>Thinking...</Text>
             </View>
           ) : null}
         </View>
@@ -466,15 +574,15 @@ export default function AssistantScreen() {
           { bottom: composerBottom, transform: [{ translateY: composerTranslateY }] },
         ]}
       >
-        <GlassCard contentStyle={styles.composerContent}>
+        <Card contentStyle={styles.composerContent}>
           <TextInput
             testID="assistant-message-input"
             value={draft}
             onChangeText={setDraft}
             placeholder="Ask in any language..."
-            placeholderTextColor={legacyColors.subtle}
+            placeholderTextColor={palette.text.tertiary}
             multiline
-            style={styles.input}
+            style={[styles.input, { color: palette.text.primary }]}
             onFocus={() =>
               setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200)
             }
@@ -486,9 +594,16 @@ export default function AssistantScreen() {
                 onPress={() => setDraft("")}
                 accessibilityRole="button"
                 accessibilityLabel="Clear"
-                style={styles.clearButton}
+                style={({ pressed }) => [
+                  styles.clearButton,
+                  {
+                    borderColor: palette.border.subtle,
+                    backgroundColor: quietPressedSurface,
+                  },
+                  pressed ? styles.controlPressed : null,
+                ]}
               >
-                <Ionicons name="close" size={16} color={legacyColors.muted} />
+                <Ionicons name="close" size={16} color={palette.text.secondary} />
               </Pressable>
             ) : null}
             <Pressable
@@ -497,19 +612,21 @@ export default function AssistantScreen() {
               disabled={!draft.trim() || loading}
               accessibilityRole="button"
               accessibilityLabel="Send"
-              style={[
+              style={({ pressed }) => [
                 styles.sendButton,
+                { backgroundColor: palette.accent.fill },
+                pressed && draft.trim() && !loading ? styles.controlPressed : null,
                 !draft.trim() || loading ? styles.sendButtonDisabled : null,
               ]}
             >
               <Ionicons
                 name="send"
                 size={18}
-                color={!draft.trim() || loading ? legacyColors.subtle : legacyColors.bg}
+                color={!draft.trim() || loading ? palette.text.tertiary : palette.text.onAccent}
               />
             </Pressable>
           </View>
-        </GlassCard>
+        </Card>
       </Animated.View>
     </ZookScreen>
   );
@@ -530,20 +647,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: legacyColors.lime,
   },
   comingSoonBadge: {
     minHeight: 34,
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(185,244,85,0.14)",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
   },
   comingSoonBadgeText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   iconButton: {
@@ -551,10 +664,12 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
+  },
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   controlsRow: {
     flexDirection: "row",
@@ -568,25 +683,16 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 14,
     paddingVertical: 9,
     alignSelf: "flex-start",
   },
-  controlChipActive: {
-    borderColor: legacyColors.lime,
-    backgroundColor: legacyColors.lime,
-  },
+  controlChipActive: {},
   controlChipText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
-  controlChipTextActive: {
-    color: legacyColors.bg,
-  },
+  controlChipTextActive: {},
   copyStatus: {
-    color: legacyColors.lime,
     ...typography.small,
   },
   suggestionRow: {
@@ -595,24 +701,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   suggestionChip: {
+    minHeight: 40,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    justifyContent: "center",
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
   suggestionChipDisabled: {
+    minHeight: 40,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    justifyContent: "center",
     opacity: 0.7,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
   suggestionText: {
-    color: legacyColors.text,
     ...typography.small,
   },
   contextContent: {
@@ -624,11 +729,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   contextLabel: {
-    color: legacyColors.blue,
     ...typography.caption,
   },
   contextText: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   chatStack: {
@@ -644,34 +747,25 @@ const styles = StyleSheet.create({
   },
   assistantBubble: {
     alignSelf: "flex-start",
-    backgroundColor: legacyColors.glassFill,
-    borderColor: legacyColors.glassStroke,
   },
   userBubble: {
     alignSelf: "flex-end",
-    backgroundColor: legacyColors.lime,
-    borderColor: legacyColors.lime,
   },
   assistantIcon: {
     width: 24,
     height: 24,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.3)",
-    backgroundColor: "rgba(185,244,85,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
   messageText: {
-    color: legacyColors.text,
     ...typography.body,
   },
   userText: {
-    color: legacyColors.bg,
     ...typography.bodyStrong,
   },
   typingText: {
-    color: legacyColors.muted,
     ...typography.body,
     fontStyle: "italic",
   },
@@ -690,7 +784,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     maxHeight: 120,
-    color: legacyColors.text,
     ...typography.body,
     textAlignVertical: "top",
   },
@@ -701,25 +794,22 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   clearButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: legacyColors.lime,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    opacity: 0.45,
   },
   emptyContent: {
     alignItems: "center",
@@ -731,18 +821,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
   comingSoonCta: {
     minHeight: 44,
     borderRadius: 14,
-    backgroundColor: legacyColors.lime,
     paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
@@ -750,7 +837,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   comingSoonCtaText: {
-    color: legacyColors.ink,
     ...typography.bodyStrong,
   },
 });

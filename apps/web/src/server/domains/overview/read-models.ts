@@ -1,9 +1,15 @@
 import { Prisma, prisma } from "@zook/db";
+import { getProviderRegistryDiagnostics } from "@zook/core/providers";
 import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
-import { cachedJson, getServerCacheStore } from "@/server/server-cache";
+import {
+  cachedJson,
+  getServerCacheDiagnostics,
+  getServerCacheStore,
+} from "@/server/server-cache";
+import { getRateLimitDiagnostics } from "@/server/rate-limit";
 import { buildOrganizationDashboardCharts, dayWindow } from "./chart-series";
 
 function organizationDashboardCacheKeys(orgId: string, branchId?: string | null) {
@@ -48,7 +54,7 @@ export async function getOrganizationDashboardFastData(
 ) {
   return cachedJson(
     `org-dashboard-fast:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
-    10,
+    60,
     () => getOrganizationDashboardFastDataUncached(orgId, filters),
   );
 }
@@ -77,6 +83,7 @@ async function getOrganizationDashboardFastDataUncached(
     aiUsageThisMonth,
     staffCount,
     plansCount,
+    planGroups,
   ] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
     prisma.memberSubscription.count({ where: { orgId, status: "ACTIVE", ...branchWhere } }),
@@ -109,7 +116,28 @@ async function getOrganizationDashboardFastDataUncached(
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
     }),
     prisma.membershipPlan.count({ where: { orgId } }),
+    prisma.memberSubscription.groupBy({
+      by: ["planId"],
+      where: { orgId, status: "ACTIVE", ...branchWhere },
+      _count: { _all: true },
+    }),
   ]);
+
+  const topPlanGroups = [...planGroups].sort((a, b) => b._count._all - a._count._all).slice(0, 6);
+  const planIds = topPlanGroups.map((group) => group.planId);
+  const planRows = planIds.length
+    ? await prisma.membershipPlan.findMany({
+        where: { id: { in: planIds }, orgId },
+        select: { id: true, name: true },
+      })
+    : [];
+  const planNameById = new Map(planRows.map((plan) => [plan.id, plan.name]));
+  const planMixTones = ["lime", "sky", "amber", "violet", "lime", "sky"] as const;
+  const planMix = topPlanGroups.map((group, index) => ({
+    label: planNameById.get(group.planId) ?? "Unknown plan",
+    value: group._count._all,
+    tone: planMixTones[index % planMixTones.length] ?? "lime",
+  }));
 
   const trialDaysRemaining = Math.max(
     0,
@@ -158,7 +186,7 @@ async function getOrganizationDashboardFastDataUncached(
       revenue30d: [],
       attendance7d: [],
       memberGrowth30d: [],
-      planMix: [],
+      planMix,
       deltas: {
         revenue7d: 0,
         revenue30d: 0,
@@ -390,18 +418,40 @@ async function getOrganizationDashboardDataUncached(
 }
 
 export async function getPlatformDashboardData() {
+  return cachedJson("platform-dashboard:shell", 30, getPlatformDashboardDataUncached);
+}
+
+async function getPlatformDashboardDataUncached() {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
   const [orgs, aiUsageThisMonth, abuseFlags, statusGroups] = await Promise.all([
-    prisma.organization.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        city: true,
+        state: true,
+        status: true,
+        joinMode: true,
+        attendanceMode: true,
+        trialEndAt: true,
+        createdAt: true,
+        contactEmail: true,
+        contactPhone: true,
+      },
+      take: 20,
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.aIUsageLog.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.organizationAbuseFlag.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
     prisma.organization.groupBy({ by: ["status"], _count: { _all: true } }),
   ]);
 
   const counts = new Map(statusGroups.map((group) => [group.status, group._count._all]));
+  const totalOrgs = statusGroups.reduce((sum, group) => sum + group._count._all, 0);
 
   return {
     orgs: orgs.map(serializeOrganizationForReadModel),
@@ -410,7 +460,7 @@ export async function getPlatformDashboardData() {
     metrics: [
       {
         label: "Organizations",
-        value: String(orgs.length),
+        value: String(totalOrgs),
         delta: `${counts.get("ACTIVE") ?? 0} active`,
       },
       {
@@ -426,5 +476,80 @@ export async function getPlatformDashboardData() {
       { label: "Assistant drafts", value: String(aiUsageThisMonth), delta: "this month" },
       { label: "Safety reviews", value: String(abuseFlags.length), delta: "recent signals" },
     ],
+  };
+}
+
+export type PlatformProviderDiagnostics = {
+  category: string;
+  selectedProvider: string;
+  activeProvider: string | null;
+  status: string;
+  configured: boolean;
+  missingEnv: string[];
+  env: Record<string, boolean>;
+  provider: string;
+  mode: string;
+  lastCheckedAt?: string;
+  notes?: string;
+  metadata?: Record<string, string | number | boolean | null>;
+};
+
+function normalizePlatformProviderDiagnostics(
+  name: string,
+  value: unknown,
+): PlatformProviderDiagnostics {
+  const record = value as {
+    selectedProvider?: unknown;
+    activeProvider?: unknown;
+    status?: unknown;
+    missingEnv?: unknown;
+    env?: unknown;
+    provider?: unknown;
+    mode?: unknown;
+    configured?: unknown;
+    lastCheckedAt?: unknown;
+    notes?: unknown;
+    metadata?: unknown;
+  };
+  const selectedProvider =
+    typeof record.selectedProvider === "string" ? record.selectedProvider : name;
+  const activeProvider =
+    typeof record.activeProvider === "string" ? record.activeProvider : null;
+  const missingEnv = Array.isArray(record.missingEnv)
+    ? record.missingEnv.filter((item): item is string => typeof item === "string")
+    : [];
+  return {
+    category: name,
+    selectedProvider,
+    activeProvider,
+    status: typeof record.status === "string" ? record.status : "unknown",
+    configured: Boolean(record.configured),
+    missingEnv,
+    env:
+      record.env && typeof record.env === "object"
+        ? (record.env as Record<string, boolean>)
+        : {},
+    provider: typeof record.provider === "string" ? record.provider : selectedProvider,
+    mode: typeof record.mode === "string" ? record.mode : selectedProvider,
+    ...(typeof record.lastCheckedAt === "string" ? { lastCheckedAt: record.lastCheckedAt } : {}),
+    ...(typeof record.notes === "string" ? { notes: record.notes } : {}),
+    ...(record.metadata && typeof record.metadata === "object"
+      ? { metadata: record.metadata as Record<string, string | number | boolean | null> }
+      : {}),
+  };
+}
+
+export function getPlatformProviderDiagnostics() {
+  const registry = getProviderRegistryDiagnostics();
+  const coarseProviders = Object.fromEntries(
+    Object.entries(registry).map(([name, value]) => [
+      name,
+      normalizePlatformProviderDiagnostics(name, value),
+    ]),
+  );
+  return {
+    ...coarseProviders,
+    rateLimit: normalizePlatformProviderDiagnostics("rateLimit", getRateLimitDiagnostics()),
+    cache: normalizePlatformProviderDiagnostics("cache", getServerCacheDiagnostics()),
   };
 }

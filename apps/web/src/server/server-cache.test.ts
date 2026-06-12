@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MemoryServerCacheStore,
+  RedisServerCacheStore,
   UpstashServerCacheStore,
   cachedJson,
   getServerCacheDiagnostics,
@@ -15,6 +16,7 @@ describe("server cache", () => {
     delete process.env.CACHE_PROVIDER;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.REDIS_URL;
     const globalState = globalThis as unknown as {
       zookServerCacheStore?: unknown;
       zookServerCacheProvider?: string;
@@ -56,6 +58,30 @@ describe("server cache", () => {
     });
     expect(serialized).not.toContain("super-secret-token");
     expect(serialized).not.toContain("example.upstash.io");
+  });
+
+  it("exposes Redis cache diagnostics without leaking the endpoint", () => {
+    process.env.SERVER_CACHE_PROVIDER = "redis";
+    process.env.REDIS_URL = "redis://cache.internal:6379";
+
+    const diagnostics = getServerCacheDiagnostics();
+    const serialized = JSON.stringify(diagnostics);
+
+    expect(diagnostics).toMatchObject({
+      selectedProvider: "redis",
+      activeProvider: "redis",
+      status: "ready",
+      configured: true,
+      mode: "distributed",
+    });
+    expect(serialized).not.toContain("cache.internal");
+  });
+
+  it("uses the Redis cache provider when configured", () => {
+    process.env.SERVER_CACHE_PROVIDER = "redis";
+    process.env.REDIS_URL = "redis://cache.internal:6379";
+
+    expect(getServerCacheStore()).toBeInstanceOf(RedisServerCacheStore);
   });
 
   it("uses the Upstash REST provider when configured", async () => {

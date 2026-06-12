@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { GlassCard, IconBubble, ZookButton } from "@/components/primitives";
+import { Card, IconBubble, ZookButton } from "@/components/primitives";
+import { useMyShopOrders, useShopProducts } from "@/lib/domains/shop";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, spacing, typography, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 const DAY_MS = 86_400_000;
 
@@ -15,9 +16,15 @@ function recent(timestamp?: string | null, windowMs = DAY_MS) {
   return Number.isFinite(parsed) && Date.now() - parsed < windowMs;
 }
 
+function unreadUpdateTitle(count: number) {
+  return `${count} unread ${count === 1 ? "update" : "updates"}`;
+}
+
 export function Banners({ home }: { home?: MemberHomeData }) {
   const [dismissed, setDismissed] = useState<Record<string, string>>({});
   const orgId = home?.activeOrganization?.id ?? "none";
+  const shopProductsQuery = useShopProducts();
+  const shopOrdersQuery = useMyShopOrders();
 
   useEffect(() => {
     let mounted = true;
@@ -41,13 +48,46 @@ export function Banners({ home }: { home?: MemberHomeData }) {
   const showProfile = Boolean(home?.activeMembership && !home.assignedTrainer);
   const showReferral = Boolean(home?.activeOrganization && !recent(dismissed.referral, 7 * DAY_MS));
   const showNotifications = Boolean((home?.unreadNotifications ?? 0) > 0 && !recent(dismissed.notifications));
+  const readyOrder = shopOrdersQuery.data?.orders.find(
+    (order) => order.pickupCode && !order.fulfilledAt && !/CANCEL|FULFILLED/i.test(order.status),
+  );
+  const hasShopProducts = (shopProductsQuery.data?.products.length ?? 0) > 0;
+  const daysLeft = home?.activeMembership?.daysLeft;
+  const membershipExpiring = typeof daysLeft === "number" && daysLeft >= 0 && daysLeft <= 7;
 
   return (
     <View style={styles.stack}>
+      {readyOrder ? (
+        <Banner
+          icon="bag-check-outline"
+          title="Pickup ready"
+          body={`Show pickup code ${readyOrder.pickupCode} at the desk.`}
+          actionHref={`/shop/pickup/${readyOrder.id}`}
+          actionLabel="Open"
+        />
+      ) : null}
+      {hasShopProducts ? (
+        <Banner
+          icon="storefront-outline"
+          title="Gym shop"
+          body="Browse products available from your gym."
+          actionHref="/shop"
+          actionLabel="Shop"
+        />
+      ) : null}
+      {membershipExpiring ? (
+        <Banner
+          icon="warning-outline"
+          title={daysLeft === 0 ? "Membership ends today" : `${daysLeft} days left`}
+          body="Renew now to keep check-ins and plan access moving."
+          actionHref="/membership/buy"
+          actionLabel="Renew"
+        />
+      ) : null}
       {showNotifications ? (
         <Banner
           icon="notifications-outline"
-          title={`${home?.unreadNotifications ?? 0} unread updates`}
+          title={unreadUpdateTitle(home?.unreadNotifications ?? 0)}
           body="Payments, plans, and gym messages are waiting."
           actionHref="/notifications"
           actionLabel="Open"
@@ -94,7 +134,7 @@ function Banner({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="compact" contentStyle={styles.banner}>
+    <Card variant="compact" contentStyle={styles.banner}>
       <IconBubble icon={icon} tone="neutral" size={34} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
@@ -104,15 +144,27 @@ function Banner({
           {body}
         </Text>
       </View>
-      <ZookButton href={actionHref as never} tone="secondary" size="sm">
+      <ZookButton href={actionHref as never} variant="secondary" size="sm">
         {actionLabel}
       </ZookButton>
       {onDismiss ? (
-        <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={`Dismiss ${title}`} style={styles.dismiss}>
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel={`Dismiss ${title}`}
+          style={({ pressed }) => [
+            styles.dismiss,
+            {
+              borderColor: palette.border.subtle,
+              backgroundColor: palette.surface.raised,
+            },
+            pressed ? styles.dismissPressed : null,
+          ]}
+        >
           <Ionicons name="close" size={16} color={palette.text.tertiary} />
         </Pressable>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -120,7 +172,18 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   banner: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   copy: { flex: 1, gap: 2 },
-  title: { color: legacyColors.text, ...typography.cardTitle },
-  body: { color: legacyColors.muted, ...typography.small },
-  dismiss: { minHeight: 32, minWidth: 32, alignItems: "center", justifyContent: "center" },
+  title: { ...typography.cardTitle },
+  body: { ...typography.small },
+  dismiss: {
+    minHeight: 40,
+    minWidth: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dismissPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
 });

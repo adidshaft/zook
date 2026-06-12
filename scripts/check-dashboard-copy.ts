@@ -134,12 +134,22 @@ function collectTsxCopy(content: string, file: string) {
   return hits;
 }
 
-function isMissingExecutable(error: unknown) {
+function shouldFallbackToGit(error: unknown) {
+  const maybeError = error as
+    | {
+        code?: unknown;
+        errno?: unknown;
+        status?: unknown;
+        syscall?: unknown;
+      }
+    | undefined;
   return (
-    Boolean(error) &&
-    typeof error === "object" &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "ENOENT"
+    Boolean(maybeError) &&
+    typeof maybeError === "object" &&
+    (maybeError.code === "ENOENT" ||
+      (maybeError.syscall === "spawnSync rg" &&
+        maybeError.status === null &&
+        maybeError.errno === -86))
   );
 }
 
@@ -151,7 +161,7 @@ function listScanFiles() {
       encoding: "utf8",
     });
   } catch (error) {
-    if (!isMissingExecutable(error)) {
+    if (!shouldFallbackToGit(error)) {
       throw error;
     }
     return execFileSync("git", ["ls-files", ...existingScanTargets], {

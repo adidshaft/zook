@@ -9,9 +9,9 @@ export const metadata = {
 export default async function NewDeskPaymentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ branchId?: string; orderId?: string }>;
+  searchParams: Promise<{ branchId?: string; memberId?: string; orderId?: string }>;
 }) {
   const resolvedSearch = await searchParams;
   const desk = await getDeskRouteContext(resolvedSearch, "/desk/payments/new");
-  return <DeskWorkspace {...desk} activeTab="payment" />;
+  return <DeskWorkspace {...desk} activeTab="payment" initialMemberUserId={resolvedSearch.memberId} />;
 }

@@ -163,8 +163,11 @@ export type AttendanceRecordRow = {
     id?: string;
     name?: string | null;
     email?: string | null;
+    phone?: string | null;
   } | null;
   plan?: { name?: string | null } | null;
+  planName?: string | null;
+  branchName?: string | null;
   subscription?: {
     endsAt?: string | Date | null;
     remainingVisits?: number | null;

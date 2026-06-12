@@ -709,6 +709,30 @@ export const ownerApi = {
       body: { joinRequestIds: options.joinRequestIds },
     });
   },
+  sendMemberNotification<T = unknown>(
+    options: RequestOptions & {
+      memberUserId: string;
+      title: string;
+      body: string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/notifications`, {
+      method: "POST",
+      token: options.token,
+      orgId: options.orgId,
+      body: {
+        type: "OPERATIONAL",
+        audience: "single_member",
+        title: options.title,
+        body: options.body,
+        pushEnabled: true,
+        selectedUserIds: [],
+        singleUserId: options.memberUserId,
+        metadata: options.metadata ?? {},
+      },
+    });
+  },
 };
 
 export const notificationsApi = {
@@ -766,6 +790,28 @@ export const privacyApi = {
       method: "POST",
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
+    });
+  },
+};
+
+export const supportApi = {
+  submitFeedback(
+    options: RequestOptions & {
+      message: string;
+      appVersion: string;
+      role: Role;
+    },
+  ) {
+    return mobileApiFetch<{ submitted: boolean }>("/support/feedback", {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      body: {
+        message: options.message,
+        appVersion: options.appVersion,
+        role: options.role,
+        ...(options.orgId ? { orgId: options.orgId } : {}),
+      },
     });
   },
 };

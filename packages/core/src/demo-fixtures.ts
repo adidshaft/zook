@@ -752,7 +752,7 @@ export const zookDemoFixtures: ZookDemoFixtures = {
       type: "PLAN",
       title: "Push Day assigned",
       message: "Coach Rohan assigned Push Day for your next session.",
-      targetRoute: "/plans",
+      targetRoute: "/plan",
       readAt: null,
       createdAt: "2026-04-26T01:30:00.000Z",
     },

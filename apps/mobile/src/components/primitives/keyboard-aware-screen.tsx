@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   TouchableWithoutFeedback,
   View,
   type KeyboardAvoidingViewProps,
@@ -37,6 +38,10 @@ export function KeyboardAwareScreen({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
             {...scrollViewProps}
+            contentContainerStyle={[
+              styles.scrollContent,
+              scrollViewProps?.contentContainerStyle,
+            ]}
           >
             {children}
           </ScrollView>
@@ -45,3 +50,10 @@ export function KeyboardAwareScreen({
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+});

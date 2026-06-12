@@ -157,7 +157,7 @@ export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Live charts</Text>
         <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
-          Backend grouped data, no placeholders
+          Revenue, attendance, and member trends
         </Text>
       </View>
       <ChartCard

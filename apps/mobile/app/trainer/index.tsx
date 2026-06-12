@@ -4,13 +4,16 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
+  AnimatedAppear,
   EmptyState,
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  OperationalQueueCard,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   StatusChip,
   ZookScreen,
@@ -19,13 +22,16 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout, spacing } from "@/lib/theme";
+import { useSharedValue } from "@/lib/reanimated-lite";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
+  const { mode, palette } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, logout, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const scrollY = useSharedValue(0);
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
   const plannedClients = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0);
@@ -41,6 +47,11 @@ export default function TrainerHomeScreen() {
     .sort((a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime())
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
+  const isDark = mode === "dark";
+  const headerButtonStyle = {
+    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+    borderColor: palette.border.default,
+  };
 
   async function onRefresh() {
     setRefreshing(true);
@@ -59,19 +70,44 @@ export default function TrainerHomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <MobileHeader
-            eyebrow="Trainer mode"
-            title="Trainer home"
-            subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
-            chip={<StatusChip status="Trainer" tone="neutral" />}
+          <ScreenHeader
+            title="Trainer"
+            subtitle={session?.user.name ?? undefined}
+            contextSlot={<RoleSwitcherContextPill />}
+            scrollY={scrollY}
             trailing={
               <View style={styles.headerActions}>
-                <Pressable onPress={() => router.push("/profile")} accessibilityRole="button" accessibilityLabel="Open profile" style={styles.iconButton}>
+                <Pressable
+                  onPress={() => router.push("/profile")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open profile"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    headerButtonStyle,
+                    pressed ? styles.controlPressed : null,
+                  ]}
+                >
                   <IconBubble icon="person-circle-outline" tone="blue" size={30} />
                 </Pressable>
-                <Pressable onPress={() => void logout()} accessibilityRole="button" accessibilityLabel="Sign out" style={[styles.iconButton, styles.signOutButton]}>
+                <Pressable
+                  onPress={() => void logout()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    {
+                      backgroundColor: palette.surface.dangerSoft,
+                      borderColor: palette.feedback.danger,
+                    },
+                    pressed ? styles.controlPressed : null,
+                  ]}
+                >
                   <IconBubble icon="log-out-outline" tone="red" size={30} />
                 </Pressable>
               </View>
@@ -81,20 +117,56 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isLoading ? <TrainerClientsSkeleton /> : null}
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
-          {priorityClient ? (
-            <GlassCard testID="trainer-client-row-first" variant="compact" contentStyle={styles.priorityClientCard} pressable onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}>
-              <ListRow
-                title={priorityClient.user?.name ?? "Client"}
-                subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
-                leading={<IconBubble icon="person-outline" tone="lime" />}
-                trailing={<StatusChip status="Priority client" tone="amber" />}
-              />
-            </GlassCard>
-          ) : null}
+          <AnimatedAppear delay={0}>
+            <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
+            <Card variant="compact" contentStyle={styles.stack}>
+              {priorityClient ? (
+                <Pressable
+                  testID="trainer-client-row-first"
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}
+                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                >
+                  <ListRow
+                    title={priorityClient.user?.name ?? "Client"}
+                    subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
+                    leading={<IconBubble icon="person-outline" tone="lime" />}
+                    trailing={<StatusChip status="Today" tone="amber" />}
+                  />
+                </Pressable>
+              ) : (
+                <EmptyState title="No coaching actions today" body="Client sessions and follow-ups will appear here." />
+              )}
+            </Card>
+          </AnimatedAppear>
 
-          <MetricGrid
-            testID="trainer-view-home"
-            items={[
+          <AnimatedAppear delay={40}>
+            <SectionHeader
+              title="Needs plan"
+              subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
+            />
+            {clientsNeedingPlans ? (
+              <OperationalQueueCard
+                title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
+                subtitle="Create the next workout or diet assignment before their next visit."
+                meta="Trainer planning queue"
+                status="Create plan next"
+                tone="amber"
+                icon="reader-outline"
+                actionLabel="Open clients"
+                onPress={() => router.push("/trainer/clients" as never)}
+              />
+            ) : (
+              <Card variant="compact" contentStyle={styles.stack}>
+                <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
+              </Card>
+            )}
+          </AnimatedAppear>
+
+          <AnimatedAppear delay={80}>
+            <MetricGrid
+              testID="trainer-view-home"
+              items={[
               {
                 label: "Clients",
                 value: clients.length,
@@ -113,46 +185,39 @@ export default function TrainerHomeScreen() {
                 hint: "Create Plan next",
                 tone: "lime",
               },
-            ]}
-          />
-
-          {plannedClients.length ? (
-            <AttentionCard
-              title="Plans in motion"
-              items={[
-                {
-                  id: "active-plan-work",
-                  icon: "document-text-outline",
-                  tone: "amber",
-                  title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
-                  subtitle: "Open Plan work to review what is in motion.",
-                  cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
-                },
               ]}
             />
+          </AnimatedAppear>
+
+          {plannedClients.length ? (
+            <AnimatedAppear delay={120}>
+              <AttentionCard
+                title="Active plan work"
+                items={[
+                  {
+                    id: "active-plan-work",
+                    icon: "document-text-outline",
+                    tone: "amber",
+                    title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
+                    subtitle: "Open Plan work to review what is in motion.",
+                    cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
+                  },
+                ]}
+              />
+            </AnimatedAppear>
           ) : null}
 
-          <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
-            {clientsNeedingPlans ? (
-              <Pressable accessibilityRole="button" onPress={() => router.push("/trainer/plans" as never)}>
-                <ListRow
-                  title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
-                  subtitle="Open Plan work and assign a starter template before the next session."
-                  leading={<IconBubble icon="reader-outline" tone="amber" />}
-                  trailing={<StatusChip status="Next" tone="amber" />}
-                />
-              </Pressable>
-            ) : (
-              <EmptyState title="Coaching queue clear" body="No plan or feedback follow-up is waiting right now." />
-            )}
-          </GlassCard>
-
-          <SectionHeader title="Recent feedback" />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <AnimatedAppear delay={160}>
+            <SectionHeader title="Recent feedback" />
+            <Card variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
               recentFeedback.map((feedback) => (
-                <Pressable key={`${feedback.clientId}-${feedback.assignmentId}`} onPress={() => router.push(`/trainer/clients/${feedback.clientId}` as never)} accessibilityRole="button">
+                <Pressable
+                  key={`${feedback.clientId}-${feedback.assignmentId}`}
+                  onPress={() => router.push(`/trainer/clients/${feedback.clientId}` as never)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                >
                   <ListRow
                     title={feedback.clientName}
                     subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
@@ -164,7 +229,28 @@ export default function TrainerHomeScreen() {
             ) : (
               <EmptyState title="No recent feedback" body="Client notes and session feedback will appear here." />
             )}
-          </GlassCard>
+            </Card>
+          </AnimatedAppear>
+
+          <AnimatedAppear delay={200}>
+            <SectionHeader title="AI draft" />
+            <Card
+              variant="compact"
+              pressable
+              onPress={() =>
+                priorityClient
+                  ? router.push(`/trainer/clients/${priorityClient.memberUserId}/plan` as never)
+                  : router.push("/trainer/clients" as never)
+              }
+            >
+              <ListRow
+                title="AI drafting is off"
+                subtitle="Create and edit plans manually."
+                leading={<IconBubble icon="sparkles-outline" tone="blue" />}
+                trailing={<StatusChip status="Manual" tone="neutral" />}
+              />
+            </Card>
+          </AnimatedAppear>
         </ScrollView>
       </ZookScreen>
     </>
@@ -174,7 +260,7 @@ export default function TrainerHomeScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: 10,
+    gap: 16,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding + 32,
     paddingTop: 8,
@@ -183,18 +269,19 @@ const styles = StyleSheet.create({
   headerActions: { alignItems: "center", flexDirection: "row", gap: 8 },
   iconButton: {
     alignItems: "center",
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
     borderRadius: 14,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 44,
     minWidth: 44,
   },
-  signOutButton: {
-    backgroundColor: "rgba(255,90,61,0.08)",
-    borderColor: "rgba(255,90,61,0.28)",
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
-  priorityClientCard: { gap: spacing.md },
+  rowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   stack: { gap: 10 },
 });

@@ -1,13 +1,15 @@
 import { Stack, router } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { MobileHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, Card, ListRow, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
 import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
@@ -15,7 +17,6 @@ const settingsRows = [
   { href: "/settings/account", title: "Account", icon: "person-outline" },
   { href: "/settings/appearance", title: "Appearance", icon: "contrast-outline" },
   { href: "/settings/notifications", title: "Notifications", icon: "notifications-outline" },
-  { href: "/settings/language", title: "Language", icon: "language-outline" },
   { href: "/settings/privacy", title: "Privacy", icon: "lock-closed-outline" },
   { href: "/settings/support", title: "Help & support", icon: "help-circle-outline" },
 ] as const;
@@ -25,16 +26,20 @@ export default function YouScreen() {
   const canSwitch = useCanSwitchRole();
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
-  const { palette, preference, mode } = useTheme();
+  const { palette, preference } = useTheme();
+  const signOutConfirm = useConfirmSheet();
+  const scrollY = useSharedValue(0);
   
   const nextRole = ctx?.availableRoles.find((role) => role !== ctx?.role);
   const gymHref = ctx?.org?.username ? `/gyms/${ctx.org.username}` : "/gyms";
 
   function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => void logout() },
-    ]);
+    signOutConfirm.confirm({
+      title: "Sign out?",
+      body: "You can sign back in with OTP any time.",
+      destructiveLabel: "Sign out",
+      onConfirm: () => void logout(),
+    });
   }
 
   const isOwnerAvailable = ctx?.availableRoles.includes("OWNER");
@@ -49,27 +54,32 @@ export default function YouScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
-          <MobileHeader
-            title="You"
-            subtitle="Profile, membership, settings, and tools"
-            showProfileShortcut={false}
-          />
+          <ScreenHeader title="You" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
 
-          <IdentityCard
-            user={ctx?.user}
-            org={ctx?.org}
-            onEdit={() => router.push("/profile/edit" as never)}
-          />
+          <AnimatedAppear delay={0}>
+            <IdentityCard
+              user={ctx?.user}
+              org={ctx?.org}
+              onEdit={() => router.push("/profile/edit" as never)}
+            />
+          </AnimatedAppear>
 
-          <SectionHeader title="Membership" />
-          <MembershipSummary
-            membership={homeQuery.data?.activeMembership}
-            onViewDetail={() => router.push("/membership" as never)}
-          />
+          <AnimatedAppear delay={40}>
+            <SectionHeader title="Membership" />
+            <MembershipSummary
+              membership={homeQuery.data?.activeMembership}
+              onViewDetail={() => router.push("/membership" as never)}
+            />
+          </AnimatedAppear>
 
-          <SectionHeader title="Quick actions" />
-          <View style={styles.listContainer}>
+          <AnimatedAppear delay={80}>
+            <SectionHeader title="Quick actions" />
+            <Card variant="compact" contentStyle={styles.list}>
             {showBackToOwner && (
               <PillActionRow
                 title="Back to Owner mode"
@@ -91,10 +101,17 @@ export default function YouScreen() {
               icon="business-outline"
               onPress={() => router.push(gymHref as never)}
             />
-          </View>
+            <PillActionRow
+              title="Gym shop"
+              icon="storefront-outline"
+              onPress={() => router.push("/shop" as never)}
+            />
+            </Card>
+          </AnimatedAppear>
 
-          <SectionHeader title="Settings" />
-          <View style={styles.listContainer}>
+          <AnimatedAppear delay={120}>
+            <SectionHeader title="Settings" />
+            <Card variant="compact" contentStyle={styles.list}>
             {settingsRows.map((row) => (
               <PillActionRow
                 key={row.href}
@@ -104,42 +121,29 @@ export default function YouScreen() {
                 onPress={() => router.push(row.href as never)}
               />
             ))}
-          </View>
+            </Card>
+          </AnimatedAppear>
 
-          <View style={styles.signOutContainer}>
-            <Pressable
-              onPress={confirmSignOut}
-              style={({ pressed }) => [
-                styles.signOutButton,
-                {
-                  borderColor: mode === "dark" ? "rgba(255, 90, 61, 0.55)" : "rgba(220, 38, 38, 0.55)",
-                  backgroundColor: mode === "dark" ? "rgba(255, 90, 61, 0.08)" : "rgba(220, 38, 38, 0.04)",
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name="log-out-outline"
-                size={22}
-                color={mode === "dark" ? "#FF5A3D" : "#DC2626"}
-                style={{ marginRight: 8 }}
-              />
-              <Text
-                style={[
-                  styles.signOutText,
-                  { color: mode === "dark" ? "#FFFFFF" : "#DC2626" },
-                ]}
+          <AnimatedAppear delay={160}>
+            <View style={styles.signOutContainer}>
+              <ZookButton
+                onPress={confirmSignOut}
+                variant="destructive"
+                icon="log-out-outline"
+                fullWidth
+                accessibilityLabel="Sign out"
               >
                 Sign out
-              </Text>
-            </Pressable>
-          </View>
+              </ZookButton>
+            </View>
+          </AnimatedAppear>
 
           <Text style={[styles.footer, { color: palette.text.tertiary }]}>
             Zook account center
           </Text>
         </ScrollView>
       </ZookScreen>
+      {signOutConfirm.sheet}
     </>
   );
 }
@@ -152,44 +156,20 @@ function PillActionRow({
 }: {
   title: string;
   subtitle?: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
-  const { palette, mode } = useTheme();
-
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={title}
       style={({ pressed }) => [
-        styles.pillRow,
-        {
-          backgroundColor: mode === "dark" ? palette.bg.app : palette.bg.elevated,
-          borderColor: palette.border.default,
-          opacity: pressed ? 0.85 : 1,
-        },
+        styles.rowPressable,
+        pressed ? styles.rowPressed : null,
       ]}
     >
-      <View style={styles.pillRowLeft}>
-        <View
-          style={[
-            styles.iconWrapper,
-            {
-              backgroundColor: mode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(17, 21, 15, 0.04)",
-            },
-          ]}
-        >
-          <Ionicons name={icon as any} size={20} color={palette.text.primary} />
-        </View>
-        <View style={styles.pillRowTextContainer}>
-          <Text style={[styles.pillRowText, { color: palette.text.primary }]}>{title}</Text>
-          {subtitle && (
-            <Text style={[styles.pillRowSubtitle, { color: palette.text.tertiary }]}>{subtitle}</Text>
-          )}
-        </View>
-      </View>
-      <Ionicons name="chevron-forward-outline" size={20} color={palette.text.tertiary} />
+      <ListRow title={title} subtitle={subtitle} icon={icon} />
     </Pressable>
   );
 }
@@ -201,77 +181,24 @@ function titleCase(value: string) {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: 20,
     width: "100%",
   },
-  listContainer: {
-    gap: 2,
+  list: {
+    gap: 4,
   },
-  pillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    marginBottom: 8,
-    // Soft drop shadow
-    shadowColor: "#000000",
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  pillRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  iconWrapper: {
-    width: 36,
-    height: 36,
+  rowPressable: {
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
   },
-  pillRowTextContainer: {
-    flex: 1,
-  },
-  pillRowText: {
-    fontSize: 14.5,
-    fontFamily: "Inter_600SemiBold",
-  },
-  pillRowSubtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    marginTop: 1,
+  rowPressed: {
+    opacity: 0.86,
   },
   signOutContainer: {
     marginTop: 8,
     marginBottom: 16,
-  },
-  signOutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 24,
-    borderWidth: 2,
-    // Shadow glow for red
-    shadowColor: "#FF5A3D",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  signOutText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
   },
   footer: {
     textAlign: "center",

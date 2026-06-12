@@ -4,9 +4,11 @@ import {
   type BranchScopeSnapshot,
   type DashboardCharts,
   type JoinRequestRow,
+  type MemberRow,
   type NotificationSnapshot,
   type OrganizationSnapshot,
   type OrganizationSummary,
+  type PaymentRow,
   type ProductSnapshot,
 } from "@/components/dashboard/types";
 
@@ -46,6 +48,8 @@ export type DashboardOperationalPanelProps = {
   initialNotifications: NotificationSnapshot[];
   initialProducts: ProductSnapshot[];
   initialAiUsage: AIUsageRow[];
+  initialMembers?: MemberRow[];
+  initialPaymentsPage?: { payments: PaymentRow[]; nextCursor?: string | null; limit: number };
   roles?: Role[];
   permissions?: Permission[];
 };

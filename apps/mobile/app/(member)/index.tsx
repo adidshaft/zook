@@ -1,48 +1,41 @@
 import { Stack } from "expo-router";
-import * as Haptics from "expo-haptics";
-import * as Location from "expo-location";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
 
 import {
-  GlassCard,
+  Card,
+  AnimatedAppear,
+  HeaderMeta,
   IconBubble,
-  MobileHeader,
+  ProfileShortcut,
   QueryErrorState,
+  ScreenHeader,
+  StatStrip,
+  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
-import { attendanceApi } from "@/lib/domain-api";
+import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
-import { layout, spacing } from "@/lib/theme";
-import { showToast } from "@/lib/toast";
+import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
+import { useSharedValue } from "@/lib/reanimated-lite";
+import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
-
-const DEFAULT_GEOFENCE_RADIUS_METERS = 150;
-const GEOFENCE_EXIT_READINGS_REQUIRED = 2;
-const configuredGeofenceRadiusMeters = Number(
-  process.env.EXPO_PUBLIC_ATTENDANCE_GEOFENCE_METERS ?? DEFAULT_GEOFENCE_RADIUS_METERS,
-);
-const GEOFENCE_RADIUS_METERS = Number.isFinite(configuredGeofenceRadiusMeters)
-  ? configuredGeofenceRadiusMeters
-  : DEFAULT_GEOFENCE_RADIUS_METERS;
-
-type ActiveCheckIn = NonNullable<MemberHomeData["activeCheckIn"]>;
 
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -60,22 +53,6 @@ function secondsSince(value: string) {
     return 0;
   }
   return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-}
-
-function distanceMeters(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-) {
-  const earthRadiusMeters = 6371000;
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-  const lat1 = toRadians(a.latitude);
-  const lat2 = toRadians(b.latitude);
-  const deltaLat = toRadians(b.latitude - a.latitude);
-  const deltaLng = toRadians(b.longitude - a.longitude);
-  const haversine =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
-  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
 function ActiveCheckInCard({
@@ -101,7 +78,7 @@ function ActiveCheckInCard({
   }, [activeCheckIn.checkedInAt]);
 
   return (
-    <GlassCard glow contentStyle={styles.activeSessionCard}>
+    <Card glow contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
         <IconBubble icon="time-outline" tone="lime" size={42} />
         <View style={styles.activeSessionCopy}>
@@ -119,159 +96,97 @@ function ActiveCheckInCard({
       <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
         Re-scan the branch QR to check out, or stop it here.
       </Text>
-      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" tone="secondary">
+      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary">
         {busy ? "Stopping..." : "Stop session"}
       </ZookButton>
-    </GlassCard>
+    </Card>
+  );
+}
+
+function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
+  const router = useRouter();
+  const { palette } = useTheme();
+  const membership = home?.activeMembership;
+  const organization = home?.activeOrganization;
+  const plan = home?.activePlan;
+  const daysLeft = membership?.daysLeft;
+  const visitsLeft = membership?.remainingVisits;
+  const isExpired =
+    !membership ||
+    String(membership.status ?? "").toLowerCase().includes("expired") ||
+    (typeof daysLeft === "number" && daysLeft <= 0);
+  const statusLabel = isExpired ? "Renewal needed" : "Access active";
+  const detail =
+    [
+      typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
+      typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "Membership synced with desk";
+
+  return (
+    <Card
+      semanticSurface={isExpired ? "warningCard" : "successCard"}
+      contentStyle={styles.membershipCard}
+      accessibilityLabel={`${statusLabel}. ${plan?.name ?? "Membership"}. ${detail}. ${organization?.name ?? "Gym"}.`}
+    >
+      <View style={styles.membershipTop}>
+        <IconBubble
+          icon={isExpired ? "warning-outline" : "shield-checkmark-outline"}
+          tone={isExpired ? "amber" : "lime"}
+          size={44}
+        />
+        <View style={styles.membershipCopy}>
+          <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
+            Membership access
+          </Text>
+          <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
+            {plan?.name ?? "Active membership"}
+          </Text>
+          <Text style={[styles.membershipMeta, { color: palette.text.secondary }]}>
+            {organization?.name ?? "Your gym"} · {detail}
+          </Text>
+        </View>
+        <StatusChip status={statusLabel} tone={isExpired ? "amber" : "lime"} />
+      </View>
+      <View style={styles.membershipActions}>
+        <ZookButton
+          onPress={() => router.push("/scan" as never)}
+          icon="qr-code-outline"
+          style={styles.membershipAction}
+          variant={isExpired ? "secondary" : "primary"}
+        >
+          Scan QR
+        </ZookButton>
+        <ZookButton
+          onPress={() => router.push("/membership" as never)}
+          icon={isExpired ? "card-outline" : "receipt-outline"}
+          variant="secondary"
+          style={styles.membershipAction}
+        >
+          {isExpired ? "Renew" : "Details"}
+        </ZookButton>
+      </View>
+    </Card>
   );
 }
 
 export default function HomeScreen() {
-  const { activeOrgId, session, token } = useAuth();
+  const router = useRouter();
+  const { session } = useAuth();
   const { palette } = useTheme();
-  const queryClient = useQueryClient();
   const homeQuery = useMemberHome();
+  const trackingQuery = useMyTracking();
   const home = homeQuery.data;
   const state = deriveHomeState(home);
   const firstName = session?.user.name?.trim().split(/\s+/)[0] || "Member";
-  const activeCheckIn = home?.activeCheckIn ?? null;
-  const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const checkoutStartedRef = useRef<string | null>(null);
-  const geofenceTarget = useMemo(() => {
-    if (
-      activeCheckIn?.branchLatitude == null ||
-      activeCheckIn.branchLongitude == null ||
-      activeCheckIn.checkedOutAt
-    ) {
-      return null;
-    }
-    return {
-      latitude: activeCheckIn.branchLatitude,
-      longitude: activeCheckIn.branchLongitude,
-    };
-  }, [activeCheckIn]);
-
-  const applyCheckoutToCache = useCallback(
-    (attendance: ActiveCheckIn) => {
-      const mergeHome = (current?: MemberHomeData) => {
-        if (!current) {
-          return current;
-        }
-        return {
-          ...current,
-          activeCheckIn: null,
-          recentAttendance: current.recentAttendance.map((record) =>
-            record.id === attendance.id
-              ? {
-                  ...record,
-                  checkedOutAt: attendance.checkedOutAt,
-                  checkoutReason: attendance.checkoutReason,
-                  durationSeconds: attendance.durationSeconds,
-                }
-              : record,
-          ),
-        };
-      };
-      queryClient.setQueryData<MemberHomeData>(["me", "home", activeOrgId ?? null], mergeHome);
-      queryClient.setQueryData<{ home: MemberHomeData }>(
-        ["me", "dashboard", activeOrgId ?? null],
-        (current) =>
-          current ? { ...current, home: mergeHome(current.home) ?? current.home } : current,
-      );
-    },
-    [activeOrgId, queryClient],
-  );
-
-  const stopActiveCheckIn = useCallback(
-    async (
-      reason: "manual" | "geofence" = "manual",
-      coordinates?: { latitude: number; longitude: number },
-    ) => {
-      if (!token || !activeCheckIn || checkoutStartedRef.current === activeCheckIn.id) {
-        return;
-      }
-      checkoutStartedRef.current = activeCheckIn.id;
-      setCheckoutBusy(true);
-      try {
-        const result = await attendanceApi.checkout<{ attendance: ActiveCheckIn }>({
-          token,
-          orgId: activeOrgId ?? undefined,
-          attendanceRecordId: activeCheckIn.id,
-          body: {
-            reason,
-            ...(coordinates
-              ? { latitude: coordinates.latitude, longitude: coordinates.longitude }
-              : {}),
-          },
-        });
-        applyCheckoutToCache(result.attendance);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["me", "attendance"] }),
-          queryClient.invalidateQueries({ queryKey: ["me", "dashboard"] }),
-          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-        ]);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToast({
-          tone: "success",
-          title: reason === "geofence" ? "Checked out automatically" : "Session stopped",
-          message: "Your gym time was recorded.",
-        });
-      } catch (error) {
-        checkoutStartedRef.current = null;
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        showToast({
-          tone: "danger",
-          title: "Could not check out",
-          message: error instanceof Error ? error.message : "Try again in a moment.",
-        });
-      } finally {
-        setCheckoutBusy(false);
-      }
-    },
-    [activeCheckIn, activeOrgId, applyCheckoutToCache, queryClient, token],
-  );
-
-  useEffect(() => {
-    checkoutStartedRef.current = null;
-  }, [activeCheckIn?.id]);
-
-  useEffect(() => {
-    if (!activeCheckIn || !geofenceTarget || !token) {
-      return;
-    }
-    let subscription: Location.LocationSubscription | null = null;
-    let cancelled = false;
-    let outsideReadings = 0;
-    void (async () => {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (cancelled || permission.status !== "granted") {
-        return;
-      }
-      subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 50,
-          timeInterval: 30_000,
-        },
-        (position) => {
-          const current = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          const distance = distanceMeters(current, geofenceTarget);
-          outsideReadings = distance > GEOFENCE_RADIUS_METERS ? outsideReadings + 1 : 0;
-          if (outsideReadings >= GEOFENCE_EXIT_READINGS_REQUIRED) {
-            subscription?.remove();
-            void stopActiveCheckIn("geofence", current);
-          }
-        },
-      );
-    })();
-    return () => {
-      cancelled = true;
-      subscription?.remove();
-    };
-  }, [activeCheckIn, geofenceTarget, stopActiveCheckIn, token]);
+  const { activeCheckIn, checkoutBusy, stopActiveCheckIn } = useManualCheckout();
+  const scrollY = useSharedValue(0);
+  const streakDays = home?.streakDays ?? 0;
+  const weeklyVisits = countThisWeek(home?.recentAttendance ?? []);
+  const activeMinutes = Math.round((trackingQuery.data?.summary.totalDuration ?? 0) / 60);
+  const workoutsLogged = trackingQuery.data?.summary.weeklyCount ?? 0;
+  const habitsDone = trackingQuery.data?.habits.length ?? 0;
 
   return (
     <>
@@ -281,6 +196,10 @@ export default function HomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={homeQuery.isRefetching}
@@ -290,12 +209,16 @@ export default function HomeScreen() {
             />
           }
         >
-          <MobileHeader
-            eyebrow={home?.activeOrganization?.name ?? "Member"}
+          <ScreenHeader
             title={`Hello, ${firstName}`}
-            subtitle="Today in your gym"
-            chip={<RoleSwitcherChip />}
-            showProfileShortcut={false}
+            contextSlot={<RoleSwitcherContextPill />}
+            trailing={<ProfileShortcut />}
+            meta={
+              streakDays > 0 ? (
+                <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>
+              ) : null
+            }
+            scrollY={scrollY}
           />
 
           {homeQuery.isLoading ? <HomeSkeleton /> : null}
@@ -304,15 +227,39 @@ export default function HomeScreen() {
           ) : null}
           {!homeQuery.isLoading && !homeQuery.isError ? (
             <>
+              <AnimatedAppear delay={0}>
+                <MembershipAccessCard home={home} />
+              </AnimatedAppear>
               {activeCheckIn ? (
-                <ActiveCheckInCard
-                  activeCheckIn={activeCheckIn}
-                  busy={checkoutBusy}
-                  onStop={() => void stopActiveCheckIn("manual")}
-                />
+                <AnimatedAppear delay={40}>
+                  <ActiveCheckInCard
+                    activeCheckIn={activeCheckIn}
+                    busy={checkoutBusy}
+                    onStop={() => void stopActiveCheckIn("manual")}
+                  />
+                </AnimatedAppear>
               ) : null}
-              <Banners home={home} />
-              {renderHomeCard(state)}
+              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open progress"
+                  onPress={() => router.push("/progress" as never)}
+                  style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
+                >
+                  <StatStrip
+                    items={[
+                      { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
+                      { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
+                      { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
+                      { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
+                    ]}
+                  />
+                </Pressable>
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
+                <Banners home={home} />
+              </AnimatedAppear>
             </>
           ) : null}
         </ScrollView>
@@ -321,41 +268,45 @@ export default function HomeScreen() {
   );
 }
 
-function HomeLoading() {
-  const { palette } = useTheme();
+function startOfWeek() {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - diff);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
 
-  return (
-    <GlassCard variant="compact" contentStyle={styles.loadingCard}>
-      <IconBubble icon="flash-outline" tone="lime" size={42} />
-      <View style={styles.loadingCopy}>
-        <Text style={[styles.loadingTitle, { color: palette.text.primary }]}>Loading today</Text>
-        <Text style={[styles.loadingBody, { color: palette.text.secondary }]}>
-          Getting your membership and plan status.
-        </Text>
-      </View>
-      <ActivityIndicator color={palette.accent.base} />
-    </GlassCard>
-  );
+function countThisWeek(records: Array<{ checkedInAt?: string | null }>) {
+  const weekStart = startOfWeek();
+  return records.filter((record) => {
+    const timestamp = record.checkedInAt ? new Date(record.checkedInAt).getTime() : Number.NaN;
+    return Number.isFinite(timestamp) && timestamp >= weekStart;
+  }).length;
+}
+
+function formatMinutes(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining ? `${hours}h${remaining}m` : `${hours}h`;
 }
 
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: 20,
     width: "100%",
   },
-  loadingCard: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    minHeight: 86,
+  statStripPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
   },
-  loadingCopy: { flex: 1, gap: 3 },
-  loadingTitle: { fontFamily: "Inter_700Bold", fontSize: 16 },
-  loadingBody: { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 18 },
   activeSessionCard: {
     gap: spacing.md,
     padding: 16,
@@ -379,14 +330,44 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   activeSessionTimer: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 44,
-    letterSpacing: 0,
-    lineHeight: 50,
+    ...typography.timer,
   },
   activeSessionHint: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,
+  },
+  membershipCard: {
+    gap: spacing.md,
+    padding: 16,
+  },
+  membershipTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  membershipCopy: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  membershipEyebrow: {
+    ...typography.caption,
+    textTransform: "uppercase",
+  },
+  membershipTitle: {
+    ...typography.titleSmall,
+  },
+  membershipMeta: {
+    ...typography.small,
+  },
+  membershipActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  membershipAction: {
+    flex: 1,
+    minWidth: 132,
   },
 });

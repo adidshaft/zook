@@ -1,13 +1,13 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
-  GlassCard,
+  Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
@@ -26,8 +26,24 @@ import {
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+
+function exerciseNameForTemplate(templateId: PlanTemplateId) {
+  switch (templateId) {
+    case "diet":
+      return "Nutrition check-in";
+    case "routine":
+      return "Weekly routine review";
+    case "machine":
+      return "Machine setup walkthrough";
+    case "recovery":
+      return "Recovery mobility flow";
+    case "workout":
+    default:
+      return "Goblet squat";
+  }
+}
 
 export default function TrainerClientPlanScreen() {
   const router = useRouter();
@@ -35,6 +51,7 @@ export default function TrainerClientPlanScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
   const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
@@ -58,6 +75,7 @@ export default function TrainerClientPlanScreen() {
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
+    const starterExercise = exerciseNameForTemplate(template.id);
     return {
       title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
       type: "WORKOUT",
@@ -68,7 +86,15 @@ export default function TrainerClientPlanScreen() {
         goal: fitnessGoal,
         template: template.id,
         sections: [{ title: template.title, body: template.body }],
-        exercises: [],
+        exercises: [
+          {
+            name: starterExercise,
+            sets: 3,
+            reps: "8-12",
+            restSeconds: 90,
+            notes: template.body,
+          },
+        ],
       },
     };
   }
@@ -186,33 +212,58 @@ export default function TrainerClientPlanScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-client-plan-screen">
         <ScrollView ref={scrollRef} contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader
+          <AppHeader
             title="Client Detail"
             subtitle={clientName}
-            leading={<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))} accessibilityRole="button" accessibilityLabel="Back to clients" style={styles.iconButton}><Text style={styles.backIcon}>‹</Text></Pressable>}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
+                accessibilityRole="button"
+                accessibilityLabel="Back to clients"
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
+              >
+                <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
+              </Pressable>
+            }
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
             <FormField testID="trainer-plan-title" label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
             <View style={styles.chipRow}>
               {planTemplates.map((template) => {
                 const selected = template.id === selectedTemplate;
                 return (
-                  <Pressable key={template.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setSelectedTemplate(template.id)} style={[styles.templateChip, selected ? styles.templateChipSelected : null]}>
-                    <Ionicons name={template.icon} size={15} color={selected ? legacyColors.lime : legacyColors.muted} />
-                    <Text style={[styles.templateChipText, selected ? styles.templateChipTextSelected : null]}>{template.label}</Text>
+                  <Pressable
+                    key={template.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setSelectedTemplate(template.id)}
+                    style={({ pressed }) => [
+                      styles.templateChip,
+                      {
+                        backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                        borderColor: selected ? palette.accent.base : palette.border.default,
+                      },
+                      pressed ? styles.controlPressed : null,
+                    ]}
+                  >
+                    <Ionicons name={template.icon} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
+                    <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.label}</Text>
                   </Pressable>
                 );
               })}
             </View>
             <View style={styles.actionRow}>
               <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>Save draft</ZookButton>
-              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>Feature Locked</SecondaryButton>
+              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>AI drafting is off</SecondaryButton>
             </View>
             <SecondaryButton
               testID="trainer-publish-plan-button"
@@ -222,17 +273,17 @@ export default function TrainerClientPlanScreen() {
             >
               Publish to {clientName}
             </SecondaryButton>
-          </GlassCard>
+          </Card>
           {savedPlan ? (
-            <GlassCard variant="warning" contentStyle={styles.draftPromptContent}>
+            <Card variant="warning" contentStyle={styles.draftPromptContent}>
               <View style={styles.attentionHeader}>
                 <IconBubble icon="reader-outline" tone="amber" />
-                <Text style={styles.cardBody}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
+                <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
-          {status ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{status}</Text></GlassCard> : null}
-          <GlassCard contentStyle={styles.stack}>
+          {status ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></Card> : null}
+          <Card contentStyle={styles.stack}>
             <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
             <View style={styles.actionRow}>
@@ -242,8 +293,8 @@ export default function TrainerClientPlanScreen() {
             <SecondaryButton testID="trainer-publish-diet-button" onPress={() => void publishDietPlan()} disabled={!client || savingPlan}>
               Publish 4-meal diet
             </SecondaryButton>
-          </GlassCard>
-          {dietStatus ? <GlassCard variant="success" contentStyle={styles.statusContent}><Text style={styles.statusText}>{dietStatus}</Text></GlassCard> : null}
+          </Card>
+          {dietStatus ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></Card> : null}
           <AiDraftPanel clientId={id} />
         </ScrollView>
       </ZookScreen>
@@ -253,19 +304,18 @@ export default function TrainerClientPlanScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
+  backIcon: { fontSize: 26, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  templateChip: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderColor: legacyColors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 36, paddingHorizontal: 11 },
-  templateChipSelected: { backgroundColor: "rgba(185,244,85,0.13)", borderColor: legacyColors.lime },
-  templateChipText: { color: legacyColors.muted, ...typography.caption },
-  templateChipTextSelected: { color: legacyColors.lime },
+  templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },
+  templateChipText: { ...typography.caption },
   actionRow: { flexDirection: "row", gap: spacing.sm },
   actionHalf: { flex: 1 },
   stack: { gap: 10 },
   attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   draftPromptContent: { gap: 12 },
-  cardBody: { color: legacyColors.muted, ...typography.body },
+  cardBody: { ...typography.body },
   statusContent: { padding: 14 },
-  statusText: { color: legacyColors.lime, ...typography.bodyStrong },
+  statusText: { ...typography.bodyStrong },
 });

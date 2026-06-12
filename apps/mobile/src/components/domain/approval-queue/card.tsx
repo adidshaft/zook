@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, IconBubble, ListRow, PrimaryButton, SecondaryButton } from "@/components/primitives";
+import { Card, IconBubble, ListRow, PrimaryButton, SecondaryButton } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { ApprovalItem } from "./types";
@@ -22,7 +22,7 @@ export function ApprovalQueueCard({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard testID={testID} variant="compact" contentStyle={styles.card}>
+    <Card testID={testID} variant="compact" contentStyle={styles.card}>
       <ListRow
         title={item.primaryText}
         subtitle={[item.secondaryText, item.metaText].filter(Boolean).join(" · ")}
@@ -40,7 +40,7 @@ export function ApprovalQueueCard({
           </SecondaryButton>
         ) : null}
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 

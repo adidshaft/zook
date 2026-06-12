@@ -1,0 +1,121 @@
+appId: com.zook.app
+name: 09-store-screenshots
+tags:
+  - store-screenshots
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runFlow:
+    file: _helpers/complete-language-if-needed.yaml
+- openLink: zook:///__demo-role?role=MEMBER&target=/
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "member-home-screen"
+    timeout: 30000
+- hideKeyboard:
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-home
+
+- openLink: zook:///plan
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "member-plan-screen"
+    timeout: 15000
+- tapOn:
+    id: "plan-schedule-first"
+    optional: true
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-plan
+
+- openLink: zook:///
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "member-home-screen"
+    timeout: 15000
+- openLink: zook:///scan
+- extendedWaitUntil:
+    visible:
+      id: "scan-screen"
+    timeout: 15000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-scan
+
+- openLink: zook:///progress
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "progress-screen"
+    timeout: 15000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-progress
+
+- openLink: zook:///notifications
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,74%"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/notifications
+
+- openLink: zook:///
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: "member-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "role-switcher-context-pill"
+- tapOn:
+    id: "role-switcher-option-org-aarogya-strength:OWNER"
+- extendedWaitUntil:
+    visible:
+      id: "owner-home-screen"
+    timeout: 30000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/owner-today
+
+- openLink: zook:///owner/approvals
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "pending-approvals-list"
+    timeout: 15000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/owner-approvals
+
+- openLink: zook:///__demo-role?role=TRAINER&target=/trainer
+- extendedWaitUntil:
+    visible:
+      id: "trainer-home-screen"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/trainer-home
+
+- openLink: zook:///__demo-role?role=RECEPTIONIST&target=/reception
+- extendedWaitUntil:
+    visible:
+      id: "reception-home-screen"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "reception-verify-code"
+- eraseText
+- inputText: "PU-9142"
+- hideKeyboard:
+    optional: true
+- tapOn:
+    text: "Verify Code"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/reception-desk

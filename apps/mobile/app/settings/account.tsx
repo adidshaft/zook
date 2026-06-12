@@ -1,13 +1,13 @@
-import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  GlassCard,
-  GlassInput,
+  Card,
+  Input,
   ListRow,
-  MobileHeader,
+  AppHeader,
   OtpInput,
+  ThemedSwitch,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -21,16 +21,15 @@ export default function AccountSettingsScreen() {
   const { palette } = useTheme();
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <AppHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />
+          <Card variant="compact" contentStyle={styles.list}>
             <ListRow title="Name" subtitle={session?.user.name ?? "Not set"} icon="person-outline" />
             <ListRow title="Email" subtitle={session?.user.email ?? "Not set"} icon="mail-outline" />
             <ListRow title="Phone" subtitle={session?.user.phone ?? "Not set"} icon="call-outline" />
-          </GlassCard>
-          <GlassCard variant="compact" contentStyle={styles.form}>
+          </Card>
+          <Card variant="compact" contentStyle={styles.form}>
             <Text style={[styles.title, { color: palette.text.primary }]}>Contact verification</Text>
             <Text style={[styles.helper, { color: palette.text.secondary }]}>
               Add or update your email and mobile number with OTP verification.
@@ -49,11 +48,14 @@ export default function AccountSettingsScreen() {
               onVerified={refresh}
               token={token}
             />
-          </GlassCard>
-          <GlassCard variant="compact" contentStyle={styles.toggleRow}>
+          </Card>
+          <Card variant="compact" contentStyle={styles.toggleRow}>
             <Text style={[styles.title, { color: palette.text.primary }]}>Biometric unlock</Text>
-            <Switch value={biometricEnabled} onValueChange={(value) => void setBiometricEnabled(value)} />
-          </GlassCard>
+            <ThemedSwitch
+              value={biometricEnabled}
+              onValueChange={(value) => void setBiometricEnabled(value)}
+            />
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>
@@ -148,7 +150,7 @@ function ContactVerifier({
 
   return (
     <View style={styles.contactBlock}>
-      <GlassInput
+      <Input
         autoCapitalize="none"
         autoCorrect={false}
         hint={helper}
@@ -173,7 +175,7 @@ function ContactVerifier({
         icon="send-outline"
         onPress={requestOtp}
         size="sm"
-        tone="secondary"
+        variant="secondary"
       >
         {currentValue ? `Update ${title}` : `Add ${title}`}
       </ZookButton>

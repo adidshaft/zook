@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DataTable,
   EmptyState,
@@ -66,6 +66,10 @@ type PlatformUserRow = {
   isPlatformAdmin?: boolean;
   createdAt?: string | Date;
 };
+
+function typedConfirmation(prompt: string, expected: string) {
+  return window.prompt(`${prompt}\n\nType ${expected} to continue.`)?.trim() === expected;
+}
 
 type PlatformPaymentRow = {
   id: string;
@@ -228,66 +232,106 @@ type ProviderDiagnostics = {
 export function PlatformOperationsPanel({
   initialOrgs,
   initialFlags,
+  initialProviders,
   initialSection = "readiness",
 }: {
   initialOrgs: PlatformOrganization[];
   initialFlags: PlatformAbuseFlag[];
+  initialProviders?: Record<string, ProviderDiagnostics> | undefined;
   initialSection?: string;
 }) {
   const [busyOrgId, setBusyOrgId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
   const [userQuery, setUserQuery] = useState("");
-  const [userRows, setUserRows] = useState<PlatformUserRow[]>([]);
+  const [userSearchRows, setUserSearchRows] = useState<PlatformUserRow[] | null>(null);
   const [selectedUser, setSelectedUser] = useState<PlatformUserDetail | null>(null);
+  const [selectedOrganization, setSelectedOrganization] = useState<PlatformOrganization | null>(
+    null,
+  );
   const [userDetailBusyId, setUserDetailBusyId] = useState<string | null>(null);
   const [paymentQuery, setPaymentQuery] = useState("");
-  const [paymentRows, setPaymentRows] = useState<PlatformPaymentRow[]>([]);
+  const [paymentSearchRows, setPaymentSearchRows] = useState<PlatformPaymentRow[] | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PlatformPaymentDetail | null>(null);
   const [paymentDetailBusyId, setPaymentDetailBusyId] = useState<string | null>(null);
   const [supportNotice, setSupportNotice] = useState("");
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
+  const activeSection = initialSection;
+  const showReadiness = activeSection === "readiness";
+  const showIncidentChecklist = activeSection === "incident-checklist";
+  const needsStatusData = showReadiness || showIncidentChecklist;
+  const showUsers = activeSection === "users";
+  const showPayments = activeSection === "payments";
+  const showBroadcasts = activeSection === "broadcasts";
+  const showModeration = activeSection === "moderation";
+  const showImpersonations = activeSection === "impersonations";
+  const showFeatureFlags = activeSection === "feature-flags";
+  const showWebhooks = activeSection === "webhooks";
+  const showAudit = activeSection === "audit";
+  const showOrganizations = activeSection === "organizations";
+  const showSubscriptions = activeSection === "subscriptions";
+  const showAssistant = activeSection === "ai-traffic";
+  const showSafety = activeSection === "abuse-flags";
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
     initialData: { orgs: initialOrgs },
+    enabled: showOrganizations,
   });
   const providersState = useOperationalResource<{ providers: Record<string, ProviderDiagnostics> }>(
     {
       path: "/api/platform/provider-status",
+      initialData: initialProviders ? { providers: initialProviders } : undefined,
+      enabled: needsStatusData,
     },
   );
   const usageState = useOperationalResource<{ usage: PlatformUsageRow[] }>({
     path: "/api/platform/ai-usage",
+    enabled: showAssistant,
   });
   const flagsState = useOperationalResource<{ flags: PlatformAbuseFlag[] }>({
     path: "/api/platform/abuse-flags",
     initialData: { flags: initialFlags },
+    enabled: showSafety,
   });
   const featureFlagsState = useOperationalResource<{ flags: PlatformFlagRow[] }>({
     path: "/api/platform/flags",
+    enabled: showFeatureFlags,
   });
   const webhooksState = useOperationalResource<{ attempts: PlatformWebhookAttempt[] }>({
     path: "/api/platform/webhooks",
+    enabled: showWebhooks,
   });
   const auditState = useOperationalResource<{ auditLogs: PlatformAuditRow[] }>({
     path: "/api/platform/audit",
+    enabled: showAudit,
   });
   const broadcastsState = useOperationalResource<{ broadcasts: PlatformBroadcastRow[] }>({
     path: "/api/platform/broadcasts",
+    enabled: showBroadcasts,
   });
   const moderationState = useOperationalResource<{ flags: PlatformModerationRow[] }>({
     path: "/api/platform/moderation",
+    enabled: showModeration,
   });
   const impersonationsState = useOperationalResource<{ impersonations: PlatformImpersonationRow[] }>(
     {
       path: "/api/platform/impersonations",
+      enabled: showImpersonations,
     },
   );
+  const usersState = useOperationalResource<{ users: PlatformUserRow[] }>({
+    path: "/api/platform/users",
+    enabled: showUsers,
+  });
+  const paymentsState = useOperationalResource<{ payments: PlatformPaymentRow[] }>({
+    path: "/api/platform/payments",
+    enabled: showPayments,
+  });
 
   const organizations = organizationsState.data?.orgs ?? initialOrgs;
-  const providers = providersState.data?.providers ?? {};
-  const providerEntries = Object.entries(providers);
+  const providers = providersState.data?.providers;
+  const providerEntries = useMemo(() => Object.entries(providers ?? {}), [providers]);
   const usage = usageState.data?.usage ?? [];
   const flags = flagsState.data?.flags ?? initialFlags;
   const featureFlags = featureFlagsState.data?.flags ?? [];
@@ -296,23 +340,43 @@ export function PlatformOperationsPanel({
   const broadcasts = broadcastsState.data?.broadcasts ?? [];
   const moderationFlags = moderationState.data?.flags ?? [];
   const impersonations = impersonationsState.data?.impersonations ?? [];
+  const userRows = userSearchRows ?? usersState.data?.users ?? [];
+  const paymentRows = paymentSearchRows ?? paymentsState.data?.payments ?? [];
 
-  const misconfiguredProviders = providerEntries.filter(
-    ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
+  const misconfiguredProviders = useMemo(
+    () =>
+      providerEntries.filter(
+        ([, provider]) => provider.status === "misconfigured" || provider.status === "unsupported",
+      ),
+    [providerEntries],
   );
-  const readyProviders = providerEntries.filter(([, provider]) => provider.status === "ready");
-  const defaultProviders = providerEntries.filter(([, provider]) => provider.status === "default");
-  const suspendedOrganizations = organizations.filter((org) => org.status === "SUSPENDED");
-  const openFlags = flags.filter(
-    (flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved",
+  const readyProviders = useMemo(
+    () => providerEntries.filter(([, provider]) => provider.status === "ready"),
+    [providerEntries],
   );
-  const trialRiskOrganizations = organizations.filter((org) => {
-    const trialEndAt = new Date(org.trialEndAt).getTime();
-    if (!Number.isFinite(trialEndAt) || org.status !== "ACTIVE") return false;
-    const daysLeft = Math.ceil((trialEndAt - Date.now()) / (1000 * 60 * 60 * 24));
-    return daysLeft >= 0 && daysLeft <= 7;
-  });
-  const cockpitItems = [
+  const defaultProviders = useMemo(
+    () => providerEntries.filter(([, provider]) => provider.status === "default"),
+    [providerEntries],
+  );
+  const suspendedOrganizations = useMemo(
+    () => organizations.filter((org) => org.status === "SUSPENDED"),
+    [organizations],
+  );
+  const openFlags = useMemo(
+    () => flags.filter((flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved"),
+    [flags],
+  );
+  const trialRiskOrganizations = useMemo(
+    () =>
+      organizations.filter((org) => {
+        const trialEndAt = new Date(org.trialEndAt).getTime();
+        if (!Number.isFinite(trialEndAt) || org.status !== "ACTIVE") return false;
+        const daysLeft = Math.ceil((trialEndAt - Date.now()) / (1000 * 60 * 60 * 24));
+        return daysLeft >= 0 && daysLeft <= 7;
+      }),
+    [organizations],
+  );
+  const cockpitItems = useMemo(() => [
     {
       label: "Ready providers",
       value: formatCompactNumber(readyProviders.length),
@@ -340,8 +404,8 @@ export function PlatformOperationsPanel({
       value: formatCompactNumber(openFlags.length),
       meta: "Needs platform decision",
     },
-  ];
-  const incidentChecklist = [
+  ], [misconfiguredProviders.length, openFlags.length, organizations, readyProviders.length, trialRiskOrganizations.length]);
+  const incidentChecklist = useMemo(() => [
     {
       step: "Confirm blast radius",
       owner: "Platform",
@@ -368,40 +432,20 @@ export function PlatformOperationsPanel({
         ? `${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} near conversion`
         : "No active trial expires this week",
     },
-  ];
-
-  useEffect(() => {
-    document.getElementById(initialSection)?.scrollIntoView({ block: "start" });
-  }, [initialSection]);
-
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      webApiFetch<{ users: PlatformUserRow[] }>("/api/platform/users"),
-      webApiFetch<{ payments: PlatformPaymentRow[] }>("/api/platform/payments"),
-    ])
-      .then(([usersPayload, paymentsPayload]) => {
-        if (!mounted) return;
-        setUserRows(usersPayload.users);
-        setPaymentRows(paymentsPayload.payments);
-      })
-      .catch((cause) => {
-        if (!mounted) return;
-        setSupportNotice(cause instanceof Error ? cause.message : "Unable to load platform records.");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  ], [misconfiguredProviders, openFlags.length, suspendedOrganizations.length, trialRiskOrganizations.length]);
 
   async function updateOrganizationStatus(
-    orgId: string,
+    org: PlatformOrganization,
     status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
   ) {
+    const expected = `${status} ${org.username}`;
+    if (!typedConfirmation(`Change ${org.name} to ${formatEnumLabel(status)}?`, expected)) {
+      return;
+    }
     try {
       setStatusError("");
-      setBusyOrgId(orgId);
-      await webApiFetch(`/api/platform/orgs/${orgId}/status`, {
+      setBusyOrgId(org.id);
+      await webApiFetch(`/api/platform/orgs/${org.id}/status`, {
         method: "PATCH",
         body: { status },
       });
@@ -415,13 +459,16 @@ export function PlatformOperationsPanel({
     }
   }
 
-  async function softDeleteOrganization(orgId: string) {
+  async function softDeleteOrganization(org: PlatformOrganization) {
+    if (!typedConfirmation(`Soft-delete ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     try {
       setStatusError("");
-      setBusyOrgId(orgId);
-      await webApiFetch(`/api/platform/orgs/${orgId}/soft-delete`, {
+      setBusyOrgId(org.id);
+      await webApiFetch(`/api/platform/orgs/${org.id}/soft-delete`, {
         method: "POST",
         body: { reason },
       });
@@ -518,10 +565,15 @@ export function PlatformOperationsPanel({
   }
 
   async function searchUsers() {
+    const query = userQuery.trim();
+    if (!query) {
+      setUserSearchRows(null);
+      return;
+    }
     const response = await webApiFetch<{ users: PlatformUserRow[] }>(
-      `/api/platform/users?q=${encodeURIComponent(userQuery.trim())}`,
+      `/api/platform/users?q=${encodeURIComponent(query)}`,
     );
-    setUserRows(response.users);
+    setUserSearchRows(response.users);
   }
 
   async function loadUserDetails(userId: string) {
@@ -540,6 +592,9 @@ export function PlatformOperationsPanel({
   }
 
   async function startImpersonation(userId: string) {
+    if (!typedConfirmation("Start a 15-minute impersonation session? Use only for support debugging.", "IMPERSONATE")) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     await webApiFetch(`/api/platform/users/${userId}/impersonate`, {
@@ -550,10 +605,15 @@ export function PlatformOperationsPanel({
   }
 
   async function searchPayments() {
+    const query = paymentQuery.trim();
+    if (!query) {
+      setPaymentSearchRows(null);
+      return;
+    }
     const response = await webApiFetch<{ payments: PlatformPaymentRow[] }>(
-      `/api/platform/payments?q=${encodeURIComponent(paymentQuery.trim())}`,
+      `/api/platform/payments?q=${encodeURIComponent(query)}`,
     );
-    setPaymentRows(response.payments);
+    setPaymentSearchRows(response.payments);
   }
 
   async function loadPaymentDetails(paymentId: string) {
@@ -567,6 +627,9 @@ export function PlatformOperationsPanel({
   }
 
   async function refundPayment(paymentId: string) {
+    if (!typedConfirmation("Submit a refund for this payment?", "REFUND")) {
+      return;
+    }
     const reason = window.prompt("Reason")?.trim();
     if (!reason) return;
     await webApiFetch(`/api/platform/payments/${paymentId}/refund`, {
@@ -666,6 +729,7 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
+      {showReadiness ? (
       <GlassCard>
         <SectionHeader
           eyebrow="Command"
@@ -710,7 +774,9 @@ export function PlatformOperationsPanel({
           ))}
         </div>
       </GlassCard>
+      ) : null}
 
+      {showUsers || showPayments ? (
       <div id="support-console" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
@@ -719,13 +785,18 @@ export function PlatformOperationsPanel({
             description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
             badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
           />
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
+            {showUsers ? (
             <div id="users" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
                 description="Find members, staff, owners, and demo accounts across the platform."
-                badge={<Pill tone="blue">{userRows.length} visible</Pill>}
+                badge={
+                  <Pill tone={usersState.loading ? "amber" : "blue"}>
+                    {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
+                  </Pill>
+                }
               />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
@@ -793,7 +864,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={userRows}
                   rowKey={(user) => user.id}
-                  empty="No users match this search."
+                  empty={usersState.error || "No users match this search."}
                 />
               </div>
               {selectedUser ? (
@@ -889,13 +960,21 @@ export function PlatformOperationsPanel({
                 </div>
               ) : null}
             </div>
+            ) : null}
 
+            {showPayments ? (
             <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment ledger"
                 description="Demo and live payment records appear here immediately after checkout or desk payment creation."
-                badge={<Pill tone="blue">{paymentRows.length} visible</Pill>}
+                badge={
+                  <Pill tone={paymentsState.loading ? "amber" : "blue"}>
+                    {paymentsState.loading && !paymentRows.length
+                      ? "Loading"
+                      : `${paymentRows.length} visible`}
+                  </Pill>
+                }
               />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
@@ -956,7 +1035,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={paymentRows}
                   rowKey={(payment) => payment.id}
-                  empty="No payments match this search."
+                  empty={paymentsState.error || "No payments match this search."}
                 />
               </div>
               {selectedPayment ? (
@@ -1061,11 +1140,15 @@ export function PlatformOperationsPanel({
                 </div>
               ) : null}
             </div>
+            ) : null}
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      {showBroadcasts || showModeration ? (
+      <div className={`grid gap-4 ${showBroadcasts && showModeration ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}>
+        {showBroadcasts ? (
         <div id="broadcasts" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
@@ -1148,7 +1231,9 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
 
+        {showModeration ? (
         <div id="moderation" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
@@ -1213,8 +1298,11 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
       </div>
+      ) : null}
 
+      {showImpersonations ? (
       <div id="impersonations" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
@@ -1264,8 +1352,15 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      {showFeatureFlags || showWebhooks || showAudit ? (
+      <div
+        className={`grid gap-4 ${
+          [showFeatureFlags, showWebhooks, showAudit].filter(Boolean).length > 1 ? "xl:grid-cols-3" : ""
+        }`}
+      >
+        {showFeatureFlags ? (
         <GlassCard id="feature-flags">
           <SectionHeader eyebrow="Flags" title="Feature flags" />
           <div className="mt-5 grid gap-3">
@@ -1289,7 +1384,9 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
 
+        {showWebhooks ? (
         <GlassCard id="webhooks">
           <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
           <div className="mt-5 grid gap-3">
@@ -1308,7 +1405,9 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
 
+        {showAudit ? (
         <GlassCard id="audit">
           <SectionHeader eyebrow="Audit" title="Global audit" />
           <div className="mt-5 grid gap-3">
@@ -1322,8 +1421,11 @@ export function PlatformOperationsPanel({
             ))}
           </div>
         </GlassCard>
+        ) : null}
       </div>
+      ) : null}
 
+      {showReadiness ? (
       <div id="readiness" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
@@ -1424,7 +1526,9 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
+      {showIncidentChecklist ? (
       <div id="incident-checklist" className="scroll-mt-5">
         <GlassCard>
           <SectionHeader
@@ -1456,7 +1560,9 @@ export function PlatformOperationsPanel({
           </div>
         </GlassCard>
       </div>
+      ) : null}
 
+      {showOrganizations ? (
       <div className="grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
         <div id="organizations" className="scroll-mt-5">
           <GlassCard>
@@ -1522,77 +1628,32 @@ export function PlatformOperationsPanel({
                     header: "Actions",
                     render: (org) => (
                       <div className="flex flex-wrap justify-end gap-2">
-                        {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
+                        <ZookButton
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => setSelectedOrganization(org)}
+                        >
+                          Details
+                        </ZookButton>
+                        {org.status !== "ACTIVE" ? (
                           <ZookButton
-                            key={nextStatus}
-                            tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
+                            tone="ghost"
                             size="sm"
-                            onClick={() => void updateOrganizationStatus(org.id, nextStatus)}
-                            disabled={busyOrgId === org.id || org.status === nextStatus}
+                            onClick={() => void updateOrganizationStatus(org, "ACTIVE")}
+                            disabled={busyOrgId === org.id}
                           >
-                            {nextStatus === "ACTIVE"
-                              ? "Activate"
-                              : nextStatus === "SUSPENDED"
-                                ? "Suspend"
-                                : "Cancel"}
+                            Activate
                           </ZookButton>
-                        ))}
-                        <ZookButton
-                          tone="danger"
-                          size="sm"
-                          onClick={() => void softDeleteOrganization(org.id)}
-                          disabled={busyOrgId === org.id || org.status === "DELETED"}
-                        >
-                          Soft delete
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void extendOrganizationTrial(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Extend trial
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void adjustOrganizationCredit(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Credit
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void changeOrganizationTier(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Tier
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void renameOrganization(org)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Rename
-                        </ZookButton>
-                        <ZookButton
-                          tone="danger"
-                          size="sm"
-                          onClick={() => void transferOrganizationOwnership(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Transfer owner
-                        </ZookButton>
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => void bulkImportOrganizationMembers(org.id)}
-                          disabled={busyOrgId === org.id}
-                        >
-                          Import CSV
-                        </ZookButton>
+                        ) : (
+                          <ZookButton
+                            tone="ghost"
+                            size="sm"
+                            onClick={() => void updateOrganizationStatus(org, "SUSPENDED")}
+                            disabled={busyOrgId === org.id}
+                          >
+                            Suspend
+                          </ZookButton>
+                        )}
                       </div>
                     ),
                     align: "right",
@@ -1603,6 +1664,151 @@ export function PlatformOperationsPanel({
                 empty="No organizations are currently available."
               />
             </div>
+            {selectedOrganization ? (
+              <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+                      Organization details
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {selectedOrganization.name}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/55">@{selectedOrganization.username}</p>
+                  </div>
+                  <ZookButton
+                    tone="ghost"
+                    size="sm"
+                    onClick={() => setSelectedOrganization(null)}
+                  >
+                    Close
+                  </ZookButton>
+                </div>
+                <ReadoutGrid
+                  className="mt-4"
+                  columns={3}
+                  items={[
+                    {
+                      label: "Status",
+                      value: formatEnumLabel(selectedOrganization.status),
+                      meta: "Current platform state",
+                    },
+                    {
+                      label: "Join mode",
+                      value: formatEnumLabel(selectedOrganization.joinMode),
+                      meta: "How members enter the gym",
+                    },
+                    {
+                      label: "Trial end",
+                      value: formatDate(selectedOrganization.trialEndAt),
+                      meta: trialRiskOrganizations.some((org) => org.id === selectedOrganization.id)
+                        ? "Needs renewal follow-up"
+                        : "No immediate trial risk",
+                    },
+                    {
+                      label: "Location",
+                      value: `${selectedOrganization.city}${
+                        selectedOrganization.state ? `, ${selectedOrganization.state}` : ""
+                      }`,
+                      meta: "Primary market",
+                    },
+                    {
+                      label: "Contact",
+                      value:
+                        selectedOrganization.contactEmail ??
+                        selectedOrganization.contactPhone ??
+                        "Not captured",
+                      meta: "Support handoff",
+                    },
+                    {
+                      label: "Created",
+                      value: formatDate(selectedOrganization.createdAt),
+                      meta: openFlags.some((flag) => flag.orgId === selectedOrganization.id)
+                        ? "Has open safety review"
+                        : "No open safety review",
+                    },
+                  ]}
+                />
+                <div className="mt-4 rounded-[18px] border border-white/10 bg-black/20 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Advanced actions
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
+                      <ZookButton
+                        key={nextStatus}
+                        tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
+                        size="sm"
+                        onClick={() => void updateOrganizationStatus(selectedOrganization, nextStatus)}
+                        disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === nextStatus}
+                      >
+                        {nextStatus === "ACTIVE"
+                          ? "Activate"
+                          : nextStatus === "SUSPENDED"
+                            ? "Suspend"
+                            : "Cancel"}
+                      </ZookButton>
+                    ))}
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void extendOrganizationTrial(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Extend trial
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void adjustOrganizationCredit(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Credit
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void changeOrganizationTier(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Tier
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void renameOrganization(selectedOrganization)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Rename
+                    </ZookButton>
+                    <ZookButton
+                      tone="ghost"
+                      size="sm"
+                      onClick={() => void bulkImportOrganizationMembers(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Import CSV
+                    </ZookButton>
+                    <ZookButton
+                      tone="danger"
+                      size="sm"
+                      onClick={() => void transferOrganizationOwnership(selectedOrganization.id)}
+                      disabled={busyOrgId === selectedOrganization.id}
+                    >
+                      Transfer owner
+                    </ZookButton>
+                    <ZookButton
+                      tone="danger"
+                      size="sm"
+                      onClick={() => void softDeleteOrganization(selectedOrganization)}
+                      disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
+                    >
+                      Soft delete
+                    </ZookButton>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </GlassCard>
         </div>
 
@@ -1656,8 +1862,17 @@ export function PlatformOperationsPanel({
           </GlassCard>
         </div>
       </div>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+      {showAssistant || showSubscriptions || showSafety ? (
+      <div
+        className={`grid gap-4 ${
+          [showAssistant, showSubscriptions, showSafety].filter(Boolean).length > 1
+            ? "xl:grid-cols-[1.05fr_0.95fr]"
+            : ""
+        }`}
+      >
+        {showAssistant ? (
         <div id="ai-traffic" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
@@ -1721,9 +1936,11 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
 
-        <PlatformSubscriptionsSection />
+        {showSubscriptions ? <PlatformSubscriptionsSection /> : null}
 
+        {showSafety ? (
         <div id="abuse-flags" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
@@ -1784,7 +2001,9 @@ export function PlatformOperationsPanel({
             </div>
           </GlassCard>
         </div>
+        ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

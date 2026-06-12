@@ -1,16 +1,16 @@
-import { Stack } from "expo-router";
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, GlassCard, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
 import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { legacyColors, layout, typography } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
+  const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const ordersQuery = useOrgActiveShopOrders();
   const lowStock = dashboardQuery.data?.products ?? [];
@@ -26,7 +26,6 @@ export default function OwnerStockScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-stock-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
@@ -37,8 +36,8 @@ export default function OwnerStockScreen() {
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching || ordersQuery.isRefetching}
                 onRefresh={() => { void dashboardQuery.refetch(); void ordersQuery.refetch(); }}
-                tintColor={legacyColors.brandLime}
-                colors={[legacyColors.brandLime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -48,15 +47,15 @@ export default function OwnerStockScreen() {
             <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
           </View>
           <SectionHeader title="Products to reorder" subtitle="Below threshold" />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
             {!dashboardQuery.isError && lowStock.length
               ? lowStock.map((product) => <StockRow key={product.id} product={product} onReorder={() => void reorderProduct(product)} />)
               : null}
             {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" body="No items below threshold." /> : null}
-          </GlassCard>
+          </Card>
           <SectionHeader title="Orders ready for pickup" />
-          <GlassCard contentStyle={styles.stack}>
+          <Card contentStyle={styles.stack}>
             {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
             {!ordersQuery.isError && orders.length
               ? orders.map((order) => (
@@ -65,12 +64,16 @@ export default function OwnerStockScreen() {
                     title={order.user?.name ?? "Member pickup"}
                     subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
                     leading={<IconBubble icon="bag-check-outline" tone="lime" />}
-                    trailing={<Text style={styles.rowAmount}>{formatInr(order.totalPaise)}</Text>}
+                    trailing={
+                      <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                        {formatInr(order.totalPaise)}
+                      </Text>
+                    }
                   />
                 ))
               : null}
             {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." /> : null}
-          </GlassCard>
+          </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>
@@ -82,5 +85,5 @@ const styles = StyleSheet.create({
   stack: { gap: 12 },
   metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },
-  rowAmount: { color: legacyColors.textPrimary, ...typography.bodyStrong },
+  rowAmount: typography.bodyStrong,
 });

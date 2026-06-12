@@ -1,11 +1,11 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
-  GlassCard,
+  Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   Pill,
   QueryErrorState,
   Skeleton,
@@ -16,7 +16,7 @@ import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatLongDate } from "@/lib/formatting";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 
@@ -55,14 +55,23 @@ function phoneRevealStorageKey(orgId?: string | null) {
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
+  const { palette, mode } = useTheme();
+  const chromeSurface = mode === "dark" ? palette.surface.default : palette.bg.elevated;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Back"
-      style={styles.iconButton}
+      style={({ pressed }) => [
+        styles.iconButton,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: chromeSurface,
+        },
+        pressed ? styles.iconButtonPressed : null,
+      ]}
     >
-      <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+      <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
     </Pressable>
   );
 }
@@ -76,12 +85,13 @@ function ContactRow({
   label: string;
   value: string;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.contactRow}>
       <IconBubble icon={icon} tone="blue" size={40} />
       <View style={styles.contactCopy}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text selectable style={styles.rowValue}>
+        <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>{label}</Text>
+        <Text selectable style={[styles.rowValue, { color: palette.text.primary }]}>
           {value}
         </Text>
       </View>
@@ -94,6 +104,7 @@ export default function OwnerMemberDetail() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = firstParam(params.id);
   const { activeOrgId: resolvedOrgId, token } = useAuth();
+  const { palette } = useTheme();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
@@ -159,14 +170,13 @@ export default function OwnerMemberDetail() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader
+          <AppHeader
             title={name}
             subtitle="Owner member profile"
             leading={
@@ -180,71 +190,88 @@ export default function OwnerMemberDetail() {
           />
 
           {memberQuery.isLoading ? (
-            <GlassCard variant="compact" contentStyle={styles.stateContent}>
+            <Card variant="compact" contentStyle={styles.stateContent}>
               <Skeleton width={44} height={44} borderRadius={22} />
               <View style={styles.stateSkeletonCopy}>
                 <Skeleton width="72%" height={16} borderRadius={8} />
                 <Skeleton width="48%" height={12} borderRadius={6} />
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {!memberQuery.isLoading && !member ? (
-            <GlassCard variant="compact" contentStyle={styles.stateContent}>
+            <Card variant="compact" contentStyle={styles.stateContent}>
               <IconBubble icon="people-outline" tone="neutral" size={44} />
-              <Text style={styles.stateText}>Member not found</Text>
-            </GlassCard>
+              <Text style={[styles.stateText, { color: palette.text.primary }]}>
+                Member not found
+              </Text>
+            </Card>
           ) : null}
 
           {memberQuery.isError ? (
-            <GlassCard variant="compact">
+            <Card variant="compact">
               <QueryErrorState
                 error={memberQuery.error}
                 onRetry={() => void memberQuery.refetch()}
                 title="Could not load member"
               />
-            </GlassCard>
+            </Card>
           ) : null}
 
           {member ? (
             <>
-              <GlassCard variant="success" contentStyle={styles.profileContent}>
-                <View style={styles.largeAvatar}>
-                  <Text style={styles.largeAvatarText}>{initialsFor(name, email)}</Text>
+              <Card variant="success" contentStyle={styles.profileContent}>
+                <View style={[styles.largeAvatar, { backgroundColor: palette.accent.fill }]}>
+                  <Text style={[styles.largeAvatarText, { color: palette.text.onAccent }]}>
+                    {initialsFor(name, email)}
+                  </Text>
                 </View>
                 <View style={styles.profileCopy}>
-                  <Text style={styles.memberName}>Member since</Text>
-                  <Text style={styles.memberEmail}>{formatLongDate(member.profile.createdAt)}</Text>
+                  <Text style={[styles.memberName, { color: palette.text.primary }]}>
+                    Member since
+                  </Text>
+                  <Text style={[styles.memberEmail, { color: palette.text.secondary }]}>
+                    {formatLongDate(member.profile.createdAt)}
+                  </Text>
                   <Pill tone="lime">{member.activeSubscription?.status ?? "Profile"}</Pill>
                 </View>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.sectionContent}>
+              <Card contentStyle={styles.sectionContent}>
                 <View style={styles.sectionRow}>
                   <IconBubble icon="barbell-outline" tone="lime" size={42} />
                   <View style={styles.sectionCopy}>
-                    <Text style={styles.sectionLabel}>Fitness goal</Text>
-                    <Text style={styles.sectionTitle}>{goal}</Text>
+                    <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
+                      Fitness goal
+                    </Text>
+                    <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
+                      {goal}
+                    </Text>
                   </View>
                 </View>
                 {notes ? (
-                  <View style={styles.notesBox}>
-                    <Text style={styles.rowLabel}>Notes</Text>
-                    <Text selectable style={styles.notesText}>
+                  <View style={[styles.notesBox, { borderTopColor: palette.border.subtle }]}>
+                    <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>Notes</Text>
+                    <Text selectable style={[styles.notesText, { color: palette.text.primary }]}>
                       {notes}
                     </Text>
                   </View>
                 ) : null}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.sectionContent}>
+              <Card contentStyle={styles.sectionContent}>
                 <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
                 {phone ? (
                   <View style={styles.contactRow}>
                     <IconBubble icon="call-outline" tone="blue" size={40} />
                     <View style={styles.contactCopy}>
-                      <Text style={styles.rowLabel}>Phone</Text>
-                      <Text selectable={phoneRevealed} style={styles.rowValue}>
+                      <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
+                        Phone
+                      </Text>
+                      <Text
+                        selectable={phoneRevealed}
+                        style={[styles.rowValue, { color: palette.text.primary }]}
+                      >
                         {phoneRevealed ? phone : redactPhone(phone)}
                       </Text>
                     </View>
@@ -253,14 +280,21 @@ export default function OwnerMemberDetail() {
                         onPress={() => void revealPhone()}
                         accessibilityRole="button"
                         accessibilityLabel={`Reveal phone for ${name}`}
-                        style={styles.revealPhoneButton}
+                        style={({ pressed }) => [
+                          styles.revealPhoneButton,
+                          { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
+                          pressed ? styles.revealPhoneButtonPressed : null,
+                        ]}
                       >
-                        <Text style={styles.revealPhoneText}>Reveal</Text>
+                        <Ionicons name="eye-outline" size={15} color={palette.accent.base} />
+                        <Text style={[styles.revealPhoneText, { color: palette.accent.base }]}>
+                          Reveal
+                        </Text>
                       </Pressable>
                     ) : null}
                   </View>
                 ) : null}
-              </GlassCard>
+              </Card>
             </>
           ) : null}
         </ScrollView>
@@ -271,27 +305,41 @@ export default function OwnerMemberDetail() {
 
 const styles = StyleSheet.create({
   content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
-  iconButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, borderColor: legacyColors.border, backgroundColor: legacyColors.panel, alignItems: "center", justifyContent: "center" },
+  iconButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  iconButtonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   stateContent: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: spacing.md },
   stateSkeletonCopy: { flex: 1, gap: 8 },
-  stateText: { color: legacyColors.text, ...typography.cardTitle },
+  stateText: typography.cardTitle,
   profileContent: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  largeAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: legacyColors.lime, alignItems: "center", justifyContent: "center" },
-  largeAvatarText: { color: legacyColors.bg, ...typography.h2 },
+  largeAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  largeAvatarText: typography.h2,
   profileCopy: { flex: 1, gap: 5, alignItems: "flex-start" },
-  memberName: { color: legacyColors.text, ...typography.headerTitle },
-  memberEmail: { color: legacyColors.muted, ...typography.small },
+  memberName: typography.headerTitle,
+  memberEmail: typography.small,
   sectionContent: { gap: spacing.md },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   sectionCopy: { flex: 1, gap: 3 },
-  sectionLabel: { color: legacyColors.muted, ...typography.caption },
-  sectionTitle: { color: legacyColors.text, ...typography.cardTitle },
-  notesBox: { borderTopWidth: 1, borderTopColor: legacyColors.border, paddingTop: spacing.md, gap: 4 },
-  notesText: { color: legacyColors.text, ...typography.body },
+  sectionLabel: typography.caption,
+  sectionTitle: typography.cardTitle,
+  notesBox: { borderTopWidth: 1, paddingTop: spacing.md, gap: 4 },
+  notesText: typography.body,
   contactRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   contactCopy: { flex: 1, gap: 3 },
-  rowLabel: { color: legacyColors.muted, ...typography.caption },
-  rowValue: { color: legacyColors.text, ...typography.bodyStrong },
-  revealPhoneButton: { minHeight: 32, borderRadius: 16, borderWidth: 1, borderColor: legacyColors.border, paddingHorizontal: 10, justifyContent: "center" },
-  revealPhoneText: { color: legacyColors.lime, ...typography.caption },
+  rowLabel: typography.caption,
+  rowValue: typography.bodyStrong,
+  revealPhoneButton: {
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  revealPhoneButtonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
+  revealPhoneText: typography.caption,
 });

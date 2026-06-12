@@ -2,7 +2,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
-import { ZookButton } from "../zook-button";
+import { ZookButton, ZookButtonLink } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
 import { ageLabel, memberLabel, phoneLast4 } from "./utils";
@@ -15,8 +15,9 @@ export function MemberTab({
   busyId,
   onMemberQueryChange,
   onSelectMember,
-  onRecordPayment,
+  getRecordPaymentHref,
   onOverrideEntry,
+  onCheckOut,
   onSendMessage,
 }: {
   copy: DeskCopy;
@@ -26,12 +27,14 @@ export function MemberTab({
   busyId: string;
   onMemberQueryChange: (value: string) => void;
   onSelectMember: (member: MemberRow) => void;
-  onRecordPayment: (member: MemberRow) => void;
+  getRecordPaymentHref: (member: MemberRow) => string;
   onOverrideEntry: (member: MemberRow) => void;
+  onCheckOut: (member: MemberRow) => void;
   onSendMessage: (member: MemberRow) => void;
 }) {
   const [showPhone, setShowPhone] = useState(false);
   const phone = selectedMember?.user?.phone;
+  const activeCheckIn = selectedMember?.activeCheckIn;
   const selectedPhoto =
     selectedMember?.profile.profilePhotoUrl ?? selectedMember?.user?.profilePhotoUrl ?? null;
 
@@ -133,6 +136,19 @@ export function MemberTab({
                 <p className="text-xs uppercase tracking-[0.16em] text-white/35">
                   {copy.recentActivity}
                 </p>
+                {activeCheckIn ? (
+                  <div className="mt-3 rounded-2xl border border-lime-300/25 bg-lime-300/10 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-lime-100/70">
+                      {copy.activeCheckIn}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-lime-50">
+                      Since {formatDateTime(activeCheckIn.checkedInAt)}
+                    </p>
+                    {activeCheckIn.branchName ? (
+                      <p className="mt-1 text-xs text-lime-50/60">{activeCheckIn.branchName}</p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <p className="mt-2 text-sm text-white/68">
                   {copy.lastCheckIn}: {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
                 </p>
@@ -140,6 +156,7 @@ export function MemberTab({
                   {(selectedMember.recentCheckIns ?? []).slice(0, 3).map((record) => (
                     <p key={record.id}>
                       {formatDateTime(record.checkedInAt)} - {formatEnumLabel(record.status)}
+                      {record.checkedOutAt ? ` - Out ${formatDateTime(record.checkedOutAt)}` : ""}
                     </p>
                   ))}
                   {selectedMember.lastPayment ? (
@@ -151,23 +168,34 @@ export function MemberTab({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <ZookButton
-                  type="button"
+                <ZookButtonLink
                   size="sm"
-                  onClick={() => onRecordPayment(selectedMember)}
+                  href={getRecordPaymentHref(selectedMember)}
                 >
                   {copy.recordPayment}
-                </ZookButton>
+                </ZookButtonLink>
                 <ZookButton
                   type="button"
                   tone="ghost"
                   size="sm"
-                  disabled={busyId === `override:${selectedMember.user?.id}`}
+                  disabled={Boolean(activeCheckIn)}
                   state={busyId === `override:${selectedMember.user?.id}` ? "loading" : "idle"}
                   onClick={() => onOverrideEntry(selectedMember)}
                 >
                   {copy.overrideEntry}
                 </ZookButton>
+                {activeCheckIn ? (
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
+                    disabled={busyId === `checkout:${selectedMember.user?.id}`}
+                    state={busyId === `checkout:${selectedMember.user?.id}` ? "loading" : "idle"}
+                    onClick={() => onCheckOut(selectedMember)}
+                  >
+                    {copy.checkOut}
+                  </ZookButton>
+                ) : null}
                 <ZookButton
                   type="button"
                   tone="ghost"

@@ -35,6 +35,9 @@ export function MobileDashboardMenu({
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const queryClient = useQueryClient();
+  const activeItem = visibleNavGroups
+    .flatMap((group) => group.items)
+    .find((item) => isActiveNav(item.href, sectionKey));
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -72,7 +75,9 @@ export function MobileDashboardMenu({
           <Menu size={18} />
           {copy.common.openMenu}
         </span>
-        <span className="text-xs text-[var(--text-tertiary)] group-open:hidden">{copy.nav.today}</span>
+        <span className="text-xs text-[var(--text-tertiary)] group-open:hidden">
+          {activeItem ? translatedNavLabel(copy, activeItem) : copy.nav.today}
+        </span>
         <span className="hidden text-xs text-[var(--text-tertiary)] group-open:inline">{copy.common.closeMenu}</span>
       </summary>
 

@@ -3,6 +3,18 @@ import Constants from "expo-constants";
 export type MobileAppEnv = "local" | "staging" | "production";
 export type MobileApiMode = "backend" | "offline-demo";
 
+function getExpoConfigExtra() {
+  const constants = Constants as typeof Constants & {
+    manifest?: { extra?: Record<string, unknown> };
+    manifest2?: { extra?: { expoClient?: { extra?: Record<string, unknown> } } };
+  };
+  return {
+    ...((constants.manifest2?.extra?.expoClient?.extra ?? {}) as Record<string, unknown>),
+    ...((constants.manifest?.extra ?? {}) as Record<string, unknown>),
+    ...((constants.expoConfig?.extra ?? {}) as Record<string, unknown>),
+  };
+}
+
 function normalizeAppEnv(value?: string | null): MobileAppEnv | undefined {
   switch (value?.trim().toLowerCase()) {
     case "local":
@@ -37,10 +49,11 @@ function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
 }
 
 function resolveAppEnv() {
+  const expoExtra = getExpoConfigExtra();
   const candidates: Array<[string, string | undefined]> = [
     ["APP_ENV", process.env.APP_ENV],
-    ["EXPO_CONFIG_APP_ENV", Constants.expoConfig?.extra?.appEnv as string | undefined],
-    ["EXPO_CONFIG_RELEASE_PROFILE", Constants.expoConfig?.extra?.releaseProfile as string | undefined],
+    ["EXPO_CONFIG_APP_ENV", expoExtra.appEnv as string | undefined],
+    ["EXPO_CONFIG_RELEASE_PROFILE", expoExtra.releaseProfile as string | undefined],
     ["EXPO_PUBLIC_APP_ENV", process.env.EXPO_PUBLIC_APP_ENV],
     ["EXPO_PUBLIC_ENV_PROFILE", process.env.EXPO_PUBLIC_ENV_PROFILE],
   ];
@@ -62,10 +75,12 @@ function resolveAppEnv() {
 }
 
 function resolveApiMode() {
+  const expoExtra = getExpoConfigExtra();
   const candidates: Array<[string, string | undefined]> = [
     ["EXPO_PUBLIC_API_MODE", process.env.EXPO_PUBLIC_API_MODE],
     ["MOBILE_API_MODE", process.env.MOBILE_API_MODE],
     ["API_MODE", process.env.API_MODE],
+    ["EXPO_CONFIG_API_MODE", expoExtra.apiMode as string | undefined],
   ];
   for (const [, value] of candidates) {
     const raw = value?.trim();
@@ -84,7 +99,8 @@ function resolveApiMode() {
   if (
     normalizeBooleanFlag(process.env.EXPO_PUBLIC_DEMO) ||
     normalizeBooleanFlag(process.env.EXPO_PUBLIC_OFFLINE_DEMO) ||
-    normalizeBooleanFlag(process.env.MOBILE_OFFLINE_DEMO)
+    normalizeBooleanFlag(process.env.MOBILE_OFFLINE_DEMO) ||
+    normalizeBooleanFlag(expoExtra.offlineDemo as string | boolean | undefined)
   ) {
     return { apiMode: "offline-demo" as const };
   }
@@ -114,7 +130,10 @@ export function isDemoBundleIncluded() {
   return process.env.EXPO_PUBLIC_INCLUDE_DEMO?.trim().toLowerCase() !== "false";
 }
 
-function normalizeBooleanFlag(value?: string | null) {
+function normalizeBooleanFlag(value?: string | boolean | null) {
+  if (typeof value === "boolean") {
+    return value;
+  }
   switch (value?.trim().toLowerCase()) {
     case "1":
     case "true":
@@ -128,7 +147,7 @@ function normalizeBooleanFlag(value?: string | null) {
 }
 
 export function isMobileFeatureEnabled(key: string) {
-  const extraValue = Constants.expoConfig?.extra?.[key] as string | boolean | undefined;
+  const extraValue = getExpoConfigExtra()[key] as string | boolean | undefined;
   if (typeof extraValue === "boolean") {
     return extraValue;
   }

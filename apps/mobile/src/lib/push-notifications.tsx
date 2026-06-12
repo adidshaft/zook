@@ -13,7 +13,6 @@ import {
   useState,
 } from "react";
 import { Linking, Platform } from "react-native";
-import { legacyColors } from "@/lib/theme";
 import { getExpoProjectId, getMobilePushEnvironment } from "./api";
 import { getApiErrorMessage, useAuth } from "./auth";
 import { isOfflineDemoMode } from "./demo-mode";
@@ -22,9 +21,11 @@ import { mergeNotificationPreferences } from "./notification-preferences";
 import { mapNotificationPayloadToHref } from "./notification-routing";
 import { useMyNotificationPreferences } from "./domains";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
+import { darkPalette } from "@zook/tokens";
 
 const INSTALLATION_ID_STORAGE_KEY = "zook_mobile_installation_id";
 const REGISTERED_PUSH_TOKEN_STORAGE_KEY = "zook_registered_push_token";
+const notificationLightColor = darkPalette.accent.base;
 const isExpoGoEnvironment = Constants.executionEnvironment === "storeClient";
 const NativeNotifications = (() => {
   if (isExpoGoEnvironment) {
@@ -258,14 +259,14 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: legacyColors.brandLime,
+        lightColor: notificationLightColor,
       }),
       notifications.setNotificationChannelAsync("ops", {
         name: "Operations",
         importance: notifications.AndroidImportance.HIGH,
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: legacyColors.brandLime,
+        lightColor: notificationLightColor,
       }),
       notifications.setNotificationChannelAsync("reminders", {
         name: "Reminders",

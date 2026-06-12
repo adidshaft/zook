@@ -37,6 +37,8 @@ export function useDashboardOperationalResources({
   selectedMemberId,
   initialJoinRequests,
   initialAiUsage,
+  initialMembers,
+  initialPaymentsPage,
   summary,
   branchScope,
 }: {
@@ -45,6 +47,10 @@ export function useDashboardOperationalResources({
   selectedMemberId: string | null;
   initialJoinRequests: JoinRequestRow[];
   initialAiUsage: AIUsageRow[];
+  initialMembers?: MemberRow[] | undefined;
+  initialPaymentsPage?:
+    | { payments: PaymentRow[]; nextCursor?: string | null; limit: number }
+    | undefined;
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;
 }) {
@@ -62,6 +68,15 @@ export function useDashboardOperationalResources({
     path: withBranch(`/api/orgs/${orgId}/members?limit=50`),
     enabled: mode === "members",
     itemKey: "members",
+    initialPage:
+      mode === "members" && initialMembers?.length
+        ? {
+            members: initialMembers,
+            nextCursor:
+              initialMembers.length >= 100 ? (initialMembers.at(-1)?.profile.id ?? null) : null,
+            limit: initialMembers.length,
+          }
+        : undefined,
   });
   const joinRequestsState = useOperationalResource<{ joinRequests: JoinRequestRow[] }>({
     path: `/api/orgs/${orgId}/join-requests`,
@@ -104,6 +119,10 @@ export function useDashboardOperationalResources({
     path: withBranch(`/api/orgs/${orgId}/payments?limit=50`),
     enabled: mode === "payments" || mode === "payment-refunds",
     itemKey: "payments",
+    initialPage:
+      (mode === "payments" || mode === "payment-refunds") && initialPaymentsPage
+        ? initialPaymentsPage
+        : undefined,
   });
   const attendanceState = usePagedOperationalResource<
     { attendance: AttendanceRecordRow[]; nextCursor?: string | null; limit: number },

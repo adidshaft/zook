@@ -1,19 +1,21 @@
 import { useRouter } from "expo-router";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 import { EmptyState, ZookButton, ZookScreen } from "@/components/primitives";
 import { routeForRole } from "@/lib/route-guards";
 import { useRoleContext } from "@/lib/role-context";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 export default function NotFoundScreen() {
   const router = useRouter();
   const roleContext = useRoleContext();
+  const { palette } = useTheme();
   const homeRoute = roleContext?.isPlatformAdmin
     ? routeForRole(roleContext.role)
     : routeForRole(roleContext?.role ?? "MEMBER");
 
   return (
-    <ZookScreen style={{ justifyContent: "center", paddingHorizontal: 20 }}>
+    <ZookScreen style={styles.screen}>
       <EmptyState
         icon="compass-outline"
         title="This screen is not available"
@@ -23,8 +25,8 @@ export default function NotFoundScreen() {
             <ZookButton onPress={() => router.replace(homeRoute as never)} fullWidth>
               Go to my workspace
             </ZookButton>
-            <Text style={{ color: "rgba(244,247,239,0.52)", textAlign: "center", marginTop: 8 }}>
-              Zook will keep this route from showing a blank or unmatched screen.
+            <Text style={[styles.helperText, { color: palette.text.secondary }]}>
+              Return to your workspace to continue.
             </Text>
           </>
         }
@@ -32,3 +34,15 @@ export default function NotFoundScreen() {
     </ZookScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  helperText: {
+    ...typography.caption,
+    marginTop: spacing.sm,
+    textAlign: "center",
+  },
+});

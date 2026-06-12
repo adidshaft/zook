@@ -2,7 +2,7 @@ export {
   ChipGroup,
   ExerciseRow,
   FormField,
-  GlassInput,
+  Input,
   ProductCard,
   SearchBar,
   SearchField,

@@ -1,18 +1,14 @@
 import { Stack, useRouter } from "expo-router";
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
+import { CameraView, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  AccessibilityInfo,
   Linking,
   Animated as RNAnimated,
   Easing as RNEasing,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -23,10 +19,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  GlassCard,
+  Card,
+  EmptyState,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   ScannerFrame,
+  useRequestPermissionWithRationale,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -45,7 +43,7 @@ import {
   removeQueuedAttendanceScan,
 } from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type ScanResult = {
@@ -77,9 +75,9 @@ type AttendanceResultHref = {
   };
 };
 
-const PUSH_PROMPTED_STORAGE_KEY = "zook_push_prompted";
 const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
 const SCAN_CONFIRMATION_VISIBLE_MS = 420;
+const CHECK_IN_MOMENT_VISIBLE_MS = 1400;
 
 type VerificationStep = {
   key: "capture" | "decode" | "server";
@@ -95,6 +93,7 @@ function CameraActiveBottomNavHider() {
 function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
   const progress = useRef(new RNAnimated.Value(0)).current;
+  const isIOS = Platform.OS === "ios";
   // Sweep edge-to-edge within the frame with a small inset so the line never
   // clips the corner brackets. Derived from the real frame size instead of a
   // magic constant so it always spans the full scan window.
@@ -142,9 +141,20 @@ function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
 
   return (
     <RNAnimated.View
-      style={[styles.scanLineRail, { shadowColor: palette.accent.base }, animatedStyle]}
+      style={[
+        styles.scanLineRail,
+        isIOS
+          ? { shadowColor: palette.accent.base, shadowOpacity: 0.82 }
+          : styles.scanLineRailAndroid,
+        animatedStyle,
+      ]}
     >
-      <View style={[styles.scanLineGlow, { backgroundColor: palette.accent.base }]} />
+      <View
+        style={[
+          styles.scanLineGlow,
+          { backgroundColor: palette.accent.base, opacity: isIOS ? 0.34 : 0.18 },
+        ]}
+      />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
     </RNAnimated.View>
   );
@@ -209,6 +219,33 @@ function readScannedAttendancePayload(
 
 export default function Scan() {
   const { mode, palette } = useTheme();
+  const isDark = mode === "dark";
+  const codePlaceholderColor = palette.text.tertiary;
+  const cameraBadgeSurface = isDark ? palette.bg.elevated : palette.surface.raised;
+  const getVerificationItemStyle = (state: VerificationStep["state"]) => {
+    if (state === "failed") {
+      return {
+        backgroundColor: palette.surface.dangerSoft,
+        borderColor: palette.feedback.danger,
+      };
+    }
+    if (state === "active") {
+      return {
+        backgroundColor: isDark ? palette.surface.raised : palette.bg.sunken,
+        borderColor: palette.feedback.info,
+      };
+    }
+    if (state === "complete") {
+      return {
+        backgroundColor: palette.surface.successSoft,
+        borderColor: palette.feedback.success,
+      };
+    }
+    return {
+      backgroundColor: palette.surface.default,
+      borderColor: palette.border.subtle,
+    };
+  };
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -217,25 +254,21 @@ export default function Scan() {
     await memberHomeQuery.refetch();
   }, [memberHomeQuery]);
   const { permissionState, requestEnablePush } = usePushNotifications();
-  const [permission, requestPermission] = useCameraPermissions();
+  const cameraPermission = useRequestPermissionWithRationale("camera");
+  const notificationPermission = useRequestPermissionWithRationale("notifications");
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
+  const [checkInMoment, setCheckInMoment] = useState<{ gymName: string } | null>(null);
   const [codePrefix, setCodePrefix] = useState("");
   const [codeDigits, setCodeDigits] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [queuedScanCount, setQueuedScanCount] = useState(0);
   const [replayingQueue, setReplayingQueue] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [pendingPushPromptHref, setPendingPushPromptHref] = useState<AttendanceResultHref | null>(
-    null,
-  );
   const completedRef = useRef(false);
-  const pushPromptClosingRef = useRef(false);
-  const pushPromptSheetRef = useRef<BottomSheetModal>(null);
   const codePrefixRef = useRef<TextInput>(null);
   const codeDigitsRef = useRef<TextInput>(null);
-  const pushPromptSnapPoints = useMemo(() => ["36%"], []);
 
   useEffect(() => {
     void getQueuedAttendanceScans().then((queue) => setQueuedScanCount(queue.length));
@@ -363,31 +396,15 @@ export default function Scan() {
     router.push(href as never);
   }
 
-  async function maybeShowPushPrompt(href: AttendanceResultHref) {
+  async function maybeShowPushPrompt() {
     if (Platform.OS === "web" || permissionState === "granted") {
       return false;
     }
-    const prompted = await getStoredValue(PUSH_PROMPTED_STORAGE_KEY);
-    if (prompted) {
-      return false;
-    }
-    await setStoredValue(PUSH_PROMPTED_STORAGE_KEY, "1");
-    setPendingPushPromptHref(href);
-    setTimeout(() => pushPromptSheetRef.current?.present(), 0);
-    return true;
-  }
-
-  async function closePushPrompt(enable: boolean) {
-    const href = pendingPushPromptHref;
-    pushPromptClosingRef.current = true;
-    setPendingPushPromptHref(null);
-    pushPromptSheetRef.current?.dismiss();
-    if (enable) {
+    const granted = await notificationPermission.requestPermission();
+    if (granted) {
       await requestEnablePush();
     }
-    if (href) {
-      navigateToAttendance(href);
-    }
+    return false;
   }
 
   async function replayQueuedScans() {
@@ -453,8 +470,19 @@ export default function Scan() {
     }
   }, [deviceId, token]);
 
-  const hasCamera = permission?.granted;
-  const cameraBlocked = permission && !permission.granted && permission.canAskAgain === false;
+  const hasCamera = cameraPermission.status?.granted;
+  const cameraBlocked =
+    cameraPermission.status && !cameraPermission.status.granted && cameraPermission.status.canAskAgain === false;
+
+  useEffect(() => {
+    if (scanMode !== "scan") return;
+    const message = cameraBlocked
+      ? "Camera access blocked. Open device settings to allow QR scanning."
+      : hasCamera
+        ? "Camera ready. Point the camera at your gym QR code."
+        : "Camera permission needed before scanning.";
+    AccessibilityInfo.announceForAccessibility(message);
+  }, [cameraBlocked, hasCamera, scanMode]);
   const needsProfilePhoto = /profile photo/i.test(errorMessage);
   const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
@@ -505,18 +533,6 @@ export default function Scan() {
     ];
   }, [codeReady, hasCamera, scanMode, scanState]);
 
-  const renderPushPromptBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
-
   async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
       return;
@@ -557,10 +573,23 @@ export default function Scan() {
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       const nextHref = attendanceResultHref(result, status);
       if (!failed) {
-        await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
+        const action = String(result.action ?? "").toLowerCase();
+        const isCheckIn = action !== "checkout" && action !== "already_checked_out" && !result.checkedOut;
+        if (isCheckIn) {
+          setCheckInMoment({
+            gymName:
+              result.attendance.branchName ??
+              memberHomeQuery.data?.activeOrganization?.name ??
+              "Your gym",
+          });
+          await sleep(CHECK_IN_MOMENT_VISIBLE_MS);
+          setCheckInMoment(null);
+        } else {
+          await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
+        }
       }
-      if (!failed && (await maybeShowPushPrompt(nextHref))) {
-        return;
+      if (!failed) {
+        await maybeShowPushPrompt();
       }
       navigateToAttendance(nextHref);
     } catch (error) {
@@ -707,13 +736,13 @@ export default function Scan() {
               <RefreshControl
                 refreshing={memberHomeQuery.isRefetching}
                 onRefresh={onRefresh}
-                tintColor={palette.accent.fill}
-                colors={[palette.accent.fill]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
         >
-          <MobileHeader
+          <AppHeader
             title="Scan Gym QR"
             contextSlot={<RoleSwitcherChip />}
             subtitle="Server-authoritative check-in for your active gym"
@@ -721,7 +750,7 @@ export default function Scan() {
           />
 
           {cameraBlocked ? (
-            <GlassCard variant="danger" contentStyle={styles.blockedPermissionContent}>
+            <Card variant="danger" contentStyle={styles.blockedPermissionContent}>
               <IconBubble icon="camera-outline" tone="red" size={42} />
               <View style={styles.blockedPermissionCopy}>
                 <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
@@ -733,12 +762,32 @@ export default function Scan() {
               </View>
               <ZookButton
                 onPress={() => void Linking.openSettings()}
-                tone="secondary"
+                variant="secondary"
                 icon="settings-outline"
               >
                 Open settings
               </ZookButton>
-            </GlassCard>
+              <View style={styles.permissionRecoveryRow}>
+                <ZookButton
+                  onPress={() => setScanMode("code")}
+                  variant="secondary"
+                  icon="keypad-outline"
+                  style={styles.permissionRecoveryAction}
+                >
+                  Enter code manually
+                </ZookButton>
+                <ZookButton
+                  onPress={() => void cameraPermission.requestPermission()}
+                  disabled={cameraPermission.busy}
+                  busy={cameraPermission.busy}
+                  variant="secondary"
+                  icon="refresh-outline"
+                  style={styles.permissionRecoveryAction}
+                >
+                  Try camera again
+                </ZookButton>
+              </View>
+            </Card>
           ) : null}
 
           {scanMode === "scan" ? (
@@ -752,6 +801,7 @@ export default function Scan() {
                 {hasCamera ? (
                   <CameraView
                     testID="scanner-view"
+                    accessibilityLabel="QR scanner camera preview"
                     style={styles.camera}
                     facing="back"
                     onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
@@ -759,25 +809,26 @@ export default function Scan() {
                   />
                 ) : (
                   <View style={styles.cameraFallback}>
-                    <Ionicons name="camera-outline" size={32} color={palette.accent.strong} />
-                    <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
-                      Camera needed
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cameraFallbackText,
-                        { color: palette.text.secondary, textAlign: "center" },
-                      ]}
-                    >
-                      {cameraBlocked
-                        ? "Camera access is blocked. Open device settings to allow scanning."
-                        : "Allow camera access to scan the gym QR."}
-                    </Text>
-                    <ZookButton
-                      onPress={() =>
-                        cameraBlocked ? void Linking.openSettings() : void requestPermission()
+                    <EmptyState
+                      icon="camera-outline"
+                      title={cameraBlocked ? "Camera access blocked" : "Enable camera"}
+                      body={
+                        cameraBlocked
+                          ? "Open device settings to allow QR scanning."
+                          : "Allow camera access when you are ready to scan the gym QR."
                       }
-                      tone="secondary"
+                    />
+                    <ZookButton
+                      onPress={() => {
+                        if (cameraBlocked) {
+                          void Linking.openSettings();
+                          return;
+                        }
+                        void cameraPermission.requestPermission();
+                      }}
+                      disabled={cameraPermission.busy}
+                      busy={cameraPermission.busy}
+                      variant="secondary"
                       style={styles.permissionButton}
                     >
                       {cameraBlocked ? "Open settings" : "Allow camera"}
@@ -789,15 +840,23 @@ export default function Scan() {
                     <AnimatedLaser frameSize={280} />
                   </ScannerFrame>
                 </View>
-                <View style={styles.cameraBadge}>
+                <View
+                  style={[
+                    styles.cameraBadge,
+                    {
+                      backgroundColor: cameraBadgeSurface,
+                      borderColor: palette.border.default,
+                    },
+                  ]}
+                >
                   <View style={[styles.liveDot, { backgroundColor: palette.accent.base }]} />
-                  <Text style={styles.cameraBadgeText}>
+                  <Text style={[styles.cameraBadgeText, { color: palette.text.primary }]}>
                     {busy ? "Checking code..." : "Searching for code..."}
                   </Text>
                 </View>
               </View>
 
-              <GlassCard variant="compact" contentStyle={styles.helpContent}>
+              <Card variant="compact" contentStyle={styles.helpContent}>
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
                   <Text style={[styles.helpTitle, { color: palette.text.primary }]}>
@@ -812,17 +871,17 @@ export default function Scan() {
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
                   accessibilityLabel="Enter manual check-in code"
-                  style={styles.manualCodeLink}
+                  style={({ pressed }) => [styles.manualCodeLink, pressed ? styles.linkPressed : null]}
                 >
                   <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
                     Enter code
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={palette.accent.strong} />
                 </Pressable>
-              </GlassCard>
+              </Card>
             </>
           ) : (
-            <GlassCard variant="compact" contentStyle={styles.codeContent}>
+            <Card variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
                 <Text style={[styles.codeTitle, { color: palette.text.primary }]}>
                   Enter check-in code
@@ -841,9 +900,7 @@ export default function Scan() {
                   autoCorrect={false}
                   maxLength={2}
                   placeholder="AB"
-                  placeholderTextColor={
-                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
-                  }
+                  placeholderTextColor={codePlaceholderColor}
                   style={[
                     styles.codeInput,
                     styles.codePrefixInput,
@@ -865,9 +922,7 @@ export default function Scan() {
                   keyboardType="number-pad"
                   maxLength={4}
                   placeholder="1234"
-                  placeholderTextColor={
-                    mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(17,21,15,0.4)"
-                  }
+                  placeholderTextColor={codePlaceholderColor}
                   style={[
                     styles.codeInput,
                     styles.codeDigitsInput,
@@ -913,56 +968,23 @@ export default function Scan() {
                 onPress={() => setScanMode("scan")}
                 accessibilityRole="button"
                 accessibilityLabel="Return to QR scanner"
-                style={styles.backToScannerLink}
+                style={({ pressed }) => [styles.backToScannerLink, pressed ? styles.linkPressed : null]}
               >
                 <Ionicons name="qr-code-outline" size={15} color={palette.accent.strong} />
                 <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
                   Back to camera scanner
                 </Text>
               </Pressable>
-            </GlassCard>
+            </Card>
           )}
 
-          <GlassCard variant="compact" contentStyle={styles.validationContent}>
+          <Card variant="compact" contentStyle={styles.validationContent}>
             {verificationSteps.map((item) => (
               <View
                 key={item.key}
                 style={[
                   styles.validationItem,
-                  {
-                    backgroundColor:
-                      item.state === "failed"
-                        ? mode === "dark"
-                          ? "rgba(255,90,61,0.12)"
-                          : "rgba(185,28,28,0.06)"
-                        : item.state === "active"
-                          ? mode === "dark"
-                            ? "rgba(125,211,252,0.12)"
-                            : "rgba(3,105,161,0.06)"
-                          : item.state === "complete"
-                            ? mode === "dark"
-                              ? "rgba(185,244,85,0.12)"
-                              : "rgba(30,63,32,0.06)"
-                            : mode === "dark"
-                              ? "rgba(255,255,255,0.06)"
-                              : "rgba(17,21,15,0.04)",
-                    borderColor:
-                      item.state === "failed"
-                        ? mode === "dark"
-                          ? "rgba(255,90,61,0.32)"
-                          : "rgba(185,28,28,0.16)"
-                        : item.state === "active"
-                          ? mode === "dark"
-                            ? "rgba(125,211,252,0.3)"
-                            : "rgba(3,105,161,0.16)"
-                          : item.state === "complete"
-                            ? mode === "dark"
-                              ? "rgba(185,244,85,0.28)"
-                              : "rgba(30,63,32,0.16)"
-                            : mode === "dark"
-                              ? "rgba(255,255,255,0.1)"
-                              : "rgba(17,21,15,0.08)",
-                  },
+                  getVerificationItemStyle(item.state),
                 ]}
               >
                 <Ionicons
@@ -991,10 +1013,10 @@ export default function Scan() {
                 </Text>
               </View>
             ))}
-          </GlassCard>
+          </Card>
 
           {errorMessage ? (
-            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+            <Card variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="alert-circle-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
@@ -1009,17 +1031,17 @@ export default function Scan() {
                   }
                   resetScan();
                 }}
-                tone="secondary"
+                variant="secondary"
                 icon={needsProfilePhoto ? "person-circle-outline" : "refresh-outline"}
                 style={styles.retryButton}
               >
                 {needsProfilePhoto ? "Add photo" : "Scan again"}
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {queuedScanCount > 0 ? (
-            <GlassCard variant="warning" contentStyle={styles.errorContent}>
+            <Card variant="warning" contentStyle={styles.errorContent}>
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
@@ -1029,7 +1051,7 @@ export default function Scan() {
               </View>
               <ZookButton
                 onPress={() => void replayQueuedScans()}
-                tone="secondary"
+                variant="secondary"
                 icon="refresh-outline"
                 busy={replayingQueue}
                 busyLabel="Syncing"
@@ -1037,7 +1059,7 @@ export default function Scan() {
               >
                 Retry now
               </ZookButton>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {__DEV__ && getMobileAppEnv() === "local" ? (
@@ -1055,67 +1077,65 @@ export default function Scan() {
           ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
-      <BottomSheetModal
-        ref={pushPromptSheetRef}
-        snapPoints={pushPromptSnapPoints}
-        enablePanDownToClose
-        backdropComponent={renderPushPromptBackdrop}
-        backgroundStyle={StyleSheet.flatten([
-          styles.sheetBackground,
-          {
-            backgroundColor: palette.bg.elevated,
-            borderColor: palette.border.subtle,
-          },
-        ])}
-        handleIndicatorStyle={StyleSheet.flatten([
-          styles.sheetHandle,
-          {
-            backgroundColor: palette.border.strong,
-          },
-        ])}
-        onDismiss={() => {
-          if (pushPromptClosingRef.current) {
-            pushPromptClosingRef.current = false;
-            return;
-          }
-          if (pendingPushPromptHref) {
-            const href = pendingPushPromptHref;
-            setPendingPushPromptHref(null);
-            navigateToAttendance(href);
-          }
-        }}
-      >
-        <BottomSheetView style={styles.pushPromptSheet}>
-          <View style={styles.pushPromptHeader}>
-            <IconBubble icon="barbell-outline" tone="lime" size={42} />
-            <View style={styles.pushPromptCopy}>
-              <Text style={[styles.pushPromptTitle, { color: palette.text.primary }]}>
-                Get plan alerts
-              </Text>
-              <Text style={[styles.pushPromptBody, { color: palette.text.secondary }]}>
-                Get notified when your trainer publishes a new plan.
-              </Text>
-            </View>
-          </View>
-          <View style={styles.pushPromptActions}>
-            <ZookButton
-              onPress={() => void closePushPrompt(true)}
-              icon="notifications-outline"
-              style={styles.pushPromptAction}
-            >
-              Enable
-            </ZookButton>
-            <ZookButton
-              onPress={() => void closePushPrompt(false)}
-              tone="secondary"
-              style={styles.pushPromptAction}
-            >
-              Not now
-            </ZookButton>
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
+      {cameraPermission.permissionSheet}
+      {notificationPermission.permissionSheet}
+      <CheckInMoment
+        visible={Boolean(checkInMoment)}
+        gymName={checkInMoment?.gymName ?? "Your gym"}
+        onDone={() => setCheckInMoment(null)}
+      />
     </>
+  );
+}
+
+function CheckInMoment({
+  visible,
+  gymName,
+  onDone,
+}: {
+  visible: boolean;
+  gymName: string;
+  onDone: () => void;
+}) {
+  const { palette } = useTheme();
+  const scale = useRef(new RNAnimated.Value(0.82)).current;
+  const opacity = useRef(new RNAnimated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      scale.setValue(0.82);
+      opacity.setValue(0);
+      return;
+    }
+    RNAnimated.parallel([
+      RNAnimated.spring(scale, {
+        toValue: 1,
+        damping: 14,
+        stiffness: 180,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(opacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    const timer = setTimeout(onDone, CHECK_IN_MOMENT_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [onDone, opacity, scale, visible]);
+
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onDone}>
+      <View style={styles.checkInMomentBackdrop}>
+        <RNAnimated.View style={[styles.checkInMomentContent, { opacity, transform: [{ scale }] }]}>
+          <View style={[styles.checkInMomentTick, { backgroundColor: palette.accent.base }]}>
+            <Ionicons name="checkmark" size={58} color={palette.text.onAccent} />
+          </View>
+          <Text style={styles.checkInMomentGym} numberOfLines={1}>{gymName}</Text>
+          <Text style={styles.checkInMomentTitle}>Checked in</Text>
+        </RNAnimated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1138,15 +1158,12 @@ const styles = StyleSheet.create({
     minHeight: 28,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.18)",
-    backgroundColor: "rgba(185,244,85,0.075)",
     paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
   validationText: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   cameraCard: {
@@ -1154,8 +1171,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: legacyColors.borderStrong,
-    backgroundColor: legacyColors.surfaceSolid,
   },
   camera: {
     flex: 1,
@@ -1168,25 +1183,35 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   cameraFallbackTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   cameraFallbackText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   permissionButton: {
-    minHeight: 38,
+    minHeight: 44,
     marginTop: spacing.xs,
   },
   blockedPermissionContent: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: spacing.md,
   },
   blockedPermissionCopy: {
     flex: 1,
     gap: 4,
+    minWidth: 180,
+  },
+  permissionRecoveryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    width: "100%",
+  },
+  permissionRecoveryAction: {
+    flex: 1,
+    minWidth: 132,
   },
   errorContent: {
     gap: spacing.sm,
@@ -1198,7 +1223,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.small,
   },
   retryButton: {
@@ -1220,7 +1244,6 @@ const styles = StyleSheet.create({
     bottom: 14,
     minHeight: 34,
     borderRadius: 17,
-    backgroundColor: "rgba(7,9,8,0.72)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1230,10 +1253,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: legacyColors.lime,
   },
   cameraBadgeText: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   scanLineRail: {
@@ -1241,10 +1262,12 @@ const styles = StyleSheet.create({
     height: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: legacyColors.lime,
-    shadowOpacity: 1,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 0 },
+  },
+  scanLineRailAndroid: {
+    elevation: 0,
+    shadowOpacity: 0,
   },
   scanLineGlow: {
     position: "absolute",
@@ -1252,7 +1275,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 18,
     borderRadius: 999,
-    opacity: 0.34,
   },
   scanLineCore: {
     width: "100%",
@@ -1271,30 +1293,29 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   helpTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   helpBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   manualCodeLink: {
-    minHeight: 38,
-    borderRadius: 19,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.24)",
-    backgroundColor: "rgba(185,244,85,0.08)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
   },
+  linkPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.98 }],
+  },
   manualCodeLinkText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
   scanHint: {
-    color: legacyColors.muted,
     textAlign: "center",
     ...typography.small,
   },
@@ -1306,11 +1327,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   codeTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   codeHint: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   codeRow: {
@@ -1322,9 +1341,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(0,0,0,0.2)",
-    color: legacyColors.text,
     paddingHorizontal: 12,
     textAlign: "center",
     ...typography.bodyStrong,
@@ -1338,14 +1354,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   codeDivider: {
-    color: legacyColors.muted,
     ...typography.cardTitle,
   },
   codeButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1353,19 +1367,18 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   checkingText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
-  checkingDot: {
-    color: legacyColors.lime,
-  },
+  checkingDot: {},
   backToScannerLink: {
     alignSelf: "center",
-    minHeight: 34,
+    minHeight: 44,
+    borderRadius: 22,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
   },
   devLink: {
     alignSelf: "center",
@@ -1373,53 +1386,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   devLinkText: {
-    color: legacyColors.muted,
     textDecorationLine: "underline",
     ...typography.caption,
-  },
-  sheetBackground: {
-    borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
-  },
-  sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
-  pushPromptSheet: {
-    width: "100%",
-    maxWidth: layout.contentWidth,
-    alignSelf: "center",
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  pushPromptHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  pushPromptCopy: {
-    flex: 1,
-    gap: 5,
-  },
-  pushPromptTitle: {
-    color: legacyColors.text,
-    ...typography.cardTitle,
-  },
-  pushPromptBody: {
-    color: legacyColors.muted,
-    ...typography.body,
-  },
-  pushPromptActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  pushPromptAction: {
-    flex: 1,
   },
   codeValidationHint: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     marginTop: 6,
     paddingLeft: 4,
+  },
+  checkInMomentBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(17,21,15,0.94)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  checkInMomentContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    width: "100%",
+  },
+  checkInMomentTick: {
+    alignItems: "center",
+    borderRadius: 999,
+    height: 104,
+    justifyContent: "center",
+    shadowColor: "#8DFF9A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    width: 104,
+  },
+  checkInMomentGym: {
+    color: "#DDE8D8",
+    maxWidth: "86%",
+    textAlign: "center",
+    ...typography.title,
+  },
+  checkInMomentTitle: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    ...typography.display,
   },
 });

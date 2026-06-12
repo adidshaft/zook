@@ -1,11 +1,11 @@
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 
 import {
   FormField,
-  MobileHeader,
+  AppHeader,
   QueryErrorState,
   SectionHeader,
   SegmentedControl,
@@ -140,10 +140,9 @@ export default function TrackingEntryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="tracking-entry-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title={mode === "workout" ? "Log workout" : "Body measurements"} subtitle={mode === "workout" ? "Add a completed session" : "Track body composition"} showProfileShortcut={false} />
+          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} subtitle={mode === "workout" ? "Add a completed session" : "Track body composition"} showProfileShortcut={false} />
           <SegmentedControl
             options={[
               { value: "workout", label: "Workout" },

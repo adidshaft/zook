@@ -1,4 +1,5 @@
 import type { ExpoConfig } from "expo/config";
+import { darkPalette } from "@zook/tokens";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobileApiMode = "backend" | "offline-demo";
@@ -32,7 +33,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   scheme: "zook",
   version: "0.1.0",
   orientation: "portrait",
-  userInterfaceStyle: "dark",
+  userInterfaceStyle: "automatic",
   icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
   splash: {
@@ -74,6 +75,8 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
   android: {
     package: "com.zook.app",
     versionCode: 3,
+    edgeToEdgeEnabled: true,
+    predictiveBackGestureEnabled: true,
     intentFilters: [
       {
         action: "VIEW",
@@ -99,7 +102,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
       "expo-notifications",
       {
         icon: "./assets/notification-icon.png",
-        color: "#B9F455",
+        color: darkPalette.accent.base,
       },
     ],
     "expo-secure-store",
@@ -227,7 +230,7 @@ function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
 }
 
 function resolveApiMode(): MobileApiMode {
-  const candidates = ["EXPO_PUBLIC_API_MODE"] as const;
+  const candidates = ["MOBILE_API_MODE", "EXPO_PUBLIC_API_MODE", "API_MODE"] as const;
   for (const key of candidates) {
     const value = process.env[key]?.trim();
     if (!value) {

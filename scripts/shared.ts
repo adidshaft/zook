@@ -85,7 +85,7 @@ export const providerSelections = [
     implementedProviders: ["local", "s3", "r2", "supabase"],
     liveProviders: {
       supabase: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET"],
-      s3: ["S3_BUCKET", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
+      s3: ["S3_BUCKET", "S3_REGION"],
       r2: ["S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
     },
   },

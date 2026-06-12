@@ -1,4 +1,6 @@
-export type ServerCacheProvider = "memory" | "upstash" | "disabled";
+import Redis from "ioredis";
+
+export type ServerCacheProvider = "memory" | "upstash" | "redis" | "disabled";
 
 export type ServerCacheDiagnostics = {
   selectedProvider: ServerCacheProvider;
@@ -112,14 +114,48 @@ export class UpstashServerCacheStore implements ServerCacheStore {
   }
 }
 
+export class RedisServerCacheStore implements ServerCacheStore {
+  readonly providerName = "redis" as const;
+
+  private readonly redis: Redis;
+
+  constructor(private readonly input: { url: string; namespace?: string }) {
+    this.redis = new Redis(input.url, {
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+    });
+  }
+
+  async get<T>(key: string) {
+    const value = await this.redis.get(this.cacheKey(key));
+    return value ? (JSON.parse(value) as T) : null;
+  }
+
+  async set<T>(key: string, value: T, ttlSeconds: number) {
+    await this.redis.set(this.cacheKey(key), JSON.stringify(value), "EX", Math.max(ttlSeconds, 1));
+  }
+
+  async delete(key: string) {
+    await this.redis.del(this.cacheKey(key));
+  }
+
+  private cacheKey(key: string) {
+    return `${this.input.namespace ?? "zook"}:cache:${key}`;
+  }
+}
+
 function normalizeProvider(value?: string | null): ServerCacheProvider | "unsupported" {
   switch (value?.trim().toLowerCase() || "memory") {
     case "memory":
     case "local":
       return "memory";
     case "upstash":
-    case "redis":
       return "upstash";
+    case "redis":
+    case "elasticache":
+    case "valkey":
+      return "redis";
     case "disabled":
     case "off":
       return "disabled";
@@ -165,6 +201,17 @@ export function getServerCacheDiagnostics(
       mode: "distributed",
     };
   }
+  if (selectedProvider === "redis") {
+    const missingEnv = ["REDIS_URL"].filter((key) => !env[key]?.trim());
+    return {
+      selectedProvider,
+      activeProvider: missingEnv.length ? null : "redis",
+      status: missingEnv.length ? "misconfigured" : "ready",
+      configured: missingEnv.length === 0,
+      missingEnv,
+      mode: "distributed",
+    };
+  }
   return {
     selectedProvider,
     activeProvider: "memory",
@@ -199,6 +246,13 @@ export function getServerCacheStore() {
     globalForCache.zookServerCacheStore = new UpstashServerCacheStore({
       url: process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "",
       token: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "",
+      ...(namespace ? { namespace } : {}),
+    });
+  } else if (diagnostics.status === "ready" && diagnostics.selectedProvider === "redis") {
+    const namespace =
+      process.env.SERVER_CACHE_NAMESPACE?.trim() || process.env.RATE_LIMIT_NAMESPACE?.trim();
+    globalForCache.zookServerCacheStore = new RedisServerCacheStore({
+      url: process.env.REDIS_URL?.trim() ?? "",
       ...(namespace ? { namespace } : {}),
     });
   } else {

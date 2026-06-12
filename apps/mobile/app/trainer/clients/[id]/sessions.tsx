@@ -1,10 +1,10 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  AppHeader,
   SegmentedControl,
   StatusChip,
   ZookScreen,
@@ -17,11 +17,12 @@ import {
   type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerClientSessionsScreen() {
   const router = useRouter();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
+  const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
   const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
   const clientName = client?.user?.name ?? "Client";
@@ -35,17 +36,25 @@ export default function TrainerClientSessionsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-client-sessions-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader
+          <AppHeader
             title="Client Detail"
             subtitle={clientName}
-            leading={<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))} accessibilityRole="button" accessibilityLabel="Back to clients" style={styles.iconButton}><Text style={styles.backIcon}>‹</Text></Pressable>}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
+                accessibilityRole="button"
+                accessibilityLabel="Back to clients"
+                style={[styles.iconButton, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}
+              >
+                <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
+              </Pressable>
+            }
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="sessions" onChange={selectTab} />
-          <GlassCard variant="compact" contentStyle={styles.stack}>
+          <Card variant="compact" contentStyle={styles.stack}>
             <ListRow
               title="Adherence"
               subtitle={averageCompletion === null ? "Waiting for member feedback and workout logs." : `${averageCompletion}% average completion across recent plan feedback.`}
@@ -60,7 +69,7 @@ export default function TrainerClientSessionsScreen() {
               <ListRow title="Plan feedback" subtitle="No member feedback yet." trailing={<StatusChip status="Waiting" tone="neutral" />} />
             )}
             <ListRow title="Plans" subtitle={planCountLabel(activePlans)} trailing={<StatusChip status="Active" tone="lime" />} />
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>
@@ -69,7 +78,7 @@ export default function TrainerClientSessionsScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
-  iconButton: { alignItems: "center", backgroundColor: legacyColors.panel, borderColor: legacyColors.border, borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { color: legacyColors.text, fontSize: 26, lineHeight: 28 },
+  iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backIcon: { fontSize: 26, lineHeight: 28 },
   stack: { gap: 10 },
 });
