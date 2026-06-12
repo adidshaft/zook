@@ -1,8 +1,17 @@
 # Real Device QA Log
 
-Last updated: 2026-05-17
+Last updated: 2026-06-13
 
 Simulators and emulators catch layout and navigation issues. The flows below still need physical iOS and Android evidence before a confident production launch claim.
+
+## 2026-06-13 Store Candidate Status
+
+Store candidates are available for physical-device QA:
+
+- iOS: EAS production/store build `282c6ef6-8ef5-4772-82d7-529993a6a687`, version `0.1.0 (5)`, commit `7b95a47`. EAS submission `1bb5152b-01c2-4402-b7e7-4cce38f7ff8a` uploaded the build to App Store Connect successfully, but direct TestFlight UI visibility still needs Apple login/2FA verification.
+- Android: EAS production/store build `3d9c0f8e-8fe9-4cdc-be06-e1468b5c7431`, version `0.1.0` versionCode `4`. Google Play internal testing shows release `4 (0.1.0)` available to internal testers.
+
+No physical-device acceptance evidence has been attached for this candidate yet. The launch remains open until the pass below is filled for both platforms.
 
 ## Evidence Template
 
@@ -68,3 +77,6 @@ Platform:
 - Real-device QR scanner evidence in normal and low light.
 - Real provider payment checkout evidence.
 - Store build install evidence.
+- Light and dark mode pass for member, owner/admin, receptionist, and trainer.
+- Geofence checkout evidence from a physical device.
+- App Store Connect/TestFlight processing visibility after Apple login.
