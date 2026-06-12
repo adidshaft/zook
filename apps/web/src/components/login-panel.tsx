@@ -440,7 +440,7 @@ export function LoginPanel({
         {loginMethod === "email" ? <Mail size={22} /> : <Smartphone size={22} />}
       </motion.div>
       <motion.h1 variants={itemVariants} className="text-3xl font-semibold tracking-tight">
-        {redirectLabel ? `Continue to ${redirectLabel}` : t("signInTitle")}
+        {t("signInTitle")}
       </motion.h1>
       <motion.p
         variants={itemVariants}
