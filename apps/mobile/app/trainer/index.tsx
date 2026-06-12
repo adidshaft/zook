@@ -248,7 +248,7 @@ export default function TrainerHomeScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: 10,
+    gap: 16,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding + 32,
     paddingTop: 8,

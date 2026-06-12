@@ -171,7 +171,7 @@ function titleCase(value: string) {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: 20,

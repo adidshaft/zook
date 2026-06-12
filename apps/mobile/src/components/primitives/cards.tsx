@@ -1,3 +1,5 @@
+import { Card } from "./foundation";
+
 export {
   AlertCard,
   AuditWarning,
@@ -15,3 +17,10 @@ export {
   StatCard,
   StatusRing,
 } from "./foundation";
+
+export function PressableCard({
+  pressable: _pressable,
+  ...props
+}: Parameters<typeof Card>[0]) {
+  return <Card {...props} pressable />;
+}

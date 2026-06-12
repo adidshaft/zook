@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    gap: 14,
+    gap: 16,
     paddingBottom: 96,
   },
   billingCard: {

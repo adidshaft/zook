@@ -44,7 +44,7 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
-import { layout, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, materials, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
 import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
@@ -220,6 +220,7 @@ function glassSurfaceColors(
   surface: CardSurface,
 ): { backgroundColor: string; borderColor: string; blurIntensity: number; blurTint: "dark" | "light" } {
   const isDark = mode === "dark";
+  const cardMaterial = materials.cardSurface(mode);
   const blurIntensity = variant === "compact" ? (isDark ? 18 : 12) : isDark ? 24 : 16;
   const blurTint = isDark ? "dark" : "light";
 
@@ -260,8 +261,8 @@ function glassSurfaceColors(
   }
 
   return {
-    backgroundColor: surface === "content" ? palette.bg.elevated : palette.surface.raised,
-    borderColor: surface === "content" ? palette.border.subtle : palette.border.default,
+    backgroundColor: surface === "content" ? cardMaterial.backgroundColor : palette.surface.raised,
+    borderColor: surface === "content" ? cardMaterial.borderColor : palette.border.default,
     blurIntensity,
     blurTint,
   };
@@ -521,6 +522,12 @@ export function Card({
   const resolvedRadius = radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard);
   const resolvedSurface = surface ?? (pressable || onPress ? "interactive" : "content");
   const surfaceColors = glassSurfaceColors(mode, palette, variant, resolvedSurface);
+  const cardMaterial = materials.cardSurface(mode);
+  const shouldElevate =
+    mode === "light" ||
+    resolvedSurface === "floating" ||
+    resolvedSurface === "interactive" ||
+    Boolean(resolvedGlowTone);
 
   // Android draws `elevation` shadows behind the view; when the same view
   // has `overflow: hidden`, the shadow gets clipped *inside* the card and
@@ -531,7 +538,7 @@ export function Card({
     { borderRadius: resolvedRadius },
     platformSurfaceShadow(
       mode,
-      resolvedSurface === "floating" || resolvedSurface === "interactive" || Boolean(resolvedGlowTone),
+      shouldElevate,
       palette.bg.sunken,
     ),
     resolvedGlowTone ? glassGlowStyles[resolvedGlowTone] : null,
@@ -549,6 +556,15 @@ export function Card({
   ];
   const inner = (
     <View style={innerStyle}>
+      {variant === "default" || variant === "compact" ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.cardInnerTopHighlight,
+            { backgroundColor: cardMaterial.innerTopHighlight },
+          ]}
+        />
+      ) : null}
       {Platform.OS === "ios" && resolvedSurface !== "content" ? (
         <BlurView
           pointerEvents="none"
@@ -579,6 +595,7 @@ export function Card({
         testID={testID}
         disabled={disabled}
         onPress={() => pressWithHaptics(onPress)}
+        android_ripple={{ color: palette.surface.accentSoft, borderless: false }}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
         style={({ pressed }) => [outerStyle, pressed && !disabled ? styles.pressed : null]}
@@ -3099,6 +3116,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: fallbackColors.panel,
   },
+  cardInnerTopHighlight: {
+    height: StyleSheet.hairlineWidth,
+    left: 16,
+    position: "absolute",
+    right: 16,
+    top: 0,
+    zIndex: 1,
+  },
   glassCardGlow: {
     borderColor: fallbackColors.limeBorder,
     ...shadows.glowLimeSoft,
@@ -3203,6 +3228,7 @@ const styles = StyleSheet.create({
   },
   sectionGroup: {
     gap: 4,
+    marginBottom: spacing.sm,
   },
   sectionEyebrow: {
     color: fallbackColors.muted,
@@ -3246,8 +3272,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
     opacity: 0.5,
