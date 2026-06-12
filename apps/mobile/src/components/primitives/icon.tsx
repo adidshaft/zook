@@ -64,22 +64,30 @@ const iconMap: Record<
 };
 
 export function Icon({
+  accessibilityLabel,
   color,
+  decorative = true,
   focused = false,
   name,
   size = 24,
 }: {
+  accessibilityLabel?: string;
   color: string;
+  decorative?: boolean;
   focused?: boolean;
   name: AppIconName;
   size?: number;
 }) {
   const icon = iconMap[name];
+  const accessibilityProps = decorative
+    ? ({ accessibilityElementsHidden: true, importantForAccessibility: "no" as const } as const)
+    : ({ accessibilityRole: "image" as const, accessibilityLabel: accessibilityLabel ?? name } as const);
   if (Platform.OS === "ios" && !__DEV__) {
-    return <ExpoSymbols.SymbolView name={icon.ios} size={size} tintColor={color} />;
+    return <ExpoSymbols.SymbolView {...accessibilityProps} name={icon.ios} size={size} tintColor={color} />;
   }
   return (
     <Ionicons
+      {...accessibilityProps}
       name={focused && icon.ioniconFocused ? icon.ioniconFocused : icon.ionicon}
       size={size}
       color={color}
