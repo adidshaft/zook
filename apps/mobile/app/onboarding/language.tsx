@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
@@ -53,56 +53,65 @@ export default function OnboardingLanguageStep() {
       testID="onboarding-language-screen"
       style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 22, paddingBottom: insets.bottom + 22 }]}
     >
-      <View style={styles.header}>
-        <Text style={[styles.brand, { color: palette.text.primary }]}>Pick your language</Text>
-        <Text style={[styles.kicker, { color: palette.text.secondary }]}>You can change this any time in Settings.</Text>
-      </View>
-
-      <View style={styles.list}>
-        {languageOptions.map((option) => {
-          const isSelected = option.value === selected;
-          return (
-            <Pressable
-              key={option.value}
-              testID={`onboarding-language-${option.value}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={option.label}
-              onPress={() => setSelected(option.value)}
-              style={({ pressed }) => [
-                styles.option,
-                { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
-                isSelected ? { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft } : null,
-                pressed ? styles.optionPressed : null,
-              ]}
-            >
-              <View style={styles.optionCopy}>
-                <Text style={[styles.optionLabel, { color: palette.text.primary }]}>{option.label}</Text>
-                <Text style={[styles.optionCaption, { color: palette.text.tertiary }]}>{option.caption}</Text>
-              </View>
-              <Ionicons
-                name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                size={22}
-                color={isSelected ? palette.accent.base : palette.text.tertiary}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.comingSoon}>
-        <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages on the way</Text>
-        <View style={styles.comingSoonChips}>
-          {comingSoonLanguages.map((name) => (
-            <View
-              key={name}
-              style={[styles.comingSoonChip, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}
-            >
-              <Text style={[styles.comingSoonChipText, { color: palette.text.tertiary }]}>{name}</Text>
-            </View>
-          ))}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.brand, { color: palette.text.primary }]}>Pick your language</Text>
+          <Text style={[styles.kicker, { color: palette.text.secondary }]}>You can change this any time in Settings.</Text>
         </View>
-      </View>
+
+        <View style={styles.list}>
+          {languageOptions.map((option) => {
+            const isSelected = option.value === selected;
+            return (
+              <Pressable
+                key={option.value}
+                testID={`onboarding-language-${option.value}`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`${option.label}. ${option.caption}`}
+                onPress={() => setSelected(option.value)}
+                style={({ pressed }) => [
+                  styles.option,
+                  { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
+                  isSelected ? { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft } : null,
+                  pressed ? styles.optionPressed : null,
+                ]}
+              >
+                <View style={styles.optionCopy}>
+                  <Text style={[styles.optionLabel, { color: palette.text.primary }]}>{option.label}</Text>
+                  <Text style={[styles.optionCaption, { color: palette.text.tertiary }]}>{option.caption}</Text>
+                </View>
+                <Ionicons
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                  name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                  size={22}
+                  color={isSelected ? palette.accent.base : palette.text.tertiary}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.comingSoon}>
+          <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages on the way</Text>
+          <View style={styles.comingSoonChips}>
+            {comingSoonLanguages.map((name) => (
+              <View
+                key={name}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+                style={[styles.comingSoonChip, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}
+              >
+                <Text style={[styles.comingSoonChipText, { color: palette.text.tertiary }]}>{name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <ZookButton
@@ -120,8 +129,14 @@ export default function OnboardingLanguageStep() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    justifyContent: "space-between",
     paddingHorizontal: 24,
+  },
+  content: {
+    flexGrow: 1,
+    gap: 24,
+    justifyContent: "center",
+    paddingBottom: 24,
+    paddingTop: 12,
   },
   header: {
     gap: 8,

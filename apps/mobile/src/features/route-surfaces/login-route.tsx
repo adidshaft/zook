@@ -572,11 +572,21 @@ export default function Login() {
                 </View>
                 <Text style={[styles.legalText, { color: palette.text.tertiary }]}>
                   By continuing you agree to our{" "}
-                  <Text style={[styles.legalLink, { color: palette.accent.base }]} onPress={() => void Linking.openURL(TERMS_URL)}>
+                  <Text
+                    accessibilityRole="link"
+                    accessibilityLabel="Open Zook terms"
+                    style={[styles.legalLink, { color: palette.accent.base }]}
+                    onPress={() => void Linking.openURL(TERMS_URL)}
+                  >
                     Terms
                   </Text>{" "}
                   and{" "}
-                  <Text style={[styles.legalLink, { color: palette.accent.base }]} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+                  <Text
+                    accessibilityRole="link"
+                    accessibilityLabel="Open Zook privacy policy"
+                    style={[styles.legalLink, { color: palette.accent.base }]}
+                    onPress={() => void Linking.openURL(PRIVACY_URL)}
+                  >
                     Privacy Policy
                   </Text>
                   .
@@ -637,10 +647,11 @@ function SsoButton({
 
 const styles = StyleSheet.create({
   content: {
-    padding: 20,
-    paddingTop: 48,
-    paddingBottom: 40,
-    gap: 18,
+    justifyContent: "center",
+    padding: 16,
+    paddingTop: 28,
+    paddingBottom: 48,
+    gap: 16,
   },
   accentGlow: {
     borderRadius: 999,
@@ -654,7 +665,7 @@ const styles = StyleSheet.create({
   heroSection: {
     gap: 8,
     position: "relative",
-    paddingVertical: 24,
+    paddingVertical: 12,
   },
   heroEyebrow: {
     ...typography.eyebrow,
@@ -666,7 +677,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   heroTitle: {
-    ...typography.display,
+    ...typography.screenTitle,
   },
   heroBody: {
     ...typography.body,
@@ -710,10 +721,12 @@ const styles = StyleSheet.create({
   },
   otpActions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   otpAction: {
     flex: 1,
+    minWidth: 132,
   },
   dividerRow: {
     flexDirection: "row",

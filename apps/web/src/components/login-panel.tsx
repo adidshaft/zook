@@ -105,6 +105,22 @@ function randomOAuthValue() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function loginDestinationLabel(redirect: string | null) {
+  if (!redirect?.startsWith("/") || redirect.startsWith("//")) {
+    return null;
+  }
+  if (redirect.startsWith("/dashboard/branches")) return "Branches";
+  if (redirect.startsWith("/dashboard/reports")) return "Reports";
+  if (redirect.startsWith("/dashboard/staff")) return "Staff";
+  if (redirect.startsWith("/dashboard/attendance/qr-display")) return "Attendance QR Console";
+  if (redirect.startsWith("/dashboard/attendance")) return "Attendance";
+  if (redirect.startsWith("/desk")) return "Front Desk";
+  if (redirect.startsWith("/coach")) return "Coach";
+  if (redirect.startsWith("/platform")) return "Platform";
+  if (redirect.startsWith("/dashboard")) return "Control Room";
+  return null;
+}
+
 function rateLimitMessage(response: Response, locale: PublicLocale) {
   const retryAfter = Number(response.headers.get("retry-after"));
   const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60;
@@ -143,8 +159,13 @@ export function LoginPanel({
   const emailRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const otpRef = useRef<HTMLInputElement>(null);
+  const redirectLabel = loginDestinationLabel(searchParams.get("redirect"));
   const [message, setMessage] = useState(
-    searchParams.get("redirect") === "/platform" ? t("signInPlatform") : t("signInDefault"),
+    redirectLabel
+      ? `Sign in to continue to ${redirectLabel}.`
+      : searchParams.get("redirect") === "/platform"
+        ? t("signInPlatform")
+        : t("signInDefault"),
   );
 
   useEffect(() => {
@@ -419,7 +440,7 @@ export function LoginPanel({
         {loginMethod === "email" ? <Mail size={22} /> : <Smartphone size={22} />}
       </motion.div>
       <motion.h1 variants={itemVariants} className="text-3xl font-semibold tracking-tight">
-        {t("signInTitle")}
+        {redirectLabel ? `Continue to ${redirectLabel}` : t("signInTitle")}
       </motion.h1>
       <motion.p
         variants={itemVariants}
