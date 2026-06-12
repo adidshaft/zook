@@ -10,6 +10,15 @@ const target = resolve(process.cwd(), process.argv[2] ?? "artifacts/app-store-sc
 const previousMemberHomeRef =
   process.env.SCREENSHOT_PREVIOUS_MEMBER_HOME ??
   "artifacts/app-store-screenshots-20260522/member-home.png";
+const bannedScreenshotText = [
+  /Open debugbar/i,
+  /React has detected/i,
+  /TEST MODE/i,
+  /No real payment/i,
+  /\b000000\b/,
+  /Downloading 100%/i,
+  /(?:Error|Warning):.*(?:stack|trace|component)/i,
+];
 
 type PngInfo = {
   bitDepth: number;
@@ -28,6 +37,19 @@ function listPngs(path: string): string[] {
       const childStats = statSync(child);
       if (childStats.isDirectory()) return listPngs(child);
       return child.endsWith(".png") ? [child] : [];
+    })
+    .sort();
+}
+
+function listTextManifests(path: string): string[] {
+  const stats = statSync(path);
+  if (stats.isFile()) return /\.(txt|json|html|md)$/i.test(path) ? [path] : [];
+  return readdirSync(path)
+    .flatMap((entry) => {
+      const child = join(path, entry);
+      const childStats = statSync(child);
+      if (childStats.isDirectory()) return listTextManifests(child);
+      return /\.(txt|json|html|md)$/i.test(child) ? [child] : [];
     })
     .sort();
 }
@@ -156,6 +178,16 @@ for (const file of files) {
   console.log(`${stddev.toFixed(2)}\t${label}`);
   if (stddev < minStddev) {
     failures.push(`${label} (${stddev.toFixed(2)})`);
+  }
+}
+
+for (const file of listTextManifests(target)) {
+  const label = file.replace(`${process.cwd()}/`, "");
+  const text = readFileSync(file, "utf8");
+  for (const pattern of bannedScreenshotText) {
+    if (pattern.test(text)) {
+      failures.push(`${label} contains launch-blocked screenshot text: ${pattern.source}`);
+    }
   }
 }
 

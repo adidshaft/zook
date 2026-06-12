@@ -40,7 +40,6 @@ const ALL_PUBLIC_ROUTES = [
   // /qr/[username] is a route handler that streams SVG, not an HTML page —
   // it has no headings to assert and screenshotting a binary response times out.
   { path: "/r/NISHAFIT", name: "referral-fallback" },
-  { path: "/checkout/mock/demo", name: "mock-checkout" },
 ] as const;
 
 const ROLE_ROUTES = [

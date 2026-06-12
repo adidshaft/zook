@@ -52,7 +52,6 @@ declare global {
 }
 
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
-const isDev = process.env.NODE_ENV === "development";
 const googleOAuthStateKey = "zook.googleOAuthState";
 const googleOAuthRedirectKey = "zook.googleOAuthRedirect";
 type LoginSession = Parameters<typeof resolvePostLoginDestination>[0];
@@ -252,14 +251,8 @@ export function LoginPanel({
         }
         throw error;
       });
-      setMessage(
-        isDev && payload.devOtp
-          ? `${t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier })} ${t(
-              "testCode",
-              { code: payload.devOtp },
-            )}`
-          : t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier }),
-      );
+      void payload.devOtp;
+      setMessage(t(resend ? "freshOtpSent" : "otpSent", { identifier: trimmedIdentifier }));
       setIdentifier(trimmedIdentifier);
       setCode("");
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
