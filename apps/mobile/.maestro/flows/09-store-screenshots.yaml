@@ -8,17 +8,18 @@ tags:
     clearKeychain: true
 - runFlow:
     file: _helpers/complete-language-if-needed.yaml
-- openLink: zook:///
+- openLink: zook:///__demo-role?role=MEMBER&target=/
 - waitForAnimationToEnd:
     timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "member-home-screen"
     timeout: 30000
-- tapOn:
-    point: "95%,94%"
+- hideKeyboard:
     optional: true
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-home.png
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-home
 
 - openLink: zook:///plan
 - waitForAnimationToEnd:
@@ -30,7 +31,7 @@ tags:
 - tapOn:
     id: "plan-schedule-first"
     optional: true
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-plan.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-plan
 
 - openLink: zook:///
 - waitForAnimationToEnd:
@@ -39,13 +40,12 @@ tags:
     visible:
       id: "member-home-screen"
     timeout: 15000
-- tapOn:
-    point: "38%,88%"
+- openLink: zook:///scan
 - extendedWaitUntil:
     visible:
       id: "scan-screen"
     timeout: 15000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-scan.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-scan
 
 - openLink: zook:///progress
 - waitForAnimationToEnd:
@@ -54,7 +54,7 @@ tags:
     visible:
       id: "progress-screen"
     timeout: 15000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/member-progress.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/member-progress
 
 - openLink: zook:///notifications
 - waitForAnimationToEnd:
@@ -66,48 +66,61 @@ tags:
     id: "notification-detail-close"
     optional: true
 - tapOn:
+    point: "90%,73%"
+    optional: true
+- tapOn:
     point: "50%,50%"
     optional: true
 - waitForAnimationToEnd:
     timeout: 1000
 - extendedWaitUntil:
-    visible: "Inbox"
+    visible:
+      id: "notifications-screen"
     timeout: 15000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/notifications.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/notifications
 
-- launchApp:
-    clearState: true
-    clearKeychain: true
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/owner-today.png
+- openLink: zook:///
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: "member-home-screen"
+    timeout: 15000
+- tapOn:
+    id: "role-switcher-chip"
+- tapOn:
+    id: "role-switcher-option-org-aarogya-strength:OWNER"
+- extendedWaitUntil:
+    visible:
+      id: "owner-home-screen"
+    timeout: 30000
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/owner-today
 
 - openLink: zook:///owner/approvals
 - waitForAnimationToEnd:
     timeout: 1500
-- tapOn:
-    text: "Open"
-    optional: true
 - extendedWaitUntil:
     visible:
       id: "pending-approvals-list"
     timeout: 15000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/owner-approvals.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/owner-approvals
 
-- launchApp:
-    clearState: true
-    clearKeychain: true
+- openLink: zook:///__demo-role?role=TRAINER&target=/trainer
 - extendedWaitUntil:
     visible:
       id: "trainer-home-screen"
     timeout: 30000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/trainer-home.png
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/trainer-home
 
-- launchApp:
-    clearState: true
-    clearKeychain: true
+- openLink: zook:///__demo-role?role=RECEPTIONIST&target=/reception
 - extendedWaitUntil:
     visible:
       id: "reception-home-screen"
     timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 1500
 - tapOn:
     id: "reception-verify-code"
 - eraseText
@@ -119,4 +132,4 @@ tags:
 - extendedWaitUntil:
     visible: "Pickup verified"
     timeout: 15000
-- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260522/reception-desk.png
+- takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/reception-desk

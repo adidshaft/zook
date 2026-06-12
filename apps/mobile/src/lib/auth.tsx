@@ -1,5 +1,5 @@
 import { ApiError } from "@zook/core/api";
-import { isOrgRole } from "@zook/core/permissions";
+import { isOrgRole, permissionsForRoles } from "@zook/core/permissions";
 import type { AuthSessionSummary, Permission, Role } from "@zook/core/types";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -280,15 +280,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         preferredRole,
         defaultRolePreferenceRef.current,
       );
+      const resolvedSession =
+        isOfflineDemoMode() && resolvedRole && currentSession.activeOrganization
+          ? {
+              ...currentSession,
+              activeOrganization: {
+                ...currentSession.activeOrganization,
+                permissions: permissionsForRoles([resolvedRole]),
+              },
+              organizations: currentSession.organizations.map((organization) =>
+                organization.orgId === currentSession.activeOrganization?.orgId
+                  ? { ...organization, permissions: permissionsForRoles([resolvedRole]) }
+                  : organization,
+              ),
+            }
+          : currentSession;
       if (resolvedRole) {
         await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, resolvedRole);
       }
       tokenRef.current = tokenValue;
-      sessionRef.current = currentSession;
+      sessionRef.current = resolvedSession;
       activeOrgIdRef.current = resolvedOrgId;
       activeRoleRef.current = resolvedRole;
       setToken(tokenValue);
-      setSession(currentSession);
+      setSession(resolvedSession);
       setActiveOrgIdState(resolvedOrgId);
       setActiveRoleState(resolvedRole);
       setStatus("authenticated");
@@ -296,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOfflineBanner(undefined);
       setProactiveLogin(undefined);
       setError(undefined);
-      await applySessionLocalePreference(currentSession.user.preferredLocale);
+      await applySessionLocalePreference(resolvedSession.user.preferredLocale);
     },
     [],
   );
@@ -437,7 +452,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await hydrate(
         DEMO_AUTH_TOKEN,
         storedOrgId ?? undefined,
-        getOfflineDemoRoleOverride() ?? normalizeStoredRole(storedRole),
+        normalizeStoredRole(storedRole) ?? getOfflineDemoRoleOverride(),
       );
       return;
     }
@@ -715,7 +730,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeRoleRef.current = role;
         setActiveRoleState(role);
         await hydrate(tokenValue, currentOrgId, role);
-        await invalidateRoleScopedQueries();
+        if (isOfflineDemoMode()) {
+          void invalidateRoleScopedQueries();
+        } else {
+          await invalidateRoleScopedQueries();
+        }
       } catch (error) {
         setRoleSwitchMessage(null);
         throw error;

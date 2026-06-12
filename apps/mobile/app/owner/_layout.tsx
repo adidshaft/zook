@@ -79,6 +79,7 @@ export default function OwnerLayout() {
         options={{
           title: "Revenue",
           href: canViewRevenue ? "/owner/revenue" : null,
+          tabBarItemStyle: canViewRevenue ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-revenue",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="revenue" focused={focused} size={size} color={color} />
@@ -100,6 +101,7 @@ export default function OwnerLayout() {
         options={{
           title: "Stock",
           href: null,
+          tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-stock",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="stock" focused={focused} size={size} color={color} />
@@ -111,13 +113,17 @@ export default function OwnerLayout() {
         options={{
           title: "Billing",
           href: null,
+          tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-billing",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="billing" focused={focused} size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen name="member/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="member/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

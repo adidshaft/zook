@@ -55,7 +55,8 @@ export function RoleTabBar({
   const focusedRouteName = state.routes[state.index]?.name;
   const visibleRoutes = state.routes.filter((route: any) => {
     const options = descriptors[route.key]?.options;
-    return options?.href !== null;
+    const itemStyle = options?.tabBarItemStyle;
+    return options?.href !== null && itemStyle?.display !== "none";
   });
 
   const translateY = useRef(new RNAnimated.Value(0)).current;
