@@ -19,6 +19,7 @@ import {
   QueryErrorState,
   ScreenHeader,
   StatStrip,
+  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -30,6 +31,7 @@ import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
 import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
+import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
@@ -101,6 +103,74 @@ function ActiveCheckInCard({
   );
 }
 
+function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
+  const router = useRouter();
+  const { palette } = useTheme();
+  const membership = home?.activeMembership;
+  const organization = home?.activeOrganization;
+  const plan = home?.activePlan;
+  const daysLeft = membership?.daysLeft;
+  const visitsLeft = membership?.remainingVisits;
+  const isExpired =
+    !membership ||
+    String(membership.status ?? "").toLowerCase().includes("expired") ||
+    (typeof daysLeft === "number" && daysLeft <= 0);
+  const statusLabel = isExpired ? "Renewal needed" : "Access active";
+  const detail =
+    [
+      typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
+      typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "Membership synced with desk";
+
+  return (
+    <Card
+      semanticSurface={isExpired ? "warningCard" : "successCard"}
+      contentStyle={styles.membershipCard}
+      accessibilityLabel={`${statusLabel}. ${plan?.name ?? "Membership"}. ${detail}. ${organization?.name ?? "Gym"}.`}
+    >
+      <View style={styles.membershipTop}>
+        <IconBubble
+          icon={isExpired ? "warning-outline" : "shield-checkmark-outline"}
+          tone={isExpired ? "amber" : "lime"}
+          size={44}
+        />
+        <View style={styles.membershipCopy}>
+          <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
+            Membership access
+          </Text>
+          <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
+            {plan?.name ?? "Active membership"}
+          </Text>
+          <Text style={[styles.membershipMeta, { color: palette.text.secondary }]}>
+            {organization?.name ?? "Your gym"} · {detail}
+          </Text>
+        </View>
+        <StatusChip status={statusLabel} tone={isExpired ? "amber" : "lime"} />
+      </View>
+      <View style={styles.membershipActions}>
+        <ZookButton
+          onPress={() => router.push("/scan" as never)}
+          icon="qr-code-outline"
+          style={styles.membershipAction}
+          variant={isExpired ? "secondary" : "primary"}
+        >
+          Scan QR
+        </ZookButton>
+        <ZookButton
+          onPress={() => router.push("/membership" as never)}
+          icon={isExpired ? "card-outline" : "receipt-outline"}
+          variant="secondary"
+          style={styles.membershipAction}
+        >
+          {isExpired ? "Renew" : "Details"}
+        </ZookButton>
+      </View>
+    </Card>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -157,8 +227,11 @@ export default function HomeScreen() {
           ) : null}
           {!homeQuery.isLoading && !homeQuery.isError ? (
             <>
+              <AnimatedAppear delay={0}>
+                <MembershipAccessCard home={home} />
+              </AnimatedAppear>
               {activeCheckIn ? (
-                <AnimatedAppear delay={0}>
+                <AnimatedAppear delay={40}>
                   <ActiveCheckInCard
                     activeCheckIn={activeCheckIn}
                     busy={checkoutBusy}
@@ -166,8 +239,8 @@ export default function HomeScreen() {
                   />
                 </AnimatedAppear>
               ) : null}
-              <AnimatedAppear delay={activeCheckIn ? 40 : 0}>{renderHomeCard(state)}</AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>
+              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open progress"
@@ -184,7 +257,7 @@ export default function HomeScreen() {
                   />
                 </Pressable>
               </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
+              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
                 <Banners home={home} />
               </AnimatedAppear>
             </>
@@ -263,5 +336,38 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,
+  },
+  membershipCard: {
+    gap: spacing.md,
+    padding: 16,
+  },
+  membershipTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  membershipCopy: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  membershipEyebrow: {
+    ...typography.caption,
+    textTransform: "uppercase",
+  },
+  membershipTitle: {
+    ...typography.titleSmall,
+  },
+  membershipMeta: {
+    ...typography.small,
+  },
+  membershipActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  membershipAction: {
+    flex: 1,
+    minWidth: 132,
   },
 });
