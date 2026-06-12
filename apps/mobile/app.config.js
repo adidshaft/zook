@@ -1,7 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { darkPalette } = require("@zook/tokens");
-
 const googleIosClientIdSuffix = ".apps.googleusercontent.com";
+const notificationAccentColor = "#B9F455";
 
 function resolveGoogleIosUrlScheme() {
   const clientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
@@ -95,7 +93,7 @@ const baseConfig = {
       "expo-notifications",
       {
         icon: "./assets/notification-icon.png",
-        color: darkPalette.accent.base,
+        color: notificationAccentColor,
       },
     ],
     "expo-secure-store",
