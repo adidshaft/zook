@@ -5,4 +5,5 @@ export * from "./typography.ts";
 export * from "./layout.ts";
 export * from "./opacity.ts";
 export * from "./shadows.ts";
+export * from "./materials.ts";
 export * from "./legacy.ts";

@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     right: 12,
+    borderCurve: "continuous",
     borderRadius: 36,
     height: 76,
     flexDirection: "row",
@@ -254,6 +255,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   tabBarMaterial: {
+    borderCurve: "continuous",
     borderRadius: 36,
     overflow: "hidden",
   },

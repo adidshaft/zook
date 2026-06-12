@@ -29,7 +29,7 @@ import { useAuth } from "@/lib/auth";
 import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
-import { layout, spacing } from "@/lib/theme";
+import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
 function formatDuration(totalSeconds: number) {
@@ -252,10 +252,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   activeSessionTimer: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 44,
-    letterSpacing: 0,
-    lineHeight: 50,
+    ...typography.timer,
   },
   activeSessionHint: {
     fontFamily: "Inter_400Regular",

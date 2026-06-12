@@ -224,6 +224,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: "86%",
+    borderCurve: "continuous",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     borderBottomWidth: 0,
