@@ -767,6 +767,26 @@ export default function Scan() {
               >
                 Open settings
               </ZookButton>
+              <View style={styles.permissionRecoveryRow}>
+                <ZookButton
+                  onPress={() => setScanMode("code")}
+                  variant="secondary"
+                  icon="keypad-outline"
+                  style={styles.permissionRecoveryAction}
+                >
+                  Enter code manually
+                </ZookButton>
+                <ZookButton
+                  onPress={() => void cameraPermission.requestPermission()}
+                  disabled={cameraPermission.busy}
+                  busy={cameraPermission.busy}
+                  variant="secondary"
+                  icon="refresh-outline"
+                  style={styles.permissionRecoveryAction}
+                >
+                  Try camera again
+                </ZookButton>
+              </View>
             </Card>
           ) : null}
 
@@ -1174,12 +1194,24 @@ const styles = StyleSheet.create({
   },
   blockedPermissionContent: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: spacing.md,
   },
   blockedPermissionCopy: {
     flex: 1,
     gap: 4,
+    minWidth: 180,
+  },
+  permissionRecoveryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    width: "100%",
+  },
+  permissionRecoveryAction: {
+    flex: 1,
+    minWidth: 132,
   },
   errorContent: {
     gap: spacing.sm,
