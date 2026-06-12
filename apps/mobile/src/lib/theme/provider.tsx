@@ -45,6 +45,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const palette = mode === "dark" ? darkPalette : lightPalette;
 
   useEffect(() => {
+    if (typeof Appearance.setColorScheme !== "function") {
+      return undefined;
+    }
     Appearance.setColorScheme(preference === "system" ? null : preference);
     return () => {
       Appearance.setColorScheme(null);
