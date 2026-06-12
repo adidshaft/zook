@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { memo, useContext, useEffect, useRef } from "react";
+import { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Animated as RNAnimated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { typography, useTheme } from "@/lib/theme";
+import { useReduceMotion } from "@/lib/motion";
+import { materials, typography, useTheme } from "@/lib/theme";
+
+const AnimatedPressable = RNAnimated.createAnimatedComponent(Pressable);
 
 type RoleTabBarProps = {
   state: any;
@@ -50,17 +53,30 @@ export function RoleTabBar({
 }: RoleTabBarProps) {
   const { mode, palette } = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   const { visible } = useContext(BottomNavVisibilityContext);
   const backdropHeight = 100 + insets.bottom;
   const focusedRouteName = state.routes[state.index]?.name;
+  const [barWidth, setBarWidth] = useState(0);
   const visibleRoutes = state.routes.filter((route: any) => {
     const options = descriptors[route.key]?.options;
     const itemStyle = options?.tabBarItemStyle;
     return options?.href !== null && itemStyle?.display !== "none";
   });
+  const focusedVisibleIndex = Math.max(
+    0,
+    visibleRoutes.findIndex((route: any) => route.name === focusedRouteName),
+  );
+  const focusedIsCenter = centerAction?.routeName === focusedRouteName;
+  const glass = materials.glassBar(mode);
+  const tonal = materials.tonalBar(mode);
 
   const translateY = useRef(new RNAnimated.Value(0)).current;
   const opacity = useRef(new RNAnimated.Value(1)).current;
+  const indicatorX = useRef(new RNAnimated.Value(0)).current;
+  const centerScale = useRef(new RNAnimated.Value(1)).current;
+  const itemWidth = visibleRoutes.length > 0 && barWidth > 0 ? barWidth / visibleRoutes.length : 0;
+  const indicatorWidth = Platform.OS === "android" ? 52 : 58;
 
   useEffect(() => {
     RNAnimated.parallel([
@@ -77,6 +93,37 @@ export function RoleTabBar({
     ]).start();
   }, [opacity, translateY, visible]);
 
+  useEffect(() => {
+    if (!itemWidth || focusedIsCenter) return;
+    const target = focusedVisibleIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
+    if (reduceMotion) {
+      indicatorX.setValue(target);
+      return;
+    }
+    RNAnimated.spring(indicatorX, {
+      toValue: target,
+      damping: 18,
+      stiffness: 220,
+      mass: 1,
+      useNativeDriver: true,
+    }).start();
+  }, [focusedIsCenter, focusedVisibleIndex, indicatorWidth, indicatorX, itemWidth, reduceMotion]);
+
+  const materialStyle = useMemo(
+    () =>
+      Platform.OS === "ios"
+        ? {
+            backgroundColor: "transparent",
+            borderColor: glass.hairline,
+          }
+        : {
+            backgroundColor: tonal.backgroundColor,
+            borderColor: tonal.topHairline,
+            elevation: tonal.elevation,
+          },
+    [glass.hairline, tonal.backgroundColor, tonal.elevation, tonal.topHairline],
+  );
+
   return (
     <RNAnimated.View
       pointerEvents={visible ? "auto" : "none"}
@@ -88,12 +135,12 @@ export function RoleTabBar({
     >
       <TabBarBackdrop height={backdropHeight} color={palette.bg.app} mode={mode} />
       <View
+        onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
         style={[
           styles.tabBarContainer,
           Platform.OS === "android" ? styles.androidTabBarContainer : null,
+          materialStyle,
           {
-            backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.elevated,
-            borderColor: palette.border.subtle,
             bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? insets.bottom + 8 : 16) : 0,
             shadowColor: mode === "dark" ? palette.bg.sunken : palette.text.primary,
             shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.18 : 0.08) : 0,
@@ -103,12 +150,35 @@ export function RoleTabBar({
         {Platform.OS === "ios" ? (
           <BlurView
             pointerEvents="none"
-            intensity={mode === "dark" ? 26 : 20}
-            tint={mode === "dark" ? "dark" : "light"}
+            intensity={glass.blurIntensity}
+            tint={glass.blurTint}
             style={[
               StyleSheet.absoluteFillObject,
               styles.tabBarMaterial,
-              { backgroundColor: mode === "dark" ? palette.surface.default : palette.surface.raised },
+            ]}
+          />
+        ) : null}
+        {Platform.OS === "ios" ? (
+          <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, styles.tabBarOverlay, { backgroundColor: glass.overlayColor }]} />
+        ) : null}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.topHairline,
+            { backgroundColor: Platform.OS === "ios" ? glass.hairline : tonal.topHairline },
+          ]}
+        />
+        {!focusedIsCenter && itemWidth > 0 ? (
+          <RNAnimated.View
+            pointerEvents="none"
+            style={[
+              styles.activeIndicator,
+              Platform.OS === "android" ? styles.androidActiveIndicator : null,
+              {
+                backgroundColor: palette.surface.accentSoft,
+                width: indicatorWidth,
+                transform: [{ translateX: indicatorX }],
+              },
             ]}
           />
         ) : null}
@@ -157,12 +227,31 @@ export function RoleTabBar({
           if (centerAction?.routeName === route.name) {
             return (
               <View key={route.key} style={styles.centerActionContainer}>
-                <Pressable
+                <AnimatedPressable
                   accessibilityRole="button"
                   accessibilityState={isFocused ? { selected: true } : {}}
                   accessibilityLabel={typeof label === "string" ? label : route.name}
-                  onPress={onPress}
+                  onPress={() => {
+                    onPress();
+                  }}
+                  onPressIn={() => {
+                    RNAnimated.spring(centerScale, {
+                      toValue: reduceMotion ? 1 : 0.94,
+                      damping: 18,
+                      stiffness: 220,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
+                  onPressOut={() => {
+                    RNAnimated.spring(centerScale, {
+                      toValue: 1,
+                      damping: 18,
+                      stiffness: 220,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
                   onLongPress={onLongPress}
+                  android_ripple={{ color: palette.surface.accentSoft, borderless: true }}
                   style={[
                     styles.centerActionButton,
                     Platform.OS === "android" ? styles.androidCenterActionButton : null,
@@ -170,17 +259,19 @@ export function RoleTabBar({
                       backgroundColor: palette.accent.base,
                       borderColor: palette.bg.app,
                       shadowColor: palette.accent.base,
-                      shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.24 : 0.12) : 0,
+                      shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.32 : 0.18) : 0,
                     },
+                    { transform: [{ scale: centerScale }] },
                   ]}
                 >
+                  <View pointerEvents="none" style={styles.centerActionHighlight} />
                   {options.tabBarIcon?.({
                     color: palette.text.onAccent,
                     focused: true,
                     size: 26,
                   }) ?? <Ionicons name="qr-code" size={26} color={palette.text.onAccent} />}
-                </Pressable>
-                <Text style={[styles.centerActionLabel, { color }]}>{label as string}</Text>
+                </AnimatedPressable>
+                <Text numberOfLines={1} style={[styles.centerActionLabel, { color }]}>{label as string}</Text>
               </View>
             );
           }
@@ -193,14 +284,10 @@ export function RoleTabBar({
               accessibilityLabel={typeof label === "string" ? label : route.name}
               onPress={onPress}
               onLongPress={onLongPress}
+              android_ripple={{ color: palette.surface.accentSoft, borderless: true }}
               style={styles.tabItem}
             >
-              <View
-                style={[
-                  styles.tabItemWrapper,
-                  isFocused ? { backgroundColor: palette.surface.accentSoft } : null,
-                ]}
-              >
+              <View style={styles.tabItemWrapper}>
                 {badge && badge > 0 ? (
                   <View style={[styles.badge, { backgroundColor: palette.feedback.danger }]}>
                     <Text style={[styles.badgeText, { color: palette.text.onDanger }]}>
@@ -209,7 +296,7 @@ export function RoleTabBar({
                   </View>
                 ) : null}
                 {icon}
-                <Text style={[styles.tabLabel, { color }]}>{label as string}</Text>
+                <Text numberOfLines={1} style={[styles.tabLabel, { color }]}>{label as string}</Text>
               </View>
             </Pressable>
           );
@@ -259,30 +346,62 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     overflow: "hidden",
   },
+  tabBarOverlay: {
+    borderCurve: "continuous",
+    borderRadius: 36,
+    overflow: "hidden",
+  },
+  topHairline: {
+    height: StyleSheet.hairlineWidth,
+    left: 18,
+    position: "absolute",
+    right: 18,
+    top: 0,
+    zIndex: 2,
+  },
+  activeIndicator: {
+    borderCurve: "continuous",
+    borderRadius: 18,
+    height: 46,
+    left: 0,
+    position: "absolute",
+    top: 15,
+    zIndex: 1,
+  },
+  androidActiveIndicator: {
+    borderRadius: 999,
+    height: 28,
+    top: 10,
+  },
   tabItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     height: 64,
+    zIndex: 3,
   },
   tabItemWrapper: {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 20,
     paddingVertical: 6,
-    paddingHorizontal: 8,
-    width: "90%",
+    paddingHorizontal: 2,
+    width: "100%",
     position: "relative",
   },
   tabLabel: {
     ...typography.navLabel,
+    letterSpacing: -0.2,
     marginTop: 2,
+    maxWidth: "100%",
+    textAlign: "center",
   },
   centerActionContainer: {
     flex: 1.1,
     alignItems: "center",
     justifyContent: "center",
     height: 64,
+    zIndex: 4,
   },
   centerActionButton: {
     width: 62,
@@ -294,6 +413,15 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
+    overflow: "hidden",
+  },
+  centerActionHighlight: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+    height: StyleSheet.hairlineWidth,
+    left: 14,
+    position: "absolute",
+    right: 14,
+    top: 7,
   },
   androidCenterActionButton: {
     width: 56,
@@ -306,7 +434,10 @@ const styles = StyleSheet.create({
   },
   centerActionLabel: {
     ...typography.navLabel,
+    letterSpacing: -0.2,
     marginTop: 2,
+    maxWidth: "100%",
+    textAlign: "center",
   },
   badge: {
     position: "absolute",
