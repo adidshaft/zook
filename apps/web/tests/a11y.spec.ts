@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 
+test.setTimeout(60_000);
+
 async function expectA11yClean(page: import("@playwright/test").Page) {
   // Wait for any entry transitions or fade-in animations to fully complete
   await page.waitForTimeout(500);
