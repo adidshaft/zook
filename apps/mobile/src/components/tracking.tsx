@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { legacyColors, radii } from "@/lib/theme";
+import { radii, useTheme } from "@/lib/theme";
 
 export function TrackingSectionHeader({
   title,
@@ -15,14 +15,15 @@ export function TrackingSectionHeader({
   linkLabel?: string;
 }) {
   const t = useT();
+  const { palette } = useTheme();
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>
+      <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
         {title}
       </Text>
       {href ? (
         <Link href={href}>
-          <Text style={styles.sectionLink}>
+          <Text style={[styles.sectionLink, { color: palette.text.secondary }]}>
             {linkLabel ?? t("common.seeAll")}
           </Text>
         </Link>
@@ -32,18 +33,29 @@ export function TrackingSectionHeader({
 }
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.summaryTile}>
-      <Text style={styles.summaryLabel}>
+    <View
+      style={[
+        styles.summaryTile,
+        {
+          borderColor: palette.border.default,
+          backgroundColor: palette.surface.raised,
+        },
+      ]}
+    >
+      <Text style={[styles.summaryLabel, { color: palette.text.secondary }]}>
         {metric.label}
       </Text>
-      <Text style={styles.summaryValue}>
+      <Text style={[styles.summaryValue, { color: palette.text.primary }]}>
         {metric.value}
       </Text>
       <Text
         style={[
           styles.summaryDetail,
-          /^[+-]/.test(metric.detail) ? styles.summaryDetailPositive : null
+          {
+            color: /^[+-]/.test(metric.detail) ? palette.accent.base : palette.text.secondary,
+          },
         ]}
       >
         {metric.detail}
@@ -62,21 +74,40 @@ export function WorkoutLogCard({
   testID?: string;
 }) {
   const t = useT();
+  const { palette } = useTheme();
   const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
 
   return (
-    <View testID={testID} style={[styles.logCard, compact ? styles.logCardCompact : null]}>
+    <View
+      testID={testID}
+      style={[
+        styles.logCard,
+        {
+          borderColor: palette.border.default,
+          backgroundColor: palette.surface.raised,
+        },
+        compact ? styles.logCardCompact : null,
+      ]}
+    >
       <View style={styles.logHeader}>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={styles.logDate}>
+          <Text style={[styles.logDate, { color: palette.text.secondary }]}>
             {entry.dateLabel}
           </Text>
-          <Text style={[styles.logTitle, compact ? styles.logTitleCompact : null]}>
+          <Text style={[styles.logTitle, { color: palette.text.primary }, compact ? styles.logTitleCompact : null]}>
             {entry.workoutName}
           </Text>
         </View>
-        <View style={styles.effortPill}>
-          <Text style={styles.effortText}>
+        <View
+          style={[
+            styles.effortPill,
+            {
+              backgroundColor: palette.surface.accentSoft,
+              borderColor: palette.border.focus,
+            },
+          ]}
+        >
+          <Text style={[styles.effortText, { color: palette.accent.base }]}>
             {entry.effortLabel}
           </Text>
         </View>
@@ -88,7 +119,7 @@ export function WorkoutLogCard({
         <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact={compact} />
       </View>
 
-      <Text style={styles.focusText}>
+      <Text style={[styles.focusText, { color: palette.feedback.warning }]}>
         {t("tracking.focus")}: {entry.focusLabel}
       </Text>
 
@@ -96,10 +127,10 @@ export function WorkoutLogCard({
         {visibleExercises.map((exercise) => (
           <View key={exercise.id} style={styles.exerciseRow}>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.exerciseName}>
+              <Text style={[styles.exerciseName, { color: palette.text.primary }]}>
                 {exercise.name}
               </Text>
-              <Text style={styles.exerciseMeta}>
+              <Text style={[styles.exerciseMeta, { color: palette.text.secondary }]}>
                 {exercise.setsLabel} · {exercise.repsLabel}
                 {exercise.loadLabel ? ` · ${exercise.loadLabel}` : ""}
               </Text>
@@ -108,13 +139,34 @@ export function WorkoutLogCard({
               style={[
                 styles.statusPill,
                 exercise.status === "DONE"
-                  ? styles.statusDone
+                  ? {
+                      backgroundColor: palette.surface.successSoft,
+                      borderColor: palette.feedback.success,
+                    }
                   : exercise.status === "OPTIONAL"
-                    ? styles.statusOptional
-                    : styles.statusSkipped
+                    ? {
+                        backgroundColor: palette.surface.warningSoft,
+                        borderColor: palette.feedback.warning,
+                      }
+                    : {
+                        backgroundColor: palette.surface.dangerSoft,
+                        borderColor: palette.feedback.danger,
+                      },
               ]}
             >
-              <Text style={styles.statusText}>
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color:
+                      exercise.status === "DONE"
+                        ? palette.feedback.success
+                        : exercise.status === "OPTIONAL"
+                          ? palette.feedback.warning
+                          : palette.feedback.danger,
+                  },
+                ]}
+              >
                 {exercise.status}
               </Text>
             </View>
@@ -122,7 +174,14 @@ export function WorkoutLogCard({
         ))}
       </View>
 
-      <Text style={[styles.notesText, compact ? styles.notesTextCompact : null]} numberOfLines={compact ? 2 : undefined}>
+      <Text
+        style={[
+          styles.notesText,
+          { color: palette.text.secondary },
+          compact ? styles.notesTextCompact : null,
+        ]}
+        numberOfLines={compact ? 2 : undefined}
+      >
         {entry.notes}
       </Text>
     </View>
@@ -131,31 +190,40 @@ export function WorkoutLogCard({
 
 export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries }) {
   const t = useT();
+  const { palette } = useTheme();
   return (
-    <View style={styles.historyCard}>
-      <Text style={styles.historyLabel}>
+    <View
+      style={[
+        styles.historyCard,
+        {
+          borderColor: palette.border.default,
+          backgroundColor: palette.surface.raised,
+        },
+      ]}
+    >
+      <Text style={[styles.historyLabel, { color: palette.text.primary }]}>
         {series.label}
       </Text>
       <View style={styles.historyMetrics}>
         <View style={styles.historyMetricBlock}>
-          <Text style={styles.historyMetricValue}>
+          <Text style={[styles.historyMetricValue, { color: palette.text.primary }]}>
             {series.totalDurationLabel}
           </Text>
-          <Text style={styles.historyMetricLabel}>
+          <Text style={[styles.historyMetricLabel, { color: palette.text.secondary }]}>
             {t("tracking.totalDuration")}
           </Text>
         </View>
         <View style={styles.historyMetricBlock}>
-          <Text style={styles.historyMetricValue}>
+          <Text style={[styles.historyMetricValue, { color: palette.text.primary }]}>
             {series.sessionCountLabel}
           </Text>
-          <Text style={styles.historyMetricLabel}>
+          <Text style={[styles.historyMetricLabel, { color: palette.text.secondary }]}>
             {t("tracking.sessions")}
           </Text>
         </View>
       </View>
-      <View style={styles.historyCallout}>
-        <Text style={styles.historyCalloutText}>
+      <View style={[styles.historyCallout, { backgroundColor: palette.surface.accentSoft }]}>
+        <Text style={[styles.historyCalloutText, { color: palette.accent.base }]}>
           {series.completionLabel}
         </Text>
       </View>
@@ -164,12 +232,19 @@ export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries
 }
 
 function MetaPill({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
+  const { palette } = useTheme();
   return (
-    <View style={[styles.metaPill, compact ? styles.metaPillCompact : null]}>
-      <Text style={styles.metaLabel}>
+    <View
+      style={[
+        styles.metaPill,
+        { backgroundColor: palette.bg.sunken },
+        compact ? styles.metaPillCompact : null,
+      ]}
+    >
+      <Text style={[styles.metaLabel, { color: palette.text.secondary }]}>
         {label}
       </Text>
-      <Text style={styles.metaValue}>
+      <Text style={[styles.metaValue, { color: palette.text.primary }]}>
         {value}
       </Text>
     </View>
@@ -183,12 +258,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   sectionTitle: {
-    color: legacyColors.text,
     fontSize: 24,
     fontWeight: "900"
   },
   sectionLink: {
-    color: legacyColors.muted,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -196,36 +269,28 @@ const styles = StyleSheet.create({
     width: "48%",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     padding: 14,
     minHeight: 112,
     gap: 7
   },
   summaryLabel: {
-    color: legacyColors.muted,
     fontSize: 13,
     fontWeight: "800"
   },
   summaryValue: {
-    color: legacyColors.text,
     fontSize: 32,
     fontWeight: "900",
     lineHeight: 34
   },
   summaryDetail: {
-    color: legacyColors.muted,
     fontSize: 13,
     lineHeight: 18
   },
   summaryDetailPositive: {
-    color: legacyColors.lime
   },
   logCard: {
     borderRadius: 30,
-    backgroundColor: legacyColors.panel,
     borderWidth: 1,
-    borderColor: legacyColors.border,
     padding: 18,
     gap: 14
   },
@@ -240,12 +305,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   },
   logDate: {
-    color: legacyColors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
   logTitle: {
-    color: legacyColors.text,
     fontSize: 24,
     fontWeight: "900",
     lineHeight: 28
@@ -258,12 +321,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "rgba(185,244,85,0.14)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.28)"
   },
   effortText: {
-    color: legacyColors.lime,
     fontSize: 12,
     fontWeight: "800"
   },
@@ -277,7 +337,6 @@ const styles = StyleSheet.create({
   metaPill: {
     flex: 1,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.05)",
     padding: 12,
     gap: 4
   },
@@ -287,17 +346,14 @@ const styles = StyleSheet.create({
     gap: 2
   },
   metaLabel: {
-    color: legacyColors.muted,
     fontSize: 11,
     fontWeight: "700"
   },
   metaValue: {
-    color: legacyColors.text,
     fontSize: 16,
     fontWeight: "800"
   },
   focusText: {
-    color: legacyColors.amber,
     fontSize: 12,
     fontWeight: "800"
   },
@@ -310,12 +366,10 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   exerciseName: {
-    color: legacyColors.text,
     fontSize: 16,
     fontWeight: "800"
   },
   exerciseMeta: {
-    color: legacyColors.muted,
     fontSize: 12
   },
   statusPill: {
@@ -325,24 +379,16 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   statusDone: {
-    backgroundColor: "rgba(185,244,85,0.12)",
-    borderColor: "rgba(185,244,85,0.26)"
   },
   statusOptional: {
-    backgroundColor: "rgba(255,182,80,0.12)",
-    borderColor: "rgba(255,182,80,0.26)"
   },
   statusSkipped: {
-    backgroundColor: "rgba(255,93,93,0.12)",
-    borderColor: "rgba(255,93,93,0.26)"
   },
   statusText: {
-    color: legacyColors.text,
     fontSize: 11,
     fontWeight: "800"
   },
   notesText: {
-    color: legacyColors.muted,
     lineHeight: 20
   },
   notesTextCompact: {
@@ -351,14 +397,11 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     borderRadius: 30,
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
     borderWidth: 1,
     padding: 18,
     gap: 14
   },
   historyLabel: {
-    color: legacyColors.text,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -371,24 +414,20 @@ const styles = StyleSheet.create({
     gap: 4
   },
   historyMetricValue: {
-    color: legacyColors.text,
     fontSize: 28,
     fontWeight: "900",
     lineHeight: 30
   },
   historyMetricLabel: {
-    color: legacyColors.muted,
     fontSize: 12,
     fontWeight: "700"
   },
   historyCallout: {
     borderRadius: radii.pill,
-    backgroundColor: "rgba(185,169,255,0.12)",
     paddingHorizontal: 16,
     paddingVertical: 14
   },
   historyCalloutText: {
-    color: legacyColors.violet,
     fontSize: 13,
     fontWeight: "700"
   }

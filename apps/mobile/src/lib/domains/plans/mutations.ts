@@ -57,8 +57,8 @@ export function useCompletePlanAssignment() {
 
       return { previousHome };
     },
-    onSuccess: async (_, input) => {
-      await Promise.all([
+    onSuccess: (_, input) => {
+      void Promise.all([
         invalidations.plans.all(queryClient),
         invalidations.plans.detail(queryClient, input.assignmentId),
         invalidations.plans.exercises(queryClient, input.assignmentId),

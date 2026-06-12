@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -34,7 +34,7 @@ import {
 import {
   useOwnerPrefs,
 } from "../../owner-customisation-panel";
-import { useDashboardSummary } from "@/lib/query-hooks/overview";
+import { useDashboardSummary, type DashboardSummaryData } from "@/lib/query-hooks/overview";
 import type { DashboardCopy, DashboardData } from "./types";
 
 const LazyOwnerCustomisationPanel = lazy(() =>
@@ -62,16 +62,6 @@ function formatInrCompact(paise: number) {
   return `₹${Math.round(rupees)}`;
 }
 
-function OverviewPanelSkeleton({ className = "" }: { className?: string }) {
-  return (
-    <GlassCard className={`p-5 ${className}`}>
-      <div className="h-3 w-32 animate-pulse rounded-full bg-[var(--surface-raised)]" />
-      <div className="mt-4 h-8 w-44 animate-pulse rounded-full bg-[var(--surface-raised)]" />
-      <div className="mt-5 h-40 animate-pulse rounded-[24px] bg-[var(--bg-sunken)]" />
-    </GlassCard>
-  );
-}
-
 export function DashboardOverview({
   activeOrg,
   selectedBranch,
@@ -83,8 +73,30 @@ export function DashboardOverview({
   copy: DashboardCopy;
 }) {
   const prefs = useOwnerPrefs();
+  const [showCustomisationPanel, setShowCustomisationPanel] = useState(false);
   const branchId = data.branchScope.allBranches ? "all" : selectedBranch?.id;
-  const dashboardQuery = useDashboardSummary(data.connected ? activeOrg.id : undefined, branchId);
+  const initialDashboardData = useMemo(
+    () =>
+      ({
+        summary: data.summary,
+        charts: data.charts,
+        products: data.products,
+        aiUsage: data.aiUsage,
+        auditLogCount: data.auditLogCount,
+      }) satisfies DashboardSummaryData,
+    [
+      data.aiUsage,
+      data.auditLogCount,
+      data.charts,
+      data.products,
+      data.summary,
+    ],
+  );
+  const dashboardQuery = useDashboardSummary(
+    data.connected ? activeOrg.id : undefined,
+    branchId,
+    { initialData: initialDashboardData },
+  );
   const hydratedData = dashboardQuery.data;
   const accent: ChartTone = prefs.accent;
   const summary = hydratedData?.summary ?? data.summary;
@@ -92,7 +104,7 @@ export function DashboardOverview({
   const products = hydratedData?.products ?? data.products;
   const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
   const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
-  const isHydratingDetails = data.connected && !hydratedData && dashboardQuery.isPending;
+  const isHydratingDetails = data.connected && dashboardQuery.isFetching;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
 
@@ -232,6 +244,16 @@ export function DashboardOverview({
     month: "short",
   }), []);
 
+  useEffect(() => {
+    const showPanel = () => setShowCustomisationPanel(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(showPanel, { timeout: 5_000 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timeoutId = globalThis.setTimeout(showPanel, 4_000);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <div className="grid gap-6">
       {/* Hero header */}
@@ -346,9 +368,6 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.revenueChart ? (
-          isHydratingDetails ? (
-            <OverviewPanelSkeleton />
-          ) : (
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -381,7 +400,6 @@ export function DashboardOverview({
               />
             </div>
           </GlassCard>
-          )
         ) : null}
 
         <GlassCard className="p-5">
@@ -419,9 +437,6 @@ export function DashboardOverview({
         }`}
       >
         {prefs.widgets.attendanceBars ? (
-        isHydratingDetails ? (
-          <OverviewPanelSkeleton />
-        ) : (
         <GlassCard className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -446,13 +461,9 @@ export function DashboardOverview({
             <BarChart series={attendanceTrend} labels={charts.attendance7d.map((point) => point.label || "")} tone="sky" />
           </div>
         </GlassCard>
-        )
         ) : null}
 
         {prefs.widgets.planMix ? (
-        isHydratingDetails ? (
-          <OverviewPanelSkeleton />
-        ) : (
         <GlassCard className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -498,7 +509,6 @@ export function DashboardOverview({
             </div>
           </div>
         </GlassCard>
-        )
         ) : null}
       </div>
       ) : null}
@@ -604,9 +614,11 @@ export function DashboardOverview({
       </div>
       ) : null}
 
-      <Suspense fallback={<div className="h-20 animate-pulse rounded-[28px] bg-[var(--surface-raised)]" />}>
-        <LazyOwnerCustomisationPanel />
-      </Suspense>
+      {showCustomisationPanel ? (
+        <Suspense fallback={<div className="h-20 animate-pulse rounded-[28px] bg-[var(--surface-raised)]" />}>
+          <LazyOwnerCustomisationPanel />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

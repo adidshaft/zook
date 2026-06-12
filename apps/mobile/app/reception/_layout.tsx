@@ -1,19 +1,18 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 
+import { Icon } from "@/components/primitives";
+import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { useTheme } from "@/lib/theme";
 
-const legacyViewTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
+const viewRedirectTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   members: "/reception/members",
   payments: "/reception/payments",
   orders: "/reception/orders",
 };
 
 export default function ReceptionLayout() {
-  const { palette } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -27,31 +26,25 @@ export default function ReceptionLayout() {
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
     if (!rawView || pathname !== "/reception") return;
-    const target = legacyViewTargets[rawView];
+    const target = viewRedirectTargets[rawView];
     if (target) router.replace(target);
   }, [params.view, pathname, router]);
 
   return (
     <Tabs
+      tabBar={(props) => <RoleTabBar {...props} badges={{ index: pendingCount }} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.accent.base,
-        tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: palette.bg.elevated,
-          borderTopColor: palette.border.subtle,
-        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Desk",
+          title: "Front desk",
           tabBarButtonTestID: "bottom-nav-desk",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "desktop" : "desktop-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="desk" focused={focused} size={size} color={color} />
           ),
-          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
         }}
       />
       <Tabs.Screen
@@ -59,8 +52,8 @@ export default function ReceptionLayout() {
         options={{
           title: "Members",
           tabBarButtonTestID: "bottom-nav-members",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -70,8 +63,8 @@ export default function ReceptionLayout() {
           title: "Payments",
           href: canRecordPayments ? "/reception/payments" : null,
           tabBarButtonTestID: "bottom-nav-payments",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="payments" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -87,15 +80,25 @@ export default function ReceptionLayout() {
         options={{
           title: "Orders",
           href: canFulfillOrders ? "/reception/orders" : null,
+          tabBarItemStyle: canFulfillOrders ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-orders",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cube" : "cube-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="orders" focused={focused} size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen name="members/[id]" options={{ href: null }} />
-      <Tabs.Screen name="payments/new" options={{ href: null }} />
-      <Tabs.Screen name="verification/[recordId]" options={{ href: null }} />
+      <Tabs.Screen
+        name="members/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="payments/new"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="verification/[recordId]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

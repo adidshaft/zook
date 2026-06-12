@@ -1,18 +1,20 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
-  GlassCard,
-  GlassInput,
+  DatePickerField,
+  Card,
+  Input,
   Pill,
   SegmentedControl,
+  ThemedSwitch,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { useI18n } from "@/lib/i18n";
 import { useMyProfile } from "@/lib/domains";
-import { legacyColors, spacing, typography } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 type GenderValue = "male" | "female" | "non_binary" | "prefer_not_to_say";
 type LocaleValue = "en" | "hi";
@@ -49,15 +51,6 @@ function parseDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function displayDate(value?: Date | null) {
-  if (!value) return "Add date of birth";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(value);
-}
-
 function normalizeGender(value?: string | null): GenderValue {
   if (value === "male" || value === "female" || value === "non_binary") return value;
   return "prefer_not_to_say";
@@ -68,6 +61,7 @@ function normalizeLocale(value?: string | null): LocaleValue {
 }
 
 export function ProfileExtraFields() {
+  const { palette } = useTheme();
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const { locale, setLocalePreference } = useI18n();
@@ -75,7 +69,6 @@ export function ProfileExtraFields() {
   const profileUser = profileQuery.data?.user;
   const sessionUser = session?.user;
   const [dob, setDob] = useState<Date | null>(parseDate(profileUser?.dateOfBirth ?? null));
-  const [showDobPicker, setShowDobPicker] = useState(false);
   const [gender, setGender] = useState<GenderValue>(normalizeGender(profileUser?.gender));
   const [emergencyName, setEmergencyName] = useState(profileUser?.emergencyContact?.name ?? "");
   const [emergencyPhone, setEmergencyPhone] = useState(profileUser?.emergencyContact?.phone ?? "");
@@ -93,6 +86,9 @@ export function ProfileExtraFields() {
   const [savedKey, setSavedKey] = useState<SaveKey | null>(null);
   const [error, setError] = useState("");
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldSurface = palette.surface.raised;
+  const decreaseGoalDisabled = weeklyWorkoutGoal <= 1 || savingKey === "weeklyWorkoutGoal";
+  const increaseGoalDisabled = weeklyWorkoutGoal >= 14 || savingKey === "weeklyWorkoutGoal";
 
   const completedCount = [
     dob,
@@ -173,47 +169,44 @@ export function ProfileExtraFields() {
   }
 
   return (
-    <GlassCard contentStyle={styles.content}>
+    <Card contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>Profile details</Text>
-            <View style={styles.completionDot} />
+            <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
+            <View
+              style={[
+                styles.completionDot,
+                {
+                  backgroundColor: palette.accent.base,
+                  shadowColor: palette.accent.base,
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.subtitle}>{completedCount}/5 safety and KYC fields complete.</Text>
+          <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
+            {completedCount}/5 safety and KYC fields complete.
+          </Text>
         </View>
         {savedKey ? <Pill tone="lime">Saved</Pill> : null}
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Date of birth</Text>
-        <Pressable
-          onPress={() => setShowDobPicker(true)}
-          accessibilityRole="button"
-          style={styles.dateButton}
-        >
-          <Text style={dob ? styles.dateText : styles.datePlaceholder}>{displayDate(dob)}</Text>
-        </Pressable>
-        {showDobPicker ? (
-          <DateTimePicker
-            value={dob ?? new Date(1998, 0, 1)}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            maximumDate={new Date()}
-            onChange={(_, selectedDate) => {
-              if (Platform.OS !== "ios") {
-                setShowDobPicker(false);
-              }
-              if (!selectedDate) return;
-              setDob(selectedDate);
-              void saveField("dateOfBirth", { dateOfBirth: dateOnly(selectedDate) });
-            }}
-          />
-        ) : null}
+        <DatePickerField
+          accessibilityLabel="Date of birth"
+          label="Date of birth"
+          maximumDate={new Date()}
+          onChange={(selectedDate) => {
+            setDob(selectedDate);
+            void saveField("dateOfBirth", { dateOfBirth: dateOnly(selectedDate) });
+          }}
+          placeholder="Add date of birth"
+          value={dob}
+        />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Gender</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>Gender</Text>
         <SegmentedControl
           options={genderOptions}
           value={gender}
@@ -227,8 +220,8 @@ export function ProfileExtraFields() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Emergency contact</Text>
-        <GlassInput
+        <Text style={[styles.label, { color: palette.text.secondary }]}>Emergency contact</Text>
+        <Input
           label="Name"
           value={emergencyName}
           onChangeText={setEmergencyName}
@@ -236,7 +229,7 @@ export function ProfileExtraFields() {
           editable={savingKey !== "emergencyContactName"}
           returnKeyType="next"
         />
-        <GlassInput
+        <Input
           label="Phone"
           value={emergencyPhone}
           onChangeText={setEmergencyPhone}
@@ -270,7 +263,7 @@ export function ProfileExtraFields() {
       />
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Locale</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>Locale</Text>
         <SegmentedControl
           options={localeOptions}
           value={preferredLocale}
@@ -283,44 +276,68 @@ export function ProfileExtraFields() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Weekly workout goal</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>Weekly workout goal</Text>
         <View style={styles.stepperRow}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Decrease weekly workout goal"
-            disabled={weeklyWorkoutGoal <= 1 || savingKey === "weeklyWorkoutGoal"}
+            disabled={decreaseGoalDisabled}
             onPress={() => {
               const nextGoal = Math.max(1, weeklyWorkoutGoal - 1);
               setWeeklyWorkoutGoal(nextGoal);
               void saveField("weeklyWorkoutGoal", { weeklyWorkoutGoal: nextGoal });
             }}
-            style={styles.stepperButton}
+            style={[
+              styles.stepperButton,
+              {
+                borderColor: palette.border.default,
+                backgroundColor: fieldSurface,
+                opacity: decreaseGoalDisabled ? 0.5 : 1,
+              },
+            ]}
           >
-            <Text style={styles.stepperButtonText}>-</Text>
+            <Ionicons
+              name="remove"
+              size={19}
+              color={decreaseGoalDisabled ? palette.text.tertiary : palette.text.primary}
+            />
           </Pressable>
-          <Text style={styles.stepperValue}>{weeklyWorkoutGoal} / week</Text>
+          <Text style={[styles.stepperValue, { color: palette.text.primary }]}>
+            {weeklyWorkoutGoal} / week
+          </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Increase weekly workout goal"
-            disabled={weeklyWorkoutGoal >= 14 || savingKey === "weeklyWorkoutGoal"}
+            disabled={increaseGoalDisabled}
             onPress={() => {
               const nextGoal = Math.min(14, weeklyWorkoutGoal + 1);
               setWeeklyWorkoutGoal(nextGoal);
               void saveField("weeklyWorkoutGoal", { weeklyWorkoutGoal: nextGoal });
             }}
-            style={styles.stepperButton}
+            style={[
+              styles.stepperButton,
+              {
+                borderColor: palette.border.default,
+                backgroundColor: fieldSurface,
+                opacity: increaseGoalDisabled ? 0.5 : 1,
+              },
+            ]}
           >
-            <Text style={styles.stepperButtonText}>+</Text>
+            <Ionicons
+              name="add"
+              size={19}
+              color={increaseGoalDisabled ? palette.text.tertiary : palette.text.primary}
+            />
           </Pressable>
         </View>
       </View>
 
       {error ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
+        <Text accessibilityRole="alert" style={[styles.errorText, { color: palette.feedback.danger }]}>
           {error}
         </Text>
       ) : null}
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -337,18 +354,17 @@ function PreferenceToggle({
   title: string;
   value: boolean;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.preferenceRow}>
       <View style={styles.preferenceCopy}>
-        <Text style={styles.preferenceTitle}>{title}</Text>
-        <Text style={styles.preferenceSubtitle}>{subtitle}</Text>
+        <Text style={[styles.preferenceTitle, { color: palette.text.primary }]}>{title}</Text>
+        <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
       </View>
-      <Switch
+      <ThemedSwitch
         value={value}
         disabled={disabled}
         onValueChange={onValueChange}
-        trackColor={{ false: "rgba(255,255,255,0.14)", true: "rgba(185,244,85,0.35)" }}
-        thumbColor={value ? legacyColors.lime : legacyColors.muted}
       />
     </View>
   );
@@ -373,18 +389,14 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: legacyColors.lime,
-    shadowColor: legacyColors.lime,
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   title: {
     ...typography.sectionTitle,
-    color: legacyColors.text,
   },
   subtitle: {
     ...typography.body,
-    color: legacyColors.muted,
     marginTop: spacing.xs,
   },
   fieldGroup: {
@@ -392,25 +404,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.caption,
-    color: legacyColors.muted,
     textTransform: "uppercase",
-  },
-  dateButton: {
-    minHeight: 50,
-    justifyContent: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    paddingHorizontal: spacing.md,
-  },
-  dateText: {
-    ...typography.bodyStrong,
-    color: legacyColors.text,
-  },
-  datePlaceholder: {
-    ...typography.body,
-    color: legacyColors.subtle,
   },
   preferenceRow: {
     alignItems: "center",
@@ -424,15 +418,12 @@ const styles = StyleSheet.create({
   },
   preferenceTitle: {
     ...typography.bodyStrong,
-    color: legacyColors.text,
   },
   preferenceSubtitle: {
     ...typography.small,
-    color: legacyColors.muted,
   },
   errorText: {
     ...typography.body,
-    color: legacyColors.red,
   },
   stepperRow: {
     alignItems: "center",
@@ -441,21 +432,14 @@ const styles = StyleSheet.create({
   },
   stepperButton: {
     alignItems: "center",
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
     borderRadius: 16,
     borderWidth: 1,
     height: 44,
     justifyContent: "center",
     width: 44,
   },
-  stepperButtonText: {
-    ...typography.headerTitle,
-    color: legacyColors.text,
-  },
   stepperValue: {
     ...typography.bodyStrong,
-    color: legacyColors.text,
     flex: 1,
     textAlign: "center",
   },

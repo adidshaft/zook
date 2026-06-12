@@ -17,6 +17,7 @@ export function DeskWorkspace({
   locale,
   activeTab,
   initialOrderId,
+  initialMemberUserId,
   redirectedFromDashboard,
 }: {
   orgId: string;
@@ -25,9 +26,15 @@ export function DeskWorkspace({
   locale?: string | null;
   activeTab: TabKey;
   initialOrderId?: string | undefined;
+  initialMemberUserId?: string | undefined;
   redirectedFromDashboard?: boolean;
 }) {
-  const { copy, state, actions } = useDeskWorkspace({ orgId, branch, locale });
+  const { copy, state, actions } = useDeskWorkspace({
+    orgId,
+    branch,
+    locale,
+    initialMemberUserId,
+  });
 
   return (
     <div className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
@@ -106,8 +113,9 @@ export function DeskWorkspace({
           busyId={state.busyId}
           onMemberQueryChange={actions.setMemberQuery}
           onSelectMember={actions.selectMember}
-          onRecordPayment={actions.handleMemberPayment}
+          getRecordPaymentHref={actions.getMemberPaymentHref}
           onOverrideEntry={(member) => void actions.overrideMemberEntry(member)}
+          onCheckOut={(member) => void actions.checkOutMember(member)}
           onSendMessage={(member) => void actions.sendMemberMessage(member)}
         />
       ) : null}

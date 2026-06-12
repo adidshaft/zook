@@ -1,42 +1,36 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useTheme } from "@/lib/theme";
+import { Icon } from "@/components/primitives";
+import { RoleTabBar } from "@/components/role-tab-bar";
 
-const legacyViewTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
+const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
   clients: "/trainer/clients",
   plans: "/trainer/plans",
 };
 
 export default function TrainerLayout() {
-  const { palette } = useTheme();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const router = useRouter();
 
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
-    const target = view ? legacyViewTargets[view] : undefined;
+    const target = view ? viewRedirectTargets[view] : undefined;
     if (target) router.replace(target as never);
   }, [params.view, router]);
 
   return (
     <Tabs
+      tabBar={(props) => <RoleTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.accent.base,
-        tabBarInactiveTintColor: palette.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: palette.bg.elevated,
-          borderTopColor: palette.border.subtle,
-        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
+          title: "Today",
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="home" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -44,8 +38,8 @@ export default function TrainerLayout() {
         name="clients/index"
         options={{
           title: "Clients",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="members" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -53,8 +47,8 @@ export default function TrainerLayout() {
         name="plans"
         options={{
           title: "Plans",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "reader" : "reader-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="plan" focused={focused} size={size} color={color} />
           ),
         }}
       />
@@ -62,12 +56,15 @@ export default function TrainerLayout() {
         name="payouts"
         options={{
           title: "Payouts",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "wallet" : "wallet-outline"} size={22} color={color} />
+          tabBarIcon: ({ color, focused, size }) => (
+            <Icon name="payouts" focused={focused} size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen name="clients/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="clients/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

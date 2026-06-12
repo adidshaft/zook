@@ -4,7 +4,9 @@ import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   EmptyState,
-  MobileHeader,
+  AppHeader,
+  Card,
+  IconBubble,
   QueryErrorState,
   SectionHeader,
   StatusChip,
@@ -14,11 +16,12 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { legacyColors, layout } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, session } = useAuth();
+  const { palette } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
   const plannedClients = (clientsQuery.data?.clients ?? []).filter(
@@ -42,10 +45,17 @@ export default function TrainerPlansScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={legacyColors.lime} colors={[legacyColors.lime]} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
+            />
+          }
         >
-          <MobileHeader
-            eyebrow="Trainer mode"
+          <AppHeader
+            eyebrow="Trainer"
             title="Plan work"
             subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}
             chip={<StatusChip status="Trainer" tone="neutral" />}
@@ -54,6 +64,20 @@ export default function TrainerPlansScreen() {
             title="Active plan work"
             subtitle={`${plannedClients.length} ${plannedClients.length === 1 ? "client" : "clients"}`}
           />
+          <Card variant="compact" contentStyle={styles.summaryCard}>
+            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "lime"} size={42} />
+            <View style={styles.summaryCopy}>
+              <SectionHeader
+                title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
+                subtitle={
+                  plannedClients.length
+                    ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
+                    : "New plan work will appear here when clients need assignments."
+                }
+              />
+            </View>
+            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "lime"} />
+          </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
               <TrainerClientsSkeleton />
@@ -80,5 +104,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     width: "100%",
   },
+  summaryCard: { alignItems: "center", flexDirection: "row", gap: 12 },
+  summaryCopy: { flex: 1, minWidth: 0 },
   stack: { gap: 10 },
 });

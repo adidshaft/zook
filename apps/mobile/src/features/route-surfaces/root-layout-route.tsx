@@ -3,9 +3,9 @@ import type { Permission, Role } from "@zook/core";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Inter_400Regular,
@@ -32,8 +32,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { legacyColors } from "@/lib/theme";
-import { ThemeProvider, useTheme } from "@/lib/theme/index";
+import { spacing, ThemeProvider, typography, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -157,6 +156,7 @@ function LayoutContent() {
   const pathname = usePathname();
   const router = useRouter();
   const activeRole = roleContext?.role;
+  const isDemoMode = Boolean(roleContext?.isDemo);
   const activePermissions = roleContext?.permissions ?? EMPTY_PERMISSIONS;
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
@@ -311,17 +311,15 @@ function LayoutContent() {
     }
 
     if ((session?.organizations.length ?? 0) === 0 && !session?.user.isPlatformAdmin) {
+      if (onboardingFlag !== ONBOARDING_COMPLETED) {
+        void setStoredValue(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED).then(() => {
+          setOnboardingFlag(ONBOARDING_COMPLETED);
+        });
+      }
       if (isPublicRoute) {
-        if (onboardingFlag !== ONBOARDING_COMPLETED) {
-          void setStoredValue(ONBOARDING_STORAGE_KEY, ONBOARDING_COMPLETED).then(() => {
-            setOnboardingFlag(ONBOARDING_COMPLETED);
-          });
-        }
         return;
       }
-      if (onboardingFlag !== ONBOARDING_COMPLETED && pathname !== "/onboarding/role-question") {
-        router.replace("/onboarding/role-question" as never);
-      }
+      router.replace("/gyms" as never);
       return;
     }
 
@@ -394,9 +392,9 @@ function LayoutContent() {
 
   if (runtimeConfigError) {
     return (
-      <View style={styles.configError}>
-        <Text style={styles.configErrorTitle}>{t("app.configErrorTitle")}</Text>
-        <Text style={styles.configErrorBody}>{t("app.configErrorBody")}</Text>
+      <View style={[styles.configError, { backgroundColor: palette.bg.app }]}>
+        <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>{t("app.configErrorTitle")}</Text>
+        <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>{t("app.configErrorBody")}</Text>
       </View>
     );
   }
@@ -412,40 +410,83 @@ function LayoutContent() {
 
   return (
     <>
-      <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <StatusBar
+        style={mode === "dark" ? "light" : "dark"}
+        backgroundColor={palette.bg.app}
+      />
       <NetworkBanner />
-      {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
-      <DemoBanner />
+      {offlineBanner || isDemoMode ? (
+        <RuntimeBannerHost>
+          {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
+          <DemoBanner />
+        </RuntimeBannerHost>
+      ) : null}
       <Stack
         screenOptions={{
-          headerShown: false,
-          headerStyle: { backgroundColor: palette.bg.app },
-          headerTintColor: palette.text.primary,
+          headerShown: true,
+          headerTransparent: Platform.OS === "ios",
+          headerBlurEffect: Platform.OS === "ios" ? (mode === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterial") : undefined,
+          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.app },
+          headerTintColor: palette.accent.base,
+          headerBackButtonDisplayMode: "minimal",
+          headerTitleStyle: typography.headerTitle,
           contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
-        <Stack.Screen name="(member)" options={{ animation: "none" }} />
-        <Stack.Screen name="profile/index" options={{ animation: "none" }} />
-        <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="membership/index" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="find-gyms" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="shop" options={{ animation: "none" }} />
-        <Stack.Screen name="assistant" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="owner" options={{ animation: "none" }} />
-        <Stack.Screen name="platform" options={{ animation: "none" }} />
-        <Stack.Screen name="reception" options={{ animation: "none" }} />
-        <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
-        <Stack.Screen name="login" options={{ animation: "slide_from_right" }} />
-        <Stack.Screen name="trainer" options={{ animation: "none" }} />
-        <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="(member)" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="profile/index" options={{ animation: "none", title: "Profile" }} />
+        <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", title: "Edit profile" }} />
+        <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", title: "Profile photo" }} />
+        <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", title: "Profile details" }} />
+        <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right", title: "Notifications", headerLargeTitle: true }} />
+        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right", title: "Settings", headerLargeTitle: true }} />
+        <Stack.Screen name="settings/account" options={{ animation: "slide_from_right", title: "Account" }} />
+        <Stack.Screen name="settings/appearance" options={{ animation: "slide_from_right", title: "Appearance" }} />
+        <Stack.Screen name="settings/language" options={{ animation: "slide_from_right", title: "Language" }} />
+        <Stack.Screen name="settings/notifications" options={{ animation: "slide_from_right", title: "Notifications" }} />
+        <Stack.Screen name="settings/privacy" options={{ animation: "slide_from_right", title: "Privacy" }} />
+        <Stack.Screen name="settings/support" options={{ animation: "slide_from_right", title: "Help & support" }} />
+        <Stack.Screen name="membership/index" options={{ animation: "slide_from_right", title: "Membership", headerLargeTitle: true }} />
+        <Stack.Screen name="membership/buy" options={{ animation: "slide_from_right", title: "Buy membership" }} />
+        <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", title: "Membership history", headerLargeTitle: true }} />
+        <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", title: "Checkout" }} />
+        <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", title: "Receipt" }} />
+        <Stack.Screen name="shop" options={{ animation: "none", title: "Shop" }} />
+        <Stack.Screen name="assistant" options={{ animation: "slide_from_right", title: "AI assistant" }} />
+        <Stack.Screen name="owner" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="platform" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="reception" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ animation: "fade", headerShown: false }} />
+        <Stack.Screen name="login" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="trainer" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right", title: "Gym" }} />
+        <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", title: "Gyms", headerLargeTitle: true }} />
+        <Stack.Screen name="tracking" options={{ animation: "slide_from_right", title: "Progress" }} />
+        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", title: "Workout history", headerLargeTitle: true }} />
+        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", title: "Log progress" }} />
+        <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", title: "Plan" }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
-          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          options={{ presentation: "modal", animation: "slide_from_bottom", title: "Attendance" }}
         />
       </Stack>
       <ToastHost />
     </>
+  );
+}
+
+function RuntimeBannerHost({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[
+        styles.runtimeBannerHost,
+        { top: Math.max(spacing.xs, Math.max(insets.top, spacing.xs) - 76) },
+      ]}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -519,10 +560,11 @@ export default function Layout() {
 }
 
 function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.configError}>
-      <Text style={styles.configErrorTitle}>Something went wrong</Text>
-      <Text style={styles.configErrorBody}>
+    <View style={[styles.configError, { backgroundColor: palette.bg.app }]}>
+      <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>Something went wrong</Text>
+      <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>
         Zook hit an unexpected error and reported it to our team. Try again, or restart the app if
         the problem continues.
       </Text>
@@ -530,9 +572,9 @@ function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
         onPress={onRetry}
         accessibilityRole="button"
         accessibilityLabel="Try again"
-        style={styles.retryButton}
+        style={[styles.retryButton, { backgroundColor: palette.accent.base }]}
       >
-        <Text style={styles.retryButtonText}>Try again</Text>
+        <Text style={[styles.retryButtonText, { color: palette.text.onAccent }]}>Try again</Text>
       </Pressable>
     </View>
   );
@@ -544,43 +586,44 @@ const styles = StyleSheet.create({
   },
   loading: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
   },
   loadingText: {
-    color: legacyColors.text,
     fontSize: 14,
   },
   configError: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
     justifyContent: "center",
     padding: 24,
     gap: 12,
   },
   configErrorTitle: {
-    color: legacyColors.text,
     fontSize: 22,
     fontWeight: "800",
   },
   configErrorBody: {
-    color: legacyColors.muted,
     fontSize: 15,
     lineHeight: 22,
   },
   retryButton: {
     marginTop: 12,
     alignSelf: "flex-start",
-    backgroundColor: legacyColors.lime,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 999,
   },
   retryButtonText: {
-    color: "#050805",
     fontSize: 14,
     fontWeight: "700",
+  },
+  runtimeBannerHost: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    zIndex: 20,
+    gap: 6,
+    paddingHorizontal: 0,
   },
 });

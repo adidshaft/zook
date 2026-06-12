@@ -2,7 +2,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 
 import { QueryErrorState } from "@/components/primitives";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
-import { legacyColors, spacing } from "@/lib/theme";
+import { spacing, useTheme } from "@/lib/theme";
 import { MemberListEmptyState } from "./empty-state";
 import { MemberListFilters } from "./filters";
 import { MemberListRow } from "./row";
@@ -29,7 +29,9 @@ export function MemberList({
   refreshing,
   onRefresh,
   header,
+  scrollEnabled = true,
 }: MemberListProps) {
+  const { palette } = useTheme();
   const renderItem = ({ item, index }: { item: typeof items[number]; index: number }) => (
     <MemberListRow
       item={item}
@@ -45,14 +47,15 @@ export function MemberList({
       data={isLoading || isError ? [] : items}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}
+      scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}
       refreshControl={
         onRefresh ? (
           <RefreshControl
             refreshing={!!refreshing}
             onRefresh={onRefresh}
-            tintColor={legacyColors.brandLime}
-            colors={[legacyColors.brandLime]}
+            tintColor={palette.accent.base}
+            colors={[palette.accent.base]}
           />
         ) : undefined
       }
@@ -76,7 +79,7 @@ export function MemberList({
           <MemberListEmptyState title={emptyState.title} subtitle={emptyState.subtitle} />
         ) : null
       }
-      contentContainerStyle={styles.listContent}
+      contentContainerStyle={[styles.listContent, !scrollEnabled ? styles.embeddedListContent : null]}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
     />
   );
@@ -89,6 +92,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 96,
+  },
+  embeddedListContent: {
+    paddingBottom: 0,
   },
   separator: {
     height: spacing.md,

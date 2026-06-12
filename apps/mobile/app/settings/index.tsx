@@ -1,14 +1,13 @@
-import { Stack, router } from "expo-router";
+import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { GlassCard, ListRow, MobileHeader, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, AppHeader, ZookScreen } from "@/components/primitives";
 import { layout, spacing } from "@/lib/theme";
 
 const sections = [
   { href: "/settings/account", title: "Account", subtitle: "Name, phone, email, and biometric unlock", icon: "person-outline" },
   { href: "/settings/appearance", title: "Appearance", subtitle: "Theme and default role", icon: "contrast-outline" },
   { href: "/settings/notifications", title: "Notifications", subtitle: "Push categories and reminders", icon: "notifications-outline" },
-  { href: "/settings/language", title: "Language", subtitle: "App language preference", icon: "language-outline" },
   { href: "/settings/privacy", title: "Privacy", subtitle: "Data export and account deletion", icon: "lock-closed-outline" },
   { href: "/settings/support", title: "Help & support", subtitle: "Contact, legal, and app version", icon: "help-circle-outline" },
 ] as const;
@@ -16,17 +15,22 @@ const sections = [
 export default function SettingsIndexScreen() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
-          <GlassCard variant="compact" contentStyle={styles.list}>
+          <AppHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
+          <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
-              <Pressable key={section.href} onPress={() => router.push(section.href as never)} accessibilityRole="button" accessibilityLabel={section.title}>
+              <Pressable
+                key={section.href}
+                onPress={() => router.push(section.href as never)}
+                accessibilityRole="button"
+                accessibilityLabel={section.title}
+                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+              >
                 <ListRow title={section.title} subtitle={section.subtitle} icon={section.icon} />
               </Pressable>
             ))}
-          </GlassCard>
+          </Card>
         </ScrollView>
       </ZookScreen>
     </>
@@ -43,4 +47,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   list: { gap: 4 },
+  rowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
 });

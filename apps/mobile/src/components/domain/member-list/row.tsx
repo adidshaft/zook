@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { GlassCard, Pill } from "@/components/primitives";
+import { Card, Pill, ZookButton } from "@/components/primitives";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
@@ -41,9 +41,19 @@ export function MemberListRow({
   const { palette } = useTheme();
   const showReveal = Boolean(item.phone && onRevealPhone && !item.phoneRevealed);
   return (
-    <GlassCard testID={testID} variant="compact" pressable onPress={onPress} contentStyle={styles.content}>
+    <Card
+      testID={testID}
+      variant="compact"
+      pressable
+      onPress={onPress}
+      contentStyle={styles.content}
+    >
       {item.avatarUrl ? (
-        <Image source={{ uri: item.avatarUrl }} style={[styles.avatarImage, { backgroundColor: palette.surface.default }]} contentFit="cover" />
+        <Image
+          source={{ uri: item.avatarUrl }}
+          style={[styles.avatarImage, { backgroundColor: palette.surface.default }]}
+          contentFit="cover"
+        />
       ) : (
         <View style={[styles.avatar, { backgroundColor: palette.accent.base }]}>
           <Text style={[styles.avatarText, { color: palette.text.onAccent }]}>
@@ -52,7 +62,7 @@ export function MemberListRow({
         </View>
       )}
       <View style={styles.copy}>
-        <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
+        <Text numberOfLines={2} style={[styles.name, { color: palette.text.primary }]}>
           {item.name}
         </Text>
         <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
@@ -82,22 +92,59 @@ export function MemberListRow({
           ))}
         </View>
       </View>
-      <Pill tone={statusTone(item.status)}>{item.status}</Pill>
-      <Ionicons name="chevron-forward" size={17} color={palette.text.secondary} />
-    </GlassCard>
+      <View style={styles.trailing}>
+        <Pill tone={statusTone(item.status)}>{item.status}</Pill>
+        {item.action ? (
+          <ZookButton
+            size="sm"
+            variant="secondary"
+            onPress={() => item.action?.onPress()}
+          >
+            {item.action.label}
+          </ZookButton>
+        ) : null}
+        <Ionicons name="chevron-forward" size={17} color={palette.text.secondary} />
+      </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: spacing.md },
-  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  avatarImage: { width: 40, height: 40, borderRadius: 20 },
+  content: { minHeight: 78, flexDirection: "row", alignItems: "center", gap: spacing.md },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
   avatarText: typography.caption,
-  copy: { flex: 1, gap: 3 },
+  copy: { flex: 1, minWidth: 0, gap: 3 },
   name: typography.cardTitle,
   email: typography.small,
-  metaRow: { minHeight: 24, flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
+  metaRow: {
+    minHeight: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexWrap: "wrap",
+  },
   phoneText: typography.small,
-  revealButton: { minHeight: 24, borderRadius: 12, borderWidth: 1, paddingHorizontal: 8, justifyContent: "center" },
+  revealButton: {
+    alignItems: "center",
+    minHeight: 44,
+    minWidth: 76,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+  },
   revealText: typography.caption,
+  trailing: {
+    width: 118,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
 });

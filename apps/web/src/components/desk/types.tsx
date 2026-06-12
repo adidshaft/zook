@@ -32,8 +32,29 @@ export type MemberRow = {
     dateOfBirth?: string | Date | null;
     profilePhotoUrl?: string | null;
   } | null;
-  lastCheckIn?: { checkedInAt: string; status: string } | null;
-  recentCheckIns?: Array<{ id: string; checkedInAt: string; status: string }>;
+  activeCheckIn?: {
+    id: string;
+    checkedInAt: string;
+    status: string;
+    branchId?: string | null;
+    branchName?: string | null;
+  } | null;
+  lastCheckIn?: {
+    id?: string;
+    checkedInAt: string;
+    checkedOutAt?: string | null;
+    status: string;
+    branchId?: string | null;
+    branchName?: string | null;
+  } | null;
+  recentCheckIns?: Array<{
+    id: string;
+    checkedInAt: string;
+    checkedOutAt?: string | null;
+    status: string;
+    branchId?: string | null;
+    branchName?: string | null;
+  }>;
   lastPayment?: { id: string; amountPaise: number; mode: string; recordedAt?: string | null } | null;
   activeSubscription?: {
     id: string;

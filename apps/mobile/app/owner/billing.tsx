@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   EmptyState,
-  GlassCard,
+  Card,
   ListRow,
   QueryErrorState,
   StatusChip,
@@ -120,7 +119,6 @@ export default function OwnerBillingScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-billing-screen">
         <KeyboardAwareScreen
           scrollViewProps={{
@@ -131,8 +129,8 @@ export default function OwnerBillingScreen() {
               <RefreshControl
                 refreshing={billingQuery.isRefetching}
                 onRefresh={() => void billingQuery.refetch()}
-                tintColor={palette.accent.fill}
-                colors={[palette.accent.fill]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -155,7 +153,7 @@ export default function OwnerBillingScreen() {
 
           {data ? (
             <>
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
@@ -185,9 +183,9 @@ export default function OwnerBillingScreen() {
                   subtitle={`${data.activeMemberCount} members currently count toward SaaS limits`}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Mandate</Text>
@@ -214,9 +212,9 @@ export default function OwnerBillingScreen() {
                 >
                   {mandate?.checkoutUrl ? "Resume setup" : "Set up mandate"}
                 </ZookButton>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Upgrade plan</Text>
@@ -230,7 +228,7 @@ export default function OwnerBillingScreen() {
                     <ZookButton
                       key={item}
                       size="sm"
-                      tone={cycle === item ? "lime" : "secondary"}
+                      variant={cycle === item ? "primary" : "secondary"}
                       onPress={() => setCycle(item)}
                     >
                       {titleCaseFromCode(item)}
@@ -260,9 +258,9 @@ export default function OwnerBillingScreen() {
                     </View>
                   );
                 })}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Current plan limits</Text>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
                   Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.
@@ -300,9 +298,9 @@ export default function OwnerBillingScreen() {
                   Reports: {titleCaseFromCode(data.entitlements?.reports)} · Support:{" "}
                   {titleCaseFromCode(data.entitlements?.support)}
                 </Text>
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.stack}>
+              <Card contentStyle={styles.stack}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Platform referral</Text>
                 <Text selectable style={[styles.referralCode, { color: palette.text.primary }]}>
                   {data.platformReferral?.code ?? "Not available"}
@@ -310,11 +308,11 @@ export default function OwnerBillingScreen() {
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
                   {data.platformReferral?.referredCount ?? 0} gym referral partnerships recorded.
                 </Text>
-              </GlassCard>
+              </Card>
 
               {subscription?.status === "ACTIVE" && !subscription.cancelAtPeriodEnd ? (
                 <ZookButton
-                  tone="danger"
+                  variant="destructive"
                   icon="close-circle-outline"
                   busy={cancel.isPending}
                   disabled={busy}

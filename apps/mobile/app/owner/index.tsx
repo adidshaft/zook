@@ -1,31 +1,35 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Linking, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { DemoBanner } from "@/components/demo-banner";
-import { GlassCard, QueryErrorState, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, WebHandoffCard, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { useOwnerBillingSubscription, useOwnerDashboard, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
+import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { legacyColors, layout, typography } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { useRoleContext } from "@/lib/role-context";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ view?: string | string[] }>();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const roleContext = useRoleContext();
+  const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
+  const scrollY = useSharedValue(0);
   const billingQuery = useOwnerBillingSubscription();
+  const setupStatusQuery = useOwnerSetupStatus();
   const prefetchOwnerWorkspace = usePrefetchOwnerWorkspace();
   const attentionQuery = useOrgAttendancePending();
   const paymentsQuery = useOrgRecentPayments();
@@ -39,55 +43,88 @@ export default function OwnerCommandScreen() {
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
+  const setupStatus = setupStatusQuery.data;
+  const setupSteps = setupStatus
+    ? [
+        {
+          id: "plans",
+          label: "Create membership plans",
+          done: setupStatus.hasMembershipPlans,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/membership-plans"),
+        },
+        {
+          id: "qr",
+          label: "Display your check-in QR",
+          done: setupStatus.hasQrDisplayed,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/attendance/qr-display"),
+        },
+        {
+          id: "staff",
+          label: "Invite staff",
+          done: setupStatus.staffCount > 1,
+          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/staff"),
+        },
+        {
+          id: "join",
+          label: "Share your join link",
+          done: setupStatus.memberCount > 1,
+          onPress: () => {
+            const username = roleContext?.org?.username;
+            const url = username ? `https://zookfit.in/g/${username}` : "https://zookfit.in";
+            void Share.share({ message: `Join my gym on Zook: ${url}`, url });
+          },
+        },
+      ]
+    : [];
+  const showSetupChecklist = setupSteps.length > 0 && setupSteps.some((step) => !step.done);
 
   useEffect(() => {
     prefetchOwnerWorkspace();
   }, [prefetchOwnerWorkspace]);
 
-  useEffect(() => {
-    const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
-    if (rawView === "members") router.replace("/owner/members");
-    if (rawView === "approvals") router.replace("/owner/approvals");
-    if (rawView === "revenue") router.replace("/owner/revenue");
-    if (rawView === "stock") router.replace("/owner/stock");
-  }, [params.view, router]);
-
-  const items: AttentionItem[] = [
-    {
-      id: "approvals",
-      title: "Approvals waiting",
-      subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
-      tone: pendingApprovals ? "amber" : "lime",
-      icon: "checkmark-done-outline",
-      cta: { label: pendingApprovals ? "Review" : "Open", onPress: () => router.replace("/owner/approvals") },
-    },
-    {
-      id: "revenue",
-      title: "Payment exceptions",
-      subtitle: paymentExceptionCount
-        ? `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`
-        : "No transactions need review",
-      tone: paymentExceptionCount ? "amber" : "lime",
-      icon: "card-outline",
-      cta: { label: paymentExceptionCount ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
-    },
-    {
-      id: "stock",
-      title: "Low stock",
-      subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
-      tone: lowStock.length ? "amber" : "lime",
-      icon: "cube-outline",
-      cta: { label: lowStock.length ? "Review" : "Open", onPress: () => router.replace("/owner/stock") },
-    },
-    {
-      id: "memberships",
-      title: "Expiring soon",
-      subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
-      tone: expiringSoon ? "blue" : "neutral",
-      icon: "time-outline",
-      cta: { label: expiringSoon ? "Review" : "Open", onPress: () => router.replace("/owner/revenue") },
-    },
+  const maybeAttentionItems: Array<AttentionItem | null> = [
+    pendingApprovals > 0
+      ? {
+          id: "approvals",
+          title: "Approvals waiting",
+          subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
+          tone: "amber",
+          icon: "checkmark-done-outline",
+          cta: { label: "Approvals", onPress: () => router.push("/owner/approvals") },
+        }
+      : null,
+    paymentExceptionCount > 0
+      ? {
+          id: "revenue",
+          title: "Payment exceptions",
+          subtitle: `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`,
+          tone: "amber",
+          icon: "card-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
+        }
+      : null,
+    lowStock.length > 0
+      ? {
+          id: "stock",
+          title: "Low stock",
+          subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
+          tone: "amber",
+          icon: "cube-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/stock") },
+        }
+      : null,
+    expiringSoon > 0
+      ? {
+          id: "memberships",
+          title: "Expiring soon",
+          subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
+          tone: "blue",
+          icon: "time-outline",
+          cta: { label: "Open", onPress: () => router.push("/owner/members?filter=expiring" as never) },
+        }
+      : null,
   ];
+  const items = maybeAttentionItems.filter((item): item is AttentionItem => Boolean(item));
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
   const subscription = billingQuery.data?.subscription;
   const billingReady =
@@ -107,15 +144,18 @@ export default function OwnerCommandScreen() {
       hint: branchName,
       tone: "lime",
       icon: "people-outline",
-      onPress: () => router.replace("/owner/members"),
+      onPress: () => router.push("/owner/members"),
     },
     {
       label: "Today check-ins",
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
-      hint: `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`,
+      hint:
+        (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
+          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`
+          : undefined,
       tone: "blue",
       icon: "qr-code-outline",
-      onPress: () => router.replace("/owner/approvals"),
+      onPress: () => router.push("/owner/approvals"),
     },
     {
       label: "Revenue",
@@ -123,15 +163,15 @@ export default function OwnerCommandScreen() {
       hint: "Collected + pickup",
       tone: "amber",
       icon: "trending-up-outline",
-      onPress: () => router.replace("/owner/revenue"),
+      onPress: () => router.push("/owner/revenue"),
     },
     {
       label: "Approvals",
       value: pendingApprovals,
-      hint: "Needs attention",
+      hint: pendingApprovals > 0 ? "Needs attention" : undefined,
       tone: "violet",
       icon: "checkmark-done-outline",
-      onPress: () => router.replace("/owner/approvals"),
+      onPress: () => router.push("/owner/approvals"),
     },
   ];
 
@@ -148,47 +188,93 @@ export default function OwnerCommandScreen() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            onScroll: (event) => {
+              scrollY.value = event.nativeEvent.contentOffset.y;
+            },
+            scrollEventThrottle: 16,
             refreshControl: (
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.brandLime}
-                colors={[legacyColors.brandLime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
         >
-          <DemoBanner />
-          <Text style={styles.headerMeta}>{dashboard?.organization?.name ?? "Active gym"} · Owner command view</Text>
-          <RoleSwitcherChip />
+          <ScreenHeader
+            title="Today"
+            subtitle={branchName}
+            contextSlot={<RoleSwitcherContextPill />}
+            scrollY={scrollY}
+          />
+          <AnimatedAppear delay={0}>
+            <WebHandoffCard
+              title="Open web control room"
+              description="Use web for branches, staff, reports, attendance QR console, and provider diagnostics."
+              destination="Dashboard"
+              action={
+                <ZookButton
+                  size="sm"
+                  icon="open-outline"
+                  onPress={() => void Linking.openURL("https://zookfit.in/dashboard")}
+                >
+                  Open web
+                </ZookButton>
+              }
+            />
+          </AnimatedAppear>
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
-          {dashboard ? (
+              {dashboard ? (
             <>
-              {!billingReady ? (
-                <GlassCard variant="warning" contentStyle={styles.billingCard}>
-                  <View style={styles.billingHeader}>
-                    <View style={styles.billingCopy}>
-                      <Text style={styles.billingTitle}>Billing setup required</Text>
-                      <Text style={styles.billingBody}>
-                        Trial access is on, but owner/admin writes need a SaaS mandate before the
-                        gym can operate normally.
-                      </Text>
-                    </View>
-                    <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
-                  </View>
-                  <ZookButton
-                    size="sm"
-                    icon="card-outline"
-                    onPress={() => router.replace("/owner/billing" as never)}
-                  >
-                    Open billing
-                  </ZookButton>
-                </GlassCard>
+              {showSetupChecklist ? (
+                <AnimatedAppear delay={0}>
+                  <SetupChecklist title="Finish gym setup" steps={setupSteps} />
+                </AnimatedAppear>
               ) : null}
-              <MetricGrid testID="owner-view-command" items={metrics} />
-              <AttentionCard items={items} />
-              <OwnerDashboardCharts charts={dashboard.charts} />
+              {!billingReady ? (
+                <AnimatedAppear delay={showSetupChecklist ? 40 : 0}>
+                  <Card variant="warning" contentStyle={styles.billingCard}>
+                    <View style={styles.billingHeader}>
+                      <View style={styles.billingCopy}>
+                        <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
+                        <Text style={[styles.billingBody, { color: palette.text.secondary }]}>
+                          Trial access is on, but owner/admin writes need a SaaS mandate before the
+                          gym can operate normally.
+                        </Text>
+                      </View>
+                      <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
+                    </View>
+                    <ZookButton
+                      size="sm"
+                      icon="card-outline"
+                      onPress={() => router.push("/owner/billing" as never)}
+                    >
+                      Open billing
+                    </ZookButton>
+                  </Card>
+                </AnimatedAppear>
+              ) : null}
+              <AnimatedAppear delay={80}>
+                <MetricGrid testID="owner-view-command" items={metrics} />
+              </AnimatedAppear>
+              <AnimatedAppear delay={120}>
+                {items.length ? (
+                  <AttentionCard items={items} />
+                ) : (
+                  <Card variant="compact">
+                    <EmptyState
+                      icon="checkmark-done-outline"
+                      title="All clear"
+                      body="Nothing needs your attention right now"
+                    />
+                  </Card>
+                )}
+              </AnimatedAppear>
+              <AnimatedAppear delay={160}>
+                <OwnerDashboardCharts charts={dashboard.charts} />
+              </AnimatedAppear>
             </>
           ) : null}
         </KeyboardAwareScreen>
@@ -203,12 +289,8 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: 14,
-    gap: 14,
+    gap: 16,
     paddingBottom: 96,
-  },
-  headerMeta: {
-    color: legacyColors.textMuted,
-    ...typography.caption,
   },
   billingCard: {
     gap: 12,
@@ -224,11 +306,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   billingTitle: {
-    color: legacyColors.textPrimary,
     ...typography.cardTitle,
   },
   billingBody: {
-    color: legacyColors.textMuted,
     ...typography.body,
   },
 });

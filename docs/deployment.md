@@ -58,7 +58,7 @@ Release evidence lives in:
   - `AI_FEATURES_ENABLED=false`
   - `PUSH_PROVIDER=expo|mock|disabled`
   - `STORAGE_PROVIDER=supabase|local|s3|r2|disabled`
-  - `RATE_LIMIT_PROVIDER=upstash` for distributed staging, or explicit `memory` only for single-process internal pilots
+  - `RATE_LIMIT_PROVIDER=upstash|redis` for distributed staging, or explicit `memory` only for single-process internal pilots
 
 ### Production
 
@@ -73,7 +73,7 @@ Release evidence lives in:
 - strong `SESSION_SECRET` required
 - public URLs required
 - seed demo users disabled by default
-- `RATE_LIMIT_PROVIDER=upstash` required for durable shared limits
+- `RATE_LIMIT_PROVIDER=upstash|redis` required for durable shared limits
 
 ## GitHub Branch Protection
 
@@ -164,9 +164,10 @@ Push:
 
 Rate limiting:
 
-- `RATE_LIMIT_PROVIDER=memory|upstash|disabled`
+- `RATE_LIMIT_PROVIDER=memory|upstash|redis|disabled`
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+- `REDIS_URL`
 - `RATE_LIMIT_NAMESPACE` optional
 
 Email:
@@ -189,8 +190,8 @@ Storage:
 - `SUPABASE_STORAGE_BUCKET`
 - `S3_BUCKET`
 - `S3_REGION`
-- `S3_ACCESS_KEY_ID`
-- `S3_SECRET_ACCESS_KEY`
+- `S3_ACCESS_KEY_ID` optional for AWS IAM-role auth, required for R2/S3-compatible endpoints
+- `S3_SECRET_ACCESS_KEY` optional for AWS IAM-role auth, required for R2/S3-compatible endpoints
 - `S3_ENDPOINT` optional
 - `S3_PUBLIC_BASE_URL` optional
 - `R2_ACCOUNT_ID` optional

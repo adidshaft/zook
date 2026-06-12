@@ -26,7 +26,7 @@ export function PickupTab({
   skippedCodeOrderIds: string[];
   busyId: string;
   onVerifyPickupCode: (order: ShopOrder) => void;
-  onSkipCode: (orderId: string) => void;
+  onSkipCode: (orderId: string, reason: string) => void;
   onJumpToShopPayment: (order: ShopOrder) => void;
   onFulfillOrder: (orderId: string) => void;
   highlightedOrderId?: string | undefined;
@@ -86,6 +86,9 @@ export function PickupTab({
                     {verified ? <Pill tone="lime">{copy.codeVerified}</Pill> : null}
                     {codeSkipped ? <Pill tone="amber">{copy.codeSkipped}</Pill> : null}
                   </div>
+                  {codeSkipped ? (
+                    <p className="mt-2 text-xs text-amber-100/70">Code override reason recorded.</p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <ZookButton
@@ -115,7 +118,10 @@ export function PickupTab({
                       type="button"
                       tone="ghost"
                       size="sm"
-                      onClick={() => onSkipCode(order.id)}
+                      onClick={() => {
+                        const reason = window.prompt("Why is the pickup code being skipped?")?.trim();
+                        if (reason) onSkipCode(order.id, reason);
+                      }}
                     >
                       {copy.skipCode}
                     </ZookButton>

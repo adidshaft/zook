@@ -13,15 +13,11 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "@/lib/reanimated-lite";
 import { radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -44,11 +40,6 @@ type ButtonPalette = {
   glow?: ViewStyle;
 };
 
-function variantFromTone(tone: ButtonTone): ButtonVariant {
-  if (tone === "lime") return "primary";
-  return tone;
-}
-
 function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPalette {
   if (variant === "primary") {
     return {
@@ -58,7 +49,7 @@ function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPale
       glow: { boxShadow: palette.shadow.sm } as ViewStyle,
     };
   }
-  if (variant === "danger") {
+  if (variant === "destructive") {
     return {
       backgroundColor: palette.surface.dangerSoft,
       borderColor: palette.feedback.danger,
@@ -102,11 +93,11 @@ export function pressWithHaptics(callback?: PressHandler, weight: HapticWeight =
 
 const buttonSizeStyles: Record<ButtonSize, ViewStyle> = {
   sm: {
-    minHeight: 32,
+    minHeight: 40,
     borderRadius: radii.button,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
   },
   md: {
     minHeight: 46,
@@ -134,8 +125,7 @@ export function ZookButton({
   children,
   onPress,
   href,
-  tone = "lime",
-  variant,
+  variant = "primary",
   size = "md",
   fullWidth = false,
   disabled = false,
@@ -152,7 +142,6 @@ export function ZookButton({
   children: ReactNode;
   onPress?: PressHandler;
   href?: Href;
-  tone?: ButtonTone;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -168,8 +157,7 @@ export function ZookButton({
   testID?: string;
 }) {
   const { palette } = useTheme();
-  const resolvedVariant = variant ?? variantFromTone(tone);
-  const buttonPalette = paletteForVariant(palette, resolvedVariant);
+  const buttonPalette = paletteForVariant(palette, variant);
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
@@ -177,10 +165,6 @@ export function ZookButton({
   const resolvedBorderColor = isDisabled ? palette.border.subtle : buttonPalette.borderColor;
   const resolvedTextColor = isDisabled ? palette.text.secondary : buttonPalette.color;
   const contentLabel = busy && busyLabel ? busyLabel : children;
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
@@ -197,8 +181,6 @@ export function ZookButton({
   const label = (
     <Text
       numberOfLines={1}
-      adjustsFontSizeToFit
-      minimumFontScale={0.72}
       style={[styles.buttonText, buttonTextSizeStyle, { color: resolvedTextColor }, textStyle]}
     >
       {contentLabel}
@@ -213,16 +195,12 @@ export function ZookButton({
   if (href && !isDisabled) {
     return (
       <Link href={href} asChild>
-        <AnimatedPressable
+        <Pressable
           testID={testID}
           onPressIn={() => {
             if (hapticWeight !== "none") {
               pressWithHaptics(undefined, hapticWeight);
             }
-            scale.value = withSpring(0.95, { mass: 0.5, damping: 12 });
-          }}
-          onPressOut={() => {
-            scale.value = withSpring(1, { mass: 0.5, damping: 12 });
           }}
           onLongPress={() => pressWithHaptics(onLongPress, hapticWeight)}
           accessibilityRole="link"
@@ -230,28 +208,18 @@ export function ZookButton({
             accessibilityLabel ?? (typeof children === "string" ? children : undefined)
           }
           accessibilityState={{ disabled: isDisabled, busy }}
-          style={[staticButtonStyle, animatedStyle]}
+          style={staticButtonStyle}
         >
           {leading}
           {label}
-        </AnimatedPressable>
+        </Pressable>
       </Link>
     );
   }
 
   return (
-    <AnimatedPressable
+    <Pressable
       testID={testID}
-      onPressIn={() => {
-        if (!isDisabled) {
-          scale.value = withSpring(0.95, { mass: 0.5, damping: 12 });
-        }
-      }}
-      onPressOut={() => {
-        if (!isDisabled) {
-          scale.value = withSpring(1, { mass: 0.5, damping: 12 });
-        }
-      }}
       onPress={() => {
         if (!isDisabled) pressWithHaptics(onPress, hapticWeight);
       }}
@@ -261,6 +229,7 @@ export function ZookButton({
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)
       }
       accessibilityState={{ disabled: isDisabled, busy }}
+      android_ripple={{ color: palette.border.default, borderless: false }}
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
@@ -273,12 +242,11 @@ export function ZookButton({
         fullWidth ? styles.fullWidth : null,
         isDisabled ? styles.disabled : null,
         style,
-        animatedStyle,
       ]}
     >
       {leading}
       {label}
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
@@ -286,41 +254,29 @@ export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "var
   return <ZookButton {...props} />;
 }
 
-export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function SecondaryGlassButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="secondary" />;
+export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
+  return <ZookButton {...props} variant="destructive" />;
 }
 
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
-  return <ZookButton {...props} variant="danger" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="ghost" />;
-}
-
-export function DangerActionButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="danger" />;
 }
 
 export function PrimaryLink({
   href,
   children,
-  tone = "lime",
+  variant = "primary",
   style,
   textStyle,
   accessibilityLabel,
 }: {
   href: Href;
   children: ReactNode;
-  tone?: ButtonTone;
+  variant?: ButtonVariant;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
@@ -328,7 +284,7 @@ export function PrimaryLink({
   return (
     <ZookButton
       href={href}
-      tone={tone}
+      variant={variant}
       style={style}
       textStyle={textStyle}
       accessibilityLabel={accessibilityLabel}
@@ -338,14 +294,15 @@ export function PrimaryLink({
   );
 }
 
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "tone">) {
-  return <PrimaryLink {...props} tone="secondary" />;
+export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
+  return <PrimaryLink {...props} variant="secondary" />;
 }
 
 const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     flexDirection: "row",
     minWidth: 0,
@@ -365,6 +322,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   disabled: {
-    opacity: 1,
+    opacity: 0.5,
   },
 });
+
+export const Button = ZookButton;

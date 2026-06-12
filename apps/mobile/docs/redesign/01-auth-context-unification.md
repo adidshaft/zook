@@ -110,11 +110,11 @@ A bottom sheet component:
 - On tap: call `switchRole` and/or `switchOrg`; close sheet; replace router to the new role's default route via `routeForRole`
 - If only one combo is available, the chip renders read-only (no tap target)
 
-Use existing primitives: `Sheet` or `expo-safe-bottom-sheet.tsx`, `ListRow` from `legacy.tsx`. Match visual treatment to the existing `MobileHeader`.
+Use existing primitives: `Sheet` or `expo-safe-bottom-sheet.tsx`, `ListRow` from `old.tsx`. Match visual treatment to the existing `AppHeader`.
 
 ### Step 4 — Mount the switcher in the global header
 
-The header currently lives in `MobileHeader` (`apps/mobile/src/components/primitives/foundation.tsx:717`). Add a new optional `contextSlot?: ReactNode` prop. Render it in the title row between eyebrow and title.
+The header currently lives in `AppHeader` (`apps/mobile/src/components/primitives/foundation.tsx:717`). Add a new optional `contextSlot?: ReactNode` prop. Render it in the title row between eyebrow and title.
 
 Update screen-level callers that already pass header props to optionally include `<RoleSwitcherChip />` — at minimum: `app/index.tsx`, `app/owner/index.tsx`, `app/reception.tsx`, `app/trainer/index.tsx`, `app/membership.tsx`, `app/scan.tsx`. The chip is a no-op when there's nothing to switch.
 
@@ -168,8 +168,8 @@ Expose `setDefaultRole(role: Role)` via `useAuth()`. **Do not** add UI for this 
 - `apps/mobile/src/lib/auth.tsx`
 - `apps/mobile/app/_layout.tsx`
 - `apps/mobile/src/lib/demo-mode.ts`
-- `apps/mobile/src/components/primitives/foundation.tsx` (MobileHeader prop)
-- Top-level role screens that render `MobileHeader`: `app/index.tsx`, `app/owner/index.tsx`, `app/reception.tsx`, `app/trainer/index.tsx`, `app/membership.tsx`, `app/scan.tsx` (and any others touched by `git grep "MobileHeader"`)
+- `apps/mobile/src/components/primitives/foundation.tsx` (AppHeader prop)
+- Top-level role screens that render `AppHeader`: `app/index.tsx`, `app/owner/index.tsx`, `app/reception.tsx`, `app/trainer/index.tsx`, `app/membership.tsx`, `app/scan.tsx` (and any others touched by `git grep "AppHeader"`)
 
 ## Files deleted
 
@@ -179,7 +179,7 @@ None in this plan.
 
 - The "Switched to OWNER view" toast (currently fires unexpectedly) is gone — silent activation removed.
 - The active role/org is now **visible at all times** in the header — fixes "I don't know what mode I'm in" disorientation.
-- Users with multiple roles can switch in one tap from anywhere with a `MobileHeader`.
+- Users with multiple roles can switch in one tap from anywhere with a `AppHeader`.
 
 ## Acceptance criteria
 

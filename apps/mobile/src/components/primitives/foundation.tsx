@@ -44,17 +44,30 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding, useStickyActionOffset } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
-import { legacyColors, layout, palettes, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, materials, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
+import type { Palette } from "@/lib/theme";
+import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
-export type ButtonTone = "lime" | "secondary" | "ghost" | "danger";
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
-type GlassCardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
-type GlassCardGlowTone = "lime" | "amber" | "red" | "success";
+type CardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
+export type SemanticSurface =
+  | "screen"
+  | "card"
+  | "taskCard"
+  | "dangerCard"
+  | "warningCard"
+  | "successCard"
+  | "moneyFlowCard"
+  | "handoffCard";
+type CardGlowTone = "lime" | "amber" | "red" | "success";
+type CardSurface = "content" | "interactive" | "floating";
+export type TaskResultTone = "success" | "pending" | "failure" | "blocked";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
+type ThemeMode = "light" | "dark";
 export type ChipGroupOption<T extends string> = {
   value: T;
   label: string;
@@ -67,6 +80,26 @@ export type ChipGroupOption<T extends string> = {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const zookMarkSource = require("../../../assets/icons/app-icon-512.png");
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
+const fallbackColors = {
+  bg: "#000000",
+  text: "#FFFFFF",
+  muted: "#D4DDD0",
+  subtle: "#99A595",
+  lime: darkPalette.accent.base,
+  limeBorder: "rgba(185,244,85,0.26)",
+  amber: "#F2C94C",
+  red: "#FF5A3D",
+  blue: "#7DD3FC",
+  violet: "#B9A9FF",
+  border: "rgba(255,255,255,0.18)",
+  borderStrong: "rgba(255,255,255,0.28)",
+  divider: "rgba(255,255,255,0.11)",
+  panel: "rgba(255,255,255,0.06)",
+  panelStrong: "rgba(255,255,255,0.10)",
+  glassFill: "rgba(255,255,255,0.06)",
+  glassStroke: "rgba(255,255,255,0.18)",
+  accentPanel: "rgba(185,244,85,0.12)",
+};
 
 const brandMarkSizes: Record<BrandMarkSize, number> = {
   sm: 32,
@@ -74,99 +107,53 @@ const brandMarkSizes: Record<BrandMarkSize, number> = {
   lg: 56,
 };
 
-const _tonePalettes: Record<
-  PillTone,
-  { borderColor: string; color: string; backgroundColor: string; glowColor: string }
-> = {
-  neutral: {
-    borderColor: "rgba(255,255,255,0.14)",
-    color: legacyColors.muted,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    glowColor: "rgba(255,255,255,0.1)",
-  },
-  lime: {
-    borderColor: "rgba(185,244,85,0.42)",
-    color: legacyColors.lime,
-    backgroundColor: "rgba(185,244,85,0.14)",
-    glowColor: "rgba(185,244,85,0.26)",
-  },
-  amber: {
-    borderColor: "rgba(242,201,76,0.4)",
-    color: legacyColors.amber,
-    backgroundColor: "rgba(242,201,76,0.13)",
-    glowColor: "rgba(242,201,76,0.22)",
-  },
-  red: {
-    borderColor: "rgba(255,90,61,0.4)",
-    color: legacyColors.red,
-    backgroundColor: "rgba(255,90,61,0.13)",
-    glowColor: "rgba(255,90,61,0.22)",
-  },
-  blue: {
-    borderColor: "rgba(125,211,252,0.35)",
-    color: legacyColors.blue,
-    backgroundColor: "rgba(125,211,252,0.11)",
-    glowColor: "rgba(125,211,252,0.18)",
-  },
-  violet: {
-    borderColor: "rgba(185,169,255,0.35)",
-    color: legacyColors.violet,
-    backgroundColor: "rgba(185,169,255,0.11)",
-    glowColor: "rgba(185,169,255,0.18)",
-  },
-};
-
-export function getTonePalette(tone: PillTone, mode: "light" | "dark", palette: any) {
-  if (mode === "dark") {
+export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palette) {
+  if (tone === "lime") {
     return {
-      borderColor: tone === "neutral" ? "rgba(255,255,255,0.14)" :
-                   tone === "lime" ? "rgba(185,244,85,0.42)" :
-                   tone === "amber" ? "rgba(242,201,76,0.4)" :
-                   tone === "red" ? "rgba(255,90,61,0.4)" :
-                   tone === "blue" ? "rgba(125,211,252,0.35)" :
-                   "rgba(185,169,255,0.35)",
-      color: tone === "neutral" ? "#8B9586" :
-             tone === "lime" ? palette.accent.base :
-             tone === "amber" ? palette.feedback.warning :
-             tone === "red" ? palette.feedback.danger :
-             tone === "blue" ? palette.feedback.info :
-             palette.text.primary,
-      backgroundColor: tone === "neutral" ? "rgba(255,255,255,0.06)" :
-                       tone === "lime" ? "rgba(185,244,85,0.14)" :
-                       tone === "amber" ? "rgba(242,201,76,0.13)" :
-                       tone === "red" ? "rgba(255,90,61,0.13)" :
-                       tone === "blue" ? "rgba(125,211,252,0.11)" :
-                       "rgba(185,169,255,0.11)",
-      glowColor: tone === "neutral" ? "rgba(255,255,255,0.1)" :
-                 tone === "lime" ? "rgba(185,244,85,0.26)" :
-                 tone === "amber" ? "rgba(242,201,76,0.22)" :
-                 tone === "red" ? "rgba(255,90,61,0.22)" :
-                 tone === "blue" ? "rgba(125,211,252,0.18)" :
-                 "rgba(185,169,255,0.18)",
-    };
-  } else {
-    return {
-      borderColor: tone === "neutral" ? "rgba(17,21,15,0.08)" :
-                   tone === "lime" ? "rgba(30,63,32,0.18)" :
-                   tone === "amber" ? "rgba(180,83,9,0.22)" :
-                   tone === "red" ? "rgba(185,28,28,0.18)" :
-                   tone === "blue" ? "rgba(3,105,161,0.18)" :
-                   "rgba(107,33,168,0.18)",
-      color: tone === "neutral" ? "#3F463C" :
-             tone === "lime" ? "#1F3E24" :
-             tone === "amber" ? "#B45309" :
-             tone === "red" ? "#B91C1C" :
-             tone === "blue" ? "#0369A1" :
-             "#6B21A8",
-      backgroundColor: tone === "neutral" ? "rgba(17,21,15,0.04)" :
-                       tone === "lime" ? "rgba(30,63,32,0.06)" :
-                       tone === "amber" ? "rgba(180,83,9,0.06)" :
-                       tone === "red" ? "rgba(185,28,28,0.06)" :
-                       tone === "blue" ? "rgba(3,105,161,0.06)" :
-                       "rgba(107,33,168,0.06)",
-      glowColor: "rgba(17,21,15,0.04)",
+      borderColor: palette.border.focus,
+      color: palette.accent.base,
+      backgroundColor: palette.surface.accentSoft,
+      glowColor: palette.surface.accentSoft,
     };
   }
+  if (tone === "amber") {
+    return {
+      borderColor: palette.feedback.warning,
+      color: palette.feedback.warning,
+      backgroundColor: palette.surface.warningSoft,
+      glowColor: palette.surface.warningSoft,
+    };
+  }
+  if (tone === "red") {
+    return {
+      borderColor: palette.feedback.danger,
+      color: palette.feedback.danger,
+      backgroundColor: palette.surface.dangerSoft,
+      glowColor: palette.surface.dangerSoft,
+    };
+  }
+  if (tone === "blue") {
+    return {
+      borderColor: palette.feedback.info,
+      color: palette.feedback.info,
+      backgroundColor: palette.bg.sunken,
+      glowColor: palette.bg.sunken,
+    };
+  }
+  if (tone === "violet") {
+    return {
+      borderColor: palette.border.default,
+      color: palette.text.primary,
+      backgroundColor: palette.surface.raised,
+      glowColor: palette.surface.default,
+    };
+  }
+  return {
+    borderColor: palette.border.subtle,
+    color: palette.text.secondary,
+    backgroundColor: palette.surface.default,
+    glowColor: palette.surface.default,
+  };
 }
 
 export function useTonePalette(tone: PillTone) {
@@ -175,37 +162,9 @@ export function useTonePalette(tone: PillTone) {
   return useMemo(() => getTonePalette(tone, mode, palette), [tone, palette, mode]);
 }
 
-
-const buttonPalettes: Record<
-  ButtonVariant,
-  { backgroundColor: string; borderColor: string; color: string; glow?: ViewStyle }
-> = {
-  primary: {
-    backgroundColor: legacyColors.lime,
-    borderColor: legacyColors.lime,
-    color: legacyColors.bg,
-    glow: shadows.glowLimeSoft,
-  },
-  secondary: {
-    backgroundColor: "rgba(255,255,255,0.045)",
-    borderColor: "rgba(255,255,255,0.12)",
-    color: legacyColors.text,
-  },
-  ghost: {
-    backgroundColor: "transparent",
-    borderColor: "rgba(255,255,255,0.1)",
-    color: legacyColors.text,
-  },
-  danger: {
-    backgroundColor: "rgba(255,90,61,0.1)",
-    borderColor: "rgba(255,90,61,0.28)",
-    color: legacyColors.text,
-  },
-};
-
 const buttonSizeStyles: Record<ButtonSize, ViewStyle> = {
   sm: {
-    minHeight: 32,
+    minHeight: 44,
     borderRadius: radii.button,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -233,81 +192,114 @@ const buttonTextSizeStyles: Record<ButtonSize, TextStyle> = {
   lg: { fontSize: 16, lineHeight: 21 },
 };
 
-const glassCardVariants: Record<
-  GlassCardVariant,
-  { backgroundColor: string; borderColor: string; shadow?: ViewStyle }
-> = {
-  default: {
-    backgroundColor: legacyColors.glassFill,
-    borderColor: legacyColors.glassStroke,
-    shadow: shadows.glowDark,
-  },
-  compact: {
-    backgroundColor: legacyColors.glassFill,
-    borderColor: legacyColors.divider,
-    shadow: shadows.card,
-  },
-  selected: {
-    backgroundColor: palettes.lime.fillSoft,
-    borderColor: palettes.lime.stroke,
-  },
-  success: {
-    backgroundColor: palettes.lime.fillSoft,
-    borderColor: palettes.lime.stroke,
-  },
-  warning: {
-    backgroundColor: palettes.warning.fill,
-    borderColor: palettes.warning.stroke,
-  },
-  danger: {
-    backgroundColor: palettes.danger.fill,
-    borderColor: palettes.danger.stroke,
-  },
-};
-
-const glassGlowStyles: Record<GlassCardGlowTone, ViewStyle> = {
+const glassGlowStyles: Record<CardGlowTone, ViewStyle> = {
   lime: shadows.glowLimeSoft,
   success: shadows.glowLimeSoft,
   amber: shadows.glowAmberSoft,
   red: shadows.glowRedSoft,
 };
 
-const metricPalettes = {
-  neutral: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: legacyColors.border,
-    valueColor: legacyColors.text,
-  },
-  lime: {
-    backgroundColor: "rgba(185,244,85,0.1)",
-    borderColor: "rgba(185,244,85,0.26)",
-    valueColor: legacyColors.lime,
-  },
-  amber: {
-    backgroundColor: "rgba(242,201,76,0.1)",
-    borderColor: "rgba(242,201,76,0.24)",
-    valueColor: legacyColors.amber,
-  },
-  blue: {
-    backgroundColor: "rgba(125,211,252,0.1)",
-    borderColor: "rgba(125,211,252,0.2)",
-    valueColor: legacyColors.blue,
-  },
-  violet: {
-    backgroundColor: "rgba(185,169,255,0.1)",
-    borderColor: "rgba(185,169,255,0.2)",
-    valueColor: legacyColors.violet,
-  },
-  red: {
-    backgroundColor: "rgba(255,90,61,0.1)",
-    borderColor: "rgba(255,90,61,0.22)",
-    valueColor: legacyColors.red,
-  },
-} satisfies Record<PillTone, { backgroundColor: string; borderColor: string; valueColor: string }>;
+function platformSurfaceShadow(
+  mode: ThemeMode,
+  elevated = false,
+  shadowColor?: string,
+): ViewStyle | null {
+  if (!elevated) {
+    return null;
+  }
 
-function variantFromTone(tone: ButtonTone): ButtonVariant {
-  if (tone === "lime") return "primary";
-  return tone;
+  if (Platform.OS === "android") {
+    return {
+      elevation: 2,
+      shadowColor: shadowColor ?? fallbackColors.bg,
+    };
+  }
+
+  return {
+    shadowColor: shadowColor ?? fallbackColors.bg,
+    shadowOpacity: mode === "dark" ? 0.22 : 0.09,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+  };
+}
+
+function glassSurfaceColors(
+  mode: ThemeMode,
+  palette: Palette,
+  variant: CardVariant,
+  surface: CardSurface,
+): { backgroundColor: string; borderColor: string; blurIntensity: number; blurTint: "dark" | "light" } {
+  const isDark = mode === "dark";
+  const cardMaterial = materials.cardSurface(mode);
+  const blurIntensity = variant === "compact" ? (isDark ? 18 : 12) : isDark ? 24 : 16;
+  const blurTint = isDark ? "dark" : "light";
+
+  if (variant === "selected") {
+    return {
+      backgroundColor: palette.surface.accentSoft,
+      borderColor: palette.border.focus,
+      blurIntensity: isDark ? 20 : 14,
+      blurTint,
+    };
+  }
+
+  if (variant === "success") {
+    return {
+      backgroundColor: palette.surface.successSoft,
+      borderColor: palette.feedback.success,
+      blurIntensity: isDark ? 20 : 14,
+      blurTint,
+    };
+  }
+
+  if (variant === "warning") {
+    return {
+      backgroundColor: palette.surface.warningSoft,
+      borderColor: palette.feedback.warning,
+      blurIntensity: isDark ? 20 : 14,
+      blurTint,
+    };
+  }
+
+  if (variant === "danger") {
+    return {
+      backgroundColor: palette.surface.dangerSoft,
+      borderColor: palette.feedback.danger,
+      blurIntensity: isDark ? 20 : 14,
+      blurTint,
+    };
+  }
+
+  return {
+    backgroundColor: surface === "content" ? cardMaterial.backgroundColor : palette.surface.raised,
+    borderColor: surface === "content" ? cardMaterial.borderColor : palette.border.default,
+    blurIntensity,
+    blurTint,
+  };
+}
+
+function variantForSemanticSurface(surface?: SemanticSurface): CardVariant | undefined {
+  if (surface === "successCard") return "success";
+  if (surface === "warningCard" || surface === "moneyFlowCard" || surface === "handoffCard") {
+    return "warning";
+  }
+  if (surface === "dangerCard") return "danger";
+  if (surface === "taskCard") return "selected";
+  return undefined;
+}
+
+function toneForTaskResult(tone: TaskResultTone): PillTone {
+  if (tone === "success") return "lime";
+  if (tone === "pending") return "amber";
+  if (tone === "failure" || tone === "blocked") return "red";
+  return "neutral";
+}
+
+function iconForTaskResult(tone: TaskResultTone): IconName {
+  if (tone === "success") return "checkmark-circle-outline";
+  if (tone === "pending") return "time-outline";
+  if (tone === "blocked") return "lock-closed-outline";
+  return "alert-circle-outline";
 }
 
 export type HapticWeight = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error" | "none";
@@ -370,7 +362,28 @@ export function ZookScreen({
         style,
       ]}
     >
-      {ambient ? <View pointerEvents="none" style={styles.ambientGlow} /> : null}
+      {ambient ? (
+        <>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.ambientGlow,
+              {
+                backgroundColor: palette.surface.accentSoft,
+              },
+            ]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              styles.ambientWash,
+              {
+                backgroundColor: palette.surface.default,
+              },
+            ]}
+          />
+        </>
+      ) : null}
       {children}
     </View>
   );
@@ -379,7 +392,7 @@ export function ZookScreen({
 export function Screen({ children, title }: { children: ReactNode; title?: string }) {
   return (
     <ZookScreen>
-      {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
+      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
       {children}
     </ZookScreen>
   );
@@ -409,7 +422,7 @@ export function ScreenShell({
   const contentPaddingBottom = bottomNav ? computedBottomPadding : stickyAction ? layout.stickyActionHeight + spacing.lg : spacing.xl;
   return (
     <ZookScreen ambient={ambient} style={style}>
-      {title ? <Text style={styles.legacyTitle}>{title}</Text> : null}
+      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
       {scroll ? (
         <ScrollView
           contentInsetAdjustmentBehavior="never"
@@ -509,7 +522,7 @@ export function ProfileShortcut({
   );
 }
 
-export function GlassCard({
+export function Card({
   children,
   style,
   contentStyle,
@@ -519,68 +532,50 @@ export function GlassCard({
   padding,
   radius,
   pressable = false,
+  surface,
+  semanticSurface,
   disabled = false,
   onPress,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityValue,
   testID,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   glow?: boolean;
-  glowTone?: GlassCardGlowTone;
-  variant?: GlassCardVariant;
+  glowTone?: CardGlowTone;
+  variant?: CardVariant;
+  semanticSurface?: SemanticSurface;
   padding?: number;
   radius?: number;
   pressable?: boolean;
+  surface?: CardSurface;
   disabled?: boolean;
   onPress?: PressHandler;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityValue?: {
+    min?: number;
+    max?: number;
+    now?: number;
+    text?: string;
+  };
   testID?: string;
 }) {
-  const { mode } = useTheme();
-  const isDark = mode === "dark";
-  const palette = glassCardVariants[variant];
+  const { mode, palette } = useTheme();
+  const resolvedVariant = variantForSemanticSurface(semanticSurface) ?? variant;
   const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
-  const resolvedRadius = radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard);
-
-  // Dynamic overrides for liquid glassmorphism
-  let cardBg = palette.backgroundColor;
-  let cardBorder = palette.borderColor;
-
-  if (isDark) {
-    if (variant === "default" || variant === "compact") {
-      cardBg = "rgba(18, 20, 19, 0.65)"; // sleek dark obsidian glass
-      cardBorder = "rgba(255, 255, 255, 0.08)"; // hairline boundary
-    } else if (variant === "selected") {
-      cardBg = "rgba(185, 244, 85, 0.12)"; // lime accent soft
-      cardBorder = "rgba(185, 244, 85, 0.35)";
-    } else if (variant === "success") {
-      cardBg = "rgba(125, 211, 172, 0.12)";
-      cardBorder = "rgba(125, 211, 172, 0.35)";
-    } else if (variant === "warning") {
-      cardBg = "rgba(242, 201, 76, 0.12)";
-      cardBorder = "rgba(242, 201, 76, 0.35)";
-    } else if (variant === "danger") {
-      cardBg = "rgba(255, 90, 61, 0.12)";
-      cardBorder = "rgba(255, 90, 61, 0.35)";
-    }
-  } else {
-    if (variant === "default" || variant === "compact") {
-      cardBg = "rgba(255, 255, 255, 0.72)"; // sleek milky glass
-      cardBorder = "rgba(17, 21, 15, 0.08)"; // hairline boundary
-    } else if (variant === "selected") {
-      cardBg = "rgba(31, 62, 36, 0.06)";
-      cardBorder = "rgba(31, 62, 36, 0.16)";
-    } else if (variant === "success") {
-      cardBg = "rgba(22, 163, 74, 0.06)";
-      cardBorder = "rgba(22, 163, 74, 0.16)";
-    } else if (variant === "warning") {
-      cardBg = "rgba(217, 119, 6, 0.06)";
-      cardBorder = "rgba(217, 119, 6, 0.16)";
-    } else if (variant === "danger") {
-      cardBg = "rgba(220, 38, 38, 0.06)";
-      cardBorder = "rgba(220, 38, 38, 0.16)";
-    }
-  }
+  const resolvedRadius = radius ?? (resolvedVariant === "compact" ? radii.smallCard : radii.mainCard);
+  const resolvedSurface = surface ?? (pressable || onPress ? "interactive" : "content");
+  const surfaceColors = glassSurfaceColors(mode, palette, resolvedVariant, resolvedSurface);
+  const cardMaterial = materials.cardSurface(mode);
+  const shouldElevate =
+    mode === "light" ||
+    resolvedSurface === "floating" ||
+    resolvedSurface === "interactive" ||
+    Boolean(resolvedGlowTone);
 
   // Android draws `elevation` shadows behind the view; when the same view
   // has `overflow: hidden`, the shadow gets clipped *inside* the card and
@@ -589,7 +584,11 @@ export function GlassCard({
   // on an inner card so the shadow renders cleanly on both platforms.
   const outerStyle: StyleProp<ViewStyle> = [
     { borderRadius: resolvedRadius },
-    palette.shadow,
+    platformSurfaceShadow(
+      mode,
+      shouldElevate,
+      palette.bg.sunken,
+    ),
     resolvedGlowTone ? glassGlowStyles[resolvedGlowTone] : null,
     disabled ? styles.disabled : null,
     style,
@@ -597,19 +596,28 @@ export function GlassCard({
   const innerStyle: StyleProp<ViewStyle> = [
     styles.glassCard,
     {
-      backgroundColor: cardBg,
-      borderColor: cardBorder,
+      backgroundColor: surfaceColors.backgroundColor,
+      borderColor: surfaceColors.borderColor,
       borderRadius: resolvedRadius,
     },
     resolvedGlowTone ? styles.glassCardGlowBorder : null,
   ];
   const inner = (
     <View style={innerStyle}>
-      {Platform.OS === "ios" ? (
+      {resolvedVariant === "default" || resolvedVariant === "compact" ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.cardInnerTopHighlight,
+            { backgroundColor: cardMaterial.innerTopHighlight },
+          ]}
+        />
+      ) : null}
+      {Platform.OS === "ios" && resolvedSurface !== "content" ? (
         <BlurView
           pointerEvents="none"
-          intensity={isDark ? 24 : 16}
-          tint={isDark ? "dark" : "light"}
+          intensity={surfaceColors.blurIntensity}
+          tint={surfaceColors.blurTint}
           // iOS composes BlurView above sibling flex children unless we
           // explicitly pin it behind — without this, primary buttons inside
           // a tinted card lose contrast under the blur overlay.
@@ -635,7 +643,11 @@ export function GlassCard({
         testID={testID}
         disabled={disabled}
         onPress={() => pressWithHaptics(onPress)}
+        android_ripple={{ color: palette.surface.accentSoft, borderless: false }}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityValue={accessibilityValue}
         accessibilityState={{ disabled }}
         style={({ pressed }) => [outerStyle, pressed && !disabled ? styles.pressed : null]}
       >
@@ -651,10 +663,6 @@ export function GlassCard({
   );
 }
 
-export function Card(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard {...props} />;
-}
-
 export function GlassPanel({
   children,
   strong = false,
@@ -664,8 +672,19 @@ export function GlassPanel({
   strong?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { palette, mode } = useTheme();
   return (
-    <View style={[styles.glassPanel, strong ? styles.glassPanelStrong : null, style]}>
+    <View
+      style={[
+        styles.glassPanel,
+        {
+          backgroundColor: strong ? palette.surface.raised : palette.surface.default,
+          borderColor: strong ? palette.border.default : palette.border.subtle,
+        },
+        platformSurfaceShadow(mode, strong, palette.bg.sunken),
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -675,17 +694,22 @@ export function ZookChip({
   children,
   tone = "neutral",
   icon,
+  onPress,
+  accessibilityLabel,
   style,
   textStyle,
 }: {
   children: ReactNode;
   tone?: PillTone;
   icon?: IconName;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }) {
+  const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
-  return (
+  const chip = (
     <View
       style={[
         styles.chip,
@@ -699,6 +723,18 @@ export function ZookChip({
       {icon ? <Ionicons name={icon} size={13} color={palette.color} /> : null}
       <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.chipText, { color: palette.color }, textStyle]}>{children}</Text>
     </View>
+  );
+  if (!onPress) return chip;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+      android_ripple={{ color: themePalette.border.default, borderless: false }}
+      onPress={() => pressWithHaptics(onPress)}
+      style={({ pressed }) => [styles.chipPressable, pressed ? styles.pressed : null]}
+    >
+      {chip}
+    </Pressable>
   );
 }
 
@@ -805,7 +841,7 @@ export function ModeChip({
   );
 }
 
-export function MobileHeader({
+export function AppHeader({
   eyebrow,
   title,
   subtitle,
@@ -828,44 +864,11 @@ export function MobileHeader({
   showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { palette, mode } = useTheme();
-
-  // Root tabs where we should not display a back button
-  const isRootTab =
-    ["/", "/plan", "/scan", "/shop", "/you", "/owner", "/trainer", "/reception"].includes(pathname) ||
-    pathname === "";
-
-  const canGoBack = !isRootTab;
+  const { palette } = useTheme();
 
   let resolvedLeading = leading;
-  if (!resolvedLeading) {
-    if (canGoBack) {
-      resolvedLeading = (
-        <Pressable
-          onPress={() => pressWithHaptics(() => router.canGoBack() ? router.back() : router.replace("/"))}
-          hitSlop={iconOnlyHitSlop}
-          style={({ pressed }) => [
-            {
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: mode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(17, 21, 15, 0.04)",
-              borderWidth: 1,
-              borderColor: palette.border.subtle,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-        >
-          <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-        </Pressable>
-      );
-    } else if (!centered && showProfileShortcut) {
-      resolvedLeading = <ProfileShortcut />;
-    }
+  if (!resolvedLeading && !centered && showProfileShortcut) {
+    resolvedLeading = <ProfileShortcut />;
   }
 
   return (
@@ -891,27 +894,6 @@ export function MobileHeader({
   );
 }
 
-export function RoleHeader({
-  role,
-  title,
-  subtitle,
-  trailing,
-}: {
-  role: Role | string;
-  title: string;
-  subtitle?: string;
-  trailing?: ReactNode;
-}) {
-  return (
-    <MobileHeader
-      title={title}
-      subtitle={subtitle}
-      chip={<RoleChip role={role} />}
-      trailing={trailing}
-    />
-  );
-}
-
 export function ZookHeader({
   title,
   subtitle,
@@ -926,7 +908,7 @@ export function ZookHeader({
   trailing?: ReactNode;
 }) {
   return (
-    <MobileHeader
+    <AppHeader
       title={title}
       subtitle={subtitle}
       chip={
@@ -937,28 +919,6 @@ export function ZookHeader({
         ) : undefined
       }
       trailing={trailing}
-    />
-  );
-}
-
-export function ScreenHeader({
-  eyebrow,
-  title,
-  subtitle,
-  trailing,
-}: {
-  eyebrow?: string;
-  title: string;
-  subtitle?: string;
-  trailing?: ReactNode;
-}) {
-  return (
-    <MobileHeader
-      eyebrow={eyebrow}
-      title={title}
-      subtitle={subtitle}
-      trailing={trailing}
-      showProfileShortcut={false}
     />
   );
 }
@@ -992,16 +952,57 @@ export function SectionTitle(props: Parameters<typeof SectionHeader>[0]) {
   return <SectionHeader {...props} />;
 }
 
-export function AppHeader(props: Parameters<typeof MobileHeader>[0]) {
-  return <MobileHeader {...props} />;
+export function FieldCard(props: Parameters<typeof Card>[0]) {
+  return <Card variant="compact" {...props} />;
 }
 
-export function FieldCard(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard variant="compact" {...props} />;
+export function QueueCard(props: Parameters<typeof Card>[0]) {
+  return <Card pressable {...props} />;
 }
 
-export function QueueCard(props: Parameters<typeof GlassCard>[0]) {
-  return <GlassCard pressable {...props} />;
+export function OperationalQueueCard({
+  title,
+  subtitle,
+  meta,
+  status,
+  tone = "amber",
+  icon = "list-outline",
+  actionLabel,
+  onPress,
+  accessibilityLabel,
+}: {
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  status?: string;
+  tone?: PillTone;
+  icon?: IconName;
+  actionLabel?: string;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Card
+      pressable={Boolean(onPress)}
+      semanticSurface={tone === "red" ? "dangerCard" : tone === "lime" ? "successCard" : "taskCard"}
+      onPress={onPress}
+      accessibilityLabel={
+        accessibilityLabel ??
+        [actionLabel ?? "Open queue item", title, status, meta].filter(Boolean).join(", ")
+      }
+      accessibilityHint={actionLabel ? `${actionLabel}.` : undefined}
+    >
+      <View style={styles.operationalQueueRow}>
+        <IconBubble icon={icon} tone={tone} size={42} />
+        <View style={styles.operationalQueueCopy}>
+          <Text style={styles.operationalQueueTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.operationalQueueSubtitle}>{subtitle}</Text> : null}
+          {meta ? <Text style={styles.operationalQueueMeta}>{meta}</Text> : null}
+        </View>
+        {status ? <StatusChip status={status} tone={tone} accessibilityLabel={`${status} status`} /> : null}
+      </View>
+    </Card>
+  );
 }
 
 export function AlertCard({
@@ -1018,7 +1019,7 @@ export function AlertCard({
   action?: ReactNode;
 }) {
   return (
-    <GlassCard variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
+    <Card variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
       <View style={styles.alertCardRow}>
         <IconBubble icon={icon ?? "alert-circle-outline"} tone={tone} size={38} />
         <View style={styles.alertCardCopy}>
@@ -1027,7 +1028,116 @@ export function AlertCard({
         </View>
         {action}
       </View>
-    </GlassCard>
+    </Card>
+  );
+}
+
+export function TaskResultCard({
+  title,
+  message,
+  tone,
+  detailRows,
+  primaryAction,
+  secondaryAction,
+  icon,
+}: {
+  title: string;
+  message?: string;
+  tone: TaskResultTone;
+  detailRows?: Array<{ label: string; value: string }>;
+  primaryAction?: ReactNode;
+  secondaryAction?: ReactNode;
+  icon?: IconName;
+}) {
+  const statusTone = toneForTaskResult(tone);
+  const semanticSurface: SemanticSurface =
+    tone === "success"
+      ? "successCard"
+      : tone === "pending"
+        ? "warningCard"
+        : "dangerCard";
+  return (
+    <Card semanticSurface={semanticSurface} accessibilityLabel={[title, message].filter(Boolean).join(". ")}>
+      <View style={styles.taskResultHeader}>
+        <IconBubble icon={icon ?? iconForTaskResult(tone)} tone={statusTone} size={48} />
+        <View style={styles.taskResultCopy}>
+          <Text style={styles.taskResultTitle}>{title}</Text>
+          {message ? <Text style={styles.taskResultMessage}>{message}</Text> : null}
+        </View>
+      </View>
+      {detailRows?.length ? (
+        <View style={styles.taskResultDetails}>
+          {detailRows.map((row) => (
+            <DetailRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </View>
+      ) : null}
+      {primaryAction || secondaryAction ? (
+        <View style={styles.taskResultActions}>
+          {secondaryAction}
+          {primaryAction}
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+export function MoneySummaryCard({
+  title,
+  amount,
+  rows,
+  consequence,
+  action,
+}: {
+  title: string;
+  amount: string;
+  rows: Array<{ label: string; value: string }>;
+  consequence?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <Card semanticSurface="moneyFlowCard" accessibilityLabel={`${title}. Total ${amount}`}>
+      <View style={styles.moneySummaryHeader}>
+        <View>
+          <Text style={styles.moneySummaryTitle}>{title}</Text>
+          <Text style={styles.moneySummaryAmount}>{amount}</Text>
+        </View>
+        <IconBubble icon="receipt-outline" tone="amber" size={44} />
+      </View>
+      <View style={styles.moneySummaryRows}>
+        {rows.map((row) => (
+          <DetailRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </View>
+      {consequence ? <AuditWarning>{consequence}</AuditWarning> : null}
+      {action}
+    </Card>
+  );
+}
+
+export function WebHandoffCard({
+  title,
+  description,
+  destination,
+  action,
+}: {
+  title: string;
+  description: string;
+  destination: string;
+  action?: ReactNode;
+}) {
+  return (
+    <Card semanticSurface="handoffCard" accessibilityLabel={`${title}. Opens ${destination} on web.`}>
+      <View style={styles.webHandoffRow}>
+        <IconBubble icon="desktop-outline" tone="blue" size={44} />
+        <View style={styles.webHandoffCopy}>
+          <Text style={styles.webHandoffTitle}>{title}</Text>
+          <Text style={styles.webHandoffDescription}>{description}</Text>
+          <StatusChip tone="blue" status={destination} accessibilityLabel={`Web destination ${destination}`} />
+        </View>
+      </View>
+      {action}
+    </Card>
   );
 }
 
@@ -1077,8 +1187,7 @@ export function ZookButton({
   children,
   onPress,
   href,
-  tone = "lime",
-  variant,
+  variant = "primary",
   size = "md",
   fullWidth = false,
   disabled = false,
@@ -1095,7 +1204,6 @@ export function ZookButton({
   children: ReactNode;
   onPress?: PressHandler;
   href?: Href;
-  tone?: ButtonTone;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -1112,32 +1220,30 @@ export function ZookButton({
 }) {
   const { palette: themePalette, mode } = useTheme();
   const isDark = mode === "dark";
-  const resolvedVariant = variant ?? variantFromTone(tone);
-  const staticPalette = buttonPalettes[resolvedVariant];
 
-  let btnBg = staticPalette.backgroundColor;
-  let btnBorder = staticPalette.borderColor;
-  let btnColor = staticPalette.color;
-  let btnGlow = Platform.OS === "ios" ? staticPalette.glow : null;
+  let btnBg = themePalette.accent.fill;
+  let btnBorder = themePalette.accent.fill;
+  let btnColor = themePalette.text.onAccent;
+  let btnGlow: ViewStyle | null = null;
 
-  if (resolvedVariant === "primary") {
+  if (variant === "primary") {
     btnBg = themePalette.accent.fill;
     btnBorder = themePalette.accent.fill;
     btnColor = themePalette.text.onAccent;
     btnGlow = isDark ? shadows.glowLimeSoft : null;
-  } else if (resolvedVariant === "secondary") {
-    btnBg = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(17, 21, 15, 0.05)";
-    btnBorder = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(17, 21, 15, 0.12)";
+  } else if (variant === "secondary") {
+    btnBg = isDark ? themePalette.surface.raised : themePalette.surface.accentSoft;
+    btnBorder = themePalette.border.default;
     btnColor = themePalette.text.primary;
     btnGlow = null;
-  } else if (resolvedVariant === "ghost") {
+  } else if (variant === "ghost") {
     btnBg = "transparent";
-    btnBorder = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(17, 21, 15, 0.1)";
+    btnBorder = themePalette.border.subtle;
     btnColor = themePalette.text.primary;
     btnGlow = null;
-  } else if (resolvedVariant === "danger") {
-    btnBg = isDark ? "rgba(255, 90, 61, 0.1)" : "rgba(220, 38, 38, 0.06)";
-    btnBorder = isDark ? "rgba(255, 90, 61, 0.28)" : "rgba(220, 38, 38, 0.16)";
+  } else if (variant === "destructive") {
+    btnBg = themePalette.surface.dangerSoft;
+    btnBorder = themePalette.feedback.danger;
     btnColor = themePalette.feedback.danger;
     btnGlow = null;
   }
@@ -1192,9 +1298,7 @@ export function ZookButton({
             <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
           ) : null}
           <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}
+            numberOfLines={2}
             style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
           >
             {contentLabel}
@@ -1231,6 +1335,7 @@ export function ZookButton({
         accessibilityLabel ?? (typeof children === "string" ? children : undefined)
       }
       accessibilityState={{ disabled: isDisabled, busy }}
+      android_ripple={{ color: themePalette.border.default, borderless: false }}
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
@@ -1252,9 +1357,7 @@ export function ZookButton({
         <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
       ) : null}
       <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.72}
+        numberOfLines={2}
         style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
       >
         {contentLabel}
@@ -1269,41 +1372,29 @@ export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "var
   return <ZookButton {...props} />;
 }
 
-export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function SecondaryGlassButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="secondary" />;
+export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
+  return <ZookButton {...props} variant="destructive" />;
 }
 
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
-  return <ZookButton {...props} variant="danger" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">) {
+export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="ghost" />;
-}
-
-export function DangerActionButton(
-  props: Omit<Parameters<typeof ZookButton>[0], "variant" | "tone">,
-) {
-  return <ZookButton {...props} variant="danger" />;
 }
 
 export function PrimaryLink({
   href,
   children,
-  tone = "lime",
+  variant = "primary",
   style,
   textStyle,
   accessibilityLabel,
 }: {
   href: Href;
   children: ReactNode;
-  tone?: ButtonTone;
+  variant?: ButtonVariant;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   accessibilityLabel?: string;
@@ -1311,7 +1402,7 @@ export function PrimaryLink({
   return (
     <ZookButton
       href={href}
-      tone={tone}
+      variant={variant}
       style={style}
       textStyle={textStyle}
       accessibilityLabel={accessibilityLabel}
@@ -1321,8 +1412,8 @@ export function PrimaryLink({
   );
 }
 
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "tone">) {
-  return <PrimaryLink {...props} tone="secondary" />;
+export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
+  return <PrimaryLink {...props} variant="secondary" />;
 }
 
 export function MetricTile({
@@ -1340,16 +1431,26 @@ export function MetricTile({
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }) {
-  const palette = metricPalettes[tone];
+  const { palette: themePalette, mode } = useTheme();
+  const tonePalette = getTonePalette(tone, mode, themePalette);
 
   return (
-    <View style={[styles.metricTile, palette, style]}>
+    <View
+      style={[
+        styles.metricTile,
+        {
+          borderColor: tonePalette.borderColor,
+          backgroundColor: tonePalette.backgroundColor,
+        },
+        style,
+      ]}
+    >
       {icon ? <IconBubble icon={icon} tone={tone} size={34} /> : null}
-      <Text style={styles.metricTileLabel} numberOfLines={2}>
+      <Text style={[styles.metricTileLabel, { color: themePalette.text.secondary }]} numberOfLines={2}>
         {label}
       </Text>
       <Text
-        style={[styles.metricTileValue, { color: palette.valueColor }]}
+        style={[styles.metricTileValue, { color: tonePalette.color }]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.7}
@@ -1357,7 +1458,7 @@ export function MetricTile({
         {value}
       </Text>
       {detail ? (
-        <Text style={styles.metricTileDetail} numberOfLines={2}>
+        <Text style={[styles.metricTileDetail, { color: themePalette.text.tertiary }]} numberOfLines={2}>
           {detail}
         </Text>
       ) : null}
@@ -1405,8 +1506,18 @@ export function StatusRing({
   size?: number;
   progress?: number;
 }) {
-  const palette = useTonePalette(tone);
+  const { palette: themePalette, mode } = useTheme();
+  const palette = getTonePalette(tone, mode, themePalette);
   const activeRotation = progress >= 0.7 ? "34deg" : progress >= 0.45 ? "-24deg" : "-72deg";
+  const ringShadow =
+    tone !== "neutral" && Platform.OS === "ios"
+      ? {
+          shadowColor: palette.color,
+          shadowOpacity: mode === "dark" ? 0.18 : 0.08,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 0 },
+        }
+      : null;
   return (
     <View
       style={[
@@ -1415,9 +1526,9 @@ export function StatusRing({
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderColor: "rgba(255,255,255,0.1)",
+          borderColor: themePalette.border.subtle,
         },
-        tone !== "neutral" ? { shadowColor: palette.color } : null,
+        ringShadow,
       ]}
     >
       <View
@@ -1442,7 +1553,11 @@ export function StatusRing({
         {value ? (
           <Text style={[styles.statusRingValue, { color: palette.color }]}>{value}</Text>
         ) : null}
-        {label ? <Text style={styles.statusRingLabel}>{label}</Text> : null}
+        {label ? (
+          <Text style={[styles.statusRingLabel, { color: themePalette.text.secondary }]}>
+            {label}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -1471,18 +1586,25 @@ export function EntryCodeCard({
   detail?: string;
   tone?: PillTone;
 }) {
+  const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
   return (
-    <GlassCard
+    <Card
       glow={tone === "lime"}
       style={[styles.entryCodeCard, { borderColor: palette.borderColor }]}
       contentStyle={styles.entryCodeContent}
     >
-      <Text style={styles.entryCodeLabel}>Entry Code</Text>
+      <Text style={[styles.entryCodeLabel, { color: themePalette.text.secondary }]}>
+        Entry Code
+      </Text>
       <Text style={[styles.entryCodeValue, { color: palette.color }]}>{code}</Text>
       {status ? <ZookChip tone={tone}>{status}</ZookChip> : null}
-      {detail ? <Text style={styles.entryCodeDetail}>{detail}</Text> : null}
-    </GlassCard>
+      {detail ? (
+        <Text style={[styles.entryCodeDetail, { color: themePalette.text.secondary }]}>
+          {detail}
+        </Text>
+      ) : null}
+    </Card>
   );
 }
 
@@ -1493,6 +1615,8 @@ export function ListRow({
   trailing,
   icon,
   tone = "neutral",
+  onPress,
+  accessibilityLabel,
   style,
 }: {
   title: string;
@@ -1501,20 +1625,49 @@ export function ListRow({
   trailing?: ReactNode;
   icon?: IconName;
   tone?: PillTone;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
-  const { palette } = useTheme();
-  return (
-    <View style={[styles.listRow, style]}>
+  const { palette, mode } = useTheme();
+  const row = (
+    <View
+      style={[
+        styles.listRow,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: mode === "dark" ? palette.surface.default : palette.bg.elevated,
+        },
+        style,
+      ]}
+    >
       {leading ?? (icon ? <IconBubble icon={icon} tone={tone} size={40} /> : null)}
       <View style={styles.listRowCopy}>
-        <Text style={[styles.listRowTitle, { color: palette.text.primary }]}>{title}</Text>
+        <Text numberOfLines={1} style={[styles.listRowTitle, { color: palette.text.primary }]}>
+          {title}
+        </Text>
         {subtitle ? (
-          <Text style={[styles.listRowSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+          <Text numberOfLines={2} style={[styles.listRowSubtitle, { color: palette.text.secondary }]}>
+            {subtitle}
+          </Text>
         ) : null}
       </View>
-      {trailing ?? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />}
+      <View style={styles.listRowTrailing}>
+        {trailing ?? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />}
+      </View>
     </View>
+  );
+  if (!onPress) return row;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      android_ripple={{ color: palette.border.default, borderless: false }}
+      onPress={() => pressWithHaptics(onPress)}
+      style={({ pressed }) => (pressed ? styles.listRowPressed : null)}
+    >
+      {row}
+    </Pressable>
   );
 }
 
@@ -1548,6 +1701,24 @@ export function TextField({
   const { palette, mode } = useTheme();
   const disabled = props.editable === false;
   const labelSuffix = required ? " *" : optional ? " optional" : "";
+  const inputBorderColor = focused
+    ? palette.border.focus
+    : error
+      ? palette.feedback.danger
+      : palette.border.default;
+  const inputSurface = error
+    ? palette.surface.dangerSoft
+    : focused
+      ? mode === "dark"
+        ? palette.surface.raised
+        : palette.bg.elevated
+      : readonly
+        ? mode === "dark"
+          ? palette.bg.sunken
+          : palette.surface.accentSoft
+        : mode === "dark"
+          ? palette.surface.default
+          : palette.surface.accentSoft;
   return (
     <View style={[styles.inputGroup, style]}>
       {label ? (
@@ -1560,12 +1731,9 @@ export function TextField({
         style={[
           styles.inputWrapper,
           {
-            borderColor: focused ? palette.border.focus : error ? palette.feedback.danger : palette.border.default,
-            backgroundColor: mode === "dark" ? "rgba(255, 255, 255, 0.03)" : "rgba(17, 21, 15, 0.03)",
+            borderColor: inputBorderColor,
+            backgroundColor: inputSurface,
           },
-          focused ? styles.inputWrapperFocused : null,
-          error ? styles.inputWrapperError : null,
-          readonly ? styles.inputWrapperReadonly : null,
           disabled ? styles.inputWrapperDisabled : null,
         ]}
       >
@@ -1592,7 +1760,7 @@ export function TextField({
         {trailing}
       </View>
       {error ? (
-        <Text accessibilityRole="alert" style={styles.inputError}>
+        <Text accessibilityRole="alert" style={[styles.inputError, { color: palette.feedback.danger }]}>
           {error}
         </Text>
       ) : null}
@@ -1601,7 +1769,7 @@ export function TextField({
   );
 }
 
-export function GlassInput(props: Parameters<typeof TextField>[0]) {
+export function Input(props: Parameters<typeof TextField>[0]) {
   return <TextField {...props} />;
 }
 
@@ -1614,7 +1782,7 @@ export function SearchBar({
   value,
   onChangeText,
   style,
-  trailing = <Ionicons name="options-outline" size={17} color={legacyColors.muted} />,
+  trailing,
 }: {
   placeholder?: string;
   value?: string;
@@ -1622,6 +1790,9 @@ export function SearchBar({
   style?: StyleProp<ViewStyle>;
   trailing?: ReactNode;
 }) {
+  const { palette } = useTheme();
+  const resolvedTrailing =
+    trailing ?? <Ionicons name="options-outline" size={17} color={palette.text.tertiary} />;
   return (
     <TextField
       value={value}
@@ -1629,8 +1800,8 @@ export function SearchBar({
       placeholder={placeholder}
       autoCapitalize="none"
       autoCorrect={false}
-      leading={<Ionicons name="search-outline" size={18} color={legacyColors.subtle} />}
-      trailing={trailing}
+      leading={<Ionicons name="search-outline" size={18} color={palette.text.tertiary} />}
+      trailing={resolvedTrailing}
       style={style}
     />
   );
@@ -1640,10 +1811,11 @@ export function SearchField({
   label,
   ...props
 }: Omit<Parameters<typeof TextField>[0], "leading"> & { label?: string }) {
+  const { palette } = useTheme();
   return (
     <TextField
       label={label ?? "Search"}
-      leading={<Ionicons name="search-outline" size={18} color={legacyColors.subtle} />}
+      leading={<Ionicons name="search-outline" size={18} color={palette.text.tertiary} />}
       {...props}
     />
   );
@@ -1687,14 +1859,24 @@ export function ProductCard({
   const increment = onIncrement ?? onPress;
   const canIncrement = !disabled && !incrementDisabled && Boolean(increment);
   const canDecrement = !disabled && Boolean(onDecrement);
+  const addButtonDisabled = !canIncrement;
   return (
-    <GlassCard
+    <Card
       testID={testID}
       style={[styles.productCard, style]}
       contentStyle={[styles.productContent, compact ? styles.productContentCompact : null]}
       disabled={disabled}
     >
-      <View style={[styles.productVisual, compact ? styles.productVisualCompact : null]}>
+      <View
+        style={[
+          styles.productVisual,
+          {
+            borderColor: themePalette.border.subtle,
+            backgroundColor: mode === "dark" ? themePalette.bg.sunken : themePalette.surface.default,
+          },
+          compact ? styles.productVisualCompact : null,
+        ]}
+      >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
         ) : (
@@ -1739,7 +1921,7 @@ export function ProductCard({
               styles.productStepper,
               {
                 borderColor: themePalette.accent.base,
-                backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(31,62,36,0.06)",
+                backgroundColor: themePalette.surface.accentSoft,
               },
             ]}
           >
@@ -1787,21 +1969,20 @@ export function ProductCard({
             style={[
               styles.productAdd,
               {
-                borderColor: disabled ? themePalette.border.default : themePalette.accent.base,
-                backgroundColor: disabled
-                  ? "rgba(255,255,255,0.035)"
-                  : mode === "dark"
-                  ? "rgba(185,244,85,0.12)"
-                  : "rgba(31,62,36,0.06)",
+                borderColor: addButtonDisabled ? themePalette.border.subtle : themePalette.accent.base,
+                backgroundColor: addButtonDisabled
+                  ? mode === "dark"
+                    ? themePalette.surface.default
+                    : themePalette.bg.sunken
+                  : themePalette.surface.accentSoft,
               },
               compact ? styles.productAddCompact : null,
-              !canIncrement ? styles.productAddDisabled : null,
             ]}
           >
             <Text
               style={[
                 styles.productAddText,
-                { color: disabled ? themePalette.text.tertiary : themePalette.accent.strong },
+                { color: addButtonDisabled ? themePalette.text.tertiary : themePalette.accent.strong },
               ]}
             >
               {disabled ? "OUT" : "ADD"}
@@ -1809,12 +1990,12 @@ export function ProductCard({
             <Ionicons
               name="add"
               size={16}
-              color={disabled ? themePalette.text.tertiary : themePalette.accent.strong}
+              color={addButtonDisabled ? themePalette.text.tertiary : themePalette.accent.strong}
             />
           </Pressable>
         )}
       </View>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -1880,8 +2061,17 @@ export function SegmentedControl<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  const { palette, mode } = useTheme();
   return (
-    <View style={styles.segmentedControl}>
+    <View
+      style={[
+        styles.segmentedControl,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: mode === "dark" ? palette.surface.default : palette.surface.accentSoft,
+        },
+      ]}
+    >
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -1890,7 +2080,17 @@ export function SegmentedControl<T extends string>({
             onPress={() => pressWithHaptics(() => onChange(option.value))}
             accessibilityRole="button"
             accessibilityState={{ selected }}
-            style={[styles.segmentedOption, selected ? styles.segmentedOptionSelected : null]}
+            style={({ pressed }) => [
+              styles.segmentedOption,
+              selected
+                ? {
+                    backgroundColor: palette.surface.accentSoft,
+                    borderWidth: 1,
+                    borderColor: palette.border.focus,
+                  }
+                : null,
+              pressed ? styles.segmentedOptionPressed : null,
+            ]}
           >
             <Text
               numberOfLines={1}
@@ -1898,7 +2098,7 @@ export function SegmentedControl<T extends string>({
               minimumFontScale={0.75}
               style={[
                 styles.segmentedOptionText,
-                selected ? styles.segmentedOptionTextSelected : null,
+                { color: selected ? palette.accent.base : palette.text.secondary },
               ]}
             >
               {option.label}
@@ -1946,8 +2146,12 @@ export function ChipGroup<T extends string>({
             style={({ pressed }) => [
               styles.chipGroupOption,
               {
-                borderColor: selected ? palette.borderColor : legacyColors.border,
-                backgroundColor: selected ? palette.backgroundColor : "rgba(255,255,255,0.035)",
+                borderColor: selected ? palette.borderColor : themePalette.border.subtle,
+                backgroundColor: selected
+                  ? palette.backgroundColor
+                  : mode === "dark"
+                    ? themePalette.surface.default
+                    : themePalette.bg.elevated,
               },
               selected ? styles.chipGroupOptionSelected : null,
               disabled ? styles.chipGroupOptionDisabled : null,
@@ -1959,12 +2163,19 @@ export function ChipGroup<T extends string>({
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                style={[styles.chipGroupLabel, selected ? { color: palette.color } : null]}
+                style={[
+                  styles.chipGroupLabel,
+                  { color: selected ? palette.color : themePalette.text.primary },
+                ]}
               >
                 {option.label}
               </Text>
               {option.description ? (
-                <Text numberOfLines={2} ellipsizeMode="tail" style={styles.chipGroupDescription}>
+                <Text
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                  style={[styles.chipGroupDescription, { color: themePalette.text.secondary }]}
+                >
                   {option.description}
                 </Text>
               ) : null}
@@ -1977,10 +2188,19 @@ export function ChipGroup<T extends string>({
 }
 
 export function AuditWarning({ children }: { children: ReactNode }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.auditWarning}>
+    <View
+      style={[
+        styles.auditWarning,
+        {
+          borderColor: palette.feedback.warning,
+          backgroundColor: palette.surface.warningSoft,
+        },
+      ]}
+    >
       <IconBubble icon="reader-outline" tone="amber" size={38} />
-      <Text style={styles.auditWarningText}>{children}</Text>
+      <Text style={[styles.auditWarningText, { color: palette.text.primary }]}>{children}</Text>
     </View>
   );
 }
@@ -1990,10 +2210,19 @@ export function OfflineBanner({
 }: {
   children?: ReactNode;
 }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.offlineBanner}>
-      <Ionicons name="cloud-offline-outline" size={16} color={legacyColors.amber} />
-      <Text style={styles.offlineBannerText}>{children}</Text>
+    <View
+      style={[
+        styles.offlineBanner,
+        {
+          borderColor: palette.feedback.warning,
+          backgroundColor: palette.surface.warningSoft,
+        },
+      ]}
+    >
+      <Ionicons name="cloud-offline-outline" size={16} color={palette.feedback.warning} />
+      <Text style={[styles.offlineBannerText, { color: palette.text.primary }]}>{children}</Text>
     </View>
   );
 }
@@ -2007,11 +2236,12 @@ export function DetailRow({
   value: string;
   trailing?: ReactNode;
 }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailRowLabel}>{label}</Text>
+    <View style={[styles.detailRow, { borderBottomColor: palette.border.subtle }]}>
+      <Text style={[styles.detailRowLabel, { color: palette.text.secondary }]}>{label}</Text>
       <View style={styles.detailRowValueWrap}>
-        <Text style={styles.detailRowValue}>{value}</Text>
+        <Text style={[styles.detailRowValue, { color: palette.text.primary }]}>{value}</Text>
         {trailing}
       </View>
     </View>
@@ -2035,12 +2265,17 @@ export function ProgressBar({
   tone?: PillTone;
   label?: string;
 }) {
+  const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
   const percent = Math.max(0, Math.min(1, value));
   return (
     <View style={styles.progressBarGroup}>
-      {label ? <Text style={styles.progressBarLabel}>{label}</Text> : null}
-      <View style={styles.progressBarTrack}>
+      {label ? (
+        <Text style={[styles.progressBarLabel, { color: themePalette.text.secondary }]}>
+          {label}
+        </Text>
+      ) : null}
+      <View style={[styles.progressBarTrack, { backgroundColor: themePalette.bg.sunken }]}>
         <View
           style={[
             styles.progressBarFill,
@@ -2061,9 +2296,19 @@ export function ScannerFrame({
   size?: number;
   tone?: PillTone;
 }) {
+  const { palette: themePalette, mode } = useTheme();
   const palette = useTonePalette(tone);
   return (
-    <View style={[styles.scannerFrame, size ? { width: size, height: size } : null]}>
+    <View
+      style={[
+        styles.scannerFrame,
+        {
+          borderColor: palette.borderColor,
+          backgroundColor: mode === "dark" ? themePalette.surface.default : themePalette.bg.sunken,
+        },
+        size ? { width: size, height: size } : null,
+      ]}
+    >
       <View
         style={[styles.scannerCorner, styles.scannerCornerTopLeft, { borderColor: palette.color }]}
       />
@@ -2113,28 +2358,34 @@ export function SwipeActionRow({
 export function StickyActionBar({
   bottomOffset,
   children,
+  elevated = true,
+  style,
 }: {
   bottomOffset?: number;
   children: ReactNode;
+  elevated?: boolean;
+  style?: StyleProp<ViewStyle>;
 }) {
   const insets = useSafeAreaInsets();
   const computedBottomOffset = useStickyActionOffset();
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
 
   return (
     <View
-      style={StyleSheet.flatten([
+      style={[
         styles.stickyActionBar,
         {
-          backgroundColor: palette.bg.app,
+          backgroundColor: mode === "dark" ? "rgba(7,8,7,0.92)" : "rgba(255,255,255,0.94)",
           borderTopWidth: 1,
           borderTopColor: palette.border.subtle,
           paddingTop: 14,
           bottom: bottomNavVisible ? (bottomOffset ?? computedBottomOffset) : 0,
           paddingBottom: Math.max(insets.bottom, 14),
         },
-      ])}
+        elevated ? platformSurfaceShadow(mode, true, palette.bg.sunken) : null,
+        style,
+      ]}
     >
       {children}
     </View>
@@ -2160,6 +2411,7 @@ export function CollapsibleSection({
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
+  const { palette } = useTheme();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   const open = controlledOpen ?? uncontrolledOpen;
 
@@ -2172,7 +2424,7 @@ export function CollapsibleSection({
   }
 
   return (
-    <GlassCard contentStyle={styles.collapsibleContent}>
+    <Card contentStyle={styles.collapsibleContent}>
       <Pressable
         onPress={() => pressWithHaptics(toggleOpen)}
         accessibilityRole="button"
@@ -2180,19 +2432,37 @@ export function CollapsibleSection({
         style={({ pressed }) => [styles.collapsibleHeader, pressed ? styles.pressed : null]}
       >
         <View style={styles.collapsibleCopy}>
-          {eyebrow ? <Text style={styles.sectionEyebrow}>{eyebrow}</Text> : null}
-          <Text style={styles.collapsibleTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.collapsibleSubtitle}>{subtitle}</Text> : null}
+          {eyebrow ? (
+            <Text style={[styles.sectionEyebrow, { color: palette.text.tertiary }]}>
+              {eyebrow}
+            </Text>
+          ) : null}
+          <Text style={[styles.collapsibleTitle, { color: palette.text.primary }]}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={[styles.collapsibleSubtitle, { color: palette.text.secondary }]}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.collapsibleTrailing}>
           {count !== undefined ? (
             <ZookChip tone={open ? "lime" : "neutral"}>{count}</ZookChip>
           ) : null}
-          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={22} color={legacyColors.muted} />
+          <Ionicons
+            name={open ? "chevron-up" : "chevron-down"}
+            size={22}
+            color={palette.text.tertiary}
+          />
         </View>
       </Pressable>
-      {open ? <View style={styles.collapsibleBody}>{children}</View> : null}
-    </GlassCard>
+      {open ? (
+        <View style={[styles.collapsibleBody, { borderTopColor: palette.border.subtle }]}>
+          {children}
+        </View>
+      ) : null}
+    </Card>
   );
 }
 
@@ -2224,7 +2494,7 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Trainer: "nav.trainer",
   Clients: "nav.clients",
   Drafts: "nav.drafts",
-  Desk: "nav.desk",
+  "Front desk": "nav.desk",
   Members: "nav.members",
   Payments: "nav.payments",
   Orders: "nav.orders",
@@ -2233,8 +2503,8 @@ const navTranslationKeys: Record<string, TranslationKey> = {
   Approvals: "nav.approvals",
   Revenue: "nav.revenue",
   Stock: "nav.stock",
-  Command: "nav.command",
-  Profile: "nav.profile",
+  Today: "nav.command",
+  You: "nav.profile",
 };
 
 function translatedNavLabel(label: string, t: ReturnType<typeof useI18n>["t"]) {
@@ -2270,7 +2540,7 @@ const memberTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2311,7 +2581,7 @@ const trainerTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2322,7 +2592,7 @@ const trainerTabs: DockTab[] = [
 const receptionTabs: DockTab[] = [
   {
     href: "/reception",
-    label: "Desk",
+    label: "Front desk",
     icon: "desktop-outline",
     activeIcon: "desktop",
     matchPath: "/reception",
@@ -2353,7 +2623,7 @@ const receptionTabs: DockTab[] = [
   },
   {
     href: "/profile" as Href,
-    label: "Profile",
+    label: "You",
     icon: "person-outline",
     activeIcon: "person",
     matchPath: "/profile",
@@ -2482,6 +2752,7 @@ function DockTabItem({
   slotStyle: StyleProp<ViewStyle>;
 }) {
   const router = useRouter();
+  const { palette } = useTheme();
   const raised = isMemberNav && tab.raised;
   const showLabel = !(raised && tab.hideLabel);
   const translatedLabel = translatedNavLabel(tab.label, t);
@@ -2491,6 +2762,13 @@ function DockTabItem({
   const animatedStyle = useRealAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+  const navColor = raised
+    ? palette.text.onAccent
+    : active
+      ? palette.accent.base
+      : palette.text.tertiary;
+  const activeBg = palette.surface.accentSoft;
+  const activeBorder = palette.border.focus;
 
   const memberPressProps = isMemberNav
     ? {
@@ -2526,6 +2804,14 @@ function DockTabItem({
         active ? styles.bottomNavItemActive : null,
         active && isMemberNav ? styles.memberBottomNavItemActive : null,
         active && raised ? styles.memberBottomNavItemRaisedActive : null,
+        active && !raised ? { backgroundColor: activeBg, borderColor: activeBorder } : null,
+        raised
+          ? {
+              backgroundColor: palette.accent.fill,
+              borderColor: palette.bg.app,
+              shadowColor: palette.accent.base,
+            }
+          : null,
         animatedStyle,
       ]}
     >
@@ -2534,11 +2820,18 @@ function DockTabItem({
         <Ionicons
           name={active ? tab.activeIcon : tab.icon}
           size={raised ? 31 : 21}
-          color={raised ? legacyColors.bg : active ? legacyColors.lime : legacyColors.subtle}
+          color={navColor}
         />
         {badgeCount > 0 ? (
-          <View style={styles.navBadge}>
-            <Text style={styles.navBadgeText}>{badgeCount > 9 ? "9+" : badgeCount}</Text>
+          <View
+            style={[
+              styles.navBadge,
+              { backgroundColor: palette.feedback.danger, borderColor: palette.bg.app },
+            ]}
+          >
+            <Text style={[styles.navBadgeText, { color: palette.text.onDanger }]}>
+              {badgeCount > 9 ? "9+" : badgeCount}
+            </Text>
           </View>
         ) : null}
       </View>
@@ -2553,6 +2846,7 @@ function DockTabItem({
             raised ? styles.memberBottomNavTextRaised : null,
             active ? styles.bottomNavTextActive : null,
             active && raised ? styles.memberBottomNavTextRaisedActive : null,
+            { color: navColor },
           ]}
         >
           {translatedLabel}
@@ -2608,6 +2902,7 @@ export function BottomNav({
   const activePath = selectedPath ?? pathname;
   const insets = useSafeAreaInsets();
   const bottom = Math.max(insets.bottom, 12);
+  const { palette, mode } = useTheme();
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => setVisible(false));
@@ -2654,7 +2949,7 @@ export function BottomNav({
     const badgeCount =
       unreadCount > 0 && tab.label === "Inbox"
         ? unreadCount
-        : receptionPendingCount > 0 && resolvedRole === "RECEPTIONIST" && tab.label === "Desk"
+        : receptionPendingCount > 0 && resolvedRole === "RECEPTIONIST" && tab.label === "Front desk"
           ? receptionPendingCount
           : 0;
 
@@ -2678,11 +2973,35 @@ export function BottomNav({
       <>
         <View
           pointerEvents="none"
-          style={[styles.bottomNavSafeAreaMask, { height: safeAreaMaskHeight }]}
+          style={[
+            styles.bottomNavSafeAreaMask,
+            { height: safeAreaMaskHeight, backgroundColor: palette.bg.app },
+          ]}
         />
         <View style={[styles.memberBottomNavShell, { bottom }]}>
-          <BlurView intensity={18} tint="dark" style={styles.memberBottomNavBlur} />
-          <View pointerEvents="none" style={styles.memberBottomNavLowerShield} />
+          <BlurView
+            intensity={mode === "dark" ? 24 : 18}
+            tint={mode === "dark" ? "dark" : "light"}
+            style={[
+              styles.memberBottomNavBlur,
+              {
+                borderColor: palette.border.subtle,
+                backgroundColor: mode === "dark" ? palette.bg.elevated : palette.surface.raised,
+              },
+              platformSurfaceShadow(mode, true, palette.bg.sunken),
+            ]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              styles.memberBottomNavLowerShield,
+              {
+                backgroundColor:
+                  mode === "dark" ? palette.bg.app : palette.surface.raised,
+                opacity: mode === "dark" ? 0.38 : 0.42,
+              },
+            ]}
+          />
           <View style={styles.memberBottomNavItems}>{navItems}</View>
         </View>
       </>
@@ -2693,16 +3012,22 @@ export function BottomNav({
     <>
       <View
         pointerEvents="none"
-        style={[styles.bottomNavSafeAreaMask, { height: safeAreaMaskHeight }]}
+        style={[
+          styles.bottomNavSafeAreaMask,
+          { height: safeAreaMaskHeight, backgroundColor: palette.bg.app },
+        ]}
       />
       <BlurView
-        intensity={18}
-        tint="dark"
+        intensity={mode === "dark" ? 24 : 18}
+        tint={mode === "dark" ? "dark" : "light"}
         style={StyleSheet.flatten([
           styles.bottomNav,
           {
             bottom,
+            borderColor: palette.border.subtle,
+            backgroundColor: mode === "dark" ? palette.bg.elevated : palette.surface.raised,
           },
+          platformSurfaceShadow(mode, true, palette.bg.sunken),
         ])}
       >
         {navItems}
@@ -2713,11 +3038,16 @@ export function BottomNav({
 
 export function LoadingState({ title, body }: { title?: string; body?: string }) {
   const { t } = useI18n();
+  const { palette } = useTheme();
   return (
     <View style={styles.loadingState}>
-      <ActivityIndicator size="large" color={legacyColors.lime} />
-      <Text style={styles.stateTitle}>{title ?? t("empty.loading")}</Text>
-      <Text style={styles.stateBody}>{body ?? t("empty.loadingBody")}</Text>
+      <ActivityIndicator size="large" color={palette.accent.base} />
+      <Text style={[styles.stateTitle, { color: palette.text.primary }]}>
+        {title ?? t("empty.loading")}
+      </Text>
+      <Text style={[styles.stateBody, { color: palette.text.secondary }]}>
+        {body ?? t("empty.loadingBody")}
+      </Text>
     </View>
   );
 }
@@ -2725,6 +3055,7 @@ export function LoadingState({ title, body }: { title?: string; body?: string })
 export function BranchSelectorChip() {
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const { t } = useI18n();
+  const { palette } = useTheme();
 
   if (!selectedBranch) {
     return null;
@@ -2751,15 +3082,21 @@ export function BranchSelectorChip() {
       accessibilityRole="button"
       accessibilityLabel={canSwitch ? t("branch.switch") : t("branch.current")}
       disabled={!canSwitch}
-      style={[styles.branchSelectorChip, canSwitch ? styles.branchSelectorChipInteractive : null]}
+      style={[
+        styles.branchSelectorChip,
+        {
+          borderColor: canSwitch ? palette.accent.base : palette.border.subtle,
+          backgroundColor: canSwitch ? palette.surface.accentSoft : palette.surface.default,
+        },
+      ]}
     >
-      <Ionicons name="business-outline" size={14} color={legacyColors.lime} />
-      <Text numberOfLines={1} style={styles.branchSelectorText}>
+      <Ionicons name="business-outline" size={14} color={palette.accent.base} />
+      <Text numberOfLines={1} style={[styles.branchSelectorText, { color: palette.text.primary }]}>
         {selectedBranch.name}
       </Text>
       {canSwitch ? (
-        <View style={styles.branchSelectorCount}>
-          <Text style={styles.branchSelectorCountText}>
+        <View style={[styles.branchSelectorCount, { backgroundColor: palette.bg.app }]}>
+          <Text style={[styles.branchSelectorCountText, { color: palette.accent.base }]}>
             {branchIndex + 1}/{branches.length}
           </Text>
         </View>
@@ -2779,11 +3116,17 @@ export function EmptyState({
   body: string;
   action?: ReactNode;
 }) {
+  const { palette } = useTheme();
   return (
-    <View style={styles.emptyState}>
+    <View
+      style={[
+        styles.emptyState,
+        { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
+      ]}
+    >
       {icon ? <IconBubble icon={icon} tone="neutral" size={42} /> : null}
-      <Text style={styles.stateTitle}>{title}</Text>
-      <Text style={styles.stateBody}>{body}</Text>
+      <Text style={[styles.stateTitle, { color: palette.text.primary }]}>{title}</Text>
+      <Text style={[styles.stateBody, { color: palette.text.secondary }]}>{body}</Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
     </View>
   );
@@ -2798,11 +3141,18 @@ export function ErrorState({
   body: string;
   action?: ReactNode;
 }) {
+  const { palette } = useTheme();
   return (
-    <View style={[styles.emptyState, styles.errorState]}>
+    <View
+      style={[
+        styles.emptyState,
+        styles.errorState,
+        { borderColor: palette.feedback.danger, backgroundColor: palette.surface.dangerSoft },
+      ]}
+    >
       <IconBubble icon="alert-circle-outline" tone="red" />
-      <Text style={styles.stateTitle}>{title}</Text>
-      <Text style={styles.stateBody}>{body}</Text>
+      <Text style={[styles.stateTitle, { color: palette.text.primary }]}>{title}</Text>
+      <Text style={[styles.stateBody, { color: palette.text.secondary }]}>{body}</Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
     </View>
   );
@@ -2829,7 +3179,7 @@ export function QueryErrorState({
       body={message}
       action={
         onRetry ? (
-          <ZookButton tone="secondary" icon="refresh-outline" onPress={onRetry}>
+          <ZookButton variant="secondary" icon="refresh-outline" onPress={onRetry}>
             {retryLabel}
           </ZookButton>
         ) : undefined
@@ -2850,20 +3200,18 @@ export function Skeleton({
   borderRadius?: number;
 }) {
   const progress = useSharedValue(0);
+  const { palette } = useTheme();
 
   useEffect(() => {
     progress.value = withRepeat(
-      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
       -1,
-      false,
+      true,
     );
   }, [progress]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: interpolate(progress.value, [0, 1], [-120, 360]) },
-      { rotate: "18deg" },
-    ],
+    opacity: interpolate(progress.value, [0, 1], [0.45, 0.8]),
   }));
 
   return (
@@ -2873,7 +3221,7 @@ export function Skeleton({
           width: width as ViewStyle["width"],
           height: height as ViewStyle["height"],
           borderRadius,
-          backgroundColor: "rgba(255,255,255,0.1)",
+          backgroundColor: palette.surface.default,
           overflow: "hidden",
         },
         style,
@@ -2900,13 +3248,14 @@ export type { OtpInputHandle } from "@/components/primitives/otp-input";
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: legacyColors.bg,
+    backgroundColor: fallbackColors.bg,
   },
   skeletonShimmer: {
     position: "absolute",
-    top: -24,
-    bottom: -24,
-    width: 96,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: "rgba(255,255,255,0.16)",
   },
   ambientGlow: {
@@ -2919,8 +3268,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(185,244,85,0.075)",
     opacity: 0.82,
   },
-  legacyTitle: {
-    color: legacyColors.text,
+  ambientWash: {
+    position: "absolute",
+    top: 148,
+    left: -120,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    opacity: 0.42,
+  },
+  shellTitle: {
+    color: fallbackColors.text,
     ...typography.screenTitle,
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.lg,
@@ -2947,7 +3305,7 @@ const styles = StyleSheet.create({
   },
   profileShortcut: {
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
+    borderColor: fallbackColors.limeBorder,
     backgroundColor: "rgba(185,244,85,0.12)",
     alignItems: "center",
     justifyContent: "center",
@@ -2958,20 +3316,29 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   profileShortcutText: {
-    color: legacyColors.lime,
+    color: fallbackColors.lime,
     ...typography.button,
   },
   glassCard: {
     borderWidth: 1,
+    borderCurve: "continuous",
     overflow: "hidden",
-    backgroundColor: legacyColors.panel,
+    backgroundColor: fallbackColors.panel,
+  },
+  cardInnerTopHighlight: {
+    height: StyleSheet.hairlineWidth,
+    left: 16,
+    position: "absolute",
+    right: 16,
+    top: 0,
+    zIndex: 1,
   },
   glassCardGlow: {
-    borderColor: legacyColors.limeBorder,
+    borderColor: fallbackColors.limeBorder,
     ...shadows.glowLimeSoft,
   },
   glassCardGlowBorder: {
-    borderColor: legacyColors.limeBorder,
+    borderColor: fallbackColors.limeBorder,
   },
   glassCardBlurLayer: {
     zIndex: 0,
@@ -2986,16 +3353,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   glassPanel: {
-    backgroundColor: legacyColors.panel,
-    borderColor: legacyColors.border,
+    backgroundColor: fallbackColors.panel,
+    borderColor: fallbackColors.border,
     borderWidth: 1,
+    borderCurve: "continuous",
     borderRadius: radii.panel,
     padding: spacing.lg,
     overflow: "hidden",
   },
   glassPanelStrong: {
-    backgroundColor: legacyColors.panelStrong,
-    borderColor: legacyColors.borderStrong,
+    backgroundColor: fallbackColors.panelStrong,
+    borderColor: fallbackColors.borderStrong,
   },
   chip: {
     alignSelf: "flex-start",
@@ -3008,8 +3376,99 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
   },
+  chipPressable: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignSelf: "flex-start",
+  },
   chipText: {
     ...typography.caption,
+  },
+  operationalQueueRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  operationalQueueCopy: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  operationalQueueTitle: {
+    color: fallbackColors.text,
+    ...typography.bodyStrong,
+  },
+  operationalQueueSubtitle: {
+    color: fallbackColors.muted,
+    ...typography.small,
+  },
+  operationalQueueMeta: {
+    color: fallbackColors.subtle,
+    ...typography.caption,
+  },
+  taskResultHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  taskResultCopy: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  taskResultTitle: {
+    color: fallbackColors.text,
+    ...typography.headerTitle,
+    letterSpacing: 0,
+  },
+  taskResultMessage: {
+    color: fallbackColors.muted,
+    ...typography.body,
+  },
+  taskResultDetails: {
+    gap: 0,
+  },
+  taskResultActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "flex-end",
+  },
+  moneySummaryHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  moneySummaryTitle: {
+    color: fallbackColors.muted,
+    ...typography.caption,
+  },
+  moneySummaryAmount: {
+    color: fallbackColors.text,
+    ...typography.metric,
+  },
+  moneySummaryRows: {
+    gap: 0,
+  },
+  webHandoffRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  webHandoffCopy: {
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  webHandoffTitle: {
+    color: fallbackColors.text,
+    ...typography.bodyStrong,
+  },
+  webHandoffDescription: {
+    color: fallbackColors.muted,
+    ...typography.small,
   },
   capitalize: {
     textTransform: "capitalize",
@@ -3040,16 +3499,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerEyebrow: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.eyebrow,
   },
   headerTitle: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.headerTitle,
     letterSpacing: 0,
   },
   headerSubtitle: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.body,
   },
   centerText: {
@@ -3064,14 +3523,15 @@ const styles = StyleSheet.create({
   },
   sectionGroup: {
     gap: 4,
+    marginBottom: spacing.sm,
   },
   sectionEyebrow: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.eyebrow,
   },
   sectionTitle: {
     flex: 1,
-    color: legacyColors.text,
+    color: fallbackColors.text,
     fontSize: 14,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -3079,17 +3539,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionSubtitle: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.small,
   },
   iconBubble: {
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     borderWidth: 1,
   },
   button: {
     borderWidth: 1,
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     flexDirection: "row",
     minWidth: 0,
@@ -3105,11 +3567,11 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
-    opacity: 0.46,
+    opacity: 0.5,
   },
   chipGroup: {
     gap: spacing.sm,
@@ -3125,7 +3587,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chipGroupOptionSelected: {
-    shadowColor: legacyColors.lime,
+    shadowColor: fallbackColors.lime,
     shadowOpacity: 0.16,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -3138,11 +3600,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   chipGroupLabel: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.bodyStrong,
   },
   chipGroupDescription: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.caption,
   },
   metricTile: {
@@ -3154,14 +3616,12 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   metricTileLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   metricTileValue: {
     ...typography.metric,
   },
   metricTileDetail: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   infoRow: {
@@ -3171,7 +3631,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   infoLabel: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.caption,
     flex: 1,
   },
@@ -3179,9 +3639,6 @@ const styles = StyleSheet.create({
     borderWidth: 8,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.22,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 0 },
   },
   statusRingArc: {
     position: "absolute",
@@ -3199,11 +3656,9 @@ const styles = StyleSheet.create({
     ...typography.h3,
   },
   statusRingLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   entryCodeCard: {
-    backgroundColor: "rgba(255,255,255,0.06)",
   },
   entryCodeContent: {
     alignItems: "center",
@@ -3211,7 +3666,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   entryCodeLabel: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   entryCodeValue: {
@@ -3219,7 +3673,6 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   entryCodeDetail: {
-    color: legacyColors.muted,
     ...typography.small,
     textAlign: "center",
   },
@@ -3230,36 +3683,38 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radii.medium,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(255,255,255,0.055)",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  listRowPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
   listRowCopy: {
     flex: 1,
+    minWidth: 0,
     gap: 3,
   },
+  listRowTrailing: {
+    flexShrink: 0,
+  },
   listRowTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   listRowSubtitle: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   inputGroup: {
     gap: spacing.sm,
   },
   inputLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   inputWrapper: {
     minHeight: 50,
+    borderCurve: "continuous",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
@@ -3268,20 +3723,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 44,
-    color: legacyColors.text,
     ...typography.body,
     paddingVertical: 11,
-  },
-  inputWrapperFocused: {
-    borderColor: "rgba(185,244,85,0.38)",
-    backgroundColor: "rgba(255,255,255,0.075)",
-  },
-  inputWrapperError: {
-    borderColor: "rgba(255,90,61,0.42)",
-    backgroundColor: "rgba(255,90,61,0.08)",
-  },
-  inputWrapperReadonly: {
-    backgroundColor: "rgba(255,255,255,0.04)",
   },
   inputWrapperDisabled: {
     opacity: 0.55,
@@ -3291,11 +3734,9 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   inputHint: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   inputError: {
-    color: legacyColors.red,
     ...typography.caption,
   },
   productCard: {
@@ -3314,8 +3755,6 @@ const styles = StyleSheet.create({
     height: 122,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(255,255,255,0.055)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -3355,11 +3794,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   productName: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.bodyStrong,
   },
   productMeta: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.small,
   },
   productFooter: {
@@ -3371,7 +3810,7 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     flexShrink: 1,
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.cardTitle,
   },
   productAdd: {
@@ -3379,8 +3818,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(7,9,8,0.9)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -3390,35 +3827,29 @@ const styles = StyleSheet.create({
     width: 86,
     height: 44,
   },
-  productAddDisabled: {
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.035)",
-  },
   productAddText: {
-    color: legacyColors.lime,
+    color: fallbackColors.lime,
     ...typography.caption,
   },
   productStepper: {
-    width: 86,
+    width: 108,
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: legacyColors.limeBorder,
-    backgroundColor: "rgba(7,9,8,0.9)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     overflow: "hidden",
   },
   productStepperButton: {
-    width: 30,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
   productQuantity: {
     minWidth: 20,
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.caption,
     textAlign: "center",
   },
@@ -3429,8 +3860,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radii.large,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(255,255,255,0.05)",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -3439,57 +3868,55 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
   exerciseCheckDone: {
-    borderColor: legacyColors.lime,
-    backgroundColor: legacyColors.lime,
   },
   exerciseCopy: {
     flex: 1,
     gap: 2,
   },
   exerciseTitle: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.bodyStrong,
   },
   exerciseDetail: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.small,
   },
   segmentedControl: {
     minHeight: 50,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.055)",
     flexDirection: "row",
     padding: 4,
     gap: 4,
   },
   segmentedOption: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
   },
+  segmentedOptionPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
+  },
   segmentedOptionSelected: {
-    backgroundColor: legacyColors.accentPanel,
+    backgroundColor: fallbackColors.accentPanel,
     borderWidth: 1,
     borderColor: "rgba(185,244,85,0.34)",
   },
   segmentedOptionText: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.caption,
     textAlign: "center",
   },
   segmentedOptionTextSelected: {
-    color: legacyColors.lime,
+    color: fallbackColors.lime,
   },
   auditWarning: {
     flexDirection: "row",
@@ -3497,28 +3924,22 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radii.large,
     borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.28)",
-    backgroundColor: "rgba(242,201,76,0.09)",
     padding: spacing.md,
   },
   auditWarningText: {
     flex: 1,
-    color: legacyColors.text,
     ...typography.body,
   },
   offlineBanner: {
     minHeight: 38,
     borderRadius: radii.input,
     borderWidth: 1,
-    borderColor: "rgba(242,201,76,0.28)",
-    backgroundColor: "rgba(242,201,76,0.08)",
     paddingHorizontal: spacing.md,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
   },
   offlineBannerText: {
-    color: legacyColors.text,
     ...typography.caption,
     flex: 1,
   },
@@ -3529,11 +3950,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: legacyColors.divider,
     paddingVertical: spacing.sm,
   },
   detailRowLabel: {
-    color: legacyColors.muted,
     ...typography.small,
     flex: 1,
   },
@@ -3545,7 +3964,6 @@ const styles = StyleSheet.create({
     flex: 1.2,
   },
   detailRowValue: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
     textAlign: "right",
   },
@@ -3553,13 +3971,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressBarLabel: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
   progressBarTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
     overflow: "hidden",
   },
   progressBarFill: {
@@ -3570,8 +3986,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: radii.mainCard,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.22)",
-    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -3671,11 +4085,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   collapsibleTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   collapsibleSubtitle: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   collapsibleTrailing: {
@@ -3684,7 +4096,6 @@ const styles = StyleSheet.create({
   },
   collapsibleBody: {
     borderTopWidth: 1,
-    borderTopColor: legacyColors.border,
     padding: 14,
     gap: spacing.md,
   },
@@ -3696,8 +4107,6 @@ const styles = StyleSheet.create({
     height: layout.bottomNavHeight,
     borderRadius: radii.bottomNav,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(7,9,8,0.86)",
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
@@ -3712,7 +4121,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: legacyColors.bg,
+    backgroundColor: fallbackColors.bg,
   },
   memberBottomNavShell: {
     position: "absolute",
@@ -3731,11 +4140,7 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: radii.bottomNav,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    backgroundColor: "rgba(7,9,8,0.9)",
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.24,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
   },
@@ -3803,9 +4208,6 @@ const styles = StyleSheet.create({
     marginTop: -28,
     borderRadius: 999,
     borderWidth: 3,
-    borderColor: "rgba(7,9,8,0.94)",
-    backgroundColor: legacyColors.lime,
-    shadowColor: legacyColors.lime,
     shadowOpacity: 0.2,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -3813,23 +4215,17 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   bottomNavItemActive: {
-    backgroundColor: "rgba(185,244,85,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.26)",
   },
   memberBottomNavItemActive: {
-    backgroundColor: "rgba(185,244,85,0.11)",
-    borderColor: "rgba(185,244,85,0.2)",
   },
   memberBottomNavItemRaisedActive: {
-    backgroundColor: legacyColors.lime,
-    borderColor: "rgba(7,9,8,0.94)",
     borderWidth: 3,
   },
   bottomNavText: {
     maxWidth: "100%",
     textAlign: "center",
-    color: legacyColors.subtle,
+    color: fallbackColors.subtle,
     ...typography.navLabel,
   },
   navIconShell: {
@@ -3848,13 +4244,13 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   memberBottomNavTextRaised: {
-    color: legacyColors.bg,
+    color: fallbackColors.bg,
   },
   bottomNavTextActive: {
-    color: legacyColors.lime,
+    color: fallbackColors.lime,
   },
   memberBottomNavTextRaisedActive: {
-    color: legacyColors.bg,
+    color: fallbackColors.bg,
   },
   navBadge: {
     position: "absolute",
@@ -3863,15 +4259,15 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: legacyColors.red,
+    backgroundColor: fallbackColors.red,
     borderWidth: 1,
-    borderColor: legacyColors.bg,
+    borderColor: fallbackColors.bg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
   navBadgeText: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     fontSize: 9,
     lineHeight: 11,
     fontFamily: "Inter_800ExtraBold",
@@ -3883,8 +4279,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.055)",
     paddingLeft: 10,
     paddingRight: 6,
     paddingVertical: 5,
@@ -3897,7 +4291,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(185,244,85,0.1)",
   },
   branchSelectorText: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     maxWidth: 170,
     ...typography.caption,
   },
@@ -3907,11 +4301,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(7,9,8,0.72)",
     paddingHorizontal: 5,
   },
   branchSelectorCountText: {
-    color: legacyColors.lime,
+    color: fallbackColors.lime,
     fontSize: 10,
     lineHeight: 12,
     fontFamily: "Inter_800ExtraBold",
@@ -3924,12 +4317,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   stateTitle: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.title,
     textAlign: "center",
   },
   stateBody: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.body,
     marginTop: 4,
     textAlign: "center",
@@ -3942,7 +4335,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: legacyColors.border,
+    borderColor: fallbackColors.border,
     borderStyle: "dashed",
     borderRadius: radii.card,
     gap: spacing.sm,
@@ -3961,11 +4354,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   alertCardTitle: {
-    color: legacyColors.text,
+    color: fallbackColors.text,
     ...typography.bodyStrong,
   },
   alertCardMessage: {
-    color: legacyColors.muted,
+    color: fallbackColors.muted,
     ...typography.small,
   },
   actionButtonRow: {

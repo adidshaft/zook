@@ -1,376 +1,88 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { memo, useContext, useEffect } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
+import { Icon } from "@/components/primitives";
+import { RoleTabBar } from "@/components/role-tab-bar";
 import { useMyNotifications } from "@/lib/domains/notifications";
-import { useTheme } from "@/lib/theme/index";
+import { useGeofenceCheckout } from "@/lib/use-geofence-checkout";
 
 export default function MemberLayout() {
-  const notificationsQuery = useMyNotifications();
-  const unread =
-    notificationsQuery.data?.notifications?.filter((notification) => !notification.readAt).length ??
-    0;
+  const geofenceCheckout = useGeofenceCheckout();
+  const notificationsQuery = useMyNotifications({
+    select: (data) =>
+      data.notifications.filter((notification) => !notification.readAt).length,
+  });
+  const unread = notificationsQuery.data ?? 0;
 
   return (
-    <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} unread={unread} />}
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-        }}
-      />
-      <Tabs.Screen
-        name="plan"
-        options={{
-          title: "Plan",
-        }}
-      />
-      <Tabs.Screen
-        name="diet"
-        options={{
-          title: "Diet",
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: "Scan",
-        }}
-      />
-      <Tabs.Screen
-        name="shop"
-        options={{
-          title: "Shop",
-        }}
-      />
-      <Tabs.Screen
-        name="you"
-        options={{
-          title: "Profile",
-        }}
-      />
-    </Tabs>
-  );
-}
-
-// Static fade backdrop behind the floating tab bar. Memoized so the 15-segment
-// gradient is not rebuilt on every tab switch / unread-count change.
-const TabBarBackdrop = memo(function TabBarBackdrop({
-  height,
-  color,
-}: {
-  height: number;
-  color: string;
-}) {
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height,
-        backgroundColor: "transparent",
-      }}
-    >
-      {Array.from({ length: 15 }).map((_, i) => {
-        const opacity = (i / 14) ** 1.8; // Exponential scaling for a buttery smooth fade out
-        const top = (i / 15) * height;
-        const segmentHeight = height / 15 + 2;
-        return (
-          <View
-            key={i}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top,
-              height: segmentHeight,
-              backgroundColor: color,
-              opacity,
-            }}
+    <>
+      <Tabs
+        tabBar={(props) => (
+          <RoleTabBar
+            {...props}
+            badges={{ you: unread }}
+            centerAction={{ routeName: "scan" }}
           />
-        );
-      })}
-    </View>
-  );
-});
-
-function FloatingTabBar({ state, descriptors, navigation, unread }: any) {
-  const { palette } = useTheme();
-  const insets = useSafeAreaInsets();
-  const { visible } = useContext(BottomNavVisibilityContext);
-  const backdropHeight = 100 + insets.bottom;
-  const focusedRouteName = state.routes[state.index]?.name;
-  const visibleRoutes = state.routes.filter((route: any) => {
-    const options = descriptors[route.key]?.options;
-    return route.name !== "diet" && options?.href !== null;
-  });
-
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(1);
-
-  useEffect(() => {
-    translateY.value = withTiming(visible ? 0 : 120, { duration: 250 });
-    opacity.value = withTiming(visible ? 1 : 0, { duration: 250 });
-  }, [visible]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-      opacity: opacity.value,
-    };
-  });
-
-  return (
-    <Animated.View
-      pointerEvents={visible ? "auto" : "none"}
-      style={[
-        {
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: backdropHeight,
-          zIndex: 100,
-        },
-        animatedStyle,
-      ]}
-    >
-      {/* Fading Opaque backdrop to hide scrolling content behind tab bar */}
-      <TabBarBackdrop height={backdropHeight} color={palette.bg.app} />
-
-      <View
-        style={[
-          styles.tabBarContainer,
-          {
-            backgroundColor: palette.bg.elevated,
-            borderColor: palette.border.subtle,
-            bottom: insets.bottom > 0 ? insets.bottom + 8 : 16,
-          },
-        ]}
+        )}
+        screenOptions={{
+          headerShown: false,
+        }}
       >
-        {visibleRoutes.map((route: any) => {
-          const { options } = descriptors[route.key];
-          const label =
-            options.tabBarLabel !== undefined
-              ? options.tabBarLabel
-              : options.title !== undefined
-                ? options.title
-                : route.name;
-
-          const isFocused = focusedRouteName === route.name || (focusedRouteName === "diet" && route.name === "plan");
-
-          const onPress = () => {
-            if (route.name === "scan") {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            } else {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
-          const onLongPress = () => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            navigation.emit({
-              type: "tabLongPress",
-              target: route.key,
-            });
-          };
-
-          // Render Special Center Button for Scan
-          if (route.name === "scan") {
-            return (
-              <View key={route.key} style={styles.scanButtonContainer}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={isFocused ? { selected: true } : {}}
-                  onPress={onPress}
-                  onLongPress={onLongPress}
-                  style={[
-                    styles.scanButton,
-                    {
-                      backgroundColor: "#B9F455", // High-contrast raw lime green
-                      borderColor: palette.bg.app, // Match the page background for outline effect
-                    },
-                  ]}
-                >
-                  <Ionicons name="qr-code" size={26} color="#000000" />
-                </Pressable>
-                <Text
-                  style={[
-                    styles.scanLabel,
-                    {
-                      color: isFocused ? palette.accent.base : palette.text.tertiary,
-                    },
-                  ]}
-                >
-                  {label as string}
-                </Text>
-              </View>
-            );
-          }
-
-          // Get matching icon based on route name
-          let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
-          if (route.name === "index") {
-            iconName = isFocused ? "home" : "home-outline";
-          } else if (route.name === "plan") {
-            iconName = isFocused ? "barbell" : "barbell-outline";
-          } else if (route.name === "shop") {
-            iconName = isFocused ? "bag" : "bag-outline";
-          } else if (route.name === "you") {
-            iconName = isFocused ? "person" : "person-outline";
-          }
-
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={styles.tabItem}
-            >
-              <View
-                style={[
-                  styles.tabItemWrapper,
-                  isFocused && {
-                    backgroundColor: palette.surface.accentSoft,
-                  },
-                ]}
-              >
-                {route.name === "you" && unread > 0 ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unread}</Text>
-                  </View>
-                ) : null}
-                <Ionicons
-                  name={iconName}
-                  size={22}
-                  color={isFocused ? palette.accent.base : palette.text.tertiary}
-                />
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: isFocused ? palette.accent.base : palette.text.tertiary,
-                    },
-                  ]}
-                >
-                  {label as string}
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-    </Animated.View>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Icon name="home" focused={focused} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="plan"
+          options={{
+            title: "Plan",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Icon name="plan" focused={focused} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: "Scan",
+            tabBarIcon: ({ color, size }) => (
+              <Icon name="scan" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="progress"
+          options={{
+            title: "Progress",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Icon name="progress" focused={focused} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="shop"
+          options={{
+            title: "Shop",
+            href: null,
+            tabBarItemStyle: { display: "none" },
+          }}
+        />
+        <Tabs.Screen name="diet" options={{ href: null, tabBarItemStyle: { display: "none" } }} />
+        <Tabs.Screen
+          name="you"
+          options={{
+            title: "You",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Icon name="you" focused={focused} size={size} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+      {geofenceCheckout.permissionSheet}
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBarContainer: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    borderRadius: 36,
-    height: 76,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    // Premium soft shadow to lift the capsule
-    shadowColor: "#000000",
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-    borderWidth: 1.5,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 64,
-  },
-  tabItemWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    width: "90%",
-    position: "relative",
-  },
-  tabLabel: {
-    fontSize: 10,
-    marginTop: 2,
-    fontFamily: "Inter_600SemiBold",
-  },
-  scanButtonContainer: {
-    flex: 1.1,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 64,
-  },
-  scanButton: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: -36,
-    borderWidth: 4,
-    shadowColor: "#B9F455",
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  scanLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
-    marginTop: 2,
-  },
-  badge: {
-    position: "absolute",
-    right: 4,
-    top: 0,
-    backgroundColor: "#FF5A3D",
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    zIndex: 10,
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 11,
-  },
-});

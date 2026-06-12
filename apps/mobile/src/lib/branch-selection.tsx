@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import * as Location from "expo-location";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { mobileApiFetch } from "./api";
@@ -12,6 +13,8 @@ type BranchRecord = {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   isDefault?: boolean | null;
 };
 
@@ -33,6 +36,51 @@ function defaultBranch(branches: BranchRecord[]) {
   return branches.find((branch) => branch.isDefault) ?? branches[0] ?? null;
 }
 
+function toCoordinate(value: unknown) {
+  const coordinate = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+}
+
+function branchCoordinates(branch: BranchRecord) {
+  const latitude = toCoordinate(branch.latitude);
+  const longitude = toCoordinate(branch.longitude);
+  return latitude == null || longitude == null ? null : { latitude, longitude };
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function distanceMeters(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+) {
+  const earthRadiusMeters = 6_371_000;
+  const lat1 = toRadians(a.latitude);
+  const lat2 = toRadians(b.latitude);
+  const deltaLat = toRadians(b.latitude - a.latitude);
+  const deltaLng = toRadians(b.longitude - a.longitude);
+  const haversine =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function nearestBranch(
+  branches: BranchRecord[],
+  coordinates: { latitude: number; longitude: number },
+) {
+  return branches
+    .map((branch) => {
+      const branchLocation = branchCoordinates(branch);
+      return branchLocation
+        ? { branch, distance: distanceMeters(coordinates, branchLocation) }
+        : null;
+    })
+    .filter((item): item is { branch: BranchRecord; distance: number } => Boolean(item))
+    .sort((a, b) => a.distance - b.distance)[0]?.branch;
+}
+
 export function BranchSelectionProvider({ children }: { children: ReactNode }) {
   const { activeOrgId, session, status, token } = useAuth();
   const activeOrganization =
@@ -40,6 +88,7 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
     session?.activeOrganization ??
     null;
   const [storedBranchId, setStoredBranchId] = useState<string | undefined>();
+  const [autoBranchId, setAutoBranchId] = useState<string | undefined>();
   const [hydratedOrgId, setHydratedOrgId] = useState<string | undefined>();
 
   const branchesQuery = useQuery({
@@ -64,13 +113,18 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
     hydratedOrgId === activeOrgId
       ? branches.find((branch) => branch.id === storedBranchId)
       : undefined;
-  const selectedBranch = storedBranch ?? defaultBranch(branches);
+  const autoBranch =
+    !storedBranchId && hydratedOrgId === activeOrgId
+      ? branches.find((branch) => branch.id === autoBranchId)
+      : undefined;
+  const selectedBranch = storedBranch ?? autoBranch ?? defaultBranch(branches);
   const selectedBranchId = selectedBranch?.id;
 
   useEffect(() => {
     let cancelled = false;
     setHydratedOrgId(undefined);
     setStoredBranchId(undefined);
+    setAutoBranchId(undefined);
     void getStoredValue(storageKey(activeOrgId))
       .then((value) => {
         if (!cancelled) {
@@ -88,25 +142,60 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
   }, [activeOrgId]);
 
   useEffect(() => {
-    if (!branches.length || hydratedOrgId !== activeOrgId) {
+    if (!branches.length || hydratedOrgId !== activeOrgId || !storedBranchId) {
       return;
     }
-    const nextBranch = selectedBranch;
-    if (nextBranch && storedBranchId !== nextBranch.id) {
-      if (storedBranchId && branches.length && !storedBranch) {
-        showToast({
-          tone: "amber",
-          haptic: "warning",
-          message: `Your branch was removed - switched to ${nextBranch.name}.`,
-        });
-      }
+    const nextBranch = storedBranch ?? defaultBranch(branches);
+    if (nextBranch && storedBranchId !== nextBranch.id && !storedBranch) {
+      showToast({
+        tone: "amber",
+        haptic: "warning",
+        message: `Your branch was removed - switched to ${nextBranch.name}.`,
+      });
       setStoredBranchId(nextBranch.id);
       void setStoredValue(storageKey(activeOrgId), nextBranch.id);
     }
-  }, [activeOrgId, branches.length, hydratedOrgId, selectedBranch, storedBranch, storedBranchId]);
+  }, [activeOrgId, branches, hydratedOrgId, storedBranch, storedBranchId]);
+
+  useEffect(() => {
+    if (
+      hydratedOrgId !== activeOrgId ||
+      storedBranchId ||
+      branches.length < 2 ||
+      !branches.some((branch) => branchCoordinates(branch))
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const existingPermission = await Location.getForegroundPermissionsAsync();
+      const permission =
+        existingPermission.status === Location.PermissionStatus.GRANTED
+          ? existingPermission
+          : await Location.requestForegroundPermissionsAsync();
+      if (cancelled || permission.status !== Location.PermissionStatus.GRANTED) {
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      if (cancelled) return;
+      const nearest = nearestBranch(branches, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      if (nearest) {
+        setAutoBranchId(nearest.id);
+      }
+    })().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrgId, branches, hydratedOrgId, storedBranchId]);
 
   const selectBranch = useCallback(
     async (branchId: string) => {
+      setAutoBranchId(undefined);
       setStoredBranchId(branchId);
       await setStoredValue(storageKey(activeOrgId), branchId);
     },

@@ -131,7 +131,7 @@ export function AttendancePanel({
                           {record.user?.name ?? record.user?.email ?? "Member"}
                         </p>
                         <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                          {record.plan?.name ?? "Membership"}
+                          {record.plan?.name ?? record.planName ?? "Membership"}
                         </p>
                       </div>
                     ),

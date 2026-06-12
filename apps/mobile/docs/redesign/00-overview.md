@@ -7,7 +7,7 @@ This folder contains the implementation plans for a multi-phase redesign of `app
 The mobile app has accumulated four classes of problems:
 
 1. **Mega-screens with internal `?view=` toggles** — `reception.tsx` (2,048 lines), `owner/index.tsx` (1,226), `trainer/index.tsx` (447), `membership.tsx` (1,278), `scan.tsx` (1,058), `index.tsx` (1,061), `profile.tsx` (895), `gym/[username].tsx` (1,197) — most of them pack 3–5 unrelated surfaces into a single component with a `view` query param branch.
-2. **Two parallel design systems** — `src/components/primitives/foundation.tsx` (3,712 lines) sits alongside the split primitives (`buttons.tsx`, `cards.tsx`, `inputs.tsx`, `layout.tsx`, `nav.tsx`, `feedback.tsx`). Some screens import legacy, some import split. The `theme.ts` file has 6 `@deprecated` aliases still in active use.
+2. **Two parallel design systems** — `src/components/primitives/foundation.tsx` (3,712 lines) sits alongside the split primitives (`buttons.tsx`, `cards.tsx`, `inputs.tsx`, `layout.tsx`, `nav.tsx`, `feedback.tsx`). Some screens import old, some import split. The `theme.ts` file has 6 `@deprecated` aliases still in active use.
 3. **Three sources of truth for "who is the user"** — server-side `session.organizations[].roles`, client-side `activeRole` in AsyncStorage, and `getOfflineDemoRoleOverride()`. Reconciled ad-hoc in `_layout.tsx` and `auth.tsx`. Demo mode leaks into auth via identifier sniffing.
 4. **No domain layer** — `src/lib/query-hooks.ts` is 1,583 lines with 50 hooks for every role and concern mixed together.
 
@@ -26,7 +26,7 @@ The mobile app has accumulated four classes of problems:
 | 08 | `08-shared-domain-components.md` | Extract MemberList, ApprovalQueue, MetricGrid | 05, 06, 07 |
 | 09 | `09-member-shell-and-home.md` | Member 4-tab shell; home state machine; kill `more.tsx` | 03, 04 |
 | 10 | `10-you-surface-consolidation.md` | Merge profile + settings + membership | 03, 09 |
-| 11 | `11-kill-list-and-cleanup.md` | Strangle `legacy.tsx`, remove dead routes | All prior |
+| 11 | `11-kill-list-and-cleanup.md` | Strangle `old.tsx`, remove dead routes | All prior |
 
 **Hard ordering:** 01 → 02. 04 before 05/06/07. 05 before 06/07 (Reception is the template). 03 can run any time; 09/10 need it. 11 is last.
 
@@ -44,7 +44,7 @@ Expo Router. No `?view=` query params for routing — every named surface is its
 Visibility of tabs, buttons, and routes is keyed on `useHasPermission(...)`. Role is a label, permission is the gate. Existing permission set lives at `apps/mobile/src/lib/auth.tsx:762` (`useActivePermissions`).
 
 ### Primitives import path
-Always import from `@/components/primitives` — never from `@/components/primitives/foundation` directly. The barrel at `apps/mobile/src/components/primitives/index.tsx` re-exports both legacy and split.
+Always import from `@/components/primitives` — never from `@/components/primitives/foundation` directly. The barrel at `apps/mobile/src/components/primitives/index.tsx` re-exports both old and split.
 
 ### Theme tokens
 After plan #03 lands, components use semantic tokens (`surface`, `surfaceRaised`, `textPrimary`, `border`, `accent`) only. No hex literals, no `@deprecated` aliases. Until #03 lands, follow what the file already uses.
@@ -87,7 +87,7 @@ apps/mobile/
     ├── components/
     │   ├── primitives/
     │   │   ├── index.tsx         # Barrel
-    │   │   ├── legacy.tsx        # 3,712 lines — strangle in plan #11
+    │   │   ├── old.tsx        # 3,712 lines — strangle in plan #11
     │   │   ├── buttons.tsx, cards.tsx, inputs.tsx, layout.tsx,
     │   │   ├── nav.tsx, feedback.tsx, bottom-nav-context.tsx,
     │   │   ├── keyboard-aware-screen.tsx, pickup-qr.tsx,

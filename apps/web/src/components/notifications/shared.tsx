@@ -83,8 +83,15 @@ export type NotificationRecipientRow = {
 };
 
 export type MemberRow = {
-  userId: string;
-  profile?: { name?: string | null; phone?: string | null } | null;
+  userId?: string;
+  profile?: { id?: string; name?: string | null; phone?: string | null } | null;
+  user?: {
+    id?: string | null;
+    name?: string | null;
+    privateHandle?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  } | null;
 };
 
 export type BranchRow = { id: string; name: string };
@@ -134,8 +141,24 @@ export function audienceOptions(type: NotificationType): Array<{ value: Audience
   ];
 }
 
+export function memberUserId(member: MemberRow) {
+  return member.userId ?? member.user?.id ?? "";
+}
+
 export function memberLabel(member: MemberRow) {
-  return member.profile?.name ?? member.profile?.phone ?? member.userId;
+  return (
+    member.profile?.name ??
+    member.user?.name ??
+    member.user?.privateHandle ??
+    member.profile?.phone ??
+    member.user?.phone ??
+    member.user?.email ??
+    memberUserId(member)
+  );
+}
+
+export function memberDescription(member: MemberRow) {
+  return member.profile?.phone ?? member.user?.phone ?? member.user?.email ?? undefined;
 }
 
 export function permissionAudience(audience: Audience): PermissionAudience {

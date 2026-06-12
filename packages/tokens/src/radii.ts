@@ -1,0 +1,15 @@
+export const radii = {
+  chip: 999,
+  pill: 999,
+  input: 16,
+  button: 18,
+  smallCard: 18,
+  card: 24,
+  mainCard: 24,
+  panel: 24,
+  bottomNav: 28,
+  large: 20,
+  medium: 16,
+  small: 12,
+  icon: 18,
+};

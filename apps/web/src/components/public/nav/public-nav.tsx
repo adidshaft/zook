@@ -55,19 +55,19 @@ export function PublicNav({
           <>
             <Link
               href={localizedPath("/pricing", locale)}
-              className="hidden rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] sm:inline-flex"
+              className="inline-flex rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
             >
               Pricing
             </Link>
             <Link
               href={localizedPath("/gyms", locale)}
-              className="hidden rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] sm:inline-flex"
+              className="inline-flex rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
             >
               {publicT(locale, "navGyms")}
             </Link>
           </>
         )}
-        <div className="hidden sm:block">
+        <div className="block">
           <ZookButtonLink href={localizedPath("/start-gym", locale)} size="sm">
             {publicT(locale, "startGym")}
           </ZookButtonLink>

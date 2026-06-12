@@ -23,13 +23,14 @@ import {
 import { Image } from "expo-image";
 import {
   EmptyState,
-  GlassCard,
+  Card,
   InfoRow,
-  MobileHeader,
+  AppHeader,
   Pill,
   PrimaryButton,
   QueryErrorState,
   SectionHeader,
+  useRequestPermissionWithRationale,
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
@@ -39,17 +40,21 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { usePushNotifications } from "@/lib/push-notifications";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type PublicTrainer = NonNullable<GymProfileData["trainers"]>[number];
 
 export default function GymProfileScreen() {
   const router = useRouter();
+  const notificationPermission = useRequestPermissionWithRationale("notifications");
+  const { permissionState, requestEnablePush } = usePushNotifications();
   const params = useLocalSearchParams<{ username: string; ref?: string }>();
   const username = Array.isArray(params.username) ? params.username[0] : params.username;
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
   const { token } = useAuth();
+  const { mode, palette } = useTheme();
   const { selectedBranchId } = useBranchSelection();
   const queryClient = useQueryClient();
   const gymQuery = useGymProfile(username ?? "");
@@ -176,6 +181,12 @@ export default function GymProfileScreen() {
         "Membership request submitted. The gym team can now review it from their dashboard.",
       );
       showToast({ tone: "success", haptic: "success", message: "Membership request submitted." });
+      if (permissionState !== "granted") {
+        const granted = await notificationPermission.requestPermission();
+        if (granted) {
+          await requestEnablePush();
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["gym", username] });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit membership request.";
@@ -254,13 +265,13 @@ export default function GymProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={legacyColors.lime}
-            colors={[legacyColors.lime]}
+            tintColor={palette.accent.base}
+            colors={[palette.accent.base]}
           />
         }
       >
         {gym ? (
-          <MobileHeader
+          <AppHeader
             eyebrow="Gym profile"
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
@@ -269,9 +280,13 @@ export default function GymProfileScreen() {
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.iconButtonPressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
             }
             trailing={
@@ -279,7 +294,7 @@ export default function GymProfileScreen() {
             }
           />
         ) : (
-          <MobileHeader
+          <AppHeader
             eyebrow="Gym profile"
             title="Membership profile"
             subtitle="We’ll load plan details, join rules, and referral support for this gym."
@@ -288,9 +303,13 @@ export default function GymProfileScreen() {
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.iconButtonPressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
             }
             showProfileShortcut={false}
@@ -300,13 +319,13 @@ export default function GymProfileScreen() {
         {gymQuery.isLoading ? <GymDetailSkeleton /> : null}
 
         {gymQuery.isError ? (
-          <GlassCard variant="compact">
+          <Card variant="compact">
             <QueryErrorState
               error={gymQuery.error}
               onRetry={() => void gymQuery.refetch()}
               title="Could not load this gym"
             />
-          </GlassCard>
+          </Card>
         ) : null}
 
         {!gymQuery.isLoading && !gymQuery.isError && !gym ? (
@@ -319,9 +338,9 @@ export default function GymProfileScreen() {
 
         {gym ? (
           <>
-            <GlassCard contentStyle={styles.heroCard}>
+            <Card contentStyle={styles.heroCard}>
               <View style={styles.coverShell}>
-                <View style={styles.coverPlaceholder}>
+                <View style={[styles.coverPlaceholder, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}>
                   {gym.coverImageUrl ? (
                     <Image
                       source={{ uri: coverImageUrl }}
@@ -329,15 +348,15 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : null}
-                  <View style={styles.coverGlow} />
-                  <Text style={styles.coverEyebrow}>{gym.tagline ?? gym.name}</Text>
-                  <Text style={styles.coverTitle}>{plans.length} plans available</Text>
-                  <Text style={styles.coverBody}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
+                  <View style={[styles.coverGlow, { backgroundColor: palette.surface.accentSoft }]} />
+                  <Text style={[styles.coverEyebrow, { color: palette.feedback.warning }]}>{gym.tagline ?? gym.name}</Text>
+                  <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{plans.length} plans available</Text>
+                  <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
                   {gym.openingHoursSummary ? (
-                    <Text style={styles.coverBody}>{gym.openingHoursSummary}</Text>
+                    <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.openingHoursSummary}</Text>
                   ) : null}
                 </View>
-                <View style={styles.gymLogoOverlay}>
+                <View style={[styles.gymLogoOverlay, { backgroundColor: palette.accent.base, borderColor: palette.bg.elevated }]}>
                   {logoUrl ? (
                     <Image
                       source={{ uri: logoUrl }}
@@ -345,16 +364,16 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <Text style={styles.gymLogoFallbackText}>{initialsForName(gym.name)}</Text>
+                    <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>{initialsForName(gym.name)}</Text>
                   )}
                 </View>
               </View>
 
               {gym.gymType || (gym.amenities ?? []).length ? (
                 <View style={styles.tagMetaBlock}>
-                  {gym.gymType ? <Text style={styles.tagMeta}>{gym.gymType}</Text> : null}
+                  {gym.gymType ? <Text style={[styles.tagMeta, { color: palette.text.secondary }]}>{gym.gymType}</Text> : null}
                   {(gym.amenities ?? []).slice(0, 6).map((amenity) => (
-                    <Text key={amenity} style={styles.tagMeta}>
+                    <Text key={amenity} style={[styles.tagMeta, { color: palette.text.secondary }]}>
                       {amenity}
                     </Text>
                   ))}
@@ -395,7 +414,7 @@ export default function GymProfileScreen() {
                   />
                 ) : null}
               </View>
-            </GlassCard>
+            </Card>
 
             <SectionHeader
               eyebrow="Inside"
@@ -403,7 +422,7 @@ export default function GymProfileScreen() {
               subtitle="Facility, trainers, access, and location details."
             />
 
-            <GlassCard style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
+            <Card style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow
                 label="Address"
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
@@ -411,17 +430,17 @@ export default function GymProfileScreen() {
               />
               {gym.equipment?.length ? (
                 <View style={styles.inlineChipBlock}>
-                  <Text style={styles.inlineChipTitle}>Equipment</Text>
+                  <Text style={[styles.inlineChipTitle, { color: palette.text.primary }]}>Equipment</Text>
                   <View style={styles.tagMetaBlock}>
                     {gym.equipment.slice(0, 12).map((equipment) => (
-                      <Text key={equipment} style={styles.tagMeta}>
+                      <Text key={equipment} style={[styles.tagMeta, { color: palette.text.secondary }]}>
                         {equipment}
                       </Text>
                     ))}
                   </View>
                 </View>
               ) : null}
-            </GlassCard>
+            </Card>
 
             {gallery.length ? (
               <ScrollView
@@ -456,8 +475,9 @@ export default function GymProfileScreen() {
                       onPress={() => openTrainerSheet(trainer)}
                       accessibilityRole="button"
                       accessibilityLabel={`Open ${trainer.name} profile`}
+                      style={({ pressed }) => (pressed ? styles.cardPressed : null)}
                     >
-                      <GlassCard contentStyle={styles.trainerCard}>
+                      <Card contentStyle={styles.trainerCard}>
                         {trainer.profilePhotoUrl ? (
                           <Image
                             source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
@@ -465,15 +485,15 @@ export default function GymProfileScreen() {
                             contentFit="cover"
                           />
                         ) : (
-                          <View style={styles.trainerImageFallback}>
-                            <Text style={styles.trainerImageText}>
+                          <View style={[styles.trainerImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
+                            <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
                               {initialsForName(trainer.name)}
                             </Text>
                           </View>
                         )}
                         <View style={styles.trainerCopy}>
-                          <Text style={styles.trainerName}>{trainer.name}</Text>
-                          <Text style={styles.sectionBody} numberOfLines={2}>
+                          <Text style={[styles.trainerName, { color: palette.text.primary }]}>{trainer.name}</Text>
+                          <Text style={[styles.sectionBody, { color: palette.text.secondary }]} numberOfLines={2}>
                             {trainer.bio ?? "Bio coming soon."}
                           </Text>
                           <View style={styles.trainerSpecialties}>
@@ -482,14 +502,14 @@ export default function GymProfileScreen() {
                               .map((specialty) => (
                                 <Text
                                   key={`${trainer.userId}-${specialty}`}
-                                  style={styles.trainerSpecialty}
+                                  style={[styles.trainerSpecialty, { color: palette.feedback.info }]}
                                 >
                                   {specialty}
                                 </Text>
                               ))}
                           </View>
                         </View>
-                      </GlassCard>
+                      </Card>
                     </Pressable>
                   ))
               ) : (
@@ -501,35 +521,35 @@ export default function GymProfileScreen() {
             </View>
 
             <View style={styles.metricRow}>
-              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
-                <Text style={styles.metricLabel}>Join flow</Text>
-                <Text style={styles.metricValue}>
+              <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Join flow</Text>
+                <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                   {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
                 </Text>
-                <Text style={styles.metricBody}>
+                <Text style={[styles.metricBody, { color: palette.text.secondary }]}>
                   {needsApproval
                     ? "Staff approval happens before payment."
                     : inviteOnlyLocked
                       ? "Referral or invite is required."
                       : "You can move straight to payment."}
                 </Text>
-              </GlassCard>
-              <GlassCard style={{ flex: 1 }} contentStyle={styles.metricCard}>
-                <Text style={styles.metricLabel}>Membership state</Text>
-                <Text style={styles.metricValue}>
+              </Card>
+              <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Membership state</Text>
+                <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                   {viewerState?.activeMembership
                     ? "Active"
                     : viewerState?.pendingJoinRequest
                       ? "Pending"
                       : "New"}
                 </Text>
-                <Text style={styles.metricBody}>
+                <Text style={[styles.metricBody, { color: palette.text.secondary }]}>
                   {viewerState?.activeMembership?.remainingVisits !== null &&
                   viewerState?.activeMembership?.remainingVisits !== undefined
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
                     : "Choose a plan when you’re ready."}
                 </Text>
-              </GlassCard>
+              </Card>
             </View>
 
             <SectionHeader
@@ -538,26 +558,26 @@ export default function GymProfileScreen() {
               subtitle="Follow these steps to start your membership."
             />
 
-            <GlassCard contentStyle={styles.timelineCard}>
+            <Card contentStyle={styles.timelineCard}>
               {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
                 <View key={step.title} style={styles.timelineRow}>
-                  <View style={styles.timelineMarker}>
-                    <Text style={styles.timelineMarkerText}>{index + 1}</Text>
+                  <View style={[styles.timelineMarker, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
+                    <Text style={[styles.timelineMarkerText, { color: palette.accent.base }]}>{index + 1}</Text>
                   </View>
                   <View style={styles.timelineCopy}>
-                    <Text style={styles.timelineTitle}>{step.title}</Text>
-                    <Text style={styles.timelineBody}>{step.body}</Text>
+                    <Text style={[styles.timelineTitle, { color: palette.text.primary }]}>{step.title}</Text>
+                    <Text style={[styles.timelineBody, { color: palette.text.secondary }]}>{step.body}</Text>
                   </View>
                 </View>
               ))}
-            </GlassCard>
+            </Card>
 
             {needsApproval &&
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
-              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={styles.sectionTitle}>Request membership first</Text>
-                <Text style={styles.sectionBody}>
+              <Card variant="warning" contentStyle={styles.ctaCard}>
+                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Request membership first</Text>
+                <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                   This gym reviews new members before payment. Submit your request and the owner can
                   approve it from the web dashboard.
                 </Text>
@@ -567,13 +587,13 @@ export default function GymProfileScreen() {
                 >
                   {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
                 </PrimaryButton>
-              </GlassCard>
+              </Card>
             ) : null}
 
             {inviteOnlyLocked ? (
-              <GlassCard variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={styles.sectionTitle}>Invite or referral required</Text>
-                <Text style={styles.sectionBody}>
+              <Card variant="warning" contentStyle={styles.ctaCard}>
+                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Invite or referral required</Text>
+                <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                   Open this gym from a referral link or ask the gym team for a code to continue.
                 </Text>
                 <View style={styles.inviteCodeRow}>
@@ -583,12 +603,19 @@ export default function GymProfileScreen() {
                     onChangeText={setInviteCode}
                     autoCapitalize="characters"
                     placeholder="Invite code"
-                    placeholderTextColor={legacyColors.textMuted}
-                    style={styles.inviteCodeInput}
+                    placeholderTextColor={palette.text.tertiary}
+                    style={[
+                      styles.inviteCodeInput,
+                      {
+                        backgroundColor: mode === "dark" ? palette.bg.sunken : palette.surface.raised,
+                        borderColor: palette.border.default,
+                        color: palette.text.primary,
+                      },
+                    ]}
                   />
                   <PrimaryButton testID="gym-apply-invite-code" onPress={applyInviteCode}>Apply</PrimaryButton>
                 </View>
-              </GlassCard>
+              </Card>
             ) : null}
 
             <SectionHeader eyebrow="Plans" title="Membership options" />
@@ -621,40 +648,50 @@ export default function GymProfileScreen() {
                 ].filter((item): item is string => Boolean(item));
 
                 return (
-                <GlassCard
+                <Card
                   key={plan.id}
                   testID={`gym-plan-row-${plan.id}`}
                   contentStyle={styles.planCard}
                 >
                   <View style={styles.planHeader}>
                     <View style={styles.planCopy}>
-                      <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planType}>
+                      <Text style={[styles.planName, { color: palette.text.primary }]}>{plan.name}</Text>
+                      <Text style={[styles.planType, { color: palette.text.secondary }]}>
                         {titleCaseFromCode(plan.type ?? "MEMBERSHIP")}
                       </Text>
-                      <Text style={styles.planPrice}>{formatInr(effectivePricePaise)}</Text>
+                      <Text style={[styles.planPrice, { color: palette.accent.base }]}>{formatInr(effectivePricePaise)}</Text>
                       {hasReferralPrice ? (
-                        <Text style={styles.planOriginalPrice}>{formatInr(plan.pricePaise)}</Text>
+                        <Text style={[styles.planOriginalPrice, { color: palette.text.tertiary }]}>{formatInr(plan.pricePaise)}</Text>
                       ) : null}
                     </View>
                   </View>
                   {badges.length ? (
                     <View style={styles.planBadgeRow}>
                       {badges.slice(0, 3).map((badge) => (
-                        <Text key={`${plan.id}-${badge}`} style={styles.planBadge}>
+                        <Text
+                          key={`${plan.id}-${badge}`}
+                          style={[
+                            styles.planBadge,
+                            {
+                              backgroundColor: palette.surface.accentSoft,
+                              borderColor: palette.border.focus,
+                              color: palette.accent.base,
+                            },
+                          ]}
+                        >
                           {badge}
                         </Text>
                       ))}
                     </View>
                   ) : null}
-                  <Text style={styles.sectionBody}>
+                  <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                     {plan.description ?? "Standard membership plan."}
                   </Text>
                   <View style={styles.planBenefits}>
                     {buildPlanHighlights(plan).map((item) => (
                       <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
-                        <View style={styles.planBenefitDot} />
-                        <Text style={styles.planBenefitText}>{item}</Text>
+                        <View style={[styles.planBenefitDot, { backgroundColor: palette.feedback.warning }]} />
+                        <Text style={[styles.planBenefitText, { color: palette.text.secondary }]}>{item}</Text>
                       </View>
                     ))}
                   </View>
@@ -669,15 +706,15 @@ export default function GymProfileScreen() {
                         ? "Choose plan"
                         : "Complete earlier step first"}
                   </PrimaryButton>
-                </GlassCard>
+                </Card>
                 );
               })}
             </View>
 
             {statusMessage ? (
-              <GlassCard testID="gym-status-message" variant="compact">
-                <Text style={styles.statusMessage}>{statusMessage}</Text>
-              </GlassCard>
+              <Card testID="gym-status-message" variant="compact">
+                <Text style={[styles.statusMessage, { color: palette.text.primary }]}>{statusMessage}</Text>
+              </Card>
             ) : null}
           </>
         ) : null}
@@ -687,8 +724,12 @@ export default function GymProfileScreen() {
         snapPoints={trainerSnapPoints}
         enablePanDownToClose
         backdropComponent={renderTrainerBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
+        backgroundStyle={{
+          ...styles.sheetBackground,
+          backgroundColor: palette.bg.elevated,
+          borderColor: palette.border.default,
+        }}
+        handleIndicatorStyle={{ ...styles.sheetHandle, backgroundColor: palette.border.strong }}
         onDismiss={() => setSelectedTrainer(null)}
       >
         <BottomSheetView style={styles.trainerSheetContent}>
@@ -702,15 +743,15 @@ export default function GymProfileScreen() {
                     contentFit="cover"
                   />
                 ) : (
-                  <View style={styles.trainerSheetImageFallback}>
-                    <Text style={styles.trainerImageText}>
+                  <View style={[styles.trainerSheetImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
+                    <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
                       {initialsForName(selectedTrainer.name)}
                     </Text>
                   </View>
                 )}
                 <View style={styles.trainerCopy}>
-                  <Text style={styles.trainerName}>{selectedTrainer.name}</Text>
-                  <Text style={styles.sectionBody}>
+                  <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
+                  <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
                     {selectedTrainer.bio ?? "Bio will appear once this trainer publishes it."}
                   </Text>
                 </View>
@@ -719,7 +760,7 @@ export default function GymProfileScreen() {
                 {normalizeSpecialties(selectedTrainer.specialties).map((specialty) => (
                   <Text
                     key={`${selectedTrainer.userId}-sheet-${specialty}`}
-                    style={styles.trainerSpecialty}
+                    style={[styles.trainerSpecialty, { color: palette.feedback.info }]}
                   >
                     {specialty}
                   </Text>
@@ -729,6 +770,7 @@ export default function GymProfileScreen() {
           ) : null}
         </BottomSheetView>
       </BottomSheetModal>
+      {notificationPermission.permissionSheet}
     </ZookScreen>
   );
 }
@@ -878,10 +920,12 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   heroCard: {
     gap: 16,
@@ -894,9 +938,7 @@ const styles = StyleSheet.create({
     minHeight: 196,
     borderRadius: 22,
     padding: 20,
-    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
-    borderColor: legacyColors.border,
     overflow: "hidden",
     gap: 10,
   },
@@ -908,8 +950,6 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "rgba(7,9,8,0.92)",
-    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -919,7 +959,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   gymLogoFallbackText: {
-    color: legacyColors.bg,
     ...typography.headerTitle,
   },
   coverGlow: {
@@ -929,18 +968,14 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: "rgba(185,244,85,0.08)",
   },
   coverEyebrow: {
-    color: legacyColors.amber,
     ...typography.eyebrow,
   },
   coverTitle: {
-    color: legacyColors.text,
     ...typography.display,
   },
   coverBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   tagMetaBlock: {
@@ -949,7 +984,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tagMeta: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   viewerStateStack: {
@@ -962,7 +996,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   inlineChipTitle: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   firstFoldEndCard: {
@@ -976,10 +1009,13 @@ const styles = StyleSheet.create({
     width: 210,
     height: 126,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.05)",
   },
   trainerStack: {
     gap: spacing.md,
+  },
+  cardPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.992 }],
   },
   trainerCard: {
     flexDirection: "row",
@@ -990,20 +1026,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.06)",
   },
   trainerImageFallback: {
     width: 64,
     height: 64,
     borderRadius: 22,
-    backgroundColor: "rgba(185,244,85,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
   trainerImageText: {
-    color: legacyColors.lime,
     ...typography.headerTitle,
   },
   trainerCopy: {
@@ -1011,7 +1043,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   trainerName: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   trainerSpecialties: {
@@ -1020,16 +1051,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   trainerSpecialty: {
-    color: legacyColors.blue,
     ...typography.small,
   },
   sheetBackground: {
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
   },
   sheetHandle: {
-    backgroundColor: "rgba(255,255,255,0.22)",
   },
   trainerSheetContent: {
     gap: spacing.lg,
@@ -1045,15 +1072,12 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.06)",
   },
   trainerSheetImageFallback: {
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: "rgba(185,244,85,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1066,15 +1090,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   metricLabel: {
-    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   metricValue: {
-    color: legacyColors.text,
     ...typography.metric,
   },
   metricBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   timelineCard: {
@@ -1091,12 +1112,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(185,244,85,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.24)",
   },
   timelineMarkerText: {
-    color: legacyColors.lime,
     ...typography.bodyStrong,
   },
   timelineCopy: {
@@ -1104,11 +1122,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   timelineTitle: {
-    color: legacyColors.text,
     ...typography.sectionTitle,
   },
   timelineBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   ctaCard: {
@@ -1121,18 +1137,13 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(0,0,0,0.22)",
-    color: legacyColors.text,
     paddingHorizontal: spacing.md,
     ...typography.body,
   },
   sectionTitle: {
-    color: legacyColors.text,
     ...typography.screenTitle,
   },
   sectionBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   planStack: {
@@ -1151,19 +1162,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   planName: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   planType: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   planPrice: {
-    color: legacyColors.lime,
     ...typography.metric,
   },
   planOriginalPrice: {
-    color: legacyColors.subtle,
     textDecorationLine: "line-through",
     ...typography.small,
   },
@@ -1176,9 +1183,6 @@ const styles = StyleSheet.create({
     minHeight: 26,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.24)",
-    backgroundColor: "rgba(185,244,85,0.1)",
-    color: legacyColors.lime,
     paddingHorizontal: spacing.sm,
     paddingTop: 5,
     ...typography.caption,
@@ -1195,14 +1199,11 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: legacyColors.amber,
   },
   planBenefitText: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   statusMessage: {
-    color: legacyColors.text,
     ...typography.body,
   },
 });

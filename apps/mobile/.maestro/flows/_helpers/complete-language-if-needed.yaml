@@ -2,6 +2,9 @@ appId: com.zook.app
 name: complete-language-if-needed
 ---
 - tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
     id: "onboarding-intro-screen"
     optional: true
 - waitForAnimationToEnd:

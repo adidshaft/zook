@@ -8,7 +8,7 @@ export default function NoOrgCard() {
       title="Join a gym"
       body="Find your gym to unlock membership, plans, check-ins, and trainer updates."
       ctaHref="/gyms"
-      ctaLabel="Find gyms"
+      ctaLabel="Find your gym"
       tone="blue"
     />
   );

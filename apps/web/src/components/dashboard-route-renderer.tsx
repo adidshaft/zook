@@ -5,10 +5,13 @@ import {
   canAccessWebDashboard,
   requireDashboardSectionPermission,
 } from "@/lib/dashboard-guards";
+import type { MemberRow, PaymentRow } from "@/components/dashboard/types";
 import { getOrganizationDashboardShellData } from "@/lib/data";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
+import { getOrganizationMembers } from "@/server/domains/members/read-models";
+import { getOrganizationPaymentsPage } from "@/server/domains/payments";
 import type { DashboardRoutePanelBaseProps } from "./dashboard/route-panels";
 
 type DashboardRouteProps = {
@@ -33,11 +36,9 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
   }
   requireDashboardSectionPermission(session, section?.join("/") ?? "");
 
-  const data = await getOrganizationDashboardShellData(
-    session.activeOrgId,
-    branchId,
-    section?.length ? "full" : "fast",
-  );
+  const sectionKey = section?.join("/") ?? "";
+  const shellDataMode = sectionKey === "reports" ? "full" : "fast";
+  const data = await getOrganizationDashboardShellData(session.activeOrgId, branchId, shellDataMode);
   return {
     section,
     data,
@@ -63,7 +64,14 @@ function getDashboardRoutePanelProps({
   data,
   roles,
   permissions,
-}: LoadedDashboardRouteProps): DashboardRoutePanelBaseProps | null {
+  initialMembers,
+  initialPaymentsPage,
+}: LoadedDashboardRouteProps & {
+  initialMembers?: MemberRow[] | undefined;
+  initialPaymentsPage?:
+    | { payments: PaymentRow[]; nextCursor?: string | null; limit: number }
+    | undefined;
+}): DashboardRoutePanelBaseProps | null {
   const activeOrg = data.orgs[0];
   if (!activeOrg) {
     return null;
@@ -90,9 +98,15 @@ function getDashboardRoutePanelProps({
     initialNotifications: data.notifications,
     initialProducts: data.products,
     initialAiUsage: data.aiUsage,
+    ...(initialMembers ? { initialMembers } : {}),
+    ...(initialPaymentsPage ? { initialPaymentsPage } : {}),
     roles,
     permissions,
   };
+}
+
+function serializeForClient<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 export async function renderDashboardPanelRoute<TExtra extends object = object>(
@@ -101,7 +115,28 @@ export async function renderDashboardPanelRoute<TExtra extends object = object>(
   panelProps?: TExtra,
 ) {
   const shellProps = await loadDashboardRouteProps(routeProps);
-  const routePanelProps = getDashboardRoutePanelProps(shellProps);
+  const activeOrgId = shellProps.data.orgs[0]?.id;
+  const initialMembers =
+    routeProps.section?.[0] === "members" && activeOrgId
+      ? (serializeForClient(await getOrganizationMembers(activeOrgId)) as unknown as MemberRow[])
+      : undefined;
+  const initialPaymentsPage =
+    routeProps.section?.[0] === "payments" && activeOrgId
+      ? (serializeForClient(
+          await getOrganizationPaymentsPage({
+            orgId: activeOrgId,
+            branchId: shellProps.data.branchScope.allBranches
+              ? undefined
+              : shellProps.data.branchScope.selectedBranch?.id,
+            limit: 50,
+          }),
+        ) as unknown as { payments: PaymentRow[]; nextCursor?: string | null; limit: number })
+      : undefined;
+  const routePanelProps = getDashboardRoutePanelProps({
+    ...shellProps,
+    ...(initialMembers ? { initialMembers } : {}),
+    ...(initialPaymentsPage ? { initialPaymentsPage } : {}),
+  });
   const sectionContent = routePanelProps ? (
     <Panel {...routePanelProps} {...(panelProps ?? ({} as TExtra))} />
   ) : null;

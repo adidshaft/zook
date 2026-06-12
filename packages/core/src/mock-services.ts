@@ -609,7 +609,7 @@ export function createZookMockServices(seed: ZookDemoFixtures = zookDemoFixtures
           type: "PLAN",
           title: "New plan assigned",
           message: `${draft.title} is ready after trainer review.`,
-          targetRoute: "/plans",
+          targetRoute: "/plan",
           readAt: null,
           createdAt: nowIso(),
         });

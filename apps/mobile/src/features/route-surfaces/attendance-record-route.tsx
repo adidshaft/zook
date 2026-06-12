@@ -1,4 +1,4 @@
-import { Link, Stack, type Href, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, type Href, useLocalSearchParams, useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -6,10 +6,10 @@ import { showToast } from "@/lib/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  GlassCard,
+  Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  AppHeader,
   Skeleton,
   StatusRing,
   StatusChip,
@@ -21,7 +21,7 @@ import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { useRoleContext } from "@/lib/role-context";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type AttendanceRecord = {
   id: string;
@@ -68,7 +68,7 @@ function titleCaseStatus(status?: string | null) {
   return "Recorded";
 }
 
-const legacyDefaultBranchName = ["Default", "Branch"].join(" ");
+const fallbackDefaultBranchName = ["Default", "Branch"].join(" ");
 
 export default function AttendanceResultScreen() {
   useHideBottomNav();
@@ -77,6 +77,7 @@ export default function AttendanceResultScreen() {
     attendanceRecordId?: string | string[];
   }>();
   const { status, token } = useAuth();
+  const { palette } = useTheme();
   const activeRole = useRoleContext()?.role;
   const queryClient = useQueryClient();
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
@@ -118,19 +119,18 @@ export default function AttendanceResultScreen() {
   if (attendanceQuery.isLoading && !recordFromApi) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
         <ZookScreen>
           <ScrollView
             contentInsetAdjustmentBehavior="never"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <MobileHeader title="Attendance" />
-            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+            <AppHeader title="Attendance" />
+            <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
               <Skeleton width="38%" height={14} borderRadius={7} />
-            </GlassCard>
+            </Card>
           </ScrollView>
         </ZookScreen>
       </>
@@ -140,25 +140,24 @@ export default function AttendanceResultScreen() {
   if (!attendanceRecordId || !recordFromApi) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
         <ZookScreen>
           <ScrollView
             contentInsetAdjustmentBehavior="never"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <MobileHeader title="Attendance" />
-            <GlassCard variant="compact" contentStyle={styles.notFoundContent}>
+            <AppHeader title="Attendance" />
+            <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
-              <Text style={styles.notFoundTitle}>Record not found in your history</Text>
+              <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
               <ZookButton
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                tone="secondary"
+                variant="secondary"
                 icon="chevron-back"
               >
                 Back
               </ZookButton>
-            </GlassCard>
+            </Card>
           </ScrollView>
         </ZookScreen>
       </>
@@ -174,23 +173,22 @@ export default function AttendanceResultScreen() {
   const tone = pending ? "amber" : approved ? "lime" : "red";
   const code = record.entryCode?.trim() || null;
   const branchName =
-    record.branchName === legacyDefaultBranchName
+    record.branchName === fallbackDefaultBranchName
       ? "Main branch"
       : (record.branchName ?? "Assigned branch");
   const planName = record.planName ?? "Active membership";
   const planTarget: Href =
-    activeRole === "TRAINER" ? ("/trainer/plans" as Href) : ("/plans?view=detail" as Href);
+    activeRole === "TRAINER" ? ("/trainer/plans" as Href) : ("/plan?view=detail" as Href);
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen>
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
-          <MobileHeader
+          <AppHeader
             title="Attendance"
             subtitle={pending ? branchName : undefined}
             leading={
@@ -198,9 +196,13 @@ export default function AttendanceResultScreen() {
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/scan"))}
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={20} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={20} color={palette.text.primary} />
               </Pressable>
             }
           />
@@ -212,7 +214,7 @@ export default function AttendanceResultScreen() {
               size={pending ? 88 : 92}
               progress={pending ? 0.52 : 0.86}
             />
-            <Text style={styles.heroTitle}>
+            <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
               {pending
                 ? "Waiting for desk approval"
                 : blocked
@@ -221,7 +223,7 @@ export default function AttendanceResultScreen() {
                     ? "Checked out"
                     : "Checked in"}
             </Text>
-            <Text style={styles.heroBody}>
+            <Text style={[styles.heroBody, { color: palette.text.secondary }]}>
               {pending
                 ? "Your check-in was received. Show this code at the front desk."
                 : blocked
@@ -233,19 +235,19 @@ export default function AttendanceResultScreen() {
           </View>
 
           {approved && warning ? (
-            <GlassCard contentStyle={styles.warningContent}>
+            <Card contentStyle={styles.warningContent}>
               <IconBubble icon="person-circle-outline" tone="amber" size={42} />
               <View style={styles.warningCopy}>
-                <Text style={styles.warningTitle}>Profile photo recommended</Text>
-                <Text style={styles.warningBody}>{warning}</Text>
+                <Text style={[styles.warningTitle, { color: palette.text.primary }]}>Profile photo recommended</Text>
+                <Text style={[styles.warningBody, { color: palette.text.secondary }]}>{warning}</Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           {pending ? (
             <>
-              <GlassCard variant="warning" contentStyle={styles.pendingCodeContent}>
-                <Text style={styles.entryLabel}>Entry Code</Text>
+              <Card variant="warning" contentStyle={styles.pendingCodeContent}>
+                <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                 {code ? (
                   <>
                     <Pressable
@@ -260,8 +262,9 @@ export default function AttendanceResultScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Copy entry code ${code}`}
                       hitSlop={8}
+                      style={({ pressed }) => (pressed ? styles.codePressed : null)}
                     >
-                      <Text style={styles.pendingCode}>{code}</Text>
+                      <Text style={[styles.pendingCode, { color: palette.feedback.warning }]}>{code}</Text>
                     </Pressable>
                     <View style={styles.pendingChips}>
                       <StatusChip status="Pending approval" />
@@ -270,22 +273,22 @@ export default function AttendanceResultScreen() {
                     <StatusChip status="Desk confirmation needed" icon="alert-circle-outline" />
                   </>
                 ) : (
-                  <Text style={styles.codeUnavailable}>
+                  <Text style={[styles.codeUnavailable, { color: palette.text.secondary }]}>
                     Entry code unavailable — please ask reception to check you in manually.
                   </Text>
                 )}
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.reasonContent}>
+              <Card contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
-                  <Text style={styles.reasonTitle}>Why confirmation?</Text>
-                  <Text style={styles.reasonBody}>
+                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Why confirmation?</Text>
+                  <Text style={[styles.reasonBody, { color: palette.text.secondary }]}>
                     Your gym asks the desk to confirm some check-ins before entry is marked
                     approved.
                   </Text>
                 </View>
-              </GlassCard>
+              </Card>
 
               <ZookButton
                 onPress={() => void attendanceQuery.refetch()}
@@ -294,43 +297,43 @@ export default function AttendanceResultScreen() {
               >
                 {attendanceQuery.isFetching ? "Refreshing..." : "Refresh status"}
               </ZookButton>
-              <ZookButton href="/" tone="secondary" icon="home-outline">
+              <ZookButton href="/" variant="secondary" icon="home-outline">
                 Back to Home
               </ZookButton>
             </>
           ) : blocked ? (
             <>
-              <GlassCard variant="warning" contentStyle={styles.reasonContent}>
+              <Card variant="warning" contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
-                  <Text style={styles.reasonTitle}>Check-in not approved</Text>
-                  <Text style={styles.reasonBody}>
+                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Check-in not approved</Text>
+                  <Text style={[styles.reasonBody, { color: palette.text.secondary }]}>
                     {record.reason || "The desk can help you complete this check-in."}
                   </Text>
                 </View>
-              </GlassCard>
-              <ZookButton href="/scan" tone="secondary" icon="qr-code-outline">
+              </Card>
+              <ZookButton href="/scan" variant="secondary" icon="qr-code-outline">
                 Try again
               </ZookButton>
             </>
           ) : (
             <>
-              <GlassCard glow contentStyle={styles.approvedCodeContent}>
+              <Card glow contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
-                  <Text style={styles.entryLabel}>Entry Code</Text>
+                  <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                   {code ? (
                     <>
-                      <Text style={styles.approvedCode}>{code}</Text>
+                      <Text style={[styles.approvedCode, { color: palette.accent.base }]}>{code}</Text>
                       <ZookChip tone="lime">Approved</ZookChip>
-                      <Text style={styles.codeDetail}>Show this to the front desk if asked.</Text>
+                      <Text style={[styles.codeDetail, { color: palette.text.secondary }]}>Show this to the front desk if asked.</Text>
                     </>
                   ) : (
-                    <Text style={styles.codeUnavailable}>
+                    <Text style={[styles.codeUnavailable, { color: palette.text.secondary }]}>
                       Entry code unavailable — please ask reception to check you in manually.
                     </Text>
                   )}
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
                 <DetailLine
                   label="Check-in"
                   value={formatTime(record.checkedInAt)}
@@ -354,24 +357,29 @@ export default function AttendanceResultScreen() {
                   icon="checkmark-circle-outline"
                   highlight
                 />
-              </GlassCard>
+              </Card>
 
-              <GlassCard contentStyle={styles.nextContent}>
+              <Card contentStyle={styles.nextContent}>
                 <IconBubble icon="barbell-outline" tone="lime" size={44} />
                 <View style={styles.nextCopy}>
-                  <Text style={styles.nextTitle}>Next up</Text>
-                  <Text style={styles.nextBody}>
+                  <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
+                  <Text style={[styles.nextBody, { color: palette.text.secondary }]}>
                     Open your latest assigned plan when you are ready.
                   </Text>
                 </View>
                 <Link href={planTarget} asChild>
-                  <Pressable accessibilityRole="link">
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel="Open assigned plan"
+                    style={({ pressed }) => (pressed ? styles.controlPressed : null)}
+                    hitSlop={6}
+                  >
                     <ZookChip tone="lime" icon="chevron-forward">
                       Open Plan
                     </ZookChip>
                   </Pressable>
                 </Link>
-              </GlassCard>
+              </Card>
               <ZookButton onPress={() => router.replace("/")} icon="home-outline">
                 Done
               </ZookButton>
@@ -394,12 +402,13 @@ function DetailLine({
   icon: keyof typeof Ionicons.glyphMap;
   highlight?: boolean;
 }) {
+  const { palette } = useTheme();
   return (
     <ListRow
       title={label}
       leading={<IconBubble icon={icon} tone={highlight ? "lime" : "neutral"} size={28} />}
       trailing={
-        <Text style={[styles.detailValue, highlight ? styles.detailValueHighlight : null]}>
+        <Text style={[styles.detailValue, { color: highlight ? palette.accent.base : palette.text.primary }]}>
           {value}
         </Text>
       }
@@ -428,7 +437,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   notFoundTitle: {
-    color: legacyColors.text,
     ...typography.h3,
     textAlign: "center",
   },
@@ -437,10 +445,12 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
+  },
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
   },
   hero: {
     alignItems: "center",
@@ -449,12 +459,10 @@ const styles = StyleSheet.create({
     paddingBottom: layout.cardGap,
   },
   heroTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
     textAlign: "center",
   },
   heroBody: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
@@ -464,13 +472,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   entryLabel: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   pendingCode: {
-    color: legacyColors.amber,
     ...typography.display,
     fontVariant: ["tabular-nums"],
+  },
+  codePressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.985 }],
   },
   pendingChips: {
     flexDirection: "row",
@@ -489,11 +499,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reasonTitle: {
-    color: legacyColors.text,
     ...typography.h3,
   },
   reasonBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   warningContent: {
@@ -507,11 +515,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   warningTitle: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
   },
   warningBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   historyLink: {
@@ -520,7 +526,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   historyText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   approvedCodeContent: {
@@ -532,23 +537,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   approvedCode: {
-    color: legacyColors.lime,
     ...typography.display,
     fontVariant: ["tabular-nums"],
   },
   codeDetail: {
-    color: legacyColors.muted,
     ...typography.small,
     textAlign: "center",
   },
   codeUnavailable: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
   detailLine: {
     minHeight: 38,
@@ -558,11 +559,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   detailValue: {
-    color: legacyColors.text,
     ...typography.bodyStrong,
-  },
-  detailValueHighlight: {
-    color: legacyColors.lime,
   },
   nextContent: {
     padding: 14,
@@ -575,11 +572,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   nextTitle: {
-    color: legacyColors.text,
     ...typography.h3,
   },
   nextBody: {
-    color: legacyColors.muted,
     ...typography.small,
   },
 });

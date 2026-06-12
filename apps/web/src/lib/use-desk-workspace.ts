@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
@@ -22,10 +22,12 @@ export function useDeskWorkspace({
   orgId,
   branch,
   locale,
+  initialMemberUserId,
 }: {
   orgId: string;
   branch: BranchSummary | null;
   locale?: string | null | undefined;
+  initialMemberUserId?: string | null | undefined;
 }) {
   const router = useRouter();
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
@@ -48,6 +50,7 @@ export function useDeskWorkspace({
   });
   const [verifiedOrderIds, setVerifiedOrderIds] = useState<string[]>([]);
   const [skippedCodeOrderIds, setSkippedCodeOrderIds] = useState<string[]>([]);
+  const [skippedCodeReasons, setSkippedCodeReasons] = useState<Record<string, string>>({});
   const [lastReceipt, setLastReceipt] = useState<ReceiptDetails | null>(null);
   const [messageDraft, setMessageDraft] = useState<{ member: MemberRow; body: string } | null>(
     null,
@@ -102,6 +105,24 @@ export function useDeskWorkspace({
       })
       .slice(0, 12);
   }, [memberQuery, members]);
+
+  useEffect(() => {
+    if (!selectedMember?.user?.id) return;
+    const nextSelectedMember = members.find(
+      (member) => member.user?.id === selectedMember.user?.id,
+    );
+    if (nextSelectedMember && nextSelectedMember !== selectedMember) {
+      setSelectedMember(nextSelectedMember);
+    }
+  }, [members, selectedMember]);
+
+  useEffect(() => {
+    if (!initialMemberUserId || paymentForm.memberUserId) return;
+    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
+    if (member) {
+      selectMember(member);
+    }
+  }, [initialMemberUserId, members, paymentForm.memberUserId]);
 
   function memberPaymentDefaults(member: MemberRow | null) {
     const subscription = member?.activeSubscription;
@@ -193,7 +214,13 @@ export function useDeskWorkspace({
 
   function handleMemberPayment(member: MemberRow) {
     selectMember(member);
-    router.push(withBranch("/desk/payments/new", branch));
+    router.push(getMemberPaymentHref(member));
+  }
+
+  function getMemberPaymentHref(member: MemberRow) {
+    const params = new URLSearchParams();
+    if (member.user?.id) params.set("memberId", member.user.id);
+    return withBranch(`/desk/payments/new?${params.toString()}`, branch);
   }
 
   function jumpToShopPayment(order: ShopOrder) {
@@ -201,10 +228,11 @@ export function useDeskWorkspace({
     router.push(withBranch("/desk/payments/new", branch));
   }
 
-  function skipPickupCode(orderId: string) {
+  function skipPickupCode(orderId: string, reason: string) {
     setSkippedCodeOrderIds((current) =>
       current.includes(orderId) ? current : [...current, orderId],
     );
+    setSkippedCodeReasons((current) => ({ ...current, [orderId]: reason }));
   }
 
   async function overrideMemberEntry(member: MemberRow) {
@@ -220,8 +248,28 @@ export function useDeskWorkspace({
           reason: "Allowed by reception after identity check.",
         },
       });
-      todayState.reload();
+      void Promise.all([todayState.reload(), membersState.reload()]);
       setToast(copy.entryApproved);
+    } catch (cause) {
+      void membersState.reload();
+      setToast(cause instanceof Error ? cause.message : copy.unableEntry);
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function checkOutMember(member: MemberRow) {
+    const activeCheckIn = member.activeCheckIn;
+    if (!activeCheckIn?.id) return;
+    try {
+      setBusyId(`checkout:${member.user?.id ?? activeCheckIn.id}`);
+      setToast("");
+      await webApiFetch(`/api/orgs/${orgId}/attendance/${activeCheckIn.id}/checkout`, {
+        method: "POST",
+        body: { reason: "manual" },
+      });
+      void Promise.all([todayState.reload(), membersState.reload()]);
+      setToast(copy.entryCheckedOut);
     } catch (cause) {
       setToast(cause instanceof Error ? cause.message : copy.unableEntry);
     } finally {
@@ -381,7 +429,7 @@ export function useDeskWorkspace({
       await webApiFetch(`/api/orgs/${orgId}/shop/orders/${orderId}/fulfill`, {
         method: "POST",
         body: skipped
-          ? { pickupCodeSkipped: true, skipReason: "Skipped by reception at handover." }
+          ? { pickupCodeSkipped: true, skipReason: skippedCodeReasons[orderId] ?? "Skipped by reception at handover." }
           : {},
       });
       ordersState.reload();
@@ -426,9 +474,11 @@ export function useDeskWorkspace({
       handlePaymentOrderChange,
       handlePaymentPlanChange,
       handleMemberPayment,
+      getMemberPaymentHref,
       jumpToShopPayment,
       skipPickupCode,
       overrideMemberEntry,
+      checkOutMember,
       sendMemberMessage,
       submitMemberMessage,
       updateAttendance,

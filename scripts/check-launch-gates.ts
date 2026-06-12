@@ -8,7 +8,7 @@ type GateFailure = {
   message: string;
 };
 
-const skippedDirs = new Set([".git", ".next", ".turbo", "node_modules", "coverage", "dist", "build", "ios"]);
+const skippedDirs = new Set([".git", ".turbo", "node_modules", "coverage", "dist", "build", "ios"]);
 const textFilePattern = /\.(cjs|cts|js|jsx|mjs|mts|ts|tsx)$/;
 const jsxFilePattern = /\.(jsx|tsx)$/;
 const bannedMarkerWords = [
@@ -22,7 +22,7 @@ const loadingEllipsisPattern = /\bLoading(?:\.\.\.|\u2026)/;
 
 function walk(dir: string, files: string[] = []) {
   for (const entry of readdirSync(dir)) {
-    if (skippedDirs.has(entry)) {
+    if (skippedDirs.has(entry) || entry.startsWith(".next")) {
       continue;
     }
 
@@ -36,6 +36,72 @@ function walk(dir: string, files: string[] = []) {
   }
 
   return files;
+}
+
+function checkLaunchScreenshotRoutes(files: string[]): GateFailure[] {
+  return files.flatMap((file) => {
+    const rel = relativeFile(file);
+    if (!rel.endsWith("walkthrough.spec.ts") && !rel.includes(".maestro/flows/")) {
+      return [];
+    }
+
+    const source = readFileSync(file, "utf8");
+    const failures: GateFailure[] = [];
+    const routePatterns = [
+      { pattern: /path:\s*["'`]\/checkout\/mock\//g, message: "Do not include mock checkout in default launch/public screenshot routes." },
+      { pattern: /["'`]\/checkout\/mock\//g, message: "Mock checkout routes require an explicit debug-only flow, not launch screenshots." },
+      { pattern: /\b000000\b/g, message: "Do not expose fixed dev OTP values in screenshot automation." },
+      { pattern: /TEST MODE|No real payment|Open debugbar|Downloading 100%|React has detected/g, message: "Remove debug/runtime text from launch screenshot automation." },
+    ];
+
+    for (const { pattern, message } of routePatterns) {
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(source))) {
+        failures.push({
+          file: rel,
+          line: lineNumber(source, match.index),
+          message,
+        });
+      }
+    }
+
+    return failures;
+  });
+}
+
+function checkPublicLaunchLeakage(files: string[]): GateFailure[] {
+  return files.flatMap((file) => {
+    const rel = relativeFile(file);
+    const isPublicAuthSurface =
+      rel === "apps/web/src/components/login-panel.tsx" ||
+      rel === "apps/mobile/src/features/route-surfaces/login-route.tsx" ||
+      rel.startsWith("apps/web/app/login/") ||
+      rel.startsWith("apps/web/app/join/");
+    if (!isPublicAuthSurface) {
+      return [];
+    }
+
+    const source = readFileSync(file, "utf8");
+    const failures: GateFailure[] = [];
+    const blockedPatterns = [
+      { pattern: /\b000000\b/g, message: "Fixed OTP values must not be visible from public auth surfaces." },
+      { pattern: /TEST MODE|No real payment|testCode|devBannerCode|Open debugbar|React has detected/g, message: "Debug/test copy must not be visible from public launch auth surfaces." },
+      { pattern: /href=\{?`?["']?\/checkout\/mock\//g, message: "Public launch paths must not link directly to mock checkout." },
+    ];
+
+    for (const { pattern, message } of blockedPatterns) {
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(source))) {
+        failures.push({
+          file: rel,
+          line: lineNumber(source, match.index),
+          message,
+        });
+      }
+    }
+
+    return failures;
+  });
 }
 
 function relativeFile(file: string) {
@@ -164,7 +230,9 @@ const failures = [
   ...checkBannedMarkers(scopedFiles),
   ...checkMutationToasts(mutationFiles),
   ...checkLoadingText(loadingFiles),
-  ...checkBusyButtons(mutationFiles)
+  ...checkBusyButtons(mutationFiles),
+  ...checkLaunchScreenshotRoutes(scopedFiles),
+  ...checkPublicLaunchLeakage(scopedFiles)
 ];
 
 if (failures.length) {

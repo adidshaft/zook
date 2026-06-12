@@ -2,14 +2,14 @@ import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import {
-  GlassCard,
+  Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   Pill,
-  GlassInput,
+  Input,
   QueryErrorState,
   SectionHeader,
   ZookScreen,
@@ -20,7 +20,8 @@ import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/domains";
-import { legacyColors, layout, spacing, typography } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 function normalizeMediaUrl(value?: string | null) {
   if (!value) {
@@ -41,7 +42,10 @@ function sanitizeReferralCode(value?: string | string[]) {
 export default function FindGyms() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { logout, session } = useAuth();
   const { t } = useI18n();
+  const { palette, mode } = useTheme();
+  const chromeSurface = mode === "dark" ? palette.surface.default : palette.bg.elevated;
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = sanitizeReferralCode(routeParams.ref);
   const [query, setQuery] = useState("");
@@ -74,6 +78,13 @@ export default function FindGyms() {
     }
   };
 
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: () => void logout() },
+    ]);
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -87,13 +98,13 @@ export default function FindGyms() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={legacyColors.lime}
-                colors={[legacyColors.lime]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
         >
-          <MobileHeader
+          <AppHeader
             eyebrow="Discovery"
             title="Find your gym"
             subtitle="Browse public gyms and apply referral codes"
@@ -102,42 +113,71 @@ export default function FindGyms() {
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
-                style={styles.iconButton}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    borderColor: palette.border.subtle,
+                    backgroundColor: chromeSurface,
+                  },
+                  pressed ? styles.pressed : null,
+                ]}
               >
-                <Ionicons name="chevron-back" size={21} color={legacyColors.text} />
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
+            }
+            trailing={
+              session ? (
+                <Pressable
+                  testID="find-gyms-sign-out"
+                  onPress={confirmSignOut}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    {
+                      borderColor: palette.border.subtle,
+                      backgroundColor: chromeSurface,
+                    },
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Ionicons name="log-out-outline" size={20} color={palette.text.primary} />
+                </Pressable>
+              ) : undefined
             }
             showProfileShortcut={false}
           />
 
           {referralCode ? (
-            <GlassCard variant="success" contentStyle={styles.referralContent}>
+            <Card variant="success" contentStyle={styles.referralContent}>
               <IconBubble icon="gift-outline" tone="lime" size={36} />
               <View style={styles.referralCopy}>
-                <Text style={styles.referralTitle}>Referral code applied</Text>
-                <Text style={styles.referralBody}>
-                  Code <Text style={styles.referralCode}>{referralCode}</Text> is attached. Open any gym to use it.
+                <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
+                  Referral code applied
+                </Text>
+                <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
+                  Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
                 </Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
-          <GlassCard contentStyle={styles.searchContent}>
-            <GlassInput
+          <Card contentStyle={styles.searchContent}>
+            <Input
               testID="find-gyms-query"
               label="Gym name or username"
               value={query}
               onChangeText={setQuery}
               placeholder={t("findGyms.searchPlaceholder")}
             />
-            <GlassInput
+            <Input
               testID="find-gyms-city"
               label="City"
               value={city}
               onChangeText={setCity}
               placeholder={t("findGyms.cityPlaceholder")}
             />
-          </GlassCard>
+          </Card>
 
           <SectionHeader
             title="Available gyms"
@@ -157,13 +197,17 @@ export default function FindGyms() {
           ) : null}
 
           {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
-            <GlassCard variant="compact" contentStyle={styles.emptyContent}>
+            <Card variant="compact" contentStyle={styles.emptyContent}>
               <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
-                <Text style={styles.emptyTitle}>No gyms found</Text>
-                <Text style={styles.emptyBody}>Try widening the city or clearing the search.</Text>
+                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
+                  No gyms found
+                </Text>
+                <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
+                  Try widening the city or clearing the search.
+                </Text>
               </View>
-            </GlassCard>
+            </Card>
           ) : null}
 
           <View style={styles.results}>
@@ -185,25 +229,35 @@ export default function FindGyms() {
                   accessibilityLabel={`Open ${gym.name}`}
                   style={({ pressed }) => [pressed ? styles.pressed : null]}
                 >
-                  <GlassCard contentStyle={styles.gymContent}>
+                  <Card contentStyle={styles.gymContent}>
                     <View style={styles.gymHeader}>
                       {gym.coverImageUrl ? (
                         <Image
                           source={{ uri: normalizeMediaUrl(gym.coverImageUrl) }}
-                          style={styles.gymThumbnail}
+                          style={[
+                            styles.gymThumbnail,
+                            {
+                              backgroundColor: chromeSurface,
+                            },
+                          ]}
                           contentFit="cover"
                           accessibilityLabel={`${gym.name} cover photo`}
                         />
                       ) : (
-                        <View style={styles.gymThumbnailFallback}>
+                        <View
+                          style={[
+                            styles.gymThumbnailFallback,
+                            { backgroundColor: palette.surface.accentSoft },
+                          ]}
+                        >
                           <IconBubble icon="business-outline" tone="lime" size={34} />
                         </View>
                       )}
                       <View style={styles.gymCopy}>
-                        <Text numberOfLines={1} style={styles.gymTitle}>
+                        <Text numberOfLines={2} style={[styles.gymTitle, { color: palette.text.primary }]}>
                           {gym.name}
                         </Text>
-                        <Text numberOfLines={1} style={styles.gymLocation}>
+                        <Text numberOfLines={1} style={[styles.gymLocation, { color: palette.text.secondary }]}>
                           {gym.city}, {gym.state}
                         </Text>
                       </View>
@@ -215,7 +269,7 @@ export default function FindGyms() {
                     {(gym.amenities ?? []).length > 0 ? (
                       <View style={styles.tags}>
                         {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                          <Text key={amenity} style={styles.tagText}>
+                          <Text key={amenity} style={[styles.tagText, { color: palette.text.secondary }]}>
                             {amenity}
                           </Text>
                         ))}
@@ -224,17 +278,17 @@ export default function FindGyms() {
 
                     <View style={styles.gymFooter}>
                       <View style={styles.gymFooterLeft}>
-                        <Ionicons name="eye-outline" size={13} color={legacyColors.muted} />
-                        <Text style={styles.gymFooterText}>
+                        <Ionicons name="eye-outline" size={13} color={palette.text.secondary} />
+                        <Text style={[styles.gymFooterText, { color: palette.text.secondary }]}>
                           {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
                         </Text>
                       </View>
                       <View style={styles.gymViewCta}>
-                        <Text style={styles.gymViewText}>View</Text>
-                        <Ionicons name="chevron-forward" size={14} color={legacyColors.lime} />
+                        <Text style={[styles.gymViewText, { color: palette.accent.base }]}>View</Text>
+                        <Ionicons name="chevron-forward" size={14} color={palette.accent.base} />
                       </View>
                     </View>
-                  </GlassCard>
+                  </Card>
                 </Pressable>
               </Link>
             ))}
@@ -266,8 +320,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -281,15 +333,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   referralTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   referralBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   referralCode: {
-    color: legacyColors.lime,
     ...typography.bodyStrong,
   },
   searchContent: {
@@ -301,7 +350,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   loadingText: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   emptyContent: {
@@ -314,11 +362,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   emptyBody: {
-    color: legacyColors.muted,
     ...typography.body,
     textAlign: "center",
   },
@@ -341,26 +387,23 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.05)",
   },
   gymThumbnailFallback: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(185,244,85,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
   gymCopy: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
   },
   gymTitle: {
-    color: legacyColors.text,
     ...typography.headerTitle,
   },
   gymLocation: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   tags: {
@@ -369,7 +412,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tagText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   gymFooter: {
@@ -383,7 +425,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   gymFooterText: {
-    color: legacyColors.muted,
     ...typography.small,
   },
   gymViewCta: {
@@ -392,7 +433,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   gymViewText: {
-    color: legacyColors.lime,
     ...typography.caption,
   },
 });

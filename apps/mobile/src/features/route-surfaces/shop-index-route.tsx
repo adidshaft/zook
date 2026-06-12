@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -9,6 +9,7 @@ import {
   type AppStateStatus,
   FlatList,
   Linking,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,9 +24,10 @@ import {
   BranchSelectorChip,
   EmptyState,
   ErrorState,
-  GlassCard,
+  Card,
   ListRow,
-  MobileHeader,
+  AppHeader,
+  MoneySummaryCard,
   ProductCard,
   SearchBar,
   SectionHeader,
@@ -49,7 +51,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { legacyColors, layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { PickupQrCode } from "@/components/primitives/pickup-qr";
@@ -509,8 +511,8 @@ export default function Shop() {
     <RefreshControl
       refreshing={refreshing}
       onRefresh={onRefresh}
-      tintColor={legacyColors.lime}
-      colors={[legacyColors.lime]}
+      tintColor={palette.accent.base}
+      colors={[palette.accent.base]}
     />
   );
 
@@ -551,7 +553,7 @@ export default function Shop() {
           ) : null
         }
       >
-        <MobileHeader
+        <AppHeader
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
@@ -564,7 +566,7 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <GlassCard variant="success" contentStyle={styles.pickupContent}>
+        <Card variant="success" contentStyle={styles.pickupContent}>
           <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
           <Pressable
             onPress={async () => {
@@ -588,15 +590,15 @@ export default function Shop() {
             <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
           <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
-        </GlassCard>
+        </Card>
         {canShowPickupQr ? (
-          <GlassCard variant="compact" contentStyle={styles.pickupQrContent}>
+          <Card variant="compact" contentStyle={styles.pickupQrContent}>
             <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>Show this to collect your order</Text>
             <PickupQrCode value={pickupQrPayload(order)} />
             <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
-          </GlassCard>
+          </Card>
         ) : null}
-        <GlassCard variant="compact" contentStyle={styles.stack}>
+        <Card variant="compact" contentStyle={styles.stack}>
           {(order.items.length
             ? order.items
             : cartItems.map((item) => ({
@@ -617,7 +619,7 @@ export default function Shop() {
               />
             );
           })}
-        </GlassCard>
+        </Card>
         <ZookButton
           testID="shop-back-to-shop"
           onPress={() => {
@@ -648,7 +650,7 @@ export default function Shop() {
           </ZookButton>
         }
       >
-        <MobileHeader
+        <AppHeader
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
@@ -661,7 +663,17 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <GlassCard contentStyle={styles.checkoutContent}>
+        <MoneySummaryCard
+          title="Pickup checkout"
+          amount={formatInr(order.totalPaise)}
+          rows={[
+            { label: "Items", value: `${order.items.length} item${order.items.length === 1 ? "" : "s"}` },
+            { label: "Pickup", value: "Ready at gym desk after payment" },
+            { label: "Branch", value: activeOrganization?.name ?? "Selected gym" },
+          ]}
+          consequence="After payment, Zook creates a pickup code for desk verification. Do not collect without the code."
+        />
+        <Card contentStyle={styles.checkoutContent}>
           <ListRow
             title={t("shop.paySecurely")}
             subtitle={t("shop.confirmOrder")}
@@ -681,7 +693,7 @@ export default function Shop() {
             <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
             <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(order.totalPaise)}</Text>
           </View>
-        </GlassCard>
+        </Card>
       </ShopShell>
     );
   }
@@ -702,7 +714,7 @@ export default function Shop() {
           </ZookButton>
         }
       >
-        <MobileHeader
+        <AppHeader
           eyebrow={t("shop.cart")}
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
@@ -718,7 +730,7 @@ export default function Shop() {
           }
           showProfileShortcut={false}
         />
-        <GlassCard variant="compact" contentStyle={styles.stack}>
+        <Card variant="compact" contentStyle={styles.stack}>
           {cartItems.length ? (
             cartItems.map((item) => (
               <ListRow
@@ -736,7 +748,10 @@ export default function Shop() {
                         onPress={() => removeFromCart(item.product.id)}
                         accessibilityRole="button"
                         accessibilityLabel={`Remove ${item.product.name}`}
-                        style={styles.cartStepperButton}
+                        style={({ pressed }) => [
+                          styles.cartStepperButton,
+                          pressed ? styles.cartStepperButtonPressed : null,
+                        ]}
                       >
                         <Ionicons name="remove" size={15} color={palette.accent.strong} />
                       </Pressable>
@@ -747,12 +762,23 @@ export default function Shop() {
                         accessibilityRole="button"
                         accessibilityLabel={`Add ${item.product.name}`}
                         disabled={item.quantity >= item.product.stock}
-                        style={[
+                        style={({ pressed }) => [
                           styles.cartStepperButton,
                           item.quantity >= item.product.stock ? styles.cartStepperDisabled : null,
+                          pressed && item.quantity < item.product.stock
+                            ? styles.cartStepperButtonPressed
+                            : null,
                         ]}
                       >
-                        <Ionicons name="add" size={15} color={palette.accent.strong} />
+                        <Ionicons
+                          name="add"
+                          size={15}
+                          color={
+                            item.quantity >= item.product.stock
+                              ? palette.text.tertiary
+                              : palette.accent.strong
+                          }
+                        />
                       </Pressable>
                     </View>
                   </View>
@@ -762,11 +788,11 @@ export default function Shop() {
           ) : (
             <EmptyState title={t("shop.yourCartEmpty")} body={t("shop.cartEmptyBody")} />
           )}
-        </GlassCard>
-        <GlassCard variant="compact" contentStyle={styles.totalRow}>
+        </Card>
+        <Card variant="compact" contentStyle={styles.totalRow}>
           <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.subtotal")}</Text>
           <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
-        </GlassCard>
+        </Card>
       </ShopShell>
     );
   }
@@ -776,14 +802,22 @@ export default function Shop() {
       <Pressable
         testID="shop-mini-cart"
         onPress={() => router.push("/shop/cart" as never)}
-        style={styles.miniCart}
+        style={[
+          styles.miniCart,
+          {
+            backgroundColor: palette.accent.fill,
+            shadowColor: palette.accent.base,
+            shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.2 : 0.1) : 0,
+            elevation: Platform.OS === "android" ? 4 : 0,
+          },
+        ]}
         accessibilityRole="button"
         accessibilityLabel={t("shop.openMiniCart")}
       >
-        <Text style={styles.miniCartText}>
+        <Text style={[styles.miniCartText, { color: palette.text.onAccent }]}>
           {itemCount} items · {formatInr(totalPaise)}
         </Text>
-        <Ionicons name="chevron-forward" size={18} color={legacyColors.bg} />
+        <Ionicons name="chevron-forward" size={18} color={palette.text.onAccent} />
       </Pressable>
     ) : null;
 
@@ -828,7 +862,7 @@ export default function Shop() {
         columnWrapperStyle={styles.columnWrapper}
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 12 }}>
-            <MobileHeader
+            <AppHeader
               title={t("shop.deskPickup")}
               subtitle={activeOrganization?.name ?? t("shop.activeGym")}
               chip={<BranchSelectorChip />}
@@ -849,8 +883,10 @@ export default function Shop() {
                 >
                   <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
                   {itemCount ? (
-                    <View style={styles.cartBadge}>
-                      <Text style={styles.cartBadgeText}>{itemCount}</Text>
+                    <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
+                      <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
+                        {itemCount}
+                      </Text>
                     </View>
                   ) : null}
                 </Pressable>
@@ -874,16 +910,15 @@ export default function Shop() {
                     onPress={() => setCategory(option.value)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    style={[
+                    style={({ pressed }) => [
                       styles.categoryChip,
                       {
                         backgroundColor: selected
                           ? palette.accent.fill
-                          : mode === "dark"
-                            ? "rgba(255, 255, 255, 0.06)"
-                            : "rgba(17, 21, 15, 0.04)",
+                          : palette.surface.default,
                         borderColor: selected ? palette.accent.strong : palette.border.subtle,
                       },
+                      pressed ? styles.categoryChipPressed : null,
                     ]}
                   >
                     <Ionicons
@@ -906,10 +941,8 @@ export default function Shop() {
                         styles.categoryCount,
                         {
                           backgroundColor: selected
-                            ? "rgba(0, 0, 0, 0.12)"
-                            : mode === "dark"
-                              ? "rgba(255, 255, 255, 0.08)"
-                              : "rgba(0, 0, 0, 0.06)",
+                            ? palette.accent.strong
+                            : palette.bg.sunken,
                         },
                       ]}
                     >
@@ -935,21 +968,21 @@ export default function Shop() {
             />
 
             {productsQuery.isError ? (
-              <GlassCard variant="danger" contentStyle={styles.stateCardContent}>
+              <Card variant="danger" contentStyle={styles.stateCardContent}>
                 <ErrorState
                   title={t("shop.shopCouldNotLoad")}
                   body={t("shop.shopCouldNotLoadBody")}
                   action={
                     <ZookButton
                       onPress={() => void productsQuery.refetch()}
-                      tone="secondary"
+                      variant="secondary"
                       icon="refresh-outline"
                     >
                       {t("shop.tryAgain")}
                     </ZookButton>
                   }
                 />
-              </GlassCard>
+              </Card>
             ) : productsQuery.isLoading || !cartHydrated ? (
               <ShopSkeleton />
             ) : null}
@@ -977,7 +1010,7 @@ function BrowserReturnCard({
 }) {
   const { palette } = useTheme();
   return (
-    <GlassCard variant="compact" contentStyle={styles.browserReturnContent}>
+    <Card variant="compact" contentStyle={styles.browserReturnContent}>
       <Ionicons name="open-outline" size={22} color={palette.feedback.warning} />
       <View style={styles.browserReturnCopy}>
         <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>
@@ -988,14 +1021,14 @@ function BrowserReturnCard({
         </Text>
       </View>
       <ZookButton
-        tone="secondary"
+        variant="secondary"
         disabled={checking}
         onPress={onCheckStatus}
         icon="refresh-outline"
       >
         {checking ? "Checking..." : "Check status"}
       </ZookButton>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -1003,7 +1036,7 @@ function ShopSkeleton() {
   return (
     <View style={styles.productGrid}>
       {[0, 1, 2, 3].map((item) => (
-        <GlassCard
+        <Card
           key={item}
           variant="compact"
           contentStyle={styles.productSkeleton}
@@ -1016,7 +1049,7 @@ function ShopSkeleton() {
             <Skeleton width={58} height={18} borderRadius={9} />
             <Skeleton width={64} height={30} borderRadius={15} />
           </View>
-        </GlassCard>
+        </Card>
       ))}
     </View>
   );
@@ -1047,7 +1080,6 @@ function ShopShell({
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID={`shop-${selectedPath.replace(/\W+/g, "-").replace(/^-|-$/g, "")}-screen`}>
         {noScroll ? (
           <View style={{ flex: 1, paddingHorizontal: layout.screenPadding, paddingTop: 20 }}>
@@ -1096,8 +1128,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1106,8 +1136,6 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1127,11 +1155,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   browserReturnTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
   },
   browserReturnBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   cartBadge: {
@@ -1141,13 +1167,11 @@ const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: legacyColors.lime,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
   },
   cartBadgeText: {
-    color: legacyColors.bg,
     ...typography.navLabel,
   },
   productGrid: {
@@ -1170,67 +1194,50 @@ const styles = StyleSheet.create({
     paddingRight: layout.screenPadding,
   },
   categoryChip: {
-    minHeight: 38,
+    minHeight: 40,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: "rgba(255,255,255,0.045)",
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  categoryChipActive: {
-    borderColor: "rgba(185,244,85,0.44)",
-    backgroundColor: legacyColors.lime,
+  categoryChipPressed: {
+    opacity: 0.84,
   },
+  categoryChipActive: {},
   categoryChipText: {
-    color: legacyColors.muted,
     ...typography.caption,
   },
-  categoryChipTextActive: {
-    color: legacyColors.bg,
-  },
+  categoryChipTextActive: {},
   categoryCount: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
     paddingHorizontal: 5,
   },
-  categoryCountActive: {
-    backgroundColor: "rgba(7,9,8,0.18)",
-  },
+  categoryCountActive: {},
   categoryCountText: {
-    color: legacyColors.muted,
     fontSize: 10,
     fontFamily: "Inter_700Bold",
     lineHeight: 12,
   },
-  categoryCountTextActive: {
-    color: legacyColors.bg,
-  },
+  categoryCountTextActive: {},
   miniCart: {
     minHeight: 54,
     borderRadius: 999,
-    backgroundColor: legacyColors.lime,
     paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    ...{
-      shadowColor: legacyColors.lime,
-      shadowOpacity: 0.12,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-    },
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
   },
   miniCartText: {
     flexShrink: 1,
     minWidth: 0,
-    color: legacyColors.bg,
     ...typography.button,
   },
   floatingAction: {
@@ -1238,7 +1245,6 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     zIndex: 35,
-    elevation: 35,
   },
   stack: {
     gap: 10,
@@ -1261,24 +1267,25 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   cartLinePrice: {
-    color: legacyColors.text,
     ...typography.caption,
   },
   cartStepper: {
-    minHeight: 30,
-    borderRadius: 15,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: legacyColors.border,
-    backgroundColor: legacyColors.panel,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
   },
   cartStepperButton: {
-    width: 30,
-    height: 30,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  cartStepperButtonPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
   },
   cartStepperDisabled: {
     opacity: 0.35,
@@ -1286,11 +1293,9 @@ const styles = StyleSheet.create({
   cartQuantity: {
     minWidth: 22,
     textAlign: "center",
-    color: legacyColors.text,
     ...typography.caption,
   },
   cardBody: {
-    color: legacyColors.muted,
     ...typography.body,
   },
   totalRow: {
@@ -1299,7 +1304,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   totalText: {
-    color: legacyColors.text,
     ...typography.metric,
   },
   actionRow: {
@@ -1315,7 +1319,6 @@ const styles = StyleSheet.create({
   },
   checkoutTotal: {
     borderTopWidth: 1,
-    borderTopColor: legacyColors.border,
     paddingTop: 14,
     marginTop: 4,
   },
@@ -1324,11 +1327,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   pickupLabel: {
-    color: legacyColors.muted,
     ...typography.eyebrow,
   },
   pickupCode: {
-    color: legacyColors.text,
     fontSize: 28,
     lineHeight: 34,
     fontFamily: "Inter_600SemiBold",
@@ -1339,12 +1340,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   pickupQrTitle: {
-    color: legacyColors.text,
     ...typography.cardTitle,
     textAlign: "center",
   },
   pickupQrCode: {
-    color: legacyColors.muted,
     ...typography.caption,
     fontVariant: ["tabular-nums"],
   },

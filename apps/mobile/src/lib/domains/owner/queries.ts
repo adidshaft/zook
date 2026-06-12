@@ -11,6 +11,14 @@ import type {
   OwnerDashboardData,
 } from "@/lib/domains/shared/types";
 
+type OwnerSetupStatusData = {
+  hasMembershipPlans: boolean;
+  hasQrDisplayed: boolean;
+  staffCount: number;
+  memberCount: number;
+  hasShopProducts: boolean;
+};
+
 export function useOwnerDashboard(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
@@ -48,13 +56,34 @@ export function useOwnerBillingSubscription(orgId?: string) {
   });
 }
 
-export function useOrgJoinRequests(orgId?: string) {
+export function useOwnerSetupStatus(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: queryKeys.owner.setupStatus(resolvedOrgId),
+    queryFn: () =>
+      mobileApiFetch<OwnerSetupStatusData>(`/orgs/${resolvedOrgId}/setup-status`, {
+        token,
+        orgId: resolvedOrgId,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
+type OrgJoinRequestsData = { joinRequests: OrgJoinRequestRecord[] };
+
+export function useOrgJoinRequests<TData = OrgJoinRequestsData>(
+  orgId?: string,
+  options?: { select?: (data: OrgJoinRequestsData) => TData },
+) {
   const { activeOrgId, status, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
     queryKey: queryKeys.owner.approvals(resolvedOrgId),
     queryFn: () =>
-      mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(
+      mobileApiFetch<OrgJoinRequestsData>(
         `/orgs/${resolvedOrgId}/join-requests`,
         {
           token,
@@ -64,6 +93,7 @@ export function useOrgJoinRequests(orgId?: string) {
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
+    select: options?.select,
   });
 }
 

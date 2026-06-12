@@ -136,7 +136,7 @@ pnpm --filter @zook/mobile list @react-navigation/material-top-tabs
 ```
 If not: `pnpm --filter @zook/mobile add @react-navigation/material-top-tabs react-native-tab-view react-native-pager-view`.
 
-If installation expands native dependencies, **stop and confirm with the user** — adding `react-native-pager-view` requires a native rebuild. Fallback option: use a segmented control (`SegmentedControl`-like component already present in `legacy.tsx`?) inside a single screen file. Search for existing segmented patterns before adding the dep.
+If installation expands native dependencies, **stop and confirm with the user** — adding `react-native-pager-view` requires a native rebuild. Fallback option: use a segmented control (`SegmentedControl`-like component already present in `old.tsx`?) inside a single screen file. Search for existing segmented patterns before adding the dep.
 
 ## Execution steps
 
@@ -231,9 +231,9 @@ Note: the **old path is `trainer/client/[id]/...` (singular "client"); the new p
 
 ### Step 6 — Update bottom nav short-circuit
 
-`legacy.tsx` `BottomNav` already short-circuits `/trainer/*` after plans #05/#06. Verify it does, add if missing.
+`old.tsx` `BottomNav` already short-circuits `/trainer/*` after plans #05/#06. Verify it does, add if missing.
 
-`trainerTabs` at `legacy.tsx:2044` marked `@deprecated`.
+`trainerTabs` at `old.tsx:2044` marked `@deprecated`.
 
 ### Step 7 — Back-compat redirects
 

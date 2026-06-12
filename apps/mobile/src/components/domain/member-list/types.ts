@@ -12,6 +12,7 @@ export type MemberRowItem = {
   badges?: Array<{ label: string; tone: DomainTone }>;
   meta?: string;
   phoneRevealed?: boolean;
+  action?: { label: string; onPress: () => void };
 };
 
 export type MemberListFilter =
@@ -37,4 +38,5 @@ export type MemberListProps = {
   refreshing?: boolean;
   onRefresh?: () => void;
   header?: ReactNode;
+  scrollEnabled?: boolean;
 };

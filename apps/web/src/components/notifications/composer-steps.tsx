@@ -6,7 +6,9 @@ import { ConfirmDialog } from "../dashboard-primitives";
 import { RadioCardGroup, SearchableSelect } from "../ui";
 import { Pill } from "../glass-card";
 import {
+  memberDescription,
   memberLabel,
+  memberUserId,
   messageTypes,
   type Audience,
   type BranchRow,
@@ -84,13 +86,13 @@ export function AudienceStep({
   onSelectedUsersChange: (userIds: string[]) => void;
   onSingleUserChange: (userId: string) => void;
 }) {
-  const memberOptions = members.map((member) => ({
-    value: member.userId,
-    label: memberLabel(member),
-    description: member.profile?.phone ?? undefined,
-  }));
+  const memberOptions = members.flatMap((member) => {
+    const value = memberUserId(member);
+    if (!value) return [];
+    return [{ value, label: memberLabel(member), description: memberDescription(member) }];
+  });
   const selectedMembers = selectedUserIds
-    .map((userId) => members.find((member) => member.userId === userId))
+    .map((userId) => members.find((member) => memberUserId(member) === userId))
     .filter((member): member is MemberRow => Boolean(member));
 
   return (
@@ -159,10 +161,12 @@ export function AudienceStep({
             <div className="flex flex-wrap gap-2">
               {selectedMembers.map((member) => (
                 <button
-                  key={member.userId}
+                  key={memberUserId(member)}
                   type="button"
                   onClick={() =>
-                    onSelectedUsersChange(selectedUserIds.filter((id) => id !== member.userId))
+                    onSelectedUsersChange(
+                      selectedUserIds.filter((id) => id !== memberUserId(member)),
+                    )
                   }
                   className="zook-focus rounded-full border border-lime-300/25 bg-lime-300/8 px-3 py-2 text-xs text-lime-100"
                 >

@@ -506,8 +506,8 @@ export class S3CompatibleStorageProvider implements StorageProvider {
       bucket: string;
       region: string;
       endpoint?: string;
-      accessKeyId: string;
-      secretAccessKey: string;
+      accessKeyId?: string;
+      secretAccessKey?: string;
       publicBaseUrl?: string;
       forcePathStyle?: boolean;
     },
@@ -515,10 +515,14 @@ export class S3CompatibleStorageProvider implements StorageProvider {
     this.client = new S3Client({
       region: options.region,
       ...(options.endpoint ? { endpoint: options.endpoint } : {}),
-      credentials: {
-        accessKeyId: options.accessKeyId,
-        secretAccessKey: options.secretAccessKey,
-      },
+      ...(options.accessKeyId && options.secretAccessKey
+        ? {
+            credentials: {
+              accessKeyId: options.accessKeyId,
+              secretAccessKey: options.secretAccessKey,
+            },
+          }
+        : {}),
       forcePathStyle: options.forcePathStyle ?? Boolean(options.endpoint),
     });
   }
