@@ -302,6 +302,7 @@ const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     flexDirection: "row",
     minWidth: 0,

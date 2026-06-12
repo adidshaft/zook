@@ -3176,6 +3176,7 @@ const styles = StyleSheet.create({
   },
   glassCard: {
     borderWidth: 1,
+    borderCurve: "continuous",
     overflow: "hidden",
     backgroundColor: fallbackColors.panel,
   },
@@ -3202,6 +3203,7 @@ const styles = StyleSheet.create({
     backgroundColor: fallbackColors.panel,
     borderColor: fallbackColors.border,
     borderWidth: 1,
+    borderCurve: "continuous",
     borderRadius: radii.panel,
     padding: spacing.lg,
     overflow: "hidden",
@@ -3302,12 +3304,14 @@ const styles = StyleSheet.create({
   },
   iconBubble: {
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     borderWidth: 1,
   },
   button: {
     borderWidth: 1,
     alignItems: "center",
+    borderCurve: "continuous",
     justifyContent: "center",
     flexDirection: "row",
     minWidth: 0,
@@ -3468,6 +3472,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     minHeight: 50,
+    borderCurve: "continuous",
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",

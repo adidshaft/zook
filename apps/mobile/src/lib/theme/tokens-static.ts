@@ -1,5 +1,6 @@
 export {
   layout,
+  materials,
   opacity,
   palettes,
   radii,
