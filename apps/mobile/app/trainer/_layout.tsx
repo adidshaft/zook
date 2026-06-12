@@ -61,7 +61,10 @@ export default function TrainerLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="clients/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="clients/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

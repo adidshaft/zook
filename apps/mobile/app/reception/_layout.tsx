@@ -80,15 +80,25 @@ export default function ReceptionLayout() {
         options={{
           title: "Orders",
           href: canFulfillOrders ? "/reception/orders" : null,
+          tabBarItemStyle: canFulfillOrders ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-orders",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="orders" focused={focused} size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Screen name="members/[id]" options={{ href: null }} />
-      <Tabs.Screen name="payments/new" options={{ href: null }} />
-      <Tabs.Screen name="verification/[recordId]" options={{ href: null }} />
+      <Tabs.Screen
+        name="members/[id]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="payments/new"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="verification/[recordId]"
+        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

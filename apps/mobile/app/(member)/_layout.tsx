@@ -68,9 +68,10 @@ export default function MemberLayout() {
           options={{
             title: "Shop",
             href: null,
+            tabBarItemStyle: { display: "none" },
           }}
         />
-        <Tabs.Screen name="diet" options={{ href: null }} />
+        <Tabs.Screen name="diet" options={{ href: null, tabBarItemStyle: { display: "none" } }} />
         <Tabs.Screen
           name="you"
           options={{

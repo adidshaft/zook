@@ -1,6 +1,14 @@
 import * as SecureStore from "expo-secure-store";
 
 const inMemoryStorage = new Map<string, string>();
+const SECURE_STORE_KEY_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function storageKey(key: string) {
+  if (SECURE_STORE_KEY_PATTERN.test(key)) {
+    return key;
+  }
+  return key.replace(/[^A-Za-z0-9._-]/g, "_");
+}
 
 export async function secureStoreAvailable() {
   try {
@@ -11,24 +19,27 @@ export async function secureStoreAvailable() {
 }
 
 export async function getStoredValue(key: string) {
+  const normalizedKey = storageKey(key);
   if (await secureStoreAvailable()) {
-    return SecureStore.getItemAsync(key)
+    return SecureStore.getItemAsync(normalizedKey)
   }
-  return inMemoryStorage.get(key) ?? null
+  return inMemoryStorage.get(normalizedKey) ?? null
 }
 
 export async function setStoredValue(key: string, value: string) {
+  const normalizedKey = storageKey(key);
   if (await secureStoreAvailable()) {
-    await SecureStore.setItemAsync(key, value)
+    await SecureStore.setItemAsync(normalizedKey, value)
     return
   }
-  inMemoryStorage.set(key, value)
+  inMemoryStorage.set(normalizedKey, value)
 }
 
 export async function deleteStoredValue(key: string) {
+  const normalizedKey = storageKey(key);
   if (await secureStoreAvailable()) {
-    await SecureStore.deleteItemAsync(key)
+    await SecureStore.deleteItemAsync(normalizedKey)
     return
   }
-  inMemoryStorage.delete(key)
+  inMemoryStorage.delete(normalizedKey)
 }

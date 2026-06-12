@@ -463,7 +463,6 @@ function LayoutContent() {
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", title: "Workout history", headerLargeTitle: true }} />
         <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", title: "Log progress" }} />
         <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", title: "Plan" }} />
-        <Stack.Screen name="owner/member/[id]" options={{ animation: "slide_from_right", title: "Member" }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
           options={{ presentation: "modal", animation: "slide_from_bottom", title: "Attendance" }}

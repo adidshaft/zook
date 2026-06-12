@@ -1,10 +1,15 @@
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { inflateSync } from "node:zlib";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const minStddev = Number(process.env.SCREENSHOT_MIN_STDDEV ?? 6);
-const target = resolve(process.cwd(), process.argv[2] ?? "artifacts/app-store-screenshots-20260522");
+const target = resolve(process.cwd(), process.argv[2] ?? "artifacts/app-store-screenshots-20260612");
+const previousMemberHomeRef =
+  process.env.SCREENSHOT_PREVIOUS_MEMBER_HOME ??
+  "artifacts/app-store-screenshots-20260522/member-home.png";
 
 type PngInfo = {
   bitDepth: number;
@@ -119,6 +124,26 @@ function rgbStddev(path: string) {
   return Math.sqrt(sumSquares / count - mean * mean);
 }
 
+function sha256(buffer: Buffer) {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+function readPreviousMemberHome() {
+  const diskPath = resolve(process.cwd(), previousMemberHomeRef);
+  if (existsSync(diskPath)) {
+    return readFileSync(diskPath);
+  }
+  try {
+    return execFileSync("git", ["show", `HEAD:${previousMemberHomeRef}`], {
+      cwd: process.cwd(),
+      encoding: "buffer",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch {
+    return null;
+  }
+}
+
 const files = listPngs(target);
 if (!files.length) {
   throw new Error(`No PNG screenshots found under ${target}.`);
@@ -131,6 +156,15 @@ for (const file of files) {
   console.log(`${stddev.toFixed(2)}\t${label}`);
   if (stddev < minStddev) {
     failures.push(`${label} (${stddev.toFixed(2)})`);
+  }
+}
+
+const memberHomePath = join(target, "member-home.png");
+if (existsSync(memberHomePath)) {
+  const current = readFileSync(memberHomePath);
+  const previous = readPreviousMemberHome();
+  if (previous && current.length === previous.length && sha256(current) === sha256(previous)) {
+    failures.push("member-home.png is identical to the committed previous capture");
   }
 }
 
