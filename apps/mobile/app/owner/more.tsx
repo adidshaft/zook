@@ -17,11 +17,12 @@ type MoreRow = {
 };
 
 const webRows: MoreRow[] = [
-  { title: "Branches", subtitle: "Manage on web", icon: "git-branch-outline", webPath: "/dashboard/branches" },
-  { title: "Coupons & offers", subtitle: "Manage on web", icon: "pricetag-outline", webPath: "/dashboard/plans/coupons" },
-  { title: "Reports", subtitle: "Manage on web", icon: "document-text-outline", webPath: "/dashboard/reports" },
-  { title: "Staff", subtitle: "Manage on web", icon: "people-circle-outline", webPath: "/dashboard/staff" },
-  { title: "Notification templates", subtitle: "Manage on web", icon: "mail-outline", webPath: "/dashboard/notifications/templates" },
+  { title: "Branches", subtitle: "Locations and operating details", icon: "git-branch-outline", webPath: "/dashboard/branches" },
+  { title: "Coupons & offers", subtitle: "Discounts and public plan campaigns", icon: "pricetag-outline", webPath: "/dashboard/plans/coupons" },
+  { title: "Reports", subtitle: "Revenue, attendance, and member movement", icon: "document-text-outline", webPath: "/dashboard/reports" },
+  { title: "Staff", subtitle: "Invite admins, reception, and trainers", icon: "people-circle-outline", webPath: "/dashboard/staff" },
+  { title: "Attendance QR Console", subtitle: "Display and rotate entry QR codes", icon: "qr-code-outline", webPath: "/dashboard/attendance/qr-display" },
+  { title: "Notification templates", subtitle: "Reusable message drafts", icon: "mail-outline", webPath: "/dashboard/notifications/templates" },
 ];
 
 export default function OwnerMoreScreen() {
@@ -66,7 +67,7 @@ export default function OwnerMoreScreen() {
             ))}
           </Card>
 
-          <SectionHeader title="Manage on web" />
+          <SectionHeader title="Web control room" subtitle="Best for configuration, reporting, staff, QR console, audits, and provider diagnostics." />
           <Card variant="compact" contentStyle={styles.list}>
             {webRows.map((row) => (
               <WebHandoffRow key={row.title} title={row.title} path={row.webPath ?? "/dashboard"} />
