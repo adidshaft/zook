@@ -53,8 +53,18 @@ export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md" | "lg";
 type CardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
+export type SemanticSurface =
+  | "screen"
+  | "card"
+  | "taskCard"
+  | "dangerCard"
+  | "warningCard"
+  | "successCard"
+  | "moneyFlowCard"
+  | "handoffCard";
 type CardGlowTone = "lime" | "amber" | "red" | "success";
 type CardSurface = "content" | "interactive" | "floating";
+export type TaskResultTone = "success" | "pending" | "failure" | "blocked";
 type BrandMarkSize = "sm" | "md" | "lg";
 type IconName = keyof typeof Ionicons.glyphMap;
 type ThemeMode = "light" | "dark";
@@ -266,6 +276,30 @@ function glassSurfaceColors(
     blurIntensity,
     blurTint,
   };
+}
+
+function variantForSemanticSurface(surface?: SemanticSurface): CardVariant | undefined {
+  if (surface === "successCard") return "success";
+  if (surface === "warningCard" || surface === "moneyFlowCard" || surface === "handoffCard") {
+    return "warning";
+  }
+  if (surface === "dangerCard") return "danger";
+  if (surface === "taskCard") return "selected";
+  return undefined;
+}
+
+function toneForTaskResult(tone: TaskResultTone): PillTone {
+  if (tone === "success") return "lime";
+  if (tone === "pending") return "amber";
+  if (tone === "failure" || tone === "blocked") return "red";
+  return "neutral";
+}
+
+function iconForTaskResult(tone: TaskResultTone): IconName {
+  if (tone === "success") return "checkmark-circle-outline";
+  if (tone === "pending") return "time-outline";
+  if (tone === "blocked") return "lock-closed-outline";
+  return "alert-circle-outline";
 }
 
 export type HapticWeight = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error" | "none";
@@ -499,8 +533,12 @@ export function Card({
   radius,
   pressable = false,
   surface,
+  semanticSurface,
   disabled = false,
   onPress,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityValue,
   testID,
 }: {
   children: ReactNode;
@@ -509,19 +547,29 @@ export function Card({
   glow?: boolean;
   glowTone?: CardGlowTone;
   variant?: CardVariant;
+  semanticSurface?: SemanticSurface;
   padding?: number;
   radius?: number;
   pressable?: boolean;
   surface?: CardSurface;
   disabled?: boolean;
   onPress?: PressHandler;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityValue?: {
+    min?: number;
+    max?: number;
+    now?: number;
+    text?: string;
+  };
   testID?: string;
 }) {
   const { mode, palette } = useTheme();
+  const resolvedVariant = variantForSemanticSurface(semanticSurface) ?? variant;
   const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
-  const resolvedRadius = radius ?? (variant === "compact" ? radii.smallCard : radii.mainCard);
+  const resolvedRadius = radius ?? (resolvedVariant === "compact" ? radii.smallCard : radii.mainCard);
   const resolvedSurface = surface ?? (pressable || onPress ? "interactive" : "content");
-  const surfaceColors = glassSurfaceColors(mode, palette, variant, resolvedSurface);
+  const surfaceColors = glassSurfaceColors(mode, palette, resolvedVariant, resolvedSurface);
   const cardMaterial = materials.cardSurface(mode);
   const shouldElevate =
     mode === "light" ||
@@ -556,7 +604,7 @@ export function Card({
   ];
   const inner = (
     <View style={innerStyle}>
-      {variant === "default" || variant === "compact" ? (
+      {resolvedVariant === "default" || resolvedVariant === "compact" ? (
         <View
           pointerEvents="none"
           style={[
@@ -597,6 +645,9 @@ export function Card({
         onPress={() => pressWithHaptics(onPress)}
         android_ripple={{ color: palette.surface.accentSoft, borderless: false }}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityValue={accessibilityValue}
         accessibilityState={{ disabled }}
         style={({ pressed }) => [outerStyle, pressed && !disabled ? styles.pressed : null]}
       >
@@ -909,6 +960,50 @@ export function QueueCard(props: Parameters<typeof Card>[0]) {
   return <Card pressable {...props} />;
 }
 
+export function OperationalQueueCard({
+  title,
+  subtitle,
+  meta,
+  status,
+  tone = "amber",
+  icon = "list-outline",
+  actionLabel,
+  onPress,
+  accessibilityLabel,
+}: {
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  status?: string;
+  tone?: PillTone;
+  icon?: IconName;
+  actionLabel?: string;
+  onPress?: PressHandler;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <QueueCard
+      semanticSurface={tone === "red" ? "dangerCard" : tone === "lime" ? "successCard" : "taskCard"}
+      onPress={onPress}
+      accessibilityLabel={
+        accessibilityLabel ??
+        [actionLabel ?? "Open queue item", title, status, meta].filter(Boolean).join(", ")
+      }
+      accessibilityHint={actionLabel ? `${actionLabel}.` : undefined}
+    >
+      <View style={styles.operationalQueueRow}>
+        <IconBubble icon={icon} tone={tone} size={42} />
+        <View style={styles.operationalQueueCopy}>
+          <Text style={styles.operationalQueueTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.operationalQueueSubtitle}>{subtitle}</Text> : null}
+          {meta ? <Text style={styles.operationalQueueMeta}>{meta}</Text> : null}
+        </View>
+        {status ? <StatusChip status={status} tone={tone} accessibilityLabel={`${status} status`} /> : null}
+      </View>
+    </QueueCard>
+  );
+}
+
 export function AlertCard({
   title,
   message,
@@ -932,6 +1027,115 @@ export function AlertCard({
         </View>
         {action}
       </View>
+    </Card>
+  );
+}
+
+export function TaskResultCard({
+  title,
+  message,
+  tone,
+  detailRows,
+  primaryAction,
+  secondaryAction,
+  icon,
+}: {
+  title: string;
+  message?: string;
+  tone: TaskResultTone;
+  detailRows?: Array<{ label: string; value: string }>;
+  primaryAction?: ReactNode;
+  secondaryAction?: ReactNode;
+  icon?: IconName;
+}) {
+  const statusTone = toneForTaskResult(tone);
+  const semanticSurface: SemanticSurface =
+    tone === "success"
+      ? "successCard"
+      : tone === "pending"
+        ? "warningCard"
+        : "dangerCard";
+  return (
+    <Card semanticSurface={semanticSurface} accessibilityLabel={[title, message].filter(Boolean).join(". ")}>
+      <View style={styles.taskResultHeader}>
+        <IconBubble icon={icon ?? iconForTaskResult(tone)} tone={statusTone} size={48} />
+        <View style={styles.taskResultCopy}>
+          <Text style={styles.taskResultTitle}>{title}</Text>
+          {message ? <Text style={styles.taskResultMessage}>{message}</Text> : null}
+        </View>
+      </View>
+      {detailRows?.length ? (
+        <View style={styles.taskResultDetails}>
+          {detailRows.map((row) => (
+            <DetailRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </View>
+      ) : null}
+      {primaryAction || secondaryAction ? (
+        <View style={styles.taskResultActions}>
+          {secondaryAction}
+          {primaryAction}
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+export function MoneySummaryCard({
+  title,
+  amount,
+  rows,
+  consequence,
+  action,
+}: {
+  title: string;
+  amount: string;
+  rows: Array<{ label: string; value: string }>;
+  consequence?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <Card semanticSurface="moneyFlowCard" accessibilityLabel={`${title}. Total ${amount}`}>
+      <View style={styles.moneySummaryHeader}>
+        <View>
+          <Text style={styles.moneySummaryTitle}>{title}</Text>
+          <Text style={styles.moneySummaryAmount}>{amount}</Text>
+        </View>
+        <IconBubble icon="receipt-outline" tone="amber" size={44} />
+      </View>
+      <View style={styles.moneySummaryRows}>
+        {rows.map((row) => (
+          <DetailRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </View>
+      {consequence ? <AuditWarning>{consequence}</AuditWarning> : null}
+      {action}
+    </Card>
+  );
+}
+
+export function WebHandoffCard({
+  title,
+  description,
+  destination,
+  action,
+}: {
+  title: string;
+  description: string;
+  destination: string;
+  action?: ReactNode;
+}) {
+  return (
+    <Card semanticSurface="handoffCard" accessibilityLabel={`${title}. Opens ${destination} on web.`}>
+      <View style={styles.webHandoffRow}>
+        <IconBubble icon="desktop-outline" tone="blue" size={44} />
+        <View style={styles.webHandoffCopy}>
+          <Text style={styles.webHandoffTitle}>{title}</Text>
+          <Text style={styles.webHandoffDescription}>{description}</Text>
+          <StatusChip tone="blue" status={destination} accessibilityLabel={`Web destination ${destination}`} />
+        </View>
+      </View>
+      {action}
     </Card>
   );
 }
@@ -2153,28 +2357,34 @@ export function SwipeActionRow({
 export function StickyActionBar({
   bottomOffset,
   children,
+  elevated = true,
+  style,
 }: {
   bottomOffset?: number;
   children: ReactNode;
+  elevated?: boolean;
+  style?: StyleProp<ViewStyle>;
 }) {
   const insets = useSafeAreaInsets();
   const computedBottomOffset = useStickyActionOffset();
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
 
   return (
     <View
-      style={StyleSheet.flatten([
+      style={[
         styles.stickyActionBar,
         {
-          backgroundColor: palette.bg.app,
+          backgroundColor: mode === "dark" ? "rgba(7,8,7,0.92)" : "rgba(255,255,255,0.94)",
           borderTopWidth: 1,
           borderTopColor: palette.border.subtle,
           paddingTop: 14,
           bottom: bottomNavVisible ? (bottomOffset ?? computedBottomOffset) : 0,
           paddingBottom: Math.max(insets.bottom, 14),
         },
-      ])}
+        elevated ? platformSurfaceShadow(mode, true, palette.bg.sunken) : null,
+        style,
+      ]}
     >
       {children}
     </View>
@@ -3172,6 +3382,92 @@ const styles = StyleSheet.create({
   },
   chipText: {
     ...typography.caption,
+  },
+  operationalQueueRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  operationalQueueCopy: {
+    flex: 1,
+    gap: 3,
+    minWidth: 0,
+  },
+  operationalQueueTitle: {
+    color: fallbackColors.text,
+    ...typography.bodyStrong,
+  },
+  operationalQueueSubtitle: {
+    color: fallbackColors.muted,
+    ...typography.small,
+  },
+  operationalQueueMeta: {
+    color: fallbackColors.subtle,
+    ...typography.caption,
+  },
+  taskResultHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  taskResultCopy: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  taskResultTitle: {
+    color: fallbackColors.text,
+    ...typography.headerTitle,
+    letterSpacing: 0,
+  },
+  taskResultMessage: {
+    color: fallbackColors.muted,
+    ...typography.body,
+  },
+  taskResultDetails: {
+    gap: 0,
+  },
+  taskResultActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "flex-end",
+  },
+  moneySummaryHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  moneySummaryTitle: {
+    color: fallbackColors.muted,
+    ...typography.caption,
+  },
+  moneySummaryAmount: {
+    color: fallbackColors.text,
+    ...typography.metric,
+  },
+  moneySummaryRows: {
+    gap: 0,
+  },
+  webHandoffRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  webHandoffCopy: {
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  webHandoffTitle: {
+    color: fallbackColors.text,
+    ...typography.bodyStrong,
+  },
+  webHandoffDescription: {
+    color: fallbackColors.muted,
+    ...typography.small,
   },
   capitalize: {
     textTransform: "capitalize",

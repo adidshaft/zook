@@ -193,6 +193,10 @@ export function RoleTabBar({
           const isFocused = focusedRouteName === route.name;
           const color = isFocused ? palette.accent.base : palette.text.tertiary;
           const badge = badges?.[route.name];
+          const stringLabel = typeof label === "string" ? label : route.name;
+          const tabAccessibilityLabel = badge && badge > 0
+            ? `${stringLabel}, ${badge} unread ${badge === 1 ? "item" : "items"}`
+            : stringLabel;
 
           const onPress = () => {
             void Haptics.impactAsync(
@@ -230,7 +234,10 @@ export function RoleTabBar({
                 <AnimatedPressable
                   accessibilityRole="button"
                   accessibilityState={isFocused ? { selected: true } : {}}
-                  accessibilityLabel={typeof label === "string" ? label : route.name}
+                  accessibilityLabel={
+                    centerAction?.routeName === route.name ? `${stringLabel}. Scan or check in` : tabAccessibilityLabel
+                  }
+                  accessibilityHint="Opens the primary scan action."
                   onPress={() => {
                     onPress();
                   }}
@@ -271,7 +278,7 @@ export function RoleTabBar({
                     size: 26,
                   }) ?? <Ionicons name="qr-code" size={26} color={palette.text.onAccent} />}
                 </AnimatedPressable>
-                <Text numberOfLines={1} style={[styles.centerActionLabel, { color }]}>{label as string}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.centerActionLabel, { color }]}>{stringLabel}</Text>
               </View>
             );
           }
@@ -281,7 +288,7 @@ export function RoleTabBar({
               key={route.key}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={typeof label === "string" ? label : route.name}
+              accessibilityLabel={tabAccessibilityLabel}
               onPress={onPress}
               onLongPress={onLongPress}
               android_ripple={{ color: palette.surface.accentSoft, borderless: true }}
@@ -290,13 +297,17 @@ export function RoleTabBar({
               <View style={styles.tabItemWrapper}>
                 {badge && badge > 0 ? (
                   <View style={[styles.badge, { backgroundColor: palette.feedback.danger }]}>
-                    <Text style={[styles.badgeText, { color: palette.text.onDanger }]}>
+                    <Text
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                      style={[styles.badgeText, { color: palette.text.onDanger }]}
+                    >
                       {badge}
                     </Text>
                   </View>
                 ) : null}
                 {icon}
-                <Text numberOfLines={1} style={[styles.tabLabel, { color }]}>{label as string}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.tabLabel, { color }]}>{stringLabel}</Text>
               </View>
             </Pressable>
           );
@@ -391,7 +402,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...typography.navLabel,
-    letterSpacing: -0.2,
+    letterSpacing: 0,
     marginTop: 2,
     maxWidth: "100%",
     textAlign: "center",
@@ -434,7 +445,7 @@ const styles = StyleSheet.create({
   },
   centerActionLabel: {
     ...typography.navLabel,
-    letterSpacing: -0.2,
+    letterSpacing: 0,
     marginTop: 2,
     maxWidth: "100%",
     textAlign: "center",
