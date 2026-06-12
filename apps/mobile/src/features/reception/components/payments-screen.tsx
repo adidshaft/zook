@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { AuditWarning, Card, FormField, IconBubble, ListRow, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
+import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
 import { formatInr } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { paymentModes } from "../constants";
@@ -71,6 +71,20 @@ export function ReceptionPaymentsScreenBody() {
                 error={amountInvalid ? "Enter an amount greater than 0." : undefined}
               />
             </Card>
+            <MoneySummaryCard
+              title="Desk payment review"
+              amount={formatInr(Number.parseFloat(amount || "0") * 100 || dueAmount)}
+              rows={[
+                { label: "Member", value: member?.name ?? "Select a member" },
+                { label: "Due", value: formatInr(dueAmount) },
+                {
+                  label: "Mode",
+                  value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
+                },
+                { label: "Desk", value: memberRecord ? "Active desk" : "Select member first" },
+              ]}
+              consequence="Only record this after cash, UPI, card, or bank transfer is actually received at the desk."
+            />
             {!memberRecord ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader

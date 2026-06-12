@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 
 import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { formatDateTime } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
@@ -34,6 +34,19 @@ export function ReceptionDeskScreenBody() {
 
   return (
     <>
+            <OperationalQueueCard
+              title={pendingCount || flaggedCount ? "Desk queue needs action" : "Desk queue clear"}
+              subtitle={
+                pendingCount || flaggedCount
+                  ? "Review pending and flagged entry attempts before they age out."
+                  : "No pending or flagged scans need the desk right now."
+              }
+              meta={`${pendingCount} pending · ${flaggedCount} flagged`}
+              status={pendingCount || flaggedCount ? "Review required" : "Active"}
+              tone={flaggedCount ? "red" : pendingCount ? "amber" : "lime"}
+              icon={flaggedCount ? "alert-circle-outline" : "shield-checkmark-outline"}
+              actionLabel="Open approval queue"
+            />
             <MetricGrid
               columns={3}
               items={[

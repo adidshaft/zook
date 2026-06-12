@@ -982,7 +982,8 @@ export function OperationalQueueCard({
   accessibilityLabel?: string;
 }) {
   return (
-    <QueueCard
+    <Card
+      pressable={Boolean(onPress)}
       semanticSurface={tone === "red" ? "dangerCard" : tone === "lime" ? "successCard" : "taskCard"}
       onPress={onPress}
       accessibilityLabel={
@@ -1000,7 +1001,7 @@ export function OperationalQueueCard({
         </View>
         {status ? <StatusChip status={status} tone={tone} accessibilityLabel={`${status} status`} /> : null}
       </View>
-    </QueueCard>
+    </Card>
   );
 }
 
