@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, Card, IconBubble, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, EmptyState, Card, IconBubble, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
@@ -54,39 +54,47 @@ export default function ProgressScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
-          <View style={styles.actions}>
-            <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
-              Log workout
-            </ZookButton>
-            <ZookButton variant="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
-              History
-            </ZookButton>
-          </View>
+          <AnimatedAppear delay={0}>
+            <View style={styles.actions}>
+              <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
+                Log workout
+              </ZookButton>
+              <ZookButton variant="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
+                History
+              </ZookButton>
+            </View>
+          </AnimatedAppear>
           {summaryQuery.isError || workoutsQuery.isError ? (
             <QueryErrorState error={summaryQuery.error ?? workoutsQuery.error} onRetry={() => void onRefresh()} />
           ) : null}
-          <SectionHeader title="This week" />
-          <View style={styles.metrics}>
-            {metrics.map((metric) => (
-              <TrackingSummaryTile key={metric.id} metric={metric} />
-            ))}
-          </View>
-          <SectionHeader title="Recent workouts" />
-          <View style={styles.stack}>
-            {workouts.slice(0, 3).map((workout, index) => (
-              <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
-            ))}
-            {!workouts.length && !workoutsQuery.isLoading ? (
-              <Card variant="compact" contentStyle={styles.emptyCard}>
-                <IconBubble icon="barbell-outline" tone="lime" />
-                <EmptyState title="No workouts logged" body="Log your first session after training." />
-              </Card>
-            ) : null}
-          </View>
-          <Card variant="compact" contentStyle={styles.note}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={palette.accent.base} />
-            <Text style={[styles.noteText, { color: palette.text.secondary }]}>Private entries stay with you unless you choose trainer visibility.</Text>
-          </Card>
+          <AnimatedAppear delay={40}>
+            <SectionHeader title="This week" />
+            <View style={styles.metrics}>
+              {metrics.map((metric) => (
+                <TrackingSummaryTile key={metric.id} metric={metric} />
+              ))}
+            </View>
+          </AnimatedAppear>
+          <AnimatedAppear delay={80}>
+            <SectionHeader title="Recent workouts" />
+            <View style={styles.stack}>
+              {workouts.slice(0, 3).map((workout, index) => (
+                <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
+              ))}
+              {!workouts.length && !workoutsQuery.isLoading ? (
+                <Card variant="compact" contentStyle={styles.emptyCard}>
+                  <IconBubble icon="barbell-outline" tone="lime" />
+                  <EmptyState title="No workouts logged" body="Log your first session after training." />
+                </Card>
+              ) : null}
+            </View>
+          </AnimatedAppear>
+          <AnimatedAppear delay={120}>
+            <Card variant="compact" contentStyle={styles.note}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={palette.accent.base} />
+              <Text style={[styles.noteText, { color: palette.text.secondary }]}>Private entries stay with you unless you choose trainer visibility.</Text>
+            </Card>
+          </AnimatedAppear>
         </ScrollView>
       </ZookScreen>
     </>

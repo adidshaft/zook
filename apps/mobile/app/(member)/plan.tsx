@@ -6,6 +6,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native
 
 import {
   EmptyState,
+  AnimatedAppear,
   Card,
   IconBubble,
   ListRow,
@@ -90,45 +91,52 @@ export default function MemberPlanScreen() {
           }
         >
           <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
-          <SegmentedControl
-            options={[
-              { label: "Workout", value: "workout" },
-              { label: "Diet", value: "diet" },
-            ]}
-            value={activeTab}
-            onChange={setActiveTab}
-          />
+          <AnimatedAppear delay={0}>
+            <SegmentedControl
+              options={[
+                { label: "Workout", value: "workout" },
+                { label: "Diet", value: "diet" },
+              ]}
+              value={activeTab}
+              onChange={setActiveTab}
+            />
+          </AnimatedAppear>
 
           {activeTab === "diet" ? (
-            <DietPanel />
+            <AnimatedAppear delay={40}>
+              <DietPanel />
+            </AnimatedAppear>
           ) : (
             <>
               {plansQuery.isLoading ? <PlansSkeleton /> : null}
               {plansQuery.isError ? <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} /> : null}
 
-              <SectionHeader title="Today's workout" />
-              {todayPlan ? (
-                <Card variant="selected" glow contentStyle={styles.todayCard}>
-                  <View style={styles.todayTop}>
-                    <IconBubble icon="barbell-outline" tone="lime" size={46} />
-                    <View style={styles.todayCopy}>
-                      <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
-                      <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
+              <AnimatedAppear delay={40}>
+                <SectionHeader title="Today's workout" />
+                {todayPlan ? (
+                  <Card variant="selected" glow contentStyle={styles.todayCard}>
+                    <View style={styles.todayTop}>
+                      <IconBubble icon="barbell-outline" tone="lime" size={46} />
+                      <View style={styles.todayCopy}>
+                        <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
+                        <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
+                      </View>
                     </View>
-                  </View>
-                  <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
-                  <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
-                    Start today
-                  </ZookButton>
-                </Card>
-              ) : !plansQuery.isLoading ? (
-                <Card variant="compact">
-                  <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign your first plan here." />
-                </Card>
-              ) : null}
+                    <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
+                    <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
+                      Start today
+                    </ZookButton>
+                  </Card>
+                ) : !plansQuery.isLoading ? (
+                  <Card variant="compact">
+                    <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign your first plan here." />
+                  </Card>
+                ) : null}
+              </AnimatedAppear>
 
-              <SectionHeader title="This week's schedule" />
-              <View style={styles.stack}>
+              <AnimatedAppear delay={80}>
+                <SectionHeader title="This week's schedule" />
+                <View style={styles.stack}>
                 {workoutPlans.slice(0, 4).map((assignment, index) => (
                   <PressableCard
                     key={assignment.id}
@@ -149,10 +157,12 @@ export default function MemberPlanScreen() {
                     <EmptyState title="Schedule empty" body="Assigned workout days will appear here." />
                   </Card>
                 ) : null}
-              </View>
+                </View>
+              </AnimatedAppear>
 
-              <SectionHeader title="Recent sessions" />
-              <View style={styles.stack}>
+              <AnimatedAppear delay={120}>
+                <SectionHeader title="Recent sessions" />
+                <View style={styles.stack}>
                 {recentWorkouts.slice(0, 3).map((workout, index) => (
                   <Card key={workout.id ?? `${workout.title}-${index}`} variant="compact">
                     <ListRow
@@ -167,10 +177,12 @@ export default function MemberPlanScreen() {
                     <EmptyState title="No sessions yet" body="Completed workouts and tracking history will appear here." />
                   </Card>
                 ) : null}
-              </View>
+                </View>
+              </AnimatedAppear>
 
-              <SectionHeader title="Browse all plans" />
-              <View style={styles.planGrid}>
+              <AnimatedAppear delay={160}>
+                <SectionHeader title="Browse all plans" />
+                <View style={styles.planGrid}>
                 {plans.map((assignment) => (
                   <PressableCard
                     key={assignment.id}
@@ -184,7 +196,8 @@ export default function MemberPlanScreen() {
                     <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
                   </PressableCard>
                 ))}
-              </View>
+                </View>
+              </AnimatedAppear>
             </>
           )}
         </ScrollView>

@@ -12,6 +12,7 @@ import {
 
 import {
   Card,
+  AnimatedAppear,
   HeaderMeta,
   IconBubble,
   ProfileShortcut,
@@ -157,29 +158,35 @@ export default function HomeScreen() {
           {!homeQuery.isLoading && !homeQuery.isError ? (
             <>
               {activeCheckIn ? (
-                <ActiveCheckInCard
-                  activeCheckIn={activeCheckIn}
-                  busy={checkoutBusy}
-                  onStop={() => void stopActiveCheckIn("manual")}
-                />
+                <AnimatedAppear delay={0}>
+                  <ActiveCheckInCard
+                    activeCheckIn={activeCheckIn}
+                    busy={checkoutBusy}
+                    onStop={() => void stopActiveCheckIn("manual")}
+                  />
+                </AnimatedAppear>
               ) : null}
-              {renderHomeCard(state)}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open progress"
-                onPress={() => router.push("/progress" as never)}
-                style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
-              >
-                <StatStrip
-                  items={[
-                    { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
-                    { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
-                    { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
-                    { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
-                  ]}
-                />
-              </Pressable>
-              <Banners home={home} />
+              <AnimatedAppear delay={activeCheckIn ? 40 : 0}>{renderHomeCard(state)}</AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open progress"
+                  onPress={() => router.push("/progress" as never)}
+                  style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
+                >
+                  <StatStrip
+                    items={[
+                      { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
+                      { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
+                      { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
+                      { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
+                    ]}
+                  />
+                </Pressable>
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
+                <Banners home={home} />
+              </AnimatedAppear>
             </>
           ) : null}
         </ScrollView>

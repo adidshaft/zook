@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
@@ -213,42 +213,52 @@ export default function OwnerCommandScreen() {
               {dashboard ? (
             <>
               {showSetupChecklist ? (
-                <SetupChecklist title="Finish gym setup" steps={setupSteps} />
+                <AnimatedAppear delay={0}>
+                  <SetupChecklist title="Finish gym setup" steps={setupSteps} />
+                </AnimatedAppear>
               ) : null}
               {!billingReady ? (
-                <Card variant="warning" contentStyle={styles.billingCard}>
-                  <View style={styles.billingHeader}>
-                    <View style={styles.billingCopy}>
-                      <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
-                      <Text style={[styles.billingBody, { color: palette.text.secondary }]}>
-                        Trial access is on, but owner/admin writes need a SaaS mandate before the
-                        gym can operate normally.
-                      </Text>
+                <AnimatedAppear delay={showSetupChecklist ? 40 : 0}>
+                  <Card variant="warning" contentStyle={styles.billingCard}>
+                    <View style={styles.billingHeader}>
+                      <View style={styles.billingCopy}>
+                        <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
+                        <Text style={[styles.billingBody, { color: palette.text.secondary }]}>
+                          Trial access is on, but owner/admin writes need a SaaS mandate before the
+                          gym can operate normally.
+                        </Text>
+                      </View>
+                      <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
                     </View>
-                    <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
-                  </View>
-                  <ZookButton
-                    size="sm"
-                    icon="card-outline"
-                    onPress={() => router.push("/owner/billing" as never)}
-                  >
-                    Open billing
-                  </ZookButton>
-                </Card>
+                    <ZookButton
+                      size="sm"
+                      icon="card-outline"
+                      onPress={() => router.push("/owner/billing" as never)}
+                    >
+                      Open billing
+                    </ZookButton>
+                  </Card>
+                </AnimatedAppear>
               ) : null}
-              <MetricGrid testID="owner-view-command" items={metrics} />
-              {items.length ? (
-                <AttentionCard items={items} />
-              ) : (
-                <Card variant="compact">
-                  <EmptyState
-                    icon="checkmark-done-outline"
-                    title="All clear"
-                    body="Nothing needs your attention right now"
-                  />
-                </Card>
-              )}
-              <OwnerDashboardCharts charts={dashboard.charts} />
+              <AnimatedAppear delay={80}>
+                <MetricGrid testID="owner-view-command" items={metrics} />
+              </AnimatedAppear>
+              <AnimatedAppear delay={120}>
+                {items.length ? (
+                  <AttentionCard items={items} />
+                ) : (
+                  <Card variant="compact">
+                    <EmptyState
+                      icon="checkmark-done-outline"
+                      title="All clear"
+                      body="Nothing needs your attention right now"
+                    />
+                  </Card>
+                )}
+              </AnimatedAppear>
+              <AnimatedAppear delay={160}>
+                <OwnerDashboardCharts charts={dashboard.charts} />
+              </AnimatedAppear>
             </>
           ) : null}
         </KeyboardAwareScreen>

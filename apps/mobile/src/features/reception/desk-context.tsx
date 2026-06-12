@@ -28,6 +28,7 @@ import { MemberList } from "@/components/domain/member-list";
 import {
   FormField,
   Card,
+  AnimatedAppear,
   IconBubble,
   PrimaryButton,
   ScreenHeader,
@@ -904,7 +905,9 @@ export function ReceptionWorkspace({
             ) : null}
           </Card>
         ) : null}
+        <AnimatedAppear delay={0}>
           {children}
+        </AnimatedAppear>
         </KeyboardAwareScreen>
         <VerificationResultModal />
         <ApprovalDecisionSheet />
@@ -1075,11 +1078,11 @@ function VerificationResultModal() {
         .filter(Boolean)
         .join(" "),
     );
-    const timer = setTimeout(dismissVerificationResult, 4000);
+    const timer = setTimeout(dismissVerificationResult, success ? 1400 : 4000);
     return () => clearTimeout(timer);
   }, [dismissVerificationResult, pulse, shake, success, verificationResult]);
   const photo = verificationResult?.photoUrl;
-  const backdropColor = success ? palette.feedback.success : palette.feedback.danger;
+  const backdropColor = success ? "rgba(17,21,15,0.94)" : `${palette.feedback.danger}E6`;
   return (
     <Modal
       animationType="fade"
@@ -1090,7 +1093,7 @@ function VerificationResultModal() {
       <View
         style={[
           styles.verificationModalBackdrop,
-          { backgroundColor: `${backdropColor}E6` },
+          { backgroundColor: backdropColor },
         ]}
       >
         <Reanimated.View style={[styles.verificationModalContent, success ? pulseStyle : shakeStyle]}>

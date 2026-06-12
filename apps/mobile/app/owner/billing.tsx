@@ -129,8 +129,8 @@ export default function OwnerBillingScreen() {
               <RefreshControl
                 refreshing={billingQuery.isRefetching}
                 onRefresh={() => void billingQuery.refetch()}
-                tintColor={palette.accent.fill}
-                colors={[palette.accent.fill]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
