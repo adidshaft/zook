@@ -11,6 +11,7 @@ import {
   Card,
   IconBubble,
   ListRow,
+  OperationalQueueCard,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
@@ -144,24 +145,22 @@ export default function TrainerHomeScreen() {
               title="Needs plan"
               subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
             />
-            <Card variant="compact" contentStyle={styles.stack}>
-              {clientsNeedingPlans ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push("/trainer/clients" as never)}
-                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
-                >
-                  <ListRow
-                    title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching`}
-                    subtitle="Create plan next."
-                    leading={<IconBubble icon="reader-outline" tone="amber" />}
-                    trailing={<StatusChip status="Create plan next" tone="amber" />}
-                  />
-                </Pressable>
-              ) : (
+            {clientsNeedingPlans ? (
+              <OperationalQueueCard
+                title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
+                subtitle="Create the next workout or diet assignment before their next visit."
+                meta="Trainer planning queue"
+                status="Create plan next"
+                tone="amber"
+                icon="reader-outline"
+                actionLabel="Open clients"
+                onPress={() => router.push("/trainer/clients" as never)}
+              />
+            ) : (
+              <Card variant="compact" contentStyle={styles.stack}>
                 <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
-              )}
-            </Card>
+              </Card>
+            )}
           </AnimatedAppear>
 
           <AnimatedAppear delay={80}>

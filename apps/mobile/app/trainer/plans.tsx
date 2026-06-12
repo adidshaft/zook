@@ -5,6 +5,8 @@ import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   EmptyState,
   AppHeader,
+  Card,
+  IconBubble,
   QueryErrorState,
   SectionHeader,
   StatusChip,
@@ -62,6 +64,20 @@ export default function TrainerPlansScreen() {
             title="Active plan work"
             subtitle={`${plannedClients.length} ${plannedClients.length === 1 ? "client" : "clients"}`}
           />
+          <Card variant="compact" contentStyle={styles.summaryCard}>
+            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "lime"} size={42} />
+            <View style={styles.summaryCopy}>
+              <SectionHeader
+                title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
+                subtitle={
+                  plannedClients.length
+                    ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
+                    : "New plan work will appear here when clients need assignments."
+                }
+              />
+            </View>
+            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "lime"} />
+          </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
               <TrainerClientsSkeleton />
@@ -88,5 +104,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     width: "100%",
   },
+  summaryCard: { alignItems: "center", flexDirection: "row", gap: 12 },
+  summaryCopy: { flex: 1, minWidth: 0 },
   stack: { gap: 10 },
 });
