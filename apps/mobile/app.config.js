@@ -100,6 +100,17 @@ const baseConfig = {
     "expo-apple-authentication",
     ...googleSignInPlugins,
     [
+      "expo-build-properties",
+      {
+        ios: {
+          extraPods: [
+            { name: "GoogleUtilities", modular_headers: true },
+            { name: "RecaptchaInterop", modular_headers: true },
+          ],
+        },
+      },
+    ],
+    [
       "expo-camera",
       {
         cameraPermission:
