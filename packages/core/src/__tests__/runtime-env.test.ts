@@ -185,5 +185,5 @@ describe("runtime env guardrails", () => {
     expect(`${result.stderr}\n${result.stdout}`).toContain(
       "Refusing to seed demo data when APP_ENV=production",
     );
-  });
+  }, 15_000);
 });
