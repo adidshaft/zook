@@ -27,6 +27,7 @@ import {
   Card,
   ListRow,
   AppHeader,
+  MoneySummaryCard,
   ProductCard,
   SearchBar,
   SectionHeader,
@@ -662,6 +663,16 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
+        <MoneySummaryCard
+          title="Pickup checkout"
+          amount={formatInr(order.totalPaise)}
+          rows={[
+            { label: "Items", value: `${order.items.length} item${order.items.length === 1 ? "" : "s"}` },
+            { label: "Pickup", value: "Ready at gym desk after payment" },
+            { label: "Branch", value: activeOrganization?.name ?? "Selected gym" },
+          ]}
+          consequence="After payment, Zook creates a pickup code for desk verification. Do not collect without the code."
+        />
         <Card contentStyle={styles.checkoutContent}>
           <ListRow
             title={t("shop.paySecurely")}
