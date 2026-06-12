@@ -1,8 +1,31 @@
 # Zook Production Readiness Handoff
 
-Last updated: 2026-05-17
+Last updated: 2026-06-13
 Branch: `main`
-Latest committed baseline before this pass: `14c4aad`
+Latest committed baseline before this pass: `7b95a47`
+
+## 2026-06-13 Launch Deployment Evidence
+
+Current launch state from the production deployment and store tooling:
+
+- `main` is clean and synced to `origin/main` at `7b95a47` (`build: bump ios store build number`).
+- The launch repair branch work has been merged into `main`; the defensive mobile provider guard and member unread-update pluralization fix are committed.
+- Production web is live on `https://zookfit.in`, `https://dashboard.zookfit.in`, `https://app.zookfit.in`, and `https://www.zookfit.in`, all resolving to `13.204.196.160`.
+- `https://zookfit.in/api/ready` reports `ready: true`, `envProfile: production`, database reachable, schema ready, migrations applied, and live configured providers for Resend email, Razorpay payments, Google Maps, Expo push, MSG91 SMS, S3 storage, Redis rate limiting, and Redis server cache. AI and WhatsApp are intentionally disabled for this release.
+- `pnpm check:launch-gates` passes on `main`.
+- `pnpm mobile:release:check` passes against production config with warnings for missing physical-device push evidence, low-light QR evidence, and checkout/webhook evidence.
+- Exact local `pnpm release:preflight` still does not pass from `.env.production.local` because that file has an unresolvable/malformed `DATABASE_URL` host (`ENOTFOUND`). Do not claim this command passed until it is rerun with the actual deploy production env.
+- EAS iOS store build is finished: build `282c6ef6-8ef5-4772-82d7-529993a6a687`, `0.1.0 (5)`, production profile, store distribution, commit `7b95a47`, archive URL present.
+- EAS iOS submission is successful: submission `1bb5152b-01c2-4402-b7e7-4cce38f7ff8a`, build `0.1.0 (5)`, log step `Upload to App Store Connect` completed.
+- Direct App Store Connect/TestFlight UI verification is still Apple-login gated. Chrome redirects `https://appstoreconnect.apple.com/apps/6767848585/testflight/ios` to login with `authResult=FAILED`.
+- EAS Android store build is finished: build `3d9c0f8e-8fe9-4cdc-be06-e1468b5c7431`, `0.1.0` versionCode `4`, production profile, store distribution, archive URL present.
+- Google Play Console internal testing shows release `4 (0.1.0)` available to internal testers, released Jun 12 11:37 PM, not reviewed yet.
+
+Open before calling the launch fully accepted:
+
+- Complete the physical iOS and Android pass in `docs/real-device-qa-log.md`, including light/dark login, workout loop, scan/check-in plus geofence, owner setup checklist, desk verify, push, low-light QR, and one real payment/webhook.
+- Verify App Store Connect/TestFlight processing after Apple login/2FA.
+- Rerun `pnpm release:preflight` with the actual production env or an equivalent deployed-env runner, without exposing secrets.
 
 ## 2026-05-17 Production Rehearsal Update
 
