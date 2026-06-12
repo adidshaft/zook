@@ -4,7 +4,7 @@ import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
@@ -424,7 +424,9 @@ function LayoutContent() {
       <Stack
         screenOptions={{
           headerShown: true,
-          headerStyle: { backgroundColor: palette.bg.app },
+          headerTransparent: Platform.OS === "ios",
+          headerBlurEffect: Platform.OS === "ios" ? (mode === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterial") : undefined,
+          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.app },
           headerTintColor: palette.accent.base,
           headerBackButtonDisplayMode: "minimal",
           headerTitleStyle: typography.headerTitle,
@@ -475,15 +477,12 @@ function LayoutContent() {
 
 function RuntimeBannerHost({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
-  const { palette } = useTheme();
   return (
     <View
+      pointerEvents="box-none"
       style={[
         styles.runtimeBannerHost,
-        {
-          paddingTop: Math.max(insets.top, spacing.xs),
-          backgroundColor: palette.bg.app,
-        },
+        { top: Math.max(insets.top, spacing.xs) },
       ]}
     >
       {children}
@@ -620,6 +619,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   runtimeBannerHost: {
+    left: 0,
+    position: "absolute",
+    right: 0,
+    zIndex: 20,
     gap: 6,
     paddingHorizontal: 0,
   },

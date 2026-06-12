@@ -9,17 +9,19 @@ import {
   Card,
   IconBubble,
   ListRow,
-  MobileHeader,
   ProgressBar,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   SegmentedControl,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { PlansSkeleton } from "@/components/skeletons";
 import { DietPanel } from "@/features/member/plan/diet-panel";
 import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type WorkoutRecord = {
@@ -45,6 +47,7 @@ export default function MemberPlanScreen() {
   const workoutsQuery = useMyTrackingWorkouts();
   const [activeTab, setActiveTab] = useState<"workout" | "diet">("workout");
   const [refreshing, setRefreshing] = useState(false);
+  const scrollY = useSharedValue(0);
   const plans = plansQuery.data?.plans ?? [];
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
@@ -77,11 +80,15 @@ export default function MemberPlanScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <MobileHeader title="Plan" subtitle="Workouts, schedule, and history" showProfileShortcut={false} />
+          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
           <SegmentedControl
             options={[
               { label: "Workout", value: "workout" },

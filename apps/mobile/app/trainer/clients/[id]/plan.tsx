@@ -7,7 +7,7 @@ import {
   FormField,
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
@@ -214,7 +214,7 @@ export default function TrainerClientPlanScreen() {
     <>
       <ZookScreen testID="trainer-client-plan-screen">
         <ScrollView ref={scrollRef} contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader
+          <AppHeader
             title="Client Detail"
             subtitle={clientName}
             leading={

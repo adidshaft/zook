@@ -6,7 +6,7 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -22,7 +22,7 @@ import {
 import { AccessibilityInfo, Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Reanimated from "@/lib/reanimated-lite";
+import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
 import {
@@ -30,6 +30,7 @@ import {
   Card,
   IconBubble,
   PrimaryButton,
+  ScreenHeader,
   SecondaryButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -778,7 +779,7 @@ export function ReceptionWorkspace({
   initialMemberId = null,
   showMemberContext = false,
   subtitle,
-  title: _title,
+  title,
   testID = "reception-home-screen",
 }: {
   children: ReactNode;
@@ -790,6 +791,7 @@ export function ReceptionWorkspace({
 }) {
   const state = useReceptionWorkspaceState({ initialMemberId });
   const { mode, palette } = useTheme();
+  const scrollY = useSharedValue(0);
   const isDark = mode === "dark";
   const headerControlStyle = {
     borderColor: palette.border.default,
@@ -804,6 +806,10 @@ export function ReceptionWorkspace({
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            onScroll: (event) => {
+              scrollY.value = event.nativeEvent.contentOffset.y;
+            },
+            scrollEventThrottle: 16,
             refreshControl: (
               <RefreshControl
                 refreshing={state.refreshing}
@@ -814,32 +820,32 @@ export function ReceptionWorkspace({
             ),
           }}
         >
-        <View style={styles.deskHeader}>
-          <Pressable
-            testID="reception-back"
-            onPress={state.activeRole === "OWNER" || state.activeRole === "ADMIN"
-              ? () => state.router.replace("/owner")
-              : () => {
-                  if (state.router.canGoBack()) {
-                    state.router.back();
-                  } else {
-                    state.router.replace("/");
-                  }
-                }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={12}
-            style={[styles.backButton, headerControlStyle]}
-          >
-            <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.title, { color: palette.text.primary }]}>
-              {subtitle}
-            </Text>
-            {testID === "reception-home-screen" ? <RoleSwitcherChip /> : null}
-          </View>
-        </View>
+        <ScreenHeader
+          title={title}
+          subtitle={subtitle}
+          contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
+          scrollY={scrollY}
+          trailing={
+            <Pressable
+              testID="reception-back"
+              onPress={state.activeRole === "OWNER" || state.activeRole === "ADMIN"
+                ? () => state.router.replace("/owner")
+                : () => {
+                    if (state.router.canGoBack()) {
+                      state.router.back();
+                    } else {
+                      state.router.replace("/");
+                    }
+                  }}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              style={[styles.backButton, headerControlStyle]}
+            >
+              <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+            </Pressable>
+          }
+        />
 
         <Pressable
           testID="reception-gym-selector"

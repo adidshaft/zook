@@ -2,12 +2,14 @@ import { Stack, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Card, ListRow, MobileHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { Card, ListRow, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
 import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
@@ -26,6 +28,7 @@ export default function YouScreen() {
   const homeQuery = useMemberHome();
   const { palette, preference } = useTheme();
   const signOutConfirm = useConfirmSheet();
+  const scrollY = useSharedValue(0);
   
   const nextRole = ctx?.availableRoles.find((role) => role !== ctx?.role);
   const gymHref = ctx?.org?.username ? `/gyms/${ctx.org.username}` : "/gyms";
@@ -51,12 +54,12 @@ export default function YouScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
-          <MobileHeader
-            title="You"
-            subtitle="Profile, membership, settings, and tools"
-            showProfileShortcut={false}
-          />
+          <ScreenHeader title="You" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
 
           <IdentityCard
             user={ctx?.user}

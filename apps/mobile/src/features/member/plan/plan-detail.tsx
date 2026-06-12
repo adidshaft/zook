@@ -15,7 +15,7 @@ import {
   ExerciseRow,
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   ProgressBar,
   QueryErrorState,
   SectionHeader,
@@ -115,7 +115,7 @@ export default function Plans() {
             ),
           }}
         >
-          <MobileHeader
+          <AppHeader
             title="Plans & training"
             subtitle="From your trainer · synced"
             showProfileShortcut={false}
@@ -483,7 +483,7 @@ export function PlanDetailScreen() {
             ),
           }}
         >
-            <MobileHeader
+            <AppHeader
               title={planTitle(selectedAssignment)}
               subtitle={coachName}
               style={[styles.stickyHeader, { backgroundColor: palette.bg.app }]}

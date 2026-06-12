@@ -4,7 +4,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  AppHeader,
   SegmentedControl,
   StatusChip,
   ZookScreen,
@@ -38,7 +38,7 @@ export default function TrainerClientSessionsScreen() {
     <>
       <ZookScreen testID="trainer-client-sessions-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader
+          <AppHeader
             title="Client Detail"
             subtitle={clientName}
             leading={

@@ -16,7 +16,7 @@ import {
   Card,
   EmptyState,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   QueryErrorState,
   ZookScreen,
 } from "@/components/primitives";
@@ -361,7 +361,7 @@ export default function NotificationsScreen() {
           }}
           ListHeaderComponent={
             <View style={{ gap: 14, marginBottom: 14 }}>
-              <MobileHeader
+              <AppHeader
                 title="Inbox"
                 subtitle={
                   unreadCount > 0

@@ -7,7 +7,7 @@ import { Image } from "expo-image";
 import {
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   Pill,
   Input,
   QueryErrorState,
@@ -104,7 +104,7 @@ export default function FindGyms() {
             ),
           }}
         >
-          <MobileHeader
+          <AppHeader
             eyebrow="Discovery"
             title="Find your gym"
             subtitle="Browse public gyms and apply referral codes"

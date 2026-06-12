@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-import { MobileHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
+import { AppHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";
@@ -26,7 +26,7 @@ export default function AppearanceSettingsScreen() {
     <>
       <ZookScreen testID="settings-appearance-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title="Appearance" subtitle="Theme and default role" showProfileShortcut={false} />
+          <AppHeader title="Appearance" subtitle="Theme and default role" showProfileShortcut={false} />
           <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Theme</Text>
           <SegmentedControl
             options={themeOptions}

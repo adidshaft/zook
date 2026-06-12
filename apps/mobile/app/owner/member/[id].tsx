@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   Pill,
   QueryErrorState,
   Skeleton,
@@ -176,7 +176,7 @@ export default function OwnerMemberDetail() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader
+          <AppHeader
             title={name}
             subtitle="Owner member profile"
             leading={

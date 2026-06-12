@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { Card, ListRow, MobileHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, AppHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useHasPermission } from "@/lib/auth";
 import { layout, spacing } from "@/lib/theme";
@@ -53,7 +53,7 @@ export default function OwnerMoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader title="More" subtitle="Owner tools and web dashboard" showProfileShortcut={false} />
+          <AppHeader title="More" subtitle="Owner tools and web dashboard" showProfileShortcut={false} />
 
           <SectionHeader title="Owner tools" />
           <Card variant="compact" contentStyle={styles.list}>

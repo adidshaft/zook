@@ -25,7 +25,7 @@ import {
   EmptyState,
   Card,
   InfoRow,
-  MobileHeader,
+  AppHeader,
   Pill,
   PrimaryButton,
   QueryErrorState,
@@ -271,7 +271,7 @@ export default function GymProfileScreen() {
         }
       >
         {gym ? (
-          <MobileHeader
+          <AppHeader
             eyebrow="Gym profile"
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
@@ -294,7 +294,7 @@ export default function GymProfileScreen() {
             }
           />
         ) : (
-          <MobileHeader
+          <AppHeader
             eyebrow="Gym profile"
             title="Membership profile"
             subtitle="We’ll load plan details, join rules, and referral support for this gym."
