@@ -28,6 +28,7 @@ import {
   Card,
   IconBubble,
   AppHeader,
+  MoneySummaryCard,
   SectionHeader,
   ZookButton,
   ZookScreen,
@@ -824,15 +825,24 @@ function RenewalSheet({
         </View>
 
         {selectedPlan ? (
-          <Card variant="compact" contentStyle={styles.renewalSummary}>
-            <Text style={[styles.summaryTitle, { color: palette.text.primary }]}>Renewal summary</Text>
-            <Text style={[styles.summaryBody, { color: palette.text.secondary }]}>
-              {selectedPlan.durationDays
-                ? `${selectedPlan.durationDays} days`
-                : "Gym-defined validity"}
-              {selectedPlan.visitLimit ? ` · ${selectedPlan.visitLimit} visits` : ""}
-            </Text>
-          </Card>
+          <MoneySummaryCard
+            title="Renewal summary"
+            amount={formatInr("pricePaise" in selectedPlan ? selectedPlan.pricePaise : 0)}
+            rows={[
+              { label: "Plan", value: selectedPlan.name ?? currentPlan?.name ?? "Selected plan" },
+              {
+                label: "Validity",
+                value: selectedPlan.durationDays
+                  ? `${selectedPlan.durationDays} days`
+                  : "Gym-defined validity",
+              },
+              {
+                label: "Visits",
+                value: selectedPlan.visitLimit ? `${selectedPlan.visitLimit} visits` : "Unlimited",
+              },
+            ]}
+            consequence="The renewed membership activates after payment confirmation from the provider or gym desk."
+          />
         ) : null}
 
         {status ? <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{status}</Text> : null}
