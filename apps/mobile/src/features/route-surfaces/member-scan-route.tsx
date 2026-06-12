@@ -8,6 +8,7 @@ import {
   Linking,
   Animated as RNAnimated,
   Easing as RNEasing,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -76,6 +77,7 @@ type AttendanceResultHref = {
 
 const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
 const SCAN_CONFIRMATION_VISIBLE_MS = 420;
+const CHECK_IN_MOMENT_VISIBLE_MS = 1400;
 
 type VerificationStep = {
   key: "capture" | "decode" | "server";
@@ -257,6 +259,7 @@ export default function Scan() {
   const [busy, setBusy] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("scan");
   const [scanState, setScanState] = useState<ScanState>("idle");
+  const [checkInMoment, setCheckInMoment] = useState<{ gymName: string } | null>(null);
   const [codePrefix, setCodePrefix] = useState("");
   const [codeDigits, setCodeDigits] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -570,7 +573,20 @@ export default function Scan() {
       void queryClient.invalidateQueries({ queryKey: ["me", "home"] });
       const nextHref = attendanceResultHref(result, status);
       if (!failed) {
-        await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
+        const action = String(result.action ?? "").toLowerCase();
+        const isCheckIn = action !== "checkout" && action !== "already_checked_out" && !result.checkedOut;
+        if (isCheckIn) {
+          setCheckInMoment({
+            gymName:
+              result.attendance.branchName ??
+              memberHomeQuery.data?.activeOrganization?.name ??
+              "Your gym",
+          });
+          await sleep(CHECK_IN_MOMENT_VISIBLE_MS);
+          setCheckInMoment(null);
+        } else {
+          await sleep(SCAN_CONFIRMATION_VISIBLE_MS);
+        }
       }
       if (!failed) {
         await maybeShowPushPrompt();
@@ -720,8 +736,8 @@ export default function Scan() {
               <RefreshControl
                 refreshing={memberHomeQuery.isRefetching}
                 onRefresh={onRefresh}
-                tintColor={palette.accent.fill}
-                colors={[palette.accent.fill]}
+                tintColor={palette.accent.base}
+                colors={[palette.accent.base]}
               />
             ),
           }}
@@ -1043,7 +1059,63 @@ export default function Scan() {
       </ZookScreen>
       {cameraPermission.permissionSheet}
       {notificationPermission.permissionSheet}
+      <CheckInMoment
+        visible={Boolean(checkInMoment)}
+        gymName={checkInMoment?.gymName ?? "Your gym"}
+        onDone={() => setCheckInMoment(null)}
+      />
     </>
+  );
+}
+
+function CheckInMoment({
+  visible,
+  gymName,
+  onDone,
+}: {
+  visible: boolean;
+  gymName: string;
+  onDone: () => void;
+}) {
+  const { palette } = useTheme();
+  const scale = useRef(new RNAnimated.Value(0.82)).current;
+  const opacity = useRef(new RNAnimated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      scale.setValue(0.82);
+      opacity.setValue(0);
+      return;
+    }
+    RNAnimated.parallel([
+      RNAnimated.spring(scale, {
+        toValue: 1,
+        damping: 14,
+        stiffness: 180,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(opacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    const timer = setTimeout(onDone, CHECK_IN_MOMENT_VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [onDone, opacity, scale, visible]);
+
+  return (
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onDone}>
+      <View style={styles.checkInMomentBackdrop}>
+        <RNAnimated.View style={[styles.checkInMomentContent, { opacity, transform: [{ scale }] }]}>
+          <View style={[styles.checkInMomentTick, { backgroundColor: palette.accent.base }]}>
+            <Ionicons name="checkmark" size={58} color={palette.text.onAccent} />
+          </View>
+          <Text style={styles.checkInMomentGym} numberOfLines={1}>{gymName}</Text>
+          <Text style={styles.checkInMomentTitle}>Checked in</Text>
+        </RNAnimated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1290,5 +1362,40 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     marginTop: 6,
     paddingLeft: 4,
+  },
+  checkInMomentBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(17,21,15,0.94)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  checkInMomentContent: {
+    alignItems: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    width: "100%",
+  },
+  checkInMomentTick: {
+    alignItems: "center",
+    borderRadius: 999,
+    height: 104,
+    justifyContent: "center",
+    shadowColor: "#8DFF9A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    width: 104,
+  },
+  checkInMomentGym: {
+    color: "#DDE8D8",
+    maxWidth: "86%",
+    textAlign: "center",
+    ...typography.title,
+  },
+  checkInMomentTitle: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    ...typography.display,
   },
 });

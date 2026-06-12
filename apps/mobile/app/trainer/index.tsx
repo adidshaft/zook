@@ -6,6 +6,7 @@ import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
+  AnimatedAppear,
   EmptyState,
   Card,
   IconBubble,
@@ -115,53 +116,58 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isLoading ? <TrainerClientsSkeleton /> : null}
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
-          <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
-          <Card variant="compact" contentStyle={styles.stack}>
-            {priorityClient ? (
-              <Pressable
-                testID="trainer-client-row-first"
-                accessibilityRole="button"
-                onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}
-                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
-              >
-                <ListRow
-                  title={priorityClient.user?.name ?? "Client"}
-                  subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
-                  leading={<IconBubble icon="person-outline" tone="lime" />}
-                  trailing={<StatusChip status="Today" tone="amber" />}
-                />
-              </Pressable>
-            ) : (
-              <EmptyState title="No coaching actions today" body="Client sessions and follow-ups will appear here." />
-            )}
-          </Card>
+          <AnimatedAppear delay={0}>
+            <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
+            <Card variant="compact" contentStyle={styles.stack}>
+              {priorityClient ? (
+                <Pressable
+                  testID="trainer-client-row-first"
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/trainer/clients/${priorityClient.memberUserId}` as never)}
+                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                >
+                  <ListRow
+                    title={priorityClient.user?.name ?? "Client"}
+                    subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
+                    leading={<IconBubble icon="person-outline" tone="lime" />}
+                    trailing={<StatusChip status="Today" tone="amber" />}
+                  />
+                </Pressable>
+              ) : (
+                <EmptyState title="No coaching actions today" body="Client sessions and follow-ups will appear here." />
+              )}
+            </Card>
+          </AnimatedAppear>
 
-          <SectionHeader
-            title="Needs plan"
-            subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
-          />
-          <Card variant="compact" contentStyle={styles.stack}>
-            {clientsNeedingPlans ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push("/trainer/clients" as never)}
-                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
-              >
-                <ListRow
-                  title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching`}
-                  subtitle="Create plan next."
-                  leading={<IconBubble icon="reader-outline" tone="amber" />}
-                  trailing={<StatusChip status="Create plan next" tone="amber" />}
-                />
-              </Pressable>
-            ) : (
-              <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
-            )}
-          </Card>
+          <AnimatedAppear delay={40}>
+            <SectionHeader
+              title="Needs plan"
+              subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
+            />
+            <Card variant="compact" contentStyle={styles.stack}>
+              {clientsNeedingPlans ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/trainer/clients" as never)}
+                  style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                >
+                  <ListRow
+                    title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching`}
+                    subtitle="Create plan next."
+                    leading={<IconBubble icon="reader-outline" tone="amber" />}
+                    trailing={<StatusChip status="Create plan next" tone="amber" />}
+                  />
+                </Pressable>
+              ) : (
+                <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
+              )}
+            </Card>
+          </AnimatedAppear>
 
-          <MetricGrid
-            testID="trainer-view-home"
-            items={[
+          <AnimatedAppear delay={80}>
+            <MetricGrid
+              testID="trainer-view-home"
+              items={[
               {
                 label: "Clients",
                 value: clients.length,
@@ -180,27 +186,31 @@ export default function TrainerHomeScreen() {
                 hint: "Create Plan next",
                 tone: "lime",
               },
-            ]}
-          />
-
-          {plannedClients.length ? (
-            <AttentionCard
-              title="Active plan work"
-              items={[
-                {
-                  id: "active-plan-work",
-                  icon: "document-text-outline",
-                  tone: "amber",
-                  title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
-                  subtitle: "Open Plan work to review what is in motion.",
-                  cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
-                },
               ]}
             />
+          </AnimatedAppear>
+
+          {plannedClients.length ? (
+            <AnimatedAppear delay={120}>
+              <AttentionCard
+                title="Active plan work"
+                items={[
+                  {
+                    id: "active-plan-work",
+                    icon: "document-text-outline",
+                    tone: "amber",
+                    title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
+                    subtitle: "Open Plan work to review what is in motion.",
+                    cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
+                  },
+                ]}
+              />
+            </AnimatedAppear>
           ) : null}
 
-          <SectionHeader title="Recent feedback" />
-          <Card variant="compact" contentStyle={styles.stack}>
+          <AnimatedAppear delay={160}>
+            <SectionHeader title="Recent feedback" />
+            <Card variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
               recentFeedback.map((feedback) => (
                 <Pressable
@@ -220,25 +230,28 @@ export default function TrainerHomeScreen() {
             ) : (
               <EmptyState title="No recent feedback" body="Client notes and session feedback will appear here." />
             )}
-          </Card>
+            </Card>
+          </AnimatedAppear>
 
-          <SectionHeader title="AI draft" />
-          <Card
-            variant="compact"
-            pressable
-            onPress={() =>
-              priorityClient
-                ? router.push(`/trainer/clients/${priorityClient.memberUserId}/plan` as never)
-                : router.push("/trainer/clients" as never)
-            }
-          >
-            <ListRow
-              title="AI drafting is off"
-              subtitle="Create and edit plans manually."
-              leading={<IconBubble icon="sparkles-outline" tone="blue" />}
-              trailing={<StatusChip status="Manual" tone="neutral" />}
-            />
-          </Card>
+          <AnimatedAppear delay={200}>
+            <SectionHeader title="AI draft" />
+            <Card
+              variant="compact"
+              pressable
+              onPress={() =>
+                priorityClient
+                  ? router.push(`/trainer/clients/${priorityClient.memberUserId}/plan` as never)
+                  : router.push("/trainer/clients" as never)
+              }
+            >
+              <ListRow
+                title="AI drafting is off"
+                subtitle="Create and edit plans manually."
+                leading={<IconBubble icon="sparkles-outline" tone="blue" />}
+                trailing={<StatusChip status="Manual" tone="neutral" />}
+              />
+            </Card>
+          </AnimatedAppear>
         </ScrollView>
       </ZookScreen>
     </>

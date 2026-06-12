@@ -2,7 +2,7 @@ import { Stack, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Card, ListRow, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { AnimatedAppear, Card, ListRow, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
@@ -61,20 +61,25 @@ export default function YouScreen() {
         >
           <ScreenHeader title="You" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
 
-          <IdentityCard
-            user={ctx?.user}
-            org={ctx?.org}
-            onEdit={() => router.push("/profile/edit" as never)}
-          />
+          <AnimatedAppear delay={0}>
+            <IdentityCard
+              user={ctx?.user}
+              org={ctx?.org}
+              onEdit={() => router.push("/profile/edit" as never)}
+            />
+          </AnimatedAppear>
 
-          <SectionHeader title="Membership" />
-          <MembershipSummary
-            membership={homeQuery.data?.activeMembership}
-            onViewDetail={() => router.push("/membership" as never)}
-          />
+          <AnimatedAppear delay={40}>
+            <SectionHeader title="Membership" />
+            <MembershipSummary
+              membership={homeQuery.data?.activeMembership}
+              onViewDetail={() => router.push("/membership" as never)}
+            />
+          </AnimatedAppear>
 
-          <SectionHeader title="Quick actions" />
-          <Card variant="compact" contentStyle={styles.list}>
+          <AnimatedAppear delay={80}>
+            <SectionHeader title="Quick actions" />
+            <Card variant="compact" contentStyle={styles.list}>
             {showBackToOwner && (
               <PillActionRow
                 title="Back to Owner mode"
@@ -101,10 +106,12 @@ export default function YouScreen() {
               icon="storefront-outline"
               onPress={() => router.push("/shop" as never)}
             />
-          </Card>
+            </Card>
+          </AnimatedAppear>
 
-          <SectionHeader title="Settings" />
-          <Card variant="compact" contentStyle={styles.list}>
+          <AnimatedAppear delay={120}>
+            <SectionHeader title="Settings" />
+            <Card variant="compact" contentStyle={styles.list}>
             {settingsRows.map((row) => (
               <PillActionRow
                 key={row.href}
@@ -114,19 +121,22 @@ export default function YouScreen() {
                 onPress={() => router.push(row.href as never)}
               />
             ))}
-          </Card>
+            </Card>
+          </AnimatedAppear>
 
-          <View style={styles.signOutContainer}>
-            <ZookButton
-              onPress={confirmSignOut}
-              variant="destructive"
-              icon="log-out-outline"
-              fullWidth
-              accessibilityLabel="Sign out"
-            >
-              Sign out
-            </ZookButton>
-          </View>
+          <AnimatedAppear delay={160}>
+            <View style={styles.signOutContainer}>
+              <ZookButton
+                onPress={confirmSignOut}
+                variant="destructive"
+                icon="log-out-outline"
+                fullWidth
+                accessibilityLabel="Sign out"
+              >
+                Sign out
+              </ZookButton>
+            </View>
+          </AnimatedAppear>
 
           <Text style={[styles.footer, { color: palette.text.tertiary }]}>
             Zook account center

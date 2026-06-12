@@ -2993,17 +2993,14 @@ export function Skeleton({
 
   useEffect(() => {
     progress.value = withRepeat(
-      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
       -1,
-      false,
+      true,
     );
   }, [progress]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: interpolate(progress.value, [0, 1], [-120, 360]) },
-      { rotate: "18deg" },
-    ],
+    opacity: interpolate(progress.value, [0, 1], [0.45, 0.8]),
   }));
 
   return (
@@ -3044,9 +3041,10 @@ const styles = StyleSheet.create({
   },
   skeletonShimmer: {
     position: "absolute",
-    top: -24,
-    bottom: -24,
-    width: 96,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: "rgba(255,255,255,0.16)",
   },
   ambientGlow: {
