@@ -26,7 +26,6 @@ import {
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
-import { getMobileReleaseProfile } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { spacing, typography, useTheme, type Palette } from "@/lib/theme";
 
@@ -134,7 +133,6 @@ export default function Login() {
   const { t } = useI18n();
   const { palette } = useTheme();
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
-  const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>("phone");
@@ -145,7 +143,6 @@ export default function Login() {
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState("");
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
   const [accountLocked, setAccountLocked] = useState(false);
@@ -203,7 +200,6 @@ export default function Login() {
 
   function resetOtpState() {
     setCode("");
-    setDevOtp(null);
     setResendCooldown(0);
     setRateLimitCooldown(0);
     setAccountLocked(false);
@@ -257,16 +253,14 @@ export default function Login() {
       return;
     }
     setBusyAction("otp");
-    setDevOtp(null);
     setAccountLocked(false);
     try {
       const result = await requestOtp(identifier);
-      const seededDevOtp = sanitizeOtpCode(result.devOtp ?? localDevOtp ?? "");
+      void sanitizeOtpCode(result.devOtp ?? "");
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
       setCode("");
       setMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }));
-      setDevOtp(seededDevOtp || null);
       setRateLimitCooldown(0);
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
     } catch (error) {
@@ -592,17 +586,6 @@ export default function Login() {
           </Card>
         </Animated.View>
 
-        {/* Local test OTP banner - only visible in __DEV__ */}
-        {devOtp ? (
-          <View
-            testID="login-dev-otp-banner"
-            style={[styles.devBanner, { backgroundColor: palette.surface.warningSoft, borderColor: palette.feedback.warning }]}
-          >
-            <Text style={[styles.devBannerLabel, { color: palette.feedback.warning }]}>{t("auth.testCode")}</Text>
-            <Text style={[styles.devBannerCode, { color: palette.text.primary }]}>{devOtp}</Text>
-          </View>
-        ) : null}
-
         {message ? <Text testID="login-message" style={[styles.messageText, { color: palette.text.secondary }]}>{message}</Text> : null}
       </KeyboardAwareScreen>
     </ZookScreen>
@@ -786,22 +769,6 @@ const styles = StyleSheet.create({
   },
   busyText: {
     ...typography.button,
-  },
-  devBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderCurve: "continuous",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  devBannerLabel: {
-    ...typography.eyebrow,
-  },
-  devBannerCode: {
-    ...typography.metric,
   },
   messageText: {
     ...typography.body,

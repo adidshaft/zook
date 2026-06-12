@@ -448,12 +448,6 @@ export default async function JoinPage({
                     <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-3 text-xs leading-5 text-[var(--text-secondary)]">
                       {t("testMode")}
                     </div>
-                    <Link
-                      href={`/checkout/mock/demo?plan=${selectedPlan.id}${referral ? `&ref=${referral.code}` : ""}`}
-                      className="zook-focus inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition duration-200 active:translate-y-px"
-                    >
-                      {t("simulatedPayment")}
-                    </Link>
                   </div>
                 ) : (
                   <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-xs leading-5 text-[var(--text-secondary)]">
