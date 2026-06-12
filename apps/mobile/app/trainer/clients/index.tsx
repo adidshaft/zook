@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import {
-  MobileHeader,
+  AppHeader,
   SectionHeader,
   StatusChip,
   ZookScreen,
@@ -81,7 +81,7 @@ export default function TrainerClientsScreen() {
             onRefresh={onRefresh}
             header={
               <>
-                <MobileHeader
+                <AppHeader
                   eyebrow="Trainer"
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}

@@ -9,7 +9,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  AppHeader,
   SegmentedControl,
   StatusChip,
   ZookButton,
@@ -103,7 +103,7 @@ export default function TrainerClientOverviewScreen() {
     <>
       <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
-          <MobileHeader
+          <AppHeader
             title="Client Detail"
             subtitle=""
             leading={

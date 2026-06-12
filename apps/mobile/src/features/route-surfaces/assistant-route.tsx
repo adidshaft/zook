@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -288,7 +288,7 @@ export default function AssistantScreen() {
             />
           }
         >
-          <MobileHeader
+          <AppHeader
             eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
             title="AI Chat"
             subtitle="Training chat is being polished before it opens in the app."
@@ -373,7 +373,7 @@ export default function AssistantScreen() {
           />
         }
       >
-        <MobileHeader
+        <AppHeader
           eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
           title={isTrainer ? "Coach with context" : "Talk through training"}
           subtitle={

@@ -5,7 +5,7 @@ import {
   Card,
   Input,
   ListRow,
-  MobileHeader,
+  AppHeader,
   OtpInput,
   ThemedSwitch,
   ZookButton,
@@ -23,7 +23,7 @@ export default function AccountSettingsScreen() {
     <>
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />
+          <AppHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />
           <Card variant="compact" contentStyle={styles.list}>
             <ListRow title="Name" subtitle={session?.user.name ?? "Not set"} icon="person-outline" />
             <ListRow title="Email" subtitle={session?.user.email ?? "Not set"} icon="mail-outline" />

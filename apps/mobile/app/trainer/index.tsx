@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
   EmptyState,
   Card,
   IconBubble,
   ListRow,
-  MobileHeader,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   StatusChip,
   ZookScreen,
@@ -20,6 +20,7 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
@@ -28,6 +29,7 @@ export default function TrainerHomeScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, logout, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const scrollY = useSharedValue(0);
   const clientsQuery = useTrainerClients();
   const clients = clientsQuery.data?.clients ?? [];
   const plannedClients = clients.filter((client) => (client.summary?.activePlans ?? 0) > 0);
@@ -66,14 +68,17 @@ export default function TrainerHomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <MobileHeader
-            eyebrow={`${clients.length} client${clients.length === 1 ? "" : "s"}`}
+          <ScreenHeader
             title="Trainer"
-            subtitle={session?.user.name ?? "Trainer"}
-            chip={<RoleSwitcherChip />}
-            showProfileShortcut={false}
+            subtitle={session?.user.name ?? undefined}
+            contextSlot={<RoleSwitcherContextPill />}
+            scrollY={scrollY}
             trailing={
               <View style={styles.headerActions}>
                 <Pressable

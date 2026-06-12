@@ -3,9 +3,11 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, Card, IconBubble, MobileHeader, QueryErrorState, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -17,6 +19,7 @@ export default function ProgressScreen() {
   const summaryQuery = useMyTracking();
   const workoutsQuery = useMyTrackingWorkouts();
   const [refreshing, setRefreshing] = useState(false);
+  const scrollY = useSharedValue(0);
   const summary = summaryQuery.data?.summary;
   const latestBodyProgress = summaryQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null | undefined;
   const workouts = (workoutsQuery.data?.workouts ?? []) as TrackingWorkout[];
@@ -44,9 +47,13 @@ export default function ProgressScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <MobileHeader title="Progress" subtitle="Workouts, body progress, and habits" showProfileShortcut={false} />
+          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
           <View style={styles.actions}>
             <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
               Log workout

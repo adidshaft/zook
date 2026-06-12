@@ -4,7 +4,7 @@ import {
   EmptyState,
   Card,
   ListRow,
-  MobileHeader,
+  AppHeader,
   QueryErrorState,
   SectionHeader,
   StatusChip,
@@ -27,7 +27,7 @@ export default function TrainerPayoutsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="trainer-payouts-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <MobileHeader title="Payouts" subtitle="Live PT earnings and paid history" chip={<StatusChip status="Trainer" tone="neutral" />} />
+          <AppHeader title="Payouts" subtitle="Live PT earnings and paid history" chip={<StatusChip status="Trainer" tone="neutral" />} />
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           <Card variant="compact" contentStyle={styles.hero}>
             <Text style={[styles.label, { color: palette.text.secondary }]}>This month accrued</Text>

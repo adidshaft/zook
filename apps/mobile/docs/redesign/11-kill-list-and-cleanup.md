@@ -50,7 +50,7 @@ If counts are high, the prior plans are incomplete — fix those first, then ret
 `apps/mobile/src/components/primitives/foundation.tsx` contains:
 - `ZookScreen` (line 296)
 - `SafeAreaScreen` (line 391) — likely a wrapper, may be unused now
-- `MobileHeader` (line 717)
+- `AppHeader` (line 717)
 - `AppHeader` (line 855)
 - `BottomNav` (line 2337)
 - `memberTabs`, `trainerTabs`, `receptionTabs`, `ownerTabs`, `adminTabs` (lines 2009–2190)
@@ -61,7 +61,7 @@ For each:
 
 1. **If it's still imported anywhere** — move to a dedicated file in `apps/mobile/src/components/primitives/`:
    - `ZookScreen`, `SafeAreaScreen` → already in `layout.tsx`? If not, move there.
-   - `MobileHeader`, `AppHeader` → `header.tsx` (new)
+   - `AppHeader`, `AppHeader` → `header.tsx` (new)
    - `BottomNav` → delete (no longer used after #09)
    - `DockTab*`, role tabs → delete (no longer used after #05/#06/#07/#09)
    - Anything else still imported → move to the appropriate split file (`cards.tsx`, `buttons.tsx`, `feedback.tsx`)
@@ -70,7 +70,7 @@ For each:
 
 Find unused exports:
 ```bash
-for sym in ZookScreen MobileHeader AppHeader BottomNav DockTabItem; do
+for sym in ZookScreen AppHeader AppHeader BottomNav DockTabItem; do
   echo "=== $sym ==="
   git grep -l "$sym" apps/mobile/src apps/mobile/app | grep -v primitives/foundation.tsx | head
 done

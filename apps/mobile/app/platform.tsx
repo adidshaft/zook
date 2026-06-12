@@ -5,7 +5,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  MobileHeader,
+  AppHeader,
   QueryErrorState,
   SecondaryButton,
   StatusChip,
@@ -95,7 +95,7 @@ export default function PlatformMobile() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader
+          <AppHeader
             eyebrow="Platform operator"
             title="Platform billing"
             subtitle={`${session?.user.name ?? "Platform team"} · SaaS health and mandate state`}

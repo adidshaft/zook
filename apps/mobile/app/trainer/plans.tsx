@@ -4,7 +4,7 @@ import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   EmptyState,
-  MobileHeader,
+  AppHeader,
   QueryErrorState,
   SectionHeader,
   StatusChip,
@@ -52,7 +52,7 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <MobileHeader
+          <AppHeader
             eyebrow="Trainer"
             title="Plan work"
             subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}

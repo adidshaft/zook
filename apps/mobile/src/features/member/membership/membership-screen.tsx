@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   SectionHeader,
   ZookButton,
   ZookScreen,
@@ -521,7 +521,7 @@ export default function MembershipScreen() {
             />
           }
         >
-          <MobileHeader
+          <AppHeader
             eyebrow="Membership"
             title="Your plans"
             contextSlot={<RoleSwitcherChip />}

@@ -21,7 +21,7 @@ import {
   EmptyState,
   Card,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   Pill,
   ProgressBar,
   ZookButton,
@@ -442,7 +442,7 @@ export default function ProfileScreen() {
             />
           }
         >
-          <MobileHeader
+          <AppHeader
             title="Profile"
             showProfileShortcut={false}
             leading={

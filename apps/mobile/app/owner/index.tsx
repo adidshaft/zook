@@ -6,9 +6,9 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { Card, EmptyState, QueryErrorState, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
@@ -17,6 +17,7 @@ import { formatCompactNumber, formatInr } from "@/lib/formatting";
 import { layout, typography, useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
 export default function OwnerCommandScreen() {
@@ -26,6 +27,7 @@ export default function OwnerCommandScreen() {
   const roleContext = useRoleContext();
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
+  const scrollY = useSharedValue(0);
   const billingQuery = useOwnerBillingSubscription();
   const setupStatusQuery = useOwnerSetupStatus();
   const prefetchOwnerWorkspace = usePrefetchOwnerWorkspace();
@@ -186,6 +188,10 @@ export default function OwnerCommandScreen() {
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
             contentContainerStyle: styles.content,
+            onScroll: (event) => {
+              scrollY.value = event.nativeEvent.contentOffset.y;
+            },
+            scrollEventThrottle: 16,
             refreshControl: (
               <RefreshControl
                 refreshing={dashboardQuery.isRefetching}
@@ -196,10 +202,12 @@ export default function OwnerCommandScreen() {
             ),
           }}
         >
-          <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-            {dashboard?.organization?.name ?? "Active gym"} · Today
-          </Text>
-          <RoleSwitcherChip />
+          <ScreenHeader
+            title="Today"
+            subtitle={branchName}
+            contextSlot={<RoleSwitcherContextPill />}
+            scrollY={scrollY}
+          />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
               {dashboard ? (
@@ -257,9 +265,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: 96,
-  },
-  headerMeta: {
-    ...typography.caption,
   },
   billingCard: {
     gap: 12,

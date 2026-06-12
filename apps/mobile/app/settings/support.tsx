@@ -6,7 +6,7 @@ import {
   Card,
   FormField,
   ListRow,
-  MobileHeader,
+  AppHeader,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -76,7 +76,7 @@ export default function SupportSettingsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <MobileHeader
+          <AppHeader
             title="Help & support"
             subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`}
             showProfileShortcut={false}

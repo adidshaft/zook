@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useRoleContext } from "@/lib/role-context";
 import { spacing, typography, useTheme } from "@/lib/theme";
@@ -10,14 +10,13 @@ export function DemoBanner() {
   return (
     <View
       accessibilityRole="alert"
-      style={{
-        backgroundColor: palette.surface.warningSoft,
-        borderBottomColor: palette.border.subtle,
-        borderBottomWidth: 1,
-        paddingHorizontal: spacing.md,
-        paddingTop: 7,
-        paddingBottom: 7,
-      }}
+      style={[
+        styles.capsule,
+        {
+          backgroundColor: palette.surface.warningSoft,
+          borderColor: palette.border.subtle,
+        },
+      ]}
     >
       <Text
         style={{
@@ -27,8 +26,20 @@ export function DemoBanner() {
           textAlign: "center",
         }}
       >
-        Demo data - not your real gym
+        Demo data
       </Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  capsule: {
+    alignSelf: "center",
+    borderCurve: "continuous",
+    borderRadius: 999,
+    borderWidth: 1,
+    minHeight: 28,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+});

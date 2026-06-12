@@ -12,15 +12,16 @@ import {
 
 import {
   Card,
+  HeaderMeta,
   IconBubble,
-  MobileHeader,
-  Pill,
+  ProfileShortcut,
   QueryErrorState,
+  ScreenHeader,
   StatStrip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherChip } from "@/components/role-switcher";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
@@ -29,6 +30,7 @@ import { useAuth } from "@/lib/auth";
 import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
+import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
@@ -108,6 +110,7 @@ export default function HomeScreen() {
   const state = deriveHomeState(home);
   const firstName = session?.user.name?.trim().split(/\s+/)[0] || "Member";
   const { activeCheckIn, checkoutBusy, stopActiveCheckIn } = useManualCheckout();
+  const scrollY = useSharedValue(0);
   const streakDays = home?.streakDays ?? 0;
   const weeklyVisits = countThisWeek(home?.recentAttendance ?? []);
   const activeMinutes = Math.round((trackingQuery.data?.summary.totalDuration ?? 0) / 60);
@@ -122,6 +125,10 @@ export default function HomeScreen() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          onScroll={(event) => {
+            scrollY.value = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={homeQuery.isRefetching}
@@ -131,21 +138,16 @@ export default function HomeScreen() {
             />
           }
         >
-          <MobileHeader
-            eyebrow={home?.activeOrganization?.name ?? "Member"}
+          <ScreenHeader
             title={`Hello, ${firstName}`}
-            subtitle="Today in your gym"
-            chip={
-              <View style={styles.headerChips}>
-                <RoleSwitcherChip />
-                {streakDays > 0 ? (
-                  <Pill tone="amber" icon="flame">
-                    {streakDays}-day streak
-                  </Pill>
-                ) : null}
-              </View>
+            contextSlot={<RoleSwitcherContextPill />}
+            trailing={<ProfileShortcut />}
+            meta={
+              streakDays > 0 ? (
+                <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>
+              ) : null
             }
-            showProfileShortcut={false}
+            scrollY={scrollY}
           />
 
           {homeQuery.isLoading ? <HomeSkeleton /> : null}
@@ -220,10 +222,6 @@ const styles = StyleSheet.create({
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: 20,
     width: "100%",
-  },
-  headerChips: {
-    alignItems: "flex-start",
-    gap: spacing.xs,
   },
   statStripPressed: {
     opacity: 0.86,

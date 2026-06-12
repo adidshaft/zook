@@ -26,7 +26,7 @@ import {
   ErrorState,
   Card,
   ListRow,
-  MobileHeader,
+  AppHeader,
   ProductCard,
   SearchBar,
   SectionHeader,
@@ -552,7 +552,7 @@ export default function Shop() {
           ) : null
         }
       >
-        <MobileHeader
+        <AppHeader
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
@@ -649,7 +649,7 @@ export default function Shop() {
           </ZookButton>
         }
       >
-        <MobileHeader
+        <AppHeader
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
@@ -703,7 +703,7 @@ export default function Shop() {
           </ZookButton>
         }
       >
-        <MobileHeader
+        <AppHeader
           eyebrow={t("shop.cart")}
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
@@ -851,7 +851,7 @@ export default function Shop() {
         columnWrapperStyle={styles.columnWrapper}
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 12 }}>
-            <MobileHeader
+            <AppHeader
               title={t("shop.deskPickup")}
               subtitle={activeOrganization?.name ?? t("shop.activeGym")}
               chip={<BranchSelectorChip />}

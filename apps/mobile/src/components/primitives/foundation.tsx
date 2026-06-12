@@ -48,7 +48,6 @@ import { layout, radii, shadows, spacing, typography, useTheme } from "@/lib/the
 import type { Palette } from "@/lib/theme";
 import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { Icon } from "./icon";
 
 export type PillTone = "neutral" | "lime" | "amber" | "red" | "blue" | "violet";
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
@@ -774,7 +773,7 @@ export function ModeChip({
   );
 }
 
-export function MobileHeader({
+export function AppHeader({
   eyebrow,
   title,
   subtitle,
@@ -797,44 +796,11 @@ export function MobileHeader({
   showProfileShortcut?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const { palette } = useTheme();
 
-  // Root tabs where we should not display a back button
-  const isRootTab =
-    ["/", "/plan", "/scan", "/shop", "/you", "/owner", "/trainer", "/reception"].includes(pathname) ||
-    pathname === "";
-
-  const canGoBack = !isRootTab;
-
   let resolvedLeading = leading;
-  if (!resolvedLeading) {
-    if (canGoBack) {
-      resolvedLeading = (
-        <Pressable
-          onPress={() => pressWithHaptics(() => router.canGoBack() ? router.back() : router.replace("/"))}
-          hitSlop={iconOnlyHitSlop}
-          style={({ pressed }) => [
-            {
-              width: 44,
-              height: 44,
-              borderRadius: 16,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: palette.surface.default,
-              borderWidth: 1,
-              borderColor: palette.border.subtle,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-        >
-          <Icon name="back" size={22} color={palette.text.primary} />
-        </Pressable>
-      );
-    } else if (!centered && showProfileShortcut) {
-      resolvedLeading = <ProfileShortcut />;
-    }
+  if (!resolvedLeading && !centered && showProfileShortcut) {
+    resolvedLeading = <ProfileShortcut />;
   }
 
   return (
@@ -860,27 +826,6 @@ export function MobileHeader({
   );
 }
 
-export function RoleHeader({
-  role,
-  title,
-  subtitle,
-  trailing,
-}: {
-  role: Role | string;
-  title: string;
-  subtitle?: string;
-  trailing?: ReactNode;
-}) {
-  return (
-    <MobileHeader
-      title={title}
-      subtitle={subtitle}
-      chip={<RoleChip role={role} />}
-      trailing={trailing}
-    />
-  );
-}
-
 export function ZookHeader({
   title,
   subtitle,
@@ -895,7 +840,7 @@ export function ZookHeader({
   trailing?: ReactNode;
 }) {
   return (
-    <MobileHeader
+    <AppHeader
       title={title}
       subtitle={subtitle}
       chip={
@@ -906,28 +851,6 @@ export function ZookHeader({
         ) : undefined
       }
       trailing={trailing}
-    />
-  );
-}
-
-export function ScreenHeader({
-  eyebrow,
-  title,
-  subtitle,
-  trailing,
-}: {
-  eyebrow?: string;
-  title: string;
-  subtitle?: string;
-  trailing?: ReactNode;
-}) {
-  return (
-    <MobileHeader
-      eyebrow={eyebrow}
-      title={title}
-      subtitle={subtitle}
-      trailing={trailing}
-      showProfileShortcut={false}
     />
   );
 }
@@ -959,10 +882,6 @@ export function SectionHeader({
 
 export function SectionTitle(props: Parameters<typeof SectionHeader>[0]) {
   return <SectionHeader {...props} />;
-}
-
-export function AppHeader(props: Parameters<typeof MobileHeader>[0]) {
-  return <MobileHeader {...props} />;
 }
 
 export function FieldCard(props: Parameters<typeof Card>[0]) {

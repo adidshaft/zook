@@ -21,7 +21,7 @@ import {
   Card,
   EmptyState,
   IconBubble,
-  MobileHeader,
+  AppHeader,
   ScannerFrame,
   useRequestPermissionWithRationale,
   ZookButton,
@@ -726,7 +726,7 @@ export default function Scan() {
             ),
           }}
         >
-          <MobileHeader
+          <AppHeader
             title="Scan Gym QR"
             contextSlot={<RoleSwitcherChip />}
             subtitle="Server-authoritative check-in for your active gym"
