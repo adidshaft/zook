@@ -801,7 +801,7 @@ export function ReceptionWorkspace({
 
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
-      <ZookScreen testID={testID} style={state.isDemo ? styles.demoScreen : undefined}>
+      <ZookScreen testID={testID}>
         <KeyboardAwareScreen
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",

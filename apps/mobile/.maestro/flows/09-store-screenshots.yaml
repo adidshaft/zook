@@ -60,23 +60,10 @@ tags:
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
-    text: "Open"
-    optional: true
-- tapOn:
-    id: "notification-detail-close"
-    optional: true
-- tapOn:
-    point: "90%,73%"
-    optional: true
-- tapOn:
-    point: "50%,50%"
+    point: "90%,74%"
     optional: true
 - waitForAnimationToEnd:
     timeout: 1000
-- extendedWaitUntil:
-    visible:
-      id: "notifications-screen"
-    timeout: 15000
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/notifications
 
 - openLink: zook:///
@@ -87,7 +74,7 @@ tags:
       id: "member-home-screen"
     timeout: 15000
 - tapOn:
-    id: "role-switcher-chip"
+    id: "role-switcher-context-pill"
 - tapOn:
     id: "role-switcher-option-org-aarogya-strength:OWNER"
 - extendedWaitUntil:
@@ -129,7 +116,6 @@ tags:
     optional: true
 - tapOn:
     text: "Verify Code"
-- extendedWaitUntil:
-    visible: "Pickup verified"
-    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
 - takeScreenshot: /Users/amanpandey/projects/zook/artifacts/app-store-screenshots-20260612/reception-desk

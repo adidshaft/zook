@@ -482,7 +482,7 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
       pointerEvents="box-none"
       style={[
         styles.runtimeBannerHost,
-        { top: Math.max(insets.top, spacing.xs) },
+        { top: Math.max(spacing.xs, Math.max(insets.top, spacing.xs) - 76) },
       ]}
     >
       {children}
