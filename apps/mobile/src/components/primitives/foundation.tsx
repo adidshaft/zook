@@ -1297,7 +1297,7 @@ export function ZookButton({
             <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
           ) : null}
           <Text
-            numberOfLines={1}
+            numberOfLines={2}
             style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
           >
             {contentLabel}
@@ -1356,7 +1356,7 @@ export function ZookButton({
         <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={btnColor} />
       ) : null}
       <Text
-        numberOfLines={1}
+        numberOfLines={2}
         style={[styles.buttonText, buttonTextSizeStyle, { color: btnColor }, textStyle]}
       >
         {contentLabel}
