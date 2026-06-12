@@ -1,9 +1,5 @@
-import type { ExpoConfig } from "expo/config";
-import { darkPalette } from "@zook/tokens";
-
-type MobileReleaseProfile = "local" | "staging" | "production";
-type MobileApiMode = "backend" | "offline-demo";
-type MobilePushEnvironment = "development" | "preview" | "production";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { darkPalette } = require("@zook/tokens");
 
 const googleIosClientIdSuffix = ".apps.googleusercontent.com";
 
@@ -17,17 +13,17 @@ function resolveGoogleIosUrlScheme() {
 
 const googleIosUrlScheme = resolveGoogleIosUrlScheme();
 const googleSignInPlugins = googleIosUrlScheme
-  ? ([
+  ? [
       [
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme: googleIosUrlScheme,
         },
       ],
-    ] as NonNullable<ExpoConfig["plugins"]>)
+    ]
   : [];
 
-const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
+const baseConfig = {
   name: "Zook",
   slug: "zook",
   scheme: "zook",
@@ -66,10 +62,7 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
           }
         : {}),
     },
-    associatedDomains: [
-      "applinks:zookfit.in",
-      "applinks:app.zookfit.in",
-    ],
+    associatedDomains: ["applinks:zookfit.in", "applinks:app.zookfit.in"],
     icon: "./assets/icons/AppIcon-1024.png",
   },
   android: {
@@ -161,19 +154,19 @@ const baseConfig: ExpoConfig & { extra?: Record<string, unknown> } = {
 const appVersion = baseConfig.version ?? "0.1.0";
 const runtimeVersion = appVersion;
 
-const apiBaseUrlByProfile: Record<MobileReleaseProfile, string> = {
+const apiBaseUrlByProfile = {
   local: "http://localhost:3000/api",
   staging: "https://staging.zookfit.in/api",
   production: "https://app.zookfit.in/api",
 };
 
-const webUrlByProfile: Record<MobileReleaseProfile, string> = {
+const webUrlByProfile = {
   local: "http://localhost:3000",
   staging: "https://staging.zookfit.in",
   production: "https://zookfit.in",
 };
 
-function normalizeProfile(value?: string | null): MobileReleaseProfile | undefined {
+function normalizeProfile(value) {
   switch (value?.trim().toLowerCase()) {
     case "local":
     case "development":
@@ -191,7 +184,7 @@ function normalizeProfile(value?: string | null): MobileReleaseProfile | undefin
   }
 }
 
-function resolveReleaseProfile(): MobileReleaseProfile {
+function resolveReleaseProfile() {
   const candidates = [
     "APP_ENV",
     "ENV_PROFILE",
@@ -199,7 +192,7 @@ function resolveReleaseProfile(): MobileReleaseProfile {
     "MOBILE_ENV_PROFILE",
     "EXPO_PUBLIC_ENV_PROFILE",
     "EAS_BUILD_PROFILE",
-  ] as const;
+  ];
   for (const key of candidates) {
     const value = process.env[key]?.trim();
     if (!value) {
@@ -214,7 +207,7 @@ function resolveReleaseProfile(): MobileReleaseProfile {
   return "local";
 }
 
-function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
+function normalizeApiMode(value) {
   switch (value?.trim().toLowerCase()) {
     case "backend":
     case "api":
@@ -229,8 +222,8 @@ function normalizeApiMode(value?: string | null): MobileApiMode | undefined {
   }
 }
 
-function resolveApiMode(): MobileApiMode {
-  const candidates = ["MOBILE_API_MODE", "EXPO_PUBLIC_API_MODE", "API_MODE"] as const;
+function resolveApiMode() {
+  const candidates = ["MOBILE_API_MODE", "EXPO_PUBLIC_API_MODE", "API_MODE"];
   for (const key of candidates) {
     const value = process.env[key]?.trim();
     if (!value) {
@@ -251,15 +244,11 @@ function resolveApiMode(): MobileApiMode {
   return "backend";
 }
 
-function resolveUrl(
-  explicitValue: string | undefined,
-  profile: MobileReleaseProfile,
-  defaults: Record<MobileReleaseProfile, string>,
-) {
+function resolveUrl(explicitValue, profile, defaults) {
   return explicitValue?.trim() || defaults[profile];
 }
 
-function resolvePushEnvironment(profile: MobileReleaseProfile): MobilePushEnvironment {
+function resolvePushEnvironment(profile) {
   if (profile === "production") {
     return "production";
   }
@@ -269,7 +258,7 @@ function resolvePushEnvironment(profile: MobileReleaseProfile): MobilePushEnviro
   return "development";
 }
 
-export default (): ExpoConfig => {
+module.exports = () => {
   const releaseProfile = resolveReleaseProfile();
   const apiMode = resolveApiMode();
   const sentryOrg = process.env.SENTRY_ORG?.trim();
@@ -279,10 +268,7 @@ export default (): ExpoConfig => {
     throw new Error("Sample mode is only available for local mobile builds.");
   }
   const expoProjectId =
-    process.env.EXPO_PROJECT_ID ??
-    process.env.EAS_PROJECT_ID ??
-    (baseConfig.extra?.eas as { projectId?: string } | undefined)?.projectId ??
-    undefined;
+    process.env.EXPO_PROJECT_ID ?? process.env.EAS_PROJECT_ID ?? baseConfig.extra?.eas?.projectId;
 
   return {
     ...baseConfig,
@@ -333,7 +319,7 @@ export default (): ExpoConfig => {
       AI_DRAFT_ENABLED: process.env.EXPO_PUBLIC_AI_DRAFT_ENABLED?.trim() ?? "",
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
-        ...((baseConfig.extra?.eas as Record<string, unknown> | undefined) ?? {}),
+        ...(baseConfig.extra?.eas ?? {}),
         ...(expoProjectId ? { projectId: expoProjectId } : {}),
       },
       mobileApiBaseUrl: resolveUrl(
