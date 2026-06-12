@@ -16,6 +16,10 @@ function recent(timestamp?: string | null, windowMs = DAY_MS) {
   return Number.isFinite(parsed) && Date.now() - parsed < windowMs;
 }
 
+function unreadUpdateTitle(count: number) {
+  return `${count} unread ${count === 1 ? "update" : "updates"}`;
+}
+
 export function Banners({ home }: { home?: MemberHomeData }) {
   const [dismissed, setDismissed] = useState<Record<string, string>>({});
   const orgId = home?.activeOrganization?.id ?? "none";
@@ -83,7 +87,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
       {showNotifications ? (
         <Banner
           icon="notifications-outline"
-          title={`${home?.unreadNotifications ?? 0} unread updates`}
+          title={unreadUpdateTitle(home?.unreadNotifications ?? 0)}
           body="Payments, plans, and gym messages are waiting."
           actionHref="/notifications"
           actionLabel="Open"
