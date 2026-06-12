@@ -2,13 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { resolvePlanName } from "@zook/ui";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   EmptyState,
   Card,
   IconBubble,
   ListRow,
+  PressableCard,
   ProgressBar,
   QueryErrorState,
   ScreenHeader,
@@ -129,22 +130,19 @@ export default function MemberPlanScreen() {
               <SectionHeader title="This week's schedule" />
               <View style={styles.stack}>
                 {workoutPlans.slice(0, 4).map((assignment, index) => (
-                  <Pressable
+                  <PressableCard
                     key={assignment.id}
                     testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
                     onPress={() => openAssignment(assignment.id)}
-                    accessibilityRole="button"
-                    style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+                    variant="compact"
                   >
-                    <Card variant="compact">
-                      <ListRow
-                        title={planTitle(assignment)}
-                        subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
-                        leading={<IconBubble icon="calendar-outline" tone="blue" />}
-                        trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
-                      />
-                    </Card>
-                  </Pressable>
+                    <ListRow
+                      title={planTitle(assignment)}
+                      subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
+                      leading={<IconBubble icon="calendar-outline" tone="blue" />}
+                      trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
+                    />
+                  </PressableCard>
                 ))}
                 {!workoutPlans.length && !plansQuery.isLoading ? (
                   <Card variant="compact">
@@ -174,20 +172,17 @@ export default function MemberPlanScreen() {
               <SectionHeader title="Browse all plans" />
               <View style={styles.planGrid}>
                 {plans.map((assignment) => (
-                  <Pressable
+                  <PressableCard
                     key={assignment.id}
                     onPress={() => openAssignment(assignment.id)}
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.planTile,
-                      { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle },
-                      pressed ? styles.cardPressed : null,
-                    ]}
+                    padding={14}
+                    style={styles.planTile}
+                    contentStyle={styles.planTileContent}
                   >
                     <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
                     <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
                     <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
-                  </Pressable>
+                  </PressableCard>
                 ))}
               </View>
             </>
@@ -201,17 +196,13 @@ export default function MemberPlanScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: 20,
     width: "100%",
   },
   stack: { gap: spacing.sm },
-  cardPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.985 }],
-  },
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },
@@ -219,13 +210,12 @@ const styles = StyleSheet.create({
   todayMeta: typography.small,
   planGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   planTile: {
-    borderRadius: 18,
-    borderWidth: 1,
     flexGrow: 1,
+    minWidth: "47%",
+  },
+  planTileContent: {
     gap: spacing.sm,
     minHeight: 126,
-    minWidth: "47%",
-    padding: 14,
   },
   planTileTitle: typography.cardTitle,
   planTileMeta: typography.caption,
