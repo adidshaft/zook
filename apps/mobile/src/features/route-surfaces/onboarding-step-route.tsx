@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { setStoredValue } from "@/lib/storage";
-import { useTheme } from "@/lib/theme";
+import { typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -37,7 +37,7 @@ export function ValuePropsStep() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [userScrolled, setUserScrolled] = useState(false);
   const [busy, setBusy] = useState(false);
-  const cardWidth = Math.max(280, Math.min(520, width - 48));
+  const cardWidth = width;
   const { palette } = useTheme();
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export function ValuePropsStep() {
           scrollEventThrottle={16}
         >
           {valueProps.map((copy, index) => (
-            <View key={copy} style={[styles.valueCard, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle, borderRadius: 24, width: cardWidth }]}>
+            <View key={copy} style={[styles.valueCard, { backgroundColor: index % 2 === 0 ? palette.bg.elevated : palette.bg.sunken, width: cardWidth }]}>
               <Text style={[styles.valueNumber, { color: palette.accent.base }]}>0{index + 1}</Text>
               <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{copy}</Text>
             </View>
@@ -149,7 +149,7 @@ export function ValuePropsStep() {
               style={[
                 styles.dot,
                 { backgroundColor: palette.border.strong },
-                activeIndex === index ? { backgroundColor: palette.accent.base, width: 22 } : null,
+                activeIndex === index ? { backgroundColor: palette.accent.base, width: 34 } : null,
               ]}
             />
           ))}
@@ -179,10 +179,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     justifyContent: "space-between",
-    paddingHorizontal: 24,
   },
   header: {
     gap: 8,
+    paddingHorizontal: 24,
   },
   brand: {
     fontFamily: "Inter_800ExtraBold",
@@ -199,22 +199,21 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   valueCard: {
-    minHeight: 300,
+    minHeight: 380,
     justifyContent: "space-between",
-    padding: 22,
-    borderWidth: 1,
+    paddingHorizontal: 28,
+    paddingVertical: 32,
   },
   valueNumber: {
     fontFamily: "Inter_800ExtraBold",
     fontSize: 13,
   },
   valueCopy: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 28,
-    lineHeight: 34,
+    ...typography.display,
   },
   footer: {
     gap: 20,
+    paddingHorizontal: 24,
   },
   dots: {
     flexDirection: "row",
@@ -222,9 +221,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 14,
+    height: 6,
+    borderRadius: 999,
   },
   skipButton: {
     position: "absolute",

@@ -118,12 +118,14 @@ const styles = StyleSheet.create({
   cell: {
     flex: 1,
     minHeight: 48,
+    borderCurve: "continuous",
     borderRadius: radii.input,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   cellActive: {
+    transform: [{ scale: 1.035 }],
   },
   cellText: {
     fontSize: 20,

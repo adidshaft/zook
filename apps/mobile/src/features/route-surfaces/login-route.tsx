@@ -12,7 +12,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "@/lib/reanimated-lite";
@@ -135,8 +134,6 @@ export default function Login() {
   const { t } = useI18n();
   const { palette } = useTheme();
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
-  const { width } = useWindowDimensions();
-  const heroFontSize = Math.min(54, width * 0.13);
   const localDevOtp = __DEV__ && getMobileReleaseProfile() === "local" ? "000000" : null;
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
@@ -390,6 +387,7 @@ export default function Login() {
 
   return (
     <ZookScreen ambient={false} testID="login-screen">
+      <View pointerEvents="none" style={[styles.accentGlow, { backgroundColor: palette.surface.accentSoft }]} />
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -400,13 +398,13 @@ export default function Login() {
           <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>{t("auth.heroEyebrow")}</Text>
           <View style={styles.logoRow}>
             <BrandMark size="lg" />
-            <Text style={[styles.heroTitle, { color: palette.text.primary, fontSize: heroFontSize }]}>Zook</Text>
+            <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
           </View>
           <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{t("auth.heroBody")}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(250).duration(600)}>
-          <Card contentStyle={styles.formContent}>
+          <Card style={styles.formCard} contentStyle={styles.formContent}>
             <View style={styles.formHeader}>
               <Text style={[styles.formTitle, { color: palette.text.primary }]}>
                 {stage === "identifier" ? t("auth.signIn") : t("auth.verifyCode")}
@@ -661,6 +659,15 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 18,
   },
+  accentGlow: {
+    borderRadius: 999,
+    height: 360,
+    opacity: 0.8,
+    position: "absolute",
+    right: -140,
+    top: -96,
+    width: 360,
+  },
   heroSection: {
     gap: 8,
     position: "relative",
@@ -676,12 +683,14 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   heroTitle: {
-    fontFamily: "Inter_900Black",
-    lineHeight: 60,
+    ...typography.display,
   },
   heroBody: {
     ...typography.body,
     marginTop: 8,
+  },
+  formCard: {
+    borderRadius: 24,
   },
   formContent: {
     gap: spacing.lg,
@@ -709,6 +718,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
     alignItems: "center",
     justifyContent: "center",
+    borderCurve: "continuous",
     borderRadius: 14,
     borderWidth: 1,
   },
@@ -741,6 +751,7 @@ const styles = StyleSheet.create({
   ssoButton: {
     flex: 1,
     minHeight: 48,
+    borderCurve: "continuous",
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
@@ -780,6 +791,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    borderCurve: "continuous",
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
