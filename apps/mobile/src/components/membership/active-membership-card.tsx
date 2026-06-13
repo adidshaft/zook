@@ -119,13 +119,14 @@ export function ActiveMembershipCard({
                 ? palette.feedback.warning
                 : guidanceTone === "red"
                   ? palette.feedback.danger
-                  : palette.border.subtle,
+                  : "transparent",
             backgroundColor:
               guidanceTone === "amber"
                 ? palette.surface.warningSoft
                 : guidanceTone === "red"
                   ? palette.surface.dangerSoft
-                  : palette.surface.default,
+                  : "transparent",
+            paddingHorizontal: guidanceTone === "amber" || guidanceTone === "red" ? spacing.md : 0,
           },
         ]}
       >
