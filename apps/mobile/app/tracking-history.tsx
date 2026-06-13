@@ -20,7 +20,7 @@ export default function TrackingHistoryScreen() {
     <>
       <ZookScreen testID="tracking-history-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Workout history" subtitle="Completed training logs" showProfileShortcut={false} />
+          <AppHeader title="Workout history" subtitle="Completed training logs" showProfileShortcut={false} showBack />
           {workoutsQuery.isError ? <QueryErrorState error={workoutsQuery.error} onRetry={() => void workoutsQuery.refetch()} /> : null}
           {bodyProgressQuery.isError ? <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} /> : null}
           <View style={styles.stack}>

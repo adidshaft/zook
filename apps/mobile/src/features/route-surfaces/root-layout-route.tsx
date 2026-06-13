@@ -32,7 +32,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { spacing, ThemeProvider, typography, useTheme } from "@/lib/theme/index";
+import { spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -423,13 +423,10 @@ function LayoutContent() {
       ) : null}
       <Stack
         screenOptions={{
-          headerShown: true,
-          headerTransparent: Platform.OS === "ios",
-          headerBlurEffect: Platform.OS === "ios" ? (mode === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterial") : undefined,
-          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.app },
-          headerTintColor: palette.accent.base,
-          headerBackButtonDisplayMode: "minimal",
-          headerTitleStyle: typography.headerTitle,
+          // Screens render their own in-content header (AppHeader/ScreenHeader);
+          // no native nav-bar header anywhere. Keeps headers consistent and stops
+          // unregistered routes from leaking their raw route name as a title.
+          headerShown: false,
           contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
@@ -461,10 +458,10 @@ function LayoutContent() {
         <Stack.Screen name="trainer" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="gyms/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
-        <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", title: "Gyms", headerLargeTitle: true }} />
-        <Stack.Screen name="tracking" options={{ animation: "slide_from_right", title: "Progress" }} />
-        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", title: "Workout history", headerLargeTitle: true }} />
-        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", title: "Log progress" }} />
+        <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
