@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
+
 import {
   Card,
   AnimatedAppear,
@@ -18,7 +20,6 @@ import {
   QueryErrorState,
   ScreenHeader,
   StatStrip,
-  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -108,7 +109,6 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
   const { palette } = useTheme();
   const membership = home?.activeMembership;
   const organization = home?.activeOrganization;
-  const plan = home?.activePlan;
   const daysLeft = membership?.daysLeft;
   const visitsLeft = membership?.remainingVisits;
   const isExpired =
@@ -128,7 +128,9 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
     <Card
       semanticSurface={isExpired ? "warningCard" : "successCard"}
       contentStyle={styles.membershipCard}
-      accessibilityLabel={`${statusLabel}. ${plan?.name ?? "Membership"}. ${detail}. ${organization?.name ?? "Gym"}.`}
+      pressable={!isExpired}
+      onPress={!isExpired ? () => router.push("/membership" as never) : undefined}
+      accessibilityLabel={`${statusLabel}. ${detail}. ${organization?.name ?? "Gym"}.`}
     >
       <View style={styles.membershipTop}>
         <IconBubble
@@ -141,32 +143,23 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
             Membership access
           </Text>
           <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
-            {plan?.name ?? "Active membership"}
+            {statusLabel}
           </Text>
           <Text style={[styles.membershipMeta, { color: palette.text.secondary }]}>
-            {organization?.name ?? "Your gym"} · {detail}
+            {detail}
           </Text>
         </View>
-        <StatusChip status={statusLabel} tone={isExpired ? "amber" : "lime"} />
+        {isExpired ? null : <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />}
       </View>
-      <View style={styles.membershipActions}>
-        <ZookButton
-          onPress={() => router.push("/scan" as never)}
-          icon="qr-code-outline"
-          style={styles.membershipAction}
-          variant={isExpired ? "secondary" : "primary"}
-        >
-          Scan QR
-        </ZookButton>
+      {isExpired ? (
         <ZookButton
           onPress={() => router.push("/membership" as never)}
-          icon={isExpired ? "card-outline" : "receipt-outline"}
-          variant="secondary"
-          style={styles.membershipAction}
+          icon="card-outline"
+          fullWidth
         >
-          {isExpired ? "Renew" : "Details"}
+          Renew membership
         </ZookButton>
-      </View>
+      ) : null}
     </Card>
   );
 }
@@ -360,14 +353,5 @@ const styles = StyleSheet.create({
   },
   membershipMeta: {
     ...typography.small,
-  },
-  membershipActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  membershipAction: {
-    flex: 1,
-    minWidth: 132,
   },
 });
