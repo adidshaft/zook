@@ -224,6 +224,8 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // Called unconditionally (before any state-based early return) to keep hook order stable.
+  const contentPaddingBottom = useBottomScrollPadding({ hasStickyAction: itemCount > 0 });
   const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
   const urlOrderId = firstParam(params.orderId);
   const urlSessionId = firstParam(params.sessionId);
@@ -821,10 +823,6 @@ export default function Shop() {
       </Pressable>
     ) : null;
 
-  const contentPaddingBottom = useBottomScrollPadding({
-    hasStickyAction: Boolean(miniCart),
-  });
-
   return (
     <ShopShell selectedPath="/shop" floatingAction={miniCart} refreshControl={refreshControl} noScroll={true}>
       <FlatList
@@ -866,6 +864,7 @@ export default function Shop() {
               title="Shop"
               subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
               chip={<BranchSelectorChip />}
+              leading={router.canGoBack() ? headerBackButton : undefined}
               showProfileShortcut={false}
               trailing={
                 <Pressable
