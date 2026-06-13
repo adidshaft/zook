@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
