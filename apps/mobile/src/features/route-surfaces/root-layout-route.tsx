@@ -460,6 +460,7 @@ function LayoutContent() {
         <Stack.Screen name="login" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="trainer" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="gyms/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", title: "Gyms", headerLargeTitle: true }} />
         <Stack.Screen name="tracking" options={{ animation: "slide_from_right", title: "Progress" }} />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", title: "Workout history", headerLargeTitle: true }} />

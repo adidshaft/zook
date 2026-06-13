@@ -349,7 +349,7 @@ export default function GymProfileScreen() {
                     />
                   ) : null}
                   <View style={[styles.coverGlow, { backgroundColor: palette.surface.accentSoft }]} />
-                  <Text style={[styles.coverEyebrow, { color: palette.feedback.warning }]}>{gym.tagline ?? gym.name}</Text>
+                  <Text style={[styles.coverEyebrow, { color: palette.accent.base }]}>{gym.tagline ?? gym.name}</Text>
                   <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{plans.length} plans available</Text>
                   <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
                   {gym.openingHoursSummary ? (
