@@ -851,6 +851,8 @@ export function AppHeader({
   contextSlot,
   centered = false,
   showProfileShortcut = true,
+  showBack = false,
+  onBack,
   style,
 }: {
   eyebrow?: string;
@@ -862,12 +864,30 @@ export function AppHeader({
   contextSlot?: ReactNode;
   centered?: boolean;
   showProfileShortcut?: boolean;
+  showBack?: boolean;
+  onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const { palette } = useTheme();
+  const router = useRouter();
 
   let resolvedLeading = leading;
-  if (!resolvedLeading && !centered && showProfileShortcut) {
+  if (!resolvedLeading && showBack) {
+    resolvedLeading = (
+      <Pressable
+        onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={12}
+        style={({ pressed }) => [
+          styles.appHeaderBack,
+          { backgroundColor: palette.bg.elevated, borderColor: palette.border.default, opacity: pressed ? 0.8 : 1 },
+        ]}
+      >
+        <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+      </Pressable>
+    );
+  } else if (!resolvedLeading && !centered && showProfileShortcut) {
     resolvedLeading = <ProfileShortcut />;
   }
 
@@ -3497,6 +3517,14 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  appHeaderBack: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
   },
   headerEyebrow: {
     color: fallbackColors.muted,

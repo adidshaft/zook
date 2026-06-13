@@ -17,7 +17,7 @@ export default function SettingsIndexScreen() {
     <>
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
+          <AppHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} showBack />
           <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
               <Pressable

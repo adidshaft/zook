@@ -80,6 +80,7 @@ export default function SupportSettingsScreen() {
             title="Help & support"
             subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`}
             showProfileShortcut={false}
+            showBack
           />
           <Card variant="compact" contentStyle={styles.list}>
             <Pressable

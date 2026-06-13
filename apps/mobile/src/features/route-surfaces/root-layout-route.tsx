@@ -435,22 +435,22 @@ function LayoutContent() {
       >
         <Stack.Screen name="(member)" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="profile/index" options={{ animation: "slide_from_right", headerShown: false }} />
-        <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", title: "Edit profile" }} />
-        <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", title: "Profile photo" }} />
-        <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", title: "Profile details" }} />
+        <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right", headerShown: false }} />
-        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right", title: "Settings", headerLargeTitle: true }} />
-        <Stack.Screen name="settings/account" options={{ animation: "slide_from_right", title: "Account" }} />
-        <Stack.Screen name="settings/appearance" options={{ animation: "slide_from_right", title: "Appearance" }} />
-        <Stack.Screen name="settings/language" options={{ animation: "slide_from_right", title: "Language" }} />
-        <Stack.Screen name="settings/notifications" options={{ animation: "slide_from_right", title: "Notifications" }} />
-        <Stack.Screen name="settings/privacy" options={{ animation: "slide_from_right", title: "Privacy" }} />
-        <Stack.Screen name="settings/support" options={{ animation: "slide_from_right", title: "Help & support" }} />
+        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/account" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/appearance" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/language" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/notifications" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/privacy" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/support" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="membership/index" options={{ animation: "slide_from_right", headerShown: false }} />
-        <Stack.Screen name="membership/buy" options={{ animation: "slide_from_right", title: "Buy membership" }} />
-        <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", title: "Membership history", headerLargeTitle: true }} />
-        <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", title: "Checkout" }} />
-        <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", title: "Receipt" }} />
+        <Stack.Screen name="membership/buy" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="shop" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="assistant" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="owner" options={{ animation: "none", headerShown: false }} />
