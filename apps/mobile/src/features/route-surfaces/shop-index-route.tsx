@@ -863,8 +863,8 @@ export default function Shop() {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 12 }}>
             <AppHeader
-              title={t("shop.deskPickup")}
-              subtitle={activeOrganization?.name ?? t("shop.activeGym")}
+              title="Shop"
+              subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
               chip={<BranchSelectorChip />}
               showProfileShortcut={false}
               trailing={

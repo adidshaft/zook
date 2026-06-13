@@ -434,7 +434,7 @@ function LayoutContent() {
         }}
       >
         <Stack.Screen name="(member)" options={{ animation: "none", headerShown: false }} />
-        <Stack.Screen name="profile/index" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="profile/index" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", title: "Edit profile" }} />
         <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", title: "Profile photo" }} />
         <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", title: "Profile details" }} />
