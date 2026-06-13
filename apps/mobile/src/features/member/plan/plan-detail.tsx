@@ -116,9 +116,27 @@ export default function Plans() {
           }}
         >
           <AppHeader
-            title="Plans & training"
+            title="Your plan"
             subtitle="From your trainer · synced"
             showProfileShortcut={false}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/plan"))}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                hitSlop={12}
+                style={({ pressed }) => [
+                  styles.headerBackButton,
+                  {
+                    backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                    borderColor: palette.border.default,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+              </Pressable>
+            }
           />
 
           {selectedAssignment ? (
@@ -596,16 +614,16 @@ export function PlanDetailScreen() {
                 icon="send-outline"
                 style={styles.stickyActionHalf}
               >
-                Send Feedback
+                Feedback
               </ZookButton>
               <ZookButton
                 testID="plan-detail-complete-workout"
                 onPress={() => void completeWorkout()}
                 disabled={!selectedAssignment || completePlan.isPending}
                 icon="checkmark-circle-outline"
-                style={styles.stickyActionHalf}
+                style={styles.stickyActionPrimary}
               >
-                {completePlan.isPending ? "Completing..." : "Complete Workout"}
+                {completePlan.isPending ? "Completing..." : "Complete workout"}
               </ZookButton>
             </View>
           </StickyActionBar>
@@ -729,6 +747,14 @@ export function PlanDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerBackButton: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -960,5 +986,8 @@ const styles = StyleSheet.create({
   },
   stickyActionHalf: {
     flex: 1,
+  },
+  stickyActionPrimary: {
+    flex: 1.6,
   },
 });
