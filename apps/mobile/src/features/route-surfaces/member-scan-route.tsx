@@ -978,6 +978,7 @@ export default function Scan() {
             </Card>
           )}
 
+          {scanState !== "idle" || cameraBlocked || (scanMode === "scan" && !hasCamera) ? (
           <Card variant="compact" contentStyle={styles.validationContent}>
             {verificationSteps.map((item) => (
               <View
@@ -1014,6 +1015,7 @@ export default function Scan() {
               </View>
             ))}
           </Card>
+          ) : null}
 
           {errorMessage ? (
             <Card variant="warning" contentStyle={styles.errorContent}>
