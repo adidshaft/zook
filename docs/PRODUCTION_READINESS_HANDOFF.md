@@ -17,14 +17,16 @@ Current launch state from the production deployment and store tooling:
 - Exact local `pnpm release:preflight` still does not pass from `.env.production.local` because that file has an unresolvable/malformed `DATABASE_URL` host (`ENOTFOUND`). Do not claim this command passed until it is rerun with the actual deploy production env.
 - EAS iOS store build is finished: build `282c6ef6-8ef5-4772-82d7-529993a6a687`, `0.1.0 (5)`, production profile, store distribution, commit `7b95a47`, archive URL present.
 - EAS iOS submission is successful: submission `1bb5152b-01c2-4402-b7e7-4cce38f7ff8a`, build `0.1.0 (5)`, log step `Upload to App Store Connect` completed.
-- Direct App Store Connect/TestFlight UI verification is still Apple-login gated. Chrome redirects `https://appstoreconnect.apple.com/apps/6767848585/testflight/ios` to login with `authResult=FAILED`.
+- App Store Connect/TestFlight UI verification passed after Apple login: build `0.1.0 (5)` is visible, upload status is `Complete`, and TestFlight status is `Ready to Submit`.
+- On 2026-06-13, TestFlight test information was completed for build `0.1.0 (5)`, tester `aman0902pandey@gmail.com` was added as the only individual tester, and the build was submitted for Apple Beta App Review. App Store Connect then showed `1 tester has been added`, `Remove from Review`, and the tester row status `No Builds Available`, so install availability is pending Apple review/processing.
 - EAS Android store build is finished: build `3d9c0f8e-8fe9-4cdc-be06-e1468b5c7431`, `0.1.0` versionCode `4`, production profile, store distribution, archive URL present.
 - Google Play Console internal testing shows release `4 (0.1.0)` available to internal testers, released Jun 12 11:37 PM, not reviewed yet.
+- Production demo login smoke passed on 2026-06-13: `member@zook.local` requested an OTP and verified successfully with code `000000` against `https://zookfit.in/api/auth/verify-otp`.
 
 Open before calling the launch fully accepted:
 
 - Complete the physical iOS and Android pass in `docs/real-device-qa-log.md`, including light/dark login, workout loop, scan/check-in plus geofence, owner setup checklist, desk verify, push, low-light QR, and one real payment/webhook.
-- Verify App Store Connect/TestFlight processing after Apple login/2FA.
+- Wait for Apple Beta App Review/TestFlight processing, then install build `0.1.0 (5)` from TestFlight on the physical iPhone.
 - Rerun `pnpm release:preflight` with the actual production env or an equivalent deployed-env runner, without exposing secrets.
 
 ## 2026-05-17 Production Rehearsal Update
