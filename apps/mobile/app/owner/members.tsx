@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
-import { ZookScreen } from "@/components/primitives";
+import { ScreenHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
@@ -138,6 +139,13 @@ export default function OwnerMembersScreen() {
         <KeyboardAwareScreen noScroll={true} style={styles.content}>
           <MemberList
             testID="owner-view-members"
+            header={
+              <ScreenHeader
+                title="Members"
+                subtitle={`${membersQuery.data?.members.length ?? 0} total`}
+                contextSlot={<RoleSwitcherContextPill />}
+              />
+            }
             items={memberItems}
             isLoading={membersQuery.isLoading}
             isError={membersQuery.isError}

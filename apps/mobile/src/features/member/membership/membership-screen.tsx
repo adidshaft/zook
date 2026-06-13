@@ -603,7 +603,7 @@ export default function MembershipScreen() {
 
           {latestSubscription ? (
             <>
-              <SectionHeader title="Active membership" />
+              <SectionHeader title="Active plan" />
               <ActiveMembershipCard
                 activeOrganizationName={activeOrganization?.name}
                 actionBusy={membershipActionBusy}

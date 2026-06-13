@@ -31,6 +31,7 @@ import {
   AnimatedAppear,
   IconBubble,
   PrimaryButton,
+  ProfileShortcut,
   ScreenHeader,
   SecondaryButton,
   ZookScreen,
@@ -782,6 +783,7 @@ export function ReceptionWorkspace({
   subtitle,
   title,
   testID = "reception-home-screen",
+  isDetailView = false,
 }: {
   children: ReactNode;
   initialMemberId?: string | null;
@@ -789,6 +791,8 @@ export function ReceptionWorkspace({
   subtitle: string;
   title: string;
   testID?: string;
+  /** Pushed detail screens (member/[id], payments/new, verification) show a back button. */
+  isDetailView?: boolean;
 }) {
   const state = useReceptionWorkspaceState({ initialMemberId });
   const { mode, palette } = useTheme();
@@ -827,24 +831,31 @@ export function ReceptionWorkspace({
           contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
           scrollY={scrollY}
           trailing={
-            <Pressable
-              testID="reception-back"
-              onPress={state.activeRole === "OWNER" || state.activeRole === "ADMIN"
-                ? () => state.router.replace("/owner")
-                : () => {
-                    if (state.router.canGoBack()) {
-                      state.router.back();
-                    } else {
-                      state.router.replace("/");
-                    }
-                  }}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-              hitSlop={12}
-              style={[styles.backButton, headerControlStyle]}
-            >
-              <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-            </Pressable>
+            isDetailView ? (
+              <Pressable
+                testID="reception-back"
+                onPress={() => (state.router.canGoBack() ? state.router.back() : state.router.replace("/reception"))}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                hitSlop={12}
+                style={[styles.backButton, headerControlStyle]}
+              >
+                <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+              </Pressable>
+            ) : state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? (
+              <Pressable
+                testID="reception-back"
+                onPress={() => state.router.replace("/owner")}
+                accessibilityRole="button"
+                accessibilityLabel="Back to owner tools"
+                hitSlop={12}
+                style={[styles.backButton, headerControlStyle]}
+              >
+                <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+              </Pressable>
+            ) : (
+              <ProfileShortcut />
+            )
           }
         />
 

@@ -19,6 +19,7 @@ export type AppIconName =
   | "stock"
   | "billing"
   | "payouts"
+  | "shop"
   | "back";
 
 const iconMap: Record<
@@ -60,6 +61,7 @@ const iconMap: Record<
   stock: { ios: "cube.box", ionicon: "cube-outline", ioniconFocused: "cube" },
   billing: { ios: "creditcard", ionicon: "card-outline", ioniconFocused: "card" },
   payouts: { ios: "wallet.pass", ionicon: "wallet-outline", ioniconFocused: "wallet" },
+  shop: { ios: "bag", ionicon: "bag-outline", ioniconFocused: "bag" },
   back: { ios: "chevron.backward", ionicon: "chevron-back" },
 };
 

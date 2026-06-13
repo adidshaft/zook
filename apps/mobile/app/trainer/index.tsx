@@ -12,6 +12,7 @@ import {
   IconBubble,
   ListRow,
   OperationalQueueCard,
+  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
@@ -26,10 +27,10 @@ import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
-  const { mode, palette } = useTheme();
+  const { palette } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, logout, session } = useAuth();
+  const { activeOrgId, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const clientsQuery = useTrainerClients();
@@ -47,11 +48,6 @@ export default function TrainerHomeScreen() {
     .sort((a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime())
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
-  const isDark = mode === "dark";
-  const headerButtonStyle = {
-    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-    borderColor: palette.border.default,
-  };
 
   async function onRefresh() {
     setRefreshing(true);
@@ -81,37 +77,7 @@ export default function TrainerHomeScreen() {
             subtitle={session?.user.name ?? undefined}
             contextSlot={<RoleSwitcherContextPill />}
             scrollY={scrollY}
-            trailing={
-              <View style={styles.headerActions}>
-                <Pressable
-                  onPress={() => router.push("/profile")}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open profile"
-                  style={({ pressed }) => [
-                    styles.iconButton,
-                    headerButtonStyle,
-                    pressed ? styles.controlPressed : null,
-                  ]}
-                >
-                  <IconBubble icon="person-circle-outline" tone="blue" size={30} />
-                </Pressable>
-                <Pressable
-                  onPress={() => void logout()}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sign out"
-                  style={({ pressed }) => [
-                    styles.iconButton,
-                    {
-                      backgroundColor: palette.surface.dangerSoft,
-                      borderColor: palette.feedback.danger,
-                    },
-                    pressed ? styles.controlPressed : null,
-                  ]}
-                >
-                  <IconBubble icon="log-out-outline" tone="red" size={30} />
-                </Pressable>
-              </View>
-            }
+            trailing={<ProfileShortcut />}
           />
 
           {clientsQuery.isLoading ? <TrainerClientsSkeleton /> : null}
@@ -129,7 +95,7 @@ export default function TrainerHomeScreen() {
                 >
                   <ListRow
                     title={priorityClient.user?.name ?? "Client"}
-                    subtitle={`${priorityClient.summary?.activePlans ?? 0} active plans · ${fitnessGoalFor(priorityClient)}`}
+                    subtitle={`${priorityClient.summary?.activePlans ?? 0} active ${(priorityClient.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${fitnessGoalFor(priorityClient)}`}
                     leading={<IconBubble icon="person-outline" tone="lime" />}
                     trailing={<StatusChip status="Today" tone="amber" />}
                   />

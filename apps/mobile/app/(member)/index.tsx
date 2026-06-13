@@ -15,7 +15,6 @@ import {
   AnimatedAppear,
   HeaderMeta,
   IconBubble,
-  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   StatStrip,
@@ -23,6 +22,7 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
@@ -212,7 +212,7 @@ export default function HomeScreen() {
           <ScreenHeader
             title={`Hello, ${firstName}`}
             contextSlot={<RoleSwitcherContextPill />}
-            trailing={<ProfileShortcut />}
+            trailing={<MemberHeaderActions />}
             meta={
               streakDays > 0 ? (
                 <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>

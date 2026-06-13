@@ -19,20 +19,13 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { PlansSkeleton } from "@/components/skeletons";
 import { DietPanel } from "@/features/member/plan/diet-panel";
-import { useMyPlans, useMyTrackingWorkouts, type MyPlanRecord } from "@/lib/domains";
+import { useMyPlans, type MyPlanRecord } from "@/lib/domains";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
-
-type WorkoutRecord = {
-  id?: string;
-  title?: string;
-  workoutType?: string;
-  startedAt?: string;
-  durationMinutes?: number | null;
-};
 
 function planTitle(assignment?: MyPlanRecord | null) {
   return resolvePlanName(assignment?.plan) || "Assigned plan";
@@ -46,14 +39,14 @@ export default function MemberPlanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const plansQuery = useMyPlans();
-  const workoutsQuery = useMyTrackingWorkouts();
   const [activeTab, setActiveTab] = useState<"workout" | "diet">("workout");
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const plans = plansQuery.data?.plans ?? [];
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
-  const recentWorkouts = (workoutsQuery.data?.workouts ?? []) as WorkoutRecord[];
+  // Don't repeat today's plan in the schedule list below.
+  const upcomingPlans = workoutPlans.filter((assignment) => assignment.id !== todayPlan?.id);
   const { palette } = useTheme();
 
   useEffect(() => {
@@ -64,7 +57,7 @@ export default function MemberPlanScreen() {
   async function onRefresh() {
     setRefreshing(true);
     try {
-      await Promise.all([plansQuery.refetch(), workoutsQuery.refetch()]);
+      await plansQuery.refetch();
     } finally {
       setRefreshing(false);
     }
@@ -90,7 +83,7 @@ export default function MemberPlanScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
+          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} trailing={<MemberHeaderActions showBell={false} />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <SegmentedControl
               options={[
@@ -134,70 +127,28 @@ export default function MemberPlanScreen() {
                 ) : null}
               </AnimatedAppear>
 
-              <AnimatedAppear delay={80}>
-                <SectionHeader title="This week's schedule" />
-                <View style={styles.stack}>
-                {workoutPlans.slice(0, 4).map((assignment, index) => (
-                  <PressableCard
-                    key={assignment.id}
-                    testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
-                    onPress={() => openAssignment(assignment.id)}
-                    variant="compact"
-                  >
-                    <ListRow
-                      title={planTitle(assignment)}
-                      subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
-                      leading={<IconBubble icon="calendar-outline" tone="blue" />}
-                      trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
-                    />
-                  </PressableCard>
-                ))}
-                {!workoutPlans.length && !plansQuery.isLoading ? (
-                  <Card variant="compact">
-                    <EmptyState title="Schedule empty" body="Assigned workout days will appear here." />
-                  </Card>
-                ) : null}
-                </View>
-              </AnimatedAppear>
-
-              <AnimatedAppear delay={120}>
-                <SectionHeader title="Recent sessions" />
-                <View style={styles.stack}>
-                {recentWorkouts.slice(0, 3).map((workout, index) => (
-                  <Card key={workout.id ?? `${workout.title}-${index}`} variant="compact">
-                    <ListRow
-                      title={workout.title ?? "Workout"}
-                      subtitle={`${workout.workoutType ?? "Training"} · ${workout.durationMinutes ?? 0} min`}
-                      leading={<IconBubble icon="checkmark-done-outline" tone="lime" />}
-                    />
-                  </Card>
-                ))}
-                {!recentWorkouts.length && !workoutsQuery.isLoading ? (
-                  <Card variant="compact">
-                    <EmptyState title="No sessions yet" body="Completed workouts and tracking history will appear here." />
-                  </Card>
-                ) : null}
-                </View>
-              </AnimatedAppear>
-
-              <AnimatedAppear delay={160}>
-                <SectionHeader title="Browse all plans" />
-                <View style={styles.planGrid}>
-                {plans.map((assignment) => (
-                  <PressableCard
-                    key={assignment.id}
-                    onPress={() => openAssignment(assignment.id)}
-                    padding={14}
-                    style={styles.planTile}
-                    contentStyle={styles.planTileContent}
-                  >
-                    <IconBubble icon={planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"} tone={planKind(assignment).includes("diet") ? "blue" : "lime"} size={38} />
-                    <Text numberOfLines={2} style={[styles.planTileTitle, { color: palette.text.primary }]}>{planTitle(assignment)}</Text>
-                    <Text style={[styles.planTileMeta, { color: palette.text.secondary }]}>{assignment.progress?.completionPct ?? 0}%</Text>
-                  </PressableCard>
-                ))}
-                </View>
-              </AnimatedAppear>
+              {upcomingPlans.length ? (
+                <AnimatedAppear delay={80}>
+                  <SectionHeader title="More plans" />
+                  <View style={styles.stack}>
+                  {upcomingPlans.map((assignment, index) => (
+                    <PressableCard
+                      key={assignment.id}
+                      testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
+                      onPress={() => openAssignment(assignment.id)}
+                      variant="compact"
+                    >
+                      <ListRow
+                        title={planTitle(assignment)}
+                        subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
+                        leading={<IconBubble icon="calendar-outline" tone="blue" />}
+                        trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
+                      />
+                    </PressableCard>
+                  ))}
+                  </View>
+                </AnimatedAppear>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -221,15 +172,4 @@ const styles = StyleSheet.create({
   todayCopy: { flex: 1, gap: 4 },
   todayTitle: typography.title,
   todayMeta: typography.small,
-  planGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  planTile: {
-    flexGrow: 1,
-    minWidth: "47%",
-  },
-  planTileContent: {
-    gap: spacing.sm,
-    minHeight: 126,
-  },
-  planTileTitle: typography.cardTitle,
-  planTileMeta: typography.caption,
 });

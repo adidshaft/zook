@@ -2,26 +2,16 @@ import { Tabs } from "expo-router";
 
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
-import { useMyNotifications } from "@/lib/domains/notifications";
 import { useGeofenceCheckout } from "@/lib/use-geofence-checkout";
 
 export default function MemberLayout() {
   const geofenceCheckout = useGeofenceCheckout();
-  const notificationsQuery = useMyNotifications({
-    select: (data) =>
-      data.notifications.filter((notification) => !notification.readAt).length,
-  });
-  const unread = notificationsQuery.data ?? 0;
 
   return (
     <>
       <Tabs
         tabBar={(props) => (
-          <RoleTabBar
-            {...props}
-            badges={{ you: unread }}
-            centerAction={{ routeName: "scan" }}
-          />
+          <RoleTabBar {...props} centerAction={{ routeName: "scan" }} />
         )}
         screenOptions={{
           headerShown: false,
@@ -67,20 +57,12 @@ export default function MemberLayout() {
           name="shop"
           options={{
             title: "Shop",
-            href: null,
-            tabBarItemStyle: { display: "none" },
-          }}
-        />
-        <Tabs.Screen name="diet" options={{ href: null, tabBarItemStyle: { display: "none" } }} />
-        <Tabs.Screen
-          name="you"
-          options={{
-            title: "You",
             tabBarIcon: ({ color, focused, size }) => (
-              <Icon name="you" focused={focused} size={size} color={color} />
+              <Icon name="shop" focused={focused} size={size} color={color} />
             ),
           }}
         />
+        <Tabs.Screen name="diet" options={{ href: null, tabBarItemStyle: { display: "none" } }} />
       </Tabs>
       {geofenceCheckout.permissionSheet}
     </>

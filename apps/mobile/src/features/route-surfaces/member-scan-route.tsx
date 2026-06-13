@@ -743,9 +743,9 @@ export default function Scan() {
           }}
         >
           <AppHeader
-            title="Scan Gym QR"
+            title="Scan to check in"
             contextSlot={<RoleSwitcherChip />}
-            subtitle="Server-authoritative check-in for your active gym"
+            subtitle="Point your camera at the QR code at your gym"
             showProfileShortcut={false}
           />
 
