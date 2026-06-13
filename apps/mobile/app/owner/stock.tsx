@@ -1,7 +1,8 @@
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
 import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
@@ -42,6 +43,7 @@ export default function OwnerStockScreen() {
             ),
           }}
         >
+          <ScreenHeader title="Stock" contextSlot={<RoleSwitcherContextPill />} />
           <View style={styles.metricGrid}>
             <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
             <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />

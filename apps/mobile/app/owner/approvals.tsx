@@ -5,8 +5,9 @@ import { useState } from "react";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { EmptyState, Card, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
 import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
@@ -99,6 +100,7 @@ export default function OwnerApprovalsScreen() {
             ),
           }}
         >
+          <ScreenHeader title="Approvals" contextSlot={<RoleSwitcherContextPill />} />
           <MetricGrid
             items={[
               {

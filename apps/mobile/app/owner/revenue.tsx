@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
 import { RefreshControl, StyleSheet, Text } from "react-native";
 
-import { EmptyState, Card, IconBubble, ListRow, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { EmptyState, Card, IconBubble, ListRow, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 import { RevenueSummary } from "@/features/owner/components/revenue-summary";
 import { titleCase } from "@/features/owner/helpers";
@@ -39,6 +40,7 @@ export default function OwnerRevenueScreen() {
             ),
           }}
         >
+          <ScreenHeader title="Revenue" contextSlot={<RoleSwitcherContextPill />} />
           <RevenueSummary revenuePaise={dashboardQuery.data?.summary?.revenuePaise ?? 0} payments={payments} />
           <OwnerDashboardCharts charts={dashboardQuery.data?.charts} />
           <SectionHeader title="Recent transactions" subtitle="Today" />
