@@ -37,8 +37,13 @@ export default function OwnerCommandScreen() {
   const joinRequests = (dashboard?.joinRequests ?? []).filter(
     (request) => String(request.status ?? "").toLowerCase() === "pending",
   );
-  const attentionAttempts = attentionQuery.data?.records ?? [];
-  const lowStock = dashboard?.products ?? [];
+  const attentionAttempts = (attentionQuery.data?.records ?? []).filter((record) => {
+    const status = String(record.status ?? "").toUpperCase();
+    return status === "PENDING_APPROVAL" || status === "FLAGGED";
+  });
+  const lowStock = (dashboard?.products ?? []).filter(
+    (product) => (product.stock ?? 0) <= (product.lowStockThreshold ?? 0),
+  );
   const expiringSoon = dashboard?.summary?.expiringMemberships ?? 0;
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
