@@ -233,7 +233,12 @@ function useReceptionWorkspaceState({
   );
   const approvalItems = useMemo<ApprovalItem[]>(
     () =>
-      approvalQueue.map((attempt) => {
+      approvalQueue
+        .filter((attempt) => {
+          const status = String(attempt.status ?? "").toUpperCase();
+          return status === "PENDING_APPROVAL" || status === "FLAGGED";
+        })
+        .map((attempt) => {
         const flags = Array.isArray(attempt.suspiciousFlags)
           ? attempt.suspiciousFlags
           : [attempt.source ?? "scan"];
