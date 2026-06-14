@@ -14,7 +14,12 @@ export default function OwnerStockScreen() {
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const ordersQuery = useOrgActiveShopOrders();
-  const lowStock = dashboardQuery.data?.products ?? [];
+  // Only items at or below their reorder threshold belong in the "Below
+  // threshold" list — guard client-side so the list and the count stay honest
+  // even if the payload includes well-stocked products.
+  const lowStock = (dashboardQuery.data?.products ?? []).filter(
+    (product) => (product.stock ?? 0) <= (product.lowStockThreshold ?? 0),
+  );
   const orders = ordersQuery.data?.orders ?? [];
 
   async function reorderProduct(product: LowStockProduct) {

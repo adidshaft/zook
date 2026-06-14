@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { IconBubble, ListRow } from "@/components/primitives";
-import { formatInr } from "@/lib/formatting";
 import { typography, useTheme } from "@/lib/theme";
 
 export type LowStockProduct = {
@@ -23,7 +22,7 @@ export function StockRow({
   return (
     <ListRow
       title={product.name}
-      subtitle={`${formatInr(product.pricePaise ?? 0)} · threshold ${product.lowStockThreshold ?? 0}`}
+      subtitle={`${product.stock ?? 0} left · threshold ${product.lowStockThreshold ?? 0}`}
       leading={<IconBubble icon="cube-outline" tone="amber" />}
       trailing={
         <Pressable
