@@ -155,7 +155,7 @@ export default function TrainerClientOverviewScreen() {
               <View style={styles.clientHeroMetric}>
                 <Ionicons name="barbell-outline" size={22} color={palette.accent.base} />
                 <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>PT pack</Text>
-                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
+                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active ${activePlans === 1 ? "plan" : "plans"}` : "Create first plan"}</Text>
               </View>
             </View>
             <ZookButton testID="trainer-ai-draft-button" href={`/trainer/clients/${id}/plan` as never} icon="sparkles-outline" disabled={!client}>
