@@ -166,12 +166,7 @@ export function ActiveMembershipCard({
         onPress={() => onPauseOrResume(subscription)}
         icon={subscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
       >
-        {subscription.status === "PAUSED"
-          ? "Resume membership"
-          : `Pause until ${pauseResumesAt.toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}`}
+        {subscription.status === "PAUSED" ? "Resume membership" : "Pause membership"}
       </ZookButton>
       {actionStatus ? (
         <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
