@@ -603,7 +603,24 @@ export async function demoMobileApiFetch<T>(
     return { ok: true } as T;
   }
   if (pathname === "/me/notifications")
-    return { notifications: zookDemoFixtures.notifications } as T;
+    // Match the real API envelope: each row wraps a `notification` whose
+    // `body` is sourced from the stored `message` (see apps/web .../data.ts).
+    return {
+      notifications: zookDemoFixtures.notifications.map((n) => ({
+        id: n.id,
+        readAt: n.readAt,
+        deliveredAt: n.createdAt,
+        notification: {
+          id: n.id,
+          title: n.title,
+          body: n.message,
+          type: n.type,
+          status: "SENT",
+          createdAt: n.createdAt,
+          metadata: { targetRoute: n.targetRoute },
+        },
+      })),
+    } as T;
   if (pathname === "/me/notifications/read") {
     const body = init.body as { ids?: string[] } | undefined;
     return { count: body?.ids?.length ?? 0 } as T;
