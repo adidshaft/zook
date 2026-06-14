@@ -7,11 +7,13 @@ import {
   Card,
   ListRow,
   QueryErrorState,
+  ScreenHeader,
   StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
   useCancelSaasSubscription,
   useCreateSaasBillingMandate,
@@ -135,13 +137,11 @@ export default function OwnerBillingScreen() {
             ),
           }}
         >
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: palette.text.tertiary }]}>Owner billing</Text>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Trial and SaaS setup</Text>
-            <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
-              Keep trial access, mandate setup, subscription status, and referral billing context visible on mobile.
-            </Text>
-          </View>
+          <ScreenHeader
+            title="Billing"
+            subtitle="Trial, subscription, and payment mandate status."
+            contextSlot={<RoleSwitcherContextPill />}
+          />
 
           {billingQuery.isError ? (
             <QueryErrorState error={billingQuery.error} onRetry={() => void billingQuery.refetch()} />
@@ -164,7 +164,7 @@ export default function OwnerBillingScreen() {
                     </Text>
                   </View>
                   <StatusChip
-                    status={subscription?.status ?? "UNKNOWN"}
+                    status={titleCaseFromCode(subscription?.status ?? "UNKNOWN")}
                     tone={subscription?.status === "ACTIVE" ? "lime" : "amber"}
                   />
                 </View>
@@ -180,7 +180,7 @@ export default function OwnerBillingScreen() {
                 />
                 <ListRow
                   title="Active members"
-                  subtitle={`${data.activeMemberCount} members currently count toward SaaS limits`}
+                  subtitle={`${data.activeMemberCount} members currently count toward your plan limits`}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
               </Card>
@@ -192,10 +192,10 @@ export default function OwnerBillingScreen() {
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
                       {mandate
                         ? `${titleCaseFromCode(mandate.status)} · ${formatInr(mandate.amountPaise)}`
-                        : "No SaaS mandate is set up yet."}
+                        : "No payment mandate is set up yet."}
                     </Text>
                   </View>
-                  <StatusChip status={mandate?.status ?? "MISSING"} tone={mandate ? "lime" : "amber"} />
+                  <StatusChip status={titleCaseFromCode(mandate?.status ?? "MISSING")} tone={mandate ? "lime" : "amber"} />
                 </View>
                 {mandate?.nextChargeAt ? (
                   <ListRow
@@ -337,19 +337,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: 96,
-  },
-  header: {
-    gap: 5,
-  },
-  eyebrow: {
-    ...typography.caption,
-    textTransform: "uppercase",
-  },
-  title: {
-    ...typography.screenTitle,
-  },
-  subtitle: {
-    ...typography.body,
   },
   stack: {
     gap: spacing.md,
