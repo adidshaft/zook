@@ -75,7 +75,9 @@ export default function AssistantScreen() {
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
   const activeRole = roleContext?.role ?? "MEMBER";
-  const isTrainer = Boolean(roleContext?.availableRoles.includes("TRAINER"));
+  // Use the ACTIVE role, not merely available roles — a member who can also
+  // train shouldn't see trainer prompts/copy while acting as a member.
+  const isTrainer = activeRole === "TRAINER";
   const trainerClientsQuery = useTrainerClients(undefined, undefined, isTrainer);
   const canUseAi = Boolean(
     roleContext?.availableRoles.some((role) => role === "TRAINER" || role === "MEMBER"),
