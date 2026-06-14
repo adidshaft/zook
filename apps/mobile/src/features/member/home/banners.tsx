@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Card, IconBubble, ZookButton } from "@/components/primitives";
-import { useMyShopOrders, useShopProducts } from "@/lib/domains/shop";
+import { useMyShopOrders } from "@/lib/domains/shop";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { spacing, typography, useTheme } from "@/lib/theme";
@@ -16,30 +16,22 @@ function recent(timestamp?: string | null, windowMs = DAY_MS) {
   return Number.isFinite(parsed) && Date.now() - parsed < windowMs;
 }
 
-function unreadUpdateTitle(count: number) {
-  return `${count} unread ${count === 1 ? "update" : "updates"}`;
-}
-
 export function Banners({ home }: { home?: MemberHomeData }) {
   const [dismissed, setDismissed] = useState<Record<string, string>>({});
   const orgId = home?.activeOrganization?.id ?? "none";
-  const shopProductsQuery = useShopProducts();
   const shopOrdersQuery = useMyShopOrders();
 
   useEffect(() => {
     let mounted = true;
-    void Promise.all([
-      getStoredValue(`zook_home_referral_dismissed_${orgId}`),
-      getStoredValue(`zook_home_notifications_dismissed_${orgId}`),
-    ]).then(([referral, notifications]) => {
-      if (mounted) setDismissed({ referral: referral ?? "", notifications: notifications ?? "" });
+    void getStoredValue(`zook_home_referral_dismissed_${orgId}`).then((referral) => {
+      if (mounted) setDismissed({ referral: referral ?? "" });
     });
     return () => {
       mounted = false;
     };
   }, [orgId]);
 
-  function dismiss(kind: "referral" | "notifications") {
+  function dismiss(kind: "referral") {
     const value = String(Date.now());
     setDismissed((current) => ({ ...current, [kind]: value }));
     void setStoredValue(`zook_home_${kind}_dismissed_${orgId}`, value);
@@ -47,74 +39,64 @@ export function Banners({ home }: { home?: MemberHomeData }) {
 
   const showProfile = Boolean(home?.activeMembership && !home.assignedTrainer);
   const showReferral = Boolean(home?.activeOrganization && !recent(dismissed.referral, 7 * DAY_MS));
-  const showNotifications = Boolean((home?.unreadNotifications ?? 0) > 0 && !recent(dismissed.notifications));
   const readyOrder = shopOrdersQuery.data?.orders.find(
     (order) => order.pickupCode && !order.fulfilledAt && !/CANCEL|FULFILLED/i.test(order.status),
   );
-  const hasShopProducts = (shopProductsQuery.data?.products.length ?? 0) > 0;
   const daysLeft = home?.activeMembership?.daysLeft;
   const membershipExpiring = typeof daysLeft === "number" && daysLeft >= 0 && daysLeft <= 7;
 
-  return (
-    <View style={styles.stack}>
-      {readyOrder ? (
-        <Banner
-          icon="bag-check-outline"
-          title="Pickup ready"
-          body={`Show pickup code ${readyOrder.pickupCode} at the desk.`}
-          actionHref={`/shop/pickup/${readyOrder.id}`}
-          actionLabel="Open"
-        />
-      ) : null}
-      {hasShopProducts ? (
-        <Banner
-          icon="storefront-outline"
-          title="Gym shop"
-          body="Browse products available from your gym."
-          actionHref="/shop"
-          actionLabel="Shop"
-        />
-      ) : null}
-      {membershipExpiring ? (
-        <Banner
-          icon="warning-outline"
-          title={daysLeft === 0 ? "Membership ends today" : `${daysLeft} days left`}
-          body="Renew now to keep check-ins and plan access moving."
-          actionHref="/membership/buy"
-          actionLabel="Renew"
-        />
-      ) : null}
-      {showNotifications ? (
-        <Banner
-          icon="notifications-outline"
-          title={unreadUpdateTitle(home?.unreadNotifications ?? 0)}
-          body="Payments, plans, and gym messages are waiting."
-          actionHref="/notifications"
-          actionLabel="Open"
-          onDismiss={() => dismiss("notifications")}
-        />
-      ) : null}
-      {showProfile ? (
-        <Banner
-          icon="person-circle-outline"
-          title="Complete your profile"
-          body="Add your details so staff and trainers can help faster."
-          actionHref="/profile"
-          actionLabel="Update"
-        />
-      ) : null}
-      {showReferral ? (
-        <Banner
-          icon="gift-outline"
-          title="Invite a friend"
-          body="Share Zook with someone who should train with you."
-          actionHref="/profile"
-          actionLabel="Referral"
-          onDismiss={() => dismiss("referral")}
-        />
-      ) : null}
-    </View>
-  );
+  // Most actionable / time-sensitive first. The Shop tab and the header
+  // notification bell already cover shop + unread-update prompts, so those
+  // banners are intentionally gone. Cap the stack so Home never turns into a
+  // wall of banners.
+  const banners = [
+    readyOrder ? (
+      <Banner
+        key="pickup"
+        icon="bag-check-outline"
+        title="Pickup ready"
+        body={`Show pickup code ${readyOrder.pickupCode} at the desk.`}
+        actionHref={`/shop/pickup/${readyOrder.id}`}
+        actionLabel="Open"
+      />
+    ) : null,
+    membershipExpiring ? (
+      <Banner
+        key="renew"
+        icon="warning-outline"
+        title={daysLeft === 0 ? "Membership ends today" : `${daysLeft} days left`}
+        body="Renew now to keep check-ins and plan access moving."
+        actionHref="/membership/buy"
+        actionLabel="Renew"
+      />
+    ) : null,
+    showProfile ? (
+      <Banner
+        key="profile"
+        icon="person-circle-outline"
+        title="Complete your profile"
+        body="Add your details so staff and trainers can help faster."
+        actionHref="/profile"
+        actionLabel="Update"
+      />
+    ) : null,
+    showReferral ? (
+      <Banner
+        key="referral"
+        icon="gift-outline"
+        title="Invite a friend"
+        body="Share Zook with someone who should train with you."
+        actionHref="/profile"
+        actionLabel="Referral"
+        onDismiss={() => dismiss("referral")}
+      />
+    ) : null,
+  ].filter(Boolean);
+
+  const visibleBanners = banners.slice(0, 2);
+  if (!visibleBanners.length) return null;
+
+  return <View style={styles.stack}>{visibleBanners}</View>;
 }
 
 function Banner({
