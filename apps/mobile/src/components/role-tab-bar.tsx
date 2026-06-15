@@ -139,6 +139,16 @@ export function RoleTabBar({
         style={[
           styles.tabBarContainer,
           Platform.OS === "android" ? styles.androidTabBarContainer : null,
+          // Android: keep the bar edge-to-edge but pad the content above the
+          // system gesture/nav bar so labels (esp. the centered "Scan", which
+          // sits right behind the gesture pill) aren't clipped. insets.bottom
+          // can report 0 with gesture nav, so enforce a minimum.
+          Platform.OS === "android"
+            ? (() => {
+                const pad = Math.max(insets.bottom, 24);
+                return { height: 64 + pad, paddingBottom: pad };
+              })()
+            : null,
           materialStyle,
           {
             bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? insets.bottom + 8 : 16) : 0,
@@ -278,7 +288,7 @@ export function RoleTabBar({
                     size: 26,
                   }) ?? <Ionicons name="qr-code" size={26} color={palette.text.onAccent} />}
                 </AnimatedPressable>
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.centerActionLabel, { color }]}>{stringLabel}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.centerActionLabel, Platform.OS === "android" ? styles.androidCenterActionLabel : null, { color }]}>{stringLabel}</Text>
               </View>
             );
           }
@@ -438,7 +448,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    marginTop: 0,
+    // Raise the button above the bar (like iOS) so the "Scan" label below it
+    // sits on the same baseline as the other tab labels instead of dropping
+    // into the system gesture bar.
+    marginTop: -34,
     borderWidth: 0,
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
@@ -449,6 +462,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: "100%",
     textAlign: "center",
+  },
+  // The raised center button only shifts itself (Yoga sizes the line with
+  // positive margins), so anchor the Android label to the row baseline
+  // instead of letting it follow the button into the gesture bar.
+  androidCenterActionLabel: {
+    position: "absolute",
+    bottom: 10,
+    left: 0,
+    right: 0,
+    marginTop: 0,
   },
   badge: {
     position: "absolute",
