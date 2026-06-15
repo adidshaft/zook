@@ -156,7 +156,7 @@ export default function OwnerCommandScreen() {
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
       hint:
         (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
-          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`
+          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending ${(dashboard?.summary?.pendingAttendanceApprovals ?? 0) === 1 ? "review" : "reviews"}`
           : undefined,
       tone: "blue",
       icon: "qr-code-outline",
