@@ -111,31 +111,38 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
   const organization = home?.activeOrganization;
   const daysLeft = membership?.daysLeft;
   const visitsLeft = membership?.remainingVisits;
+  const hasMembership = Boolean(membership);
   const isExpired =
-    !membership ||
-    String(membership.status ?? "").toLowerCase().includes("expired") ||
-    (typeof daysLeft === "number" && daysLeft <= 0);
-  const statusLabel = isExpired ? "Renewal needed" : "Access active";
-  const detail =
-    [
-      typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
-      typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ") || "Membership synced with desk";
+    hasMembership &&
+    (String(membership?.status ?? "").toLowerCase().includes("expired") ||
+      (typeof daysLeft === "number" && daysLeft <= 0));
+  const needsAction = !hasMembership || isExpired;
+  const statusLabel = !hasMembership
+    ? "No active membership"
+    : isExpired
+      ? "Renewal needed"
+      : "Access active";
+  const detail = !hasMembership
+    ? "Browse plans to start training here"
+    : [
+        typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
+        typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || "Membership synced with desk";
 
   return (
     <Card
-      semanticSurface={isExpired ? "warningCard" : "successCard"}
+      semanticSurface={needsAction ? "warningCard" : "successCard"}
       contentStyle={styles.membershipCard}
-      pressable={!isExpired}
-      onPress={!isExpired ? () => router.push("/membership" as never) : undefined}
+      pressable={!needsAction}
+      onPress={!needsAction ? () => router.push("/membership" as never) : undefined}
       accessibilityLabel={`${statusLabel}. ${detail}. ${organization?.name ?? "Gym"}.`}
     >
       <View style={styles.membershipTop}>
         <IconBubble
-          icon={isExpired ? "warning-outline" : "shield-checkmark-outline"}
-          tone={isExpired ? "amber" : "lime"}
+          icon={!hasMembership ? "card-outline" : isExpired ? "warning-outline" : "shield-checkmark-outline"}
+          tone={needsAction ? "amber" : "lime"}
           size={44}
         />
         <View style={styles.membershipCopy}>
@@ -149,15 +156,15 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
             {detail}
           </Text>
         </View>
-        {isExpired ? null : <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />}
+        {needsAction ? null : <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />}
       </View>
-      {isExpired ? (
+      {needsAction ? (
         <ZookButton
           onPress={() => router.push("/membership" as never)}
           icon="card-outline"
           fullWidth
         >
-          Renew membership
+          {hasMembership ? "Renew membership" : "Get membership"}
         </ZookButton>
       ) : null}
     </Card>
