@@ -83,6 +83,21 @@ export default function OwnerApprovalsScreen() {
     );
   }
 
+  function confirmRejectJoinRequest(id: string) {
+    Alert.alert(
+      "Reject join request?",
+      "This person won't be added to the gym and would need to request again.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: () => rejectJoinRequestMutation.mutate(id),
+        },
+      ],
+    );
+  }
+
   const onRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
   };
@@ -144,7 +159,7 @@ export default function OwnerApprovalsScreen() {
                 testID="pending-approvals-list"
                 items={joinItems}
                 onApprove={(id) => approveJoinRequestMutation.mutate(id)}
-                onReject={(id) => rejectJoinRequestMutation.mutate(id)}
+                onReject={(id) => confirmRejectJoinRequest(id)}
               />
             </>
           ) : null}
