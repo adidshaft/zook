@@ -11,6 +11,7 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   AppState,
   type AppStateStatus,
   ActivityIndicator,
@@ -414,7 +415,25 @@ export default function MembershipScreen() {
     }
   }
 
-  async function pauseOrResumeMembership(subscription: MembershipRecord) {
+  function pauseOrResumeMembership(subscription: MembershipRecord) {
+    // Resuming is safe/positive — do it immediately. Pausing freezes gym
+    // access until the resume date, so confirm first to avoid a misfire that
+    // leaves the member unable to check in.
+    if (subscription.status === "PAUSED") {
+      void performPauseOrResume(subscription);
+      return;
+    }
+    Alert.alert(
+      "Pause membership?",
+      `Your access stays frozen until ${formatLongDate(pauseResumesAt.toISOString())}. You can resume anytime before then.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Pause", style: "destructive", onPress: () => void performPauseOrResume(subscription) },
+      ],
+    );
+  }
+
+  async function performPauseOrResume(subscription: MembershipRecord) {
     if (!token) return;
     setMembershipActionBusy(true);
     setMembershipActionStatus("");
