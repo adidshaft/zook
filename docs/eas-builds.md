@@ -11,7 +11,8 @@ Last updated: 3 May 2026
 - `preview`
   - internal distribution build for staging pilot validation
   - defaults to `EXPO_PUBLIC_ENV_PROFILE=staging`
-  - expected API/web targets resolve to `https://staging.zookfit.in`
+  - defaults to the reachable pilot backend at `https://app.zookfit.in/api` and public web at `https://zookfit.in`
+  - set `MOBILE_API_BASE_URL` and `EXPO_PUBLIC_WEB_URL` explicitly only when a separate staging host is live
 - `production`
   - production candidate build
   - defaults to `EXPO_PUBLIC_ENV_PROFILE=production`
@@ -46,7 +47,7 @@ The Expo config must show backend mode and must not show `offlineDemo=true`.
 - The mobile app reads `EXPO_PUBLIC_ENV_PROFILE`, `EXPO_PUBLIC_API_BASE_URL`, and `EXPO_PUBLIC_WEB_URL`.
 - `APP_ENV` and `API_MODE` are authoritative for release builds; production and preview builds must use backend mode.
 - Physical devices must never rely on `localhost`; use a LAN URL for local testing or the staging/production hostnames.
-- If `EXPO_PUBLIC_API_BASE_URL` is omitted, the app falls back to profile defaults from `apps/mobile/app.config.ts`.
+- If `EXPO_PUBLIC_API_BASE_URL` is omitted, the app falls back to profile defaults from `apps/mobile/app.config.js`.
 - Expo push registration also needs `EXPO_PROJECT_ID` for local and development builds.
 - Do not put provider secrets such as `OPENAI_API_KEY`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `S3_SECRET_ACCESS_KEY`, `UPSTASH_REDIS_REST_TOKEN`, or SMTP credentials into Expo public env vars.
 

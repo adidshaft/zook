@@ -165,13 +165,13 @@ const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile = {
   local: "http://localhost:3000/api",
-  staging: "https://staging.zookfit.in/api",
+  staging: "https://app.zookfit.in/api",
   production: "https://app.zookfit.in/api",
 };
 
 const webUrlByProfile = {
   local: "http://localhost:3000",
-  staging: "https://staging.zookfit.in",
+  staging: "https://zookfit.in",
   production: "https://zookfit.in",
 };
 

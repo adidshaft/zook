@@ -817,7 +817,7 @@ export default function Shop() {
         accessibilityLabel={t("shop.openMiniCart")}
       >
         <Text style={[styles.miniCartText, { color: palette.text.onAccent }]}>
-          {itemCount} items · {formatInr(totalPaise)}
+          {itemCount} {t(itemCount === 1 ? "shop.item" : "shop.items")} · {formatInr(totalPaise)}
         </Text>
         <Ionicons name="chevron-forward" size={18} color={palette.text.onAccent} />
       </Pressable>

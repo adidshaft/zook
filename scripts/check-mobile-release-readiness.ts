@@ -53,6 +53,25 @@ async function checkUrl(label: string, url: string, required = true): Promise<Ch
   }
 }
 
+async function checkMobileApiUrl(baseUrl: string): Promise<CheckResult> {
+  if (!isAbsoluteHttpUrl(baseUrl)) {
+    return fail("Mobile API reachability", "Mobile API URL is missing or invalid.");
+  }
+  const requestUrl = `${baseUrl.replace(/\/$/, "")}/health`;
+  try {
+    const response = await fetch(requestUrl, { method: "GET", redirect: "follow" });
+    if (response.ok) {
+      return pass("Mobile API reachability", `${requestUrl} returned ${response.status}.`);
+    }
+    return fail("Mobile API reachability", `${requestUrl} returned ${response.status}.`);
+  } catch (error) {
+    return fail(
+      "Mobile API reachability",
+      `${requestUrl} could not be reached: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 async function checkLiveReadiness(baseUrl: string): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   try {
@@ -277,6 +296,9 @@ async function main() {
   results.push(await checkUrl("Privacy URL", `${webUrl.replace(/\/$/, "")}/privacy`));
   results.push(await checkUrl("Terms URL", `${webUrl.replace(/\/$/, "")}/terms`));
   results.push(await checkUrl("Support URL", `${webUrl.replace(/\/$/, "")}/support`));
+  if (target !== "local") {
+    results.push(await checkMobileApiUrl(mobileApiBaseUrl));
+  }
 
   if (isProduction && isAbsoluteHttpUrl(webUrl)) {
     results.push(...(await checkLiveReadiness(webUrl)));
