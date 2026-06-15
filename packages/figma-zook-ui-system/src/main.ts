@@ -1,4 +1,20 @@
-import { DesignContext, fixedFrame, row, stack, text } from "./components";
+import {
+  DesignContext,
+  bottomNav,
+  button,
+  chip,
+  exerciseRow,
+  fixedFrame,
+  header,
+  kpiCard,
+  memberNavItems,
+  productCard,
+  row,
+  searchBar,
+  stack,
+  text,
+  textField
+} from "./components";
 import { runCorrectedMvpPass } from "./corrected";
 import { applyAutoExportSettings, exportFrameNames } from "./export";
 import { createIcon, IconName } from "./icons";
@@ -20,6 +36,8 @@ const pageNames = [
   "07 — Export Frames",
   "08 — Notes / Export"
 ] as const;
+
+const SINGLE_PAGE_BOARD_NAME = "Zook UI System v1 — Native Editable";
 
 function isGeneratedPage(page: PageNode): boolean {
   return (
@@ -129,10 +147,9 @@ function createCover(ctx: DesignContext, page: PageNode, thumbnails: FrameNode[]
   cover.appendChild(thumbGrid);
 }
 
-function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
-  sectionMarker(ctx, page, "01 — UI Kit", 80, yOffset);
+function buildUiKitBoard(ctx: DesignContext): FrameNode {
   const board = stack("UI Kit / Zook Product UI System", "VERTICAL", 22);
-  board.resize(1180, 760);
+  board.resize(1500, 1760);
   board.primaryAxisSizingMode = "FIXED";
   board.counterAxisSizingMode = "FIXED";
   board.paddingTop = 28;
@@ -143,8 +160,6 @@ function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
   board.fills = [solid(TOKENS.color.surface, 0.98)];
   board.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
   board.strokeWeight = 1;
-  board.x = 80;
-  board.y = yOffset + 84;
   board.appendChild(text("Zook UI Kit", ctx.styles.text.h1, TOKENS.color.primaryText));
 
   const colors = stack("Colors", "VERTICAL", 12);
@@ -247,7 +262,83 @@ function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
     iconShelf.appendChild(slot);
   }
   board.appendChild(iconShelf);
+
+  const specimenTitle = text("Editable Component Specimens", ctx.styles.text.h2, TOKENS.color.primaryText);
+  board.appendChild(specimenTitle);
+
+  const specimenGrid = row("Component specimen grid", 18);
+  specimenGrid.counterAxisAlignItems = "MIN";
+
+  const leftCol = stack("Specimen left column", "VERTICAL", 16);
+  leftCol.resize(700, 760);
+  leftCol.primaryAxisSizingMode = "FIXED";
+  leftCol.counterAxisSizingMode = "AUTO";
+
+  const buttonShelf = stack("Button specimen shelf", "VERTICAL", 10);
+  buttonShelf.appendChild(text("Buttons", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  const buttonRow = row("Buttons row", 10);
+  buttonRow.appendChild(button(ctx, "Primary action", "primary", "plus", 180));
+  buttonRow.appendChild(button(ctx, "Secondary action", "secondary", "chevron", 190));
+  buttonRow.appendChild(button(ctx, "Danger action", "danger", "trash", 170));
+  buttonShelf.appendChild(buttonRow);
+  leftCol.appendChild(buttonShelf);
+
+  const chipShelf = stack("Chip specimen shelf", "VERTICAL", 10);
+  chipShelf.appendChild(text("Chips", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  const chipRow = row("Chips row", 8);
+  chipRow.appendChild(chip(ctx, "Active", "lime", "check"));
+  chipRow.appendChild(chip(ctx, "Needs review", "warning", "warning"));
+  chipRow.appendChild(chip(ctx, "Offline", "danger", "shield"));
+  chipRow.appendChild(chip(ctx, "Neutral tag", "glass"));
+  chipShelf.appendChild(chipRow);
+  leftCol.appendChild(chipShelf);
+
+  const formShelf = stack("Form specimen shelf", "VERTICAL", 10);
+  formShelf.appendChild(text("Inputs", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  formShelf.appendChild(searchBar(ctx, "Search members, invoices, products"));
+  formShelf.appendChild(textField(ctx, "Phone number", "+91 90000 12345"));
+  formShelf.appendChild(textField(ctx, "Reference ID", "UPI-2026-06-15-4481"));
+  leftCol.appendChild(formShelf);
+
+  const navShelf = stack("Nav specimen shelf", "VERTICAL", 10);
+  navShelf.appendChild(text("Header + Navigation", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  navShelf.appendChild(header(ctx, "Client Detail", "Assigned client", "back", "bell", "Trainer"));
+  navShelf.appendChild(bottomNav(ctx, "Member", memberNavItems, "Check-in"));
+  leftCol.appendChild(navShelf);
+
+  const rightCol = stack("Specimen right column", "VERTICAL", 16);
+  rightCol.resize(700, 760);
+  rightCol.primaryAxisSizingMode = "FIXED";
+  rightCol.counterAxisSizingMode = "AUTO";
+
+  const metricShelf = stack("Metric specimen shelf", "VERTICAL", 10);
+  metricShelf.appendChild(text("KPI + Product Cards", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  const metricRow = row("KPI row", 10);
+  metricRow.appendChild(kpiCard(ctx, "Active members", "412"));
+  metricRow.appendChild(kpiCard(ctx, "Pending approvals", "7", "warning"));
+  metricRow.appendChild(productCard(ctx, "Whey Shake", "₹249", "In stock", "lime"));
+  metricShelf.appendChild(metricRow);
+  rightCol.appendChild(metricShelf);
+
+  const exerciseShelf = stack("Exercise specimen shelf", "VERTICAL", 10);
+  exerciseShelf.appendChild(text("Rows / Workout Patterns", ctx.styles.text.bodyStrong, TOKENS.color.primaryText));
+  exerciseShelf.appendChild(exerciseRow(ctx, "Incline press", "4×8", "Controlled tempo · 24kg", false, false));
+  exerciseShelf.appendChild(exerciseRow(ctx, "Cable fly", "3×12", "Pause on contraction", true, false));
+  exerciseShelf.appendChild(exerciseRow(ctx, "Tricep pushdown", "3×15", "Swipe-to-delete specimen", false, true));
+  rightCol.appendChild(exerciseShelf);
+
+  specimenGrid.appendChild(leftCol);
+  specimenGrid.appendChild(rightCol);
+  board.appendChild(specimenGrid);
+  return board;
+}
+
+function createUiKit(ctx: DesignContext, page: PageNode, yOffset = 0): void {
+  sectionMarker(ctx, page, "01 — UI Kit", 80, yOffset);
+  const board = buildUiKitBoard(ctx);
   page.appendChild(board);
+  board.x = 80;
+  board.y = yOffset + 84;
 }
 
 function createPrototypePage(ctx: DesignContext, page: PageNode, screens: FrameNode[], yOffset = 0): void {
@@ -464,9 +555,126 @@ async function generateFullSystem(): Promise<void> {
   figma.closePlugin("Zook Product UI System v1 generated.");
 }
 
+function clearGeneratedBoard(page: PageNode): void {
+  const existing = page.findChild((child) => child.type === "FRAME" && child.name === SINGLE_PAGE_BOARD_NAME);
+  if (existing) existing.remove();
+}
+
+function sectionTitleChip(ctx: DesignContext, label: string, subtitle: string, width = 1660): FrameNode {
+  const wrap = stack(`Single Page Section / ${label}`, "VERTICAL", 10);
+  wrap.resize(width, 84);
+  wrap.primaryAxisSizingMode = "FIXED";
+  wrap.counterAxisSizingMode = "FIXED";
+
+  const marker = row(`Marker / ${label}`, 8);
+  marker.paddingTop = 10;
+  marker.paddingBottom = 10;
+  marker.paddingLeft = 14;
+  marker.paddingRight = 14;
+  marker.cornerRadius = 999;
+  marker.fills = [solid(TOKENS.color.accent, 0.1)];
+  marker.strokes = [solid(TOKENS.color.accent, 0.28)];
+  marker.strokeWeight = 1;
+  marker.appendChild(createIcon("shield", 14, TOKENS.color.accent));
+  marker.appendChild(text(label, ctx.styles.text.bodyStrong, TOKENS.color.accent));
+  wrap.appendChild(marker);
+  wrap.appendChild(text(subtitle, ctx.styles.text.body, TOKENS.color.mutedText));
+  return wrap;
+}
+
+function appendScreenGrid(section: FrameNode, screens: FrameNode[], columns: number): void {
+  const grid = stack(`${section.name} / Grid`, "VERTICAL", 36);
+  for (let index = 0; index < screens.length; index += columns) {
+    const rowWrap = row(`Row ${Math.floor(index / columns) + 1}`, 28);
+    for (const screen of screens.slice(index, index + columns)) {
+      rowWrap.appendChild(screen);
+    }
+    grid.appendChild(rowWrap);
+  }
+  section.appendChild(grid);
+}
+
+async function generateCurrentPageEditableSystem(): Promise<void> {
+  figma.notify("Generating editable UI kit on current page…");
+  await loadTokenFonts();
+  const styles = await createTokenStyles();
+  const ctx: DesignContext = { styles };
+  const page = figma.currentPage;
+
+  clearGeneratedBoard(page);
+
+  const board = stack(SINGLE_PAGE_BOARD_NAME, "VERTICAL", 52);
+  board.x = 80;
+  board.y = 80;
+  board.primaryAxisSizingMode = "AUTO";
+  board.counterAxisSizingMode = "AUTO";
+  board.fills = [];
+  page.appendChild(board);
+
+  const cover = stack("Current Page Cover", "VERTICAL", 20);
+  cover.resize(1660, 250);
+  cover.primaryAxisSizingMode = "FIXED";
+  cover.counterAxisSizingMode = "FIXED";
+  cover.paddingTop = 34;
+  cover.paddingBottom = 34;
+  cover.paddingLeft = 34;
+  cover.paddingRight = 34;
+  cover.cornerRadius = 30;
+  cover.fills = [solid(TOKENS.color.background)];
+  cover.strokes = [glassStroke(TOKENS.opacity.subtleStroke)];
+  cover.strokeWeight = 1;
+  cover.appendChild(text("Zook UI System v1", ctx.styles.text.display, TOKENS.color.primaryText));
+  cover.appendChild(text("Native editable Figma build from repo components. Buttons, labels, chips, cards, and navigation are selectable layers.", ctx.styles.text.body, TOKENS.color.mutedText));
+  const proof = row("Editability proof", 10);
+  proof.appendChild(chip(ctx, "Editable text", "lime", "check"));
+  proof.appendChild(chip(ctx, "Editable buttons", "lime", "check"));
+  proof.appendChild(chip(ctx, "Editable cards", "lime", "check"));
+  proof.appendChild(chip(ctx, "Icons as vectors", "lime", "check"));
+  cover.appendChild(proof);
+  board.appendChild(cover);
+
+  const uiKitSection = stack("Section / UI Kit", "VERTICAL", 22);
+  uiKitSection.appendChild(sectionTitleChip(ctx, "01 — UI Kit", "Reusable native components and style references"));
+  const uiKitBoard = buildUiKitBoard(ctx);
+  uiKitSection.appendChild(uiKitBoard);
+  board.appendChild(uiKitSection);
+
+  const member = buildScreens("Member", memberScreens, ctx);
+  const memberSection = stack("Section / Member", "VERTICAL", 22);
+  memberSection.appendChild(sectionTitleChip(ctx, "02 — Member", "Home, scanner, attendance, shop, and plan flows as editable layers"));
+  appendScreenGrid(memberSection, member, 3);
+  board.appendChild(memberSection);
+
+  const trainer = buildScreens("Trainer", trainerScreens, ctx);
+  const trainerSection = stack("Section / Trainer", "VERTICAL", 22);
+  trainerSection.appendChild(sectionTitleChip(ctx, "03 — Trainer", "Client detail and AI draft review in native frames"));
+  appendScreenGrid(trainerSection, trainer, 2);
+  board.appendChild(trainerSection);
+
+  const receptionist = buildScreens("Receptionist", receptionistScreens, ctx);
+  const receptionSection = stack("Section / Receptionist", "VERTICAL", 22);
+  receptionSection.appendChild(sectionTitleChip(ctx, "04 — Receptionist", "Desk payment flow with editable fields and action controls"));
+  appendScreenGrid(receptionSection, receptionist, 2);
+  board.appendChild(receptionSection);
+
+  const owner = buildScreens("Owner", ownerScreens, ctx);
+  const ownerSection = stack("Section / Owner", "VERTICAL", 22);
+  ownerSection.appendChild(sectionTitleChip(ctx, "05 — Owner", "Command-view dashboard with editable KPI and list structures"));
+  appendScreenGrid(ownerSection, owner, 2);
+  board.appendChild(ownerSection);
+
+  figma.viewport.scrollAndZoomIntoView([board]);
+  figma.notify("Editable UI kit generated on current page.");
+  figma.closePlugin("Editable UI kit generated on current page.");
+}
+
 async function main(): Promise<void> {
   if (figma.command === "corrected-mvp-pass") {
     await runCorrectedMvpPass();
+    return;
+  }
+  if (figma.command === "generate-current-page") {
+    await generateCurrentPageEditableSystem();
     return;
   }
   await generateFullSystem();

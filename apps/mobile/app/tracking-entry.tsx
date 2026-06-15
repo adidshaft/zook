@@ -155,7 +155,7 @@ export default function TrackingEntryScreen() {
           {mode === "workout" ? (
             <>
               <SectionHeader title="Session" />
-              <FormField testID="tracking-entry-title" label="Workout title" value={title} onChangeText={setTitle} placeholder="Maestro workout" />
+              <FormField testID="tracking-entry-title" label="Workout title" value={title} onChangeText={setTitle} placeholder="e.g. Push day" />
               <SectionHeader title="Exercise" />
               <FormField testID="tracking-entry-exercise-0-name" label="Exercise name" value={exerciseName} onChangeText={setExerciseName} placeholder="Push press" />
               <FormField testID="tracking-entry-exercise-0-sets" label="Sets" value={sets} onChangeText={setSets} keyboardType="number-pad" placeholder="3" />
