@@ -35,11 +35,6 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
         ) : (
           <div className="relative mb-5 h-40 w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-sunken)] via-[var(--surface-raised)] to-[var(--bg-sunken)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,var(--accent-soft)_35%,transparent_65%)]" />
-            <div className="relative grid h-full place-items-center">
-              <span className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)]/70 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--text-secondary)] backdrop-blur">
-                Cover photo coming soon
-              </span>
-            </div>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
