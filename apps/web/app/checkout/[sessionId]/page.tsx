@@ -90,6 +90,24 @@ export default async function HostedCheckoutPage({
   const showExpiryWarning = expiresInMs > 0 && expiresInMs < 5 * 60 * 1000;
   const expiryMinutes = Math.max(0, Math.floor(expiresInMs / 60_000));
   const expirySeconds = Math.max(0, Math.floor((expiresInMs % 60_000) / 1000));
+  const retryHref = returnUrl ?? "/login";
+  const sessionStatus = session?.status ?? "MISSING";
+  const isExpired = !Number.isFinite(expiresAtMs) || expiresInMs <= 0;
+  const showRecoveryState =
+    Boolean(session) &&
+    (isExpired ||
+      sessionStatus === "FAILED" ||
+      sessionStatus === "CANCELLED" ||
+      sessionStatus === "EXPIRED");
+  const recoveryMessage = isExpired
+    ? "This payment link has expired. Return to Zook and start a fresh checkout before trying again."
+    : sessionStatus === "FAILED"
+      ? "This payment attempt failed, so the membership was not activated. Start a fresh checkout from Zook to try again."
+      : sessionStatus === "CANCELLED"
+        ? "This payment session was cancelled before confirmation. Start a fresh checkout from Zook when you are ready."
+        : sessionStatus === "EXPIRED"
+          ? "This payment session expired before confirmation. Start a fresh checkout from Zook to continue."
+          : "";
 
   if (!session) {
     return (
@@ -105,6 +123,20 @@ export default async function HostedCheckoutPage({
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             Please return to Zook and start checkout again.
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/login"
+              className="zook-focus inline-flex items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
+            >
+              Open Zook sign-in
+            </Link>
+            <Link
+              href="/"
+              className="zook-focus inline-flex items-center justify-center rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+            >
+              Back to home
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -153,6 +185,26 @@ export default async function HostedCheckoutPage({
             Payment confirmed. Redirecting you back to Zook in 3 seconds.
           </div>
         ) : null}
+        {showRecoveryState ? (
+          <div className="mt-5 rounded-[22px] border border-[var(--feedback-danger)] bg-[var(--surface-danger-soft)] px-4 py-4 text-sm text-[var(--text-primary)]">
+            <p className="font-semibold text-[var(--text-primary)]">Checkout needs to be restarted</p>
+            <p className="mt-2 leading-6 text-[var(--text-secondary)]">{recoveryMessage}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={retryHref}
+                className="zook-focus inline-flex items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
+              >
+                Return to Zook to retry
+              </Link>
+              <Link
+                href={`/checkout/${session.id}`}
+                className="zook-focus inline-flex items-center justify-center rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              >
+                Refresh status
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-4 rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 text-sm text-[var(--text-secondary)] md:grid-cols-2">
           <div>
@@ -194,7 +246,7 @@ export default async function HostedCheckoutPage({
           </div>
         ) : null}
 
-        {checkoutData?.provider === "razorpay" ? (
+        {checkoutData?.provider === "razorpay" && !showRecoveryState ? (
           <RazorpayCheckoutPanel
             checkoutData={checkoutData}
             sessionId={session.id}
