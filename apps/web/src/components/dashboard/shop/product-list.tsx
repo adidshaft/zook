@@ -1,15 +1,18 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { EmptyState } from "../../dashboard-primitives";
 import { ZookButton } from "../../zook-button";
-import { ErrorNotice } from "../operational-shared";
+import { ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { ProductRow } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { ProductEditPanel } from "./product-edit-panel";
 import { productImagesFromProduct } from "./product-images";
 import type { ProductFormState, ProductPatch, ResourceState, StockAdjustmentState } from "./types";
+
+const PRODUCT_PAGE_SIZE = 6;
 
 export function ProductList({
   orgId,
@@ -44,6 +47,17 @@ export function ProductList({
   adjustStock: (productId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
 }) {
+  const [visibleCount, setVisibleCount] = useState(PRODUCT_PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount((current) =>
+      Math.max(PRODUCT_PAGE_SIZE, Math.min(current, inventory.length || PRODUCT_PAGE_SIZE)),
+    );
+  }, [inventory.length]);
+
+  const visibleProducts = inventory.slice(0, visibleCount);
+  const hasMore = inventory.length > visibleProducts.length;
+
   return (
     <div className="mt-5 grid gap-3">
       {productsState.error ? (
@@ -54,9 +68,8 @@ export function ProductList({
           description="Pulling product availability and stock thresholds."
         />
       ) : inventory.length ? (
-        inventory
-          .slice(0, 6)
-          .map((product) => (
+        <>
+          {visibleProducts.map((product) => (
             <ProductListItem
               key={product.id}
               orgId={orgId}
@@ -74,7 +87,14 @@ export function ProductList({
               adjustStock={adjustStock}
               deleteProduct={deleteProduct}
             />
-          ))
+          ))}
+          <LoadMoreButton
+            hasMore={hasMore}
+            loading={productsState.loading}
+            onLoadMore={() => setVisibleCount((current) => current + PRODUCT_PAGE_SIZE)}
+            count={visibleProducts.length}
+          />
+        </>
       ) : (
         <EmptyState
           title="Inventory is clear"
