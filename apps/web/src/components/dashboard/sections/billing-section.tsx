@@ -279,6 +279,9 @@ export function BillingSection({
   }
 
   async function cancelAtPeriodEnd() {
+    if (!window.confirm("Cancel this subscription at the end of the current billing period?")) {
+      return;
+    }
     try {
       setMandateBusy(true);
       setStatus("");

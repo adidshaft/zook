@@ -139,6 +139,16 @@ export function MembersPage({
 
   async function updateSubscription(action: "switch" | "pause" | "resume") {
     if (!selectedSubscription) return;
+    const confirmed = window.confirm(
+      action === "switch"
+        ? "Switch this member to the selected plan now?"
+        : action === "pause"
+          ? "Pause this membership for 7 days now?"
+          : "Resume this paused membership now?",
+    );
+    if (!confirmed) {
+      return;
+    }
     setSubscriptionBusy(action);
     setSubscriptionStatus("");
     try {
