@@ -133,6 +133,8 @@ const styles = StyleSheet.create({
     ...typography.eyebrow,
   },
   headerTitle: {
+    // Pushed detail screens use the compact title scale so they read as a
+    // navigated step beneath the larger tab-root landing headers.
     ...typography.headerTitle,
     letterSpacing: 0,
   },

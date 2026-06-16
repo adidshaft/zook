@@ -207,6 +207,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
+    // Tab-root screens intentionally use the larger landing-page title scale;
+    // pushed screens route through AppHeader's compact headerTitle token.
     ...typography.screenTitle,
   },
   subtitle: {
