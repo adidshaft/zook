@@ -6,7 +6,7 @@ import type { Permission, Role } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { ConfirmDialog } from "../dashboard-primitives";
 import { Send } from "lucide-react";
-import { GlassCard, Pill } from "../glass-card";
+import { GlassCard } from "../glass-card";
 import { PulseDot, SectionHero } from "../dashboard/charts";
 import { ZookButton } from "../zook-button";
 import {
@@ -77,7 +77,8 @@ export function NotificationComposerPanel({
   const [templateName, setTemplateName] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [sendConfirmationOpen, setSendConfirmationOpen] = useState(false);
   const [queryApplied, setQueryApplied] = useState(false);
 
@@ -136,22 +137,6 @@ export function NotificationComposerPanel({
     [permissions, roles, type],
   );
   const canManageTemplates = permissions.includes("NOTIFICATION_MANAGE_TEMPLATES");
-  const previewReady = useMemo(() => {
-    if (!title.trim() || !body.trim()) return false;
-    if (audience === "branch_members" && !branchId) return false;
-    if (audience === "membership_plan" && !planId) return false;
-    if (audience === "single_member" && !singleUserId) return false;
-    if (audience === "selected_members" && selectedUserIds.length === 0) return false;
-    return true;
-  }, [
-    audience,
-    body,
-    branchId,
-    planId,
-    selectedUserIds,
-    singleUserId,
-    title,
-  ]);
   const notificationPayload = useMemo(
     () => ({
       title,
@@ -261,10 +246,47 @@ export function NotificationComposerPanel({
     return true;
   }
 
+  function validateCurrentStep(targetStep: number) {
+    if (targetStep === 1) {
+      if (!typePermissions.get(type)) {
+        setError("Choose a notification type your role can send.");
+        return false;
+      }
+      setError("");
+      return true;
+    }
+    if (targetStep === 2) {
+      if (audience === "branch_members" && !branchId) {
+        setError("Choose a branch.");
+        return false;
+      }
+      if (audience === "membership_plan" && !planId) {
+        setError("Choose a plan.");
+        return false;
+      }
+      if (audience === "single_member" && !singleUserId) {
+        setError("Choose one member.");
+        return false;
+      }
+      if (audience === "selected_members" && selectedUserIds.length === 0) {
+        setError("Choose at least one member.");
+        return false;
+      }
+      setError("");
+      return true;
+    }
+    if (targetStep === 3) {
+      return validateDraft();
+    }
+    setError("");
+    return true;
+  }
+
   async function loadPreview() {
     if (!validateDraft()) return;
     try {
-      setSaving(true);
+      setPreviewLoading(true);
+      setError("");
       setPreview(
         await webApiFetch<Preview>(`/api/orgs/${orgId}/notifications/preview`, {
           method: "POST",
@@ -275,30 +297,14 @@ export function NotificationComposerPanel({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to preview recipients.");
     } finally {
-      setSaving(false);
+      setPreviewLoading(false);
     }
   }
-
-  useEffect(() => {
-    if (!previewReady) {
-      setPreview(null);
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      webApiFetch<Preview>(`/api/orgs/${orgId}/notifications/preview`, {
-        method: "POST",
-        body: notificationPayload,
-      })
-        .then((nextPreview) => setPreview(nextPreview))
-        .catch(() => setPreview(null));
-    }, 450);
-    return () => window.clearTimeout(timeout);
-  }, [notificationPayload, orgId, previewReady]);
 
   async function submitNotification() {
     if (!preview && !validateDraft()) return;
     try {
-      setSaving(true);
+      setSending(true);
       setError("");
       await webApiFetch(`/api/orgs/${orgId}/notifications`, { method: "POST", body: payload() });
       if (saveAsTemplate && templateName.trim()) {
@@ -320,7 +326,7 @@ export function NotificationComposerPanel({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to send notification.");
     } finally {
-      setSaving(false);
+      setSending(false);
     }
   }
 
@@ -350,7 +356,6 @@ export function NotificationComposerPanel({
               Choose the purpose, audience, message, then review delivery.
             </p>
           </div>
-          <Pill tone="blue">Step {step} of 4</Pill>
         </div>
         <div className="mt-5 grid gap-4">
           {step === 1 ? (
@@ -438,7 +443,10 @@ export function NotificationComposerPanel({
               type="button"
               tone="ghost"
               size="sm"
-              onClick={() => setStep(Math.max(1, step - 1))}
+              onClick={() => {
+                setError("");
+                setStep(Math.max(1, step - 1));
+              }}
             >
               Back
             </ZookButton>
@@ -447,7 +455,10 @@ export function NotificationComposerPanel({
                 <ZookButton
                   type="button"
                   size="sm"
-                  onClick={() => setStep(step + 1)}
+                  onClick={() => {
+                    if (!validateCurrentStep(step)) return;
+                    setStep(step + 1);
+                  }}
                 >
                   Continue
                 </ZookButton>
@@ -457,10 +468,10 @@ export function NotificationComposerPanel({
                   type="button"
                   size="sm"
                   onClick={() => void loadPreview()}
-                  disabled={saving}
-                  state={saving ? "loading" : "idle"}
+                  disabled={previewLoading}
+                  state={previewLoading ? "loading" : "idle"}
                 >
-                  Preview recipients
+                  {previewLoading ? "Loading preview..." : "Preview recipients"}
                 </ZookButton>
               ) : null}
               {step === 4 ? (
@@ -468,8 +479,8 @@ export function NotificationComposerPanel({
                   type="button"
                   size="sm"
                   onClick={() => setSendConfirmationOpen(true)}
-                  disabled={saving || !preview?.willDeliver}
-                  state={saving ? "loading" : "idle"}
+                  disabled={sending || !preview?.willDeliver}
+                  state={sending ? "loading" : "idle"}
                 >
                   Send to {preview?.willDeliver ?? 0} members
                 </ZookButton>
