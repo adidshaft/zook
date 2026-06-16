@@ -45,6 +45,15 @@ describe("deriveHomeState", () => {
     });
   });
 
+  it("returns membershipPendingActivation when the gym is set but membership is not active yet", () => {
+    expect(
+      deriveHomeState(home({ activeMembership: null, activePlan: null })),
+    ).toMatchObject({
+      kind: "membershipPendingActivation",
+      gymName: "Zook Gym",
+    });
+  });
+
   it("returns todayRest when active with no workout today", () => {
     expect(deriveHomeState(home())).toMatchObject({ kind: "todayRest", planName: "Strength" });
   });

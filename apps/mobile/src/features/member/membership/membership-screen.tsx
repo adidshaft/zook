@@ -211,7 +211,7 @@ export default function MembershipScreen() {
   const gymUsername =
     latestSubscription?.organization?.username ?? activeOrganization?.username ?? undefined;
   const gymQuery = useGymProfile(gymUsername ?? "");
-  const availablePlans = gymQuery.data?.plans ?? [];
+  const availablePlans = useMemo(() => gymQuery.data?.plans ?? [], [gymQuery.data?.plans]);
   const activeCount = memberships.filter((s) => s.status === "ACTIVE").length;
   const expiringSoonCount = memberships.filter((s) => {
     if (s.status !== "ACTIVE" || !s.endsAt) return false;

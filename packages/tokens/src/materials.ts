@@ -1,4 +1,5 @@
 import { darkPalette, lightPalette, type Palette } from "./palette.ts";
+import { shadows } from "./shadows.ts";
 
 export type ThemeMode = "light" | "dark";
 
@@ -18,7 +19,13 @@ export type TonalBarMaterial = {
 export type CardSurfaceMaterial = {
   backgroundColor: string;
   borderColor: string;
-  shadow: string;
+  shadow: {
+    shadowColor: string;
+    shadowOpacity: number;
+    shadowRadius: number;
+    shadowOffset: { width: number; height: number };
+    elevation: number;
+  } | null;
   innerTopHighlight: string;
 };
 
@@ -49,7 +56,7 @@ export function cardSurfaceMaterial(mode: ThemeMode): CardSurfaceMaterial {
   return {
     backgroundColor: palette.surface.default,
     borderColor: mode === "dark" ? "transparent" : palette.border.subtle,
-    shadow: mode === "dark" ? "none" : palette.shadow.sm,
+    shadow: mode === "dark" ? null : shadows.card,
     innerTopHighlight: mode === "dark" ? "rgba(255,255,255,0.06)" : "transparent",
   };
 }

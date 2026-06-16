@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...typography.display,
+    ...typography.screenTitle,
   },
   subtitle: {
     ...typography.small,

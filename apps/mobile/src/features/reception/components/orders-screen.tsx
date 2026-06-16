@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
@@ -120,7 +120,19 @@ export function ReceptionOrdersScreenBody() {
                       testID={index === 0 ? "fulfill-button-first" : `fulfill-button-${order.id}`}
                       icon="bag-check-outline"
                       disabled={fulfillOrderMutation.isPending}
-                      onPress={() => fulfillOrder(order.id)}
+                      onPress={() => {
+                        Alert.alert(
+                          "Mark order picked up?",
+                          `${order.user?.name ?? "This member"} will be marked as collected for ${formatInr(order.totalPaise)}.`,
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Mark picked up",
+                              onPress: () => fulfillOrder(order.id),
+                            },
+                          ],
+                        );
+                      }}
                     >
                       Mark Picked Up
                     </PrimaryButton>

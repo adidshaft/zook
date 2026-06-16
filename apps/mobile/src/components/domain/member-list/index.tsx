@@ -30,6 +30,7 @@ export function MemberList({
   onRefresh,
   header,
   scrollEnabled = true,
+  style,
 }: MemberListProps) {
   const { palette } = useTheme();
   const renderItem = ({ item, index }: { item: typeof items[number]; index: number }) => (
@@ -44,6 +45,7 @@ export function MemberList({
   return (
     <FlatList
       testID={testID}
+      style={style}
       data={isLoading || isError ? [] : items}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}

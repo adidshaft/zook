@@ -92,7 +92,22 @@ export default function OwnerApprovalsScreen() {
         {
           text: "Reject",
           style: "destructive",
-          onPress: () => rejectJoinRequestMutation.mutate(id),
+          onPress: () => {
+            void rejectJoinRequestMutation
+              .mutateAsync(id)
+              .then(() => {
+                showToast({
+                  tone: "success",
+                  haptic: "success",
+                  message: "Join request rejected.",
+                });
+              })
+              .catch((error) => {
+                const message =
+                  error instanceof Error ? error.message : "Unable to reject join request.";
+                showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+              });
+          },
         },
       ],
     );

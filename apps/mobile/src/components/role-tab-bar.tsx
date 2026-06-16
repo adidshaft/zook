@@ -185,7 +185,8 @@ export function RoleTabBar({
               styles.activeIndicator,
               Platform.OS === "android" ? styles.androidActiveIndicator : null,
               {
-                backgroundColor: palette.surface.accentSoft,
+                backgroundColor:
+                  mode === "dark" ? palette.surface.accentSoft : "rgba(31,62,36,0.14)",
                 width: indicatorWidth,
                 transform: [{ translateX: indicatorX }],
               },
@@ -288,7 +289,7 @@ export function RoleTabBar({
                     size: 26,
                   }) ?? <Ionicons name="qr-code" size={26} color={palette.text.onAccent} />}
                 </AnimatedPressable>
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.centerActionLabel, Platform.OS === "android" ? styles.androidCenterActionLabel : null, { color }]}>{stringLabel}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.92} style={[styles.centerActionLabel, Platform.OS === "android" ? styles.androidCenterActionLabel : null, { color }]}>{stringLabel}</Text>
               </View>
             );
           }
@@ -317,7 +318,7 @@ export function RoleTabBar({
                   </View>
                 ) : null}
                 {icon}
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.tabLabel, { color }]}>{stringLabel}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.92} style={[styles.tabLabel, { color }]}>{stringLabel}</Text>
               </View>
             </Pressable>
           );

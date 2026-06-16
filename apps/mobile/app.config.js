@@ -33,7 +33,7 @@ const baseConfig = {
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#070908",
+    backgroundColor: "#050806",
   },
   ios: {
     supportsTablet: true,

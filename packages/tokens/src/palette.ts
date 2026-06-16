@@ -48,11 +48,6 @@ export type Palette = {
     success: string;
     info: string;
   };
-  shadow: {
-    sm: string;
-    md: string;
-    lg: string;
-  };
 };
 
 export const lightPalette: Palette = {
@@ -87,7 +82,7 @@ export const lightPalette: Palette = {
   },
   accent: {
     base: "#1F3E24",
-    soft: "#EEF0EA",
+    soft: "#DCEAD8",
     strong: "#1F3E24",
     fill: "#1F3E24",
   },
@@ -96,11 +91,6 @@ export const lightPalette: Palette = {
     warning: "#B45309",
     success: "#15803D",
     info: "#0369A1",
-  },
-  shadow: {
-    sm: "0 1px 2px rgba(17,21,15,0.06)",
-    md: "0 4px 12px rgba(17,21,15,0.08)",
-    lg: "0 16px 40px rgba(17,21,15,0.12)",
   },
 };
 
@@ -146,10 +136,5 @@ export const darkPalette: Palette = {
     warning: "#F2C94C",
     success: "#7DD3AC",
     info: "#7DD3FC",
-  },
-  shadow: {
-    sm: "0 1px 2px rgba(0,0,0,0.4)",
-    md: "0 4px 16px rgba(0,0,0,0.45)",
-    lg: "0 16px 48px rgba(0,0,0,0.55)",
   },
 };

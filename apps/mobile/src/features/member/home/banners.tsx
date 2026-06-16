@@ -66,7 +66,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
         icon="warning-outline"
         title={daysLeft === 0 ? "Membership ends today" : `${daysLeft} days left`}
         body="Renew now to keep check-ins and plan access moving."
-        actionHref="/membership/buy"
+        actionHref="/membership?focus=buy"
         actionLabel="Renew"
       />
     ) : null,
@@ -76,7 +76,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
         icon="person-circle-outline"
         title="Complete your profile"
         body="Add your details so staff and trainers can help faster."
-        actionHref="/profile"
+        actionHref="/profile?focus=details"
         actionLabel="Update"
       />
     ) : null,
@@ -86,7 +86,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
         icon="gift-outline"
         title="Invite a friend"
         body="Share Zook with someone who should train with you."
-        actionHref="/profile"
+        actionHref="/profile?focus=referral"
         actionLabel="Referral"
         onDismiss={() => dismiss("referral")}
       />

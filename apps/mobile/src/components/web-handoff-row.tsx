@@ -17,9 +17,11 @@ import { showToast } from "@/lib/toast";
 
 export function WebHandoffRow({
   path,
+  subtitle = "zookfit.in dashboard",
   title,
 }: {
   path: string;
+  subtitle?: string;
   title: string;
 }) {
   const { palette } = useTheme();
@@ -56,7 +58,7 @@ export function WebHandoffRow({
       >
         <ListRow
           title={title}
-          subtitle="zookfit.in dashboard"
+          subtitle={subtitle}
           icon="globe-outline"
           trailing={<Ionicons name="chevron-up-outline" size={18} color={palette.text.tertiary} />}
         />

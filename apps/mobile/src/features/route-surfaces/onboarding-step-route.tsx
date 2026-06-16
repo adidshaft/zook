@@ -40,6 +40,13 @@ export function ValuePropsStep() {
   const cardWidth = width;
   const { palette } = useTheme();
 
+  function clearAutoScrollTimer() {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
   useEffect(() => {
     if (userScrolled) {
       return undefined;
@@ -55,20 +62,16 @@ export function ValuePropsStep() {
       });
     }, 2600);
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
+    return clearAutoScrollTimer;
   }, [cardWidth, userScrolled]);
+
+  useEffect(() => {
+    return clearAutoScrollTimer;
+  }, []);
 
   function stopAutoScroll() {
     setUserScrolled(true);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    clearAutoScrollTimer();
   }
 
   async function finishOnboarding() {

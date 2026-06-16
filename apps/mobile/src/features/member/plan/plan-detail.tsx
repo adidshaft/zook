@@ -166,18 +166,18 @@ export default function Plans() {
                 <ZookButton
                   testID="plans-start-session"
                   onPress={() => openAssignment(selectedAssignment.id)}
-                  icon="play-outline"
+                  icon="open-outline"
                   style={styles.activePlanPrimaryAction}
                 >
-                  Start today's session
+                  Open today's plan
                 </ZookButton>
                 <ZookButton
                   testID="plans-view-active"
-                  onPress={() => openAssignment(selectedAssignment.id)}
+                  onPress={() => setFilter(planKind(selectedAssignment).includes("diet") ? "diet" : "workout")}
                   variant="secondary"
                   style={styles.activePlanSecondaryAction}
                 >
-                  View
+                  See weekly list
                 </ZookButton>
               </View>
             </Card>
@@ -269,7 +269,7 @@ export function PlanDetailScreen() {
   const { activeOrgId, token } = useAuth();
   const plansQuery = useMyPlans();
   const completePlan = useCompletePlanAssignment();
-  const plans = plansQuery.data?.plans ?? [];
+  const plans = useMemo(() => plansQuery.data?.plans ?? [], [plansQuery.data?.plans]);
   const selectedAssignment =
     plans.find((assignment) => assignment.id === selectedAssignmentId) ??
     plans[0] ??

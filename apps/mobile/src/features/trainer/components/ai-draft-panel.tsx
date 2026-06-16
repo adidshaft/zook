@@ -1,13 +1,16 @@
 import { useRouter } from "expo-router";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, SecondaryButton } from "@/components/primitives";
-import { spacing, typography, useTheme } from "@/lib/theme";
+import { elevation, spacing, typography, useTheme } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
   const { mode, palette } = useTheme();
   const router = useRouter();
   const isDark = mode === "dark";
+  const lockShadow = elevation(2, palette.accent.base, {
+    shadowOpacity: isDark ? 0.18 : 0.08,
+  });
 
   return (
     <Card testID="trainer-ai-draft-screen" contentStyle={styles.lockedCard}>
@@ -17,8 +20,7 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
           {
             borderColor: palette.border.focus,
             backgroundColor: palette.surface.accentSoft,
-            shadowColor: palette.accent.base,
-            shadowOpacity: Platform.OS === "ios" ? (isDark ? 0.18 : 0.08) : 0,
+            ...lockShadow,
           },
         ]}
       >
@@ -51,10 +53,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 56,
     justifyContent: "center",
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
     width: 56,
-    elevation: 0,
   },
   title: {
     ...typography.h2,

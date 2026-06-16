@@ -1,6 +1,5 @@
 export {
   ActiveGymPill,
-  BottomNav,
   BranchSelectorChip,
   ModeChip,
   Pill,
@@ -8,5 +7,6 @@ export {
   RoleChip,
   StatusChip,
   ZookChip,
-} from "./foundation";
-export type { PillTone } from "./foundation";
+} from "./chips";
+export { BottomNav } from "./foundation";
+export type { PillTone } from "./chips";

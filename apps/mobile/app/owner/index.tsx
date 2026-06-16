@@ -6,10 +6,11 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, WebHandoffCard, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
+import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
@@ -214,19 +215,10 @@ export default function OwnerCommandScreen() {
             scrollY={scrollY}
           />
           <AnimatedAppear delay={0}>
-            <WebHandoffCard
+            <WebHandoffRow
               title="Open web control room"
-              description="Use web for branches, staff, reports, attendance QR console, and provider diagnostics."
-              destination="Dashboard"
-              action={
-                <ZookButton
-                  size="sm"
-                  icon="open-outline"
-                  onPress={() => void Linking.openURL("https://zookfit.in/dashboard")}
-                >
-                  Open web
-                </ZookButton>
-              }
+              subtitle="Setup, reports, staff, and QR console"
+              path="/dashboard"
             />
           </AnimatedAppear>
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}

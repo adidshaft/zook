@@ -69,9 +69,14 @@ export function PulseHalo({
   duration?: number;
   style?: ViewStyle;
 }) {
+  const reduceMotion = useReduceMotion();
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      scale.setValue(1);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(scale, {
@@ -88,7 +93,7 @@ export function PulseHalo({
     );
     loop.start();
     return () => loop.stop();
-  }, [duration, scale, scaleTo]);
+  }, [duration, reduceMotion, scale, scaleTo]);
 
   return <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>;
 }

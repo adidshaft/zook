@@ -92,10 +92,6 @@ export default function ReceptionLayout() {
         options={{ href: null, tabBarItemStyle: { display: "none" } }}
       />
       <Tabs.Screen
-        name="payments/new"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
-      />
-      <Tabs.Screen
         name="verification/[recordId]"
         options={{ href: null, tabBarItemStyle: { display: "none" } }}
       />

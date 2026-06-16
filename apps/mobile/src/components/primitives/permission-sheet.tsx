@@ -12,7 +12,8 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { IconBubble, ZookButton } from "./foundation";
+import { ZookButton } from "./foundation";
+import { IconBubble } from "./icon-bubble";
 
 export type PermissionKind = "camera" | "location" | "notifications";
 

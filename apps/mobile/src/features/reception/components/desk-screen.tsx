@@ -31,6 +31,8 @@ export function ReceptionDeskScreenBody() {
     verifyCode,
     verifyEntryCode,
   } = useReceptionWorkspace();
+  const firstQueueItem =
+    approvalQueue.find((attempt) => attempt.status === "FLAGGED") ?? approvalQueue[0] ?? null;
 
   return (
     <>
@@ -46,6 +48,17 @@ export function ReceptionDeskScreenBody() {
               tone={flaggedCount ? "red" : pendingCount ? "amber" : "lime"}
               icon={flaggedCount ? "alert-circle-outline" : "shield-checkmark-outline"}
               actionLabel="Open approval queue"
+              onPress={
+                firstQueueItem
+                  ? () => {
+                      if (!canApproveAttendance) {
+                        showOwnerApprovalRequired();
+                        return;
+                      }
+                      openDecisionSheet(firstQueueItem);
+                    }
+                  : undefined
+              }
             />
             <MetricGrid
               columns={3}

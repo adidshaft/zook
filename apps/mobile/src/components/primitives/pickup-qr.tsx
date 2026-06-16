@@ -1,9 +1,9 @@
 import QRCode from "react-native-qrcode-svg";
-import { Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Reanimated from "@/lib/reanimated-lite";
 import { useBreathingScale } from "@/lib/motion";
 import { useT } from "@/lib/i18n";
-import { radii, spacing, useTheme } from "@/lib/theme";
+import { elevation, radii, spacing, useTheme } from "@/lib/theme";
 
 const qrPaper = "#FFFFFF";
 const qrInk = "#11150F";
@@ -13,15 +13,9 @@ export function PickupQrCode({ value }: { value: string }) {
   const { mode, palette } = useTheme();
   const t = useT();
   const isDark = mode === "dark";
-  const qrShadow =
-    Platform.OS === "ios"
-      ? {
-          shadowColor: palette.bg.sunken,
-          shadowOpacity: isDark ? 0.2 : 0.08,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
-        }
-      : { elevation: 2 };
+  const qrShadow = elevation(2, palette.bg.sunken, {
+    shadowOpacity: isDark ? 0.2 : 0.08,
+  });
   return (
     <Reanimated.View style={breathingStyle}>
       <View
@@ -32,8 +26,8 @@ export function PickupQrCode({ value }: { value: string }) {
           {
             backgroundColor: isDark ? palette.surface.raised : palette.bg.elevated,
             borderColor: palette.border.subtle,
-            ...qrShadow,
           },
+          qrShadow,
         ]}
       >
         <View style={styles.paper}>

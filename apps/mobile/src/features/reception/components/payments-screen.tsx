@@ -64,8 +64,9 @@ export function ReceptionPaymentsScreenBody() {
                 label="Amount received"
                 value={amount}
                 onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
-                keyboardType="decimal-pad"
+                keyboardType="numeric"
                 placeholder="₹0"
+                leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                 returnKeyType="next"
                 required
                 error={amountInvalid ? "Enter an amount greater than 0." : undefined}
@@ -237,8 +238,9 @@ export function ReceptionPaymentsScreenBody() {
                   label="Amount received"
                   value={amount}
                   onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
-                  keyboardType="decimal-pad"
+                  keyboardType="numeric"
                   placeholder="₹0"
+                  leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                   returnKeyType="next"
                   required
                   error={amountInvalid ? "Enter an amount greater than 0." : undefined}

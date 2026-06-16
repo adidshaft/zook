@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
   Inter_400Regular,
@@ -161,14 +162,6 @@ function LayoutContent() {
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    if (status !== "loading" && onboardingFlag !== undefined) {
-      void SplashScreen.hideAsync().catch(() => {
-        // Ignore splash cleanup races during local development.
-      });
-    }
-  }, [status, onboardingFlag]);
 
   useEffect(() => {
     return setAuthQueryClient(queryClient);
@@ -492,7 +485,7 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
 function ThemedGestureRoot({ queryClient }: { queryClient: QueryClient }) {
   const { palette } = useTheme();
   return (
-    <View style={[styles.gestureRoot, { backgroundColor: palette.bg.app }]}>
+    <GestureHandlerRootView style={[styles.gestureRoot, { backgroundColor: palette.bg.app }]}>
       <Sentry.ErrorBoundary
         fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
       >
@@ -512,7 +505,7 @@ function ThemedGestureRoot({ queryClient }: { queryClient: QueryClient }) {
           </I18nProvider>
         </QueryClientProvider>
       </Sentry.ErrorBoundary>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -535,6 +528,8 @@ export default function Layout() {
     Inter_800ExtraBold,
     Inter_900Black,
   });
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
+  const appShellReady = fontsLoaded || fontLoadTimedOut;
 
   useEffect(() => {
     void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -542,18 +537,42 @@ export default function Layout() {
     });
   }, []);
 
-  // Splash hide is now deferred until both fonts are loaded and Auth hydration completes in LayoutContent.
+  useEffect(() => {
+    if (fontsLoaded) {
+      setFontLoadTimedOut(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setFontLoadTimedOut(true);
+    }, 4000);
+    return () => clearTimeout(timeout);
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  useEffect(() => {
+    if (!appShellReady) {
+      return;
+    }
+    void SplashScreen.hideAsync().catch(() => {
+      // Ignore splash cleanup races during local development.
+    });
+  }, [appShellReady]);
 
   return (
     <ThemeProvider>
       <SafeAreaProvider>
-        <ThemedGestureRoot queryClient={queryClient} />
+        {appShellReady ? <ThemedGestureRoot queryClient={queryClient} /> : <LaunchFallbackScreen />}
       </SafeAreaProvider>
     </ThemeProvider>
+  );
+}
+
+function LaunchFallbackScreen() {
+  const { palette } = useTheme();
+  return (
+    <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
+      <ActivityIndicator color={palette.accent.base} />
+      <Text style={[styles.loadingText, { color: palette.text.secondary }]}>Loading Zook…</Text>
+    </View>
   );
 }
 

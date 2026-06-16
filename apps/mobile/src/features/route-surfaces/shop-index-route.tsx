@@ -59,6 +59,14 @@ import { shopStyles as styles } from "./shop-index-route.styles";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
+type PersistedCheckoutContext = {
+  checkoutSession: {
+    id: string;
+    provider?: string;
+    checkoutUrl?: string;
+  } | null;
+  order: ShopOrderViewRecord | null;
+};
 type OptimisticShopOrder = Pick<
   ShopOrderRecord,
   "id" | "status" | "pickupCode" | "totalPaise" | "items"
@@ -181,7 +189,8 @@ export default function Shop() {
         : "browse";
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
-  const products = productsQuery.data?.products ?? [];
+  const checkoutContextStoragePrefix = `zook_shop_checkout_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
+  const products = useMemo(() => productsQuery.data?.products ?? [], [productsQuery.data?.products]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -232,6 +241,11 @@ export default function Shop() {
   const urlProvider = firstParam(params.provider);
   const urlCheckoutUrl = firstParam(params.checkoutUrl);
   const urlTotalPaise = Number(firstParam(params.totalPaise) ?? 0);
+  const checkoutContextStorageKey = urlOrderId
+    ? `${checkoutContextStoragePrefix}_${urlOrderId}`
+    : order?.id
+      ? `${checkoutContextStoragePrefix}_${order.id}`
+      : null;
 
   useEffect(() => {
     if (!urlOrderId || checkoutState !== "pickup") {
@@ -358,6 +372,47 @@ export default function Shop() {
     });
   }, [urlCheckoutUrl, urlProvider, urlSessionId]);
 
+  useEffect(() => {
+    if (!urlOrderId || !checkoutContextStorageKey) {
+      return;
+    }
+    let cancelled = false;
+    void getStoredValue(checkoutContextStorageKey).then((stored) => {
+      if (cancelled || !stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as PersistedCheckoutContext;
+        if (!order && parsed.order?.id === urlOrderId) {
+          setOrder(parsed.order);
+        }
+        if (!checkoutSession && parsed.checkoutSession?.id) {
+          setCheckoutSession(parsed.checkoutSession);
+        }
+      } catch {
+        void deleteStoredValue(checkoutContextStorageKey);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutContextStorageKey, checkoutSession, order, urlOrderId]);
+
+  useEffect(() => {
+    if (!checkoutContextStorageKey) {
+      return;
+    }
+    if (!order?.id || order.status !== "PENDING_PAYMENT") {
+      void deleteStoredValue(checkoutContextStorageKey);
+      return;
+    }
+    const payload: PersistedCheckoutContext = {
+      order,
+      checkoutSession,
+    };
+    void setStoredValue(checkoutContextStorageKey, JSON.stringify(payload));
+  }, [checkoutContextStorageKey, checkoutSession, order]);
+
   const refreshShopCheckoutStatus = useCallback(async () => {
     if (!order) return;
     setCheckingCheckoutStatus(true);
@@ -369,6 +424,9 @@ export default function Shop() {
         setCart({});
         setWaitingCheckoutSessionId(null);
         void deleteStoredValue(cartStorageKey);
+        if (checkoutContextStorageKey) {
+          void deleteStoredValue(checkoutContextStorageKey);
+        }
         router.replace(`/shop/pickup/${refreshedOrder.id}` as never);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
@@ -381,7 +439,7 @@ export default function Shop() {
     } finally {
       setCheckingCheckoutStatus(false);
     }
-  }, [cartStorageKey, order, ordersQuery, queryClient, router]);
+  }, [cartStorageKey, checkoutContextStorageKey, order, ordersQuery, queryClient, router]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -483,8 +541,12 @@ export default function Shop() {
       const refreshed = await ordersQuery.refetch();
       const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
       setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
+      setCheckoutSession(null);
       setCart({});
       void deleteStoredValue(cartStorageKey);
+      if (checkoutContextStorageKey) {
+        void deleteStoredValue(checkoutContextStorageKey);
+      }
       showToast({ tone: "success", haptic: "success", message: "Payment confirmed." });
       router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
     } catch (error) {
@@ -586,6 +648,7 @@ export default function Shop() {
                 ? `Copy pickup code ${order.pickupCode}`
                 : "Pickup code pending"
             }
+            accessibilityState={{ disabled: !order.pickupCode }}
             disabled={!order.pickupCode}
             hitSlop={6}
           >
@@ -1109,4 +1172,3 @@ function ShopShell({
     </>
   );
 }
-

@@ -13,7 +13,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii, typography } from "@/lib/theme";
+import { radii, shadows, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
 
@@ -40,13 +40,13 @@ type ButtonPalette = {
   glow?: ViewStyle;
 };
 
-function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPalette {
+function paletteForVariant(palette: Palette, variant: ButtonVariant, isDark: boolean): ButtonPalette {
   if (variant === "primary") {
     return {
       backgroundColor: palette.accent.fill,
       borderColor: palette.accent.strong,
       color: palette.text.onAccent,
-      glow: { boxShadow: palette.shadow.sm } as ViewStyle,
+      glow: isDark ? shadows.glowLimeSoft : shadows.card,
     };
   }
   if (variant === "destructive") {
@@ -156,8 +156,8 @@ export function ZookButton({
   hapticWeight?: HapticWeight;
   testID?: string;
 }) {
-  const { palette } = useTheme();
-  const buttonPalette = paletteForVariant(palette, variant);
+  const { palette, mode } = useTheme();
+  const buttonPalette = paletteForVariant(palette, variant, mode === "dark");
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;

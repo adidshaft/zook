@@ -189,7 +189,7 @@ export function ReceptionMembersScreenBody() {
                 ) : null}
               </Card>
             ) : null}
-            <View style={styles.stack}>
+            <View style={[styles.stack, styles.memberListSection]}>
               <MemberList
                 testID="reception-member"
                 searchTestID="reception-member-search"
@@ -209,7 +209,7 @@ export function ReceptionMembersScreenBody() {
                   }
                 }}
                 onRevealPhone={(user) => revealMemberPhone(user.id)}
-                scrollEnabled={false}
+                style={styles.memberList}
               />
               {hiddenMemberCount ? (
                 <Text style={[styles.resultHint, { color: palette.text.tertiary }]}>

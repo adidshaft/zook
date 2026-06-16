@@ -1,9 +1,10 @@
 import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  LayoutChangeEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -90,6 +91,10 @@ function routeForRole(role?: Role) {
   return "/";
 }
 
+function firstParam(value?: string | string[] | null) {
+  return Array.isArray(value) ? value[0] : value ?? undefined;
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "Syncing";
   return new Date(value).toLocaleDateString("en-IN", {
@@ -152,6 +157,7 @@ function membershipProgressLabel(input: {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const { mode, palette } = useTheme();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const {
@@ -172,6 +178,8 @@ export default function ProfileScreen() {
   const attendanceQuery = useMyAttendance();
   const plansQuery = useMyPlans();
   const { selectedBranch } = useBranchSelection();
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsetsRef = useRef<Partial<Record<"identity" | "details" | "membership" | "referral", number>>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [roleBusy, setRoleBusy] = useState<Role | null>(null);
 
@@ -187,7 +195,7 @@ export default function ProfileScreen() {
       profile?.profile?.profilePhotoUrl ??
       session?.user.profilePhotoUrl,
   );
-  const roles = activeOrganization?.roles ?? [];
+  const roles = useMemo(() => activeOrganization?.roles ?? [], [activeOrganization?.roles]);
   const activeRole = roleContext?.role ?? "MEMBER";
   const rolesInOtherGyms = useMemo(() => {
     const activeRoles = new Set(roles);
@@ -277,6 +285,38 @@ export default function ProfileScreen() {
       })) ?? [];
     return [...attendanceItems, ...workoutItems].slice(0, 3);
   }, [attendanceQuery.data?.attendance, plansQuery.data?.plans]);
+  const focusTarget = firstParam(params.focus);
+
+  function rememberSection(
+    key: "identity" | "details" | "membership" | "referral",
+    event: LayoutChangeEvent,
+  ) {
+    sectionOffsetsRef.current[key] = event.nativeEvent.layout.y;
+  }
+
+  useEffect(() => {
+    const sectionKey =
+      focusTarget === "photo"
+        ? "identity"
+        : focusTarget === "edit" || focusTarget === "details"
+          ? "details"
+          : focusTarget === "buy" || focusTarget === "history"
+            ? "membership"
+            : focusTarget === "referral"
+              ? "referral"
+              : null;
+    if (!sectionKey) {
+      return;
+    }
+    const offset = sectionOffsetsRef.current[sectionKey];
+    if (typeof offset !== "number") {
+      return;
+    }
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, offset - spacing.lg), animated: true });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [focusTarget]);
 
   async function refreshProfile() {
     setRefreshing(true);
@@ -430,6 +470,7 @@ export default function ProfileScreen() {
     <>
       <ZookScreen testID="profile-screen">
         <ScrollView
+          ref={scrollRef}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
@@ -472,7 +513,7 @@ export default function ProfileScreen() {
           />
 
           {referralCode ? (
-            <View style={styles.section}>
+            <View style={styles.section} onLayout={(event) => rememberSection("referral", event)}>
               <ReferralCard
                 code={referralCode.code}
                 maxUses={referralCode.maxUses}
@@ -488,62 +529,66 @@ export default function ProfileScreen() {
             </View>
           ) : null}
 
-          <Card contentStyle={styles.identityCard}>
-            <ProfilePhotoControl
-              token={token}
-              orgId={activeOrgId}
-              name={userName}
-              profilePhotoUrl={photoUrl}
-              size={72}
-              onSaved={() => void refreshProfile()}
-            />
-            <View style={styles.identityCopy}>
-              <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
-                {userName}
-              </Text>
-              {userEmail ? (
-                <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
-                  {userEmail}
+          <View onLayout={(event) => rememberSection("identity", event)}>
+            <Card contentStyle={styles.identityCard}>
+              <ProfilePhotoControl
+                token={token}
+                orgId={activeOrgId}
+                name={userName}
+                profilePhotoUrl={photoUrl}
+                size={72}
+                onSaved={() => void refreshProfile()}
+              />
+              <View style={styles.identityCopy}>
+                <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
+                  {userName}
                 </Text>
-              ) : null}
-              <Text numberOfLines={2} style={[styles.gymLine, { color: palette.text.primary }]}>
-                {formatOrgLocationLine(
-                  activeOrganization?.name,
-                  selectedBranch?.name,
-                  activeOrganization?.city,
-                )}
-              </Text>
-              <View style={styles.roleRow}>
-                {roles.length ? (
-                  roles.map((role) => (
-                    <Pressable
-                      key={role}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Use Zook as ${titleCaseRole(role)}`}
-                      accessibilityState={{
-                        selected: role === activeRole,
-                        disabled: Boolean(roleBusy),
-                        busy: roleBusy === role,
-                      }}
-                      disabled={Boolean(roleBusy)}
-                      onPress={() => confirmRoleSwitch(role)}
-                    >
-                      <Pill tone={role === activeRole ? "lime" : "neutral"}>
-                        {roleBusy === role ? "Switching..." : titleCaseRole(role)}
-                      </Pill>
-                    </Pressable>
-                  ))
-                ) : (
-                  <Pill>No role assigned</Pill>
-                )}
+                {userEmail ? (
+                  <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
+                    {userEmail}
+                  </Text>
+                ) : null}
+                <Text numberOfLines={2} style={[styles.gymLine, { color: palette.text.primary }]}>
+                  {formatOrgLocationLine(
+                    activeOrganization?.name,
+                    selectedBranch?.name,
+                    activeOrganization?.city,
+                  )}
+                </Text>
+                <View style={styles.roleRow}>
+                  {roles.length ? (
+                    roles.map((role) => (
+                      <Pressable
+                        key={role}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Use Zook as ${titleCaseRole(role)}`}
+                        accessibilityState={{
+                          selected: role === activeRole,
+                          disabled: Boolean(roleBusy),
+                          busy: roleBusy === role,
+                        }}
+                        disabled={Boolean(roleBusy)}
+                        onPress={() => confirmRoleSwitch(role)}
+                      >
+                        <Pill tone={role === activeRole ? "lime" : "neutral"}>
+                          {roleBusy === role ? "Switching..." : titleCaseRole(role)}
+                        </Pill>
+                      </Pressable>
+                    ))
+                  ) : (
+                    <Pill>No role assigned</Pill>
+                  )}
+                </View>
               </View>
-            </View>
-          </Card>
+            </Card>
+          </View>
 
-          <ProfileExtraFields />
+          <View onLayout={(event) => rememberSection("details", event)}>
+            <ProfileExtraFields />
+          </View>
 
           {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
-          <View style={styles.section}>
+          <View style={styles.section} onLayout={(event) => rememberSection("membership", event)}>
             <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Membership</Text>
             <Card variant="compact" contentStyle={styles.membershipCard}>
               {membership ? (

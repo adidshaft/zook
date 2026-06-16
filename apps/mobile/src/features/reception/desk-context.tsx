@@ -105,8 +105,10 @@ export function useReceptionWorkspace() {
 
 function useReceptionWorkspaceState({
   initialMemberId = null,
+  initialRecordId = null,
 }: {
   initialMemberId?: string | null;
+  initialRecordId?: string | null;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -161,7 +163,7 @@ function useReceptionWorkspaceState({
       lastReceptionMemberId = selectedMemberId;
     }
   }, [selectedMemberId]);
-  const approvalQueue = queueQuery.data?.records ?? [];
+  const approvalQueue = useMemo(() => queueQuery.data?.records ?? [], [queueQuery.data?.records]);
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
   ).length;
@@ -180,6 +182,17 @@ function useReceptionWorkspaceState({
       setSelectedMemberId(initialMemberId);
     }
   }, [initialMemberId]);
+
+  useEffect(() => {
+    if (!initialRecordId) {
+      return;
+    }
+    const attempt = approvalQueue.find((item) => item.id === initialRecordId);
+    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
+      return;
+    }
+    openDecisionSheet(attempt);
+  }, [approvalQueue, initialRecordId, selectedDecisionAttempt?.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -784,6 +797,8 @@ function useReceptionWorkspaceState({
 export function ReceptionWorkspace({
   children,
   initialMemberId = null,
+  initialRecordId = null,
+  noScroll = false,
   showMemberContext = false,
   subtitle,
   title,
@@ -792,14 +807,16 @@ export function ReceptionWorkspace({
 }: {
   children: ReactNode;
   initialMemberId?: string | null;
+  initialRecordId?: string | null;
+  noScroll?: boolean;
   showMemberContext?: boolean;
   subtitle: string;
   title: string;
   testID?: string;
-  /** Pushed detail screens (member/[id], payments/new, verification) show a back button. */
+  /** Pushed detail screens (member/[id], verification) show a back button. */
   isDetailView?: boolean;
 }) {
-  const state = useReceptionWorkspaceState({ initialMemberId });
+  const state = useReceptionWorkspaceState({ initialMemberId, initialRecordId });
   const { mode, palette } = useTheme();
   const scrollY = useSharedValue(0);
   const isDark = mode === "dark";
@@ -812,6 +829,7 @@ export function ReceptionWorkspace({
     <ReceptionWorkspaceContext.Provider value={state}>
       <ZookScreen testID={testID}>
         <KeyboardAwareScreen
+          noScroll={noScroll}
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
@@ -830,100 +848,102 @@ export function ReceptionWorkspace({
             ),
           }}
         >
-        <ScreenHeader
-          title={title}
-          subtitle={subtitle}
-          contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
-          scrollY={scrollY}
-          trailing={
-            isDetailView ? (
-              <Pressable
-                testID="reception-back"
-                onPress={() => (state.router.canGoBack() ? state.router.back() : state.router.replace("/reception"))}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                hitSlop={12}
-                style={[styles.backButton, headerControlStyle]}
-              >
-                <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-              </Pressable>
-            ) : state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? (
-              <Pressable
-                testID="reception-back"
-                onPress={() => state.router.replace("/owner")}
-                accessibilityRole="button"
-                accessibilityLabel="Back to owner tools"
-                hitSlop={12}
-                style={[styles.backButton, headerControlStyle]}
-              >
-                <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-              </Pressable>
-            ) : (
-              <ProfileShortcut />
-            )
-          }
-        />
-
-        <Pressable
-          testID="reception-gym-selector"
-          onPress={state.openBranchSwitcher}
-          accessibilityRole="button"
-          accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
-          disabled={!state.canSwitchBranches}
-          style={({ pressed }) => [
-            styles.gymSelector,
-            {
-              borderColor: palette.border.default,
-              backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-            },
-            pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
-          ]}
-        >
-          <Ionicons name="business-outline" size={22} color={palette.text.primary} />
-          <View style={styles.gymSelectorCopy}>
-            <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
-              {state.gymSelectorLabel}
-            </Text>
-            <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-              {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
-            </Text>
-          </View>
-          {state.canSwitchBranches ? (
-            <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
-          ) : null}
-        </Pressable>
-
-        {showMemberContext ? (
-          <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
-            <IconBubble
-              icon={state.member ? "person-outline" : "person-add-outline"}
-              tone={state.member ? "lime" : "amber"}
-              size={34}
+          <View style={noScroll ? styles.contentNoScroll : undefined}>
+            <ScreenHeader
+              title={title}
+              subtitle={subtitle}
+              contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
+              scrollY={scrollY}
+              trailing={
+                isDetailView ? (
+                  <Pressable
+                    testID="reception-back"
+                    onPress={() => (state.router.canGoBack() ? state.router.back() : state.router.replace("/reception"))}
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    hitSlop={12}
+                    style={[styles.backButton, headerControlStyle]}
+                  >
+                    <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+                  </Pressable>
+                ) : state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? (
+                  <Pressable
+                    testID="reception-back"
+                    onPress={() => state.router.replace("/owner")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Back to owner tools"
+                    hitSlop={12}
+                    style={[styles.backButton, headerControlStyle]}
+                  >
+                    <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+                  </Pressable>
+                ) : (
+                  <ProfileShortcut />
+                )
+              }
             />
-            <View style={styles.memberContextCopy}>
-              <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
-                {state.member?.name ?? "No member selected"}
-              </Text>
-              <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
-                {state.member?.email ?? "Search members before recording payments or attendance"}
-                {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
-              </Text>
-            </View>
-            {state.member ? (
-              <Pressable
-                onPress={() => state.setSelectedMemberId(null)}
-                accessibilityRole="button"
-                accessibilityLabel="Clear selected member"
-                style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
-              >
-                <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
-              </Pressable>
+
+            <Pressable
+              testID="reception-gym-selector"
+              onPress={state.openBranchSwitcher}
+              accessibilityRole="button"
+              accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
+              disabled={!state.canSwitchBranches}
+              style={({ pressed }) => [
+                styles.gymSelector,
+                {
+                  borderColor: palette.border.default,
+                  backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+                },
+                pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
+              ]}
+            >
+              <Ionicons name="business-outline" size={22} color={palette.text.primary} />
+              <View style={styles.gymSelectorCopy}>
+                <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
+                  {state.gymSelectorLabel}
+                </Text>
+                <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
+                  {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
+                </Text>
+              </View>
+              {state.canSwitchBranches ? (
+                <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
+              ) : null}
+            </Pressable>
+
+            {showMemberContext ? (
+              <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
+                <IconBubble
+                  icon={state.member ? "person-outline" : "person-add-outline"}
+                  tone={state.member ? "lime" : "amber"}
+                  size={34}
+                />
+                <View style={styles.memberContextCopy}>
+                  <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
+                    {state.member?.name ?? "No member selected"}
+                  </Text>
+                  <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
+                    {state.member?.email ?? "Search members before recording payments or attendance"}
+                    {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
+                  </Text>
+                </View>
+                {state.member ? (
+                  <Pressable
+                    onPress={() => state.setSelectedMemberId(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear selected member"
+                    style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
+                  >
+                    <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
+                  </Pressable>
+                ) : null}
+              </Card>
             ) : null}
-          </Card>
-        ) : null}
-        <AnimatedAppear delay={0}>
-          {children}
-        </AnimatedAppear>
+            <AnimatedAppear delay={0} style={noScroll ? styles.animatedContentNoScroll : undefined}>
+              {children}
+            </AnimatedAppear>
+          </View>
         </KeyboardAwareScreen>
         <VerificationResultModal />
         <ApprovalDecisionSheet />

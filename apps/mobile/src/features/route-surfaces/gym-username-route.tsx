@@ -96,9 +96,12 @@ export default function GymProfileScreen() {
     profileBranches.find((branch) => branch.isDefault)?.id ??
     profileBranches[0]?.id;
 
-  function setStatusMessage(message: string | null) {
-    queryClient.setQueryData(statusMessageKey, message);
-  }
+  const setStatusMessage = useCallback(
+    (message: string | null) => {
+      queryClient.setQueryData(statusMessageKey, message);
+    },
+    [queryClient, statusMessageKey],
+  );
 
   useEffect(() => {
     usernameRef.current = username;
@@ -155,7 +158,7 @@ export default function GymProfileScreen() {
       });
     });
     return () => subscription.remove();
-  }, [queryClient]);
+  }, [queryClient, setStatusMessage]);
 
   async function requestMembership() {
     if (!gym) {
@@ -775,10 +778,7 @@ export default function GymProfileScreen() {
   );
 }
 
-function buildJoinSteps(
-  joinMode: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY",
-  referralCode?: string,
-) {
+function buildJoinSteps(joinMode: string, referralCode?: string) {
   if (joinMode === "APPROVAL_REQUIRED") {
     return [
       {
@@ -813,6 +813,10 @@ function buildJoinSteps(
         body: "Payment activates the membership once the invite rules are met.",
       },
     ];
+  }
+
+  if (joinMode !== "OPEN_JOIN") {
+    console.warn("Unknown join mode; defaulting to OPEN_JOIN flow", joinMode);
   }
 
   return [

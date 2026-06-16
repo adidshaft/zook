@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams } from "expo-router";
+import { Redirect, Stack, useLocalSearchParams } from "expo-router";
 
 export default function GymAliasScreen() {
   const params = useLocalSearchParams<{ username?: string | string[]; ref?: string | string[] }>();
@@ -6,18 +6,26 @@ export default function GymAliasScreen() {
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
 
   if (!username) {
-    return <Redirect href="/gyms" />;
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false, animation: "none" }} />
+        <Redirect href="/gyms" />
+      </>
+    );
   }
 
   return (
-    <Redirect
-      href={{
-        pathname: "/gyms/[username]",
-        params: {
-          username,
-          ...(referralCode ? { ref: referralCode } : {}),
-        },
-      }}
-    />
+    <>
+      <Stack.Screen options={{ headerShown: false, animation: "none" }} />
+      <Redirect
+        href={{
+          pathname: "/gyms/[username]",
+          params: {
+            username,
+            ...(referralCode ? { ref: referralCode } : {}),
+          },
+        }}
+      />
+    </>
   );
 }

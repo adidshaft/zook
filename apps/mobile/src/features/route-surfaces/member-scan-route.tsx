@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { CameraView, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -407,7 +407,7 @@ export default function Scan() {
     return false;
   }
 
-  async function replayQueuedScans() {
+  const replayQueuedScans = useCallback(async () => {
     if (!token || replayingQueue) {
       return;
     }
@@ -462,13 +462,13 @@ export default function Scan() {
     } finally {
       setReplayingQueue(false);
     }
-  }
+  }, [deviceId, queryClient, replayingQueue, token]);
 
   useEffect(() => {
     if (token) {
       void replayQueuedScans();
     }
-  }, [deviceId, token]);
+  }, [replayQueuedScans, token]);
 
   const hasCamera = cameraPermission.status?.granted;
   const cameraBlocked =
@@ -533,6 +533,12 @@ export default function Scan() {
     ];
   }, [codeReady, hasCamera, scanMode, scanState]);
 
+  useFocusEffect(
+    useCallback(() => {
+      resetScan();
+    }, []),
+  );
+
   async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
       return;
@@ -552,7 +558,7 @@ export default function Scan() {
           .toUpperCase()
           .includes("EXPIRED") ||
           (typeof activeMembership?.daysLeft === "number" && activeMembership.daysLeft <= 0));
-      if (membershipExpired) {
+      if (membershipExpired && !memberHomeQuery.isFetching) {
         throw new Error("Membership expired. Renew before checking in.");
       }
       const result = await attendanceApi.scan<ScanResult>({
@@ -1128,16 +1134,22 @@ function CheckInMoment({
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onDone}>
-      <View style={styles.checkInMomentBackdrop}>
+      <View style={[styles.checkInMomentBackdrop, { backgroundColor: palette.bg.overlay }]}>
         <RNAnimated.View style={[styles.checkInMomentContent, { opacity, transform: [{ scale }] }]}>
-          <View style={[styles.checkInMomentTick, { backgroundColor: palette.accent.base }]}>
+          <View
+            style={[
+              styles.checkInMomentTick,
+              { backgroundColor: palette.accent.base, shadowColor: palette.accent.base },
+            ]}
+          >
             <Ionicons name="checkmark" size={58} color={palette.text.onAccent} />
           </View>
-          <Text style={styles.checkInMomentGym} numberOfLines={1}>{gymName}</Text>
-          <Text style={styles.checkInMomentTitle}>Checked in</Text>
+          <Text style={[styles.checkInMomentGym, { color: palette.text.secondary }]} numberOfLines={1}>
+            {gymName}
+          </Text>
+          <Text style={[styles.checkInMomentTitle, { color: palette.text.primary }]}>Checked in</Text>
         </RNAnimated.View>
       </View>
     </Modal>
   );
 }
-

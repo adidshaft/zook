@@ -260,7 +260,6 @@ export const scanStyles = StyleSheet.create({
   },
   checkInMomentBackdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(17,21,15,0.94)",
     flex: 1,
     justifyContent: "center",
     padding: spacing.xl,
@@ -276,20 +275,17 @@ export const scanStyles = StyleSheet.create({
     borderRadius: 999,
     height: 104,
     justifyContent: "center",
-    shadowColor: "#8DFF9A",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.28,
     shadowRadius: 24,
     width: 104,
   },
   checkInMomentGym: {
-    color: "#DDE8D8",
     maxWidth: "86%",
     textAlign: "center",
     ...typography.title,
   },
   checkInMomentTitle: {
-    color: "#FFFFFF",
     textAlign: "center",
     ...typography.display,
   },

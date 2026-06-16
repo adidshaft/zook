@@ -25,7 +25,7 @@ export function KeyboardAwareScreen({
 }: KeyboardAwareScreenProps) {
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior="padding"
       style={{ flex: 1 }}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
       {...rest}

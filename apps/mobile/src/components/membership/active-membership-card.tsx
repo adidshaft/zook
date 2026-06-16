@@ -157,6 +157,9 @@ export function ActiveMembershipCard({
             minimumDate={pauseMinimumDate()}
             onChange={onPauseDateChange}
           />
+          <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
+            Pausing freezes check-ins until this date, and your remaining days carry over.
+          </Text>
         </View>
       ) : null}
       <ZookButton
@@ -246,6 +249,10 @@ const styles = StyleSheet.create({
   },
   pausePicker: {
     marginTop: -spacing.xs,
+    gap: spacing.xs,
+  },
+  pauseHelp: {
+    ...typography.small,
   },
   statusMessage: {
     ...typography.small,

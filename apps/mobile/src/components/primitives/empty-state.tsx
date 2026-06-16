@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "./buttons";
-import { IconBubble } from "./foundation";
+import { IconBubble } from "./icon-bubble";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 type IonIconName = keyof typeof Ionicons.glyphMap;

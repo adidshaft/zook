@@ -38,6 +38,12 @@ function usageLine(used?: number, limit?: number | null) {
   return `${used ?? 0} / ${formatLimit(limit)}`;
 }
 
+function activeMembersCopy(count: number) {
+  const noun = count === 1 ? "member" : "members";
+  const verb = count === 1 ? "counts" : "count";
+  return `${count} ${noun} currently ${verb} toward your plan limits`;
+}
+
 function resolveCheckoutUrl(value?: string | null, target: "owner-billing" = "owner-billing") {
   if (!value) return null;
   const resolved = value.startsWith("http://") || value.startsWith("https://") ? value : toWebUrl(value);
@@ -180,7 +186,7 @@ export default function OwnerBillingScreen() {
                 />
                 <ListRow
                   title="Active members"
-                  subtitle={`${data.activeMemberCount} members currently count toward your plan limits`}
+                  subtitle={activeMembersCopy(data.activeMemberCount)}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
               </Card>

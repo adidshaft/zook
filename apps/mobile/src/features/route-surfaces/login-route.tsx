@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
+import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
 import { useLocalSearchParams } from "expo-router";
 import { ApiError } from "@zook/core/api";
 import {
@@ -27,10 +28,11 @@ import {
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { spacing, typography, useTheme, type Palette } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 type BusyAction = "otp" | "apple" | "google" | null;
 type LoginMethod = "phone" | "email";
+type MessageTone = "neutral" | "danger" | "success";
 
 const TERMS_URL = "https://zookfit.in/terms";
 const PRIVACY_URL = "https://zookfit.in/privacy";
@@ -143,10 +145,21 @@ export default function Login() {
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<MessageTone>("neutral");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
   const [accountLocked, setAccountLocked] = useState(false);
   const busy = busyAction !== null;
+
+  function showMessage(nextMessage: string, tone: MessageTone = "neutral") {
+    setMessage(nextMessage);
+    setMessageTone(tone);
+  }
+
+  function clearMessage() {
+    setMessage("");
+    setMessageTone("neutral");
+  }
 
   useEffect(() => {
     const prefill = Array.isArray(params.prefill) ? params.prefill[0] : params.prefill;
@@ -166,10 +179,10 @@ export default function Login() {
   useEffect(() => {
     const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
     if (reason === "proactive") {
-      setMessage(t("auth.verifyToContinue"));
+      showMessage(t("auth.verifyToContinue"));
     }
     if (reason === "expired") {
-      setMessage(t("auth.sessionExpired"));
+      showMessage(t("auth.sessionExpired"));
     }
   }, [params.reason, t]);
 
@@ -191,7 +204,7 @@ export default function Login() {
 
   useEffect(() => {
     if (rateLimitCooldown <= 0) return undefined;
-    setMessage(tooManyAttemptsMessage(rateLimitCooldown));
+    showMessage(tooManyAttemptsMessage(rateLimitCooldown), "danger");
     const timer = setInterval(() => {
       setRateLimitCooldown((current) => Math.max(0, current - 1));
     }, 1000);
@@ -227,16 +240,16 @@ export default function Login() {
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
       setAccountLocked(true);
-      setMessage(getApiErrorMessage(error));
+      showMessage(getApiErrorMessage(error), "danger");
       return;
     }
     if (error instanceof ApiError && error.status === 429) {
       const seconds = readRetryAfterSeconds(error);
       setRateLimitCooldown(seconds);
-      setMessage(tooManyAttemptsMessage(seconds));
+      showMessage(tooManyAttemptsMessage(seconds), "danger");
       return;
     }
-    setMessage(getApiErrorMessage(error));
+    showMessage(getApiErrorMessage(error), "danger");
   }
 
   async function requestCode(resend = false) {
@@ -249,7 +262,7 @@ export default function Login() {
         ? !isValidEmailIdentifier(identifier)
         : !isValidPhoneIdentifier(identifier)
     ) {
-      setMessage(identifierInvalidMessage);
+      showMessage(identifierInvalidMessage, "danger");
       return;
     }
     setBusyAction("otp");
@@ -260,7 +273,7 @@ export default function Login() {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
       setCode("");
-      setMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }));
+      showMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }), "success");
       setRateLimitCooldown(0);
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
     } catch (error) {
@@ -280,7 +293,7 @@ export default function Login() {
     setBusyAction("otp");
     try {
       await verifyOtp(identifier, nextCode);
-      setMessage(t("auth.signedIn"));
+      showMessage(t("auth.signedIn"), "success");
     } catch (error) {
       handleOtpError(error);
     } finally {
@@ -308,11 +321,11 @@ export default function Login() {
 
   async function handleAppleSignIn() {
     setBusyAction("apple");
-    setMessage("");
+    clearMessage();
     try {
       const available = await AppleAuthentication.isAvailableAsync();
       if (!available) {
-        setMessage(t("auth.appleUnavailable"));
+        showMessage(t("auth.appleUnavailable"), "danger");
         return;
       }
       const credential = await AppleAuthentication.signInAsync({
@@ -322,7 +335,7 @@ export default function Login() {
         ],
       });
       if (!credential.identityToken) {
-        setMessage(t("auth.appleNoToken"));
+        showMessage(t("auth.appleNoToken"), "danger");
         return;
       }
       const fullName = [
@@ -333,13 +346,14 @@ export default function Login() {
         .filter(Boolean)
         .join(" ");
       await signInWithApple(credential.identityToken, fullName || undefined);
-      setMessage(t("auth.signedIn"));
+      showMessage(t("auth.signedIn"), "success");
     } catch (error) {
       if (isCanceledAuthError(error)) return;
-      setMessage(
+      showMessage(
         error instanceof ApiError && error.status === 501
           ? t("auth.appleComingSoon")
           : getApiErrorMessage(error),
+        "danger",
       );
     } finally {
       setBusyAction(null);
@@ -348,12 +362,12 @@ export default function Login() {
 
   async function handleGoogleSignIn() {
     setBusyAction("google");
-    setMessage("");
+    clearMessage();
     try {
       await configureGoogleSignIn();
       const module = await getGoogleSigninModule();
       if (!module) {
-        setMessage(t("auth.googleUnavailable"));
+        showMessage(t("auth.googleUnavailable"), "danger");
         return;
       }
       if (Platform.OS === "android") {
@@ -363,16 +377,17 @@ export default function Login() {
       if (response.type !== "success") return;
       const idToken = response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
       if (!idToken) {
-        setMessage(t("auth.googleNoToken"));
+        showMessage(t("auth.googleNoToken"), "danger");
         return;
       }
       await signInWithGoogle(idToken);
-      setMessage(t("auth.signedIn"));
+      showMessage(t("auth.signedIn"), "success");
     } catch (error) {
-      setMessage(
+      showMessage(
         error instanceof ApiError && error.status === 501
           ? t("auth.googleComingSoon")
           : getApiErrorMessage(error),
+        "danger",
       );
     } finally {
       setBusyAction(null);
@@ -427,7 +442,7 @@ export default function Login() {
                       message === t("auth.invalidEmailOnly") ||
                       message === t("auth.invalidMobile")
                     ) {
-                      setMessage("");
+                      clearMessage();
                     }
                   }}
                   onBlur={() => setIdentifierTouched(true)}
@@ -460,7 +475,7 @@ export default function Login() {
                             message === t("auth.invalidEmailOnly") ||
                             message === t("auth.invalidMobile")
                           ) {
-                            setMessage("");
+                            clearMessage();
                           }
                         }}
                         style={[
@@ -535,6 +550,7 @@ export default function Login() {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setStage("identifier");
                     resetOtpState();
+                    clearMessage();
                   }}
                   disabled={busy}
                   variant="secondary"
@@ -547,26 +563,22 @@ export default function Login() {
               <>
                 <View style={styles.dividerRow}>
                   <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
-                  <Text style={[styles.dividerText, { color: palette.text.tertiary }]}>or continue with</Text>
+                  <Text style={[styles.dividerText, { color: palette.text.tertiary }]}>
+                    {t("auth.orContinueWith")}
+                  </Text>
                   <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
                 </View>
                 <View style={styles.ssoRow}>
-                  <SsoButton
+                  <AppleSsoButton
                     testID="login-apple"
-                    label="Apple"
-                    mark="A"
                     busy={busyAction === "apple"}
                     disabled={busy}
-                    palette={palette}
                     onPress={() => void handleAppleSignIn()}
                   />
-                  <SsoButton
+                  <GoogleSsoButton
                     testID="login-google"
-                    label="Google"
-                    mark="G"
                     busy={busyAction === "google"}
                     disabled={busy}
-                    palette={palette}
                     onPress={() => void handleGoogleSignIn()}
                   />
                 </View>
@@ -596,52 +608,124 @@ export default function Login() {
           </Card>
         </Animated.View>
 
-        {message ? <Text testID="login-message" style={[styles.messageText, { color: palette.text.secondary }]}>{message}</Text> : null}
+        {message ? (
+          <Text
+            testID="login-message"
+            style={[
+              styles.messageText,
+              {
+                color:
+                  messageTone === "danger"
+                    ? palette.feedback.danger
+                    : messageTone === "success"
+                      ? palette.feedback.success
+                      : palette.text.secondary,
+              },
+            ]}
+          >
+            {message}
+          </Text>
+        ) : null}
       </KeyboardAwareScreen>
     </ZookScreen>
   );
 }
 
-function SsoButton({
+function AppleSsoButton({
   busy,
   disabled,
-  label,
-  mark,
   onPress,
-  palette,
   testID,
 }: {
   busy: boolean;
   disabled: boolean;
-  label: string;
-  mark: string;
   onPress: () => void;
-  palette: Palette;
+  testID?: string;
+}) {
+  const { mode, palette } = useTheme();
+  if (Platform.OS !== "ios") {
+    return (
+      <Pressable
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel="Apple"
+        disabled={disabled}
+        onPress={disabled ? undefined : onPress}
+        style={({ pressed }) => [
+          styles.fallbackSsoButton,
+          {
+            backgroundColor: palette.surface.raised,
+            borderColor: palette.border.default,
+          },
+          pressed && !disabled
+            ? { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }
+            : null,
+          disabled ? styles.ssoButtonDisabled : null,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color={palette.text.primary} />
+        ) : (
+          <Text style={[styles.fallbackSsoLabel, { color: palette.text.primary }]}>Apple</Text>
+        )}
+      </Pressable>
+    );
+  }
+  return (
+    <View style={[styles.nativeSsoShell, disabled ? styles.ssoButtonDisabled : null]}>
+      <AppleAuthentication.AppleAuthenticationButton
+        testID={testID}
+        accessibilityLabel="Apple"
+        buttonStyle={
+          mode === "dark"
+            ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+            : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+        }
+        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+        style={styles.nativeSsoButton}
+        cornerRadius={14}
+        onPress={() => {
+          if (!disabled) onPress();
+        }}
+      />
+      {busy ? (
+        <View pointerEvents="none" style={styles.ssoBusyOverlay}>
+          <ActivityIndicator size="small" color={mode === "dark" ? "#000000" : "#FFFFFF"} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function GoogleSsoButton({
+  busy,
+  disabled,
+  onPress,
+  testID,
+}: {
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
   testID?: string;
 }) {
   return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.ssoButton,
-        { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
-        pressed && !disabled ? { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base } : null,
-        disabled ? styles.ssoButtonDisabled : null,
-      ]}
-    >
+    <View style={[styles.nativeSsoShell, disabled ? styles.ssoButtonDisabled : null]}>
+      <GoogleSigninButton
+        testID={testID}
+        accessibilityLabel="Google"
+        onPress={() => {
+          if (!disabled) onPress();
+        }}
+        size={GoogleSigninButton.Size.Wide}
+        color={GoogleSigninButton.Color.Light}
+        style={styles.nativeSsoButton}
+      />
       {busy ? (
-        <ActivityIndicator size="small" color={palette.text.primary} />
-      ) : (
-        <Text style={[styles.ssoMark, { color: palette.text.primary }]}>{mark}</Text>
-      )}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} style={[styles.ssoLabel, { color: palette.text.primary }]}>
-        {label}
-      </Text>
-    </Pressable>
+        <View pointerEvents="none" style={styles.ssoBusyOverlay}>
+          <ActivityIndicator size="small" color="#1F1F1F" />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -744,29 +828,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
   },
-  ssoButton: {
+  nativeSsoShell: {
     flex: 1,
     minHeight: 48,
-    borderCurve: "continuous",
+    position: "relative",
+  },
+  nativeSsoButton: {
+    width: "100%",
+    minHeight: 48,
+    borderRadius: 14,
+  },
+  fallbackSsoButton: {
+    minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
+  },
+  fallbackSsoLabel: {
+    ...typography.button,
   },
   ssoButtonDisabled: {
     opacity: 0.6,
   },
-  ssoMark: {
-    width: 18,
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 16,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  ssoLabel: {
-    ...typography.button,
+  ssoBusyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   legalText: {
     ...typography.caption,

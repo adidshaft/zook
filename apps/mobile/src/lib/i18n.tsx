@@ -87,6 +87,7 @@ export type TranslationKey =
   | "auth.googleUnavailable"
   | "auth.googleNoToken"
   | "auth.googleComingSoon"
+  | "auth.orContinueWith"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -323,6 +324,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.googleUnavailable": "Google sign-in is not available in Expo Go.",
     "auth.googleNoToken": "Google did not return an ID token. Try again.",
     "auth.googleComingSoon": "Google sign-in coming soon.",
+    "auth.orContinueWith": "or continue with",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -558,6 +560,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.googleUnavailable": "Expo Go में Google sign-in उपलब्ध नहीं है.",
     "auth.googleNoToken": "Google ने ID token नहीं दिया. फिर से प्रयास करें.",
     "auth.googleComingSoon": "Google sign-in जल्द आ रहा है.",
+    "auth.orContinueWith": "या इसके साथ जारी रखें",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",

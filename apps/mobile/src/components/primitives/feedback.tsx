@@ -2,8 +2,8 @@ export {
   ErrorState,
   LoadingSkeleton,
   LoadingState,
-  OfflineBanner,
   QueryErrorState,
   Skeleton,
-} from "./foundation";
+} from "./feedback-primitives";
+export { OfflineBanner } from "./offline-banner";
 export { NetworkBanner } from "./network-banner";

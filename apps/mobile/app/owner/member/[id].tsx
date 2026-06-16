@@ -199,15 +199,6 @@ export default function OwnerMemberDetail() {
             </Card>
           ) : null}
 
-          {!memberQuery.isLoading && !member ? (
-            <Card variant="compact" contentStyle={styles.stateContent}>
-              <IconBubble icon="people-outline" tone="neutral" size={44} />
-              <Text style={[styles.stateText, { color: palette.text.primary }]}>
-                Member not found
-              </Text>
-            </Card>
-          ) : null}
-
           {memberQuery.isError ? (
             <Card variant="compact">
               <QueryErrorState
@@ -215,6 +206,15 @@ export default function OwnerMemberDetail() {
                 onRetry={() => void memberQuery.refetch()}
                 title="Could not load member"
               />
+            </Card>
+          ) : null}
+
+          {!memberQuery.isLoading && !memberQuery.isError && !member ? (
+            <Card variant="compact" contentStyle={styles.stateContent}>
+              <IconBubble icon="people-outline" tone="neutral" size={44} />
+              <Text style={[styles.stateText, { color: palette.text.primary }]}>
+                Member not found
+              </Text>
             </Card>
           ) : null}
 

@@ -11,6 +11,19 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding + 80,
   },
+  contentNoScroll: {
+    flex: 1,
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: 14,
+    gap: 16,
+    minHeight: 0,
+  },
+  animatedContentNoScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
   demoScreen: {
     paddingTop: 0,
   },
@@ -109,6 +122,14 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  memberListSection: {
+    flex: 1,
+    minHeight: 0,
+  },
+  memberList: {
+    flex: 1,
+    minHeight: 0,
   },
   liveFeed: {
     gap: 8,

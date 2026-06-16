@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card, ListRow } from "./foundation";
+import { Card } from "./foundation";
+import { ListRow } from "./input-primitives";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export type SetupChecklistStep = {

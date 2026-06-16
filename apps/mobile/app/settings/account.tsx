@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   Card,
@@ -81,6 +81,7 @@ function ContactVerifier({
   const [requestedFor, setRequestedFor] = useState<string | undefined>();
   const [busy, setBusy] = useState<"request" | "verify" | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [status, setStatus] = useState<string | undefined>();
   const trimmedValue = value.trim();
   const title = kind === "email" ? "Email" : "Mobile number";
   const placeholder = kind === "email" ? "you@example.com" : "+91 98765 43210";
@@ -104,6 +105,7 @@ function ContactVerifier({
     }
     setBusy("request");
     setError(undefined);
+    setStatus(undefined);
     try {
       await memberApi.requestContactOtp({
         token,
@@ -112,7 +114,7 @@ function ContactVerifier({
       });
       setRequestedFor(trimmedValue);
       setCode("");
-      Alert.alert("OTP sent", `Enter the code sent to ${trimmedValue}.`);
+      setStatus(`Enter the code sent to ${trimmedValue}.`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not send OTP.");
     } finally {
@@ -130,6 +132,7 @@ function ContactVerifier({
     }
     setBusy("verify");
     setError(undefined);
+    setStatus(undefined);
     try {
       await memberApi.verifyContactOtp({
         token,
@@ -140,7 +143,7 @@ function ContactVerifier({
       await onVerified();
       setRequestedFor(undefined);
       setCode("");
-      Alert.alert(`${title} verified`, "Your account has been updated.");
+      setStatus(`${title} verified. Your account has been updated.`);
     } catch (verifyError) {
       setError(verifyError instanceof Error ? verifyError.message : "Could not verify OTP.");
     } finally {
@@ -159,6 +162,7 @@ function ContactVerifier({
         label={title}
         onChangeText={(nextValue) => {
           setValue(nextValue);
+          setStatus(undefined);
           if (requestedFor && nextValue.trim() !== requestedFor) {
             setRequestedFor(undefined);
             setCode("");
@@ -205,6 +209,11 @@ function ContactVerifier({
       {error ? (
         <Text accessibilityRole="alert" style={[styles.error, { color: palette.feedback.danger }]}>
           {error}
+        </Text>
+      ) : null}
+      {!error && status ? (
+        <Text style={[styles.helper, { color: palette.text.secondary }]}>
+          {status}
         </Text>
       ) : null}
     </View>

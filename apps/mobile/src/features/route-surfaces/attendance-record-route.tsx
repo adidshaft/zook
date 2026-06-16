@@ -95,6 +95,28 @@ export default function AttendanceResultScreen() {
   const recordFromApi = attendanceQuery.data?.attendance ?? null;
   const warning =
     queryClient.getQueryData<string>(["me", "attendanceWarning", attendanceRecordId]) ?? "";
+  const dismissAttendance = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/scan");
+  };
+  const dismissButton = (
+    <Pressable
+      onPress={dismissAttendance}
+      accessibilityRole="button"
+      accessibilityLabel="Dismiss attendance details"
+      hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
+      style={({ pressed }) => [
+        styles.iconButton,
+        { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+        pressed ? styles.controlPressed : null,
+      ]}
+    >
+      <Ionicons name="close" size={20} color={palette.text.primary} />
+    </Pressable>
+  );
 
   useEffect(() => {
     if (!attendanceRecordId) {
@@ -125,7 +147,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" />
+            <AppHeader title="Attendance" leading={dismissButton} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -146,7 +168,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" />
+            <AppHeader title="Attendance" leading={dismissButton} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
@@ -191,20 +213,7 @@ export default function AttendanceResultScreen() {
           <AppHeader
             title="Attendance"
             subtitle={pending ? branchName : undefined}
-            leading={
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace("/scan"))}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
-                  pressed ? styles.controlPressed : null,
-                ]}
-              >
-                <Ionicons name="chevron-back" size={20} color={palette.text.primary} />
-              </Pressable>
-            }
+            leading={dismissButton}
           />
 
           <View style={styles.hero}>
@@ -441,8 +450,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
