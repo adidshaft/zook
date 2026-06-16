@@ -76,14 +76,22 @@ export function DashboardHeader({
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <ThemeToggleButton />
-          <div className="relative grid h-10 w-10 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
+          <Link
+            href="/dashboard/notifications"
+            aria-label={
+              data.summary.notificationQueueCount > 0
+                ? `View notifications (${data.summary.notificationQueueCount} pending)`
+                : "View notifications"
+            }
+            className="zook-focus relative grid h-10 w-10 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+          >
             <Bell className="h-4 w-4" aria-hidden="true" />
             {data.summary.notificationQueueCount > 0 ? (
               <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[var(--accent-fill)] px-1 text-[10px] font-black tabular-nums text-[var(--text-on-accent)]">
                 {data.summary.notificationQueueCount}
               </span>
             ) : null}
-          </div>
+          </Link>
           <UserMenu
             user={user}
             roleLabel={roleLabel}
