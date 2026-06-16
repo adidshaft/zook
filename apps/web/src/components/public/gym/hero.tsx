@@ -4,12 +4,6 @@ import { Pill } from "@/components/glass-card";
 import { joinModeLabelForLocale, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
 
-function fallbackAmenities(org: PublicGym) {
-  return org.amenities.length
-    ? org.amenities
-    : ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"];
-}
-
 export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   return (
@@ -78,13 +72,18 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           <p className="mt-3 text-sm text-[var(--accent-strong)] font-semibold">{org.openingHoursSummary}</p>
         ) : null}
 
-        <div className="mt-7 flex flex-wrap gap-2 relative">
-          {fallbackAmenities(org).map((amenity) => (
-            <Pill key={amenity} className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]">
-              {amenity}
-            </Pill>
-          ))}
-        </div>
+        {org.amenities.length ? (
+          <div className="mt-7 flex flex-wrap gap-2 relative">
+            {org.amenities.map((amenity) => (
+              <Pill
+                key={amenity}
+                className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+              >
+                {amenity}
+              </Pill>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-10 flex flex-wrap gap-6 relative">
           {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
