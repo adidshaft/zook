@@ -5,14 +5,13 @@ import type { PublicGym } from "./types";
 
 export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
-  const facilities = org.facilities.length ? org.facilities : org.amenities;
   const gallery = org.gallery.length
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
   return (
     <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={facilities} tone="blue" />
+        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} tone="blue" />
         <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} tone="lime" />
       </section>
       
