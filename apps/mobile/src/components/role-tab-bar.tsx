@@ -454,6 +454,7 @@ const styles = StyleSheet.create({
     // into the system gesture bar.
     marginTop: -34,
     borderWidth: 0,
+    elevation: 6,
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
   },
