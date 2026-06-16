@@ -74,7 +74,6 @@ export function assertSafeMutationRequest(
     fetchSite === null ||
     fetchSite === "same-origin" ||
     fetchSite === "same-site" ||
-    fetchSite === "none" ||
     (fetchSite === "cross-site" && equivalentLoopback);
 
   if (!originMatches || !sameSiteFetch) {

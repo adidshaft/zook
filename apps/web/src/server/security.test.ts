@@ -79,4 +79,16 @@ describe("mutation safety", () => {
       ),
     ).toThrow(/Cross-site mutation blocked/);
   });
+
+  it("blocks sec-fetch-site none for cookie-authenticated writes", () => {
+    expect(() =>
+      assertSafeMutationRequest(
+        createMutationRequest({
+          origin: "https://zookfit.in",
+          fetchSite: "none",
+          hasCookieSession: true,
+        }) as never,
+      ),
+    ).toThrow(/Cross-site mutation blocked/);
+  });
 });
