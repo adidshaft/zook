@@ -1,4 +1,4 @@
-import { Bell, Building2, Calendar, ChevronDown, ExternalLink, Search } from "lucide-react";
+import { Bell, Building2, Calendar, ChevronDown, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { BranchSwitcher } from "./branch-switcher";
 import { UserMenu } from "./user-menu";
@@ -63,17 +63,7 @@ export function DashboardHeader({
           ) : null}
         </div>
 
-        <div className="relative mx-auto hidden min-h-10 w-full max-w-[480px] flex-1 items-center md:flex">
-          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[var(--text-tertiary)]" aria-hidden="true" />
-          <input
-            type="search"
-            placeholder="Search members, invoices, plans..."
-            className="zook-focus h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] pl-10 pr-16 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
-          />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[var(--border)] bg-[var(--surface-raised)] px-1.5 py-0.5 text-[10px] uppercase tracking-widest text-[var(--text-tertiary)]">
-            ⌘ K
-          </kbd>
-        </div>
+        <div className="hidden flex-1 md:block" aria-hidden="true" />
 
         <div className="flex items-center justify-end gap-3">
           <Link
