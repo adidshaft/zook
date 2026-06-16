@@ -25,6 +25,7 @@ import {
   verifyOtpSchema,
   isInternalPhoneEmail,
   getAppEnv,
+  getCronSecret,
   getQrSigningSecret,
   isMockPaymentCompletionAllowed,
   isQaDemoIdentifier,
@@ -9664,13 +9665,10 @@ export async function handleReports(request: NextRequest, path: string[]) {
 
 export async function handleCronJobs(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
-    const cronSecret = process.env.CRON_SECRET?.trim();
+    const cronSecret = getCronSecret();
     const authHeader = request.headers.get("authorization");
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       throw forbiddenError("Invalid cron authorization.");
-    }
-    if (!cronSecret && getAppEnv() === "production") {
-      throw forbiddenError("CRON_SECRET must be set in production.");
     }
 
     const now = new Date();
@@ -9769,13 +9767,10 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "renewal-reminders"])) {
-    const cronSecret = process.env.CRON_SECRET?.trim();
+    const cronSecret = getCronSecret();
     const authHeader = request.headers.get("authorization");
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       throw forbiddenError("Invalid cron authorization.");
-    }
-    if (!cronSecret && getAppEnv() === "production") {
-      throw forbiddenError("CRON_SECRET must be set in production.");
     }
 
     const now = new Date();
@@ -9934,13 +9929,10 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "refund-reconcile"])) {
-    const cronSecret = process.env.CRON_SECRET?.trim();
+    const cronSecret = getCronSecret();
     const authHeader = request.headers.get("authorization");
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       throw forbiddenError("Invalid cron authorization.");
-    }
-    if (!cronSecret && getAppEnv() === "production") {
-      throw forbiddenError("CRON_SECRET must be set in production.");
     }
 
     const provider = getPaymentProvider();
@@ -9997,13 +9989,10 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "trainer-payouts-draft"])) {
-    const cronSecret = process.env.CRON_SECRET?.trim();
+    const cronSecret = getCronSecret();
     const authHeader = request.headers.get("authorization");
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       throw forbiddenError("Invalid cron authorization.");
-    }
-    if (!cronSecret && getAppEnv() === "production") {
-      throw forbiddenError("CRON_SECRET must be set in production.");
     }
 
     const month = request.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
