@@ -17,6 +17,7 @@ artifacts
 !.env.test.example
 *.log
 *.tsbuildinfo
+*.apk
 packages/db/prisma/dev.db
 packages/db/prisma/migrations/*/migration_lock.toml
 
