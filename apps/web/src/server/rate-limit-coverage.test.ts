@@ -13,6 +13,17 @@ const sensitiveRoutes = [
   { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
   { label: "QR scan", needle: 'pathMatches(path, ["attendance", "scan"])' },
   { label: "manual payment", needle: 'pathMatches(path, ["orgs", /.+/, "manual-payments"])' },
+  { label: "payment refund", needle: 'pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])' },
+  { label: "platform payment refund", needle: 'pathMatches(path, ["platform", "payments", /.+/, "refund"])' },
+  { label: "member subscription switch", needle: 'pathMatches(path, ["me", "subscriptions", /.+/, "switch"])' },
+  { label: "org subscription switch", needle: 'pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "switch"])' },
+  {
+    label: "saas subscription cancel",
+    needle:
+      'if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]))'
+  },
+  { label: "autopay cancel", needle: 'pathMatches(path, ["me", "memberships", /.+/, "autopay"])' },
+  { label: "coupon validate", needle: 'pathMatches(path, ["orgs", /.+/, "coupons", "validate"])' },
   { label: "staff invite", needle: 'pathMatches(path, ["orgs", /.+/, "staff", "invite"])' },
   { label: "AI request", needle: 'pathMatches(path, ["ai", "generate-plan"])' },
   { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
@@ -39,5 +50,16 @@ describe("rate-limit route coverage", () => {
     const verifyBody = routerSource.slice(verifyStart, verifyStart + 1400);
     expect(verifyBody).toContain('"otpVerifyByIdentifier"');
     expect(verifyBody).not.toContain("if (!isSeededDemoIdentifier(body.identifier))");
+  });
+
+  it("normalizes forwarded client IPs to the first hop", async () => {
+    const { getForwardedClientIp } = await import("./context");
+    expect(
+      getForwardedClientIp({
+        headers: new Headers({
+          "x-forwarded-for": "198.51.100.10, 203.0.113.5"
+        })
+      })
+    ).toBe("198.51.100.10");
   });
 });

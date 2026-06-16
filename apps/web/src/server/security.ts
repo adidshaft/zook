@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
-import { sessionCookieName } from "./context";
+import { getForwardedClientIp, sessionCookieName } from "./context";
 import { forbiddenError } from "./errors";
 
 export function getClientIp(request: Pick<NextRequest, "headers">) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  return getForwardedClientIp(request) ?? "unknown";
 }
 
 function parseUrl(value: string) {

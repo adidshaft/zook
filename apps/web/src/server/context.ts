@@ -11,18 +11,25 @@ export function extractSessionToken(request: Pick<NextRequest, "headers" | "cook
   return bearer || cookieToken || undefined;
 }
 
+export function getForwardedClientIp(
+  request: Pick<NextRequest, "headers">,
+): string | undefined {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const firstHop = forwardedFor?.split(",")[0]?.trim();
+  return firstHop ? firstHop : undefined;
+}
+
 export async function createRequestContext(
   request: NextRequest,
   input: { orgId?: string } = {},
 ): Promise<RequestContext> {
   const token = extractSessionToken(request);
+  const ipAddress = getForwardedClientIp(request);
   if (!token) {
     return {
       roles: [],
       permissions: [],
-      ...(request.headers.get("x-forwarded-for")
-        ? { ipAddress: request.headers.get("x-forwarded-for") as string }
-        : {})
+      ...(ipAddress ? { ipAddress } : {})
     };
   }
 
@@ -56,9 +63,7 @@ export async function createRequestContext(
     roles,
     permissions,
     isPlatformAdmin: session.user.isPlatformAdmin,
-    ...(request.headers.get("x-forwarded-for")
-      ? { ipAddress: request.headers.get("x-forwarded-for") as string }
-      : {}),
+    ...(ipAddress ? { ipAddress } : {}),
     ...(request.headers.get("user-agent") ? { userAgent: request.headers.get("user-agent") as string } : {})
   };
 }

@@ -8287,6 +8287,11 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_BILLING");
+    await assertRateLimit(
+      "subscriptionChangeByActor",
+      `saas-cancel:${orgId}:${userId}`,
+      "Too many subscription cancellation attempts.",
+    );
     const [subscription, mandate] = await Promise.all([
       prisma.saaSSubscription.findUnique({ where: { orgId } }),
       prisma.saaSBillingMandate.findUnique({ where: { orgId } }),
@@ -10554,6 +10559,11 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const ctx = await getRequestContext(request, { orgId });
     assertNotImpersonating(ctx, "Refund approval");
     const userId = requireOrgPermission(ctx, orgId, "PAYMENTS_REFUND");
+    await assertRateLimit(
+      "paymentRefundByActorOrg",
+      `${orgId}:${userId}`,
+      "Too many refund attempts from this account.",
+    );
     const body = paymentRefundSchema.parse(await readJson(request).catch(() => ({})));
     const payment = await prisma.payment.findFirst({ where: { id: paymentId, orgId } });
     if (!payment) {
@@ -11526,7 +11536,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const userId = requireAuth(ctx);
     const body = subscriptionSwitchSchema.parse(await readJson(request));
     await assertRateLimit(
-      "paymentSessionByActor",
+      "subscriptionChangeByActor",
       `switch:${subscriptionId}:${userId}`,
       "Too many membership switch attempts.",
     );
@@ -11597,6 +11607,11 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const subscriptionId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "MEMBERSHIP_SUBSCRIPTION_MANAGE");
+    await assertRateLimit(
+      "subscriptionChangeByActor",
+      `org-switch:${orgId}:${subscriptionId}:${userId}`,
+      "Too many membership switch attempts.",
+    );
     const body = subscriptionSwitchSchema.parse(await readJson(request));
     const subscription = await prisma.memberSubscription.findFirst({
       where: { id: subscriptionId, orgId },
@@ -11662,6 +11677,11 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
     const subscriptionId = path[2]!;
     const ctx = await getRequestContext(request);
     const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "subscriptionChangeByActor",
+      `autopay-cancel:${subscriptionId}:${userId}`,
+      "Too many autopay cancellation attempts.",
+    );
     const currentSubscription = await prisma.memberSubscription.findFirst({
       where: { id: subscriptionId, memberUserId: userId },
     });
@@ -11948,6 +11968,11 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "coupons", "validate"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
+    await assertRateLimit(
+      "couponValidateByIp",
+      `${orgId}:${ctx.ipAddress ?? "unknown"}`,
+      "Too many coupon validation attempts. Please try again shortly.",
+    );
     const body = publicCouponValidateSchema.parse(await readJson(request));
     const plan = await prisma.membershipPlan.findFirst({
       where: { id: body.planId, orgId, active: true, publicVisible: true },
@@ -17246,6 +17271,11 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const ctx = await getRequestContext(request);
     const actorUserId = requirePlatformAdmin(ctx);
     assertNotImpersonating(ctx, "Platform refund");
+    await assertRateLimit(
+      "paymentRefundByActorOrg",
+      `platform:${actorUserId}`,
+      "Too many refund attempts from this account.",
+    );
     const body = paymentRefundSchema.parse(await readJson(request).catch(() => ({})));
     return ok(
       await refundPaymentForActor({
