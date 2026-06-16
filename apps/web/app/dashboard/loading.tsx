@@ -52,7 +52,7 @@ export default function DashboardLoading() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                  Aarogya Strength
+                  Loading organization
                 </p>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
                   Loading live command board
