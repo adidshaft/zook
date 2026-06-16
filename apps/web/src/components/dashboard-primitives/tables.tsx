@@ -198,31 +198,35 @@ export function VirtualizedDataTable<Row>({
         className,
       )}
       aria-label="Virtualized scrollable table"
-      role="grid"
+      role="table"
+      aria-colcount={columns.length}
+      aria-rowcount={rows.length + 1}
     >
       <div style={{ minWidth: tableMinWidth }}>
-        <div
-          className="grid border-b border-[var(--border)] bg-[var(--bg-sunken)] text-sm text-[var(--text-tertiary)]"
-          style={{ gridTemplateColumns: template }}
-          role="row"
-        >
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              role="columnheader"
-              className={clsx(
-                "px-4 py-3 font-medium",
-                column.align === "right"
-                  ? "text-right"
-                  : column.align === "center"
-                    ? "text-center"
-                    : "text-left",
-                column.className,
-              )}
-            >
-              {column.header}
-            </div>
-          ))}
+        <div role="rowgroup">
+          <div
+            className="grid border-b border-[var(--border)] bg-[var(--bg-sunken)] text-sm text-[var(--text-tertiary)]"
+            style={{ gridTemplateColumns: template }}
+            role="row"
+          >
+            {columns.map((column) => (
+              <div
+                key={column.id}
+                role="columnheader"
+                className={clsx(
+                  "px-4 py-3 font-medium",
+                  column.align === "right"
+                    ? "text-right"
+                    : column.align === "center"
+                      ? "text-center"
+                      : "text-left",
+                  column.className,
+                )}
+              >
+                {column.header}
+              </div>
+            ))}
+          </div>
         </div>
 
         {rows.length ? (
@@ -269,7 +273,17 @@ export function VirtualizedDataTable<Row>({
             </div>
           </div>
         ) : (
-          <div className="px-4 py-5 text-sm text-[var(--text-tertiary)]">{empty}</div>
+          <div role="rowgroup">
+            <div role="row">
+              <div
+                role="cell"
+                className="px-4 py-5 text-sm text-[var(--text-tertiary)]"
+                aria-colspan={columns.length}
+              >
+                {empty}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </motion.div>
