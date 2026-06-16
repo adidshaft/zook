@@ -28,4 +28,16 @@ describe("rate-limit route coverage", () => {
     const routeBody = routerSource.slice(routeStart, routeStart + 1800);
     expect(routeBody).toContain("assertRateLimit");
   });
+
+  it("does not exempt seeded demo OTP flows from identifier rate limits", () => {
+    const requestStart = routerSource.indexOf('pathMatches(path, ["auth", "request-otp"])');
+    const requestBody = routerSource.slice(requestStart, requestStart + 1400);
+    expect(requestBody).toContain('"otpRequestByIdentifier"');
+    expect(requestBody).not.toContain("if (!seededDemoLogin)");
+
+    const verifyStart = routerSource.indexOf('pathMatches(path, ["auth", "verify-otp"])');
+    const verifyBody = routerSource.slice(verifyStart, verifyStart + 1400);
+    expect(verifyBody).toContain('"otpVerifyByIdentifier"');
+    expect(verifyBody).not.toContain("if (!isSeededDemoIdentifier(body.identifier))");
+  });
 });

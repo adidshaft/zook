@@ -6059,13 +6059,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
     const seededDemoLogin = isSeededDemoIdentifier(body.identifier);
-    if (!seededDemoLogin) {
-      await assertRateLimit(
-        "otpRequestByIdentifier",
-        body.identifier.value,
-        "Too many one-time code requests for this account.",
-      );
-    }
+    await assertRateLimit(
+      "otpRequestByIdentifier",
+      body.identifier.value,
+      "Too many one-time code requests for this account.",
+    );
     await assertRateLimit(
       "otpRequestByIp",
       ipAddress,
@@ -6108,13 +6106,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const body = verifyOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
     const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
-    if (!isSeededDemoIdentifier(body.identifier)) {
-      await assertRateLimit(
-        "otpVerifyByIdentifier",
-        body.identifier.value,
-        "Too many one-time code attempts for this account.",
-      );
-    }
+    await assertRateLimit(
+      "otpVerifyByIdentifier",
+      body.identifier.value,
+      "Too many one-time code attempts for this account.",
+    );
     await assertRateLimit(
       "otpVerifyByIp",
       ipAddress,
