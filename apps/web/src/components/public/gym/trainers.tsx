@@ -21,7 +21,7 @@ export function GymTrainers({
         <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("visibleTrainers")}</h2>
         <div className="mt-5 grid gap-3">
           {trainers.length ? (
-            trainers.map((trainer) => <TrainerRow key={trainer.userId} trainer={trainer} locale={locale} />)
+            trainers.map((trainer) => <TrainerRow key={trainer.userId} trainer={trainer} />)
           ) : (
             <p className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm leading-6 text-[var(--text-tertiary)]">
               {t("trainersPending")}
@@ -36,12 +36,9 @@ export function GymTrainers({
 
 function TrainerRow({
   trainer,
-  locale,
 }: {
   trainer: PublicGymTrainer;
-  locale: PublicLocale;
 }) {
-  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const profileDetails = trainerProfileDetails(trainer.specialties);
   return (
     <div className="flex items-start gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
@@ -62,7 +59,9 @@ function TrainerRow({
       )}
       <div className="min-w-0">
         <p className="font-medium text-[var(--text-primary)]">{trainer.name}</p>
-        <p className="mt-1 text-sm text-[var(--text-tertiary)]">{trainer.bio ?? t("bioComingSoon")}</p>
+        {trainer.bio ? (
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">{trainer.bio}</p>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {profileDetails.specialties.slice(0, 3).map((specialty) => (
             <Pill key={specialty}>{specialty}</Pill>
