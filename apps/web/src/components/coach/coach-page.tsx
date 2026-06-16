@@ -97,8 +97,8 @@ export function CoachPage({
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">Pinned for today</h2>
-            <Link href="/me" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              Open my profile {"->"}
+            <Link href="/coach" className="text-xs font-medium text-[var(--accent)] hover:underline">
+              Refresh overview {"->"}
             </Link>
           </div>
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
@@ -138,15 +138,15 @@ export function CoachPage({
               iconTone="lime"
               title="Assign a new plan"
               subtitle="Create a trainer draft for an assigned client"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
+              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
               index={0}
             />
             <ActivityRow
               icon={Bell}
               iconTone="sky"
               title="Notify a member"
-              subtitle="Send a quick check-in nudge"
-              href="/me"
+              subtitle="Open the client workspace and leave a trainer note"
+              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
               index={1}
             />
             <ActivityRow
@@ -154,15 +154,15 @@ export function CoachPage({
               iconTone="amber"
               title="Log this week's progress"
               subtitle="Capture weights, reps, body comp"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
+              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
               index={2}
             />
             <ActivityRow
               icon={Smartphone}
               iconTone="violet"
-              title="Open in the Zook app"
-              subtitle="Full coaching surface lives on mobile"
-              href="/me"
+              title="Open coach overview"
+              subtitle="Stay in the web coach surface instead of bouncing to the member portal"
+              href="/coach"
               index={3}
             />
           </div>
