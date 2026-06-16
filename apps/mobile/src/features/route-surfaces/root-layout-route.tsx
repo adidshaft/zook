@@ -18,6 +18,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, setAuthQueryClient, useAuth } from "@/lib/auth";
+import { BrandMark } from "@/components/primitives";
 import { DemoBanner } from "@/components/demo-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
@@ -393,12 +394,7 @@ function LayoutContent() {
   }
 
   if (status === "loading") {
-    return (
-      <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
-        <ActivityIndicator color={palette.accent.base} />
-        <Text style={[styles.loadingText, { color: palette.text.secondary }]}>{t("app.loadingSession")}</Text>
-      </View>
-    );
+    return <LaunchSurface subtitle={t("app.loadingSession")} />;
   }
 
   return (
@@ -567,11 +563,60 @@ export default function Layout() {
 }
 
 function LaunchFallbackScreen() {
-  const { palette } = useTheme();
+  return <LaunchSurface subtitle="Loading Zook…" />;
+}
+
+function LaunchSurface({ subtitle }: { subtitle: string }) {
+  const { mode, palette } = useTheme();
   return (
     <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
-      <ActivityIndicator color={palette.accent.base} />
-      <Text style={[styles.loadingText, { color: palette.text.secondary }]}>Loading Zook…</Text>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.loadingOrb,
+          styles.loadingOrbPrimary,
+          { backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(31,62,36,0.10)" },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.loadingOrb,
+          styles.loadingOrbSecondary,
+          { backgroundColor: mode === "dark" ? "rgba(125,211,252,0.10)" : "rgba(125,211,252,0.14)" },
+        ]}
+      />
+      <View
+        style={[
+          styles.loadingCard,
+          {
+            backgroundColor: mode === "dark" ? palette.surface.default : palette.bg.elevated,
+            borderColor: palette.border.subtle,
+          },
+        ]}
+      >
+        <View
+          pointerEvents="none"
+          style={[
+            styles.loadingStageFrame,
+            {
+              backgroundColor: mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.56)",
+              borderColor: palette.border.subtle,
+            },
+          ]}
+        />
+        <View style={styles.loadingBrandRow}>
+          <BrandMark size="lg" />
+          <Text style={[styles.loadingBrandText, { color: palette.text.primary }]}>Zook</Text>
+        </View>
+        <Text style={[styles.loadingSubtitle, { color: palette.text.secondary }]}>
+          Gym ops, without the clutter.
+        </Text>
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator color={palette.accent.base} />
+          <Text style={[styles.loadingText, { color: palette.text.secondary }]}>{subtitle}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -605,7 +650,59 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    padding: 24,
+    position: "relative",
+  },
+  loadingOrb: {
+    position: "absolute",
+    borderRadius: 999,
+  },
+  loadingOrbPrimary: {
+    width: 260,
+    height: 260,
+    top: 88,
+    right: -84,
+  },
+  loadingOrbSecondary: {
+    width: 220,
+    height: 220,
+    bottom: 112,
+    left: -72,
+  },
+  loadingCard: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+  },
+  loadingStageFrame: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 28,
+    borderWidth: 1,
+  },
+  loadingBrandRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
+  },
+  loadingBrandText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 42,
+    letterSpacing: 0,
+  },
+  loadingSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: 240,
+  },
+  loadingFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   loadingText: {
     fontSize: 14,

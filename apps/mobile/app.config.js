@@ -31,9 +31,14 @@ const baseConfig = {
   icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
   splash: {
-    image: "./assets/splash.png",
+    image: "./assets/icons/ic_launcher_foreground.png",
     resizeMode: "contain",
-    backgroundColor: "#050806",
+    backgroundColor: "#EFF2E8",
+    dark: {
+      image: "./assets/icons/ic_launcher_foreground.png",
+      resizeMode: "contain",
+      backgroundColor: "#0B100C",
+    },
   },
   ios: {
     supportsTablet: true,
