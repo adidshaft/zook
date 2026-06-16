@@ -43,12 +43,14 @@ export function DataTable<Row>({
   rows,
   rowKey,
   empty,
+  caption,
   className,
 }: {
   columns: Array<DataTableColumn<Row>>;
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  caption?: string | undefined;
   className?: string | undefined;
 }) {
   return (
@@ -58,9 +60,9 @@ export function DataTable<Row>({
         "relative overflow-x-auto rounded-[24px] border border-[var(--border)] bg-[var(--surface)]",
         className,
       )}
-      aria-label="Scrollable table"
     >
       <table className="min-w-[720px] w-full text-left text-sm border-collapse">
+        {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead className="sticky top-0 z-10 bg-[var(--bg-sunken)] text-[var(--text-tertiary)] shadow-[inset_0_-1px_0_var(--border)]">
           <tr>
             {columns.map((column) => (
@@ -122,6 +124,7 @@ export function VirtualizedDataTable<Row>({
   rows,
   rowKey,
   empty,
+  caption,
   className,
   rowHeight = 88,
   maxHeight = 560,
@@ -133,6 +136,7 @@ export function VirtualizedDataTable<Row>({
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  caption?: string | undefined;
   className?: string | undefined;
   rowHeight?: number | undefined;
   maxHeight?: number | undefined;
@@ -197,11 +201,11 @@ export function VirtualizedDataTable<Row>({
         "relative overflow-x-auto rounded-[24px] border border-[var(--border)] bg-[var(--surface)]",
         className,
       )}
-      aria-label="Virtualized scrollable table"
       role="table"
       aria-colcount={columns.length}
       aria-rowcount={rows.length + 1}
     >
+      {caption ? <div className="sr-only">{caption}</div> : null}
       <div style={{ minWidth: tableMinWidth }}>
         <div role="rowgroup">
           <div
