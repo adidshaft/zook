@@ -13582,7 +13582,7 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "classes"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
-    requireAuth(ctx);
+    const userId = requireAuth(ctx);
     assertActiveContextOrg(ctx, orgId);
     const branchId = queryBranchId(request);
     if (branchId) {

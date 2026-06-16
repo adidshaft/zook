@@ -1,10 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link, Stack } from "expo-router";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { Link, Stack, useRouter } from "expo-router";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { Card, ListRow, AppHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import {
+  Card,
+  ListRow,
+  AppHeader,
+  SectionHeader,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
+import { RoleSwitcherChip } from "@/components/role-switcher";
 import { WebHandoffRow } from "@/components/web-handoff-row";
-import { useHasPermission } from "@/lib/auth";
+import { useAuth, useHasPermission } from "@/lib/auth";
 import { layout, spacing } from "@/lib/theme";
 
 type MoreRow = {
@@ -26,8 +34,10 @@ const webRows: MoreRow[] = [
 ];
 
 export default function OwnerMoreScreen() {
+  const router = useRouter();
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
+  const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
     {
       title: "Stock",
@@ -45,6 +55,19 @@ export default function OwnerMoreScreen() {
     },
   ];
 
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => {
+          void logout().then(() => router.replace("/login"));
+        },
+      },
+    ]);
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -54,7 +77,27 @@ export default function OwnerMoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader title="More" subtitle="Owner tools and web dashboard" showProfileShortcut={false} />
+          <AppHeader
+            title="More"
+            subtitle="Owner tools and web dashboard"
+            showProfileShortcut={false}
+          />
+
+          <SectionHeader
+            title="Account & access"
+            subtitle="Switch workspace or safely sign out from this device."
+          />
+          <Card variant="compact" contentStyle={styles.accountCard}>
+            <RoleSwitcherChip />
+            <ZookButton
+              testID="owner-more-sign-out"
+              variant="destructive"
+              icon="log-out-outline"
+              onPress={confirmSignOut}
+            >
+              Sign out
+            </ZookButton>
+          </Card>
 
           <SectionHeader title="Owner tools" />
           <Card variant="compact" contentStyle={styles.list}>
@@ -67,7 +110,10 @@ export default function OwnerMoreScreen() {
             ))}
           </Card>
 
-          <SectionHeader title="Web control room" subtitle="Best for configuration, reporting, staff, QR console, audits, and provider diagnostics." />
+          <SectionHeader
+            title="Web control room"
+            subtitle="Best for configuration, reporting, staff, QR console, audits, and provider diagnostics."
+          />
           <Card variant="compact" contentStyle={styles.list}>
             {webRows.map((row) => (
               <WebHandoffRow key={row.title} title={row.title} path={row.webPath ?? "/dashboard"} />
@@ -90,5 +136,8 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: spacing.xs,
+  },
+  accountCard: {
+    gap: spacing.sm,
   },
 });
