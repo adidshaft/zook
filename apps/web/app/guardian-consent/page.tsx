@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { GuardianConsentRetiredPage } from "@/components/guardian-consent-retired-page";
 
 export default function GuardianConsentRedirectPage() {
-  redirect("/");
+  return <GuardianConsentRetiredPage />;
 }

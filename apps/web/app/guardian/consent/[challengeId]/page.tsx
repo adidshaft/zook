@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { GuardianConsentRetiredPage } from "@/components/guardian-consent-retired-page";
 
-export default function GuardianConsentPage() {
-  redirect("/");
+export default async function GuardianConsentPage({
+  params,
+}: {
+  params: Promise<{ challengeId: string }>;
+}) {
+  const { challengeId } = await params;
+  return <GuardianConsentRetiredPage challengeId={challengeId} />;
 }
