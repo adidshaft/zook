@@ -16,6 +16,7 @@ import {
   type AppStateStatus,
   ActivityIndicator,
   Linking,
+  LayoutChangeEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -235,6 +236,9 @@ export default function MembershipScreen() {
   const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const handledFocusRef = useRef<string | null>(null);
+  const sectionOffsetsRef = useRef<Record<string, number>>({});
   useAppFocusInvalidation([["me", "home"]]);
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
@@ -245,6 +249,32 @@ export default function MembershipScreen() {
     if (!renewalTarget) return;
     setSelectedPlanId(planIdFor(renewalTarget) ?? availablePlans[0]?.id);
   }, [availablePlans, renewalTarget]);
+
+  const focusTarget = useMemo(() => {
+    switch (routeParams.focus) {
+      case "buy":
+      case "checkout":
+      case "history":
+      case "payments":
+      case "membership":
+        return routeParams.focus;
+      default:
+        return null;
+    }
+  }, [routeParams.focus]);
+
+  function registerSectionOffset(section: "active" | "history" | "payments", event: LayoutChangeEvent) {
+    sectionOffsetsRef.current[section] = event.nativeEvent.layout.y;
+  }
+
+  function scrollToSection(section: "active" | "history" | "payments") {
+    const y = sectionOffsetsRef.current[section];
+    if (typeof y !== "number") {
+      return false;
+    }
+    scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true });
+    return true;
+  }
 
   const refreshMembershipAfterCheckout = useCallback(async () => {
     setCheckingCheckoutStatus(true);
@@ -288,6 +318,49 @@ export default function MembershipScreen() {
     setRenewalTarget(null);
     setRenewalStatus("");
   }
+
+  useEffect(() => {
+    if (!focusTarget) {
+      handledFocusRef.current = null;
+      return;
+    }
+    if (handledFocusRef.current === focusTarget) {
+      return;
+    }
+    if (focusTarget === "buy" || focusTarget === "checkout") {
+      if (!latestSubscription) {
+        handledFocusRef.current = focusTarget;
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      openRenewal(latestSubscription);
+      scrollToSection("active");
+      return;
+    }
+    if (membershipsQuery.isLoading) {
+      return;
+    }
+    if (focusTarget === "history") {
+      if (!scrollToSection(sortedSubscriptions.length > 1 ? "history" : "payments")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      return;
+    }
+    if (focusTarget === "payments") {
+      if (!scrollToSection("payments")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      return;
+    }
+    if (focusTarget === "membership") {
+      if (!scrollToSection("active")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+    }
+  }, [focusTarget, latestSubscription, membershipsQuery.isLoading, sortedSubscriptions.length]);
 
   async function renewMembership() {
     if (!token || !renewalTarget) return;
@@ -529,6 +602,7 @@ export default function MembershipScreen() {
     <>
       <ZookScreen testID="membership-screen">
         <ScrollView
+          ref={scrollViewRef}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
@@ -569,15 +643,43 @@ export default function MembershipScreen() {
             showProfileShortcut={false}
           />
 
-          {routeParams.focus === "membership" ? (
+          {focusTarget ? (
             <Card variant="selected" contentStyle={styles.calloutContent}>
-              <IconBubble icon="notifications" tone="blue" size={36} />
+              <IconBubble
+                icon={
+                  focusTarget === "history" || focusTarget === "payments"
+                    ? "receipt-outline"
+                    : focusTarget === "buy" || focusTarget === "checkout"
+                      ? "card-outline"
+                      : "notifications"
+                }
+                tone={focusTarget === "buy" || focusTarget === "checkout" ? "lime" : "blue"}
+                size={36}
+              />
               <View style={styles.calloutCopy}>
-                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>Membership update</Text>
+                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>
+                  {focusTarget === "buy"
+                    ? "Choose a plan"
+                    : focusTarget === "checkout"
+                      ? "Continue checkout"
+                      : focusTarget === "history"
+                        ? "Membership history"
+                        : focusTarget === "payments"
+                          ? "Payment documents"
+                          : "Membership update"}
+                </Text>
                 <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
-                  {routeParams.subscriptionId
-                    ? "Your subscription has been updated."
-                    : "Showing your current status."}
+                  {focusTarget === "buy" || focusTarget === "checkout"
+                    ? latestSubscription
+                      ? "We opened the renewal flow for your current membership."
+                      : "Browse gyms and purchase a membership to get started."
+                    : focusTarget === "history"
+                      ? "Jumped to your previous memberships and payment trail."
+                      : focusTarget === "payments"
+                        ? "Receipts and invoices live below."
+                        : routeParams.subscriptionId
+                          ? "Your subscription has been updated."
+                          : "Showing your current status."}
                 </Text>
               </View>
             </Card>
@@ -621,7 +723,7 @@ export default function MembershipScreen() {
           ) : null}
 
           {latestSubscription ? (
-            <>
+            <View onLayout={(event) => registerSectionOffset("active", event)}>
               <SectionHeader title="Active plan" />
               <ActiveMembershipCard
                 activeOrganizationName={activeOrganization?.name}
@@ -643,18 +745,22 @@ export default function MembershipScreen() {
                 onEnable={(subscription) => void enableAutopay(subscription)}
                 subscription={latestSubscription}
               />
-            </>
+            </View>
           ) : null}
 
-          <MembershipHistorySection subscriptions={sortedSubscriptions} />
+          <View onLayout={(event) => registerSectionOffset("history", event)}>
+            <MembershipHistorySection subscriptions={sortedSubscriptions} />
+          </View>
 
-          <PaymentsSection
-            documentBusyKey={documentBusyKey}
-            invoices={invoices}
-            onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
-            onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
-            payments={payments}
-          />
+          <View onLayout={(event) => registerSectionOffset("payments", event)}>
+            <PaymentsSection
+              documentBusyKey={documentBusyKey}
+              invoices={invoices}
+              onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
+              onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
+              payments={payments}
+            />
+          </View>
         </ScrollView>
         <RenewalSheet
           availablePlans={availablePlans}
