@@ -8,10 +8,13 @@ export default function DashboardLoading() {
 
   return (
     <main
-      aria-live="polite"
+      aria-busy="true"
       aria-label="Loading dashboard section"
       className="zook-shell-bg min-h-dvh overflow-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8"
     >
+      <div role="status" aria-live="polite" className="sr-only">
+        Loading dashboard section.
+      </div>
       <div className="fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-[var(--border-subtle)]">
         <div className="h-full w-1/3 animate-[zook-dashboard-loading_900ms_ease-in-out_infinite] rounded-r-full bg-[var(--accent)]" />
       </div>
