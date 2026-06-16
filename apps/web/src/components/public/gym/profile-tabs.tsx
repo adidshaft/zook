@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Sparkles, Star, Smartphone, Dumbbell } from "lucide-react";
+import { Users, Sparkles, Smartphone, Dumbbell } from "lucide-react";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan, PublicGymTrainer } from "./types";
 import { GymPlansGrid } from "./plans-grid";
@@ -10,9 +10,8 @@ import { MemberJourney } from "./member-journey";
 import { GymFacilities } from "./facilities";
 import { ShareInstall } from "./share-install";
 import { GymTrainers } from "./trainers";
-import { GymReviews } from "./reviews";
 
-type TabId = "plans" | "trainers" | "facilities" | "app" | "reviews";
+type TabId = "plans" | "trainers" | "facilities" | "app";
 
 export function GymProfileTabs({
   org,
@@ -57,12 +56,6 @@ export function GymProfileTabs({
       label: t("shareOrInstall"),
       icon: Smartphone,
       content: <ShareInstall org={org} locale={locale} />,
-    },
-    {
-      id: "reviews" as TabId,
-      label: t("reviews"),
-      icon: Star,
-      content: <GymReviews locale={locale} />,
     },
   ];
 
