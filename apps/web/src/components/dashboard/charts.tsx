@@ -691,7 +691,10 @@ export function LegendItem({
       <div className="flex items-center gap-2 min-w-0">
         <span
           className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: TONE_COLORS[tone], boxShadow: `0 0 8px color-mix(in srgb, ${TONE_COLORS[tone]} 33%, transparent)` }}
+          style={{
+            background: TONE_COLORS[tone],
+            filter: `drop-shadow(0 0 8px color-mix(in srgb, ${TONE_COLORS[tone]} 33%, transparent))`,
+          }}
         />
         <span className="truncate text-xs text-[var(--text-secondary)]">{label}</span>
       </div>

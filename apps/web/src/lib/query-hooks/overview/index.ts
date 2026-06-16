@@ -54,9 +54,9 @@ export function useDashboardSummary(
     retry: 1,
   };
 
-  if (hasInitialData) {
-    return useQuery<DashboardSummaryData>({ ...queryOptions, initialData, initialDataUpdatedAt: 0 });
-  }
-
-  return useQuery<DashboardSummaryData>(queryOptions);
+  return useQuery<DashboardSummaryData>(
+    hasInitialData
+      ? { ...queryOptions, initialData, initialDataUpdatedAt: 0 }
+      : queryOptions,
+  );
 }

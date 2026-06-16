@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
@@ -79,7 +79,7 @@ export function useDeskWorkspace({
     refreshMs: 30_000,
   });
 
-  const members = membersState.data?.members ?? [];
+  const members = useMemo(() => membersState.data?.members ?? [], [membersState.data?.members]);
   const pendingRecords = pendingState.data?.records ?? [];
   const todayRecords = todayState.data?.records ?? [];
   const activeOrders = ordersState.data?.orders ?? [];
@@ -116,15 +116,7 @@ export function useDeskWorkspace({
     }
   }, [members, selectedMember]);
 
-  useEffect(() => {
-    if (!initialMemberUserId || paymentForm.memberUserId) return;
-    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
-    if (member) {
-      selectMember(member);
-    }
-  }, [initialMemberUserId, members, paymentForm.memberUserId]);
-
-  function memberPaymentDefaults(member: MemberRow | null) {
+  const memberPaymentDefaults = useCallback((member: MemberRow | null) => {
     const subscription = member?.activeSubscription;
     const plan = (plansState.data?.plans ?? []).find(
       (candidate) => candidate.id === subscription?.planId,
@@ -135,13 +127,13 @@ export function useDeskWorkspace({
       subscriptionId: canActivateExisting && subscription?.id ? subscription.id : "",
       amountRupees: plan ? String(plan.pricePaise / 100) : "",
     };
-  }
+  }, [plansState.data?.plans]);
 
   function updatePaymentForm(patch: Partial<PaymentFormState>) {
     setPaymentForm((current) => ({ ...current, ...patch }));
   }
 
-  function selectMember(member: MemberRow) {
+  const selectMember = useCallback((member: MemberRow) => {
     const defaults = memberPaymentDefaults(member);
     setSelectedMember(member);
     setPaymentForm((current) => ({
@@ -151,7 +143,15 @@ export function useDeskWorkspace({
       subscriptionId: defaults.subscriptionId,
       amountRupees: defaults.amountRupees || current.amountRupees,
     }));
-  }
+  }, [memberPaymentDefaults]);
+
+  useEffect(() => {
+    if (!initialMemberUserId || paymentForm.memberUserId) return;
+    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
+    if (member) {
+      selectMember(member);
+    }
+  }, [initialMemberUserId, members, paymentForm.memberUserId, selectMember]);
 
   function selectPaymentOrder(order: ShopOrder) {
     setPaymentForm((current) => ({

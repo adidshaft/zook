@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "./dashboard-primitives";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
@@ -47,7 +47,7 @@ export function TrainerDietPlansPanel({
 
   const path = `/api/orgs/${orgId}/trainers/${trainerId}/clients/${clientId}/diet-plans`;
 
-  async function loadPlans() {
+  const loadPlans = useCallback(async () => {
     try {
       setError("");
       const payload = await webApiFetch<{ plans: DietPlan[] }>(path);
@@ -57,11 +57,11 @@ export function TrainerDietPlansPanel({
     } finally {
       setLoading(false);
     }
-  }
+  }, [path]);
 
   useEffect(() => {
     void loadPlans();
-  }, []);
+  }, [loadPlans]);
 
   function planPayload(existing?: DietPlan) {
     const title = window.prompt("Plan title", existing?.title ?? "Nutrition plan")?.trim();

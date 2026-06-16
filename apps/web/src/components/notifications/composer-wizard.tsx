@@ -136,6 +136,50 @@ export function NotificationComposerPanel({
     [permissions, roles, type],
   );
   const canManageTemplates = permissions.includes("NOTIFICATION_MANAGE_TEMPLATES");
+  const previewReady = useMemo(() => {
+    if (!title.trim() || !body.trim()) return false;
+    if (audience === "branch_members" && !branchId) return false;
+    if (audience === "membership_plan" && !planId) return false;
+    if (audience === "single_member" && !singleUserId) return false;
+    if (audience === "selected_members" && selectedUserIds.length === 0) return false;
+    return true;
+  }, [
+    audience,
+    body,
+    branchId,
+    planId,
+    selectedUserIds,
+    singleUserId,
+    title,
+  ]);
+  const notificationPayload = useMemo(
+    () => ({
+      title,
+      body,
+      type,
+      audience,
+      pushEnabled,
+      branchId: branchId || undefined,
+      planId: planId || undefined,
+      singleUserId: singleUserId || undefined,
+      selectedUserIds,
+      daysAhead: Number(daysAhead) || 7,
+      scheduleAt: scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
+    }),
+    [
+      audience,
+      body,
+      branchId,
+      daysAhead,
+      planId,
+      pushEnabled,
+      scheduleAt,
+      selectedUserIds,
+      singleUserId,
+      title,
+      type,
+    ],
+  );
 
   useEffect(() => {
     const firstAllowed = availableAudiences.find((option) => option.allowed);
@@ -181,19 +225,7 @@ export function NotificationComposerPanel({
   }, [availableAudiences, queryApplied, searchParams]);
 
   function payload() {
-    return {
-      title,
-      body,
-      type,
-      audience,
-      pushEnabled,
-      branchId: branchId || undefined,
-      planId: planId || undefined,
-      singleUserId: singleUserId || undefined,
-      selectedUserIds,
-      daysAhead: Number(daysAhead) || 7,
-      scheduleAt: scheduleAt ? new Date(scheduleAt).toISOString() : undefined,
-    };
+    return notificationPayload;
   }
 
   function applyTemplate(template: TemplateRow) {
@@ -229,15 +261,6 @@ export function NotificationComposerPanel({
     return true;
   }
 
-  function canPreviewDraft() {
-    if (!title.trim() || !body.trim()) return false;
-    if (audience === "branch_members" && !branchId) return false;
-    if (audience === "membership_plan" && !planId) return false;
-    if (audience === "single_member" && !singleUserId) return false;
-    if (audience === "selected_members" && selectedUserIds.length === 0) return false;
-    return true;
-  }
-
   async function loadPreview() {
     if (!validateDraft()) return;
     try {
@@ -257,33 +280,20 @@ export function NotificationComposerPanel({
   }
 
   useEffect(() => {
-    if (!canPreviewDraft()) {
+    if (!previewReady) {
       setPreview(null);
       return;
     }
     const timeout = window.setTimeout(() => {
       webApiFetch<Preview>(`/api/orgs/${orgId}/notifications/preview`, {
         method: "POST",
-        body: payload(),
+        body: notificationPayload,
       })
         .then((nextPreview) => setPreview(nextPreview))
         .catch(() => setPreview(null));
     }, 450);
     return () => window.clearTimeout(timeout);
-  }, [
-    orgId,
-    title,
-    body,
-    type,
-    audience,
-    pushEnabled,
-    branchId,
-    planId,
-    singleUserId,
-    selectedUserIds,
-    daysAhead,
-    scheduleAt,
-  ]);
+  }, [notificationPayload, orgId, previewReady]);
 
   async function submitNotification() {
     if (!preview && !validateDraft()) return;

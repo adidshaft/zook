@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Mail, Smartphone } from "lucide-react";
@@ -137,10 +137,13 @@ export function LoginPanel({
   origins?: WebOrigins;
 }) {
   const searchParams = useSearchParams();
-  const t = (
-    key: Parameters<typeof publicT>[1],
-    replacements: Record<string, string | number> = {},
-  ) => publicT(locale, key, replacements);
+  const t = useCallback(
+    (
+      key: Parameters<typeof publicT>[1],
+      replacements: Record<string, string | number> = {},
+    ) => publicT(locale, key, replacements),
+    [locale],
+  );
   const initialIdentifier = searchParams.get("email") ?? "";
   const [loginMethod, setLoginMethod] = useState<LoginMethod>(
     initialIdentifier.includes("@") ? "email" : "phone",
@@ -171,6 +174,49 @@ export function LoginPanel({
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  const redirectHrefForSession = useCallback((session: LoginSession, redirect: string | null) => {
+    const resolvedOrigins = origins ?? getOrigins();
+    const resolvedCurrentHost =
+      currentHost ?? webHostFromHeader(window.location.host, resolvedOrigins);
+    return destinationToHref(
+      resolvePostLoginDestination(session, redirect),
+      resolvedCurrentHost,
+      resolvedOrigins,
+    );
+  }, [currentHost, origins]);
+
+  const completeSsoSignIn = useCallback(
+    async (
+      provider: "google" | "apple",
+      body: { idToken: string } | { identityToken: string },
+      redirectOverride?: string | null,
+    ) => {
+      setSsoSubmitting(provider);
+      try {
+        const response = await fetch(`/api/auth/${provider}/callback`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
+          body: JSON.stringify(body),
+        });
+        const payload = await parseApiResponse<{
+          session?: AuthSessionSummary;
+        }>(response);
+        const redirect = redirectOverride ?? searchParams.get("redirect");
+        const safeRedirect =
+          redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
+        toast.success(t("verifyContinue"));
+        window.location.href = redirectHrefForSession(payload.session, safeRedirect);
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : "Sign-in could not be completed.";
+        setMessage(nextMessage);
+        toast.error(nextMessage);
+        setSsoSubmitting(null);
+      }
+    },
+    [redirectHrefForSession, searchParams, t],
+  );
 
   useEffect(() => {
     if (!window.location.hash.includes("id_token=") && !window.location.hash.includes("error=")) {
@@ -203,7 +249,7 @@ export function LoginPanel({
       return;
     }
     void completeSsoSignIn("google", { idToken }, redirect);
-  }, []);
+  }, [completeSsoSignIn]);
 
   useEffect(() => {
     if (stage === "identifier") {
@@ -234,17 +280,6 @@ export function LoginPanel({
 
   function selectedIdentifier() {
     return loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
-  }
-
-  function redirectHrefForSession(session: LoginSession, redirect: string | null) {
-    const resolvedOrigins = origins ?? getOrigins();
-    const resolvedCurrentHost =
-      currentHost ?? webHostFromHeader(window.location.host, resolvedOrigins);
-    return destinationToHref(
-      resolvePostLoginDestination(session, redirect),
-      resolvedCurrentHost,
-      resolvedOrigins,
-    );
   }
 
   async function requestOtp({ resend = false }: { resend?: boolean } = {}) {
@@ -316,35 +351,6 @@ export function LoginPanel({
       setMessage(nextMessage);
       toast.error(nextMessage);
       setSubmitting(null);
-    }
-  }
-
-  async function completeSsoSignIn(
-    provider: "google" | "apple",
-    body: { idToken: string } | { identityToken: string },
-    redirectOverride?: string | null,
-  ) {
-    setSsoSubmitting(provider);
-    try {
-      const response = await fetch(`/api/auth/${provider}/callback`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
-        body: JSON.stringify(body),
-      });
-      const payload = await parseApiResponse<{
-        session?: AuthSessionSummary;
-      }>(response);
-      const redirect = redirectOverride ?? searchParams.get("redirect");
-      const safeRedirect =
-        redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
-      toast.success(t("verifyContinue"));
-      window.location.href = redirectHrefForSession(payload.session, safeRedirect);
-    } catch (error) {
-      const nextMessage =
-        error instanceof Error ? error.message : "Sign-in could not be completed.";
-      setMessage(nextMessage);
-      toast.error(nextMessage);
-      setSsoSubmitting(null);
     }
   }
 
