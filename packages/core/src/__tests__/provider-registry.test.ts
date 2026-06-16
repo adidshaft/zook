@@ -215,6 +215,22 @@ describe("provider registry", () => {
     });
   });
 
+  it("defaults payment provider to disabled in production when unset", () => {
+    process.env.APP_ENV = "production";
+    process.env.STORAGE_URL_SIGNING_SECRET = "test-storage-signing-secret";
+
+    expect(() => getPaymentProvider()).toThrowError(ProviderSetupError);
+    expect(() => getPaymentProvider()).toThrowError(/PAYMENT_PROVIDER=disabled/);
+    expect(getProviderRegistryDiagnostics().payment).toMatchObject({
+      status: "disabled",
+      selectedProvider: "disabled",
+      activeProvider: null,
+      provider: "disabled",
+      mode: "disabled",
+      configured: false,
+    });
+  });
+
   it("uses real providers only when the selected env is fully configured", () => {
     process.env.AI_PROVIDER = "openai";
     process.env.OPENAI_API_KEY = "sk-test";

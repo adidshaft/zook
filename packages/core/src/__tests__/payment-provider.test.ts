@@ -99,6 +99,39 @@ describe("razorpay payment provider", () => {
     expect(refunded?.providerEventId).toBe("refund.processed:pay_123:1710000001");
   });
 
+  it("prefers x-razorpay-event-id when present for webhook dedupe", async () => {
+    const rawBody = JSON.stringify({
+      event: "payment.captured",
+      created_at: 1710000000,
+      payload: {
+        payment: {
+          entity: {
+            id: "pay_123",
+            order_id: "order_123",
+            amount: 49900,
+            currency: "INR"
+          }
+        }
+      }
+    });
+    const signature = createHmac("sha256", "webhook_secret").update(rawBody).digest("hex");
+    const headers = { "x-razorpay-event-id": "evt_123" };
+
+    const verification = await provider.verifyWebhook({
+      rawBody,
+      signature,
+      headers
+    });
+    const parsed = await provider.parseWebhookEvent({
+      rawBody,
+      headers
+    });
+
+    expect(verification).toMatchObject({ valid: true, providerEventId: "evt_123" });
+    expect(parsed?.providerEventId).toBe("evt_123");
+    expect(parsed?.idempotencyKey).toBe("payment.captured:evt_123");
+  });
+
   it("creates a Razorpay plan and subscription for autopay mandates", async () => {
     const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
