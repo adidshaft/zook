@@ -11,6 +11,7 @@ import { PublicNav } from "@/components/public/nav/public-nav";
 import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getOrigins } from "@/lib/origins";
+import { localizedPath, resolvePublicLocale, type PublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function renderMembershipSurface(session: AuthSessionSummary) {
+async function renderMembershipSurface(session: AuthSessionSummary, locale: PublicLocale) {
   const origins = getOrigins();
   const memberPrivateUrl = session.user.slug
     ? destinationToUrl({ host: "public", path: `/m/${session.user.slug}` }, origins)
@@ -49,9 +50,9 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
   ]);
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <PublicNav locale="en" />
+        <PublicNav locale={locale} />
 
         <GlassCard variant="strong" className="p-6 md:p-8">
           <Pill tone="lime">Member profile</Pill>
@@ -148,7 +149,7 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
 
                   {organization?.username ? (
                     <Link
-                      href={`/g/${organization.username}`}
+                      href={localizedPath(`/g/${organization.username}`, locale)}
                       className="zook-focus mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/72 transition hover:bg-white/8 hover:text-white"
                     >
                       <MapPin size={16} aria-hidden="true" />
@@ -166,7 +167,7 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
               Find your gym, choose a plan, and continue with payment to see your membership here.
             </p>
             <Link
-              href="/gyms"
+              href={localizedPath("/gyms", locale)}
               className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
             >
               Find a gym
@@ -178,7 +179,12 @@ async function renderMembershipSurface(session: AuthSessionSummary) {
   );
 }
 
-export default async function MyMembershipPage() {
+export default async function MyMembershipPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const locale = resolvePublicLocale((await searchParams) ?? {});
   const session = await requireDashboardSession({ loginRedirectPath: "/me" });
   const destination = resolvePostLoginDestination(session);
 
@@ -189,5 +195,5 @@ export default async function MyMembershipPage() {
     redirect(`/m/${session.user.slug}`);
   }
 
-  return renderMembershipSurface(session);
+  return renderMembershipSurface(session, locale);
 }

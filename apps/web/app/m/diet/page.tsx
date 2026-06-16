@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { PublicNav } from "@/components/public/nav/public-nav";
+import { resolvePublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata: Metadata = {
@@ -10,7 +11,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function MemberDietPage() {
+export default async function MemberDietPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const locale = resolvePublicLocale((await searchParams) ?? {});
   const session = await requireDashboardSession({ loginRedirectPath: "/m/diet" });
   const plan = await prisma.dietPlan.findFirst({
     where: { memberId: session.user.id, status: "PUBLISHED" },
@@ -21,9 +27,9 @@ export default async function MemberDietPage() {
     : [];
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <PublicNav locale="en" />
+        <PublicNav locale={locale} />
         <GlassCard variant="strong" className="p-6 md:p-8">
           <Pill tone="lime">Diet</Pill>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">

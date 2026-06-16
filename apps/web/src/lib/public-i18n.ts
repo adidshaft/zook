@@ -12,6 +12,11 @@ export function resolvePublicLocale(searchParams?: SearchParamsLike): PublicLoca
   return firstParam(searchParams?.lang)?.toLowerCase() === "hi" ? "hi" : "en";
 }
 
+export function resolvePublicLocaleFromHeader(acceptLanguage?: string | null): PublicLocale {
+  if (!acceptLanguage) return "en";
+  return /\bhi\b/i.test(acceptLanguage) ? "hi" : "en";
+}
+
 export function alternatePublicLocale(locale: PublicLocale): PublicLocale {
   return locale === "hi" ? "en" : "hi";
 }

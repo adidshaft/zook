@@ -1,16 +1,22 @@
 import Link from "next/link";
 
 import { PublicNav } from "@/components/public/nav/public-nav";
+import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 
 export function GuardianConsentRetiredPage({
   challengeId,
+  locale = "en",
 }: {
   challengeId?: string;
+  locale?: PublicLocale;
 }) {
   return (
-    <main className="flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text-primary)]">
+    <main
+      lang={locale === "hi" ? "hi-IN" : "en-IN"}
+      className="flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text-primary)]"
+    >
       <div className="mx-auto grid w-full max-w-5xl gap-5 px-4 sm:px-6">
-        <PublicNav locale="en" />
+        <PublicNav locale={locale} />
       </div>
       <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="max-w-xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)]/92 p-8 shadow-[var(--shadow-lg)] backdrop-blur">
@@ -35,13 +41,13 @@ export function GuardianConsentRetiredPage({
           ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
-              href="/login"
+              href={localizedPath("/login", locale)}
               className="zook-focus inline-flex items-center gap-2 rounded-xl bg-[var(--accent-fill)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
             >
               Open Zook sign-in
             </Link>
             <Link
-              href="/"
+              href={localizedPath("/", locale)}
               className="zook-focus inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)]"
             >
               Back to home
