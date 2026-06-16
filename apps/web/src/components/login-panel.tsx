@@ -131,10 +131,16 @@ export function LoginPanel({
   locale = "en",
   currentHost,
   origins,
+  initialIdentifier,
+  initialCode = "",
+  initialStage = "identifier",
 }: {
   locale?: PublicLocale;
   currentHost?: WebHost;
   origins?: WebOrigins;
+  initialIdentifier?: string;
+  initialCode?: string;
+  initialStage?: "identifier" | "otp";
 }) {
   const searchParams = useSearchParams();
   const t = useCallback(
@@ -144,17 +150,17 @@ export function LoginPanel({
     ) => publicT(locale, key, replacements),
     [locale],
   );
-  const initialIdentifier = searchParams.get("email") ?? "";
+  const seededIdentifier = initialIdentifier ?? searchParams.get("identifier") ?? searchParams.get("email") ?? "";
   const [loginMethod, setLoginMethod] = useState<LoginMethod>(
-    initialIdentifier.includes("@") ? "email" : "phone",
+    seededIdentifier.includes("@") ? "email" : "phone",
   );
-  const [email, setEmail] = useState(initialIdentifier.includes("@") ? initialIdentifier : "");
-  const [phone, setPhone] = useState(initialIdentifier && !initialIdentifier.includes("@") ? initialIdentifier : "");
+  const [email, setEmail] = useState(seededIdentifier.includes("@") ? seededIdentifier : "");
+  const [phone, setPhone] = useState(seededIdentifier && !seededIdentifier.includes("@") ? seededIdentifier : "");
   const [identifier, setIdentifier] = useState(
-    initialIdentifier.includes("@") ? initialIdentifier : "",
+    seededIdentifier,
   );
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"identifier" | "otp">("identifier");
+  const [code, setCode] = useState(sanitizeOtpCode(initialCode));
+  const [stage, setStage] = useState<"identifier" | "otp">(initialStage);
   const [submitting, setSubmitting] = useState<"request" | "verify" | null>(null);
   const [ssoSubmitting, setSsoSubmitting] = useState<"google" | "apple" | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -164,7 +170,9 @@ export function LoginPanel({
   const otpRef = useRef<HTMLInputElement>(null);
   const redirectLabel = loginDestinationLabel(searchParams.get("redirect"));
   const [message, setMessage] = useState(
-    redirectLabel
+    initialStage === "otp" && seededIdentifier
+      ? t("otpSent", { identifier: seededIdentifier })
+      : redirectLabel
       ? `Sign in to continue to ${redirectLabel}.`
       : searchParams.get("redirect") === "/platform"
         ? t("signInPlatform")
