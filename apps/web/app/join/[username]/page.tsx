@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { CheckCircle2, LockKeyhole, MapPin, Building } from "lucide-react";
+import { CheckCircle2, Circle, LockKeyhole, MapPin, Building } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -198,6 +198,11 @@ export default async function JoinPage({
   );
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
   const nextLocale = alternatePublicLocale(locale);
+  const checkoutSteps = [
+    { label: "Pay", state: "current" as const },
+    { label: "Confirm", state: "upcoming" as const },
+    { label: "Activate", state: "upcoming" as const },
+  ];
 
   if (!org || !selectedPlan) {
     return (
@@ -556,17 +561,27 @@ export default async function JoinPage({
                 
                 {/* Checkout Progress Steps in a neat horizontal bar */}
                 <div className="mt-4 flex items-center justify-between gap-1 border-t border-[var(--border-subtle)] pt-4 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                  <span className="flex items-center gap-1 font-semibold text-[var(--accent-strong)]">
-                    <CheckCircle2 size={12} className="shrink-0" /> Pay
-                  </span>
-                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 size={12} className="shrink-0" /> Confirm
-                  </span>
-                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 size={12} className="shrink-0" /> Activate
-                  </span>
+                  {checkoutSteps.map((step, index) => {
+                    const isCurrent = step.state === "current";
+                    const Icon = isCurrent ? CheckCircle2 : Circle;
+
+                    return (
+                      <div key={step.label} className="contents">
+                        <span
+                          className={`flex items-center gap-1 ${
+                            isCurrent
+                              ? "font-semibold text-[var(--accent-strong)]"
+                              : "text-[var(--text-tertiary)]"
+                          }`}
+                        >
+                          <Icon size={12} className="shrink-0" /> {step.label}
+                        </span>
+                        {index < checkoutSteps.length - 1 ? (
+                          <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Secure Payment warning inline */}
