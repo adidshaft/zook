@@ -6,7 +6,6 @@ import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
 const options: Array<{ label: string; value: LocalePreference }> = [
-  { label: "System", value: "system" },
   { label: "English", value: "en" },
   { label: "Hindi", value: "hi" },
 ];

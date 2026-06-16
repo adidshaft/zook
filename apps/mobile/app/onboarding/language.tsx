@@ -16,7 +16,6 @@ type LanguageOption = {
 };
 
 const languageOptions: LanguageOption[] = [
-  { value: "system", label: "Use device language", caption: "Match your phone settings" },
   { value: "en", label: "English", caption: "English" },
   { value: "hi", label: "हिंदी", caption: "Hindi" },
 ];
