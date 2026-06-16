@@ -4,6 +4,7 @@ import { useState } from "react";
 import type * as React from "react";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import type { PaymentRow } from "@/components/dashboard/types";
 import { PaymentHistoryCard } from "./payment-history-card";
 import { PaymentMetricCards } from "./payment-metric-cards";
@@ -102,7 +103,12 @@ export function PaymentsPanel({
     try {
       setManualPaymentBusy(true);
       setManualPaymentStatus("");
-      const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
+      const amountError = getRupeeAmountError(manualPayment.amountRupees);
+      if (amountError) {
+        setManualPaymentStatus(amountError);
+        return;
+      }
+      const amountPaise = Math.round(Number(normalizeRupeeInput(manualPayment.amountRupees)) * 100);
       const payload = await webApiFetch<{ payment?: PaymentRow }>(
         `/api/orgs/${orgId}/manual-payments`,
         {

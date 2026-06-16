@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 import { deskTranslations } from "@/components/desk/copy";
@@ -332,7 +333,12 @@ export function useDeskWorkspace({
     try {
       setBusyId("payment");
       setToast("");
-      const amountPaise = Math.round(Number(paymentForm.amountRupees) * 100);
+      const amountError = getRupeeAmountError(paymentForm.amountRupees);
+      if (amountError) {
+        setToast(amountError);
+        return;
+      }
+      const amountPaise = Math.round(Number(normalizeRupeeInput(paymentForm.amountRupees)) * 100);
       const selectedOrder = activeOrders.find((order) => order.id === paymentForm.shopOrderId);
       const body = {
         purpose: paymentForm.purpose,

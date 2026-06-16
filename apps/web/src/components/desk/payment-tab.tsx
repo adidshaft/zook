@@ -1,6 +1,7 @@
-import type { FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { CreditCard } from "lucide-react";
 import { formatInr } from "@/lib/format";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import { GlassCard } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
@@ -40,6 +41,8 @@ export function PaymentTab({
   onPlanChange: (planId: string) => void;
   onFormChange: (patch: Partial<PaymentFormState>) => void;
 }) {
+  const [amountTouched, setAmountTouched] = useState(false);
+  const amountError = getRupeeAmountError(paymentForm.amountRupees);
   const selectedPaymentMember = members.find(
     (member) => member.user?.id === paymentForm.memberUserId,
   );
@@ -54,7 +57,17 @@ export function PaymentTab({
           <p className="mt-1 text-sm text-[var(--text-tertiary)]">{copy.paymentDescription}</p>
         </div>
       </div>
-      <form className="mt-5 grid gap-4 pb-24" onSubmit={onSubmit}>
+      <form
+        className="mt-5 grid gap-4 pb-24"
+        onSubmit={(event) => {
+          setAmountTouched(true);
+          if (amountError) {
+            event.preventDefault();
+            return;
+          }
+          onSubmit(event);
+        }}
+      >
         <fieldset className="grid gap-2">
           <legend className="text-sm text-[var(--text-secondary)]">{copy.paymentPurpose}</legend>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -208,14 +221,37 @@ export function PaymentTab({
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.amount}
-            <input
-              value={paymentForm.amountRupees}
-              onChange={(event) => onFormChange({ amountRupees: event.target.value })}
-              inputMode="decimal"
-              placeholder="2500"
-              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
-              required
-            />
+            <div
+              className={`flex min-h-12 items-center rounded-2xl border bg-[var(--bg-sunken)] px-4 transition ${
+                amountTouched && amountError
+                  ? "border-rose-500/60"
+                  : "border-[var(--border)] focus-within:border-[var(--border-focus)]"
+              }`}
+            >
+              <span className="pr-2 text-sm font-semibold text-[var(--text-secondary)]">₹</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={paymentForm.amountRupees}
+                onBlur={() => setAmountTouched(true)}
+                onChange={(event) =>
+                  onFormChange({ amountRupees: normalizeRupeeInput(event.target.value) })
+                }
+                inputMode="decimal"
+                placeholder="2500"
+                aria-invalid={amountTouched && amountError ? true : undefined}
+                className="zook-focus min-h-12 flex-1 bg-transparent text-[var(--text-primary)] transition focus:outline-none"
+                required
+              />
+            </div>
+            {amountTouched && amountError ? (
+              <span className="text-xs text-rose-500 dark:text-rose-300">{amountError}</span>
+            ) : (
+              <span className="text-xs text-[var(--text-tertiary)]">
+                Enter the collected amount in rupees.
+              </span>
+            )}
           </label>
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.referenceNumber}
