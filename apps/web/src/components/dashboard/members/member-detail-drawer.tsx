@@ -15,10 +15,13 @@ export function MemberDetailDrawer({
   membershipPlans,
   switchPlanId,
   setSwitchPlanId,
+  pauseResumesAt,
+  setPauseResumesAt,
   pauseReason,
   setPauseReason,
   subscriptionBusy,
   subscriptionStatus,
+  subscriptionStatusTone,
   setSelectedMemberId,
   updateSubscription,
 }: {
@@ -27,10 +30,13 @@ export function MemberDetailDrawer({
   membershipPlans: MembershipPlanRow[];
   switchPlanId: string;
   setSwitchPlanId: (planId: string) => void;
+  pauseResumesAt: string;
+  setPauseResumesAt: (value: string) => void;
   pauseReason: string;
   setPauseReason: (reason: string) => void;
   subscriptionBusy: string | null;
   subscriptionStatus: string;
+  subscriptionStatusTone: "neutral" | "success" | "danger";
   setSelectedMemberId: (memberId: string | null) => void;
   updateSubscription: (action: "switch" | "pause" | "resume") => void;
 }) {
@@ -108,6 +114,19 @@ export function MemberDetailDrawer({
                   className="zook-focus min-h-16 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                 />
                 <p className="text-[11px] text-[var(--text-tertiary)]">{pauseReason.length}/180</p>
+                <label className="grid gap-1 text-xs text-[var(--text-secondary)]">
+                  Resume date
+                  <input
+                    type="date"
+                    value={pauseResumesAt}
+                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                    onChange={(event) => setPauseResumesAt(event.target.value)}
+                    className="zook-focus rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-xs text-[var(--text-primary)]"
+                  />
+                </label>
+                <p className="text-[11px] text-[var(--text-tertiary)]">
+                  Pause keeps the membership inactive until the selected resume date.
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <ZookButton
                     type="button"
@@ -140,7 +159,17 @@ export function MemberDetailDrawer({
                   </ZookButton>
                 </div>
                 {subscriptionStatus ? (
-                  <p className="text-xs text-[var(--text-tertiary)]">{subscriptionStatus}</p>
+                  <p
+                    className={`text-xs ${
+                      subscriptionStatusTone === "danger"
+                        ? "text-[var(--feedback-danger)]"
+                        : subscriptionStatusTone === "success"
+                          ? "text-[var(--feedback-success)]"
+                          : "text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    {subscriptionStatus}
+                  </p>
                 ) : null}
               </div>
             ) : null}

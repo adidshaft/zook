@@ -39,7 +39,13 @@ export function MembersPage({
   const searchParams = useSearchParams();
   const [subscriptionBusy, setSubscriptionBusy] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
+  const [subscriptionStatusTone, setSubscriptionStatusTone] = useState<
+    "neutral" | "success" | "danger"
+  >("neutral");
   const [switchPlanId, setSwitchPlanId] = useState("");
+  const [pauseResumesAt, setPauseResumesAt] = useState(() =>
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  );
   const [pauseReason, setPauseReason] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>(() =>
     statusFromParam(searchParams.get("status")),
@@ -139,18 +145,29 @@ export function MembersPage({
 
   async function updateSubscription(action: "switch" | "pause" | "resume") {
     if (!selectedSubscription) return;
+    const pauseDateIso = pauseResumesAt
+      ? new Date(`${pauseResumesAt}T00:00:00.000Z`).toISOString()
+      : "";
     const confirmed = window.confirm(
       action === "switch"
-        ? "Switch this member to the selected plan now?"
+        ? "Switch this member to the selected plan now? This changes the active membership immediately."
         : action === "pause"
-          ? "Pause this membership for 7 days now?"
+          ? pauseResumesAt
+            ? `Pause this membership until ${pauseResumesAt}?`
+            : "Choose a resume date before pausing this membership."
           : "Resume this paused membership now?",
     );
     if (!confirmed) {
       return;
     }
+    if (action === "pause" && !pauseDateIso) {
+      setSubscriptionStatusTone("danger");
+      setSubscriptionStatus("Choose a resume date before pausing.");
+      return;
+    }
     setSubscriptionBusy(action);
     setSubscriptionStatus("");
+    setSubscriptionStatusTone("neutral");
     try {
       await webApiFetch(`/api/orgs/${orgId}/subscriptions/${selectedSubscription.id}/${action}`, {
         method: "POST",
@@ -159,7 +176,7 @@ export function MembersPage({
           ...(action === "switch" ? { planId: switchPlanId } : {}),
           ...(action === "pause"
             ? {
-                resumesAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                resumesAt: pauseDateIso,
                 reason: pauseReason || undefined,
               }
             : {}),
@@ -176,8 +193,16 @@ export function MembersPage({
       });
       memberDetailState.reload();
       membersState.reload();
-      setSubscriptionStatus("Membership updated.");
+      setSubscriptionStatusTone("success");
+      setSubscriptionStatus(
+        action === "switch"
+          ? "Membership switched to the new plan."
+          : action === "pause"
+            ? `Membership paused until ${pauseResumesAt}.`
+            : "Membership resumed.",
+      );
     } catch (error) {
+      setSubscriptionStatusTone("danger");
       setSubscriptionStatus(error instanceof Error ? error.message : "Unable to update membership.");
     } finally {
       setSubscriptionBusy(null);
@@ -228,10 +253,13 @@ export function MembersPage({
                 membershipPlans={membershipPlans}
                 switchPlanId={switchPlanId}
                 setSwitchPlanId={setSwitchPlanId}
+                pauseResumesAt={pauseResumesAt}
+                setPauseResumesAt={setPauseResumesAt}
                 pauseReason={pauseReason}
                 setPauseReason={setPauseReason}
                 subscriptionBusy={subscriptionBusy}
                 subscriptionStatus={subscriptionStatus}
+                subscriptionStatusTone={subscriptionStatusTone}
                 setSelectedMemberId={setSelectedMemberId}
                 updateSubscription={(action) => void updateSubscription(action)}
               />
