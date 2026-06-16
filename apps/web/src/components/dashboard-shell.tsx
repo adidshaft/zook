@@ -25,6 +25,7 @@ const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
     billing: "Complete billing details before generating receipts and GST invoices.",
     members: "Approve joins, find members, and manage plan handoffs.",
     plans: "Create plans and open discounts, public offers, and referral tools from one place.",
+    classes: "Schedule upcoming group sessions for a branch and keep capacity visible for the desk team.",
     "plans/coupons": "Create and pause joining discounts for public plan purchases.",
     "plans/offers": "Publish public offers for plans or short campaigns.",
     "plans/referrals": "Create referral codes and tune rewards for members, trainers, and staff.",
@@ -48,6 +49,7 @@ const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
     billing: "रसीद और GST इनवॉइस बनाने से पहले बिलिंग डिटेल पूरी करें.",
     members: "जॉइन रिक्वेस्ट मंज़ूर करें, मेंबर खोजें, और प्लान हैंडऑफ संभालें.",
     plans: "प्लान बनाएं और डिस्काउंट, ऑफर, रेफरल टूल एक जगह से खोलें.",
+    classes: "ब्रांच के लिए ग्रुप क्लास शेड्यूल करें और टीम को क्षमता साफ दिखाएं.",
     "plans/coupons": "पब्लिक प्लान खरीदारी के लिए जॉइनिंग डिस्काउंट बनाएं या रोकें.",
     "plans/offers": "प्लान या छोटे कैंपेन के लिए पब्लिक ऑफर प्रकाशित करें.",
     "plans/referrals": "मेंबर, ट्रेनर, और टीम के लिए रेफरल कोड और रिवॉर्ड संभालें.",
@@ -77,7 +79,7 @@ export function DashboardShell({
   isPlatformAdmin: boolean;
   roles: Role[];
   permissions?: Permission[];
-  user: { name: string; email: string; preferredLocale?: string | null };
+  user: { id?: string; name: string; email: string; preferredLocale?: string | null };
   children?: ReactNode;
 }) {
   const title = titleFromSection(section);

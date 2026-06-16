@@ -67,6 +67,9 @@ export function resourcePathsForDashboardHref(
   if (href.startsWith("/dashboard/plans")) {
     return [withBranch(`/api/orgs/${orgId}/membership-plans`), `/api/orgs/${orgId}/plans`];
   }
+  if (href.startsWith("/dashboard/classes")) {
+    return [withBranch(`/api/orgs/${orgId}/classes`), `/api/orgs/${orgId}/staff`];
+  }
   if (href.startsWith("/dashboard/notifications")) {
     return [`/api/orgs/${orgId}/notifications`];
   }

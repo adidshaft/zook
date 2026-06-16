@@ -13608,12 +13608,40 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
           where: { classId: { in: classes.map((entry) => entry.id) } },
         })
       : [];
+    const [trainers, branches] = classes.length
+      ? await Promise.all([
+          prisma.user.findMany({
+            where: { id: { in: Array.from(new Set(classes.map((entry) => entry.trainerId))) } },
+            select: { id: true, name: true },
+          }),
+          prisma.branch.findMany({
+            where: { id: { in: Array.from(new Set(classes.map((entry) => entry.branchId))) } },
+            select: { id: true, name: true },
+          }),
+        ])
+      : [[], []];
+    const trainerNames = new Map(trainers.map((trainer) => [trainer.id, trainer.name]));
+    const branchNames = new Map(branches.map((branch) => [branch.id, branch.name]));
     return ok({
       classes: classes.map((entry) => ({
         ...entry,
         enrollmentCount: enrollments.filter(
           (enrollment) => enrollment.classId === entry.id && enrollment.status === "confirmed",
         ).length,
+        remainingCapacity: Math.max(
+          0,
+          entry.maxCapacity -
+            enrollments.filter(
+              (enrollment) =>
+                enrollment.classId === entry.id && enrollment.status === "confirmed",
+            ).length,
+        ),
+        myEnrollmentStatus:
+          enrollments.find(
+            (enrollment) => enrollment.classId === entry.id && enrollment.memberId === userId,
+          )?.status ?? null,
+        trainerName: trainerNames.get(entry.trainerId) ?? null,
+        branchName: branchNames.get(entry.branchId) ?? null,
       })),
     });
   }

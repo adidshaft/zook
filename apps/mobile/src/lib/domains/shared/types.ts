@@ -133,6 +133,27 @@ export interface MemberDashboardData {
   preferences: NotificationPreferenceRecord[];
 }
 
+export interface MemberClassRecord {
+  id: string;
+  orgId: string;
+  branchId: string;
+  branchName?: string | null;
+  trainerId: string;
+  trainerName?: string | null;
+  name: string;
+  description?: string | null;
+  classType: string;
+  maxCapacity: number;
+  startTime: string;
+  endTime: string;
+  recurrenceRule?: string | null;
+  status: string;
+  createdAt: string;
+  enrollmentCount: number;
+  remainingCapacity: number;
+  myEnrollmentStatus?: string | null;
+}
+
 export interface PublicPlanSummary {
   id: string;
   name: string;

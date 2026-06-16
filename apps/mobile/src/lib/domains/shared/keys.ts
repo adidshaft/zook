@@ -9,6 +9,8 @@ export const queryKeys = {
     activeOrganization: (orgId?: string | null) => ["me", "active-org", orgId] as const,
     home: (orgId?: string | null) => ["me", "home", orgId] as const,
     dashboard: (orgId?: string | null) => ["me", "dashboard", orgId] as const,
+    classes: (orgId?: string | null, branchId?: string | null) =>
+      ["me", "classes", orgId, branchId] as const,
     membership: () => ["me", "memberships"] as const,
     activeMembership: (orgId?: string | null) => ["me", "membership", "active", orgId] as const,
     attendance: () => ["me", "attendance"] as const,

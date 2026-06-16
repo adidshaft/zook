@@ -189,6 +189,27 @@ export type MembershipPlanRow = {
   createdAt: string;
 };
 
+export type ClassRow = {
+  id: string;
+  orgId: string;
+  branchId: string;
+  branchName?: string | null;
+  trainerId: string;
+  trainerName?: string | null;
+  name: string;
+  description?: string | null;
+  classType: string;
+  maxCapacity: number;
+  startTime: string | Date;
+  endTime: string | Date;
+  recurrenceRule?: string | null;
+  status: string;
+  createdAt: string | Date;
+  enrollmentCount: number;
+  remainingCapacity: number;
+  myEnrollmentStatus?: string | null;
+};
+
 export type StaffAssignmentRow = {
   id: string;
   userId: string;

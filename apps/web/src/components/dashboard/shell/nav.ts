@@ -83,6 +83,13 @@ export const navGroups: Array<{ key: keyof DashboardMessages["navGroups"]; items
         permissions: ["MEMBERSHIP_PLAN_MANAGE"],
       },
       {
+        key: "classes",
+        label: "Classes",
+        href: "/dashboard/classes",
+        icon: CalendarDays,
+        permissions: ["TRAINERS_MANAGE", "PLANS_CREATE"],
+      },
+      {
         key: "coupons",
         label: "Coupons",
         href: "/dashboard/plans/coupons",

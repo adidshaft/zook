@@ -46,6 +46,7 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
     roles: session.activeOrganization?.roles ?? [],
     permissions: session.activeOrganization?.permissions ?? [],
     user: {
+      id: session.user.id,
       name: session.user.name,
       email: session.user.email,
       preferredLocale: session.user.preferredLocale ?? null,

@@ -701,6 +701,14 @@ export default function ProfileScreen() {
                 Switch gym
               </ZookButton>
               <ZookButton
+                variant="secondary"
+                icon="calendar-outline"
+                onPress={() => router.push("/classes" as never)}
+                style={styles.quickButton}
+              >
+                Classes
+              </ZookButton>
+              <ZookButton
                 testID="profile-biometric-toggle"
                 variant="secondary"
                 icon={biometricEnabled ? "lock-closed-outline" : "lock-open-outline"}

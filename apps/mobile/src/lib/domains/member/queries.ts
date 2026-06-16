@@ -3,12 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { AuthSessionSummary } from "@zook/core";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { queryString } from "@/lib/domains/shared/request";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type {
   ActiveMembershipRecord,
   MemberBadgeRecord,
+  MemberClassRecord,
   MemberDashboardData,
   MemberEngagementData,
   MemberHomeData,
@@ -314,5 +316,24 @@ export function useMyGoals() {
     queryFn: () =>
       mobileApiFetch<{ goals: Array<Record<string, unknown>> }>("/me/goals", { token }),
     enabled: status === "authenticated" && Boolean(token),
+  });
+}
+
+export function useMyClasses() {
+  const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
+  return useQuery({
+    queryKey: queryKeys.member.classes(activeOrgId, selectedBranchId),
+    queryFn: () =>
+      mobileApiFetch<{ classes: MemberClassRecord[] }>(
+        `/orgs/${activeOrgId}/classes${queryString({ branchId: selectedBranchId ?? undefined })}`,
+        {
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    staleTime: 30_000,
   });
 }
