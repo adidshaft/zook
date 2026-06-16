@@ -27,7 +27,7 @@ export async function GET(
   });
   const headers = new Headers({
     "content-type": "image/svg+xml; charset=utf-8",
-    "cache-control": "no-store",
+    "cache-control": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800",
   });
   if (request.nextUrl.searchParams.get("download") === "1") {
     headers.set(
