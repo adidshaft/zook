@@ -236,4 +236,43 @@ test.describe("payments actions", () => {
       status: "REFUNDED",
     });
   });
+
+  test("selected branch payments exclude legacy shared payments", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const sharedPayment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: null,
+        userId: member.id,
+        purpose: "MEMBERSHIP",
+        amountPaise: 90900,
+        status: "SUCCEEDED",
+        mode: "CASH",
+        recordedAt: new Date(),
+      },
+    });
+    const branchPayment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: member.id,
+        purpose: "MEMBERSHIP",
+        amountPaise: 123400,
+        status: "SUCCEEDED",
+        mode: "CASH",
+        recordedAt: new Date(),
+      },
+    });
+
+    const payload = await expectApiOk<{ payments: Array<{ id: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/payments?branchId=${branch.id}&limit=20`),
+    );
+    expect(payload.data.payments.some((payment) => payment.id === branchPayment.id)).toBe(true);
+    expect(payload.data.payments.some((payment) => payment.id === sharedPayment.id)).toBe(false);
+  });
 });

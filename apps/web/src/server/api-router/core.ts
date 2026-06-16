@@ -10244,7 +10244,7 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       plans: await prisma.membershipPlan.findMany({
         where: {
           orgId,
-          ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
+          ...(branchId ? { branchId } : {}),
         },
         orderBy: { createdAt: "desc" },
       }),

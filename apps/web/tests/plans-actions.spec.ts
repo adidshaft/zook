@@ -176,4 +176,36 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     expect(await page.getByRole("button", { name: /duplicate plan/i }).count()).toBeGreaterThan(0);
     expect(await page.getByRole("button", { name: /archived/i }).count()).toBeGreaterThan(0);
   });
+
+  test("selected branch membership plans exclude legacy shared plans", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const sharedPlan = await prisma.membershipPlan.create({
+      data: {
+        orgId: org.id,
+        branchId: null,
+        createdById: owner.id,
+        name: `Shared Plan ${Date.now()}`,
+        type: "DURATION",
+        pricePaise: 111100,
+        durationDays: 30,
+        publicVisible: true,
+      },
+    });
+    const branchPlan = await createMembershipPlan(page, org.id, {
+      name: `Branch Plan ${Date.now()}`,
+      pricePaise: 222200,
+      branchId: branch.id,
+    });
+
+    const payload = await expectApiOk<{ plans: Array<{ id: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/membership-plans?branchId=${branch.id}`),
+    );
+    expect(payload.data.plans.some((plan) => plan.id === branchPlan.id)).toBe(true);
+    expect(payload.data.plans.some((plan) => plan.id === sharedPlan.id)).toBe(false);
+  });
 });
