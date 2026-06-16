@@ -220,22 +220,36 @@ export default async function PlatformPage({
 
           <nav
             aria-label="Platform sections"
-            className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden"
+            className="no-scrollbar sticky top-3 z-20 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden"
           >
-            {platformNavItems.map(([item, href, key]) => (
-              <Link
-                key={item}
-                href={href}
-                prefetch={false}
-                className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
-                  key === sectionKey
-                    ? "bg-lime-300 text-black"
-                    : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
-                }`}
-              >
-                {item}
-              </Link>
-            ))}
+            <div className="flex gap-3">
+              {platformNavGroups.map((group) => (
+                <div
+                  key={group.label}
+                  className="min-w-[220px] shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2"
+                >
+                  <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.items.map(([item, href, key]) => (
+                      <Link
+                        key={item}
+                        href={href}
+                        prefetch={false}
+                        className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
+                          key === sectionKey
+                            ? "bg-lime-300 text-black"
+                            : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        {item}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </nav>
 
           <Suspense fallback={<PlatformContentSkeleton />}>

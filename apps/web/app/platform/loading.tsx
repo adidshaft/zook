@@ -22,6 +22,21 @@ const platformMetrics = [
   ["Billing", "Checking"],
 ];
 
+const platformSectionGroups = [
+  {
+    label: "Health",
+    items: ["Status", "Incidents", "Webhooks", "Audit"],
+  },
+  {
+    label: "Support",
+    items: ["Users", "Payments", "Gyms", "Subscriptions"],
+  },
+  {
+    label: "Controls",
+    items: ["Broadcasts", "Moderation", "Flags", "Safety"],
+  },
+];
+
 export default function PlatformLoading() {
   return (
     <main
@@ -64,7 +79,7 @@ export default function PlatformLoading() {
               <div>
                 <div className="flex flex-wrap gap-2 lg:hidden">
                   <Pill tone="lime">Production</Pill>
-                  <Pill tone="blue">Status</Pill>
+                  <Pill tone="blue">Loading section</Pill>
                 </div>
                 <h1 className="mt-3 text-xl font-semibold tracking-tight text-white md:text-2xl lg:mt-0">
                   Platform operations
@@ -80,17 +95,29 @@ export default function PlatformLoading() {
             </div>
           </GlassCard>
 
-          <nav className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden">
-            {platformSections.map((item, index) => (
-              <div
-                key={item}
-                className={`shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium ${
-                  index === 0 ? "bg-lime-300 text-black" : "border border-white/10 text-white/68"
-                }`}
-              >
-                {item}
-              </div>
-            ))}
+          <nav className="no-scrollbar sticky top-3 z-20 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden">
+            <div className="flex gap-3">
+              {platformSectionGroups.map((group) => (
+                <div
+                  key={group.label}
+                  className="min-w-[220px] shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2"
+                >
+                  <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.items.map((item) => (
+                      <div
+                        key={item}
+                        className="shrink-0 rounded-xl border border-white/10 px-3 py-2 text-center text-sm font-medium text-white/68"
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </nav>
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
