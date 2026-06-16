@@ -5575,45 +5575,49 @@ async function redeemReferralCodeForUser(input: {
   if (!referral) {
     throw validationError("Referral code is invalid for this gym");
   }
-  const existing = await prisma.referralRedemption.findFirst({
-    where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId },
-  });
-  if (existing) {
-    return { referral, redemption: existing, alreadyRedeemed: true };
-  }
-  const policy = await prisma.referralPolicy.upsert({
-    where: { orgId: input.orgId },
-    update: {},
-    create: { orgId: input.orgId },
-  });
-  const reserved = await prisma.referralCode.updateMany({
-    where: {
-      id: referral.id,
-      orgId: input.orgId,
-      status: "active",
-      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      monthlyUseCount: { lt: policy.maxReferralsPerMonth },
-      AND: [
-        {
-          OR: [{ maxUses: null }, { redemptionCount: { lt: referral.maxUses ?? 0 } }],
-        },
-      ],
-    },
-    data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
-  });
-  if (reserved.count !== 1) {
-    throw validationError("Referral code has reached its limit");
-  }
   try {
-    const redemption = await prisma.referralRedemption.create({
-      data: {
-        orgId: input.orgId,
-        referralCodeId: referral.id,
-        referredUserId: input.userId,
-        metadata: { source: "redeem_endpoint" },
-      },
+    return await prisma.$transaction(async (tx) => {
+      const existing = await tx.referralRedemption.findFirst({
+        where: { orgId: input.orgId, referralCodeId: referral.id, referredUserId: input.userId },
+      });
+      if (existing) {
+        return { referral, redemption: existing, alreadyRedeemed: true };
+      }
+
+      const policy = await tx.referralPolicy.upsert({
+        where: { orgId: input.orgId },
+        update: {},
+        create: { orgId: input.orgId },
+      });
+      const reserved = await tx.referralCode.updateMany({
+        where: {
+          id: referral.id,
+          orgId: input.orgId,
+          status: "active",
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          monthlyUseCount: { lt: policy.maxReferralsPerMonth },
+          AND: [
+            {
+              OR: [{ maxUses: null }, { redemptionCount: { lt: referral.maxUses ?? 0 } }],
+            },
+          ],
+        },
+        data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
+      });
+      if (reserved.count !== 1) {
+        throw validationError("Referral code has reached its limit");
+      }
+
+      const redemption = await tx.referralRedemption.create({
+        data: {
+          orgId: input.orgId,
+          referralCodeId: referral.id,
+          referredUserId: input.userId,
+          metadata: { source: "redeem_endpoint" },
+        },
+      });
+      return { referral, redemption, alreadyRedeemed: false };
     });
-    return { referral, redemption, alreadyRedeemed: false };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const duplicate = await prisma.referralRedemption.findFirst({
