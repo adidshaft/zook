@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -6,6 +7,12 @@ import { StartGymPanel } from "@/components/start-gym-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
+
+export const metadata: Metadata = {
+  title: "Start your gym | Zook",
+  description: "Create a gym on Zook and continue into billing setup.",
+  robots: { index: false, follow: false },
+};
 
 function normalizeTier(value?: string | string[]) {
   const tier = (Array.isArray(value) ? value[0] : value)?.trim().toUpperCase();

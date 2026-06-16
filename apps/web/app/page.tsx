@@ -15,6 +15,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,14 @@ export const metadata: Metadata = {
     description:
       "A clean operating system for memberships, QR entry, desk workflows, trainer plans, and gym growth.",
     type: "website",
+    images: [{ url: publicSocialImage(), alt: "Zook for modern gyms" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Zook for modern gyms",
     description:
       "A clean operating system for memberships, QR entry, desk workflows, trainer plans, and gym growth.",
+    images: [publicSocialImage()],
   },
 };
 

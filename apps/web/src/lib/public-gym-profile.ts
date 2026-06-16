@@ -1,4 +1,5 @@
 import { formatInr } from "@/lib/format";
+import { publicAbsoluteUrl } from "./public-metadata";
 
 export function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" = "en") {
   if (!plans.length) {
@@ -49,8 +50,8 @@ export function gymJsonLd({
     "@context": "https://schema.org",
     "@type": "HealthClub",
     name: org.name,
-    url: `/g/${org.username}`,
-    image: org.coverImageUrl ?? org.logoUrl ?? undefined,
+    url: publicAbsoluteUrl(`/g/${org.username}`),
+    image: org.coverImageUrl ?? org.logoUrl ?? publicAbsoluteUrl(`/g/${org.username}/opengraph-image`),
     address: {
       "@type": "PostalAddress",
       streetAddress: org.address,

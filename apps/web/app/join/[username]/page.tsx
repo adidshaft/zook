@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { CheckCircle2, LockKeyhole, MapPin, Building } from "lucide-react";
@@ -26,6 +27,7 @@ import {
   type PublicGymReferral,
 } from "@/server/public-gym-read-models";
 import { resolveSessionSummaryFromToken } from "@/server/session";
+import { publicAbsoluteUrl } from "@/lib/public-metadata";
 
 function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
   if (!referral || referral.status !== "active") {
@@ -124,6 +126,41 @@ async function getViewerJoinState(orgId: string) {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const data = await getPublicGymProfileData(username).catch(() => null);
+  if (!data) {
+    return {
+      title: "Join gym | Zook",
+      description: "Continue your membership signup in Zook.",
+      robots: { index: false, follow: false },
+    };
+  }
+  return {
+    title: `Join ${data.org.name} | Zook`,
+    description: `Continue membership signup for ${data.org.name} in ${data.org.city}.`,
+    alternates: { canonical: `/join/${data.org.username}` },
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: `Join ${data.org.name} | Zook`,
+      description: `Continue membership signup for ${data.org.name}.`,
+      type: "website",
+      images: [
+        {
+          url:
+            data.org.coverImageUrl ??
+            publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+          alt: `Join ${data.org.name} on Zook`,
+        },
+      ],
+    },
+  };
 }
 
 export default async function JoinPage({

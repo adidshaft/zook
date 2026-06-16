@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { zookDemoFixtures } from "@zook/core";
@@ -5,6 +6,12 @@ import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
+
+export const metadata: Metadata = {
+  title: "Referral link | Zook",
+  description: "Continue to a gym membership page from a Zook referral link.",
+  robots: { index: false, follow: false },
+};
 
 async function referralUsername(code: string) {
   const normalizedCode = code.trim().toUpperCase();

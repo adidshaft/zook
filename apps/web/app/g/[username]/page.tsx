@@ -7,6 +7,7 @@ import { GymMembershipCard } from "@/components/public/gym/membership-card";
 import { GymProfileTabs } from "@/components/public/gym/profile-tabs";
 import { StructuredData } from "@/components/public/seo/structured-data";
 import { gymJsonLd, priceSummary } from "@/lib/public-gym-profile";
+import { publicAbsoluteUrl } from "@/lib/public-metadata";
 import {
   alternatePublicLocale,
   localizedPath,
@@ -41,12 +42,22 @@ export async function generateMetadata({ params }: GymPublicPageProps): Promise<
       title: `${data.org.name} on Zook`,
       description: `${data.org.city}, ${data.org.state} · ${priceSummary(data.plans)}`,
       type: "website",
-      images: data.org.coverImageUrl ? [{ url: data.org.coverImageUrl }] : undefined,
+      images: [
+        {
+          url:
+            data.org.coverImageUrl ??
+            publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+          alt: `${data.org.name} on Zook`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${data.org.name} on Zook`,
       description: `${data.org.city}, ${data.org.state} · ${priceSummary(data.plans)}`,
+      images: [
+        data.org.coverImageUrl ?? publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+      ],
     },
   };
 }

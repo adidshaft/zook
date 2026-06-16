@@ -11,6 +11,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 import {
   defaultSaasPlanCatalog,
   formatSaasLimit,
@@ -23,6 +24,20 @@ export const metadata: Metadata = {
   description:
     "Compare Zook pricing for gyms: two-month free trial, Starter, Growth, and Pro plans.",
   alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Zook pricing",
+    description:
+      "Compare Zook pricing for gyms: free trial, Starter, Growth, and Pro plans.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Zook pricing" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Zook pricing",
+    description:
+      "Compare Zook pricing for gyms: free trial, Starter, Growth, and Pro plans.",
+    images: [publicSocialImage()],
+  },
 };
 
 const tierOrder: SaasTier[] = ["FREE", "STARTER", "GROWTH", "PRO"];
