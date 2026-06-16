@@ -27,6 +27,7 @@ const privateReadPermissionsByCategory: Partial<Record<StorageFileCategory, Perm
 };
 
 const uploadPermissionsByCategory: Partial<Record<StorageFileCategory, Permission>> = {
+  payment_proof: "PAYMENTS_RECORD_OFFLINE",
   org_logo: "ORG_MANAGE_PROFILE",
   org_cover: "ORG_MANAGE_PROFILE",
   product_image: "SHOP_MANAGE_PRODUCTS",

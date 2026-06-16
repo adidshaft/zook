@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { RequestContext } from "@zook/core";
-import { assertCanAccessFileAsset, assertCanServeLocalPublicFileAsset, resolveFileVisibility } from "./files";
+import {
+  assertCanAccessFileAsset,
+  assertCanServeLocalPublicFileAsset,
+  assertFileUploadPermission,
+  resolveFileVisibility
+} from "./files";
 
 function baseContext(overrides: Partial<RequestContext> = {}): RequestContext {
   return {
@@ -69,6 +74,34 @@ describe("file access rules", () => {
     expect(resolveFileVisibility("org_logo", "public")).toBe("public");
     expect(resolveFileVisibility("org_gallery", "public")).toBe("public");
     expect(() => resolveFileVisibility("payment_proof", "public")).toThrow(/cannot use visibility/);
+  });
+
+  it("requires desk payment permissions to upload payment proof assets", () => {
+    expect(() =>
+      assertFileUploadPermission({
+        category: "payment_proof",
+        ctx: baseContext({
+          userId: "staff_1",
+          roles: ["RECEPTIONIST"],
+          permissions: []
+        }),
+        actorUserId: "staff_1",
+        orgId: "org_a"
+      })
+    ).toThrow(/permission to upload this file type/);
+
+    expect(() =>
+      assertFileUploadPermission({
+        category: "payment_proof",
+        ctx: baseContext({
+          userId: "staff_1",
+          roles: ["RECEPTIONIST"],
+          permissions: ["PAYMENTS_RECORD_OFFLINE"]
+        }),
+        actorUserId: "staff_1",
+        orgId: "org_a"
+      })
+    ).not.toThrow();
   });
 
   it("allows the local public file route to serve only public assets", () => {
