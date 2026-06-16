@@ -458,6 +458,7 @@ export function LoginPanel({
       </motion.h1>
       <motion.p
         variants={itemVariants}
+        id="login-status"
         className="mt-2 text-sm leading-6 text-[var(--text-secondary)]"
         role="alert"
         aria-live="polite"
@@ -551,7 +552,7 @@ export function LoginPanel({
         ) : null}
         {stage === "otp" ? (
           <>
-            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-tertiary)]">
+            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-secondary)]">
               {t("otp")}
             </label>
             <input
@@ -560,12 +561,18 @@ export function LoginPanel({
               ref={otpRef}
               inputMode="numeric"
               autoComplete="one-time-code"
+              aria-describedby="login-status login-otp-helper"
+              aria-required="true"
               placeholder="6-digit code"
               value={code}
               onChange={(event) => handleOtpChange(event.target.value)}
               maxLength={6}
+              required
               className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
             />
+            <p id="login-otp-helper" className="text-xs leading-5 text-[var(--text-secondary)]">
+              {t("otpHint", { identifier })}
+            </p>
           </>
         ) : null}
         {stage === "otp" && resendCooldown > 0 ? (
