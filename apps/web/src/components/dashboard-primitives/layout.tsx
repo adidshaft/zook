@@ -4,7 +4,6 @@ import clsx from "clsx";
 import { motion, type Variants } from "framer-motion";
 import { Check, AlertTriangle, X, Circle } from "lucide-react";
 import { Pill, ProductPanel, type PillTone } from "../glass-card";
-import { HelpHint } from "../ui";
 import { toneFromStatus } from "./stats";
 
 export const staggerContainerVariants: Variants = {
@@ -55,13 +54,13 @@ export function SectionHeader({
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">{title}</h2>
-          {description ? (
-            <HelpHint label={title} title={title}>
-              {description}
-            </HelpHint>
-          ) : null}
           {badge}
         </div>
+        {description ? (
+          <div className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
+            {description}
+          </div>
+        ) : null}
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
     </motion.div>
