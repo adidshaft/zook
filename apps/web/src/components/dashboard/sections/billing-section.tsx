@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "../../glass-card";
@@ -179,6 +180,7 @@ export function BillingSection({
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
 }) {
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<BillingProfile | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null);
@@ -188,6 +190,13 @@ export function BillingSection({
   const [status, setStatus] = useState("");
   const [selectedTier, setSelectedTier] = useState<"STARTER" | "GROWTH" | "PRO">("STARTER");
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+
+  useEffect(() => {
+    const requestedTier = searchParams.get("tier")?.trim().toUpperCase();
+    if (requestedTier === "STARTER" || requestedTier === "GROWTH" || requestedTier === "PRO") {
+      setSelectedTier(requestedTier);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let mounted = true;

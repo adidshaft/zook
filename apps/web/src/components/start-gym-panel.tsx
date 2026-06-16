@@ -132,7 +132,13 @@ function formatIndiaPhone(value: string) {
   return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
 }
 
-export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
+export function StartGymPanel({
+  ownerEmail,
+  initialTier = "STARTER",
+}: {
+  ownerEmail: string;
+  initialTier?: "STARTER" | "GROWTH" | "PRO";
+}) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -228,7 +234,12 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           visibility,
         },
       });
-      window.location.href = `/dashboard/billing?created=${payload.org.id}&setup=billing`;
+      const billingParams = new URLSearchParams({
+        created: payload.org.id,
+        setup: "billing",
+        tier: initialTier.toLowerCase(),
+      });
+      window.location.href = `/dashboard/billing?${billingParams.toString()}`;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create gym.");
     } finally {
@@ -262,6 +273,10 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           Create the gym, main branch, owner access, two-month trial, and public profile from the
           web. Mobile stays focused on daily execution.
         </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Pill tone="blue">{initialTier} plan selected</Pill>
+          <Pill tone="neutral">Billing setup opens next</Pill>
+        </div>
         <div className="mt-8 grid gap-3">
           {[
             "Creates the organization and default branch",

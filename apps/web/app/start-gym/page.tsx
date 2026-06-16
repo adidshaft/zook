@@ -7,20 +7,39 @@ import { ZookLogo } from "@/components/zook-logo";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
-export default async function StartGymPage() {
+function normalizeTier(value?: string | string[]) {
+  const tier = (Array.isArray(value) ? value[0] : value)?.trim().toUpperCase();
+  return tier === "STARTER" || tier === "GROWTH" || tier === "PRO" ? tier : null;
+}
+
+export default async function StartGymPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const tier = normalizeTier(resolvedSearchParams.tier);
   const cookieStore = await cookies();
   const token = cookieStore.get(sessionCookieName)?.value;
   const session = await resolveSessionSummaryFromToken(token);
 
   if (!session) {
-    redirect("/login?redirect=/start-gym");
+    const redirectTarget = tier ? `/start-gym?tier=${tier.toLowerCase()}` : "/start-gym";
+    redirect(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
   const ownerOrganization = session.organizations.find((organization) =>
     organization.roles.some((role) => role === "OWNER" || role === "ADMIN"),
   );
   if (ownerOrganization) {
-    redirect(`/dashboard/billing?created=${ownerOrganization.orgId}&setup=billing`);
+    const billingParams = new URLSearchParams({
+      created: ownerOrganization.orgId,
+      setup: "billing",
+    });
+    if (tier) {
+      billingParams.set("tier", tier.toLowerCase());
+    }
+    redirect(`/dashboard/billing?${billingParams.toString()}`);
   }
 
   return (
@@ -38,7 +57,7 @@ export default async function StartGymPage() {
             <DashboardSignOutButton compact label="Switch account" />
           </div>
         </header>
-        <StartGymPanel ownerEmail={session.user.email} />
+        <StartGymPanel {...(tier ? { initialTier: tier } : {})} ownerEmail={session.user.email} />
       </div>
     </main>
   );

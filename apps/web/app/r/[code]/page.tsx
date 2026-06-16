@@ -30,12 +30,28 @@ async function referralUsername(code: string) {
   return org?.username ?? null;
 }
 
-export default async function ReferralPage({ params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
+export default async function ReferralPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ code: string }>;
+  searchParams?: Promise<{ plan?: string; lang?: string }>;
+}) {
+  const [{ code }, query] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve({} as { plan?: string; lang?: string }),
+  ]);
   const normalizedCode = code.trim().toUpperCase();
   const username = await referralUsername(normalizedCode);
   if (!username) {
     notFound();
+  }
+  const joinParams = new URLSearchParams({ ref: normalizedCode });
+  if (query.plan?.trim()) {
+    joinParams.set("plan", query.plan.trim());
+  }
+  if (query.lang?.trim()) {
+    joinParams.set("lang", query.lang.trim());
   }
 
   return (
@@ -50,7 +66,7 @@ export default async function ReferralPage({ params }: { params: Promise<{ code:
           Continue to the gym membership page. Your referral code will be applied there.
         </p>
         <Link
-          href={`/join/${username}?ref=${normalizedCode}`}
+          href={`/join/${username}?${joinParams.toString()}`}
           className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 font-semibold text-black"
         >
           Continue
