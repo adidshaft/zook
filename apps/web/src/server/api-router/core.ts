@@ -100,6 +100,8 @@ import {
   PersonalTrackingService,
   requireManualOverrideReason,
   runAIGuardedRequest,
+  MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE,
+  validateManualMembershipPaymentAmount,
   validateClassSchedule,
   validateAttendanceScan,
   validateReferralRedemption,
@@ -13913,6 +13915,16 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       if (!plan) {
         throw notFoundError("Membership plan not found");
       }
+      try {
+        validateManualMembershipPaymentAmount({
+          amountPaise: body.amountPaise,
+          expectedAmountPaise: plan.pricePaise,
+        });
+      } catch {
+        throw validationError(
+          `Manual membership payments must be within Rs ${(MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE / 100).toFixed(2)} of the plan price.`,
+        );
+      }
       const window = computeSubscriptionWindow(
         clean({
           id: plan.id,
@@ -13961,6 +13973,16 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       }
       if (deskBranchId && plan.branchId && plan.branchId !== deskBranchId) {
         throw forbiddenError("This plan belongs to another branch.");
+      }
+      try {
+        validateManualMembershipPaymentAmount({
+          amountPaise: body.amountPaise,
+          expectedAmountPaise: plan.pricePaise,
+        });
+      } catch {
+        throw validationError(
+          `Manual membership payments must be within Rs ${(MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE / 100).toFixed(2)} of the plan price.`,
+        );
       }
       const branch = await resolveOrgBranch(orgId, deskBranchId ?? plan.branchId);
       const window = computeSubscriptionWindow(

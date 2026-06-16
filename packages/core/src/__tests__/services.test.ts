@@ -31,6 +31,7 @@ import {
   createSignedQrToken,
   decideClassEnrollment,
   decideAttendanceStatus,
+  MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE,
   defaultAIQuotaForRole,
   encodeQrPayload,
   evaluateOperatingHours,
@@ -44,6 +45,7 @@ import {
   shouldFanOutWhatsApp,
   transitionSubscriptionReminder,
   transitionPaymentSession,
+  validateManualMembershipPaymentAmount,
   validateAttendanceScan,
   validateClassSchedule,
   validateReferralRedemption,
@@ -250,6 +252,28 @@ describe("payments", () => {
         "org",
       ),
     ).toThrow("Permission denied");
+  });
+
+  it("allows small manual membership payment differences but rejects larger mismatches", () => {
+    expect(
+      validateManualMembershipPaymentAmount({
+        amountPaise: 200050,
+        expectedAmountPaise: 200000,
+      }).differencePaise,
+    ).toBe(50);
+    expect(
+      validateManualMembershipPaymentAmount({
+        amountPaise: 199900,
+        expectedAmountPaise: 200000,
+      }).differencePaise,
+    ).toBe(-100);
+    expect(() =>
+      validateManualMembershipPaymentAmount({
+        amountPaise: 200101,
+        expectedAmountPaise: 200000,
+      }),
+    ).toThrow("outside allowed tolerance");
+    expect(MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE).toBe(100);
   });
 });
 

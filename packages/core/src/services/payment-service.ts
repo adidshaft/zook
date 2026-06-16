@@ -8,6 +8,8 @@ export interface PaymentSessionState {
   status: PaymentStatus;
 }
 
+export const MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE = 100;
+
 const allowedTransitions: Record<PaymentStatus, PaymentStatus[]> = {
   CREATED: ["PENDING", "REQUIRES_ACTION", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"],
   PENDING: ["REQUIRES_ACTION", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"],
@@ -62,4 +64,27 @@ export function createManualPaymentAdjustment(input: {
 
 export function assertManualPaymentRecordContext(ctx: RequestContext, orgId: string): string {
   return assertOrgServicePermission(ctx, orgId, "PAYMENTS_RECORD_OFFLINE");
+}
+
+export function validateManualMembershipPaymentAmount(input: {
+  amountPaise: number;
+  expectedAmountPaise: number;
+  tolerancePaise?: number;
+}): {
+  amountPaise: number;
+  expectedAmountPaise: number;
+  differencePaise: number;
+  tolerancePaise: number;
+} {
+  const tolerancePaise = input.tolerancePaise ?? MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE;
+  const differencePaise = input.amountPaise - input.expectedAmountPaise;
+  if (Math.abs(differencePaise) > tolerancePaise) {
+    throw new Error("Manual membership payment amount outside allowed tolerance");
+  }
+  return {
+    amountPaise: input.amountPaise,
+    expectedAmountPaise: input.expectedAmountPaise,
+    differencePaise,
+    tolerancePaise,
+  };
 }
