@@ -87,6 +87,13 @@ function yearlyLine(plan: SaasPlanDefinition) {
   return `${formatInr(plan.yearly)} / year`;
 }
 
+function yearlyMonthlyEquivalent(plan: SaasPlanDefinition) {
+  if (plan.tier === "FREE") {
+    return null;
+  }
+  return `Approx. ${formatInr(Math.round(plan.yearly / 12))} / month when billed yearly`;
+}
+
 function detailsForPlan(plan: SaasPlanDefinition) {
   const e = plan.entitlements;
   return [
@@ -197,7 +204,14 @@ export default async function PricingPage({
                 </span>
                 <span className="ml-2 text-sm text-[var(--text-tertiary)]">{planPeriod(plan)}</span>
               </div>
-              <p className="mt-2 text-xs text-[var(--text-tertiary)]">{yearlyLine(plan)}</p>
+              <div className="mt-2 grid gap-1">
+                <p className="text-xs text-[var(--text-tertiary)]">{yearlyLine(plan)}</p>
+                {yearlyMonthlyEquivalent(plan) ? (
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {yearlyMonthlyEquivalent(plan)}
+                  </p>
+                ) : null}
+              </div>
               <p className="mt-5 min-h-14 text-sm leading-6 text-[var(--text-secondary)]">
                 {plan.description}
               </p>
