@@ -1180,54 +1180,65 @@ async function refundPaymentForActor(input: {
   amountPaise?: number;
   platformRefund?: boolean;
 }) {
-  const payment = await prisma.payment.findUnique({ where: { id: input.paymentId } });
-  if (!payment) {
-    throw notFoundError("Payment not found");
-  }
-  const orgId = payment.orgId;
-  if (!orgId) {
-    throw validationError("Only organization payments can be refunded.");
-  }
-  if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
-    throw conflictError("Only successful or partly refunded payments can be refunded.");
-  }
-  const requiresProviderRefund = Boolean(payment.providerRef && payment.provider);
-  const existingRefunds = await prisma.paymentRefund.findMany({
-    where: {
-      paymentId: payment.id,
-      orgId,
-      status: { notIn: ["FAILED", "CANCELLED"] },
+  const { payment, requestedRefund, refundAmountPaise, orgId } = await prisma.$transaction(
+    async (tx) => {
+      const payment = await tx.payment.findUnique({ where: { id: input.paymentId } });
+      if (!payment) {
+        throw notFoundError("Payment not found");
+      }
+      const orgId = payment.orgId;
+      if (!orgId) {
+        throw validationError("Only organization payments can be refunded.");
+      }
+      if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status)) {
+        throw conflictError("Only successful or partly refunded payments can be refunded.");
+      }
+
+      const existingRefunds = await tx.paymentRefund.findMany({
+        where: {
+          paymentId: payment.id,
+          orgId,
+          status: { notIn: ["FAILED", "CANCELLED"] },
+        },
+      });
+      const alreadyRefundedPaise = existingRefunds.reduce(
+        (total, refund) => total + refund.amountPaise,
+        0,
+      );
+      const refundableAmountPaise = Math.max(payment.amountPaise - alreadyRefundedPaise, 0);
+      if (refundableAmountPaise <= 0) {
+        throw conflictError("This payment has already been fully refunded.");
+      }
+      const refundAmountPaise = input.amountPaise ?? refundableAmountPaise;
+      if (refundAmountPaise > refundableAmountPaise) {
+        throw validationError(
+          `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
+        );
+      }
+
+      const requestedRefund = await tx.paymentRefund.create({
+        data: clean({
+          orgId,
+          branchId: payment.branchId,
+          paymentId: payment.id,
+          provider: payment.provider,
+          amountPaise: refundAmountPaise,
+          currency: payment.currency,
+          status: "REQUESTED",
+          reason: input.reason,
+          requestedById: input.actorUserId,
+          metadata: input.platformRefund ? { platformRefund: true } : undefined,
+        }),
+      });
+
+      return { payment, requestedRefund, refundAmountPaise, orgId };
     },
-  });
-  const alreadyRefundedPaise = existingRefunds.reduce(
-    (total, refund) => total + refund.amountPaise,
-    0,
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
   );
-  const refundableAmountPaise = Math.max(payment.amountPaise - alreadyRefundedPaise, 0);
-  if (refundableAmountPaise <= 0) {
-    throw conflictError("This payment has already been fully refunded.");
-  }
-  const refundAmountPaise = input.amountPaise ?? refundableAmountPaise;
-  if (refundAmountPaise > refundableAmountPaise) {
-    throw validationError(
-      `Refund amount cannot exceed the remaining ${Math.round(refundableAmountPaise / 100)} rupees.`,
-    );
-  }
+  const requiresProviderRefund = Boolean(payment.providerRef && payment.provider);
   const provider = requiresProviderRefund ? getPaymentProviderOrThrow() : null;
-  const requestedRefund = await prisma.paymentRefund.create({
-    data: clean({
-      orgId,
-      branchId: payment.branchId,
-      paymentId: payment.id,
-      provider: payment.provider,
-      amountPaise: refundAmountPaise,
-      currency: payment.currency,
-      status: "REQUESTED",
-      reason: input.reason,
-      requestedById: input.actorUserId,
-      metadata: input.platformRefund ? { platformRefund: true } : undefined,
-    }),
-  });
   let refund;
   try {
     refund =
@@ -1252,44 +1263,64 @@ async function refundPaymentForActor(input: {
     throw cause;
   }
   const processedAt = new Date();
-  const nextRefundedAmountPaise = alreadyRefundedPaise + refundAmountPaise;
-  const nextStatus =
-    nextRefundedAmountPaise >= payment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
-  const [updatedRefund, updated] = await prisma.$transaction([
-    prisma.paymentRefund.update({
-      where: { id: requestedRefund.id },
-      data: {
-        status: refund.status,
-        providerRefundId: refund.providerRefundId ?? null,
-        processedAt,
-        providerResponse: refund as unknown as Prisma.InputJsonValue,
-        metadata: clean({
-          ...jsonObject(requestedRefund.metadata),
-          platformRefund: input.platformRefund || undefined,
-        }) as Prisma.InputJsonValue,
-      },
-    }),
-    prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: nextStatus,
-        metadata: {
-          ...jsonObject(payment.metadata),
-          refundedAmountPaise: nextRefundedAmountPaise,
-          refund: {
-            refundId: requestedRefund.id,
-            status: refund.status,
-            providerRefundId: refund.providerRefundId,
-            amountPaise: refundAmountPaise,
-            reason: input.reason,
-            refundedAt: processedAt.toISOString(),
-            refundedById: input.actorUserId,
-            platformRefund: Boolean(input.platformRefund),
+  const { updatedRefund, updated, nextStatus } = await prisma.$transaction(
+    async (tx) => {
+      const updatedRefund = await tx.paymentRefund.update({
+        where: { id: requestedRefund.id },
+        data: {
+          status: refund.status,
+          providerRefundId: refund.providerRefundId ?? null,
+          processedAt,
+          providerResponse: refund as unknown as Prisma.InputJsonValue,
+          metadata: clean({
+            ...jsonObject(requestedRefund.metadata),
+            platformRefund: input.platformRefund || undefined,
+          }) as Prisma.InputJsonValue,
+        },
+      });
+      const refreshedPayment = await tx.payment.findUnique({ where: { id: payment.id } });
+      if (!refreshedPayment) {
+        throw notFoundError("Payment not found");
+      }
+      const activeRefunds = await tx.paymentRefund.findMany({
+        where: {
+          paymentId: payment.id,
+          orgId,
+          status: { notIn: ["FAILED", "CANCELLED"] },
+        },
+      });
+      const nextRefundedAmountPaise = activeRefunds.reduce(
+        (total, activeRefund) => total + activeRefund.amountPaise,
+        0,
+      );
+      const nextStatus =
+        nextRefundedAmountPaise >= refreshedPayment.amountPaise ? "REFUNDED" : "PARTIALLY_REFUNDED";
+      const updated = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: nextStatus,
+          metadata: {
+            ...jsonObject(refreshedPayment.metadata),
+            refundedAmountPaise: nextRefundedAmountPaise,
+            refund: {
+              refundId: requestedRefund.id,
+              status: refund.status,
+              providerRefundId: refund.providerRefundId,
+              amountPaise: refundAmountPaise,
+              reason: input.reason,
+              refundedAt: processedAt.toISOString(),
+              refundedById: input.actorUserId,
+              platformRefund: Boolean(input.platformRefund),
+            },
           },
         },
-      },
-    }),
-  ]);
+      });
+      return { updatedRefund, updated, nextStatus };
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
+  );
   await writeAuditLog({
     request: input.request,
     orgId,
