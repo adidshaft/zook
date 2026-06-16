@@ -55,12 +55,12 @@ const tierHighlights: Record<SaasTier, string[]> = {
   ],
   GROWTH: [
     "More members, branches, trainers, inventory, and campaign capacity",
-    "Advanced reports, referrals, notifications, and AI text usage",
+    "Advanced reports, referrals, notifications, and campaign tools",
     "Best for teams running daily front-desk and trainer workflows",
   ],
   PRO: [
     "Unlimited members, branches, staff, trainers, and products",
-    "Premium support, custom reports/referrals, API access, and higher AI limits",
+    "Premium support, custom reports/referrals, API access, and launch support",
     "Best for multi-branch operators and serious scale",
   ],
 };
@@ -96,15 +96,13 @@ function yearlyMonthlyEquivalent(plan: SaasPlanDefinition) {
 
 function detailsForPlan(plan: SaasPlanDefinition) {
   const e = plan.entitlements;
-  return [
+  const details = [
     `Members: ${formatSaasLimit(e.memberLimit)}`,
     `Branches: ${formatSaasLimit(e.branchLimit)}`,
     `Staff users: ${formatSaasLimit(e.staffLimit)}`,
     `Trainers: ${formatSaasLimit(e.trainerLimit)}`,
     `Products: ${formatSaasLimit(e.productLimit)}`,
     `Notifications/month: ${formatSaasLimit(e.notificationMonthlyLimit)}`,
-    `AI text/month: ${e.aiTextMonthlyLimit.toLocaleString("en-IN")}`,
-    `AI images/month: ${e.aiImageMonthlyLimit.toLocaleString("en-IN")}`,
     `Reports: ${e.reports.replaceAll("_", " ")}`,
     `Referrals: ${e.referrals.replaceAll("_", " ")}`,
     `Support: ${e.support.replaceAll("_", " ")}`,
@@ -112,6 +110,10 @@ function detailsForPlan(plan: SaasPlanDefinition) {
     e.multiBranch ? "Multi-branch controls included" : "Single-branch focused",
     e.apiAccess ? "API access included" : "API access not included",
   ];
+  if (e.aiTextMonthlyLimit > 0 || e.aiImageMonthlyLimit > 0) {
+    details.push("AI tools roll out separately after launch.");
+  }
+  return details;
 }
 
 function startGymHrefForTier(tier: SaasTier, locale: ReturnType<typeof resolvePublicLocale>) {
@@ -149,7 +151,7 @@ export default async function PricingPage({
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-8 text-[var(--text-secondary)]">
               Start with a 2-month free trial, then move into the plan that fits your members,
-              branches, staff, trainers, inventory, messages, reports, and AI usage.
+              branches, staff, trainers, inventory, messages, and reporting needs.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ZookButtonLink href={localizedPath("/start-gym", locale)} trailingIcon={<ArrowRight size={18} />}>
