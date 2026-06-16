@@ -303,6 +303,22 @@ export async function applyPaymentSessionStatus(input: {
     marketingOptIn?: boolean;
   }) => Promise<void>;
 }) {
+  async function findPaymentBySessionOrProviderRef(
+    inputRef: { sessionId: string; provider: string; providerRef?: string },
+  ) {
+    const existingBySession = await prisma.payment.findUnique({ where: { sessionId: inputRef.sessionId } });
+    if (existingBySession) {
+      return existingBySession;
+    }
+    if (!inputRef.providerRef) {
+      return null;
+    }
+    return prisma.payment.findFirst({
+      where: { provider: inputRef.provider, providerRef: inputRef.providerRef },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
   const currentSession = await prisma.paymentSession.findUnique({ where: { id: input.sessionId } });
   if (!currentSession) {
     throw new Error("Payment session not found");
@@ -350,13 +366,11 @@ export async function applyPaymentSessionStatus(input: {
   });
 
   const resolvedProviderRef = input.providerRef ?? session.providerRef ?? session.id;
-  let payment = await prisma.payment.findUnique({ where: { sessionId: session.id } });
-  if (!payment && resolvedProviderRef) {
-    payment = await prisma.payment.findFirst({
-      where: { provider: input.provider, providerRef: resolvedProviderRef },
-      orderBy: { createdAt: "asc" },
-    });
-  }
+  let payment = await findPaymentBySessionOrProviderRef({
+    sessionId: session.id,
+    provider: input.provider,
+    providerRef: resolvedProviderRef,
+  });
 
   if (session.status === "SUCCEEDED") {
     payment = payment
@@ -389,6 +403,19 @@ export async function applyPaymentSessionStatus(input: {
             providerRef: resolvedProviderRef,
             recordedAt: new Date(),
           },
+        }).catch(async (error) => {
+          if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+            throw error;
+          }
+          const replayed = await findPaymentBySessionOrProviderRef({
+            sessionId: session.id,
+            provider: input.provider,
+            providerRef: resolvedProviderRef,
+          });
+          if (!replayed) {
+            throw error;
+          }
+          return replayed;
         });
 
     if (!payment.orgId && session.orgId) {
@@ -492,8 +519,11 @@ export async function applyPaymentSessionStatus(input: {
                 renewalStartsAt.getTime() + (window.endsAt.getTime() - window.startsAt.getTime()),
               )
             : window.endsAt;
-        await prisma.memberSubscription.update({
-          where: { id: metadata.subscriptionId },
+        const activated = await prisma.memberSubscription.updateMany({
+          where: {
+            id: metadata.subscriptionId,
+            status: { not: "ACTIVE" },
+          },
           data: clean({
             status: "ACTIVE",
             startsAt: renewalStartsAt,
@@ -503,6 +533,9 @@ export async function applyPaymentSessionStatus(input: {
             activatedById: session.userId,
           }),
         });
+        if (activated.count !== 1) {
+          return { session, payment };
+        }
         await input.ensureMembership({
           orgId: planSub.orgId,
           userId: session.userId,
