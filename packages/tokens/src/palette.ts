@@ -68,11 +68,11 @@ export const lightPalette: Palette = {
   text: {
     primary: "#11150F",
     secondary: "#3F463C",
-    tertiary: "#687161",
+    tertiary: "#66705E",
     inverse: "#FFFFFF",
     onAccent: "#FFFFFF",
     onDanger: "#FFFFFF",
-    onWarning: "#11150F",
+    onWarning: "#FFFFFF",
   },
   border: {
     subtle: "rgba(17,21,15,0.08)",
@@ -116,7 +116,7 @@ export const darkPalette: Palette = {
     tertiary: "#99A595",
     inverse: "#000000",
     onAccent: "#000000",
-    onDanger: "#FFFFFF",
+    onDanger: "#11150F",
     onWarning: "#000000",
   },
   border: {

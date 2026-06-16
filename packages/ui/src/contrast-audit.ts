@@ -1,48 +1,35 @@
+import { darkPalette, lightPalette, type Palette as TokenPalette } from "../../tokens/src/palette";
+
 import { contrast } from "./contrast";
 
 type Palette = Record<string, string>;
 
+function flattenPalette(palette: TokenPalette): Palette {
+  return {
+    bg: palette.bg.app,
+    "bg-elevated": palette.bg.elevated,
+    "bg-sunken": palette.bg.sunken,
+    surface: palette.surface.default,
+    "surface-raised": palette.surface.raised,
+    "surface-accent-soft": palette.surface.accentSoft,
+    "surface-danger-soft": palette.surface.dangerSoft,
+    "surface-warning-soft": palette.surface.warningSoft,
+    "surface-success-soft": palette.surface.successSoft,
+    "text-primary": palette.text.primary,
+    "text-secondary": palette.text.secondary,
+    "text-tertiary": palette.text.tertiary,
+    "text-on-accent": palette.text.onAccent,
+    "text-on-danger": palette.text.onDanger,
+    "text-on-warning": palette.text.onWarning,
+    "accent-fill": palette.accent.fill,
+    "feedback-danger": palette.feedback.danger,
+    "feedback-warning": palette.feedback.warning,
+  };
+}
+
 export const palettes = {
-  dark: {
-    bg: "#070908",
-    "bg-elevated": "#0f1411",
-    "bg-sunken": "#050706",
-    surface: "rgba(255, 255, 255, 0.04)",
-    "surface-raised": "rgba(255, 255, 255, 0.07)",
-    "surface-accent-soft": "rgba(185, 244, 85, 0.1)",
-    "surface-danger-soft": "rgba(255, 90, 61, 0.12)",
-    "surface-warning-soft": "rgba(242, 201, 76, 0.12)",
-    "surface-success-soft": "rgba(125, 211, 172, 0.12)",
-    "text-primary": "#f4f7ef",
-    "text-secondary": "#c7cfc0",
-    "text-tertiary": "#8b9586",
-    "text-on-accent": "#11150f",
-    "text-on-danger": "#11150f",
-    "text-on-warning": "#11150f",
-    "accent-fill": "#b9f455",
-    "feedback-danger": "#ff5a3d",
-    "feedback-warning": "#f2c94c",
-  },
-  light: {
-    bg: "#f4f6f8",
-    "bg-elevated": "#ffffff",
-    "bg-sunken": "#ebeef1",
-    surface: "#ffffff",
-    "surface-raised": "#ffffff",
-    "surface-accent-soft": "rgba(59, 122, 26, 0.07)",
-    "surface-danger-soft": "rgba(239, 68, 68, 0.08)",
-    "surface-warning-soft": "rgba(245, 158, 11, 0.08)",
-    "surface-success-soft": "rgba(16, 185, 129, 0.08)",
-    "text-primary": "#09090b",
-    "text-secondary": "#27272a",
-    "text-tertiary": "#3f3f46",
-    "text-on-accent": "#09090b",
-    "text-on-danger": "#ffffff",
-    "text-on-warning": "#09090b",
-    "accent-fill": "#a6e044",
-    "feedback-danger": "#dc2626",
-    "feedback-warning": "#f59e0b",
-  },
+  dark: flattenPalette(darkPalette),
+  light: flattenPalette(lightPalette),
 } satisfies Record<string, Palette>;
 
 export const contrastPairs = [
