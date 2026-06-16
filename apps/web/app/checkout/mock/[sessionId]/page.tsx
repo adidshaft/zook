@@ -3,6 +3,7 @@ import { Prisma, prisma } from "@zook/db";
 import { notFound } from "next/navigation";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
+import { resolvePublicLocale } from "@/lib/public-i18n";
 
 function getMetadataString(metadata: unknown, key: string) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
@@ -41,14 +42,21 @@ function safePaymentReturnUrl(value?: string) {
   }
 }
 
-function planValidityLabel(plan: { durationDays: number | null; visitLimit: number | null }) {
+function planValidityLabel(
+  plan: { durationDays: number | null; visitLimit: number | null },
+  locale: "en" | "hi",
+) {
   const parts = [
-    plan.durationDays ? `${plan.durationDays} days` : null,
+    plan.durationDays ? `${plan.durationDays} ${locale === "hi" ? "दिन" : "days"}` : null,
     plan.visitLimit
-      ? `${plan.visitLimit} visit${plan.visitLimit === 1 ? "" : "s"}`
-      : "Unlimited visits",
+      ? locale === "hi"
+        ? `${plan.visitLimit} विज़िट`
+        : `${plan.visitLimit} visit${plan.visitLimit === 1 ? "" : "s"}`
+      : locale === "hi"
+        ? "असीमित विज़िट"
+        : "Unlimited visits",
   ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Gym-defined validity";
+  return parts.length ? parts.join(" · ") : locale === "hi" ? "जिम की निर्धारित वैधता" : "Gym-defined validity";
 }
 
 export default async function MockCheckoutPage({
@@ -63,6 +71,19 @@ export default async function MockCheckoutPage({
   }
   const { sessionId } = await params;
   const resolvedSearchParams = await searchParams;
+  const locale = resolvePublicLocale(resolvedSearchParams);
+  const copy =
+    locale === "hi"
+      ? {
+          sampleMembership: "नमूना सदस्यता",
+          confirmationRequired: "पुष्टि आवश्यक",
+          testBanner: "टेस्ट मोड - यह असली पेमेंट नहीं है. किसी भी परिणाम पर क्लिक करके सिमुलेट करें.",
+        }
+      : {
+          sampleMembership: "Sample membership",
+          confirmationRequired: "Confirmation required",
+          testBanner: "TEST MODE - No real payment. Click any outcome to simulate.",
+        };
   let session = null;
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
@@ -112,16 +133,16 @@ export default async function MockCheckoutPage({
         amountPaise: session.amountPaise,
         purpose: session.purpose,
         status: session.status,
-        planName: plan?.name ?? (session.id === "demo" ? "Sample membership" : null),
-        validityLabel: plan ? planValidityLabel(plan) : null,
-        activationLabel: "Confirmation required",
+        planName: plan?.name ?? (session.id === "demo" ? copy.sampleMembership : null),
+        validityLabel: plan ? planValidityLabel(plan, locale) : null,
+        activationLabel: copy.confirmationRequired,
       }
     : null;
 
   return (
     <main className="grid min-h-screen place-items-center px-5 py-16">
       <div className="fixed inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-black shadow-lg shadow-amber-950/20">
-        TEST MODE - No real payment. Click any outcome to simulate.
+        {copy.testBanner}
       </div>
       <div className="absolute left-5 top-5">
         <ZookLogo />

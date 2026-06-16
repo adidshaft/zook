@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { StartGymPanel } from "@/components/start-gym-panel";
 import { ZookLogo } from "@/components/zook-logo";
+import { publicT, resolvePublicLocale } from "@/lib/public-i18n";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -25,14 +26,23 @@ export default async function StartGymPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
+  const locale = resolvePublicLocale(resolvedSearchParams);
   const tier = normalizeTier(resolvedSearchParams.tier);
+  const switchAccountLabel = locale === "hi" ? "अकाउंट बदलें" : "Switch account";
   const cookieStore = await cookies();
   const token = cookieStore.get(sessionCookieName)?.value;
   const session = await resolveSessionSummaryFromToken(token);
 
   if (!session) {
-    const redirectTarget = tier ? `/start-gym?tier=${tier.toLowerCase()}` : "/start-gym";
-    redirect(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
+    const redirectTarget = new URLSearchParams();
+    if (tier) {
+      redirectTarget.set("tier", tier.toLowerCase());
+    }
+    if (locale === "hi") {
+      redirectTarget.set("lang", "hi");
+    }
+    const redirectPath = `/start-gym${redirectTarget.size ? `?${redirectTarget.toString()}` : ""}`;
+    redirect(`/login?redirect=${encodeURIComponent(redirectPath)}`);
   }
 
   const ownerOrganization = session.organizations.find((organization) =>
@@ -59,9 +69,9 @@ export default async function StartGymPage({
               href="/dashboard"
               className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70"
             >
-              Dashboard
+              {publicT(locale, "dashboard")}
             </Link>
-            <DashboardSignOutButton compact label="Switch account" />
+            <DashboardSignOutButton compact label={switchAccountLabel} />
           </div>
         </header>
         <StartGymPanel {...(tier ? { initialTier: tier } : {})} ownerEmail={session.user.email} />

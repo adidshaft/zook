@@ -14,7 +14,7 @@ import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 import { homeData } from "./home-data";
 
 export function HomeHero({ locale }: { locale: PublicLocale }) {
-  const { t, pillars } = homeData(locale);
+  const { t, pillars, statStrip } = homeData(locale);
   return (
     <section className="relative grid gap-10 pt-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
       <Reveal y={32}>
@@ -54,7 +54,7 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
           delay={0.25}
           gap={0.1}
         >
-          {["roles", "record", "uptime"].map((label, index) => (
+          {statStrip.map((label, index) => (
             <StaggerItem key={label} className="px-4 py-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</p>
               <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">

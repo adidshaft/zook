@@ -12,6 +12,7 @@ const supportCopy = {
   en: {
     eyebrow: "Support",
     title: "Zook support",
+    emailCta: "Email support",
     intro:
       "For account, billing, gym setup, membership, attendance, payment, refund, privacy, or app support, write to support@zookfit.in.",
     sections: [
@@ -32,6 +33,7 @@ const supportCopy = {
   hi: {
     eyebrow: "सहायता",
     title: "Zook सहायता",
+    emailCta: "सहायता ईमेल करें",
     intro:
       "Account, billing, gym setup, membership, attendance, payment, refund, privacy या app support के लिए support@zookfit.in पर लिखें.",
     sections: [
@@ -85,7 +87,7 @@ export default async function SupportPage({
             href="mailto:support@zookfit.in"
             className="mt-6 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black transition hover:bg-lime-200"
           >
-            Email support
+            {copy.emailCta}
           </a>
           <div className="mt-8 grid gap-4">
             {copy.sections.map(([title, body]) => (
