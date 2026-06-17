@@ -3,6 +3,7 @@ import { Link, Stack, useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 
 import {
+  BranchSelectorChip,
   Card,
   ListRow,
   AppHeader,
@@ -13,9 +14,11 @@ import {
 import { RoleSwitcherChip } from "@/components/role-switcher";
 import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useAuth, useHasPermission } from "@/lib/auth";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing } from "@/lib/theme";
 
 type MoreRow = {
+  testID?: string;
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -35,6 +38,7 @@ const webRows: MoreRow[] = [
 
 export default function OwnerMoreScreen() {
   const router = useRouter();
+  const bottomPadding = useBottomScrollPadding();
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const { logout } = useAuth();
@@ -43,6 +47,7 @@ export default function OwnerMoreScreen() {
       title: "Stock",
       subtitle: "Products and pickups",
       icon: "cube-outline",
+      testID: "owner-more-stock",
       href: "/owner/stock",
       visible: canViewStock,
     },
@@ -50,6 +55,7 @@ export default function OwnerMoreScreen() {
       title: "Billing",
       subtitle: "Trial and subscription",
       icon: "card-outline",
+      testID: "owner-more-billing",
       href: "/owner/billing",
       visible: canManageBilling,
     },
@@ -75,7 +81,7 @@ export default function OwnerMoreScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
         >
           <AppHeader
             title="More"
@@ -89,6 +95,7 @@ export default function OwnerMoreScreen() {
           />
           <Card variant="compact" contentStyle={styles.accountCard}>
             <RoleSwitcherChip />
+            <BranchSelectorChip />
             <ZookButton
               testID="owner-more-sign-out"
               variant="destructive"
@@ -103,7 +110,11 @@ export default function OwnerMoreScreen() {
           <Card variant="compact" contentStyle={styles.list}>
             {nativeRows.filter((row) => row.visible !== false).map((row) => (
               <Link key={row.title} href={row.href as never} asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={row.title}>
+                <Pressable
+                  testID={row.testID}
+                  accessibilityRole="button"
+                  accessibilityLabel={row.title}
+                >
                   <ListRow title={row.title} subtitle={row.subtitle} icon={row.icon} />
                 </Pressable>
               </Link>
@@ -130,8 +141,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: spacing.md,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   list: {

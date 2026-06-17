@@ -19,7 +19,18 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { AccessibilityInfo, Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  AccessibilityInfo,
+  Alert,
+  InteractionManager,
+  Keyboard,
+  Modal,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
@@ -187,7 +198,8 @@ function useReceptionWorkspaceState({
     if (!initialRecordId) {
       return;
     }
-    const attempt = approvalQueue.find((item) => item.id === initialRecordId);
+    const attempt =
+      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
     if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
       return;
     }
@@ -278,9 +290,21 @@ function useReceptionWorkspaceState({
   );
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
-      (record) => record.profile.userId === selectedMemberId,
+      (record) =>
+        record.profile.userId === selectedMemberId || record.user?.id === selectedMemberId,
     ) ?? null;
-  const memberRecord = selectedMemberRecord;
+  useEffect(() => {
+    if (!initialMemberId || selectedMemberRecord || !(membersQuery.data?.members.length)) {
+      return;
+    }
+    const fallbackMemberId = membersQuery.data.members[0]?.profile.userId ?? null;
+    if (fallbackMemberId) {
+      setSelectedMemberId(fallbackMemberId);
+    }
+  }, [initialMemberId, membersQuery.data?.members, selectedMemberRecord]);
+  const memberRecord =
+    selectedMemberRecord ??
+    (initialMemberId ? (membersQuery.data?.members ?? [])[0] ?? null : null);
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
@@ -403,7 +427,6 @@ function useReceptionWorkspaceState({
           Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
         ),
     );
-    decisionSheetRef.current?.present();
   }
 
   function closeDecisionSheet() {
@@ -968,6 +991,23 @@ function ApprovalDecisionSheet() {
     setDecisionReason,
     setSelectedDecisionAttempt,
   } = useReceptionWorkspace();
+  useEffect(() => {
+    if (!selectedDecisionAttempt) {
+      return;
+    }
+    let cancelled = false;
+    const task = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) {
+          decisionSheetRef.current?.present();
+        }
+      });
+    });
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
+  }, [decisionSheetRef, selectedDecisionAttempt]);
   const sheetBackground = StyleSheet.flatten([
     styles.sheetBackground,
     {

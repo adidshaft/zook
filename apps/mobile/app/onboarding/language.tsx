@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -34,7 +34,7 @@ export default function OnboardingLanguageStep() {
     setBusy(true);
     try {
       await setLocalePreference(selected);
-      router.push("/onboarding/value-props" as never);
+      router.replace("/onboarding/value-props" as never);
     } catch {
       showToast({
         title: "Couldn't save language",
@@ -128,7 +128,7 @@ export default function OnboardingLanguageStep() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   content: {
     flexGrow: 1,

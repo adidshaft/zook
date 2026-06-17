@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native
 import { useState } from "react";
 import {
   AppHeader,
+  BranchSelectorChip,
   Card,
   EmptyState,
   Pill,
@@ -80,10 +81,20 @@ export default function ClassesRoute() {
 
           <Card variant="compact" contentStyle={styles.helperCard}>
             <View style={styles.helperHeader}>
-              <Text style={[styles.helperTitle, { color: palette.text.primary }]}>
-                Upcoming group sessions
-              </Text>
-              <Pill>{selectedBranch?.name ?? "All branches"}</Pill>
+              <View style={styles.helperCopy}>
+                <Text style={[styles.helperTitle, { color: palette.text.primary }]}>
+                  Upcoming group sessions
+                </Text>
+                <Text style={[styles.helperMeta, { color: palette.text.secondary }]}>
+                  {selectedBranch
+                    ? "Bookings and waitlists follow the active branch."
+                    : "Pick a branch to see its upcoming sessions."}
+                </Text>
+              </View>
+              <View style={styles.helperBadge}>
+                <BranchSelectorChip />
+                <Pill>{selectedBranch?.name ?? "All branches"}</Pill>
+              </View>
             </View>
             <Text style={[styles.helperBody, { color: palette.text.secondary }]}>
               Book classes in the active branch. If a session fills up, Zook will add you to the
@@ -115,12 +126,17 @@ export default function ClassesRoute() {
           ) : null}
 
           <View style={styles.stack}>
-            {(classesQuery.data?.classes ?? []).map((entry) => {
+            {(classesQuery.data?.classes ?? []).map((entry, index) => {
               const busy = enrollMutation.isPending && enrollMutation.variables?.classId === entry.id;
               const alreadyBooked = entry.myEnrollmentStatus === "confirmed";
               const alreadyWaitlisted = entry.myEnrollmentStatus === "waitlisted";
               return (
-                <Card key={entry.id} variant="compact" contentStyle={styles.classCard}>
+                <Card
+                  key={entry.id}
+                  testID={index === 0 ? "class-row-first" : `class-row-${entry.id}`}
+                  variant="compact"
+                  contentStyle={styles.classCard}
+                >
                   <View style={styles.classHeader}>
                     <View style={styles.classTitleBlock}>
                       <Text style={[styles.classTitle, { color: palette.text.primary }]}>
@@ -155,6 +171,7 @@ export default function ClassesRoute() {
                     </Text>
                   ) : null}
                   <ZookButton
+                    testID={index === 0 ? "class-book-first" : `class-book-${entry.id}`}
                     onPress={() => enrollMutation.mutate({ classId: entry.id })}
                     disabled={busy || alreadyBooked || alreadyWaitlisted}
                     variant={alreadyBooked || alreadyWaitlisted ? "secondary" : "primary"}
@@ -179,19 +196,27 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   helperCard: {
     gap: spacing.sm,
   },
   helperHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  helperCopy: {
+    gap: 4,
+  },
+  helperBadge: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
   },
   helperTitle: {
     ...typography.cardTitle,
+  },
+  helperMeta: {
+    ...typography.caption,
   },
   helperBody: {
     ...typography.body,

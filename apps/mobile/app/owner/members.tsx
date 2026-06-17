@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
-import { ScreenHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, ScreenHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
@@ -146,7 +146,12 @@ export default function OwnerMembersScreen() {
               <ScreenHeader
                 title="Members"
                 subtitle={`${membersQuery.data?.members.length ?? 0} total`}
-                contextSlot={<RoleSwitcherContextPill />}
+                contextSlot={
+                  <>
+                    <RoleSwitcherContextPill />
+                    <BranchSelectorChip />
+                  </>
+                }
               />
             }
             items={memberItems}
@@ -180,5 +185,12 @@ export default function OwnerMembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, paddingHorizontal: 16, flex: 1 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    paddingHorizontal: 16,
+    flex: 1,
+  },
 });

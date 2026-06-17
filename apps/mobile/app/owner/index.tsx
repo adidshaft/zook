@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
@@ -211,7 +211,12 @@ export default function OwnerCommandScreen() {
           <ScreenHeader
             title="Today"
             subtitle={branchName}
-            contextSlot={<RoleSwitcherContextPill />}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
             scrollY={scrollY}
           />
           <AnimatedAppear delay={0}>
@@ -281,11 +286,15 @@ export default function OwnerCommandScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "flex-start",
+    gap: 6,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 16,
     paddingBottom: 96,
   },

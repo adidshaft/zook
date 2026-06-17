@@ -459,6 +459,7 @@ export interface ReceptionQueueRecord {
   id: string;
   status: string;
   checkedInAt: string;
+  branchId?: string | null;
   branchName?: string | null;
   source?: string;
   suspiciousFlags?: string[] | null;

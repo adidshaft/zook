@@ -3,9 +3,10 @@ import { useEffect } from "react";
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 
-const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
+const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans" | "/trainer/payouts"> = {
   clients: "/trainer/clients",
   plans: "/trainer/plans",
+  payouts: "/trainer/payouts",
 };
 
 export default function TrainerLayout() {

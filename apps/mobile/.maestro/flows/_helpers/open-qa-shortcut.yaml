@@ -1,0 +1,42 @@
+appId: com.zook.app
+name: open-qa-shortcut
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-continue"
+    timeout: 3000
+    optional: true
+- tapOn:
+    id: "onboarding-language-continue"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-value-skip"
+    timeout: 3000
+    optional: true
+- tapOn:
+    id: "onboarding-value-skip"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "login-qa-shortcuts"
+    timeout: 15000
+- tapOn:
+    id: "login-qa-shortcuts"
+- extendedWaitUntil:
+    visible:
+      id: "qa-launcher-screen"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: ${shortcut_id}
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: ${shortcut_id}
+- extendedWaitUntil:
+    visible:
+      id: ${home_id}
+    timeout: 30000

@@ -777,6 +777,13 @@ const ownerTabs: DockTab[] = [
     matchPath: "/owner",
     activeView: "stock",
   },
+  {
+    href: "/owner/more" as Href,
+    label: "More",
+    icon: "ellipsis-horizontal-outline",
+    activeIcon: "ellipsis-horizontal",
+    matchPath: "/owner/more",
+  },
 ];
 
 /** compat Admin shares Owner's Expo Router tab layout. Plan #11 removes this. */
@@ -810,6 +817,13 @@ const adminTabs: DockTab[] = [
     activeIcon: "cube",
     matchPath: "/owner",
     activeView: "stock",
+  },
+  {
+    href: "/owner/more" as Href,
+    label: "More",
+    icon: "ellipsis-horizontal-outline",
+    activeIcon: "ellipsis-horizontal",
+    matchPath: "/owner/more",
   },
 ];
 

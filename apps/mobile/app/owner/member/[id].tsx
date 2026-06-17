@@ -170,7 +170,7 @@ export default function OwnerMemberDetail() {
 
   return (
     <>
-      <ZookScreen>
+      <ZookScreen testID="owner-member-detail-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -304,7 +304,14 @@ export default function OwnerMemberDetail() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.md,
+    paddingBottom: 96,
+  },
   iconButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   iconButtonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   stateContent: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: spacing.md },

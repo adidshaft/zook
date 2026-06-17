@@ -11,12 +11,13 @@ tags:
     env:
       email: member@zook.local
       home_id: member-home-screen
+      home_path: zook:///
 - takeScreenshot: /tmp/zook-maestro/member/home.png
 
-- openLink: zook:///tracking
+- openLink: zook:///progress
 - extendedWaitUntil:
     visible:
-      id: "tracking-screen"
+      id: "progress-screen"
     timeout: 15000
 - extendedWaitUntil:
     visible:
@@ -29,8 +30,13 @@ tags:
     visible:
       id: "notifications-screen"
     timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Pickup order ready"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
-    id: "notification-row-first"
+    text: "Pickup order ready"
 - extendedWaitUntil:
     visible:
       id: "shop-back-to-shop"
@@ -43,7 +49,11 @@ tags:
       id: "scan-screen"
     timeout: 15000
 - tapOn:
-    id: "scan-enter-code"
+    id: "scan-manual-code"
+    optional: true
+- tapOn:
+    text: "Enter code"
+    optional: true
 - tapOn:
     id: "scan-code-prefix"
 - inputText: "AB"
@@ -69,8 +79,11 @@ tags:
 - openLink: zook:///plans
 - extendedWaitUntil:
     visible:
-      id: "plans-screen"
+      id: "member-plan-screen"
     timeout: 15000
+- tapOn:
+    id: "plan-start-today"
+    optional: true
 - tapOn:
     id: "plan-row-first"
     optional: true
@@ -87,6 +100,16 @@ tags:
     id: "plan-detail-feedback-send"
     optional: true
 - takeScreenshot: /tmp/zook-maestro/member/plans.png
+
+- openLink: zook:///classes
+- extendedWaitUntil:
+    visible:
+      id: "member-classes-screen"
+    timeout: 15000
+- tapOn:
+    id: "class-book-first"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/member/classes.png
 
 - openLink: zook:///shop
 - extendedWaitUntil:
@@ -107,17 +130,17 @@ tags:
     optional: true
 - extendedWaitUntil:
     visible:
-      id: "shop-back-to-shop"
-    timeout: 30000
-- takeScreenshot: /tmp/zook-maestro/member/shop-pickup.png
-
-- openLink: zook:///more
+      id: "shop-continue-payment"
+    timeout: 15000
+    optional: true
 - extendedWaitUntil:
     visible:
-      id: "more-assistant"
+      id: "shop-back-to-shop"
     timeout: 15000
-- tapOn:
-    id: "more-assistant"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/member/shop-pickup.png
+
+- openLink: zook:///assistant
 - extendedWaitUntil:
     visible:
       id: "assistant-coming-soon-screen"
@@ -174,7 +197,7 @@ tags:
     optional: true
 - extendedWaitUntil:
     visible:
-      id: "tracking-screen"
+      id: "progress-screen"
     timeout: 30000
 - openLink: zook:///tracking-history
 - extendedWaitUntil:

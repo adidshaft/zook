@@ -2,6 +2,16 @@ import { zookDemoFixtures } from "@zook/core/demo-fixtures";
 import { demoMemberHomePayload } from "./demo-member-home";
 import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
 
+const DEMO_SEEDED_IDENTIFIERS = new Set([
+  DEMO_MEMBER_EMAIL,
+  "member@zook.local",
+  "owner@zook.local",
+  "admin@zook.local",
+  "reception@zook.local",
+  "trainer@zook.local",
+  "platform@zook.local",
+]);
+
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
 }
@@ -399,10 +409,13 @@ export async function demoMobileApiFetch<T>(
     if (
       body.code !== "000000" ||
       !(
-        identifier === DEMO_MEMBER_EMAIL || phoneIdentifier === DEMO_MEMBER_PHONE.replace(/\D/g, "")
+        DEMO_SEEDED_IDENTIFIERS.has(identifier) ||
+        phoneIdentifier === DEMO_MEMBER_PHONE.replace(/\D/g, "")
       )
     ) {
-      throw new Error("Use member@zook.local or +91 98765 43210 with OTP 000000 for demo mode.");
+      throw new Error(
+        "Use a seeded @zook.local account or +91 98765 43210 with OTP 000000 for demo mode.",
+      );
     }
     return {
       token: "offline-demo-session",

@@ -28,6 +28,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
+  BranchSelectorChip,
   IconBubble,
   AppHeader,
   MoneySummaryCard,
@@ -618,7 +619,12 @@ export default function MembershipScreen() {
           <AppHeader
             eyebrow="Membership"
             title="Your plans"
-            contextSlot={<RoleSwitcherChip />}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherChip />
+                <BranchSelectorChip />
+              </View>
+            }
             subtitle={
               memberships.length
                 ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`
@@ -1019,6 +1025,10 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  headerContext: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
   },
   iconButton: {
     width: 44,

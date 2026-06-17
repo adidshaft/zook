@@ -15,12 +15,14 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, trackingApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function TrackingEntryScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const bottomPadding = useBottomScrollPadding();
   const { activeOrgId, token } = useAuth();
   const [title, setTitle] = useState("");
   const [exerciseName, setExerciseName] = useState("");
@@ -143,7 +145,7 @@ export default function TrackingEntryScreen() {
   return (
     <>
       <ZookScreen testID="tracking-entry-screen">
-        <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}>
           <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} subtitle={mode === "workout" ? "Add a completed session" : "Track body composition"} showProfileShortcut={false} showBack />
           <SegmentedControl
             options={[
@@ -197,5 +199,5 @@ export default function TrackingEntryScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingTop: 14, width: "100%" },
 });

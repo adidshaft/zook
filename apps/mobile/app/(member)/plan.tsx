@@ -117,7 +117,7 @@ export default function MemberPlanScreen() {
                     </View>
                     <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
                     <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
-                      Start today
+                      Open today plan
                     </ZookButton>
                   </Card>
                 ) : !plansQuery.isLoading ? (
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 20,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   stack: { gap: spacing.sm },

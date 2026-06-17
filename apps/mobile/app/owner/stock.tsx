@@ -1,6 +1,6 @@
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
@@ -48,7 +48,15 @@ export default function OwnerStockScreen() {
             ),
           }}
         >
-          <ScreenHeader title="Stock" contextSlot={<RoleSwitcherContextPill />} />
+          <ScreenHeader
+            title="Stock"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
           <View style={styles.metricGrid}>
             <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
             <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
@@ -88,7 +96,15 @@ export default function OwnerStockScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  headerContext: { alignItems: "flex-start", gap: 6 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: 14,
+    paddingBottom: 96,
+  },
   stack: { gap: 12 },
   metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },

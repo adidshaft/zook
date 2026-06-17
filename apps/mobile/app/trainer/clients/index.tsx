@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
     width: "100%",
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: layout.screenContentTopPadding,
   },
 });

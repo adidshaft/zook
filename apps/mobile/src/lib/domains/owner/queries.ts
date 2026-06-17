@@ -21,13 +21,15 @@ type OwnerSetupStatusData = {
 
 export function useOwnerDashboard(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.dashboard(resolvedOrgId),
+    queryKey: queryKeys.owner.dashboard(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/dashboard`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
@@ -39,15 +41,17 @@ export function useOwnerDashboard(orgId?: string) {
 
 export function useOwnerBillingSubscription(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.billing(resolvedOrgId),
+    queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerBillingSubscriptionData>(
         `/orgs/${resolvedOrgId}/billing/subscription`,
         {
           token,
           orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
@@ -58,13 +62,15 @@ export function useOwnerBillingSubscription(orgId?: string) {
 
 export function useOwnerSetupStatus(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.setupStatus(resolvedOrgId),
+    queryKey: queryKeys.owner.setupStatus(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerSetupStatusData>(`/orgs/${resolvedOrgId}/setup-status`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
@@ -79,15 +85,17 @@ export function useOrgJoinRequests<TData = OrgJoinRequestsData>(
   options?: { select?: (data: OrgJoinRequestsData) => TData },
 ) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.approvals(resolvedOrgId),
+    queryKey: queryKeys.owner.approvals(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OrgJoinRequestsData>(
         `/orgs/${resolvedOrgId}/join-requests`,
         {
           token,
           orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
@@ -99,13 +107,15 @@ export function useOrgJoinRequests<TData = OrgJoinRequestsData>(
 
 export function useOrgMembers(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.members(resolvedOrgId),
+    queryKey: queryKeys.owner.members(resolvedOrgId, null, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
@@ -123,12 +133,12 @@ export function usePrefetchOwnerWorkspace(orgId?: string) {
     if (status !== "authenticated" || !token || !resolvedOrgId) return;
     const request = { token, orgId: resolvedOrgId, ...(selectedBranchId ? { branchId: selectedBranchId } : {}) };
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.dashboard(resolvedOrgId),
+      queryKey: queryKeys.owner.dashboard(resolvedOrgId, selectedBranchId),
       queryFn: () => mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/dashboard`, request),
       staleTime: 60_000,
     });
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.billing(resolvedOrgId),
+      queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
       queryFn: () =>
         mobileApiFetch<OwnerBillingSubscriptionData>(
           `/orgs/${resolvedOrgId}/billing/subscription`,
@@ -137,12 +147,12 @@ export function usePrefetchOwnerWorkspace(orgId?: string) {
       staleTime: 60_000,
     });
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.members(resolvedOrgId),
+      queryKey: queryKeys.owner.members(resolvedOrgId, null, selectedBranchId),
       queryFn: () => mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, request),
       staleTime: 60_000,
     });
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.approvals(resolvedOrgId),
+      queryKey: queryKeys.owner.approvals(resolvedOrgId, selectedBranchId),
       queryFn: () =>
         mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(
           `/orgs/${resolvedOrgId}/join-requests`,

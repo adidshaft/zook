@@ -3110,6 +3110,17 @@ function assertLocalQaIdentityAllowed() {
   }
 }
 
+function localSeededSimulatorAuthBypass(
+  request: NextRequest,
+  identifier: { kind: "email" | "phone"; value: string },
+) {
+  return (
+    localQaIdentitiesAllowed() &&
+    request.headers.get("x-zook-qa-auth") === "simulator" &&
+    isSeededDemoIdentifier(identifier)
+  );
+}
+
 async function createFreshQaUser(identifier: { kind: "email" | "phone"; value: string }) {
   assertLocalQaIdentityAllowed();
   const nonce = `${Date.now().toString(36)}${randomBytes(4).toString("hex")}`;
@@ -6096,16 +6107,18 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const body = requestOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
     const seededDemoLogin = isSeededDemoIdentifier(body.identifier);
-    await assertRateLimit(
-      "otpRequestByIdentifier",
-      body.identifier.value,
-      "Too many one-time code requests for this account.",
-    );
-    await assertRateLimit(
-      "otpRequestByIp",
-      ipAddress,
-      "Too many one-time code requests from this IP.",
-    );
+    if (!localSeededSimulatorAuthBypass(request, body.identifier)) {
+      await assertRateLimit(
+        "otpRequestByIdentifier",
+        body.identifier.value,
+        "Too many one-time code requests for this account.",
+      );
+      await assertRateLimit(
+        "otpRequestByIp",
+        ipAddress,
+        "Too many one-time code requests from this IP.",
+      );
+    }
     if (seededDemoLogin) {
       const challenge = await createSeededDemoOtpChallenge({
         identifier: body.identifier,
@@ -6143,16 +6156,18 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     const body = verifyOtpSchema.parse(await readJson(request));
     const ipAddress = getClientIp(request);
     const auth = new AuthService(new PrismaAuthRepo(), getEmailProviderOrThrow());
-    await assertRateLimit(
-      "otpVerifyByIdentifier",
-      body.identifier.value,
-      "Too many one-time code attempts for this account.",
-    );
-    await assertRateLimit(
-      "otpVerifyByIp",
-      ipAddress,
-      "Too many one-time code attempts from this IP.",
-    );
+    if (!localSeededSimulatorAuthBypass(request, body.identifier)) {
+      await assertRateLimit(
+        "otpVerifyByIdentifier",
+        body.identifier.value,
+        "Too many one-time code attempts for this account.",
+      );
+      await assertRateLimit(
+        "otpVerifyByIp",
+        ipAddress,
+        "Too many one-time code attempts from this IP.",
+      );
+    }
     const user = await getAuthUserForVerifiedIdentifier(body.identifier);
     const session = await auth.verifyOtp(
       clean({

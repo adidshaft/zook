@@ -5,6 +5,7 @@ export const layout = {
   screenPaddingCompact: 16,
   screenPaddingLargeText: 16,
   contentWidth: 370,
+  screenContentTopPadding: 14,
   topSectionGap: 24,
   cardGap: 12,
   cardPadding: 18,

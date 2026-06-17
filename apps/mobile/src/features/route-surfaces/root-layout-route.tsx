@@ -4,7 +4,7 @@ import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, LogBox, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
@@ -17,7 +17,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 
-import { AuthProvider, setAuthQueryClient, useAuth } from "@/lib/auth";
+import { AuthProvider, isQaResetInFlight, setAuthQueryClient, useAuth } from "@/lib/auth";
 import { BrandMark } from "@/components/primitives";
 import { DemoBanner } from "@/components/demo-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
@@ -40,6 +40,10 @@ import { useRoleContext } from "@/lib/role-context";
 
 initMobileSentry();
 enableFreeze(true);
+
+if (__DEV__) {
+  LogBox.ignoreAllLogs(true);
+}
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const ONBOARDING_COMPLETED = "true";
@@ -87,6 +91,12 @@ function safeRedirectTarget(value?: string | string[]) {
 
 function isPublicUnauthenticatedRoute(pathname: string) {
   return (
+    pathname === "/qa" ||
+    pathname.startsWith("/qa") ||
+    pathname.startsWith("/__qa-role") ||
+    pathname.startsWith("/__qa-open") ||
+    pathname.startsWith("/__qa-reset") ||
+    pathname.startsWith("/__demo-role") ||
     pathname === "/gyms" ||
     pathname.startsWith("/gyms/") ||
     pathname.startsWith("/gym/") ||
@@ -177,6 +187,10 @@ function LayoutContent() {
         }
         await clearExpiredSession();
         queryClient.clear();
+        if (isQaResetInFlight()) {
+          router.replace("/login" as never);
+          return;
+        }
         showToast({
           title: t("auth.sessionExpiredTitle"),
           message: t("auth.sessionExpiredBody"),
@@ -357,6 +371,16 @@ function LayoutContent() {
 
     if (pathname === "/" && defaultRoute !== "/") {
       router.replace(defaultRoute as never);
+      return;
+    }
+
+    if (
+      pathname === "/qa" ||
+      pathname.startsWith("/qa") ||
+      pathname.startsWith("/__qa-open") ||
+      pathname.startsWith("/__demo-role") ||
+      pathname.startsWith("/__qa-reset")
+    ) {
       return;
     }
 

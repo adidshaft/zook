@@ -1,6 +1,8 @@
 import type { Permission, Role } from "@zook/core";
 
-export const routePermissions: Record<string, Permission | null> = {
+type RoutePermissionRule = Permission | Permission[] | null;
+
+export const routePermissions: Record<string, RoutePermissionRule> = {
   "/owner": "ORG_VIEW_REPORTS",
   "/owner/member": "MEMBERS_VIEW",
   "/owner/members": "MEMBERS_VIEW",
@@ -13,8 +15,8 @@ export const routePermissions: Record<string, Permission | null> = {
   "/reception/payments": "PAYMENTS_RECORD_OFFLINE",
   "/reception/orders": "SHOP_FULFILL_ORDER",
   "/trainer": "PT_RECORD",
-  "/trainer/client": "MEMBERS_VIEW",
-  "/trainer/clients": "MEMBERS_VIEW",
+  "/trainer/client": ["MEMBERS_VIEW", "PT_RECORD"],
+  "/trainer/clients": ["MEMBERS_VIEW", "PT_RECORD"],
   "/trainer/plans": "PT_RECORD",
   "/trainer/payouts": "PT_RECORD",
   "/platform": null,
@@ -37,7 +39,7 @@ function longestMatchingRoute<T>(pathname: string, routes: Record<string, T>) {
     .sort((left, right) => right.length - left.length)[0];
 }
 
-export function permissionForPath(pathname: string): Permission | null | undefined {
+export function permissionForPath(pathname: string): RoutePermissionRule | undefined {
   const route = longestMatchingRoute(pathname, routePermissions);
   return route ? routePermissions[route] : undefined;
 }
@@ -59,6 +61,9 @@ export function checkRouteAccess(
   const required = permissionForPath(pathname);
   if (required === undefined) return true;
   if (required === null) return isPlatformAdmin;
+  if (Array.isArray(required)) {
+    return required.some((permission) => perms.has(permission));
+  }
   return perms.has(required);
 }
 

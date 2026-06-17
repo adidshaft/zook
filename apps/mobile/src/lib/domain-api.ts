@@ -1,5 +1,6 @@
-import type { AuthSessionSummary, Role } from "@zook/core";
+import { isSeededDemoIdentifier, type AuthSessionSummary, type Role } from "@zook/core";
 import { mobileApiFetch } from "./api";
+import { getMobileAppEnv } from "./runtime-mode";
 
 type RequestOptions = {
   token?: string;
@@ -57,6 +58,13 @@ export type ProfilePhotoSaveResponse = {
 export const apiClient = {
   request: mobileApiFetch,
 };
+
+function localSimulatorAuthHeaders(identifier: string) {
+  if (getMobileAppEnv() !== "local" || !isSeededDemoIdentifier(identifier)) {
+    return undefined;
+  }
+  return { "x-zook-qa-auth": "simulator" };
+}
 
 export const filesApi = {
   uploadProfilePhoto(
@@ -134,12 +142,18 @@ export const authClient = {
   requestOtp(identifier: string) {
     return mobileApiFetch<OtpResult>("/auth/request-otp", {
       method: "POST",
+      ...(localSimulatorAuthHeaders(identifier)
+        ? { headers: localSimulatorAuthHeaders(identifier) }
+        : {}),
       body: { identifier },
     });
   },
   verifyOtp(identifier: string, code: string) {
     return mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
       method: "POST",
+      ...(localSimulatorAuthHeaders(identifier)
+        ? { headers: localSimulatorAuthHeaders(identifier) }
+        : {}),
       body: { identifier, code },
     });
   },

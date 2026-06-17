@@ -12,6 +12,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useTrainerPayouts } from "@/lib/domains";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 function rupees(paise: number) {
@@ -20,6 +21,7 @@ function rupees(paise: number) {
 
 export default function TrainerPayoutsScreen() {
   const { palette } = useTheme();
+  const bottomPadding = useBottomScrollPadding();
   const payoutsQuery = useTrainerPayouts();
   const isLoading = payoutsQuery.isLoading;
   const payouts = payoutsQuery.data?.payouts ?? [];
@@ -31,7 +33,7 @@ export default function TrainerPayoutsScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           refreshControl={
             <RefreshControl
               refreshing={payoutsQuery.isRefetching}
@@ -76,7 +78,7 @@ export default function TrainerPayoutsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingTop: layout.screenContentTopPadding, width: "100%" },
   hero: { gap: 8 },
   label: { ...typography.caption },
   total: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40 },

@@ -24,7 +24,12 @@ export default function TrainerClientSessionsScreen() {
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
+  const client =
+    clientsQuery.data?.clients.find(
+      (candidate) => candidate.memberUserId === id || candidate.id === id,
+    ) ??
+    clientsQuery.data?.clients[0] ??
+    null;
   const clientName = client?.user?.name ?? "Client";
   const activePlans = client?.summary?.activePlans ?? 0;
   const averageCompletion = averageCompletionFor(client);
@@ -77,7 +82,7 @@ export default function TrainerClientSessionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   backIcon: { fontSize: 26, lineHeight: 28 },
   stack: { gap: 10 },

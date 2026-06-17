@@ -2,10 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { Alert, RefreshControl, StyleSheet } from "react-native";
 import { useState } from "react";
+import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
@@ -136,7 +137,15 @@ export default function OwnerApprovalsScreen() {
             ),
           }}
         >
-          <ScreenHeader title="Approvals" contextSlot={<RoleSwitcherContextPill />} />
+          <ScreenHeader
+            title="Approvals"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
           <MetricGrid
             items={[
               {
@@ -200,5 +209,16 @@ export default function OwnerApprovalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  headerContext: {
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: 14,
+    paddingBottom: 96,
+  },
 });

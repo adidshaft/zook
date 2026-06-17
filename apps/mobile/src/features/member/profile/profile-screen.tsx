@@ -725,6 +725,17 @@ export default function ProfileScreen() {
               >
                 Settings
               </ZookButton>
+              {__DEV__ ? (
+                <ZookButton
+                  testID="profile-qa-shortcuts"
+                  variant="secondary"
+                  icon="flask-outline"
+                  onPress={() => router.push("/qa" as never)}
+                  style={styles.quickButton}
+                >
+                  QA shortcuts
+                </ZookButton>
+              ) : null}
               <ZookButton
                 testID="profile-sign-out"
                 variant="destructive"

@@ -31,13 +31,13 @@ const baseConfig = {
   icon: "./assets/icons/AppIcon-1024.png",
   newArchEnabled: true,
   splash: {
-    image: "./assets/icons/ic_launcher_foreground.png",
+    image: "./assets/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#EFF2E8",
+    backgroundColor: "#070908",
     dark: {
-      image: "./assets/icons/ic_launcher_foreground.png",
+      image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#0B100C",
+      backgroundColor: "#070908",
     },
   },
   ios: {

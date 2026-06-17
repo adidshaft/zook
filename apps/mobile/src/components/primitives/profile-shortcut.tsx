@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { useAuth } from "@/lib/auth";
 import { typography } from "@/lib/theme";
-import { pressWithHaptics } from "./foundation";
+import { pressWithHaptics } from "./buttons";
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
 

@@ -23,8 +23,6 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { MemberHeaderActions } from "@/components/member-header-actions";
-import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
 import { renderHomeCard } from "@/features/member/home/render";
@@ -211,8 +209,6 @@ export default function HomeScreen() {
         >
           <ScreenHeader
             title={`Hello, ${firstName}`}
-            contextSlot={<RoleSwitcherContextPill />}
-            trailing={<MemberHeaderActions />}
             meta={
               streakDays > 0 ? (
                 <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>
@@ -300,7 +296,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 20,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   statStripPressed: {

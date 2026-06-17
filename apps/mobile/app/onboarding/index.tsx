@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
 import { useReduceMotion } from "@/lib/motion";
-import { useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function OnboardingSplash() {
   const navigateNext = useCallback(() => {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
-    router.push("/onboarding/language" as never);
+    router.replace("/onboarding/language" as never);
   }, [router]);
 
   useEffect(() => {
@@ -159,7 +159,7 @@ export default function OnboardingSplash() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   center: {
     flex: 1,

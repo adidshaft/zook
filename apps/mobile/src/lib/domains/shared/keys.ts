@@ -33,25 +33,34 @@ export const queryKeys = {
   },
   owner: {
     all: () => ["org"] as const,
-    dashboard: (orgId?: string | null) => ["org", orgId, "dashboard"] as const,
-    members: (orgId?: string | null, filter?: string | null) =>
-      filter ? (["org", orgId, "members", filter] as const) : (["org", orgId, "members"] as const),
-    approvals: (orgId?: string | null) => ["org", orgId, "join-requests"] as const,
-    setupStatus: (orgId?: string | null) => ["org", orgId, "setup-status"] as const,
+    dashboard: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "dashboard", branchId] as const,
+    members: (orgId?: string | null, filter?: string | null, branchId?: string | null) =>
+      filter
+        ? (["org", orgId, "members", filter, branchId] as const)
+        : (["org", orgId, "members", branchId] as const),
+    approvals: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "join-requests", branchId] as const,
+    setupStatus: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "setup-status", branchId] as const,
     revenue: (orgId?: string | null) => ["owner", "revenue", orgId] as const,
     stock: (orgId?: string | null) => ["owner", "stock", orgId] as const,
-    billing: (orgId?: string | null) => ["org", orgId, "billing", "subscription"] as const,
+    billing: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "billing", "subscription", branchId] as const,
     member: (memberId: string) => ["owner", "member", memberId] as const,
   },
   reception: {
-    queue: (orgId?: string | null) => ["org", orgId, "attendance", "live"] as const,
+    queue: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "attendance", "live", branchId] as const,
     members: (orgId?: string | null) => ["reception", "members", orgId] as const,
     payments: (orgId?: string | null) => ["reception", "payments", orgId] as const,
     orders: (orgId?: string | null) => ["reception", "orders", orgId] as const,
   },
   attendance: {
-    today: (orgId?: string | null) => ["org", orgId, "attendance", "today"] as const,
-    pending: (orgId?: string | null) => ["org", orgId, "attendance", "pending"] as const,
+    today: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "attendance", "today", branchId] as const,
+    pending: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "attendance", "pending", branchId] as const,
     record: (id: string) => ["attendance", "record", id] as const,
   },
   plans: {

@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
-import { RefreshControl, StyleSheet, Text } from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   EmptyState,
+  BranchSelectorChip,
   Card,
   IconBubble,
   ListRow,
@@ -52,7 +53,15 @@ export default function OwnerRevenueScreen() {
             ),
           }}
         >
-          <ScreenHeader title="Revenue" contextSlot={<RoleSwitcherContextPill />} />
+          <ScreenHeader
+            title="Revenue"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
               <LoadingSkeleton height={18} width="38%" />
@@ -127,7 +136,15 @@ export default function OwnerRevenueScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  headerContext: { alignItems: "flex-start", gap: 6 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: 14,
+    paddingBottom: 96,
+  },
   loadingCard: { gap: 12 },
   stack: { gap: 12 },
   rowAmount: typography.bodyStrong,

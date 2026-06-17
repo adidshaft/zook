@@ -40,6 +40,7 @@ const SESSION_PROACTIVE_WINDOW_MS = 60 * 1000;
 const ORG_ROLE_PRIORITY: Role[] = ["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"];
 type LogoutCleanup = () => Promise<void> | void;
 let authQueryClient: QueryClient | undefined;
+let qaResetInFlight = false;
 
 export function setAuthQueryClient(queryClient: QueryClient) {
   authQueryClient = queryClient;
@@ -48,6 +49,10 @@ export function setAuthQueryClient(queryClient: QueryClient) {
       authQueryClient = undefined;
     }
   };
+}
+
+export function isQaResetInFlight() {
+  return qaResetInFlight;
 }
 
 function sanitizeOtpCode(value: string) {
@@ -90,6 +95,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refresh: () => Promise<string | void>;
   clearExpiredSession: () => Promise<void>;
+  resetQaSession: () => Promise<void>;
   defaultRolePreference?: Role;
   switchOrg: (orgId: string) => Promise<void>;
   switchRole: (role: Role) => Promise<void>;
@@ -187,6 +193,10 @@ function defaultRouteForSession(session?: AuthSessionSummary, role?: Role) {
 
 function fallbackSessionExpiresAt() {
   return new Date(Date.now() + SESSION_FALLBACK_MS).toISOString();
+}
+
+function branchStorageKey(orgId?: string) {
+  return `zook_active_branch_${orgId ?? "global"}`;
 }
 
 function normalizeSessionExpiresAt(value?: string | null) {
@@ -342,6 +352,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearExpiredSession = useCallback(async () => {
     await clearSession();
     setError("Your session expired. Sign in again to continue.");
+  }, [clearSession]);
+
+  const resetQaSession = useCallback(async () => {
+    const tokenValue = tokenRef.current;
+    const organizations = sessionRef.current?.organizations ?? [];
+    qaResetInFlight = true;
+    try {
+      if (tokenValue) {
+        await authClient.logout(tokenValue);
+      }
+    } catch {
+      // Keep simulator QA flows deterministic even if remote logout fails.
+    } finally {
+      await Promise.all([
+        deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY),
+        deleteStoredValue(branchStorageKey()),
+        ...organizations.map((organization) => deleteStoredValue(branchStorageKey(organization.orgId))),
+      ]);
+      await clearSession();
+      setError(undefined);
+    }
   }, [clearSession]);
 
   const refreshAccessToken = useCallback(
@@ -588,6 +619,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ]);
       refreshTokenRef.current = refreshTokenValue;
       await hydrate(result.token);
+      qaResetInFlight = false;
       await maybePromptForBiometric();
     },
     [hydrate, maybePromptForBiometric],
@@ -699,7 +731,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrgIdState(orgId);
       setActiveRoleState(correctedRole);
       await hydrate(tokenValue, orgId, correctedRole);
-      await invalidateAllQueries();
+      void invalidateAllQueries();
     },
     [hydrate],
   );
@@ -730,11 +762,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeRoleRef.current = role;
         setActiveRoleState(role);
         await hydrate(tokenValue, currentOrgId, role);
-        if (isOfflineDemoMode()) {
-          void invalidateRoleScopedQueries();
-        } else {
-          await invalidateRoleScopedQueries();
-        }
+        void invalidateRoleScopedQueries();
       } catch (error) {
         setRoleSwitchMessage(null);
         throw error;
@@ -809,6 +837,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refresh,
       clearExpiredSession,
+      resetQaSession,
       switchOrg,
       switchRole,
       setDefaultRole,
@@ -832,6 +861,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       offlineMode,
       proactiveLogin,
       refresh,
+      resetQaSession,
       registerLogoutCleanup,
       requestOtp,
       session,

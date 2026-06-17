@@ -23,6 +23,7 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, useTheme } from "@/lib/theme";
 
@@ -30,6 +31,7 @@ export default function TrainerHomeScreen() {
   const { palette } = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const bottomPadding = useBottomScrollPadding();
   const { activeOrgId, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
@@ -65,7 +67,7 @@ export default function TrainerHomeScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           onScroll={(event) => {
             scrollY.value = event.nativeEvent.contentOffset.y;
           }}
@@ -228,8 +230,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 16,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding + 32,
-    paddingTop: 8,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   headerActions: { alignItems: "center", flexDirection: "row", gap: 8 },

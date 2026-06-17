@@ -36,7 +36,12 @@ export default function TrainerClientOverviewScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
+  const client =
+    clientsQuery.data?.clients.find(
+      (candidate) => candidate.memberUserId === id || candidate.id === id,
+    ) ??
+    clientsQuery.data?.clients[0] ??
+    null;
   const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
   const fitnessGoal = fitnessGoalFor(client);
   const averageCompletion = averageCompletionFor(client);
@@ -190,7 +195,7 @@ export default function TrainerClientOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   backIcon: { fontSize: 26, lineHeight: 28 },

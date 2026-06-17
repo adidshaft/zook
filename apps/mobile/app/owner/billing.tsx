@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
+  BranchSelectorChip,
   EmptyState,
   Card,
   ListRow,
@@ -146,7 +147,12 @@ export default function OwnerBillingScreen() {
           <ScreenHeader
             title="Billing"
             subtitle="Trial, subscription, and payment mandate status."
-            contextSlot={<RoleSwitcherContextPill />}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
           />
 
           {billingQuery.isError ? (
@@ -336,11 +342,15 @@ export default function OwnerBillingScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "flex-start",
+    gap: 6,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 14,
     paddingBottom: 96,
   },

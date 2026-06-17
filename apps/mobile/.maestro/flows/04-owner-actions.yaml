@@ -11,22 +11,23 @@ tags:
     env:
       email: owner@zook.local
       home_id: owner-home-screen
+      home_path: zook:///owner
 - takeScreenshot: /tmp/zook-maestro/owner/home.png
 
-- openLink: zook:///owner?view=members
+- openLink: zook:///owner/members
 - extendedWaitUntil:
     visible:
-      id: "owner-home-screen"
+      id: "owner-members-screen"
     timeout: 15000
 - tapOn:
     id: "member-row-first"
     optional: true
 - takeScreenshot: /tmp/zook-maestro/owner/members.png
 
-- openLink: zook:///owner?view=approvals
+- openLink: zook:///owner/approvals
 - extendedWaitUntil:
     visible:
-      id: "pending-approvals-list"
+      id: "owner-approvals-screen"
     timeout: 15000
 - tapOn:
     id: "approve-button-first"
@@ -35,6 +36,20 @@ tags:
     id: "approve-attendance-first"
     optional: true
 - takeScreenshot: /tmp/zook-maestro/owner/approvals.png
+
+- openLink: zook:///owner/billing
+- extendedWaitUntil:
+    visible:
+      id: "owner-billing-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/owner/billing.png
+
+- openLink: zook:///owner/more
+- extendedWaitUntil:
+    visible:
+      id: "owner-more-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/owner/more.png
 
 - openLink: zook:///owner
 - extendedWaitUntil:

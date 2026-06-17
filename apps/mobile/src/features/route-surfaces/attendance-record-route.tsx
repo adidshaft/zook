@@ -20,6 +20,8 @@ import {
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
+import { useMemberHome } from "@/lib/domains";
+import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -36,6 +38,41 @@ type AttendanceRecord = {
   reason?: string | null;
   source?: string | null;
 };
+
+function toAttendanceFallbackRecord(
+  home: MemberHomeData,
+  attendanceRecordId?: string,
+): AttendanceRecord | null {
+  if (!attendanceRecordId) {
+    return null;
+  }
+  if (home.activeCheckIn?.id === attendanceRecordId) {
+    return {
+      id: home.activeCheckIn.id,
+      checkedInAt: home.activeCheckIn.checkedInAt,
+      checkedOutAt: home.activeCheckIn.checkedOutAt,
+      checkoutReason: home.activeCheckIn.checkoutReason,
+      durationSeconds: home.activeCheckIn.durationSeconds,
+      status: home.activeCheckIn.status,
+      branchName: home.activeCheckIn.branchName ?? null,
+      source: home.activeCheckIn.source ?? null,
+      reason: home.activeMembership?.status === "ACTIVE" ? "Membership active." : undefined,
+    };
+  }
+  const recent = home.recentAttendance.find((record) => record.id === attendanceRecordId);
+  if (!recent) {
+    return null;
+  }
+  return {
+    id: recent.id,
+    checkedInAt: recent.checkedInAt,
+    checkedOutAt: recent.checkedOutAt,
+    checkoutReason: recent.checkoutReason,
+    durationSeconds: recent.durationSeconds,
+    status: recent.status,
+    source: recent.source ?? null,
+  };
+}
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -76,10 +113,11 @@ export default function AttendanceResultScreen() {
   const routeParams = useLocalSearchParams<{
     attendanceRecordId?: string | string[];
   }>();
-  const { status, token } = useAuth();
+  const { activeOrgId, status, token } = useAuth();
   const { palette } = useTheme();
   const activeRole = useRoleContext()?.role;
   const queryClient = useQueryClient();
+  const memberHomeQuery = useMemberHome();
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const attendanceQuery = useQuery({
     queryKey: ["me", "attendance", attendanceRecordId],
@@ -93,6 +131,13 @@ export default function AttendanceResultScreen() {
   });
   const { refetch: refetchAttendance } = attendanceQuery;
   const recordFromApi = attendanceQuery.data?.attendance ?? null;
+  const memberHomeSnapshot =
+    memberHomeQuery.data ??
+    queryClient.getQueryData<MemberHomeData>(["me", "home", activeOrgId ?? null]) ??
+    null;
+  const fallbackAttendance = memberHomeSnapshot
+    ? toAttendanceFallbackRecord(memberHomeSnapshot, attendanceRecordId)
+    : null;
   const warning =
     queryClient.getQueryData<string>(["me", "attendanceWarning", attendanceRecordId]) ?? "";
   const dismissAttendance = () => {
@@ -159,7 +204,7 @@ export default function AttendanceResultScreen() {
     );
   }
 
-  if (!attendanceRecordId || !recordFromApi) {
+  if (!attendanceRecordId || (!recordFromApi && !fallbackAttendance)) {
     return (
       <>
         <ZookScreen>
@@ -186,7 +231,7 @@ export default function AttendanceResultScreen() {
     );
   }
 
-  const record = recordFromApi;
+  const record: AttendanceRecord = recordFromApi ?? fallbackAttendance!;
 
   const pending = record.status === "PENDING_APPROVAL";
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";

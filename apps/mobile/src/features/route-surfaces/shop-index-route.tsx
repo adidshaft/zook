@@ -156,6 +156,7 @@ export default function Shop() {
     checkoutUrl?: string | string[];
     totalPaise?: string | string[];
     focus?: string | string[];
+    qaBrowse?: string | string[];
   }>();
   const { activeOrgId, session } = useAuth();
   const { selectedBranchId } = useBranchSelection();
@@ -241,11 +242,36 @@ export default function Shop() {
   const urlProvider = firstParam(params.provider);
   const urlCheckoutUrl = firstParam(params.checkoutUrl);
   const urlTotalPaise = Number(firstParam(params.totalPaise) ?? 0);
+  const qaBrowse = firstParam(params.qaBrowse) === "1";
   const checkoutContextStorageKey = urlOrderId
     ? `${checkoutContextStoragePrefix}_${urlOrderId}`
     : order?.id
       ? `${checkoutContextStoragePrefix}_${order.id}`
       : null;
+
+  useEffect(() => {
+    if (!qaBrowse) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      await deleteStoredValue(cartStorageKey);
+      if (order?.id) {
+        await deleteStoredValue(`${checkoutContextStoragePrefix}_${order.id}`);
+      }
+      if (cancelled) {
+        return;
+      }
+      setCart({});
+      setOrder(null);
+      setCheckoutSession(null);
+      setWaitingCheckoutSessionId(null);
+      router.replace("/shop" as never);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cartStorageKey, checkoutContextStoragePrefix, order?.id, qaBrowse, router]);
 
   useEffect(() => {
     if (!urlOrderId || checkoutState !== "pickup") {

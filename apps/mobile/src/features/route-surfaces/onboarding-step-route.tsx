@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { setStoredValue } from "@/lib/storage";
-import { typography, useTheme } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 8,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   brand: {
     fontFamily: "Inter_800ExtraBold",
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     gap: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   dots: {
     flexDirection: "row",

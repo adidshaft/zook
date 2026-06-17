@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Constants from "expo-constants";
-import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ApiError } from "@zook/core/api";
 import {
   ActivityIndicator,
@@ -44,7 +43,6 @@ let googleSignInModule:
   | typeof import("@react-native-google-signin/google-signin")
   | null
   | undefined;
-
 async function getGoogleSigninModule() {
   if (googleSignInModule !== undefined) {
     return googleSignInModule;
@@ -569,12 +567,14 @@ export default function Login() {
                   <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
                 </View>
                 <View style={styles.ssoRow}>
-                  <AppleSsoButton
-                    testID="login-apple"
-                    busy={busyAction === "apple"}
-                    disabled={busy}
-                    onPress={() => void handleAppleSignIn()}
-                  />
+                  {Platform.OS === "ios" ? (
+                    <AppleSsoButton
+                      testID="login-apple"
+                      busy={busyAction === "apple"}
+                      disabled={busy}
+                      onPress={() => void handleAppleSignIn()}
+                    />
+                  ) : null}
                   <GoogleSsoButton
                     testID="login-google"
                     busy={busyAction === "google"}
@@ -603,6 +603,15 @@ export default function Login() {
                   </Text>
                   .
                 </Text>
+                {__DEV__ ? (
+                  <ZookButton
+                    testID="login-qa-shortcuts"
+                    variant="ghost"
+                    onPress={() => router.push("/qa" as never)}
+                  >
+                    QA shortcuts
+                  </ZookButton>
+                ) : null}
               </>
             )}
           </Card>
@@ -644,32 +653,7 @@ function AppleSsoButton({
 }) {
   const { mode, palette } = useTheme();
   if (Platform.OS !== "ios") {
-    return (
-      <Pressable
-        testID={testID}
-        accessibilityRole="button"
-        accessibilityLabel="Apple"
-        disabled={disabled}
-        onPress={disabled ? undefined : onPress}
-        style={({ pressed }) => [
-          styles.fallbackSsoButton,
-          {
-            backgroundColor: palette.surface.raised,
-            borderColor: palette.border.default,
-          },
-          pressed && !disabled
-            ? { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }
-            : null,
-          disabled ? styles.ssoButtonDisabled : null,
-        ]}
-      >
-        {busy ? (
-          <ActivityIndicator size="small" color={palette.text.primary} />
-        ) : (
-          <Text style={[styles.fallbackSsoLabel, { color: palette.text.primary }]}>Apple</Text>
-        )}
-      </Pressable>
-    );
+    return null;
   }
   return (
     <View style={[styles.nativeSsoShell, disabled ? styles.ssoButtonDisabled : null]}>
@@ -708,24 +692,37 @@ function GoogleSsoButton({
   onPress: () => void;
   testID?: string;
 }) {
+  const { palette } = useTheme();
   return (
-    <View style={[styles.nativeSsoShell, disabled ? styles.ssoButtonDisabled : null]}>
-      <GoogleSigninButton
-        testID={testID}
-        accessibilityLabel="Google"
-        onPress={() => {
-          if (!disabled) onPress();
-        }}
-        size={GoogleSigninButton.Size.Wide}
-        color={GoogleSigninButton.Color.Light}
-        style={styles.nativeSsoButton}
-      />
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel="Google"
+      accessibilityState={{ busy, disabled }}
+      disabled={disabled || busy}
+      onPress={() => {
+        if (!disabled) onPress();
+      }}
+      style={[
+        styles.fallbackSsoButton,
+        {
+          backgroundColor: palette.surface.default,
+          borderColor: palette.border.default,
+        },
+        disabled ? styles.ssoButtonDisabled : null,
+      ]}
+    >
       {busy ? (
-        <View pointerEvents="none" style={styles.ssoBusyOverlay}>
-          <ActivityIndicator size="small" color="#1F1F1F" />
+        <ActivityIndicator size="small" color={palette.text.primary} />
+      ) : (
+        <View style={styles.busyRow}>
+          <Text style={styles.googleFallbackMark}>G</Text>
+          <Text style={[styles.fallbackSsoLabel, { color: palette.text.primary }]}>
+            Sign in with Google
+          </Text>
         </View>
-      ) : null}
-    </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -847,6 +844,12 @@ const styles = StyleSheet.create({
   },
   fallbackSsoLabel: {
     ...typography.button,
+  },
+  googleFallbackMark: {
+    color: "#4285F4",
+    fontFamily: "Inter_700Bold",
+    fontSize: 20,
+    lineHeight: 24,
   },
   ssoButtonDisabled: {
     opacity: 0.6,

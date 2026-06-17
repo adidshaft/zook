@@ -16,12 +16,14 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, session } = useAuth();
   const { palette } = useTheme();
+  const bottomPadding = useBottomScrollPadding();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
   const plannedClients = (clientsQuery.data?.clients ?? []).filter(
@@ -44,7 +46,7 @@ export default function TrainerPlansScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -100,8 +102,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 10,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding + 32,
-    paddingTop: 8,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   summaryCard: { alignItems: "center", flexDirection: "row", gap: 12 },
