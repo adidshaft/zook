@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   stateTitle: {
-    ...typography.title,
+    ...typography.headerTitle,
     textAlign: "center",
   },
   stateBody: {

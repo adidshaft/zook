@@ -170,6 +170,6 @@ const styles = StyleSheet.create({
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },
-  todayTitle: typography.title,
+  todayTitle: typography.headerTitle,
   todayMeta: typography.small,
 });

@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     width: 56,
   },
   title: {
-    ...typography.h2,
+    ...typography.headerTitle,
     textAlign: "center",
   },
   body: {

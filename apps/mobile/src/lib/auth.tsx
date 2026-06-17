@@ -925,7 +925,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   roleSwitchText: {
-    ...typography.h2,
+    ...typography.headerTitle,
     textAlign: "center",
   },
 });

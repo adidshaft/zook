@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   name: {
-    ...typography.h1,
+    ...typography.screenTitle,
     textAlign: "left",
   },
   email: {
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   cardTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   cardSubtitle: {
     ...typography.body,

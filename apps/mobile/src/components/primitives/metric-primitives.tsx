@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   statusRingValue: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   statusRingLabel: {
     ...typography.caption,

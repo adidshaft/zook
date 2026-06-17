@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   stateText: typography.cardTitle,
   profileContent: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   largeAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
-  largeAvatarText: typography.h2,
+  largeAvatarText: typography.headerTitle,
   profileCopy: { flex: 1, gap: 5, alignItems: "flex-start" },
   memberName: typography.headerTitle,
   memberEmail: typography.small,

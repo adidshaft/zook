@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   notFoundTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
     textAlign: "center",
   },
   iconButton: {
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reasonTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   reasonBody: {
     ...typography.small,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   nextTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   nextBody: {
     ...typography.small,

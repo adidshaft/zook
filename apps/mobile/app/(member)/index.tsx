@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   membershipTitle: {
-    ...typography.titleSmall,
+    ...typography.cardTitle,
   },
   membershipMeta: {
     ...typography.small,

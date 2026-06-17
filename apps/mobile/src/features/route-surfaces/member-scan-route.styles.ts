@@ -283,7 +283,7 @@ export const scanStyles = StyleSheet.create({
   checkInMomentGym: {
     maxWidth: "86%",
     textAlign: "center",
-    ...typography.title,
+    ...typography.headerTitle,
   },
   checkInMomentTitle: {
     textAlign: "center",
