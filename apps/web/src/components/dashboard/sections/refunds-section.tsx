@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "../../glass-card";
@@ -190,18 +191,21 @@ export function RefundsSection({
             >
               Cancel
             </ZookButton>
-            <ZookButton
-              type="submit"
-              size="sm"
+            <ConfirmActionButton
+              className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              title={`Refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "this payment"}?`}
+              description={`This will refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "the entered amount"} to ${refundDraft.payment.user?.name ?? formatEnumLabel(refundDraft.payment.purpose)}. Razorpay refunds are irreversible.`}
+              confirmLabel="Submit refund"
+              confirmTone="danger"
+              onConfirm={() => refundPayment()}
               disabled={
                 !refundDraft.reason.trim() ||
                 !refundDraft.amountRupees.trim() ||
                 busyPaymentId === refundDraft.payment.id
               }
-              state={busyPaymentId === refundDraft.payment.id ? "loading" : "idle"}
             >
               {busyPaymentId === refundDraft.payment.id ? "Submitting..." : "Submit refund"}
-            </ZookButton>
+            </ConfirmActionButton>
           </div>
         </form>
       ) : null}
@@ -230,7 +234,7 @@ export function RefundsSection({
                   setRefundDraft({
                     payment,
                     reason: "Owner requested refund",
-                    amountRupees: (remainingRefundAmount(payment) / 100).toFixed(2),
+                    amountRupees: "",
                   });
                 }}
                 disabled={busyPaymentId === payment.id}

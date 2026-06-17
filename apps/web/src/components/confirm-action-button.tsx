@@ -11,6 +11,7 @@ type ConfirmActionButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "o
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  confirmTone?: "lime" | "danger";
   onConfirm: () => void | Promise<void>;
   children: ReactNode;
 };
@@ -20,6 +21,7 @@ export function ConfirmActionButton({
   description,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  confirmTone,
   onConfirm,
   children,
   className,
@@ -45,6 +47,12 @@ export function ConfirmActionButton({
       setOpen(false);
     }
   }, [confirming]);
+  const resolvedConfirmTone =
+    confirmTone ??
+    (buttonProps["aria-label"]?.toString().toLowerCase().includes("delete") ||
+    confirmLabel.toLowerCase().includes("delete")
+      ? "danger"
+      : "lime");
 
   async function runConfirmation() {
     try {
@@ -113,12 +121,7 @@ export function ConfirmActionButton({
                   <ZookButton
                     type="button"
                     data-testid="confirm"
-                    tone={
-                      buttonProps["aria-label"]?.toString().toLowerCase().includes("delete") ||
-                      confirmLabel.toLowerCase().includes("delete")
-                        ? "danger"
-                        : "lime"
-                    }
+                    tone={resolvedConfirmTone}
                     size="sm"
                     onClick={() => void runConfirmation()}
                     state={confirming ? "loading" : "idle"}

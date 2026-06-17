@@ -50,6 +50,10 @@ export function createReferralActions({
       state.setQueueBusyId(requestId);
       await webApiFetch(`/api/orgs/${orgId}/join-requests/${requestId}/${action}`, {
         method: "POST",
+        feedback: {
+          success: action === "approve" ? "Join request approved." : "Join request rejected.",
+          error: action === "approve" ? "Unable to approve the join request." : "Unable to reject the join request.",
+        },
       });
       resources.joinRequestsState.reload();
       resources.membersState.reload();

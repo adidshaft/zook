@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { GlassCard } from "@/components/glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import type { DashboardRoutePanelBaseProps } from "../route-panels";
@@ -32,7 +33,7 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
   const [selectedTrainerId, setSelectedTrainerId] = useState("");
   const [commission, setCommission] = useState("20");
   const [baseMonthly, setBaseMonthly] = useState("0");
-  const [perSession, setPerSession] = useState("50000");
+  const [perSession, setPerSession] = useState("");
   const [status, setStatus] = useState("");
   const [configBusy, setConfigBusy] = useState(false);
   const [busyPayoutId, setBusyPayoutId] = useState<string | null>(null);
@@ -89,12 +90,7 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
       setConfigBusy(false);
     }
   }
-
   async function markPaid(payout: Payout) {
-    const trainerName = payout.trainer?.name ?? "this trainer";
-    if (!window.confirm(`Mark ${trainerName}'s payout of ${formatInr(payout.totalPaise)} as paid?`)) {
-      return;
-    }
     try {
       setBusyPayoutId(payout.id);
       setStatus("Marking payout paid...");
@@ -140,6 +136,9 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
           </label>
           <button className="zook-focus rounded-lg bg-[var(--accent-fill)] px-4 py-2 font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={configBusy} onClick={() => void saveConfig()}>{configBusy ? "Saving..." : "Save config"}</button>
         </div>
+        <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+          Leave per-session blank if the trainer does not earn a fixed fee per session.
+        </p>
         {status ? <p className="mt-3 text-sm text-[var(--text-secondary)]">{status}</p> : null}
       </GlassCard>
       <div className="grid gap-3 md:grid-cols-2">
@@ -161,7 +160,16 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
               ))}
             </div>
             {payout.status !== "paid" ? (
-              <button className="zook-focus mt-4 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60" disabled={busyPayoutId === payout.id} onClick={() => void markPaid(payout)}>{busyPayoutId === payout.id ? "Marking..." : "Mark paid"}</button>
+              <ConfirmActionButton
+                className="zook-focus mt-4 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={busyPayoutId === payout.id}
+                title={`Mark ${payout.trainer?.name ?? "trainer"} paid?`}
+                description={`This records ${formatInr(payout.totalPaise)} as paid and cannot be undone from the dashboard.`}
+                confirmLabel="Mark paid"
+                onConfirm={() => markPaid(payout)}
+              >
+                {busyPayoutId === payout.id ? "Marking..." : "Mark paid"}
+              </ConfirmActionButton>
             ) : null}
           </GlassCard>
         ))}
