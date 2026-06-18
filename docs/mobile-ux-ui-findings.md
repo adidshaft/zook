@@ -799,3 +799,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web dashboard header-label cue (`R143`) is closed: shop
   product creation and member bulk-import header labels now use neutral badge styling instead
   of informational blue, matching their role as form-mode and file-format metadata.
+- **[ui, fixed]** Overstated web trainer diet surface cue (`R144`) is closed: the trainer
+  diet-plan panel fallback "Web dashboard" badge now uses neutral styling, keeping lime
+  reserved for actual success notices.
