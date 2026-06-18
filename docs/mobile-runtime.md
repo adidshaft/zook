@@ -59,9 +59,9 @@ APP_ENV=production API_MODE=backend pnpm release:preflight
 APP_ENV=production API_MODE=backend EXPO_PUBLIC_API_MODE=backend pnpm --filter @zook/mobile exec expo config --type public
 ```
 
-The public config must resolve a non-local backend URL and `offlineDemo=false`. If backend URL or runtime config is missing, the app should show a fatal configuration state instead of silently loading demo data.
+The public config must resolve a non-local backend URL and `offlineDemo=false`. If backend URL or runtime config is missing, the app should show a fatal configuration state instead of silently loading test data.
 
-AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. For pilot launch, `AI_FEATURES_ENABLED=false` keeps the assistant in a coming-soon state and trainers use manual plan creation, review, assignment, and sending.
+AI provider settings are server-only. Do not expose `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, or `OPENAI_TIMEOUT_MS` through Expo public env vars. For pilot launch, `AI_FEATURES_ENABLED=false` keeps the assistant neutrally gated and trainers use manual plan creation, review, assignment, and sending.
 
 Trainer plan publishing is intentionally human-reviewed:
 

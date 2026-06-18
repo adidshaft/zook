@@ -125,7 +125,7 @@ set -a; source .env; set +a; pnpm --filter @zook/db exec prisma validate --schem
 6. Run `pnpm db:deploy` against the target database after a fresh backup/snapshot exists.
 7. Deploy the web/API container or hosting build.
 8. Check `/api/health`, `/api/ready`, and `/api/platform/provider-status` as a platform admin.
-9. Exercise one local/staging provider path at a time: Razorpay test checkout/webhook, Expo physical-device push, AI coming-soon/manual trainer plan flow, and object-storage upload/download.
+9. Exercise one local/staging provider path at a time: Razorpay test checkout/webhook, Expo physical-device push, AI gated/manual trainer plan flow, and object-storage upload/download.
 10. Build and install the mobile preview/production candidate only after release preflight and Expo public config checks pass.
 11. Record the exact build, commit, env, provider modes, and failed/skipped checks in `docs/PRODUCTION_READINESS_HANDOFF.md`.
 
@@ -349,7 +349,7 @@ Pilot recommendation:
 - AI disabled or misconfigured: trainer draft surfaces show unavailable/error state; no direct client provider calls occur.
 - Push disabled or permission denied: in-app inbox remains usable and delivery attempts record disabled/failure state without fake remote success.
 - Storage disabled or misconfigured: upload routes return controlled errors; public pages use honest empty states instead of local-path leaks.
-- No backend connection: mobile should show a fatal configuration/network state in backend mode, not silent offline-demo data.
+- No backend connection: mobile should show a fatal configuration/network state in backend mode, not silent offline test data.
 - Invalid session or wrong role/org: API returns safe 401/403 responses with request IDs and no stack traces.
 
 ## Observability Checklist

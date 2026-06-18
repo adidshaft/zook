@@ -287,6 +287,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   gating to assert neutral unavailable copy instead of the removed "coming soon" wording.
 - **6/R118 Hardening plan AI gate wording** — updated the production hardening plan's AI
   roadmap notes from "coming soon" language to neutral gated-state wording.
+- **6/R119 Runtime QA test-data wording** — updated runtime/deployment/QA docs so missing
+  backend checks refer to fatal config states instead of silent test data, and neutralized the
+  mobile-runtime AI gate note.
 
 ## 1. Functional / correctness
 
