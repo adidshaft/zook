@@ -85,7 +85,6 @@ import { createUniqueMemberSlug } from "../member-slug";
 import { privateUserHandle } from "../private-user-handle";
 import { writeAuditLog } from "../audit";
 import { assertRateLimit, defaultRateLimitRules } from "../rate-limit";
-import { getPlatformProviderDiagnostics } from "../domains/overview";
 import { currentRequestId } from "../request-state";
 import { getClientIp } from "../security";
 import {
@@ -9705,28 +9704,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       metadata: { status: body.status },
     });
     return ok({ org });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "ai-usage"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    return ok({
-      usage: await prisma.aIUsageLog.findMany({ take: 100, orderBy: { createdAt: "desc" } }),
-    });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "provider-status"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    return ok({ providers: getPlatformProviderDiagnostics() });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "abuse-flags"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    return ok({
-      flags: await prisma.organizationAbuseFlag.findMany({
-        take: 100,
-        orderBy: { createdAt: "desc" },
-      }),
-    });
   }
   return undefined;
 }
