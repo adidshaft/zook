@@ -121,6 +121,7 @@ import {
 import {
   ApiRouteError,
   conflictError,
+  featureUnavailableError,
   forbiddenError,
   notFoundError,
   payloadTooLargeError,
@@ -4984,10 +4985,11 @@ function currentAIProviderType(): "MOCK" | "OPENAI" {
 
 function assertAiLaunchEnabled() {
   if (process.env.AI_FEATURES_ENABLED !== "true") {
-    throw serviceUnavailableError(
-      "AI plan assistant is coming soon. Trainers can create, review, assign, and send plans manually.",
+    throw featureUnavailableError(
+      "AI features are unavailable in this environment.",
       {
-        expectedFormat: "AI_FEATURES_ENABLED=true",
+        feature: "ai",
+        flag: "AI_FEATURES_ENABLED",
       },
     );
   }

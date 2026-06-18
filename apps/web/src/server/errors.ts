@@ -63,6 +63,10 @@ export function serviceUnavailableError(message = "Service unavailable", details
   return new ApiRouteError(503, "service_unavailable", message, details);
 }
 
+export function featureUnavailableError(message = "Feature unavailable", details?: unknown) {
+  return new ApiRouteError(503, "feature_unavailable", message, details);
+}
+
 export function internalError(message = "Internal error") {
   return new ApiRouteError(500, "internal_error", message);
 }
