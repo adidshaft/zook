@@ -141,6 +141,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   imports with direct read-model/shared module imports and removed the empty forwarding files.
 - **6/R50 Web internal read-model types** — made no-caller server read-model types internal and
   removed the now-unused plan exercise type file.
+- **6/R51 Mobile skeleton alias** — replaced the remaining `LoadingSkeleton` alias callers with
+  the canonical `Skeleton` primitive and removed the wrapper export.
 
 ## 1. Functional / correctness
 

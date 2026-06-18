@@ -4,7 +4,7 @@ import {
   EmptyState,
   Card,
   ListRow,
-  LoadingSkeleton,
+  Skeleton,
   AppHeader,
   QueryErrorState,
   SectionHeader,
@@ -46,9 +46,9 @@ export default function TrainerPayoutsScreen() {
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
-              <LoadingSkeleton height={16} width="36%" />
-              <LoadingSkeleton height={34} width="48%" />
-              <LoadingSkeleton height={16} width="58%" />
+              <Skeleton height={16} width="36%" />
+              <Skeleton height={34} width="48%" />
+              <Skeleton height={16} width="58%" />
             </Card>
           ) : null}
           {!isLoading ? (

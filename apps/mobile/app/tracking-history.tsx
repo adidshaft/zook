@@ -4,7 +4,7 @@ import {
   EmptyState,
   Card,
   AppHeader,
-  LoadingSkeleton,
+  Skeleton,
   QueryErrorState,
   ZookScreen,
 } from "@/components/primitives";
@@ -56,10 +56,10 @@ export default function TrackingHistoryScreen() {
           <View style={styles.stack}>
             {workoutsQuery.isLoading || bodyProgressQuery.isLoading ? (
               <Card variant="compact" contentStyle={styles.loadingCard}>
-                <LoadingSkeleton height={18} width="44%" />
-                <LoadingSkeleton height={44} />
-                <LoadingSkeleton height={44} />
-                <LoadingSkeleton height={84} />
+                <Skeleton height={18} width="44%" />
+                <Skeleton height={44} />
+                <Skeleton height={44} />
+                <Skeleton height={84} />
               </Card>
             ) : null}
             {!workoutsQuery.isLoading && !bodyProgressQuery.isLoading ? (

@@ -119,10 +119,6 @@ export function Skeleton({
   );
 }
 
-export function LoadingSkeleton(props: Parameters<typeof Skeleton>[0]) {
-  return <Skeleton {...props} />;
-}
-
 const styles = StyleSheet.create({
   stateTitle: {
     ...typography.headerTitle,

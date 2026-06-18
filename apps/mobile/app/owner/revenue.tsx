@@ -7,7 +7,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  LoadingSkeleton,
+  Skeleton,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
@@ -64,10 +64,10 @@ export default function OwnerRevenueScreen() {
           />
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
-              <LoadingSkeleton height={18} width="38%" />
-              <LoadingSkeleton height={36} width="52%" />
-              <LoadingSkeleton height={52} />
-              <LoadingSkeleton height={52} />
+              <Skeleton height={18} width="38%" />
+              <Skeleton height={36} width="52%" />
+              <Skeleton height={52} />
+              <Skeleton height={52} />
             </Card>
           ) : null}
           {hasDashboardData ? (
