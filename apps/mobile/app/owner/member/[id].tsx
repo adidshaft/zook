@@ -11,9 +11,10 @@ import {
   Skeleton,
   ZookScreen,
 } from "@/components/primitives";
+import { toneForStatus } from "@/components/membership/helpers";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
-import { formatInitials, formatLongDate, formatRedactedPhone } from "@/lib/formatting";
+import { formatInitials, formatLongDate, formatRedactedPhone, titleCaseFromCode } from "@/lib/formatting";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -105,6 +106,8 @@ export default function OwnerMemberDetail() {
   const phone = member?.user?.phone ?? "";
   const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? "Not set";
   const notes = member?.profile.notes;
+  const subscriptionStatus = member?.activeSubscription?.status ?? null;
+  const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : "No active plan";
 
   useEffect(() => {
     let mounted = true;
@@ -214,7 +217,7 @@ export default function OwnerMemberDetail() {
                   <Text style={[styles.memberEmail, { color: palette.text.secondary }]}>
                     {formatLongDate(member.profile.createdAt)}
                   </Text>
-                  <Pill tone="lime">{member.activeSubscription?.status ?? "Profile"}</Pill>
+                  <Pill tone={toneForStatus(subscriptionStatus)}>{subscriptionStatusLabel}</Pill>
                 </View>
               </Card>
 
