@@ -103,6 +103,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   tracking habits, product aliases, and privacy consents.
 - **6/R32 Unused query-key helpers** — trimmed no-caller mobile query-key helpers and
   invalidation branches left behind after the domain-hook cleanup.
+- **6/R33 Internal domain prop types** — stopped publicly re-exporting domain component prop
+  types that only their own modules consume; app callers still import the item types they use.
 
 ## 1. Functional / correctness
 

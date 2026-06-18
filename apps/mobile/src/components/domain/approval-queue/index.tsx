@@ -6,7 +6,7 @@ import { spacing } from "@/lib/theme";
 import { ApprovalQueueCard } from "./card";
 import type { ApprovalQueueProps } from "./types";
 
-export type { ApprovalItem, ApprovalQueueProps } from "./types";
+export type { ApprovalItem } from "./types";
 
 // Supports loading, error, empty, and populated approval states.
 export function ApprovalQueue({

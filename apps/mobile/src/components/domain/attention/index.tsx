@@ -5,7 +5,7 @@ import { spacing } from "@/lib/theme";
 import { AttentionListItem } from "./item";
 import type { AttentionCardProps } from "./types";
 
-export type { AttentionCardProps, AttentionItem } from "./types";
+export type { AttentionItem } from "./types";
 
 // Supports empty and populated attention states across owner and trainer surfaces.
 export function AttentionCard({
