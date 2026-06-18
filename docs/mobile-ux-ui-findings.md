@@ -470,3 +470,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Decorative sparkle icons (`R26`) is closed: assistant, engagement
   notification, and first-run home states now use domain-specific chat, heart, and compass icons
   instead of generic sparkle flair.
+- **[code, fixed]** Dashboard tip decoration (`R27`) is closed: removed the owner tip card's
+  decorative blurred accent blob, replaced its sparkle link icon with a members icon, and deleted
+  the unused global `zook-shimmer` keyframe.

@@ -12,7 +12,6 @@ import {
   Dumbbell,
   IndianRupee,
   Package,
-  Sparkles,
   TrendingUp,
   UserPlus,
   Users,
@@ -589,8 +588,7 @@ export function DashboardOverview({
         ) : null}
 
         {prefs.widgets.tip ? (
-        <GlassCard className="relative overflow-hidden p-5 lg:col-span-3">
-          <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-lime-300/8 blur-3xl" />
+        <GlassCard className="p-5 lg:col-span-3">
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-[var(--accent)]" />
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
@@ -606,7 +604,7 @@ export function DashboardOverview({
             href="/dashboard/members"
             className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
           >
-            <Sparkles size={12} />
+            <Users size={12} />
             View members
           </Link>
         </GlassCard>

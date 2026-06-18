@@ -138,15 +138,6 @@ label {
   display: none;
 }
 
-@keyframes zook-shimmer {
-  from {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  to {
-    transform: translateX(420%) rotate(12deg);
-  }
-}
-
 @keyframes zook-dashboard-loading {
   0% {
     transform: translateX(-110%);
