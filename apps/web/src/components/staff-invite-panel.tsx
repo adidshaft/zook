@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { ApiError } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
-import { formatEnumLabel } from "@/lib/format";
+import { formatDate, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton, ZookButtonLink } from "./zook-button";
 
@@ -97,11 +97,7 @@ export function StaffInvitePanel({ token }: { token: string }) {
           <div className="flex items-center justify-between gap-4">
             <span className="text-xs uppercase tracking-[0.18em] text-white/35">Expires</span>
             <span className="text-sm font-medium text-white">
-              {new Date(payload.invite.expiresAt).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              {formatDate(payload.invite.expiresAt)}
             </span>
           </div>
         </div>

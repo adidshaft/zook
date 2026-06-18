@@ -616,3 +616,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   panel now uses shared `formatTime` for expiry, queue, and refresh timestamps.
 - **[code, fixed]** Ad hoc impersonation expiry copy (`R80`) is closed: the web impersonation
   banner now uses shared `formatTime` instead of inline locale time formatting.
+- **[code, fixed]** Ad hoc staff invite expiry copy (`R81`) is closed: staff invite acceptance
+  now uses shared web `formatDate` instead of inline locale date formatting.
