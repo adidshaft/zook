@@ -89,8 +89,8 @@ export function Pill(props: Parameters<typeof ZookChip>[0]) {
   return <ZookChip {...props} />;
 }
 
-function toneForStatusLabel(status: string): PillTone {
-  const normalized = status.toLowerCase();
+export function toneForStatusLabel(status: string): PillTone {
+  const normalized = status.toLowerCase().replace(/[_-]+/g, " ");
   if (
     normalized.includes("approved") ||
     normalized.includes("active") ||
@@ -103,11 +103,20 @@ function toneForStatusLabel(status: string): PillTone {
     normalized.includes("pending") ||
     normalized.includes("review") ||
     normalized.includes("desk") ||
+    normalized.includes("expiring") ||
+    normalized.includes("past due") ||
     normalized.includes("low")
   ) {
     return "amber";
   }
-  if (normalized.includes("expired") || normalized.includes("flagged")) {
+  if (
+    normalized.includes("expired") ||
+    normalized.includes("flagged") ||
+    normalized.includes("failed") ||
+    normalized.includes("suspended") ||
+    normalized.includes("cancelled") ||
+    normalized.includes("canceled")
+  ) {
     return "red";
   }
   return "neutral";

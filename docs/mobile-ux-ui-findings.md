@@ -540,3 +540,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate phone reveal storage keys (`R51`) is closed: owner member detail
   and reception desk flows now use shared mobile `phoneRevealStorageKey` while preserving their
   owner/reception key namespaces.
+- **[code, fixed]** Duplicate mobile status tone helpers (`R52`) is closed: platform billing
+  rows and member-list rows now use the shared `StatusChip` status-label tone resolver instead
+  of carrying local status-to-tone mappings.

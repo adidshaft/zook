@@ -2,17 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card, Pill, ZookButton } from "@/components/primitives";
+import { Card, Pill, StatusChip, ZookButton } from "@/components/primitives";
 import { formatInitials, formatRedactedPhone } from "@/lib/formatting";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
-
-function statusTone(status: MemberRowItem["status"]) {
-  if (status === "active") return "lime";
-  if (status === "expiring" || status === "pending") return "amber";
-  return "red";
-}
 
 export function MemberListRow({
   item,
@@ -80,7 +74,7 @@ export function MemberListRow({
         </View>
       </View>
       <View style={styles.trailing}>
-        <Pill tone={statusTone(item.status)}>{item.status}</Pill>
+        <StatusChip status={item.status} />
         {item.action ? (
           <ZookButton
             size="sm"

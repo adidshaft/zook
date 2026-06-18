@@ -9,6 +9,7 @@ import {
   QueryErrorState,
   SecondaryButton,
   StatusChip,
+  toneForStatusLabel,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -58,13 +59,6 @@ function formatDate(value?: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function statusTone(status?: string | null) {
-  if (!status) return "amber" as const;
-  if (["ACTIVE", "AUTHENTICATED", "TRIAL_ACTIVE"].includes(status)) return "lime" as const;
-  if (["SUSPENDED", "CANCELLED", "FAILED", "PAST_DUE"].includes(status)) return "red" as const;
-  return "amber" as const;
 }
 
 export default function PlatformMobile() {
@@ -167,26 +161,26 @@ export default function PlatformMobile() {
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
               <StatusChip status={`${rows.length} shown`} tone="amber" />
             </View>
-            {rows.map((row) => (
-              <ListRow
-                key={row.orgId}
-                title={row.orgName}
-                subtitle={`${row.tier ?? "FREE"} ${row.billingCycle ?? "MONTHLY"} · ${formatInr(row.priceLockedPaise)} · next ${formatDate(row.nextBillingAt)} · ${row.referredCount} referrals`}
-                icon="business-outline"
-                tone={statusTone(row.subscriptionStatus ?? row.orgStatus)}
-                trailing={
-                  <View style={styles.rowStatus}>
-                    <StatusChip
-                      status={row.subscriptionStatus ?? row.orgStatus}
-                      tone={statusTone(row.subscriptionStatus ?? row.orgStatus)}
-                    />
-                    <Text style={[styles.rowMeta, { color: palette.text.secondary }]}>
-                      Mandate {row.mandateStatus ?? "missing"} · {row.mandatePaidCount} paid
-                    </Text>
-                  </View>
-                }
-              />
-            ))}
+            {rows.map((row) => {
+              const status = row.subscriptionStatus ?? row.orgStatus;
+              return (
+                <ListRow
+                  key={row.orgId}
+                  title={row.orgName}
+                  subtitle={`${row.tier ?? "FREE"} ${row.billingCycle ?? "MONTHLY"} · ${formatInr(row.priceLockedPaise)} · next ${formatDate(row.nextBillingAt)} · ${row.referredCount} referrals`}
+                  icon="business-outline"
+                  tone={toneForStatusLabel(status)}
+                  trailing={
+                    <View style={styles.rowStatus}>
+                      <StatusChip status={status} />
+                      <Text style={[styles.rowMeta, { color: palette.text.secondary }]}>
+                        Mandate {row.mandateStatus ?? "missing"} · {row.mandatePaidCount} paid
+                      </Text>
+                    </View>
+                  }
+                />
+              );
+            })}
           </Card>
 
           <SecondaryButton testID="platform-sign-out" icon="log-out-outline" onPress={() => void logout()}>
