@@ -29,6 +29,7 @@ import { handleOrganizationPermissions } from "./organization-permissions";
 import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
 import { handlePublicOrganizations } from "./public-organizations";
+import { handlePushDevices } from "./push-devices";
 import { handleReports } from "./reports";
 import { handleStaff } from "./staff";
 import { handleProducts } from "./products";
@@ -51,6 +52,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleMeData, firstSegments: ["me"] },
   { handler: handleTracking, firstSegments: ["me"] },
   { handler: handleMemberPlansGoals, firstSegments: ["me"] },
+  { handler: handlePushDevices, firstSegments: ["me", "push"] },
   { handler: handleFiles, firstSegments: ["files"] },
   { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleOrganizationAuditLogs, firstSegments: ["orgs"] },
@@ -78,7 +80,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   },
   {
     handler: handleAiNotificationsShopPrivacyPlatform,
-    firstSegments: ["ai", "guardian-consent", "me", "orgs", "platform", "push", "shop"],
+    firstSegments: ["ai", "guardian-consent", "me", "orgs", "platform", "shop"],
   },
 ];
 
