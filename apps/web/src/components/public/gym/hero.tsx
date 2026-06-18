@@ -6,12 +6,14 @@ import type { PublicGym } from "./types";
 
 export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
+  const coverAlt = locale === "hi" ? `${org.name} जिम की तस्वीर` : `${org.name} gym interior`;
+  const logoAlt = locale === "hi" ? `${org.name} लोगो` : `${org.name} logo`;
   return (
     <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
       {org.coverImageUrl ? (
         <Image
           src={org.coverImageUrl}
-          alt={`${org.name} gym interior`}
+          alt={coverAlt}
           fill
           sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
           className="object-cover opacity-20 dark:opacity-30"
@@ -25,7 +27,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-[var(--border)]">
             <Image
               src={org.coverImageUrl}
-              alt={`${org.name} gym`}
+              alt={coverAlt}
               fill
               sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
               className="object-cover"
@@ -41,7 +43,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           {org.logoUrl ? (
             <Image
               src={org.logoUrl}
-              alt={`${org.name} logo`}
+              alt={logoAlt}
               width={56}
               height={56}
               sizes="56px"

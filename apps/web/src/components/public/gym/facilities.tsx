@@ -8,6 +8,10 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
   const gallery = org.gallery.length
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+  const galleryAlt = (index: number) =>
+    locale === "hi"
+      ? `${org.name} गैलरी तस्वीर ${index + 1}`
+      : `${org.name} gallery photo ${index + 1}`;
   return (
     <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -27,7 +31,7 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
               >
                 <Image
                   src={imageUrl}
-                  alt={`${org.name} gallery photo ${index + 1}`}
+                  alt={galleryAlt(index)}
                   fill
                   sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
