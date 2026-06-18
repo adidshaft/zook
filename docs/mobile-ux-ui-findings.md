@@ -793,3 +793,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public gym-type cue (`R141`) is closed: public gym type
   metadata now uses neutral badge styling instead of informational blue, keeping status-like
   color for join mode.
+- **[ui, fixed]** Overstated web notification template cue (`R142`) is closed: saved
+  notification template type metadata now uses neutral badge styling instead of informational
+  blue, keeping stronger tones for operational delivery states and budgets.

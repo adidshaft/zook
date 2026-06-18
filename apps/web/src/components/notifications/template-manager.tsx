@@ -177,7 +177,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  <Pill tone="blue">{formatEnumLabel(template.type)}</Pill>
+                  <Pill>{formatEnumLabel(template.type)}</Pill>
                   <ZookButton
                     type="button"
                     tone="ghost"
