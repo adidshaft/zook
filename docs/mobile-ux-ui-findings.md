@@ -811,3 +811,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web branch-form step cues (`R147`) are closed: create-branch
   step markers now use neutral badges instead of informational blue, matching their role as
   structural wayfinding rather than state.
+- **[ui, fixed]** Overstated web membership plan count cues (`R148`) are closed: membership
+  plan ladder and catalog header counts now use neutral badges instead of informational blue,
+  keeping status color on the plan rows themselves.

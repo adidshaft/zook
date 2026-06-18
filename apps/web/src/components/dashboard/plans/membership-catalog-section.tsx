@@ -48,7 +48,7 @@ export function MembershipCatalogSection({
         eyebrow="Membership plans"
         title="Membership catalog"
         description="Plans shown to members, staff, and desk teams."
-        badge={<Pill tone="blue">{membershipPlans.length} offers</Pill>}
+        badge={<Pill>{membershipPlans.length} offers</Pill>}
       />
       <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
         <div className="flex items-center justify-between gap-3">

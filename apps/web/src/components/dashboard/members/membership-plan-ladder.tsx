@@ -29,7 +29,7 @@ export function MembershipPlanLadder({
         eyebrow="Membership setup"
         title="Membership plan ladder"
         description="Use the live pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
-        badge={<Pill tone="blue">{membershipPlans.length} plans</Pill>}
+        badge={<Pill>{membershipPlans.length} plans</Pill>}
       />
       <div className="mt-5">
         {membershipPlansState.error ? (
