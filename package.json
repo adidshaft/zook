@@ -55,6 +55,7 @@
     "db:a3.3:sql": "tsx scripts/a3.3-async-push-delivery-sql.ts",
     "db:a3.4:sql": "tsx scripts/a3.4-renewal-reminder-queue-sql.ts",
     "db:a3.6:sql": "tsx scripts/a3.6-idempotency-expiry-sql.ts",
+    "db:b1:sql": "tsx scripts/b1-rbac-multi-branch-role-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",

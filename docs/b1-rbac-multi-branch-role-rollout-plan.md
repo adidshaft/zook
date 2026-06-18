@@ -63,6 +63,24 @@ single org-level assignment per role.
 
 ## Preflight audits
 
+Generate the rollout SQL with:
+
+```bash
+pnpm db:b1:sql
+```
+
+Print a single section when needed:
+
+```bash
+pnpm db:b1:sql current-constraint-collision-audit
+pnpm db:b1:sql branch-scoped-duplicate-audit
+pnpm db:b1:sql org-level-duplicate-audit
+pnpm db:b1:sql assignment-detail
+pnpm db:b1:sql migration-staging-only
+pnpm db:b1:sql validate-migration
+pnpm db:b1:sql rollback
+```
+
 Run these first on a staging clone or disposable copy of production.
 
 Current constraint collision audit:
