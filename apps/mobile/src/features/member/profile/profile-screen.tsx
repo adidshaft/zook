@@ -33,6 +33,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import { formatLongDate } from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -95,15 +96,6 @@ function routeForRole(role?: Role) {
 
 function firstParam(value?: string | string[] | null) {
   return Array.isArray(value) ? value[0] : value ?? undefined;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "Syncing";
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function formatActivityDate(value?: string | null) {
@@ -617,7 +609,7 @@ export default function ProfileScreen() {
                         {planName}
                       </Text>
                       <Text style={[styles.cardSubtitle, { color: palette.text.secondary }]}>
-                        Expires {formatDate(membership.endsAt)}
+                        Expires {formatLongDate(membership.endsAt, "Syncing")}
                       </Text>
                     </View>
                     <Pill

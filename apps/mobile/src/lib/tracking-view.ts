@@ -3,13 +3,7 @@ import type {
   WorkoutLogEntry
 } from "@zook/core";
 
-function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
+import { formatLongDate } from "@/lib/formatting";
 
 function formatTimeLabel(value?: string | null) {
   if (!value) {
@@ -51,7 +45,7 @@ export function workoutToEntry(workout: {
 }): WorkoutLogEntry {
   return {
     id: workout.id,
-    dateLabel: formatDateLabel(workout.startedAt),
+    dateLabel: formatLongDate(workout.startedAt),
     workoutName: workout.title,
     startTimeLabel: formatTimeLabel(workout.startedAt),
     endTimeLabel: formatTimeLabel(workout.endedAt),

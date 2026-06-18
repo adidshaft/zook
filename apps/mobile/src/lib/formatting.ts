@@ -6,10 +6,10 @@ function toDate(value?: string | Date | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatLongDate(value?: string | Date | null) {
+export function formatLongDate(value?: string | Date | null, fallback = "Not available") {
   const date = toDate(value);
   if (!date) {
-    return "Not available";
+    return fallback;
   }
   return date.toLocaleDateString(undefined, {
     day: "numeric",

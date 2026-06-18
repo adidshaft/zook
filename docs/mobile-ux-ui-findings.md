@@ -547,3 +547,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   billing now uses shared `formatInr` instead of carrying a local rupee formatter.
 - **[code, fixed]** Duplicate web INR formatters (`R54`) is closed: pricing and trainer
   payouts now use shared web `formatInr` instead of carrying local rupee formatters.
+- **[code, fixed]** Duplicate mobile long-date formatters (`R55`) is closed: tracking entries
+  and member profile expiry copy now use shared `formatLongDate` while preserving their fallback
+  labels.
