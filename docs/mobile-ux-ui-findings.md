@@ -706,3 +706,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate member check-in code cleanup (`R112`) is closed: the member
   scanner now shares one local compaction helper for scanned and manually entered check-in
   codes instead of repeating uppercase/alphanumeric regex cleanup.
+- **[code, fixed]** Duplicate mobile rupee input cleanup (`R113`) is closed: reception payment
+  amount fields now use shared mobile rupee-input normalization instead of repeating inline
+  amount sanitizers.

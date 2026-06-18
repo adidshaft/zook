@@ -119,6 +119,18 @@ export function formatInr(valuePaise?: number | null) {
   }).format((valuePaise ?? 0) / 100);
 }
 
+export function normalizeRupeeInput(value: string) {
+  const compact = value.replace(/[₹,\s]/g, "").replace(/[^\d.]/g, "");
+  const [whole = "", ...fractionParts] = compact.split(".");
+  const fraction = fractionParts.join("").slice(0, 2);
+
+  if (!compact.includes(".")) {
+    return whole;
+  }
+
+  return `${whole}.${fraction}`;
+}
+
 export function formatCompactNumber(value?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     notation: "compact",

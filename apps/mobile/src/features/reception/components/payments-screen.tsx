@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
-import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, normalizeRupeeInput, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { paymentModes } from "../constants";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
@@ -64,7 +64,7 @@ export function ReceptionPaymentsScreenBody() {
                 testID="reception-payment-amount"
                 label="Amount received"
                 value={amount}
-                onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
+                onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
                 keyboardType="numeric"
                 placeholder="₹0"
                 leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
@@ -244,7 +244,7 @@ export function ReceptionPaymentsScreenBody() {
                 <FormField
                   label="Amount received"
                   value={amount}
-                  onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
+                  onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
                   keyboardType="numeric"
                   placeholder="₹0"
                   leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
