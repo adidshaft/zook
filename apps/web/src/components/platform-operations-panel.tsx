@@ -9,6 +9,7 @@ import {
   StatusPill,
   toneFromStatus,
 } from "./dashboard-primitives";
+import { ConfirmActionButton } from "./confirm-action-button";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import {
@@ -699,13 +700,13 @@ export function PlatformOperationsPanel({
   }
 
   async function deleteBroadcast(broadcastId: string) {
-    const confirmed = window.confirm("Delete this broadcast?");
-    if (!confirmed) return;
     try {
       setBroadcastBusyId(broadcastId);
       await webApiFetch(`/api/platform/broadcasts/${broadcastId}`, { method: "DELETE" });
       setSupportNotice("Broadcast deleted");
       broadcastsState.reload();
+    } catch (cause) {
+      setSupportNotice(cause instanceof Error ? cause.message : "Unable to delete broadcast");
     } finally {
       setBroadcastBusyId(null);
     }
@@ -1212,14 +1213,17 @@ export function PlatformOperationsPanel({
                         >
                           Expire
                         </ZookButton>
-                        <ZookButton
-                          size="sm"
-                          tone="danger"
+                        <ConfirmActionButton
+                          className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={broadcastBusyId === broadcast.id}
-                          onClick={() => void deleteBroadcast(broadcast.id)}
+                          title="Delete this broadcast?"
+                          description="This removes the platform broadcast from the support console. Published recipients may already have seen it."
+                          confirmLabel="Delete"
+                          confirmTone="danger"
+                          onConfirm={() => deleteBroadcast(broadcast.id)}
                         >
                           Delete
-                        </ZookButton>
+                        </ConfirmActionButton>
                       </div>
                     ),
                   },
