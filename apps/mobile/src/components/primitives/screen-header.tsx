@@ -99,7 +99,9 @@ export function ScreenHeader({
       ) : null}
       <Reanimated.View style={[styles.titleBlock, titleStyle]}>
         <View style={styles.titleRow}>
-          <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+          <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
+            {title}
+          </Text>
           {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
         </View>
         {subtitle ? (
@@ -243,7 +245,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   titleAccessory: {
-    flexShrink: 1,
+    alignItems: "flex-end",
+    flex: 1,
     marginLeft: "auto",
     minWidth: 0,
   },

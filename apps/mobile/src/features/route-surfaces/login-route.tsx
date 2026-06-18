@@ -651,7 +651,7 @@ function AppleSsoButton({
   onPress: () => void;
   testID?: string;
 }) {
-  const { mode, palette } = useTheme();
+  const { mode } = useTheme();
   if (Platform.OS !== "ios") {
     return null;
   }
