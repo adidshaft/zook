@@ -12,6 +12,7 @@ import {
   type RouteHandlerEntry,
 } from "./dispatch";
 import { handleAuth } from "./auth";
+import { handleClasses } from "./classes";
 import { handleCouponsReferrals } from "./coupons-referrals";
 import { handleCronJobs } from "./cron";
 import { handleFiles } from "./files";
@@ -60,6 +61,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
+  { handler: handleClasses, firstSegments: ["orgs"] },
   {
     handler: handleStaffPlansGoals,
     firstSegments: ["me", "orgs", "staff-invitations"],
