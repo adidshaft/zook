@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { AppHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme, type ThemePreference } from "@/lib/theme/index";
@@ -18,7 +19,7 @@ export default function AppearanceSettingsScreen() {
   const { palette, preference, setPreference } = useTheme();
   const roleOptions =
     ctx?.availableRoles.map((role) => ({
-      label: titleCase(role),
+      label: titleCaseFromCode(role),
       value: role,
     })) ?? [];
   const selectedRole = defaultRolePreference ?? ctx?.role ?? roleOptions[0]?.value;
@@ -47,10 +48,6 @@ export default function AppearanceSettingsScreen() {
       </ZookScreen>
     </>
   );
-}
-
-function titleCase(value: string) {
-  return value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 const styles = StyleSheet.create({

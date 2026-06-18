@@ -518,3 +518,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dead desk bottom nav (`R42`) is closed: removed the unused
   `DeskBottomNav` component and its private `deskTabs` icon config because exact reference checks
   showed the desk panel config's only external caller uses `withBranch`.
+- **[code, fixed]** Duplicate mobile role formatter (`R43`) is closed: appearance settings now
+  uses shared `titleCaseFromCode` for role labels instead of carrying a local title-case helper.
