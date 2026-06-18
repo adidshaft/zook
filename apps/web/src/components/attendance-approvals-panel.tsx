@@ -80,7 +80,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
           >
             Export CSV
           </a>
-          <Pill tone="lime">{records.length} exceptions</Pill>
+          <Pill>{records.length} exceptions</Pill>
         </div>
       </div>
       {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
