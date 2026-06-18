@@ -802,12 +802,12 @@ export default function Shop() {
           <ListRow
             title={t("shop.getPickupCode")}
             subtitle={t("shop.makeDeskCode")}
-            trailing={<StatusChip status="2" tone="amber" />}
+            trailing={<StatusChip status="2" tone="neutral" />}
           />
           <ListRow
             title={t("shop.collectAtDesk")}
             subtitle={t("shop.showPickupCode")}
-            trailing={<StatusChip status="3" tone="lime" />}
+            trailing={<StatusChip status="3" tone="neutral" />}
           />
           <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
             <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
