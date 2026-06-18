@@ -101,10 +101,11 @@ fully complete until the human/device/provider gates below have external evidenc
   `31acabe2` (dead exported glow tokens),
   `3672de40` (static status-dot naming),
   `a97b9d70` (primitive status-dot halo),
-  `404ae284` (release-readiness demo wording), and
+  `404ae284` (release-readiness demo wording),
   `f695bbda` (dashboard sample-data copy guard),
-  `424b2afb` (dashboard disabled-cue copy guard), and
-  `efbcfedf` (AI launch-gate unavailable-state wording).
+  `424b2afb` (dashboard disabled-cue copy guard),
+  `efbcfedf` (AI launch-gate unavailable-state wording), and
+  `1080b2fc` (visual cue regression evidence gate).
 
 ### Product plan Part A and Part B
 
