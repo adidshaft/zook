@@ -98,6 +98,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   modules directly.
 - **6/R30 Placeholder mobile READMEs** — removed one-line scaffold README files under
   `apps/mobile/src` that contained only directory headings and no useful local guidance.
+- **6/R31 No-caller domain hooks** — removed unused mobile domain query hooks and their
+  private query-key/invalidation leftovers for engagement, badges, goals, push devices,
+  tracking habits, product aliases, and privacy consents.
 
 ## 1. Functional / correctness
 

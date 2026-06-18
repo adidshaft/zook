@@ -1,12 +1,7 @@
 export const queryKeys = {
-  auth: {
-    currentUser: (orgId?: string | null) => ["auth", "me", orgId] as const,
-  },
   member: {
     all: () => ["me"] as const,
     homePrefix: () => ["me", "home"] as const,
-    organizations: (orgId?: string | null) => ["me", "orgs", orgId] as const,
-    activeOrganization: (orgId?: string | null) => ["me", "active-org", orgId] as const,
     home: (orgId?: string | null) => ["me", "home", orgId] as const,
     dashboard: (orgId?: string | null) => ["me", "dashboard", orgId] as const,
     classes: (orgId?: string | null, branchId?: string | null) =>
@@ -14,11 +9,8 @@ export const queryKeys = {
     membership: () => ["me", "memberships"] as const,
     activeMembership: (orgId?: string | null) => ["me", "membership", "active", orgId] as const,
     attendance: () => ["me", "attendance"] as const,
-    engagement: (orgId?: string | null) => ["me", "engagement", orgId] as const,
-    badges: (orgId?: string | null) => ["me", "badges", orgId] as const,
     profile: (orgId?: string | null) => ["me", "profile", orgId] as const,
     referralCodes: (orgId?: string | null) => ["me", "referral-codes", orgId] as const,
-    goals: () => ["me", "goals"] as const,
     diet: () => ["me", "diet"] as const,
   },
   trainer: {
@@ -85,7 +77,6 @@ export const queryKeys = {
     list: () => ["me", "notifications"] as const,
     detail: (id: string) => ["notifications", "detail", id] as const,
     preferences: () => ["me", "notification-preferences"] as const,
-    pushDevices: () => ["me", "push-devices"] as const,
   },
   payments: {
     invoices: () => ["me", "invoices"] as const,
@@ -96,17 +87,12 @@ export const queryKeys = {
     all: () => ["ai"] as const,
     draft: (clientId: string) => ["ai", "draft", clientId] as const,
   },
-  privacy: {
-    settings: () => ["privacy", "settings"] as const,
-    consents: () => ["me", "consents"] as const,
-  },
   tracking: {
     all: () => ["me", "tracking"] as const,
     history: () => ["tracking", "history"] as const,
     summary: () => ["me", "tracking", "summary"] as const,
     bodyProgress: () => ["me", "tracking", "body-progress"] as const,
     workouts: () => ["me", "tracking", "workouts"] as const,
-    habits: () => ["me", "tracking", "habits"] as const,
     entry: (id: string) => ["tracking", "entry", id] as const,
   },
   gym: {

@@ -66,9 +66,6 @@ export const invalidations = {
   ai: {
     all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.ai.all() }),
   },
-  privacy: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.privacy.consents() }),
-  },
   tracking: {
     all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.tracking.all() }),
   },

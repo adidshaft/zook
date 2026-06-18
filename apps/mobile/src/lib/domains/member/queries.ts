@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { AuthSessionSummary } from "@zook/core";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
@@ -9,10 +8,7 @@ import { queryString } from "@/lib/domains/shared/request";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type {
   ActiveMembershipRecord,
-  MemberBadgeRecord,
   MemberClassRecord,
-  MemberDashboardData,
-  MemberEngagementData,
   MemberHomeData,
   MyProfileData,
   OrgPaymentRecord,
@@ -28,7 +24,7 @@ type CachedQuerySnapshot<T> = {
   data: T;
 };
 
-function memberQueryCacheKey(scope: "home" | "dashboard", orgId?: string | null) {
+function memberQueryCacheKey(scope: "home", orgId?: string | null) {
   return `${MEMBER_QUERY_CACHE_NAMESPACE}:${scope}:${encodeURIComponent(orgId ?? "no-org")}`;
 }
 
@@ -84,36 +80,6 @@ function persistQuerySnapshot<T>(key: string, data: T) {
   });
 }
 
-export function useCurrentUser() {
-  const { activeOrgId, session, status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.auth.currentUser(activeOrgId),
-    queryFn: () =>
-      mobileApiFetch<AuthSessionSummary>("/auth/me", {
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-      }),
-    enabled: status === "authenticated" && Boolean(token),
-    initialData: session,
-  });
-}
-
-export function useMyOrganizations() {
-  const { activeOrgId, status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.member.organizations(activeOrgId),
-    queryFn: async () => {
-      const session = await mobileApiFetch<{
-        organizations: AuthSessionSummary["organizations"];
-        activeOrgId?: string;
-      }>("/me/orgs", { token, ...(activeOrgId ? { orgId: activeOrgId } : {}) });
-      return session.organizations;
-    },
-    enabled: status === "authenticated" && Boolean(token),
-    staleTime: 5 * 60_000,
-  });
-}
-
 export function useMyProfile() {
   const { activeOrgId, status, token } = useAuth();
   return useQuery({
@@ -125,31 +91,6 @@ export function useMyProfile() {
       }),
     enabled: status === "authenticated" && Boolean(token),
     staleTime: 5 * 60_000,
-  });
-}
-
-export function useActiveOrganization() {
-  const { activeOrgId, session, status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.member.activeOrganization(activeOrgId),
-    queryFn: async () => {
-      const currentSession = await mobileApiFetch<AuthSessionSummary>("/auth/me", {
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-      });
-      return (
-        currentSession.organizations.find(
-          (organization) => organization.orgId === currentSession.activeOrgId,
-        ) ??
-        currentSession.activeOrganization ??
-        null
-      );
-    },
-    enabled: status === "authenticated" && Boolean(token),
-    initialData:
-      session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
-      session?.activeOrganization ??
-      null,
   });
 }
 
@@ -186,71 +127,6 @@ export function memberHomeQueryOptions(input: {
       }),
     staleTime: 30_000,
   };
-}
-
-export function memberDashboardQueryOptions(input: {
-  activeOrgId?: string | null;
-  token?: string | null;
-}) {
-  return {
-    queryKey: queryKeys.member.dashboard(input.activeOrgId ?? null),
-    queryFn: () =>
-      mobileApiFetch<MemberDashboardData>(
-        `/me/dashboard${queryString({ orgId: input.activeOrgId ?? undefined })}`,
-        {
-          token: input.token ?? undefined,
-          ...(input.activeOrgId ? { orgId: input.activeOrgId } : {}),
-        },
-      ),
-    staleTime: 30_000,
-  };
-}
-
-export function useMemberDashboard() {
-  const { activeOrgId, status, token } = useAuth();
-  const enabled = status === "authenticated" && Boolean(token);
-  const cacheKey = memberQueryCacheKey("dashboard", activeOrgId);
-  const cachedDashboard = useStoredQuerySnapshot<MemberDashboardData>(cacheKey, enabled);
-  const query = useQuery({
-    ...memberDashboardQueryOptions({ activeOrgId, token }),
-    enabled,
-    placeholderData: cachedDashboard,
-  });
-
-  useEffect(() => {
-    if (query.data && !query.isPlaceholderData) {
-      persistQuerySnapshot(cacheKey, query.data);
-    }
-  }, [cacheKey, query.data, query.isPlaceholderData]);
-
-  return query;
-}
-
-export function useMyEngagement() {
-  const { activeOrgId, status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.member.engagement(activeOrgId),
-    queryFn: () =>
-      mobileApiFetch<MemberEngagementData>("/me/engagement", {
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-      }),
-    enabled: status === "authenticated" && Boolean(token),
-  });
-}
-
-export function useMyBadges() {
-  const { activeOrgId, status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.member.badges(activeOrgId),
-    queryFn: () =>
-      mobileApiFetch<{ badges: MemberBadgeRecord[] }>("/me/badges", {
-        token,
-        ...(activeOrgId ? { orgId: activeOrgId } : {}),
-      }),
-    enabled: status === "authenticated" && Boolean(token),
-    staleTime: 10 * 60_000,
-  });
 }
 
 export function useMyMemberships() {
@@ -306,16 +182,6 @@ export function useMyReferralCodes() {
         policy?: Record<string, unknown> | null;
       }>(`/me/referral-codes${queryString({ orgId: activeOrgId })}`, { token }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
-  });
-}
-
-export function useMyGoals() {
-  const { status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.member.goals(),
-    queryFn: () =>
-      mobileApiFetch<{ goals: Array<Record<string, unknown>> }>("/me/goals", { token }),
-    enabled: status === "authenticated" && Boolean(token),
   });
 }
 

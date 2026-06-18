@@ -49,17 +49,6 @@ export function useMyTrackingWorkouts() {
   });
 }
 
-export function useMyTrackingHabits() {
-  const { status, token } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.tracking.habits(),
-    queryFn: () =>
-      mobileApiFetch<{ habits: Array<Record<string, unknown>> }>("/me/tracking/habits", { token }),
-    enabled: status === "authenticated" && Boolean(token),
-    staleTime: 5 * 60_000,
-  });
-}
-
 export function useMyDiet() {
   const { status, token, activeOrgId } = useAuth();
   return useQuery({
