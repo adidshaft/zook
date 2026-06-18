@@ -13,7 +13,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii, shadows, typography } from "@/lib/theme";
+import { radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
 
@@ -37,16 +37,14 @@ type ButtonPalette = {
   backgroundColor: string;
   borderColor: string;
   color: string;
-  glow?: ViewStyle;
 };
 
-function paletteForVariant(palette: Palette, variant: ButtonVariant, isDark: boolean): ButtonPalette {
+function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPalette {
   if (variant === "primary") {
     return {
       backgroundColor: palette.accent.fill,
       borderColor: palette.accent.strong,
       color: palette.text.onAccent,
-      glow: isDark ? shadows.glowLimeSoft : shadows.card,
     };
   }
   if (variant === "destructive") {
@@ -156,8 +154,8 @@ export function ZookButton({
   hapticWeight?: HapticWeight;
   testID?: string;
 }) {
-  const { palette, mode } = useTheme();
-  const buttonPalette = paletteForVariant(palette, variant, mode === "dark");
+  const { palette } = useTheme();
+  const buttonPalette = paletteForVariant(palette, variant);
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
@@ -168,7 +166,6 @@ export function ZookButton({
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
-    buttonPalette.glow,
     {
       backgroundColor: resolvedBgColor,
       borderColor: resolvedBorderColor,
@@ -233,7 +230,6 @@ export function ZookButton({
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
-        buttonPalette.glow,
         {
           backgroundColor: resolvedBgColor,
           borderColor: resolvedBorderColor,

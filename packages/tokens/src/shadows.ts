@@ -60,17 +60,6 @@ export function elevation(
 }
 
 export const shadows = {
-  glowLime: elevation(2, darkPalette.accent.strong, {
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-  }),
-  glowLimeSoft: elevation(1, darkPalette.accent.strong),
-  glowDark: elevation(1, "#000000", {
-    shadowOpacity: 0.1,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-  }),
   glass: elevation(1, "#000000", {
     shadowOpacity: 0.1,
     shadowRadius: 28,

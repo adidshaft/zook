@@ -224,6 +224,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   deleted the now-unused `glowColor` tone-palette field.
 - **6/R87 Screen ambient background layers** — removed the default `ZookScreen` ambient glow/wash
   layers and the login-only opt-out prop so screens use the plain app background.
+- **6/R88 Mobile button glow shadow** — removed the decorative primary-button glow shadow path
+  and deleted now-unused mobile glow shadow tokens.
 
 ## 1. Functional / correctness
 
