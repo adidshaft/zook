@@ -22,7 +22,7 @@ export function ReferralCard({
   const { palette } = useTheme();
   return (
     <Card variant="compact" contentStyle={styles.content}>
-      <IconBubble icon="gift-outline" tone="amber" size={38} />
+      <IconBubble icon="gift-outline" tone="neutral" size={38} />
       <View style={styles.copy}>
         <Text style={[styles.title, { color: palette.text.primary }]}>Refer a friend</Text>
         <Text numberOfLines={1} style={[styles.meta, { color: palette.text.secondary }]}>

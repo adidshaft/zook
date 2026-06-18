@@ -994,3 +994,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile platform hero icon cue (`R208`) is closed:
   the platform billing hero now uses a neutral shield icon instead of amber, keeping state
   color on fetch freshness and subscription status chips.
+- **[ui, fixed]** Overstated mobile profile referral icon cue (`R209`) is closed:
+  the member profile referral card now uses a neutral gift icon instead of amber, keeping
+  action emphasis on the share button and success color on applied referral states.
