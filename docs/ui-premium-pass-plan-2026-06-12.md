@@ -61,7 +61,7 @@ Export from the package index; re-export through `apps/mobile/src/lib/theme`.
 
 ### U0.2 Continuous corners + radius discipline
 Add `borderCurve: "continuous"` (no-op on Android, correct smoothing on iOS) to the
-base styles of: Card (`primitives/cards.tsx`), Button (`primitives/buttons.tsx`),
+base styles of: Card (`primitives/foundation.tsx`), Button (`primitives/buttons.tsx`),
 Input, the tab bar container, sheets, and `IconBubble`. Audit radii: cards 24, small
 cards/buttons 18, inputs 16, chips/pills 999 — replace any ad-hoc values
 (`rg "borderRadius: [0-9]" apps/mobile/src/components | sort` and normalize outliers
@@ -187,14 +187,14 @@ platforms; reduce-motion disables the indicator spring (jump cut).
 # U3 — Surfaces and cards
 
 ### U3.1 Card material pass
-Apply `cardSurface` (U0.1) in `primitives/cards.tsx`: light mode cards get the
+Apply `cardSurface` (U0.1) in `primitives/foundation.tsx`: light mode cards get the
 hairline + `shadow.sm` (currently border-only — flat); dark mode cards get the inner
 top highlight (a 1px top border in rgba(255,255,255,0.06)) instead of a heavier
 outline. Kill any remaining double-border looks (card-inside-card with two visible
 borders — when nesting, the inner surface uses `bg.sunken` with NO border).
 
 ### U3.2 Pressable cards
-Create `PressableCard` in `cards.tsx`: Card + press feedback (scale 0.98 +
+Create `PressableCard` alongside the Card primitive: Card + press feedback (scale 0.98 +
 opacity 0.92 via `springs.snappy`, `android_ripple` on Android, haptic "light").
 Migrate the obvious tappable cards: metric tiles
 (`src/components/domain/metric-grid/tile.tsx`), attention rows, member home

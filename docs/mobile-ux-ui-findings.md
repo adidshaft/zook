@@ -93,6 +93,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `SettingsSkeleton` shapes from the mobile skeleton module.
 - **6/R28 Primitive card barrel imports** — flattened the card primitive barrel so it directly
   re-exports card helpers instead of creating unused local bindings.
+- **6/R29 Primitive category shims** — removed no-caller `cards.tsx`, `inputs.tsx`, and
+  `layout.tsx` primitive forwarding barrels; the main primitive barrel now exports the real
+  modules directly.
 
 ## 1. Functional / correctness
 
