@@ -640,3 +640,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate trainer client tab logic (`R89`) is closed: overview, plan, and
   sessions now share client selection and detail route helpers instead of repeating fallback
   lookup and tab path construction.
+- **[ui, fixed]** Misleading trainer plans status (`R90`) is closed: the client sessions tab
+  now shows a neutral `No plans` status when the active plan count is zero instead of always
+  labeling the row `Active`.

@@ -29,6 +29,7 @@ export default function TrainerClientSessionsScreen() {
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const activePlans = client?.summary?.activePlans ?? 0;
+  const hasActivePlans = activePlans > 0;
   const averageCompletion = averageCompletionFor(client);
   const progressTimeline = progressTimelineFor(client);
 
@@ -70,7 +71,16 @@ export default function TrainerClientSessionsScreen() {
             ) : (
               <ListRow title="Plan feedback" subtitle="No member feedback yet." trailing={<StatusChip status="Waiting" tone="neutral" />} />
             )}
-            <ListRow title="Plans" subtitle={planCountLabel(activePlans)} trailing={<StatusChip status="Active" tone="lime" />} />
+            <ListRow
+              title="Plans"
+              subtitle={planCountLabel(activePlans)}
+              trailing={
+                <StatusChip
+                  status={hasActivePlans ? "Active" : "No plans"}
+                  tone={hasActivePlans ? "lime" : "neutral"}
+                />
+              }
+            />
           </Card>
         </ScrollView>
       </ZookScreen>
