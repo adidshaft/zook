@@ -2269,7 +2269,7 @@ function PlatformSubscriptionsSection() {
                   header: "Gyms referred",
                   render: (row: SubscriptionRow) =>
                     row.referredCount > 0 ? (
-                      <Pill tone="blue">{row.referredCount}</Pill>
+                      <Pill>{row.referredCount}</Pill>
                     ) : (
                       <span className="text-xs text-white/45">0</span>
                     ),

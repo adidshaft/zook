@@ -868,3 +868,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile permission rationale cue (`R166`) is closed: permission
   sheet header icons now use neutral accents instead of informational blue, leaving the
   permission action as the interactive emphasis.
+- **[ui, fixed]** Overstated web platform referral-count cue (`R167`) is closed: subscription
+  table referral counts now use neutral badges instead of informational blue, keeping status
+  color on organization and mandate state.
