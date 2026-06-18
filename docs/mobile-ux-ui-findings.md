@@ -643,3 +643,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading trainer plans status (`R90`) is closed: the client sessions tab
   now shows a neutral `No plans` status when the active plan count is zero instead of always
   labeling the row `Active`.
+- **[ui, fixed]** Misleading trainer profile note chips (`R91`) is closed: diet and allergy
+  rows now show `Shared` only when member profile text exists, with neutral missing states
+  otherwise.

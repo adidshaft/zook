@@ -47,6 +47,8 @@ export default function TrainerClientOverviewScreen() {
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
   const lastWorkoutStartedAt = recentWorkouts[0]?.startedAt;
   const activePlans = client?.summary?.activePlans ?? 0;
+  const dietPreference = client?.summary?.dietPreference?.trim();
+  const allergies = client?.summary?.allergies?.trim();
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
   const [bodyWeight, setBodyWeight] = useState("");
@@ -174,8 +176,16 @@ export default function TrainerClientOverviewScreen() {
 
           <Card variant="compact" contentStyle={styles.stack}>
             <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />} />
-            <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
-            <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
+            <ListRow
+              title="Diet note"
+              subtitle={dietPreference || "Not shared"}
+              trailing={<StatusChip status={dietPreference ? "Shared" : "Missing"} tone="neutral" />}
+            />
+            <ListRow
+              title="Allergy note"
+              subtitle={allergies || "None added"}
+              trailing={<StatusChip status={allergies ? "Shared" : "Not added"} tone="neutral" />}
+            />
             <ListRow
               title="Last check-in"
               subtitle={formatDateTime(lastWorkoutStartedAt, "No workout logged", "en-IN")}
