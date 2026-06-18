@@ -16,6 +16,7 @@ const bannedCopy = [
   /\bmvp\b/i,
   /\bdefault branch\b/i,
   /\bnot available yet\b/i,
+  /\bdemo data\b/i,
   /\bsample data\b/i,
   /\bsample view\b/i,
   /\btest mode\b/i,

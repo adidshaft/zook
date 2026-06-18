@@ -274,6 +274,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   "test data" in English and Hindi acceptable-use copy.
 - **6/R112 Disabled mobile test-data errors** — changed disabled offline-demo replacement
   module errors from "Demo data" to "Test data" while preserving the Metro replacement wiring.
+- **6/R113 Dashboard demo-data guard** — added `demo data` to the dashboard copy guard so
+  fallback workspace labels cannot regress to the old wording silently.
 
 ## 1. Functional / correctness
 
