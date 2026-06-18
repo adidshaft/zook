@@ -30,7 +30,7 @@ type OwnerPrefs = {
   numberFormat: "in" | "international";
 };
 
-export const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
+const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
   widgets: {
     revenueChart: true,
     attendanceBars: true,
@@ -46,7 +46,7 @@ export const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
 
 const STORAGE_KEY = "zook.owner.prefs.v1";
 
-export function loadOwnerPrefs(): OwnerPrefs {
+function loadOwnerPrefs(): OwnerPrefs {
   if (typeof window === "undefined") return OWNER_PREFS_DEFAULTS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);

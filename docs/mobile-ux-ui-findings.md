@@ -503,3 +503,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal plan/product payload helpers (`R37`) is closed: operational
   action payload builders `payloadForPlanForm` and `payloadForProductForm` are no longer exported
   because exact reference checks showed only `createPlansProductsActions` is imported externally.
+- **[code, fixed]** Internal owner preference helpers (`R38`) is closed: dashboard
+  customisation defaults and local-storage loading are no longer exported because exact reference
+  checks showed only the panel component and owner-preferences hook are imported externally.
