@@ -71,6 +71,12 @@ window.
 
 Run these on a staging clone or disposable production snapshot before creating indexes.
 
+```sh
+pnpm db:b5:sql duplicate-receipt-numbers
+pnpm db:b5:sql duplicate-ai-quota
+pnpm db:b5:sql duplicate-subscription-payment
+```
+
 Duplicate receipt numbers inside one org:
 
 ```sql
@@ -191,6 +197,10 @@ Representative code areas:
 
 Index SQL for staging:
 
+```sh
+pnpm db:b5:sql create-indexes-staging-only
+```
+
 ```sql
 CREATE UNIQUE INDEX payment_org_receipt_number_unique_idx
 ON "Payment" ("orgId", "receiptNumber")
@@ -208,6 +218,10 @@ WHERE "paymentId" IS NOT NULL;
 ```
 
 Validation query:
+
+```sh
+pnpm db:b5:sql validate-indexes
+```
 
 ```sql
 SELECT indexname, indexdef
@@ -232,6 +246,10 @@ changes, but because both fields are nullable today, use a reviewed migration wi
 ## Rollback
 
 If staging rollout fails:
+
+```sh
+pnpm db:b5:sql rollback
+```
 
 ```sql
 DROP INDEX IF EXISTS payment_org_receipt_number_unique_idx;
