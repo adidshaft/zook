@@ -88,6 +88,16 @@ export function titleCaseFromCode(value?: string | null) {
     .join(" ");
 }
 
+export function formatInitials(name?: string | null, fallback?: string | null) {
+  const source = name?.trim() || fallback?.trim() || "Member";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 export function joinModeLabel(
   mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
 ) {

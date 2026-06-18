@@ -520,3 +520,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   showed the desk panel config's only external caller uses `withBranch`.
 - **[code, fixed]** Duplicate mobile role formatter (`R43`) is closed: appearance settings now
   uses shared `titleCaseFromCode` for role labels instead of carrying a local title-case helper.
+- **[code, fixed]** Duplicate member initials helpers (`R44`) is closed: owner member detail
+  and member-list rows now use shared mobile `formatInitials` instead of carrying local copies.

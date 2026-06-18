@@ -13,7 +13,7 @@ import {
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
-import { formatLongDate } from "@/lib/formatting";
+import { formatInitials, formatLongDate } from "@/lib/formatting";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -33,16 +33,6 @@ type OrgMemberDetailResponse = {
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function initialsFor(name?: string | null, email?: string | null) {
-  const source = name?.trim() || email?.trim() || "Member";
-  return source
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
 }
 
 function redactPhone(phone?: string | null) {
@@ -223,7 +213,7 @@ export default function OwnerMemberDetail() {
               <Card variant="success" contentStyle={styles.profileContent}>
                 <View style={[styles.largeAvatar, { backgroundColor: palette.accent.fill }]}>
                   <Text style={[styles.largeAvatarText, { color: palette.text.onAccent }]}>
-                    {initialsFor(name, email)}
+                    {formatInitials(name, email)}
                   </Text>
                 </View>
                 <View style={styles.profileCopy}>

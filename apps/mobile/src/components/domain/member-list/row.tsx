@@ -3,18 +3,10 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card, Pill, ZookButton } from "@/components/primitives";
+import { formatInitials } from "@/lib/formatting";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
-
-function initialsFor(name: string, email?: string | null) {
-  const source = name.trim() || email?.trim() || "Member";
-  return source
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 function redactPhone(phone?: string | null) {
   if (!phone) return "No phone";
@@ -57,7 +49,7 @@ export function MemberListRow({
       ) : (
         <View style={[styles.avatar, { backgroundColor: palette.accent.base }]}>
           <Text style={[styles.avatarText, { color: palette.text.onAccent }]}>
-            {initialsFor(item.name, item.email)}
+            {formatInitials(item.name, item.email)}
           </Text>
         </View>
       )}
