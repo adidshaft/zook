@@ -491,3 +491,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal dashboard chart helpers (`R33`) is closed: `AnimatedNumber` and
   `Sparkline` are no longer exported from `dashboard/charts.tsx` because exact reference checks
   showed they are only used internally by the KPI tile.
+- **[code, fixed]** Internal dashboard primitive helpers (`R34`) is closed:
+  `staggerContainerVariants` and `DataTableColumn` are no longer exported because exact reference
+  checks showed they are only used inside their own primitive modules.

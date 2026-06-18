@@ -6,7 +6,7 @@ import { Check, AlertTriangle, X, Circle } from "lucide-react";
 import { Pill, ProductPanel, type PillTone } from "../glass-card";
 import { toneFromStatus } from "./stats";
 
-export const staggerContainerVariants: Variants = {
+const staggerContainerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,

@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { fadeUpVariants } from "./layout";
 
-export type DataTableColumn<Row> = {
+type DataTableColumn<Row> = {
   id: string;
   header: React.ReactNode;
   align?: "left" | "center" | "right";
