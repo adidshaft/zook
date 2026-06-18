@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useRoleContext } from "@/lib/role-context";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
-export function DemoBanner() {
+export function TestDataBanner() {
   const ctx = useRoleContext();
   const { palette } = useTheme();
   if (!ctx?.isDemo) return null;

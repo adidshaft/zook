@@ -19,7 +19,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, isQaResetInFlight, setAuthQueryClient, useAuth } from "@/lib/auth";
 import { BrandMark } from "@/components/primitives";
-import { DemoBanner } from "@/components/demo-banner";
+import { TestDataBanner } from "@/components/test-data-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { ToastHost } from "@/components/toast-host";
@@ -435,7 +435,7 @@ function LayoutContent() {
       {offlineBanner || isDemoMode ? (
         <RuntimeBannerHost>
           {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
-          <DemoBanner />
+          <TestDataBanner />
         </RuntimeBannerHost>
       ) : null}
       <Stack

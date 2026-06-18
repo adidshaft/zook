@@ -268,6 +268,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   "Demo" fallback labels with neutral test/live-data wording.
 - **6/R109 Mobile offline data banner** — changed the offline demo banner's visible label from
   "Demo data" to "Test data" while leaving the local-only runtime guard behavior unchanged.
+- **6/R110 Mobile test-data banner naming** — renamed the mobile runtime banner component from
+  `DemoBanner` to `TestDataBanner` and removed the now-unused `app.demoMode` translations.
 
 ## 1. Functional / correctness
 

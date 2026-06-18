@@ -11,7 +11,6 @@ export type AppLocale = "en" | "hi";
 export type LocalePreference = "system" | AppLocale;
 
 export type TranslationKey =
-  | "app.demoMode"
   | "app.loadingSession"
   | "app.configErrorTitle"
   | "app.configErrorBody"
@@ -238,7 +237,6 @@ type TranslationValues = Record<string, string | number>;
 
 const translations: Record<AppLocale, Record<TranslationKey, string>> = {
   en: {
-    "app.demoMode": "DEMO MODE",
     "app.loadingSession": "Restoring your Zook session...",
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
@@ -464,7 +462,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.fallbackName": "Member",
   },
   hi: {
-    "app.demoMode": "डेमो मोड",
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
