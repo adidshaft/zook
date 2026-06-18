@@ -242,6 +242,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `opacity.glowAmbient` exports after repo-wide reference checks showed no callers.
 - **6/R96 Static status dot naming** — renamed the shared web `PulseDot` helper to
   `StatusDot` now that the component no longer carries pulse motion.
+- **6/R97 Primitive status-dot halo** — removed the decorative halo shadow from the
+  dashboard primitive `StatusDot` while preserving the status color cue.
 
 ## 1. Functional / correctness
 

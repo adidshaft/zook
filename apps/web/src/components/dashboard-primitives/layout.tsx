@@ -107,11 +107,11 @@ export function StatusDot({
   tone?: PillTone;
 }) {
   const tones: Record<PillTone, string> = {
-    neutral: "bg-[var(--text-tertiary)] shadow-[0_0_0_4px_var(--border-subtle)]",
-    lime: "bg-[var(--accent)] shadow-[0_0_0_4px_var(--surface-accent-soft)]",
-    amber: "bg-[var(--feedback-warning)] shadow-[0_0_0_4px_var(--surface-warning-soft)]",
-    red: "bg-[var(--feedback-danger)] shadow-[0_0_0_4px_var(--surface-danger-soft)]",
-    blue: "bg-[var(--feedback-info)] shadow-[0_0_0_4px_var(--surface-info-soft)]",
+    neutral: "bg-[var(--text-tertiary)]",
+    lime: "bg-[var(--accent)]",
+    amber: "bg-[var(--feedback-warning)]",
+    red: "bg-[var(--feedback-danger)]",
+    blue: "bg-[var(--feedback-info)]",
   };
   return (
     <span
