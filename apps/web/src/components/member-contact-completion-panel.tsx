@@ -145,12 +145,21 @@ export function MemberContactCompletionPanel({
             <Pill tone={completedCount === 2 ? "lime" : "amber"}>
               {completedCount}/2 contacts
             </Pill>
-            <Pill tone="blue">OTP verified</Pill>
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-white">Account contact</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">{statusText}</p>
         </div>
-        <ShieldCheck className="text-lime-200" size={24} aria-hidden="true" />
+        <ShieldCheck
+          className={
+            completedCount === 2
+              ? "text-lime-200"
+              : completedCount === 1
+                ? "text-amber-200"
+                : "text-white/35"
+          }
+          size={24}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">

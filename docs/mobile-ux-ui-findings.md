@@ -727,3 +727,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web GSTIN cleanup (`R119`) is closed: gym onboarding now uses
   shared tested GSTIN normalization and validation instead of repeating uppercase, stripping,
   and pattern checks inline.
+- **[ui, fixed]** Premature contact verification cue (`R120`) is closed: the member contact
+  completion panel no longer shows a fixed "OTP verified" badge, and its shield tone now
+  follows the actual number of completed contact methods.
