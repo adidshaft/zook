@@ -53,7 +53,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           ) : null}
           <div className="flex flex-wrap gap-2">
             <Pill tone={joinModeTone(org.joinMode)}>{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
-            {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
+            {org.gymType ? <Pill>{org.gymType}</Pill> : null}
           </div>
         </div>
         <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-tight text-[var(--text-primary)] md:text-7xl">
