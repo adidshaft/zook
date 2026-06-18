@@ -23,6 +23,7 @@ import {
 } from "./demo-mode";
 import { titleCaseFromCode } from "./formatting";
 import { applySessionLocalePreference } from "./i18n";
+import { sanitizeOtpValue } from "./otp";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 import { typography, useTheme } from "./theme";
 
@@ -54,13 +55,6 @@ export function setAuthQueryClient(queryClient: QueryClient) {
 
 export function isQaResetInFlight() {
   return qaResetInFlight;
-}
-
-function sanitizeOtpCode(value: string) {
-  return value
-    .normalize("NFKC")
-    .replace(/[^0-9]/g, "")
-    .slice(0, 6);
 }
 
 interface RequestOtpResult {
@@ -588,7 +582,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp = useCallback(
     async (identifier: string, code: string) => {
-      const normalizedCode = sanitizeOtpCode(code);
+      const normalizedCode = sanitizeOtpValue(code);
       const result = await authClient.verifyOtp(identifier, normalizedCode);
       const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
       const refreshTokenValue = result.refreshToken;

@@ -23,6 +23,7 @@ import {
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { sanitizeOtpValue } from "@/lib/otp";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
@@ -34,13 +35,6 @@ const TERMS_URL = "https://zookfit.in/terms";
 const PRIVACY_URL = "https://zookfit.in/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
-
-function sanitizeOtpCode(value: string) {
-  return value
-    .normalize("NFKC")
-    .replace(/[^0-9]/g, "")
-    .slice(0, 6);
-}
 
 function readRetryAfterSeconds(error: ApiError) {
   const details = error.details;
@@ -222,8 +216,7 @@ export default function Login() {
     setBusyAction("otp");
     setAccountLocked(false);
     try {
-      const result = await requestOtp(identifier);
-      void sanitizeOtpCode(result.devOtp ?? "");
+      await requestOtp(identifier);
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
       setCode("");
@@ -239,7 +232,7 @@ export default function Login() {
 
   async function submitOtp(overrideCode?: string) {
     const identifier = selectedIdentifier();
-    const nextCode = sanitizeOtpCode(overrideCode ?? code);
+    const nextCode = sanitizeOtpValue(overrideCode ?? code);
     if (verifyingRef.current || accountLocked || rateLimitCooldown > 0 || nextCode.length !== 6) {
       return;
     }
@@ -265,7 +258,7 @@ export default function Login() {
   }
 
   function handleOtpChange(value: string) {
-    const nextCode = sanitizeOtpCode(value);
+    const nextCode = sanitizeOtpValue(value);
     setCode(nextCode);
     if (nextCode.length === 6) {
       Keyboard.dismiss();

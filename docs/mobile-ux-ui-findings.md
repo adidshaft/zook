@@ -712,3 +712,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile web-media URL normalization (`R114`) is closed: profile
   photos, member profile images, and public gym media now share web URL normalization instead
   of carrying route-local URL helpers.
+- **[code, fixed]** Duplicate mobile OTP code cleanup (`R115`) is closed: login and auth
+  verification now use the shared tested OTP sanitizer instead of carrying their own six-digit
+  digit-normalization helpers.
