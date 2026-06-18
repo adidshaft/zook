@@ -4,17 +4,9 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
-import { equipmentOptions } from "./gym-profile-fields";
+import { equipmentOptions, gymTypes } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
 import { joinModeLabel } from "@/lib/format";
-
-const gymTypes = [
-  "Strength gym",
-  "Premium fitness club",
-  "Cross-training box",
-  "Yoga and wellness studio",
-  "Personal training studio",
-];
 
 const amenityOptions = [
   "Certified trainers",

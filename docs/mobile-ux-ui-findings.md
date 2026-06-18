@@ -203,6 +203,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   halo loop and stale motion comments while keeping the static endpoint marker.
 - **6/R77 Public hero pointer glow** — removed the one-off cursor-following spotlight from the
   public hero dashboard card and deleted the now-unused visual helper export.
+- **6/R78 Gym type option wording** — changed the public setup/profile gym type option from
+  "Premium fitness club" to neutral "Fitness club" and reused the shared gym-type list in the
+  start-gym flow.
 
 ## 1. Functional / correctness
 
