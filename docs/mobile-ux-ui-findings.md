@@ -877,3 +877,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web platform section-label cues (`R169`) are closed: platform
   shell and loading section labels now use neutral badges instead of informational blue,
   keeping environment and team/state cues on their existing tones.
+- **[ui, fixed]** Overstated web plan-growth link-count cues (`R170`) are closed: coupon,
+  offer, and referral link-card counts now use neutral badges instead of informational blue,
+  keeping stronger color cues for actual plan and promotion states.

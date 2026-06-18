@@ -51,7 +51,7 @@ export function PlanGrowthLinks({
                 <p className="font-medium text-white">{item.label}</p>
                 <p className="mt-2 text-sm leading-5 text-white/50">{item.detail}</p>
               </div>
-              <Pill tone="blue">{item.badge}</Pill>
+              <Pill>{item.badge}</Pill>
             </div>
           </Link>
         ))}
