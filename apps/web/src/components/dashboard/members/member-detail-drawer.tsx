@@ -3,8 +3,8 @@
 import { X } from "lucide-react";
 import { BodyCompositionTimeline } from "../body-composition-timeline";
 import { ErrorNotice } from "../operational-shared";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { ManagedOn, SearchableSelect } from "../../ui";
-import { ZookButton } from "../../zook-button";
 import type { MemberDetailPayload, MembershipPlanRow } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import type { ResourceState } from "./member-list/types";
@@ -38,13 +38,17 @@ export function MemberDetailDrawer({
   subscriptionStatus: string;
   subscriptionStatusTone: "neutral" | "success" | "danger";
   setSelectedMemberId: (memberId: string | null) => void;
-  updateSubscription: (action: "switch" | "pause" | "resume") => void;
+  updateSubscription: (action: "switch" | "pause" | "resume") => Promise<void>;
 }) {
   if (!selectedMemberId) {
     return null;
   }
 
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
+  const nextPlan = membershipPlans.find((plan) => plan.id === switchPlanId) ?? null;
+  const canPause = selectedSubscription?.status === "ACTIVE";
+  const canResume = selectedSubscription?.status === "PAUSED";
+  const pauseActionLabel = pauseResumesAt ? `Pause until ${pauseResumesAt}` : "Pause membership";
 
   return (
     <div className="relative mt-4 rounded-[22px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5">
@@ -128,35 +132,44 @@ export function MemberDetailDrawer({
                   Pause keeps the membership inactive until the selected resume date.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <ZookButton
-                    type="button"
-                    size="sm"
+                  <ConfirmActionButton
+                    title="Switch membership plan?"
+                    description={
+                      nextPlan
+                        ? `This changes the active membership immediately to ${nextPlan.name} (${formatInr(nextPlan.pricePaise)}).`
+                        : "Choose a plan before switching this membership."
+                    }
+                    confirmLabel="Switch plan"
+                    onConfirm={() => updateSubscription("switch")}
                     disabled={!switchPlanId || Boolean(subscriptionBusy)}
-                    state={subscriptionBusy === "switch" ? "loading" : "idle"}
-                    onClick={() => updateSubscription("switch")}
+                    className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--accent-fill)] bg-[var(--accent-fill)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition duration-200 active:translate-y-px disabled:pointer-events-none disabled:opacity-45"
                   >
-                    Switch
-                  </ZookButton>
-                  <ZookButton
-                    type="button"
-                    tone="ghost"
-                    size="sm"
-                    disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "ACTIVE"}
-                    state={subscriptionBusy === "pause" ? "loading" : "idle"}
-                    onClick={() => updateSubscription("pause")}
+                    {subscriptionBusy === "switch" ? "Switching..." : "Switch"}
+                  </ConfirmActionButton>
+                  <ConfirmActionButton
+                    title="Pause membership?"
+                    description={
+                      pauseResumesAt
+                        ? `Pause this membership until ${pauseResumesAt}. Check-ins stay inactive until the selected resume date.`
+                        : "Choose a resume date before pausing this membership."
+                    }
+                    confirmLabel="Pause membership"
+                    onConfirm={() => updateSubscription("pause")}
+                    disabled={Boolean(subscriptionBusy) || !canPause || !pauseResumesAt}
+                    className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-transparent px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] transition duration-200 active:translate-y-px hover:bg-[var(--surface)] hover:text-[var(--text-primary)] disabled:pointer-events-none disabled:opacity-45"
                   >
-                    Pause 7d
-                  </ZookButton>
-                  <ZookButton
-                    type="button"
-                    tone="ghost"
-                    size="sm"
-                    disabled={Boolean(subscriptionBusy) || selectedSubscription.status !== "PAUSED"}
-                    state={subscriptionBusy === "resume" ? "loading" : "idle"}
-                    onClick={() => updateSubscription("resume")}
+                    {subscriptionBusy === "pause" ? "Pausing..." : pauseActionLabel}
+                  </ConfirmActionButton>
+                  <ConfirmActionButton
+                    title="Resume membership?"
+                    description="Resume this paused membership now and re-enable member access immediately."
+                    confirmLabel="Resume membership"
+                    onConfirm={() => updateSubscription("resume")}
+                    disabled={Boolean(subscriptionBusy) || !canResume}
+                    className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-transparent px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] transition duration-200 active:translate-y-px hover:bg-[var(--surface)] hover:text-[var(--text-primary)] disabled:pointer-events-none disabled:opacity-45"
                   >
-                    Resume
-                  </ZookButton>
+                    {subscriptionBusy === "resume" ? "Resuming..." : "Resume"}
+                  </ConfirmActionButton>
                 </div>
                 {subscriptionStatus ? (
                   <p

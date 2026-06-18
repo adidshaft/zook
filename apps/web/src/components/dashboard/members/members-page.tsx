@@ -148,18 +148,6 @@ export function MembersPage({
     const pauseDateIso = pauseResumesAt
       ? new Date(`${pauseResumesAt}T00:00:00.000Z`).toISOString()
       : "";
-    const confirmed = window.confirm(
-      action === "switch"
-        ? "Switch this member to the selected plan now? This changes the active membership immediately."
-        : action === "pause"
-          ? pauseResumesAt
-            ? `Pause this membership until ${pauseResumesAt}?`
-            : "Choose a resume date before pausing this membership."
-          : "Resume this paused membership now?",
-    );
-    if (!confirmed) {
-      return;
-    }
     if (action === "pause" && !pauseDateIso) {
       setSubscriptionStatusTone("danger");
       setSubscriptionStatus("Choose a resume date before pausing.");
@@ -261,7 +249,7 @@ export function MembersPage({
                 subscriptionStatus={subscriptionStatus}
                 subscriptionStatusTone={subscriptionStatusTone}
                 setSelectedMemberId={setSelectedMemberId}
-                updateSubscription={(action) => void updateSubscription(action)}
+                updateSubscription={updateSubscription}
               />
             </div>
             {joinRequestsPanel}
