@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AvatarInitials } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
+import { formatInrCompact } from "@/lib/format";
 import {
   ActivityRow,
   BarChart,
@@ -52,13 +53,6 @@ type AttentionRow = {
 
 function formatInr(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
-
-function formatInrCompact(paise: number) {
-  const rupees = paise / 100;
-  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
-  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}K`;
-  return `₹${Math.round(rupees)}`;
 }
 
 export function DashboardOverview({

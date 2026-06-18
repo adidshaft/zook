@@ -29,16 +29,10 @@ import {
   formatDaysRemaining,
   formatEnumLabel,
   formatInr,
+  formatInrCompact,
 } from "@/lib/format";
 import type { DashboardCharts, OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 import { CsvExportButton } from "../operational-shared";
-
-function formatInrCompact(paise: number) {
-  const rupees = paise / 100;
-  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
-  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}K`;
-  return `₹${Math.round(rupees)}`;
-}
 
 type TabId = "financials" | "attendance" | "members" | "snapshot";
 

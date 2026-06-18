@@ -561,3 +561,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate public join URL builders (`R59`) is closed: the join page,
   plan selector, and coupon form now share `publicJoinHref` for plan/referral/coupon/lang query
   construction.
+- **[code, fixed]** Duplicate compact rupee formatters (`R60`) is closed: dashboard overview
+  and read-only reports now share web `formatInrCompact` for K/L rupee chart labels.

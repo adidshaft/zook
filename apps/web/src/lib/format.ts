@@ -6,6 +6,13 @@ export function formatInr(paise: number): string {
   }).format(paise / 100);
 }
 
+export function formatInrCompact(paise: number): string {
+  const rupees = paise / 100;
+  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
+  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}K`;
+  return `₹${Math.round(rupees)}`;
+}
+
 export function formatCompactNumber(value: number): string {
   return new Intl.NumberFormat("en-IN", {
     notation: "compact",
