@@ -32,7 +32,6 @@ export * from "./audit-warning";
 export * from "./empty-state";
 export * from "./stat-strip";
 export * from "./setup-checklist";
-export * from "./confirm-sheet";
 export * from "./permission-sheet";
 export * from "./icon";
 export * from "./offline-banner";

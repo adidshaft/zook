@@ -464,3 +464,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Empty domain modules (`R24`) is closed: no-op `export {};` files and the
   empty AI domain barrel were removed from ai, gym, notifications, privacy, reception, tracking,
   and trainer domains.
+- **[code, fixed]** No-caller confirmation sheet (`R25`) is closed: the unused
+  `useConfirmSheet` bottom-sheet helper and its primitive barrel export were removed after exact
+  reference checks found no app callers.
