@@ -96,6 +96,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R29 Primitive category shims** — removed no-caller `cards.tsx`, `inputs.tsx`, and
   `layout.tsx` primitive forwarding barrels; the main primitive barrel now exports the real
   modules directly.
+- **6/R30 Placeholder mobile READMEs** — removed one-line scaffold README files under
+  `apps/mobile/src` that contained only directory headings and no useful local guidance.
 
 ## 1. Functional / correctness
 
