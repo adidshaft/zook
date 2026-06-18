@@ -263,7 +263,7 @@ export const publicMessages = {
     membershipActivates: "Membership activates",
     testMode:
       "Test mode is on for this environment. The next page simulates payment outcomes and will not collect real money.",
-    simulatedPayment: "Pay securely · sample mode",
+    simulatedPayment: "Pay securely · test mode",
     statusLabel: "Zook status",
     statusCopy: "Live status for the services Zook uses right now.",
     lastChecked: "Last checked",
@@ -511,7 +511,7 @@ export const publicMessages = {
     membershipActivates: "सदस्यता सक्रिय",
     testMode:
       "इस वातावरण में टेस्ट मोड चालू है. अगला पेज भुगतान परिणामों का सिमुलेशन करेगा और असली पैसा नहीं लेगा.",
-    simulatedPayment: "सुरक्षित भुगतान · सैंपल मोड",
+    simulatedPayment: "सुरक्षित भुगतान · टेस्ट मोड",
     statusLabel: "Zook स्थिति",
     statusCopy: "Zook जिन सेवाओं का अभी उपयोग कर रहा है उनकी लाइव स्थिति.",
     lastChecked: "अंतिम जांच",

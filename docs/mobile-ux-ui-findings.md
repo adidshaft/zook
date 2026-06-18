@@ -167,6 +167,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   attendance controls.
 - **6/R61 Platform console demo wording** — replaced demo/manual labels in the platform support
   console with seeded-test, manual-entry, and provider/test event wording.
+- **6/R62 Public checkout test-mode label** — changed the simulated checkout CTA from
+  "sample mode" to "test mode" in public English/Hindi copy so it matches the surrounding
+  no-real-money payment explanation.
 
 ## 1. Functional / correctness
 
