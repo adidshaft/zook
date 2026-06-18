@@ -20,8 +20,6 @@ const languageOptions: LanguageOption[] = [
   { value: "hi", label: "हिंदी", caption: "Hindi" },
 ];
 
-const comingSoonLanguages = ["தமிழ்", "తెలుగు", "ಕನ್ನಡ", "मराठी", "বাংলা"];
-
 export default function OnboardingLanguageStep() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -95,21 +93,6 @@ export default function OnboardingLanguageStep() {
           })}
         </View>
 
-        <View style={styles.comingSoon}>
-          <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages on the way</Text>
-          <View style={styles.comingSoonChips}>
-            {comingSoonLanguages.map((name) => (
-              <View
-                key={name}
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-                style={[styles.comingSoonChip, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}
-              >
-                <Text style={[styles.comingSoonChipText, { color: palette.text.tertiary }]}>{name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -179,29 +162,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,
-  },
-  comingSoon: {
-    gap: 10,
-  },
-  comingSoonHeader: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  comingSoonChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  comingSoonChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  comingSoonChipText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
   },
   footer: {
     gap: 12,

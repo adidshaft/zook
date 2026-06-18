@@ -1,20 +1,16 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 
 import { AppHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { layout, spacing, typography } from "@/lib/theme";
-import { useTheme } from "@/lib/theme/index";
+import { layout, spacing } from "@/lib/theme";
 
 const options: Array<{ label: string; value: LocalePreference }> = [
   { label: "English", value: "en" },
   { label: "Hindi", value: "hi" },
 ];
 
-const comingSoonLanguages = ["தமிழ்", "తెలుగు", "ಕನ್ನಡ", "मराठी", "বাংলা"];
-
 export default function LanguageSettingsScreen() {
   const { preference, setLocalePreference } = useI18n();
-  const { palette } = useTheme();
   return (
     <>
       <ZookScreen testID="settings-language-screen">
@@ -25,27 +21,6 @@ export default function LanguageSettingsScreen() {
             value={preference}
             onChange={(value) => void setLocalePreference(value)}
           />
-          <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>
-            More languages coming soon
-          </Text>
-          <View style={styles.languagePreviewRow}>
-            {comingSoonLanguages.map((name) => (
-              <View
-                key={name}
-                style={[
-                  styles.languagePreview,
-                  {
-                    backgroundColor: palette.surface.default,
-                    borderColor: palette.border.subtle,
-                  },
-                ]}
-              >
-                <Text style={[styles.languagePreviewText, { color: palette.text.tertiary }]}>
-                  {name}
-                </Text>
-              </View>
-            ))}
-          </View>
         </ScrollView>
       </ZookScreen>
     </>
@@ -61,15 +36,4 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  comingSoonHeader: { ...typography.small, marginTop: spacing.sm },
-  languagePreviewRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  languagePreview: {
-    borderRadius: 20,
-    borderWidth: 1,
-    minHeight: 40,
-    paddingHorizontal: 14,
-    justifyContent: "center",
-    opacity: 0.72,
-  },
-  languagePreviewText: typography.caption,
 });

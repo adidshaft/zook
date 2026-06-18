@@ -34,6 +34,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   static emphasis but no longer renders a looping halo.
 - **3.6 Onboarding splash carried decorative cue clutter** — removed the ambient orbs, feature
   chips, frame layer, and faux scan glyph so the intro focuses on the Zook mark and tap affordance.
+- **3.7 Settings/onboarding showed future-feature chips** — removed non-actionable coming-soon
+  language previews and the WhatsApp notification card from mobile settings/onboarding flows.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -128,6 +130,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Fault:** The splash screen layered ambient orb shapes, a separate frame, feature chips, and a faux scanner glyph around the Zook mark.
 - **Experience:** First launch felt busier than the rest of the cleaned mobile surfaces and repeated product cues before users reached onboarding.
 - **Fix:** Keep the brand mark, one concise value sentence, and the tap-to-continue affordance; remove the decorative layers and their styles.
+
+### 3.7 Settings/onboarding showed future-feature chips  **[ui, minor, fixed]**
+- **Fault:** Language onboarding/settings displayed disabled future-language chips, and notification settings had a separate WhatsApp "Coming Soon!" card.
+- **Experience:** Users saw non-actionable controls on screens meant for active preferences.
+- **Fix:** Remove the future-feature chip rows/cards and leave only currently configurable preferences.
 
 ---
 
