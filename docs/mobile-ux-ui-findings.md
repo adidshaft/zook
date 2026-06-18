@@ -904,3 +904,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile membership focus callout cues (`R178`) are closed:
   non-purchase membership focus icons now use neutral styling instead of informational blue,
   keeping lime only for buy and checkout action targets.
+- **[ui, fixed]** Overstated web platform support visible-count cues (`R179`) are closed:
+  loaded user and payment support-console counts now use neutral badges instead of
+  informational blue, keeping amber for loading state.

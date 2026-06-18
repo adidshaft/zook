@@ -795,7 +795,7 @@ export function PlatformOperationsPanel({
                 title="User search and details"
                 description="Find members, staff, owners, and seeded test accounts across the platform."
                 badge={
-                  <Pill tone={usersState.loading ? "amber" : "blue"}>
+                  <Pill tone={usersState.loading ? "amber" : "neutral"}>
                     {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
                   </Pill>
                 }
@@ -971,7 +971,7 @@ export function PlatformOperationsPanel({
                 title="Payment ledger"
                 description="Test and live payment records appear here immediately after checkout or desk payment creation."
                 badge={
-                  <Pill tone={paymentsState.loading ? "amber" : "blue"}>
+                  <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length
                       ? "Loading"
                       : `${paymentRows.length} visible`}
