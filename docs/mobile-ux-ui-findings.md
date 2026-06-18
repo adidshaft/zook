@@ -1021,3 +1021,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated public gym not-found label cue (`R217`) is closed:
   the missing-gym page now uses a neutral label instead of amber for the repeated
   Gym not found text, keeping the primary state on the heading and recovery action.
+- **[ui, fixed]** Decorative public home feature-grid color cues (`R218`) are closed:
+  owner/member feature rows now share neutral icon and hover styling instead of lime
+  and amber variants, removing category color that did not communicate state.
