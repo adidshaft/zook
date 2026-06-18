@@ -182,6 +182,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R67 Mobile local test wording** — replaced remaining mobile runtime/offline transport
   "sample" and "demo mode" user-facing copy with local test wording while keeping internal
   runtime identifiers unchanged.
+- **6/R68 Cross-app local test wording** — replaced remaining web/core/mobile build diagnostics
+  and checkout/dashboard labels that called local test surfaces "sample" or "demo mode".
 
 ## 1. Functional / correctness
 

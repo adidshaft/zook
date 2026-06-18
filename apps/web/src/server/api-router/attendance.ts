@@ -105,7 +105,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     const orgId = ctx.orgId;
     if (!orgId) {
-      throw validationError("Select a gym before trying a sample check-in.");
+      throw validationError("Select a gym before trying a test check-in.");
     }
     const branch = await resolveOrgBranch(orgId);
     const dateKey = operationalDateKey();

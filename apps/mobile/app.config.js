@@ -283,7 +283,7 @@ module.exports = () => {
   const sentryProject = (process.env.SENTRY_MOBILE_PROJECT ?? process.env.SENTRY_PROJECT)?.trim();
   const shouldConfigureNativeSentry = releaseProfile !== "local" && sentryOrg && sentryProject;
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
-    throw new Error("Sample mode is only available for local mobile builds.");
+    throw new Error("Local test mode is only available for local mobile builds.");
   }
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ?? process.env.EAS_PROJECT_ID ?? baseConfig.extra?.eas?.projectId;

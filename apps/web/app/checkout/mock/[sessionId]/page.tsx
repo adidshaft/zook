@@ -75,12 +75,12 @@ export default async function MockCheckoutPage({
   const copy =
     locale === "hi"
       ? {
-          sampleMembership: "नमूना सदस्यता",
+          sampleMembership: "टेस्ट सदस्यता",
           confirmationRequired: "पुष्टि आवश्यक",
           testBanner: "टेस्ट मोड - यह असली पेमेंट नहीं है. किसी भी परिणाम पर क्लिक करके सिमुलेट करें.",
         }
       : {
-          sampleMembership: "Sample membership",
+          sampleMembership: "Test membership",
           confirmationRequired: "Confirmation required",
           testBanner: "TEST MODE - No real payment. Click any outcome to simulate.",
         };
@@ -88,7 +88,7 @@ export default async function MockCheckoutPage({
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
   } catch {
-    // Payment records may be unavailable during local samples.
+    // Payment records may be unavailable during local test runs.
   }
   const canRenderLocalDemo = sessionId === "demo" && getAppEnv() !== "production";
   if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {

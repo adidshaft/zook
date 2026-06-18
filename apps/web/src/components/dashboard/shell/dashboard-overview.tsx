@@ -270,7 +270,7 @@ export function DashboardOverview({
               Live
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Demo mode"}
+              {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Local data"}
             </span>
           </div>
         }

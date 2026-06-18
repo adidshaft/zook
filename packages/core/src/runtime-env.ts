@@ -244,7 +244,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
     issues.push({
       level: "error",
       code: "OFFLINE_DEMO_NON_LOCAL",
-      message: "Sample mode is only available in local builds.",
+      message: "Local test mode is only available in local builds.",
     });
   }
 
