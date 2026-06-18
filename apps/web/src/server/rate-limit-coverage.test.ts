@@ -26,6 +26,10 @@ const organizationNotificationsRouteSource = readFileSync(
   "utf8",
 );
 const privacyRouteSource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
+const platformPaymentsRouteSource = readFileSync(
+  new URL("./api-router/platform-payments.ts", import.meta.url),
+  "utf8",
+);
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 const staffRouteSource = readFileSync(new URL("./api-router/staff.ts", import.meta.url), "utf8");
 
@@ -75,7 +79,12 @@ const sensitiveRoutes = [
   },
   { label: "manual payment", needle: 'pathMatches(path, ["orgs", /.+/, "manual-payments"])' },
   { label: "payment refund", needle: 'pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])' },
-  { label: "platform payment refund", needle: 'pathMatches(path, ["platform", "payments", /.+/, "refund"])' },
+  {
+    label: "platform payment refund",
+    needle: 'pathMatches(path, ["platform", "payments", /.+/, "refund"])',
+    source: platformPaymentsRouteSource,
+    sourceLabel: "api-router/platform-payments.ts",
+  },
   { label: "member subscription switch", needle: 'pathMatches(path, ["me", "subscriptions", /.+/, "switch"])' },
   { label: "org subscription switch", needle: 'pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "switch"])' },
   {

@@ -36,6 +36,7 @@ import { handlePlatformBroadcasts } from "./platform-broadcasts";
 import { handlePlatformFlags } from "./platform-flags";
 import { handlePlatformModeration } from "./platform-moderation";
 import { handlePlatformMonitoring } from "./platform-monitoring";
+import { handlePlatformPayments } from "./platform-payments";
 import { handlePlatformSettings } from "./platform-settings";
 import { handlePlatformUsers } from "./platform-users";
 import { handlePrivacy } from "./privacy";
@@ -94,6 +95,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handlePlatformFlags, firstSegments: ["platform"] },
   { handler: handlePlatformModeration, firstSegments: ["platform"] },
   { handler: handlePlatformMonitoring, firstSegments: ["platform"] },
+  { handler: handlePlatformPayments, firstSegments: ["platform"] },
   { handler: handlePlatformSettings, firstSegments: ["platform"] },
   { handler: handlePlatformUsers, firstSegments: ["platform"] },
   {

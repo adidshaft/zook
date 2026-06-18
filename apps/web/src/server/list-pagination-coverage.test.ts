@@ -11,6 +11,10 @@ const memberPlansGoalsSource = readFileSync(
   "utf8",
 );
 const privacySource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
+const platformPaymentsSource = readFileSync(
+  new URL("./api-router/platform-payments.ts", import.meta.url),
+  "utf8",
+);
 const shopOrdersSource = readFileSync(
   new URL("./domains/shop-orders/read-models.ts", import.meta.url),
   "utf8",
@@ -46,6 +50,7 @@ describe("list pagination coverage", () => {
     expectRouteListBounded(
       'pathMatches(path, ["platform", "payments", /.+/])',
       "prisma.paymentEvent.findMany",
+      platformPaymentsSource,
     );
     expectRouteListBounded(
       'pathMatches(path, ["platform", "subscriptions"])',
