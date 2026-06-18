@@ -436,7 +436,7 @@ export default function GymProfileScreen() {
               <InfoRow
                 label="Address"
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
-                tone="blue"
+                tone="neutral"
               />
               {gym.equipment?.length ? (
                 <View style={styles.inlineChipBlock}>
