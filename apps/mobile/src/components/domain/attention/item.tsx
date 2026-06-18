@@ -1,14 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { IconBubble, ListRow } from "@/components/primitives";
+import { IconBubble, ListRow, normalizePillTone } from "@/components/primitives";
 import { typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { AttentionItem } from "./types";
-
-function normalizeTone(tone: AttentionItem["tone"]) {
-  return tone === "danger" ? "red" : tone;
-}
 
 export function AttentionListItem({ item }: { item: AttentionItem }) {
   const { palette } = useTheme();
@@ -16,7 +12,7 @@ export function AttentionListItem({ item }: { item: AttentionItem }) {
     <ListRow
       title={item.title}
       subtitle={item.subtitle}
-      leading={<IconBubble icon={item.icon} tone={normalizeTone(item.tone)} />}
+      leading={<IconBubble icon={item.icon} tone={normalizePillTone(item.tone)} />}
       trailing={
         item.cta ? (
           <View style={styles.trailing}>

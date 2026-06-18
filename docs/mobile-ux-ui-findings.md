@@ -700,3 +700,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   calls.
 - **[code, fixed]** Ad hoc owner chart delta formatting (`R110`) is closed: owner dashboard
   charts now use shared signed-percent formatting instead of carrying a local delta formatter.
+- **[code, fixed]** Duplicate mobile danger tone normalization (`R111`) is closed: member list
+  badges and attention items now share primitive tone normalization instead of mapping
+  `danger` to `red` inline.

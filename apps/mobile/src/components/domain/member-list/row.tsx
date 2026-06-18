@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card, Pill, StatusChip, ZookButton } from "@/components/primitives";
+import { Card, normalizePillTone, Pill, StatusChip, ZookButton } from "@/components/primitives";
 import { formatInitials, formatRedactedPhone } from "@/lib/formatting";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
@@ -67,7 +67,7 @@ export function MemberListRow({
             </Pressable>
           ) : null}
           {item.badges?.map((badge) => (
-            <Pill key={badge.label} tone={badge.tone === "danger" ? "red" : badge.tone}>
+            <Pill key={badge.label} tone={normalizePillTone(badge.tone)}>
               {badge.label}
             </Pill>
           ))}

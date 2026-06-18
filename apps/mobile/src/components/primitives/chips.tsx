@@ -89,6 +89,10 @@ export function Pill(props: Parameters<typeof ZookChip>[0]) {
   return <ZookChip {...props} />;
 }
 
+export function normalizePillTone(tone?: PillTone | "danger" | null): PillTone {
+  return tone === "danger" ? "red" : tone ?? "neutral";
+}
+
 export function toneForStatusLabel(status: string): PillTone {
   const normalized = status.toLowerCase().replace(/[_-]+/g, " ");
   if (
