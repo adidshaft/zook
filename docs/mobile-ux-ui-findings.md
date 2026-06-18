@@ -145,6 +145,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   the canonical `Skeleton` primitive and removed the wrapper export.
 - **6/R52 Web placeholder README cleanup** — removed one-line scaffold README files from web
   domain, query-hook, and overview component folders.
+- **6/R53 App-wide scaffold README cleanup** — removed remaining one-line placeholder README
+  files across app route, component, public asset, test, and website folders.
 
 ## 1. Functional / correctness
 
