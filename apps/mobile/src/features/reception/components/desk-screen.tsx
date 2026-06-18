@@ -82,7 +82,7 @@ export function ReceptionDeskScreenBody() {
                   label: "Today",
                   value: todayCount,
                   hint: "Check-ins",
-                  tone: "lime",
+                  tone: "neutral",
                   icon: "qr-code-outline",
                 },
                 {
@@ -131,7 +131,7 @@ export function ReceptionDeskScreenBody() {
             <SectionHeader
               title="Live feed"
               subtitle="Recent check-ins for this gym."
-              action={<Pill tone="lime">{todayCount} today</Pill>}
+              action={<Pill tone="neutral">{todayCount} today</Pill>}
             />
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
