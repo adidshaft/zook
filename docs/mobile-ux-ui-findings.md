@@ -220,6 +220,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   deleted amber/red glow token entries that no longer had app callers.
 - **6/R85 Scanner line glow layer** — removed the decorative scanner-line glow/shadow layer
   and no-op Android override while keeping the animated scan line itself.
+- **6/R86 Product placeholder glow** — removed the product-card placeholder glow layer and
+  deleted the now-unused `glowColor` tone-palette field.
 
 ## 1. Functional / correctness
 

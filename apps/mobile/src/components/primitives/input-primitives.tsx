@@ -303,10 +303,7 @@ export function ProductCard({
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
         ) : (
-          <>
-            <View style={[styles.productVisualGlow, { backgroundColor: palette.backgroundColor }]} />
-            <Ionicons name={icon} size={38} color={palette.color} />
-          </>
+          <Ionicons name={icon} size={38} color={palette.color} />
         )}
         {tone === "red" || tone === "amber" ? (
           <View
@@ -630,13 +627,6 @@ const styles = StyleSheet.create({
   productImage: {
     width: "100%",
     height: "100%",
-  },
-  productVisualGlow: {
-    position: "absolute",
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    opacity: 0.82,
   },
   productBadge: {
     position: "absolute",

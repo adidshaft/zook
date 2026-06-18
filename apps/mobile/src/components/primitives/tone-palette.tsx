@@ -13,7 +13,6 @@ export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palett
       borderColor: palette.border.focus,
       color: palette.accent.base,
       backgroundColor: palette.surface.accentSoft,
-      glowColor: palette.surface.accentSoft,
     };
   }
   if (tone === "amber") {
@@ -21,7 +20,6 @@ export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palett
       borderColor: palette.feedback.warning,
       color: palette.feedback.warning,
       backgroundColor: palette.surface.warningSoft,
-      glowColor: palette.surface.warningSoft,
     };
   }
   if (tone === "red") {
@@ -29,7 +27,6 @@ export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palett
       borderColor: palette.feedback.danger,
       color: palette.feedback.danger,
       backgroundColor: palette.surface.dangerSoft,
-      glowColor: palette.surface.dangerSoft,
     };
   }
   if (tone === "blue") {
@@ -37,7 +34,6 @@ export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palett
       borderColor: palette.feedback.info,
       color: palette.feedback.info,
       backgroundColor: palette.bg.sunken,
-      glowColor: palette.bg.sunken,
     };
   }
   if (tone === "violet") {
@@ -45,14 +41,12 @@ export function getTonePalette(tone: PillTone, _mode: ThemeMode, palette: Palett
       borderColor: palette.border.default,
       color: palette.text.primary,
       backgroundColor: palette.surface.raised,
-      glowColor: palette.surface.default,
     };
   }
   return {
     borderColor: palette.border.subtle,
     color: palette.text.secondary,
     backgroundColor: palette.surface.default,
-    glowColor: palette.surface.default,
   };
 }
 
