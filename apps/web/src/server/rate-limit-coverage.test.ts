@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
 const authRouteSource = readFileSync(new URL("./api-router/auth.ts", import.meta.url), "utf8");
+const couponsReferralsRouteSource = readFileSync(
+  new URL("./api-router/coupons-referrals.ts", import.meta.url),
+  "utf8",
+);
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 
@@ -46,7 +50,12 @@ const sensitiveRoutes = [
       'if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]))'
   },
   { label: "autopay cancel", needle: 'pathMatches(path, ["me", "memberships", /.+/, "autopay"])' },
-  { label: "coupon validate", needle: 'pathMatches(path, ["orgs", /.+/, "coupons", "validate"])' },
+  {
+    label: "coupon validate",
+    needle: 'pathMatches(path, ["orgs", /.+/, "coupons", "validate"])',
+    source: couponsReferralsRouteSource,
+    sourceLabel: "api-router/coupons-referrals.ts",
+  },
   { label: "staff invite", needle: 'pathMatches(path, ["orgs", /.+/, "staff", "invite"])' },
   { label: "AI request", needle: 'pathMatches(path, ["ai", "generate-plan"])' },
   { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
