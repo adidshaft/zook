@@ -16,6 +16,7 @@ const scanTargets = [
 const bannedCopy = [
   /\bmvp\b/i,
   /\bdefault branch\b/i,
+  /\bsample data\b/i,
   /\bsample view\b/i,
   /\btest mode\b/i,
   /\bmock\b/i,

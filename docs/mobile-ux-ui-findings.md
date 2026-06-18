@@ -246,6 +246,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   dashboard primitive `StatusDot` while preserving the status color cue.
 - **6/R98 Release-readiness wording** — changed stale "sample mode" release-check output to
   the actual `offlineDemo` terminology used by the mobile config.
+- **6/R99 Dashboard copy guard** — added "sample data" to the dashboard copy guard so the
+  cleaned fallback workspace label cannot regress silently.
 
 ## 1. Functional / correctness
 
