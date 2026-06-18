@@ -197,6 +197,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   from the public plan selector pending overlay while keeping the spinner and status label.
 - **6/R74 Public hero ring motion** — kept the public home hero ring ornament but removed its
   infinite orbital rotations so the first viewport no longer carries always-on decorative motion.
+- **6/R75 Dashboard pulse-dot motion** — changed the shared web `PulseDot` from an infinite
+  pulsing animation to a static status dot while preserving color, size, and layout.
 
 ## 1. Functional / correctness
 

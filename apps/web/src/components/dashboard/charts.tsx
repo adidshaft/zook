@@ -816,21 +816,9 @@ export function ActivityRow({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Pulse dot — small live indicator.
- * ────────────────────────────────────────────────────────────────────────── */
-
 export function PulseDot({ tone = "lime", size = 8 }: { tone?: ChartTone; size?: number }) {
   const color = TONE_COLORS[tone];
   return (
-    <span className="relative inline-flex" style={{ width: size, height: size }}>
-      <motion.span
-        className="absolute inset-0 rounded-full"
-        style={{ background: color }}
-        animate={{ scale: [1, 2, 1], opacity: [0.55, 0, 0.55] }}
-        transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-      />
-      <span className="relative h-full w-full rounded-full" style={{ background: color }} />
-    </span>
+    <span className="inline-flex rounded-full" style={{ width: size, height: size, background: color }} />
   );
 }
