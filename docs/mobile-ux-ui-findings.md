@@ -576,3 +576,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web enum display formatting (`R65`) is closed: pricing,
   public plan cards, and dashboard overview now use shared `formatEnumLabel` instead of
   hand-rolled underscore replacement.
+- **[code, fixed]** Duplicate mobile role title-case helpers (`R66`) is closed: auth and role
+  switcher copy now reuse shared mobile `titleCaseFromCode` instead of local role formatter
+  copies.

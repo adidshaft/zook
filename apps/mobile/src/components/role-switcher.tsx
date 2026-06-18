@@ -13,6 +13,7 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -24,15 +25,6 @@ type RoleCombo = {
   orgName: string;
   role: Role;
 };
-
-function titleCaseRole(role: Role) {
-  return role
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 export function RoleSwitcherChip() {
   const { palette } = useTheme();
@@ -56,7 +48,7 @@ export function RoleSwitcherChip() {
 
   const currentOrgId = ctx?.org?.orgId ?? activeOrgId;
   const currentLabel = ctx?.org
-    ? `${ctx.org.name} · ${titleCaseRole(ctx.role)}`
+    ? `${ctx.org.name} · ${titleCaseFromCode(ctx.role)}`
     : ctx?.isPlatformAdmin
       ? "Zook · Platform Admin"
       : "Zook · Member";
@@ -190,7 +182,7 @@ export function RoleSwitcherChip() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseRole(combo.role)}`}
+                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
                     subtitle={selected ? "Current workspace" : "Switch to this workspace"}
                     leading={
                       <IconBubble
@@ -245,7 +237,7 @@ export function RoleSwitcherContextPill() {
   const currentOrgName = ctx?.org?.name ?? "Zook";
   const rolesInOrg =
     session?.organizations.find((organization) => organization.orgId === currentOrgId)?.roles ?? [];
-  const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseRole(ctx.role) : null;
+  const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseFromCode(ctx.role) : null;
   const canSwitch = combos.length > 1;
   const initial = currentOrgName.trim().charAt(0).toUpperCase() || "Z";
 
@@ -385,7 +377,7 @@ export function RoleSwitcherContextPill() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseRole(combo.role)}`}
+                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
                     subtitle={selected ? "Current workspace" : "Switch to this workspace"}
                     leading={
                       <IconBubble

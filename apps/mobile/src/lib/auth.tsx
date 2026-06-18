@@ -21,6 +21,7 @@ import {
   getOfflineDemoRoleOverride,
   isOfflineDemoMode,
 } from "./demo-mode";
+import { titleCaseFromCode } from "./formatting";
 import { applySessionLocalePreference } from "./i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 import { typography, useTheme } from "./theme";
@@ -60,15 +61,6 @@ function sanitizeOtpCode(value: string) {
     .normalize("NFKC")
     .replace(/[^0-9]/g, "")
     .slice(0, 6);
-}
-
-function titleCaseRole(role: Role) {
-  return role
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 interface RequestOtpResult {
@@ -698,7 +690,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (roleSwitchOverlayTimerRef.current) {
         clearTimeout(roleSwitchOverlayTimerRef.current);
       }
-      setRoleSwitchMessage(`Switching to ${titleCaseRole(role)}...`);
+      setRoleSwitchMessage(`Switching to ${titleCaseFromCode(role)}...`);
       try {
         await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
         activeRoleRef.current = role;
