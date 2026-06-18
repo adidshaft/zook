@@ -285,5 +285,3 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
-
-export const Button = ZookButton;

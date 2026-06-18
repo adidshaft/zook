@@ -3,7 +3,7 @@ import type { Href } from "expo-router";
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Button } from "./buttons";
+import { ZookButton } from "./buttons";
 import { IconBubble } from "./icon-bubble";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
@@ -40,7 +40,7 @@ export function EmptyState({
         {body ? <Text style={[styles.body, { color: palette.text.secondary }]}>{body}</Text> : null}
       </View>
       {cta ? (
-        <Button
+        <ZookButton
           variant="secondary"
           size="sm"
           href={cta.href}
@@ -48,7 +48,7 @@ export function EmptyState({
           accessibilityLabel={cta.label}
         >
           {cta.label}
-        </Button>
+        </ZookButton>
       ) : null}
       {action ? <View style={styles.action}>{action}</View> : null}
     </View>

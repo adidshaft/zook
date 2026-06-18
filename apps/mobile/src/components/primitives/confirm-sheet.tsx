@@ -6,7 +6,7 @@ import {
   BottomSheetView,
   type BottomSheetModal as BottomSheetModalHandle,
 } from "@/components/expo-safe-bottom-sheet";
-import { Button } from "./buttons";
+import { ZookButton } from "./buttons";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 type ConfirmSheetConfig = {
@@ -47,12 +47,12 @@ export function useConfirmSheet() {
           ) : null}
         </View>
         <View style={styles.actions}>
-          <Button variant="destructive" onPress={() => void runConfirm()} fullWidth>
+          <ZookButton variant="destructive" onPress={() => void runConfirm()} fullWidth>
             {config?.destructiveLabel ?? "Confirm"}
-          </Button>
-          <Button variant="secondary" onPress={dismiss} fullWidth>
+          </ZookButton>
+          <ZookButton variant="secondary" onPress={dismiss} fullWidth>
             {config?.cancelLabel ?? "Cancel"}
-          </Button>
+          </ZookButton>
         </View>
       </BottomSheetView>
     </BottomSheetModal>

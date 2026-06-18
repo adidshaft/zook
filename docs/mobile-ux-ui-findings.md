@@ -50,6 +50,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   exports so the mobile primitive surface only exposes components with live callers.
 - **6/R11 Unused button aliases** — removed unused `DangerButton`, `GhostButton`,
   `PrimaryLink`, and `SecondaryLink` wrappers in favor of `ZookButton` variants.
+- **6/R12 Generic button alias** — replaced the remaining internal `Button` alias call sites
+  with `ZookButton` and removed the alias export.
 
 ## 1. Functional / correctness
 
@@ -167,3 +169,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   removed after exact reference checks showed no app callers.
 - **[code, fixed]** Unused button aliases (`R11`) is closed: old button/link wrapper exports
   with no app callers were removed; callers should use `ZookButton` with `variant`/`href`.
+- **[code, fixed]** Generic button alias (`R12`) is closed: internal `Button` alias usage in
+  empty states and confirm sheets now uses `ZookButton` directly.
