@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Permission, Role } from "@zook/core";
+import type { Permission } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
 import { ConfirmDialog } from "../dashboard-primitives";
 import { Send } from "lucide-react";
@@ -48,11 +48,9 @@ function isAudience(value: string | null): value is Audience {
 
 export function NotificationComposerPanel({
   orgId,
-  roles = [],
   permissions = [],
 }: {
   orgId: string;
-  roles?: Role[];
   permissions?: Permission[];
 }) {
   const searchParams = useSearchParams();
@@ -113,7 +111,6 @@ export function NotificationComposerPanel({
           option.value,
           audienceOptions(option.value).some((candidate) =>
             canUseNotificationOption({
-              roles,
               permissions,
               type: option.value,
               audience: permissionAudience(candidate.value),
@@ -121,20 +118,19 @@ export function NotificationComposerPanel({
           ),
         ]),
       ),
-    [permissions, roles],
+    [permissions],
   );
   const availableAudiences = useMemo(
     () =>
       audienceOptions(type).map((option) => ({
         ...option,
         allowed: canUseNotificationOption({
-          roles,
           permissions,
           type,
           audience: permissionAudience(option.value),
         }),
       })),
-    [permissions, roles, type],
+    [permissions, type],
   );
   const canManageTemplates = permissions.includes("NOTIFICATION_MANAGE_TEMPLATES");
   const notificationPayload = useMemo(

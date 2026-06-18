@@ -512,3 +512,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal dashboard leaf types (`R40`) is closed: chart point,
   plan-mix point, and shop-order item aliases are no longer exported because exact reference checks
   showed they are only used to compose exported dashboard models inside `types.ts`.
+- **[code, fixed]** Dead notification role threading (`R41`) is closed: notification composer
+  permission checks no longer accept or forward a `roles` parameter because exact reference checks
+  showed the helper only reads explicit notification permissions.

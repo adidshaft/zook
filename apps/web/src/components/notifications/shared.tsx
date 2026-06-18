@@ -1,6 +1,6 @@
 "use client";
 
-import type { Permission, Role } from "@zook/core";
+import type { Permission } from "@zook/core";
 
 export type NotificationType =
   | "TRANSACTIONAL"
@@ -168,7 +168,6 @@ export function permissionAudience(audience: Audience): PermissionAudience {
 }
 
 export function canUseNotificationOption(input: {
-  roles: Role[];
   permissions: Permission[];
   type: NotificationType;
   audience: PermissionAudience;

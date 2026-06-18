@@ -55,7 +55,6 @@ const REGISTRY: Record<
       organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
-      roles={props.roles ?? []}
       permissions={props.permissions ?? []}
       view="compose"
     />
@@ -66,7 +65,6 @@ const REGISTRY: Record<
       organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
-      roles={props.roles ?? []}
       permissions={props.permissions ?? []}
       view="templates"
     />
@@ -77,7 +75,6 @@ const REGISTRY: Record<
       organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
-      roles={props.roles ?? []}
       permissions={props.permissions ?? []}
       view="history"
     />

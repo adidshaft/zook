@@ -12,7 +12,7 @@ import type {
   OrganizationSnapshot,
   OrganizationSummary,
 } from "@/components/dashboard/types";
-import type { Permission, Role } from "@zook/core";
+import type { Permission } from "@zook/core";
 import { HelpHint } from "../../ui";
 
 export function NotificationsPanel({
@@ -20,7 +20,6 @@ export function NotificationsPanel({
   organization,
   summary,
   initialNotifications,
-  roles = [],
   permissions = [],
   view = "compose",
 }: {
@@ -28,7 +27,6 @@ export function NotificationsPanel({
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   initialNotifications: NotificationSnapshot[];
-  roles?: Role[];
   permissions?: Permission[];
   view?: "compose" | "templates" | "history";
 }) {
@@ -57,7 +55,7 @@ export function NotificationsPanel({
 
   return (
     <div className="grid gap-4">
-      <NotificationComposerPanel orgId={orgId} roles={roles} permissions={permissions} />
+      <NotificationComposerPanel orgId={orgId} permissions={permissions} />
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <GlassCard>
           <SectionHeader
