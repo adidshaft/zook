@@ -231,16 +231,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
+    justifyContent: "space-between",
     minWidth: 0,
+    width: "100%",
   },
   title: {
     // Tab-root screens intentionally use the larger landing-page title scale;
     // pushed screens route through AppHeader's compact headerTitle token.
     ...typography.screenTitle,
-    flexShrink: 0,
+    flexShrink: 1,
+    minWidth: 0,
   },
   titleAccessory: {
     flexShrink: 1,
+    marginLeft: "auto",
     minWidth: 0,
   },
   subtitle: {
