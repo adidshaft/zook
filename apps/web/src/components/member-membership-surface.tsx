@@ -101,7 +101,7 @@ export async function renderMembershipSurface(
                         <Pill tone={toneForMemberSubscriptionStatus(subscription.status)}>
                           {formatEnumLabel(subscription.status)}
                         </Pill>
-                        {autopay ? <Pill tone="blue">Autopay on</Pill> : null}
+                        {autopay ? <Pill tone="lime">Autopay on</Pill> : null}
                       </div>
                       <h2 className="mt-4 text-2xl font-semibold text-white">
                         {organization?.name ?? "Zook gym"}

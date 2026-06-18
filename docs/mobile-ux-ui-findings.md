@@ -757,3 +757,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web desk initials cleanup (`R129`) is closed: desk queue rows
   now use the shared web avatar-initials primitive instead of carrying a local one-letter
   member initial formatter.
+- **[ui, fixed]** Understated web member autopay cue (`R130`) is closed: the member web
+  membership surface now uses success tone for active/authenticated autopay instead of
+  informational blue, matching the mobile recurring-renewal cue.
