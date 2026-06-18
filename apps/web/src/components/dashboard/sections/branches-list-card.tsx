@@ -68,7 +68,7 @@ export function BranchesListCard({
         eyebrow="Locations"
         title="Branch list"
         description="Keep addresses, managers, and active branches ready for member check-ins and staff work."
-        badge={<Pill tone="blue">{branches.filter((branch) => branch.active).length} active</Pill>}
+        badge={<Pill>{branches.filter((branch) => branch.active).length} active</Pill>}
       />
       <div className="mt-5 grid gap-3">
         {branchesState.error ? <ErrorNotice message={branchesState.error} /> : null}

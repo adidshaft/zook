@@ -871,3 +871,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web platform referral-count cue (`R167`) is closed: subscription
   table referral counts now use neutral badges instead of informational blue, keeping status
   color on organization and mandate state.
+- **[ui, fixed]** Overstated web branch active-count cue (`R168`) is closed: the branch list
+  header active-count aggregate now uses a neutral badge instead of informational blue,
+  keeping active/default/paused color on each branch row status pill.
