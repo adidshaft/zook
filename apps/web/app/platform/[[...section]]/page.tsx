@@ -185,7 +185,7 @@ export default async function PlatformPage({
                 <DashboardSignOutButton compact />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Pill tone="lime">Production</Pill>
+                <Pill>Production</Pill>
                 <Pill>{activeNavLabel}</Pill>
               </div>
             </GlassCard>
@@ -198,8 +198,8 @@ export default async function PlatformPage({
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 lg:hidden">
-                  <Pill tone="lime">Production</Pill>
-                  <Pill tone="amber">Platform team</Pill>
+                  <Pill>Production</Pill>
+                  <Pill>Platform team</Pill>
                   <Pill>{activeNavLabel}</Pill>
                 </div>
                 <div className="mt-3 min-w-0 lg:mt-0">

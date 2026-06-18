@@ -946,3 +946,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public no-results label cue (`R192`) is closed: the gym
   discovery no-results badge now uses neutral styling instead of amber, keeping warning
   color for unavailable and approval-required states.
+- **[ui, fixed]** Overstated web platform header-label cues (`R193`) are closed:
+  Production and Platform team header badges now use neutral styling instead of
+  lime/amber, keeping stronger colors for live health, selected navigation, and warnings.
