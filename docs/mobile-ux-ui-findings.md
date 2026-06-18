@@ -772,3 +772,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile profile-shortcut initials cleanup (`R134`) is closed:
   the profile shortcut now uses the shared mobile initials formatter instead of carrying a
   local name-splitting helper.
+- **[code, fixed]** Duplicate mobile public-gym initials cleanup (`R135`) is closed: public
+  gym and trainer fallback avatars now use the shared mobile initials formatter instead of
+  a route-local name-splitting helper.

@@ -39,6 +39,7 @@ import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
 import {
+  formatInitials,
   formatInr,
   formatLongDate,
   formatVisitLimit,
@@ -373,7 +374,7 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>{initialsForName(gym.name)}</Text>
+                    <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>{formatInitials(gym.name, "T")}</Text>
                   )}
                 </View>
               </View>
@@ -496,7 +497,7 @@ export default function GymProfileScreen() {
                         ) : (
                           <View style={[styles.trainerImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
                             <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
-                              {initialsForName(trainer.name)}
+                              {formatInitials(trainer.name, "T")}
                             </Text>
                           </View>
                         )}
@@ -754,7 +755,7 @@ export default function GymProfileScreen() {
                 ) : (
                   <View style={[styles.trainerSheetImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
                     <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
-                      {initialsForName(selectedTrainer.name)}
+                      {formatInitials(selectedTrainer.name, "T")}
                     </Text>
                   </View>
                 )}
@@ -866,11 +867,6 @@ function checkoutUrlWithReturnUrl(value: string, sessionId?: string | null) {
     const separator = resolvedUrl.includes("?") ? "&" : "?";
     return `${resolvedUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
   }
-}
-
-function initialsForName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return (parts[0]?.[0] ?? "T").concat(parts[1]?.[0] ?? "").toUpperCase();
 }
 
 function buildPlanHighlights(plan: {
