@@ -33,6 +33,7 @@ import { handleReports } from "./reports";
 import { handleStaff } from "./staff";
 import { handleProducts } from "./products";
 import { handleShopOrders } from "./shop-orders";
+import { handleSupport } from "./support";
 import { handleTracking } from "./tracking";
 
 export type ApiRouteHandler = (
@@ -70,13 +71,14 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleClasses, firstSegments: ["orgs"] },
   { handler: handleProducts, firstSegments: ["orgs"] },
   { handler: handleShopOrders, firstSegments: ["orgs", "shop"] },
+  { handler: handleSupport, firstSegments: ["support"] },
   {
     handler: handleStaffPlansGoals,
     firstSegments: ["me", "orgs", "staff-invitations"],
   },
   {
     handler: handleAiNotificationsShopPrivacyPlatform,
-    firstSegments: ["ai", "guardian-consent", "me", "orgs", "platform", "push", "shop", "support"],
+    firstSegments: ["ai", "guardian-consent", "me", "orgs", "platform", "push", "shop"],
   },
 ];
 

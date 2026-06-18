@@ -100,7 +100,6 @@ import { privateUserHandle } from "../private-user-handle";
 import { writeAuditLog } from "../audit";
 import { assertRateLimit, defaultRateLimitRules } from "../rate-limit";
 import { getPlatformProviderDiagnostics } from "../domains/overview";
-import { getErrorReporter } from "../error-reporter";
 import { currentRequestId } from "../request-state";
 import { getClientIp } from "../security";
 import {
@@ -766,13 +765,6 @@ const aiChatSchema = z.object({
   prompt: z.string().trim().min(2).max(2_000),
   orgId: z.string().optional(),
   conversationId: z.string().optional(),
-});
-
-const supportFeedbackSchema = z.object({
-  message: z.string().trim().min(10).max(2_000),
-  appVersion: z.string().trim().max(80).optional(),
-  role: z.string().trim().max(80).optional(),
-  orgId: z.string().trim().optional(),
 });
 
 const aiGenerateSchema = z.object({
@@ -9073,61 +9065,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
   request: NextRequest,
   path: string[],
 ) {
-  if (request.method === "POST" && pathMatches(path, ["support", "feedback"])) {
-    const body = supportFeedbackSchema.parse(await readJson(request));
-    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
-    const userId = requireAuth(ctx);
-    assertActiveContextOrg(ctx, body.orgId);
-    const role = ctx.roles[0] ?? body.role ?? "MEMBER";
-    const orgId = ctx.orgId ?? body.orgId;
-    const requestId = currentRequestId();
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true, email: true, phone: true },
-    });
-    const metadata = {
-      appVersion: body.appVersion ?? "unknown",
-      role,
-      orgId: orgId ?? "none",
-      userId,
-      requestId,
-    };
-    const title = `Zook app feedback from ${role}`;
-    const lines = [
-      body.message,
-      "",
-      `User: ${user?.name ?? "Unknown"} (${publicUserEmail(user?.email) ?? user?.phone ?? userId})`,
-      `Role: ${role}`,
-      `Organization: ${orgId ?? "none"}`,
-      `App version: ${body.appVersion ?? "unknown"}`,
-      `Request ID: ${requestId ?? "unknown"}`,
-    ];
-
-    getErrorReporter().captureMessage("support.feedback_submitted", {
-      ...(requestId ? { requestId } : {}),
-      method: request.method,
-      path: request.nextUrl.pathname,
-      userId,
-      ...(orgId ? { orgId } : {}),
-      metadata,
-    });
-    await getEmailProviderOrThrow().sendNotificationEmail({
-      to: "support@zookfit.in",
-      title,
-      body: lines.join("\n"),
-      ...(orgId ? { organizationName: orgId } : {}),
-      variant: "generic",
-    });
-    await writeAuditLog({
-      request,
-      ...(orgId ? { orgId } : {}),
-      actorUserId: userId,
-      action: "support.feedback_submitted",
-      entityType: "support_feedback",
-      metadata: { ...metadata, message: body.message },
-    });
-    return ok({ submitted: true });
-  }
   if (request.method === "POST" && pathMatches(path, ["ai", "chat"])) {
     assertAiLaunchEnabled();
     const body = aiChatSchema.parse(await readJson(request));
