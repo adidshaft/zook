@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
-import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
@@ -105,7 +105,7 @@ export function ActiveMembershipCard({
         <View style={styles.membershipMetaLine}>
           <Ionicons name="walk-outline" size={14} color={palette.accent.base} />
           <Text style={[styles.membershipMetaText, { color: palette.text.secondary }]}>
-            {subscription.remainingVisits} visits remaining
+            {formatVisitLimit(subscription.remainingVisits)} remaining
           </Text>
         </View>
       ) : null}

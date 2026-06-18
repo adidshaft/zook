@@ -628,3 +628,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   copy inline.
 - **[code, fixed]** Duplicate mobile shop order date formatting (`R85`) is closed: shop order
   history now uses shared mobile `formatDateTime` with its existing `Recently` fallback.
+- **[code, fixed]** Duplicate mobile remaining-visit copy (`R86`) is closed: active membership
+  and profile progress labels now use shared mobile `formatVisitLimit` instead of hand-built
+  visit pluralization.

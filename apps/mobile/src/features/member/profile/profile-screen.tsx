@@ -33,7 +33,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
-import { formatLongDate, formatRoleLabel } from "@/lib/formatting";
+import { formatLongDate, formatRoleLabel, formatVisitLimit } from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -129,7 +129,7 @@ function membershipProgressLabel(input: {
   visitLimit?: number | null;
 }) {
   if (typeof input.remainingVisits === "number" && input.visitLimit) {
-    return `${input.remainingVisits} of ${input.visitLimit} visits remaining`;
+    return `${input.remainingVisits} of ${formatVisitLimit(input.visitLimit)} remaining`;
   }
   if (typeof input.daysLeft === "number" && input.durationDays) {
     return `${input.daysLeft} of ${input.durationDays} days remaining`;
