@@ -60,6 +60,7 @@
     "db:b3:sql": "tsx scripts/b3-invoice-column-collapse-sql.ts",
     "db:b4:sql": "tsx scripts/b4-branch-scope-model-sql.ts",
     "db:b5:sql": "tsx scripts/b5-uniqueness-gap-sql.ts",
+    "db:b6:sql": "tsx scripts/b6-retention-scale-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",

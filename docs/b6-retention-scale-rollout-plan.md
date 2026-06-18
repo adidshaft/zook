@@ -77,6 +77,10 @@ Partitioning gives scale without prematurely deleting compliance evidence.
 
 Run on a staging clone or disposable production snapshot:
 
+```sh
+pnpm db:b6:sql row-count-audit
+```
+
 ```sql
 SELECT 'RequestIdempotency' AS table_name, COUNT(*) AS rows, MIN("createdAt") AS oldest, MAX("createdAt") AS newest
 FROM "RequestIdempotency"
@@ -97,6 +101,10 @@ ORDER BY table_name;
 
 Notification recipient org backfill audit:
 
+```sh
+pnpm db:b6:sql notification-recipient-org-audit
+```
+
 ```sql
 SELECT
   COUNT(*) AS recipients,
@@ -107,6 +115,10 @@ LEFT JOIN "Notification" n ON n."id" = nr."notificationId";
 ```
 
 Large tenant distribution audit:
+
+```sh
+pnpm db:b6:sql tenant-distribution-audit
+```
 
 ```sql
 SELECT n."orgId", COUNT(*) AS recipient_rows
@@ -120,6 +132,10 @@ LIMIT 25;
 ## Staging migration phase 1: add nullable metadata
 
 Add nullable fields first:
+
+```sh
+pnpm db:b6:sql migration-phase-1-staging-only
+```
 
 ```sql
 ALTER TABLE "RequestIdempotency"
@@ -137,6 +153,10 @@ ADD COLUMN IF NOT EXISTS "expiresAt" timestamp(3);
 ```
 
 Backfill:
+
+```sh
+pnpm db:b6:sql backfill-staging-only
+```
 
 ```sql
 UPDATE "RequestIdempotency"
@@ -165,6 +185,10 @@ WHERE "expiresAt" IS NULL
 
 Indexes:
 
+```sh
+pnpm db:b6:sql create-indexes-staging-only
+```
+
 ```sql
 CREATE INDEX IF NOT EXISTS "RequestIdempotency_expiresAt_idx"
 ON "RequestIdempotency" ("expiresAt");
@@ -183,6 +207,10 @@ ON "NotificationRecipient" ("expiresAt");
 ```
 
 After `RequestIdempotency.expiresAt` is fully backfilled, make it required in a later migration:
+
+```sh
+pnpm db:b6:sql enforce-idempotency-expiry-staging-only
+```
 
 ```sql
 ALTER TABLE "RequestIdempotency"
@@ -211,6 +239,14 @@ Representative code areas:
 Run deletes in small batches and skip rows without `expiresAt`.
 
 Example SQL for a generic batch:
+
+```sh
+pnpm db:b6:sql purge-preview
+pnpm db:b6:sql purge-expired-push-delivery-batch
+pnpm db:b6:sql purge-expired-idempotency-batch
+pnpm db:b6:sql purge-expired-provider-health-batch
+pnpm db:b6:sql purge-expired-notification-recipient-batch
+```
 
 ```sql
 WITH expired AS (
@@ -258,6 +294,10 @@ Preferred staging route:
 
 Example partition shape:
 
+```sh
+pnpm db:b6:sql audit-log-partition-example
+```
+
 ```sql
 CREATE TABLE "AuditLog_v2" (
   LIKE "AuditLog" INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES
@@ -274,6 +314,10 @@ raw SQL, but partition operations must be reviewed manually.
 ## Validation queries
 
 After phase 1:
+
+```sh
+pnpm db:b6:sql validate-phase-1
+```
 
 ```sql
 SELECT COUNT(*) AS missing_idempotency_expiry
@@ -311,6 +355,10 @@ The expired idempotency count should trend to zero after the purge job runs.
 ## Rollback
 
 Before runtime depends on the new fields:
+
+```sh
+pnpm db:b6:sql rollback
+```
 
 ```sql
 DROP INDEX IF EXISTS "RequestIdempotency_expiresAt_idx";
