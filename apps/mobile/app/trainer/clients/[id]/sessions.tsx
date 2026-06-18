@@ -61,7 +61,7 @@ export default function TrainerClientSessionsScreen() {
             <ListRow
               title="Adherence"
               subtitle={averageCompletion === null ? "Waiting for member feedback and workout logs." : `${averageCompletion}% average completion across recent plan feedback.`}
-              leading={<IconBubble icon="analytics-outline" tone="lime" />}
+              leading={<IconBubble icon="analytics-outline" tone="neutral" />}
               trailing={<StatusChip status={averageCompletion === null ? "Waiting" : `${averageCompletion}%`} tone={averageCompletion === null ? "neutral" : "lime"} />}
             />
             {progressTimeline.length ? (

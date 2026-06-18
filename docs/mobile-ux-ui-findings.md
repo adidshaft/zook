@@ -967,3 +967,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile trainer today-row cues (`R199`) are closed:
   the trainer priority client row now uses neutral person and Today chips instead of
   lime/amber, keeping emphasis on the section heading and real progress/adherence states.
+- **[ui, fixed]** Overstated mobile trainer adherence icon cue (`R200`) is closed:
+  the client sessions Adherence row now uses a neutral analytics icon instead of lime,
+  keeping progress meaning on the adjacent completion chip and active-plan status.
