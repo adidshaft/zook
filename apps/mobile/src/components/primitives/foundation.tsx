@@ -21,8 +21,6 @@ import Animated, {
   useAnimatedStyle as useRealAnimatedStyle,
   useSharedValue as useRealSharedValue,
   withSpring as withRealSpring,
-  withRepeat,
-  withTiming,
 } from "@/lib/reanimated-lite";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -837,35 +835,6 @@ function getTabsForRole(role?: Role): DockTab[] {
   return memberTabs;
 }
 
-function AnimatedPulse() {
-  const scale = useRealSharedValue(1);
-  const opacity = useRealSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withRepeat(withTiming(1.5, { duration: 2000 }), -1, false);
-    opacity.value = withRepeat(withTiming(0, { duration: 2000 }), -1, false);
-  }, [scale, opacity]);
-
-  const animatedStyle = useRealAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        {
-          borderRadius: 999,
-          backgroundColor: "rgba(185,244,85,0.32)",
-        },
-        animatedStyle,
-      ]}
-      pointerEvents="none"
-    />
-  );
-}
-
 function DockTabItem({
   tab,
   t,
@@ -946,7 +915,6 @@ function DockTabItem({
       ]}
     >
       <View style={[styles.navIconShell, raised ? styles.navIconShellRaised : null]}>
-        {raised ? <AnimatedPulse /> : null}
         <Ionicons
           name={active ? tab.activeIcon : tab.icon}
           size={raised ? 31 : 21}
@@ -1175,13 +1143,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: fallbackColors.bg,
   },
-  skeletonShimmer: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
   ambientGlow: {
     position: "absolute",
     top: -120,
@@ -1257,10 +1218,6 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1,
   },
-  glassCardGlow: {
-    borderColor: fallbackColors.limeBorder,
-    ...shadows.glowLimeSoft,
-  },
   glassCardGlowBorder: {
     borderColor: fallbackColors.limeBorder,
   },
@@ -1284,31 +1241,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.panel,
     padding: spacing.lg,
     overflow: "hidden",
-  },
-  glassPanelStrong: {
-    backgroundColor: fallbackColors.panelStrong,
-    borderColor: fallbackColors.borderStrong,
-  },
-  centerText: {
-    textAlign: "center",
-  },
-  button: {
-    borderWidth: 1,
-    alignItems: "center",
-    borderCurve: "continuous",
-    justifyContent: "center",
-    flexDirection: "row",
-    minWidth: 0,
-  },
-  buttonText: {
-    flexShrink: 1,
-    minWidth: 0,
-    maxWidth: "100%",
-    textAlign: "center",
-    ...typography.button,
-  },
-  fullWidth: {
-    width: "100%",
   },
   pressed: {
     opacity: 0.92,

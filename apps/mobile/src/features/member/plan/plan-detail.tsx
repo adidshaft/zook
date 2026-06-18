@@ -776,21 +776,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  detailHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  detailTitleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  detailTitle: {
-    ...typography.headerTitle,
-  },
-  detailSubtitle: {
-    ...typography.body,
-  },
   sheetBackground: {
     borderWidth: 1,
   },
@@ -861,12 +846,6 @@ const styles = StyleSheet.create({
   stack: {
     gap: spacing.sm,
   },
-  stateContent: {
-    minHeight: 72,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
   activePlanContent: {
     gap: spacing.lg,
     padding: 16,
@@ -933,26 +912,8 @@ const styles = StyleSheet.create({
   progressText: {
     ...typography.metric,
   },
-  featuredContent: {
-    gap: spacing.lg,
-  },
-  featuredTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
   eyebrow: {
     ...typography.eyebrow,
-  },
-  planMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  metaDot: {
-    ...typography.small,
   },
   libraryGrid: {
     flexDirection: "row",

@@ -30,12 +30,16 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   and users get a steady target; the unused pulse animation exports were removed.
 - **3.4 Disabled assistant prompts looked actionable** — the coming-soon assistant state no
   longer renders inert prompt chips or a duplicate status badge.
+- **3.5 Raised bottom-nav action used continuous pulse** — the raised member action keeps its
+  static emphasis but no longer renders a looping halo.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
   palettes instead of reaching around the package boundary or duplicating values.
 - **6/R5 Stale mobile stylesheet keys** — removed unused/empty style entries left behind in
   assistant, attendance, notifications, login, date-picker, and tracking surfaces.
+- **6/R6 Legacy membership/plan/foundation styles** — removed unused style blocks left behind
+  by extracted membership cards, plan detail states, and old primitive button/skeleton code.
 
 ## 1. Functional / correctness
 
@@ -97,6 +101,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Experience:** Users saw affordances that looked like useful starter prompts on a screen where chat is unavailable.
 - **Fix:** Keep the explanatory empty state, but remove the inert prompt chips and duplicate badge from the disabled route. Enabled assistant prompts are unchanged.
 
+### 3.5 Raised bottom-nav action used continuous pulse  **[ui, minor, fixed]**
+- **Fault:** The raised member nav action rendered a looping halo behind the icon. It did not communicate loading, focus, or a state change.
+- **Experience:** A persistent moving cue competed with normal navigation scanning.
+- **Fix:** Remove the looping halo while keeping the raised button's static accent fill, icon sizing, and press feedback.
+
 ---
 
 ## 4. Needs product/backend confirmation (likely demo-fixture artifacts)
@@ -131,3 +140,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Stale mobile stylesheet keys (`R5`) is closed: unused styles from earlier
   UI states were removed from assistant, attendance, notifications, login, date-picker, and
   tracking files.
+- **[code, fixed]** Legacy membership/plan/foundation styles (`R6`) is closed: unused style
+  blocks left behind by extracted membership sections, old plan detail states, and replaced
+  primitive button/skeleton code were removed.
