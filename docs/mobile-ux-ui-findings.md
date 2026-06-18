@@ -206,6 +206,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R78 Gym type option wording** — changed the public setup/profile gym type option from
   "Premium fitness club" to neutral "Fitness club" and reused the shared gym-type list in the
   start-gym flow.
+- **6/R79 Dashboard chart comment drift** — updated the shared dashboard section-header comment
+  to describe the component plainly instead of preserving stale "premium" visual language.
 
 ## 1. Functional / correctness
 

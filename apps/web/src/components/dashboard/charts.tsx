@@ -690,7 +690,7 @@ export function LegendItem({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Section hero — premium section header with icon + meta + optional CTA.
+ * Section hero — section header with icon, meta, and optional CTA.
  * ────────────────────────────────────────────────────────────────────────── */
 
 export function SectionHero({
