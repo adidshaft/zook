@@ -901,3 +901,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile assigned-plan type cues (`R177`) are closed: assigned
   plan library icons now use neutral styling instead of blue/lime category color, keeping
   plan type readable through the icon shape and plan title.
+- **[ui, fixed]** Overstated mobile membership focus callout cues (`R178`) are closed:
+  non-purchase membership focus icons now use neutral styling instead of informational blue,
+  keeping lime only for buy and checkout action targets.

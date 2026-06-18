@@ -659,7 +659,7 @@ export default function MembershipScreen() {
                       ? "card-outline"
                       : "notifications"
                 }
-                tone={focusTarget === "buy" || focusTarget === "checkout" ? "lime" : "blue"}
+                tone={focusTarget === "buy" || focusTarget === "checkout" ? "lime" : "neutral"}
                 size={36}
               />
               <View style={styles.calloutCopy}>
