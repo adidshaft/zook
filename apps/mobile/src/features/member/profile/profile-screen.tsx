@@ -33,7 +33,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
-import { formatLongDate } from "@/lib/formatting";
+import { formatLongDate, formatRoleLabel } from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -75,15 +75,6 @@ function formatOrgLocationLine(
     location = org || branch || "";
   }
   return city ? `${location}, ${city}` : location;
-}
-
-function titleCaseRole(role: Role | string) {
-  if (role === "RECEPTIONIST") return "Reception";
-  if (role === "PLATFORM_ADMIN") return "Platform operator";
-  return String(role)
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function routeForRole(role?: Role) {
@@ -330,7 +321,7 @@ export default function ProfileScreen() {
 
   function confirmRoleSwitch(role: Role) {
     if (role === activeRole) return;
-    Alert.alert(`Switch to ${titleCaseRole(role)}?`, "Zook will move you to that role's tools.", [
+    Alert.alert(`Switch to ${formatRoleLabel(role)}?`, "Zook will move you to that role's tools.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",
@@ -352,12 +343,12 @@ export default function ProfileScreen() {
 
   function confirmOtherGymRoleSwitch(input: { orgId: string; orgName: string; role: Role }) {
     Alert.alert(
-      `${titleCaseRole(input.role)} is in another gym`,
-      `Switch gyms before opening ${titleCaseRole(input.role)} tools.`,
+      `${formatRoleLabel(input.role)} is in another gym`,
+      `Switch gyms before opening ${formatRoleLabel(input.role)} tools.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: `Switch to ${input.orgName} to access ${titleCaseRole(input.role)} tools`,
+          text: `Switch to ${input.orgName} to access ${formatRoleLabel(input.role)} tools`,
           onPress: () => {
             void switchOrg(input.orgId)
               .then(() => switchRole(input.role))
@@ -384,11 +375,11 @@ export default function ProfileScreen() {
       "Choose the role to use in this gym.",
       [
         ...roles.map((role) => ({
-          text: role === activeRole ? `${titleCaseRole(role)} (active)` : titleCaseRole(role),
+          text: role === activeRole ? `${formatRoleLabel(role)} (active)` : formatRoleLabel(role),
           onPress: () => confirmRoleSwitch(role),
         })),
         ...rolesInOtherGyms.map((option) => ({
-          text: `${titleCaseRole(option.role)} at ${option.orgName}`,
+          text: `${formatRoleLabel(option.role)} at ${option.orgName}`,
           onPress: () => confirmOtherGymRoleSwitch(option),
         })),
         { text: "Cancel", style: "cancel" as const },
@@ -571,7 +562,7 @@ export default function ProfileScreen() {
                       <Pressable
                         key={role}
                         accessibilityRole="button"
-                        accessibilityLabel={`Use Zook as ${titleCaseRole(role)}`}
+                        accessibilityLabel={`Use Zook as ${formatRoleLabel(role)}`}
                         accessibilityState={{
                           selected: role === activeRole,
                           disabled: Boolean(roleBusy),
@@ -581,7 +572,7 @@ export default function ProfileScreen() {
                         onPress={() => confirmRoleSwitch(role)}
                       >
                         <Pill tone={role === activeRole ? "lime" : "neutral"}>
-                          {roleBusy === role ? "Switching..." : titleCaseRole(role)}
+                          {roleBusy === role ? "Switching..." : formatRoleLabel(role)}
                         </Pill>
                       </Pressable>
                     ))

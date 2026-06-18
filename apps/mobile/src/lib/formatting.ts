@@ -88,6 +88,12 @@ export function titleCaseFromCode(value?: string | null) {
     .join(" ");
 }
 
+export function formatRoleLabel(role?: string | null) {
+  if (role === "RECEPTIONIST") return "Reception";
+  if (role === "PLATFORM_ADMIN") return "Platform operator";
+  return titleCaseFromCode(role);
+}
+
 export function formatInitials(name?: string | null, fallback?: string | null) {
   const source = name?.trim() || fallback?.trim() || "Member";
   return source

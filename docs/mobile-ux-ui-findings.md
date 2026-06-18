@@ -594,3 +594,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Direct mobile QA shortcut surfaces (`R71`) is closed: the QA launcher and
   internal `__qa-*` helper routes now self-gate behind the same local feature flag used by the
   visible shortcut buttons.
+- **[code, fixed]** Duplicate profile role display labels (`R72`) is closed: member profile
+  role-switching copy now uses shared mobile `formatRoleLabel`, preserving Reception/platform
+  wording without carrying a local formatter.
