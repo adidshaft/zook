@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
   },
   titleBlock: {
     gap: spacing.xs,
+    width: "100%",
   },
   titleRow: {
     alignItems: "center",
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
   },
   titleAccessory: {
     alignItems: "flex-end",
-    flex: 1,
+    flexShrink: 0,
     marginLeft: "auto",
     minWidth: 0,
   },
