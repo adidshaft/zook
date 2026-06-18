@@ -709,3 +709,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile rupee input cleanup (`R113`) is closed: reception payment
   amount fields now use shared mobile rupee-input normalization instead of repeating inline
   amount sanitizers.
+- **[code, fixed]** Duplicate mobile web-media URL normalization (`R114`) is closed: profile
+  photos, member profile images, and public gym media now share web URL normalization instead
+  of carrying route-local URL helpers.

@@ -29,7 +29,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
-import { toWebUrl } from "@/lib/api";
+import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
@@ -87,11 +87,6 @@ function routeForRole(role?: Role) {
 
 function firstParam(value?: string | string[] | null) {
   return Array.isArray(value) ? value[0] : value ?? undefined;
-}
-
-function normalizeRemoteUrl(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed && /^https?:\/\//.test(trimmed) ? trimmed : undefined;
 }
 
 function percentFromMembership(input: {
@@ -163,10 +158,11 @@ export default function ProfileScreen() {
   const profile = profileQuery.data;
   const userName = profile?.user.name || session?.user.name || "Zook member";
   const userEmail = profile?.user.email || session?.user.email || "";
-  const photoUrl = normalizeRemoteUrl(
+  const photoUrl = normalizeWebUrl(
     profile?.user.profilePhotoUrl ??
       profile?.profile?.profilePhotoUrl ??
       session?.user.profilePhotoUrl,
+    { resolveRelative: false },
   );
   const roles = useMemo(() => activeOrganization?.roles ?? [], [activeOrganization?.roles]);
   const activeRole = roleContext?.role ?? "MEMBER";

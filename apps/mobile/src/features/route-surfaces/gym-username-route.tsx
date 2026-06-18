@@ -34,7 +34,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
-import { toWebUrl } from "@/lib/api";
+import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
@@ -93,8 +93,8 @@ export default function GymProfileScreen() {
     : gym?.coverImageUrl
       ? [gym.coverImageUrl]
       : [];
-  const coverImageUrl = normalizeMediaUrl(gym?.coverImageUrl);
-  const logoUrl = normalizeMediaUrl(gym?.logoUrl);
+  const coverImageUrl = normalizeWebUrl(gym?.coverImageUrl);
+  const logoUrl = normalizeWebUrl(gym?.logoUrl);
   const viewerState = gymQuery.data?.viewerState;
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
   const profileBranches = gymQuery.data?.branches ?? [];
@@ -460,7 +460,7 @@ export default function GymProfileScreen() {
                 {gallery.map((imageUrl, index) => (
                   <Image
                     key={`${imageUrl}-${index}`}
-                    source={{ uri: normalizeMediaUrl(imageUrl) }}
+                    source={{ uri: normalizeWebUrl(imageUrl) }}
                     style={styles.galleryImage}
                     contentFit="cover"
                   />
@@ -489,7 +489,7 @@ export default function GymProfileScreen() {
                       <Card contentStyle={styles.trainerCard}>
                         {trainer.profilePhotoUrl ? (
                           <Image
-                            source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
+                            source={{ uri: normalizeWebUrl(trainer.profilePhotoUrl) }}
                             style={styles.trainerImage}
                             contentFit="cover"
                           />
@@ -747,7 +747,7 @@ export default function GymProfileScreen() {
               <View style={styles.trainerSheetHeader}>
                 {selectedTrainer.profilePhotoUrl ? (
                   <Image
-                    source={{ uri: normalizeMediaUrl(selectedTrainer.profilePhotoUrl) }}
+                    source={{ uri: normalizeWebUrl(selectedTrainer.profilePhotoUrl) }}
                     style={styles.trainerSheetImage}
                     contentFit="cover"
                   />
@@ -849,13 +849,6 @@ function normalizeSpecialties(value: unknown) {
     return Object.values(value).filter((item): item is string => typeof item === "string");
   }
   return [];
-}
-
-function normalizeMediaUrl(value?: string | null) {
-  if (!value) {
-    return undefined;
-  }
-  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
 
 function checkoutUrl(value: string) {
