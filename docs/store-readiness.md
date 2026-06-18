@@ -10,6 +10,19 @@ Run the static release gate before building a store candidate:
 ZOOK_MOBILE_RELEASE_ENV_FILE=.env.production.local pnpm mobile:release:check
 ```
 
+Attach external evidence references when they are available:
+
+```bash
+ZOOK_REAL_DEVICE_PUSH_EVIDENCE=<ticket-or-redacted-path> \
+ZOOK_QR_LOW_LIGHT_EVIDENCE=<ticket-or-redacted-path> \
+ZOOK_CHECKOUT_WEBHOOK_EVIDENCE=<ticket-or-redacted-path> \
+ZOOK_PROVIDER_CERT_EVIDENCE=<ticket-or-redacted-path> \
+ZOOK_STORE_METADATA_EVIDENCE=<ticket-or-redacted-path> \
+ZOOK_PRODUCT_SCOPE_APPROVAL=<ticket-or-redacted-path> \
+ZOOK_MOBILE_RELEASE_ENV_FILE=.env.production.local \
+pnpm mobile:release:check
+```
+
 ## App Metadata
 
 - App name, subtitle, and short description.

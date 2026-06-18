@@ -297,6 +297,34 @@ async function main() {
     );
   }
 
+  const externalEvidenceChecklistPath = resolve(rootDir, "docs/mobile-ui-cleanup-external-evidence-checklist.md");
+  if (existsSync(externalEvidenceChecklistPath)) {
+    const externalEvidenceChecklist = readFileSync(externalEvidenceChecklistPath, "utf8");
+    results.push(pass("External evidence checklist", "Mobile cleanup external evidence checklist exists."));
+    for (const phrase of [
+      "Live Razorpay Membership Checkout",
+      "Live Razorpay Shop Order",
+      "Razorpay Dashboard Configuration",
+      "Provider Credential Certification",
+      "Physical Device QA",
+      "Store Console and Release Metadata",
+      "Product and Finance Decisions",
+    ]) {
+      results.push(
+        externalEvidenceChecklist.includes(phrase)
+          ? pass("External evidence checklist", `${phrase} is tracked.`)
+          : fail("External evidence checklist", `${phrase} is missing from the external evidence checklist.`),
+      );
+    }
+  } else {
+    results.push(
+      fail(
+        "External evidence checklist",
+        "docs/mobile-ui-cleanup-external-evidence-checklist.md is missing.",
+      ),
+    );
+  }
+
   const certification = readFileSync(resolve(rootDir, "docs/production-provider-certification.md"), "utf8");
   for (const phrase of [
     "iOS physical device receives foreground notification",
@@ -346,6 +374,33 @@ async function main() {
         "Checkout/webhook evidence",
         "No ZOOK_CHECKOUT_WEBHOOK_EVIDENCE reference was provided.",
         "Attach a staging or controlled live Razorpay checkout/webhook event before broad rollout.",
+      ),
+    );
+  }
+  if (!env("ZOOK_PROVIDER_CERT_EVIDENCE")) {
+    results.push(
+      warn(
+        "Provider certification evidence",
+        "No ZOOK_PROVIDER_CERT_EVIDENCE reference was provided.",
+        "Attach storage, Expo push, Sentry, Upstash, email, SMS, and enabled-AI provider certification before broad rollout.",
+      ),
+    );
+  }
+  if (!env("ZOOK_STORE_METADATA_EVIDENCE")) {
+    results.push(
+      warn(
+        "Store metadata evidence",
+        "No ZOOK_STORE_METADATA_EVIDENCE reference was provided.",
+        "Attach App Store and Play Console metadata, screenshots, data-safety, and support/refund evidence before broad rollout.",
+      ),
+    );
+  }
+  if (!env("ZOOK_PRODUCT_SCOPE_APPROVAL")) {
+    results.push(
+      warn(
+        "Product scope approval",
+        "No ZOOK_PRODUCT_SCOPE_APPROVAL reference was provided.",
+        "Attach written approval for Part E scope, GST/e-invoicing scope, historical remediation, and localization launch scope.",
       ),
     );
   }
