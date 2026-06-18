@@ -856,3 +856,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification sender-quota cue (`R162`) is closed: the
   composer preview sender-remaining total now uses a neutral badge instead of informational
   blue, keeping stronger colors on gym availability and announcement limits.
+- **[ui, fixed]** Overstated mobile push-opened notification cue (`R163`) is closed: the
+  push/deep-link callout icon now uses a neutral accent instead of informational blue,
+  keeping notification type colors on list rows and details.

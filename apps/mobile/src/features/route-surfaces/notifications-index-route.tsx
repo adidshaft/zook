@@ -422,7 +422,7 @@ export default function NotificationsScreen() {
 
               {routeParams.notificationId ? (
                 <Card variant="selected" contentStyle={styles.calloutContent}>
-                  <IconBubble icon="notifications" tone="blue" size={36} />
+                  <IconBubble icon="notifications" tone="neutral" size={36} />
                   <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
                       ? "Attendance alert received"
