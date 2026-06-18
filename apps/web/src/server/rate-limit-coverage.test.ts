@@ -21,6 +21,7 @@ const organizationJoinRequestsRouteSource = readFileSync(
   "utf8",
 );
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
+const staffRouteSource = readFileSync(new URL("./api-router/staff.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
   {
@@ -83,7 +84,12 @@ const sensitiveRoutes = [
     source: couponsReferralsRouteSource,
     sourceLabel: "api-router/coupons-referrals.ts",
   },
-  { label: "staff invite", needle: 'pathMatches(path, ["orgs", /.+/, "staff", "invite"])' },
+  {
+    label: "staff invite",
+    needle: 'pathMatches(path, ["orgs", /.+/, "staff", "invite"])',
+    source: staffRouteSource,
+    sourceLabel: "api-router/staff.ts",
+  },
   { label: "AI request", needle: 'pathMatches(path, ["ai", "generate-plan"])' },
   { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
   { label: "notification send", needle: 'pathMatches(path, ["orgs", /.+/, "notifications"])' },

@@ -27,6 +27,7 @@ import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
 import { handlePublicOrganizations } from "./public-organizations";
 import { handleReports } from "./reports";
+import { handleStaff } from "./staff";
 import { handleTracking } from "./tracking";
 
 export type ApiRouteHandler = (
@@ -58,6 +59,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleMembershipPayments, firstSegments: ["me", "orgs", "payments"] },
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
+  { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
   {
     handler: handleStaffPlansGoals,
     firstSegments: ["me", "orgs", "staff-invitations"],
