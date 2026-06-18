@@ -10,6 +10,7 @@ import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
+import { formatLongDate } from "@/lib/formatting";
 import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -43,7 +44,7 @@ export default function OwnerMembersScreen() {
     async (input: { memberUserId: string; name: string; endsAt?: string | null }) => {
       if (!token || !activeOrgId) return;
       try {
-        const dateLabel = input.endsAt ? new Date(input.endsAt).toLocaleDateString() : "soon";
+        const dateLabel = formatLongDate(input.endsAt, "soon");
         await ownerApi.sendMemberNotification({
           token,
           orgId: activeOrgId,

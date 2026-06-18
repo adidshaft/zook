@@ -607,3 +607,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   each carrying local hour/minute calculations.
 - **[code, fixed]** Duplicate mobile billing limit labels (`R76`) is closed: owner billing now
   uses shared mobile `formatUsageLimit` instead of carrying a local Unlimited/number formatter.
+- **[code, fixed]** Ad hoc owner reminder date copy (`R77`) is closed: owner member renewal
+  reminders now use shared mobile `formatLongDate` instead of platform-default date formatting.
