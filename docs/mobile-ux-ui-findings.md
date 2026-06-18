@@ -853,3 +853,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification audience-total cue (`R161`) is closed: the
   composer preview matched-recipient total now uses a neutral badge instead of informational
   blue, keeping delivery outcome colors on receive and opt-out states.
+- **[ui, fixed]** Overstated web notification sender-quota cue (`R162`) is closed: the
+  composer preview sender-remaining total now uses a neutral badge instead of informational
+  blue, keeping stronger colors on gym availability and announcement limits.

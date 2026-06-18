@@ -365,7 +365,7 @@ export function ReviewStep({
         </p>
       ) : null}
       <div className="grid gap-3 md:grid-cols-4">
-        <Pill tone="blue">{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
+        <Pill>{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
         <Pill tone="lime">{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
         <Pill tone="amber">{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
         <Pill tone="neutral">{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
