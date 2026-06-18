@@ -20,7 +20,7 @@ export function MemberJourney({
   return (
     <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
       <GlassCard>
-        <Pill tone="lime">{t("afterJoining")}</Pill>
+        <Pill>{t("afterJoining")}</Pill>
         <h2 className="mt-4 text-2xl font-semibold text-[var(--text-primary)]">{t("afterJoining")}</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("afterJoiningCopy")}</p>
         <div className="mt-5 grid gap-3">

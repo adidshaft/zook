@@ -21,7 +21,7 @@ export function GymDiscoveryFilters({
     <GlassCard variant="strong">
       <div className="grid gap-6 lg:grid-cols-[1fr_440px] lg:items-end">
         <div>
-          <Pill tone="lime">{t("gymDiscovery")}</Pill>
+          <Pill>{t("gymDiscovery")}</Pill>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-6xl">
             {t("findGymNear")}
           </h1>

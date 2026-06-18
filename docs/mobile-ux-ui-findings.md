@@ -916,3 +916,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web media/profile count cues (`R182`) are closed: body-photo,
   product-photo, and member-profile header counts now use neutral badges instead of lime,
   keeping stronger colors on row-level status and latest/private cues.
+- **[ui, fixed]** Overstated web public label cues (`R183`) are closed: gym discovery,
+  after-joining, and India operations labels now use neutral badges instead of lime,
+  keeping stronger colors for empty, unavailable, and join-state feedback.

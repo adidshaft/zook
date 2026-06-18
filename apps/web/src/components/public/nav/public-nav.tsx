@@ -27,7 +27,7 @@ export function PublicNav({
       <div className="flex items-center gap-2 pl-2">
         <ZookLogo />
         <div className="hidden md:block">
-          <Pill tone="lime">
+          <Pill>
             <MapPin size={12} />
             {publicT(locale, "indiaOps")}
           </Pill>
