@@ -266,7 +266,7 @@ writePng("apps/mobile/assets/icons/ic_launcher_background.png", 432, "background
 writePng("apps/mobile/assets/icons/ic_launcher_foreground.png", 432, "foreground");
 writePng("apps/mobile/assets/icons/ic_launcher_monochrome.png", 432, "monochrome");
 
-// All standard app and store branding icons are resized cleanly from the premium source file using macOS sips
+// All standard app and store branding icons are resized cleanly from the source file using macOS sips
 resizeFromSource("apps/mobile/assets/icons/AppIcon-1024.png", 1024);
 resizeFromSource("apps/mobile/assets/icons/app-icon-512-fixed.png", 512);
 resizeFromSource("apps/mobile/assets/icons/icon-mac-512x512.png", 512);

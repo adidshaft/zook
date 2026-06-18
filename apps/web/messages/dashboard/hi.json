@@ -49,7 +49,7 @@
   },
   "dashboard": {
     "liveWorkspace": "लाइव वर्कस्पेस",
-    "sampleData": "सैंपल डेटा",
+    "sampleData": "टेस्ट वर्कस्पेस",
     "emptyOrganization": "अभी कोई जिम उपलब्ध नहीं है.",
     "emptyOrganizationDescription": "आपका साइन-इन चालू है, लेकिन इस अकाउंट से अभी कोई जिम जुड़ा नहीं है. मालिक सेटअप से जिम प्रोफाइल बना सकते हैं.",
     "startGym": "जिम शुरू करें",

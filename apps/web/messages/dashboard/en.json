@@ -49,7 +49,7 @@
   },
   "dashboard": {
     "liveWorkspace": "Live workspace",
-    "sampleData": "Sample data",
+    "sampleData": "Test workspace",
     "emptyOrganization": "No active gym is available yet.",
     "emptyOrganizationDescription": "Your sign-in is active, but no gym is connected to this account yet. Owners can create a gym profile from setup.",
     "startGym": "Start a gym",
