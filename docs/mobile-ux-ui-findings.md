@@ -698,3 +698,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc class schedule formatting (`R109`) is closed: the mobile classes
   route now uses shared class schedule formatting instead of carrying local date/time locale
   calls.
+- **[code, fixed]** Ad hoc owner chart delta formatting (`R110`) is closed: owner dashboard
+  charts now use shared signed-percent formatting instead of carrying a local delta formatter.

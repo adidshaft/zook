@@ -126,6 +126,12 @@ export function formatCompactNumber(value?: number | null) {
   }).format(value ?? 0);
 }
 
+export function formatSignedPercent(value?: number | null) {
+  const safe = Number.isFinite(value) ? Number(value) : 0;
+  const sign = safe > 0 ? "+" : "";
+  return `${sign}${safe.toFixed(Number.isInteger(safe) ? 0 : 1)}%`;
+}
+
 export function formatUsageLimit(
   limit?: number | null,
   options: { compact?: boolean; unlimitedLabel?: string } = {},
