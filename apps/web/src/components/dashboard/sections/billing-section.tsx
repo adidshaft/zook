@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
 import type {
@@ -288,9 +289,6 @@ export function BillingSection({
   }
 
   async function cancelAtPeriodEnd() {
-    if (!window.confirm("Cancel this subscription at the end of the current billing period?")) {
-      return;
-    }
     try {
       setMandateBusy(true);
       setStatus("");
@@ -556,15 +554,18 @@ export function BillingSection({
             ) : null}
             {subscription.subscription.status === "ACTIVE" &&
             !subscription.subscription.cancelAtPeriodEnd ? (
-              <ZookButton
+              <ConfirmActionButton
                 type="button"
-                tone="ghost"
-                size="sm"
                 disabled={mandateBusy}
-                onClick={() => void cancelAtPeriodEnd()}
+                className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-sunken)] disabled:cursor-wait disabled:opacity-60"
+                title="Cancel subscription at period end?"
+                description="Your gym keeps access until the current paid period ends, then Zook will stop future subscription charges."
+                confirmLabel="Cancel at period end"
+                confirmTone="danger"
+                onConfirm={() => cancelAtPeriodEnd()}
               >
-                Cancel at period end
-              </ZookButton>
+                {mandateBusy ? "Cancelling..." : "Cancel at period end"}
+              </ConfirmActionButton>
             ) : null}
           </div>
         </GlassCard>
