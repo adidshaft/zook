@@ -14,15 +14,16 @@ divides the remaining work into owned workstreams with a day-by-day sequence.
 
 ## Decisions locked for this launch (per product direction)
 
-- **AI** — do **not** build now. Keep the assistant/plan-AI surfaces **visible as
-  "Coming Soon!"**, not hidden.
-- **WhatsApp** — do **not** enable now. Keep it **visible as "Coming Soon!"** in
-  notification settings (the backend fan-out is already built; it stays off).
+- **AI** — do **not** build now. Keep assistant/plan-AI entry points gated with neutral
+  unavailable-state copy, not polished placeholder surfaces.
+- **WhatsApp** — do **not** enable now. Keep notification settings neutral while the
+  backend fan-out stays off; avoid disabled placeholder rows.
 - **Languages** — ship **English + Hindi** only. Show additional Indian languages
-  (Tamil/Telugu/Kannada/Marathi/Bengali) as **visible "Coming Soon!"** options.
+  (Tamil/Telugu/Kannada/Marathi/Bengali) only when they are selectable or clearly
+  unavailable without launch-hype copy.
 
-These three are now *intentional, signposted* states — not gaps. They move into Workstream C
-as small "make it say Coming Soon, visibly" tasks, not build tasks.
+These three are now intentional gated states — not gaps. They move into Workstream C
+as small "make the unavailable state clear" tasks, not build tasks.
 
 ## Implemented today (2026-05-30) — code changes landed
 
@@ -45,20 +46,19 @@ gates), and `pnpm --filter @zook/mobile test` (31 tests) — all green. No new d
   `TabBarBackdrop`, so it no longer rebuilds on every tab switch / unread-count change. No new
   dep, no visual change. `(member)/_layout.tsx`.
 
-### B–E pass (2026-05-30, second batch — branch `launch-coming-soon-signposting`)
+### B–E pass (2026-05-30, second batch — deferred-feature gating branch)
 
 - ✅ **B3 animation audit — clean.** Reviewed every animation surface (`motion.ts`, `toast-host`,
   `foundation`, `buttons`, `animated-appear`, `reanimated-lite`). The shared motion library is
   premium-grade: respects `reduce-motion` (accessibility), spring physics, ease-in-out loops,
   ping-pong reversal. The scanner was the **only** defect (it bypassed the lib with raw
   `RNAnimated`); now fixed. No further motion defects found.
-- ✅ **C1 AI assistant — already correct.** The assistant route already renders a proper
-  "Coming Soon!" screen (`assistant-route.tsx`); left as-is, visible and on-brand.
-- ✅ **C2 WhatsApp — added.** Notification settings now shows a visible "Coming Soon!" WhatsApp
-  channel row (`settings/notifications.tsx`).
-- ✅ **C3 Languages — added.** Onboarding + settings language pickers now show display-only
-  "Coming Soon!" chips for Tamil/Telugu/Kannada/Marathi/Bengali in native script; English + Hindi
-  remain the selectable launch languages.
+- ✅ **C1 AI assistant — gated state reviewed.** Assistant entry points should use neutral
+  unavailable-state copy when the feature flag is off, without visible dead prompt chips.
+- ✅ **C2 WhatsApp — gated.** Notification settings should avoid non-actionable channel controls
+  while the provider is off.
+- ✅ **C3 Languages — gated.** English + Hindi remain the selectable launch languages; other
+  language options should not render as launch-hype placeholders.
 - ✅ **B4 tab-bar perf** — done in first batch (memoized backdrop).
 - ✅ **D1 classes — shipped.** Owner web scheduling plus member mobile booking are now visible
   and backed by the existing classes API.
@@ -70,9 +70,8 @@ gates), and `pnpm --filter @zook/mobile test` (31 tests) — all green. No new d
 - ⚠️ **E1 config reconcile — needs founder.** Flipping the local `.env.production.local`
   `SMS_PROVIDER` to match the deployed `msg91` requires the real MSG91 credentials (which would
   otherwise fail preflight), and the file is gitignored. Founder action; documented here.
-- ✅ **E2 commit — done.** Remaining work committed on branch
-  `launch-coming-soon-signposting` (the bulk was already committed to `main` as
-  `b666c03 "Polish mobile launch readiness"`).
+- ✅ **E2 commit — done.** Remaining work committed on a deferred-feature gating branch
+  (the bulk was already committed to `main` as `b666c03 "Polish mobile launch readiness"`).
 
 **Net: B, C, and the code-doable parts of D and E are complete. What genuinely remains is
 non-code:** the live Razorpay transaction (A — you're doing it later), on-device QA + push +
@@ -116,7 +115,7 @@ Five workstreams. A/B/E are the launch-blocking spine; C/D can partly run in par
 |---|---|---|---|
 | **A** | Money path proven (Razorpay live) | 🔴 yes | 0.5 day + 1 live txn |
 | **B** | Device QA + UI motion/polish | 🔴 yes | 2–3 days |
-| **C** | "Coming Soon" signposting (AI/WhatsApp/languages) | 🟠 | 0.5–1 day |
+| **C** | Deferred feature gating (AI/WhatsApp/languages) | 🟠 | 0.5–1 day |
 | **D** | Half-shipped product surfaces (classes, multi-branch) | 🟠 decide | 0.5 day decision |
 | **E** | Store submission + config hygiene | 🔴 for store | 1 day |
 
@@ -175,24 +174,20 @@ real device.
 
 ---
 
-## Workstream C — "Coming Soon" signposting 🟠 (owner: mobile + web)
+## Workstream C — Deferred feature gating 🟠 (owner: mobile + web)
 
-Make the deferred features *intentional and visible*, not dead buttons or hidden capability.
+Make deferred features intentional and honest, not dead buttons or launch-hype placeholders.
 
-- [ ] **C1 — AI assistant.** Keep the entry point **visible** with a clear "Coming Soon!"
-      state (badge + disabled CTA + one-line "AI plans & assistant arrive soon"). Today the
-      backend returns "coming soon" copy (`core.ts:4735`) and the trainer draft panel says AI is
-      off — make sure the member-facing entry is visible and on-brand, not just an error string.
-- [ ] **C2 — WhatsApp.** In notification settings, show a **WhatsApp channel row marked
-      "Coming Soon!"** (disabled toggle). Backend fan-out already exists; do not enable the
-      provider.
+- [ ] **C1 — AI assistant.** When the feature flag is off, route users away from dead assistant
+      surfaces or show neutral unavailable-state copy without prompt chips, badges, or disabled CTAs.
+- [ ] **C2 — WhatsApp.** In notification settings, avoid disabled WhatsApp controls while the
+      provider is off. Backend fan-out already exists; do not enable the provider.
 - [ ] **C3 — Languages.** In the language picker (`onboarding/language.tsx` + settings), keep
-      English + Hindi selectable and list Tamil/Telugu/Kannada/Marathi/Bengali as **disabled
-      "Coming Soon!"** rows.
+      English + Hindi selectable and avoid listing other languages as disabled launch placeholders.
 - [ ] **C4** Ensure no store listing / marketing copy promises AI, WhatsApp, or languages
       beyond English + Hindi as *available now*.
 
-**Exit:** all three read as deliberate "Coming Soon," consistent across mobile + web + store copy.
+**Exit:** all three read as deliberate gated states, consistent across mobile + web + store copy.
 
 ---
 
@@ -261,7 +256,7 @@ scope.
 
 **Live providers:** DB ✅, Resend ✅, Razorpay ✅ **live**, Supabase ✅, Expo push ✅, Google
 Maps ✅, MSG91 SMS ✅ **live**, Upstash rate-limit ✅. AI / WhatsApp = intentionally off
-("Coming Soon").
+with neutral unavailable-state copy.
 
 **What automated gates do NOT cover** (hence WS-A/B): live real-money flow, on-device motion
 smoothness, push delivery on physical devices, low-light camera scanning. These are the
@@ -274,7 +269,7 @@ launch-proving work, and they are the point of this workflow.
 Method: opinionated teardown of the *actual* implemented screens, flows, copy, design tokens,
 and edge states, judged against a premium-launch taste rubric (motion, materiality, color
 calibration, typography, interaction states, anti-slop copy). Deferred features
-(AI/WhatsApp/classes/languages) are out of scope — they stay visible "Coming Soon!".
+(AI/WhatsApp/classes/languages) are out of scope and should stay honestly gated.
 
 ## The verdict, plainly
 
