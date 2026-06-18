@@ -120,6 +120,12 @@ Use deterministic precedence so staging and production produce the same branch a
 
 Run these on a staging clone or disposable production snapshot.
 
+```sh
+pnpm db:b4:sql multi-branch-member-audit
+pnpm db:b4:sql multi-branch-trainer-audit
+pnpm db:b4:sql multi-branch-plan-assignment-audit
+```
+
 Members with multiple active branch subscriptions:
 
 ```sql
@@ -185,6 +191,10 @@ for each ambiguity class before enforcing stricter filtering.
 
 Add nullable columns and indexes:
 
+```sh
+pnpm db:b4:sql migration-phase-1-staging-only
+```
+
 ```sql
 ALTER TABLE "MemberProfile"
 ADD COLUMN IF NOT EXISTS "primaryBranchId" text;
@@ -221,6 +231,10 @@ ON "PlanAssignment" ("orgId", "branchId", "assignedToUserId");
 
 Backfill `MemberProfile.primaryBranchId` from newest active subscription:
 
+```sh
+pnpm db:b4:sql backfill-member-profile-staging-only
+```
+
 ```sql
 WITH ranked AS (
   SELECT
@@ -246,6 +260,10 @@ WHERE ranked.rn = 1
 
 Backfill `TrainerAssignment.branchId` from member primary branch:
 
+```sh
+pnpm db:b4:sql backfill-trainer-assignment-staging-only
+```
+
 ```sql
 UPDATE "TrainerAssignment" ta
 SET "branchId" = mp."primaryBranchId"
@@ -257,6 +275,10 @@ WHERE ta."orgId" = mp."orgId"
 ```
 
 Backfill `PersonalTrainingSubscription.branchId` from trainer assignment:
+
+```sh
+pnpm db:b4:sql backfill-pt-subscription-staging-only
+```
 
 ```sql
 UPDATE "PersonalTrainingSubscription" pts
@@ -270,6 +292,10 @@ WHERE pts."orgId" = ta."orgId"
 ```
 
 Backfill user-specific `PlanAssignment.branchId` from member primary branch:
+
+```sh
+pnpm db:b4:sql backfill-plan-assignment-staging-only
+```
 
 ```sql
 UPDATE "PlanAssignment" pa
@@ -320,6 +346,10 @@ Run smoke checks in both org-global and branch-selected contexts:
 
 SQL validation:
 
+```sh
+pnpm db:b4:sql validation-counts
+```
+
 ```sql
 SELECT
   COUNT(*) FILTER (WHERE "primaryBranchId" IS NULL) AS member_profiles_without_branch
@@ -356,6 +386,10 @@ evidence shows no ambiguous legacy rows.
 ## Rollback
 
 Before application code depends on the columns, rollback is:
+
+```sh
+pnpm db:b4:sql rollback
+```
 
 ```sql
 DROP INDEX IF EXISTS "MemberProfile_orgId_primaryBranchId_idx";
