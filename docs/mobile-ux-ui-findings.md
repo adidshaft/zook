@@ -6,14 +6,25 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 
 ---
 
+## Fixed in `mobile-ui-cleanup`
+
+- **1.1 Reception "Verify scan" deep-link ignores the record** — current route reads
+  `recordId`, passes it to `ReceptionWorkspace`, and auto-opens the matching decision sheet.
+- **1.2 Billing single-tenant pluralization** — `activeMembersCopy()` now handles
+  "1 member currently counts" vs plural counts.
+- **2.2 Owner web-handoff shown twice** — Owner Today no longer shows the broad web control-room
+  row; Owner More remains the web handoff hub.
+- **2.4 Pause-membership control could explain itself** — active membership card now explains that
+  pausing freezes check-ins until the resume date and carries remaining days over.
+
 ## 1. Functional / correctness
 
-### 1.1 Reception "Verify scan" deep-link ignores the record  **[bug]**
+### 1.1 Reception "Verify scan" deep-link ignores the record  **[bug, fixed]**
 - **Fault:** `app/reception/verification/[recordId].tsx` renders the generic Front-Desk body and never reads the `recordId` param. The route exists to verify one specific flagged/pending scan (e.g. from a push notification or a tap in the queue).
 - **Experience:** A receptionist who taps a specific scan-to-review lands on the generic desk and has to hunt for it in the queue. The deep link is effectively dead.
 - **Fix:** Have `ReceptionWorkspace`/desk body accept `initialRecordId` and auto-open/scroll to that record's verification card (mirrors how `members/[id]` passes `initialMemberId`).
 
-### 1.2 Billing single-tenant pluralization  **[bug, minor]**
+### 1.2 Billing single-tenant pluralization  **[bug, minor, fixed]**
 - **Fault:** `app/owner/billing.tsx` — `"${activeMemberCount} members currently count toward your plan limits"` doesn't handle `=== 1` ("1 members … count").
 - **Experience:** A brand-new gym with one member sees ungrammatical copy.
 - **Fix:** Pluralize member/members and count/counts.
@@ -27,7 +38,7 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Experience:** Tapping "Edit", "Photo", or "Profile details" doesn't take the user to a focused sub-screen as the labels imply; they all land on the full profile.
 - **Fix:** Either (a) make `profile-screen` read the route and scroll-to/expand the relevant section, or (b) collapse these to a single `/profile` and remove the alias links.
 
-### 2.2 Owner web-handoff shown twice  **[ux, minor]**
+### 2.2 Owner web-handoff shown twice  **[ux, minor, fixed]**
 - **Fault:** "Open web control room" is a prominent card on Owner → Today **and** the whole "Web control room" list on Owner → More.
 - **Experience:** Mild redundancy; the Today card eats prime real estate for a link.
 - **Fix:** Slim the Today card to a one-line row, or drop it (More already covers web).
@@ -37,7 +48,7 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Experience:** Looks unfinished for single-plan members.
 - **Fix:** When there's one plan, surface its exercise preview inline (the data the Home card already shows) so the tab feels complete.
 
-### 2.4 Pause-membership control could explain itself  **[ux, minor]**
+### 2.4 Pause-membership control could explain itself  **[ux, minor, fixed]**
 - **Fault:** `active-membership-card.tsx` shows a date field + "Pause membership" with no explanation of what pausing does (freezes access, extends end date?).
 - **Experience:** Users hesitate on a consequential action. (We added a confirm dialog; the inline copy could still help.)
 - **Fix:** One line under the control: "Pausing freezes check-ins until the resume date; your remaining days carry over."

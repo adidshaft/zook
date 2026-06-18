@@ -9,7 +9,6 @@ import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid
 import { AnimatedAppear, Card, EmptyState, HeaderMeta, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
-import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
@@ -226,13 +225,6 @@ export default function OwnerCommandScreen() {
             meta={<HeaderMeta icon="business-outline">{branchLabel}</HeaderMeta>}
             scrollY={scrollY}
           />
-          <AnimatedAppear delay={0}>
-            <WebHandoffRow
-              title="Open web control room"
-              subtitle="Setup, reports, staff, and QR console"
-              path="/dashboard"
-            />
-          </AnimatedAppear>
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
               {dashboard ? (
