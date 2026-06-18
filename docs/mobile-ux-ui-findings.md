@@ -964,3 +964,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile gym thumbnail fallback cue (`R198`) is closed:
   gym cards without cover art now use a neutral business icon instead of lime, keeping
   join-mode status color on the adjacent pill.
+- **[ui, fixed]** Overstated mobile trainer today-row cues (`R199`) are closed:
+  the trainer priority client row now uses neutral person and Today chips instead of
+  lime/amber, keeping emphasis on the section heading and real progress/adherence states.

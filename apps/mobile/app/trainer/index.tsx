@@ -117,8 +117,8 @@ export default function TrainerHomeScreen() {
                   <ListRow
                     title={priorityClient.user?.name ?? "Client"}
                     subtitle={`${priorityClient.summary?.activePlans ?? 0} active ${(priorityClient.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${fitnessGoalFor(priorityClient)}`}
-                    leading={<IconBubble icon="person-outline" tone="lime" />}
-                    trailing={<StatusChip status="Today" tone="amber" />}
+                    leading={<IconBubble icon="person-outline" tone="neutral" />}
+                    trailing={<StatusChip status="Today" tone="neutral" />}
                   />
                 </Pressable>
               ) : (
