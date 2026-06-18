@@ -232,6 +232,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   the unused success card variant.
 - **6/R91 Dead web glow utility** — removed the unused `.zook-lime-glow` global utility and
   its paper-mode override after reference checks showed no app callers.
+- **6/R92 Dead full glow token** — removed unused `--shadow-glow-accent` palette variables
+  after app/component code stopped referencing the full glow token.
 
 ## 1. Functional / correctness
 
