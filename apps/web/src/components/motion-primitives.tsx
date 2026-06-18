@@ -196,57 +196,6 @@ export function Counter({
   );
 }
 
-/** Slow ambient float for decorative blobs. */
-export function Float({
-  children,
-  amplitude = 12,
-  duration = 9,
-  className,
-}: {
-  children: ReactNode;
-  amplitude?: number;
-  duration?: number;
-  className?: string;
-}) {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-  return (
-    <motion.div
-      animate={{ y: [0, -amplitude, 0, amplitude * 0.6, 0] }}
-      transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/** Marquee-style infinite text strip. */
-export function Marquee({
-  children,
-  duration = 28,
-  className,
-}: {
-  children: ReactNode;
-  duration?: number;
-  className?: string;
-}) {
-  return (
-    <div className={`relative overflow-hidden ${className ?? ""}`}>
-      <motion.div
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration, repeat: Infinity, ease: "linear" }}
-        className="flex w-max gap-12"
-      >
-        {children}
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
 /**
  * Spotlight that follows the cursor inside a container — adds a subtle
  * radial glow for premium feel on hero cards.

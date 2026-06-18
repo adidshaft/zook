@@ -2,8 +2,6 @@ export type PublicLocale = "en" | "hi";
 
 type SearchParamsLike = Record<string, string | string[] | undefined> | undefined;
 
-export const publicLocales: PublicLocale[] = ["en", "hi"];
-
 export function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -19,10 +17,6 @@ export function resolvePublicLocaleFromHeader(acceptLanguage?: string | null): P
 
 export function alternatePublicLocale(locale: PublicLocale): PublicLocale {
   return locale === "hi" ? "en" : "hi";
-}
-
-export function publicLocaleLabel(locale: PublicLocale) {
-  return locale === "hi" ? "हिंदी" : "English";
 }
 
 export function localizedPath(

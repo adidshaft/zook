@@ -129,6 +129,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   empty-state labels with neutral published/pending/no-history wording.
 - **6/R44 Cross-app stale helper cleanup** — removed unused web mini-chart/chip/action helper
   exports and neutralized stale refund/comment wording found by the cue scan.
+- **6/R45 Web unused public helpers** — removed no-caller locale-label/list exports and unused
+  ambient motion primitives from the public web helper modules.
 
 ## 1. Functional / correctness
 
