@@ -1,8 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
-import {
-  handleMembershipPayments,
-  handleStaffPlansGoals,
-} from "./core";
+import { handleStaffPlansGoals } from "./core";
 import { handleAi } from "./ai";
 import { handleAttendance } from "./attendance";
 import {
@@ -19,6 +16,7 @@ import { handleHealthReadiness } from "./health-readiness";
 import { handleMeData } from "./me-data";
 import { handleMemberMemberships } from "./member-memberships";
 import { handleMemberPlansGoals } from "./member-plans-goals";
+import { handleMembershipPayments } from "./membership-payments";
 import { handleMembershipSubscriptionActions } from "./membership-subscription-actions";
 import { handleNotificationsInbox } from "./notifications-inbox";
 import { handleOrganizationAuditLogs } from "./organization-audit-logs";
