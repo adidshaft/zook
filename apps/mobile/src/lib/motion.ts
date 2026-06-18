@@ -6,7 +6,6 @@ import {
   useSharedValue,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "@/lib/reanimated-lite";
 
@@ -41,20 +40,6 @@ export function useReduceMotion() {
   }, []);
 
   return reduceMotion;
-}
-
-export function useScalePulse() {
-  const reduceMotion = useReduceMotion();
-  const scale = useSharedValue(1);
-  const pulse = useCallback(() => {
-    if (reduceMotion) return;
-    scale.value = withSequence(
-      withSpring(1.08, { damping: 12, stiffness: 220 }),
-      withSpring(1, { damping: 14, stiffness: 200 }),
-    );
-  }, [reduceMotion, scale]);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  return { animatedStyle, pulse };
 }
 
 export function useShake() {

@@ -78,6 +78,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   quietly, the QA shortcut is hidden with the same flag, and stale assistant nav strings are gone.
 - **6/R21 Primitive nav shim** — removed the leftover `nav.tsx` chip re-export shim and
   exported chips directly from the primitive barrel.
+- **6/R22 Reception success pulse** — removed the extra success scale animation from the
+  verification result modal; success already has modal copy, haptics/toast, announcement, and
+  auto-dismiss.
 
 ## 1. Functional / correctness
 
@@ -239,3 +242,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Primitive nav shim (`R21`) is closed: the last `nav.tsx` compatibility
   barrel was deleted now that navigation is owned by Expo Router layouts and chips have their own
   primitive module.
+- **[code, fixed]** Reception success pulse (`R22`) is closed: the verification result modal no
+  longer scales on success, and the now-unused `useScalePulse` helper was removed while keeping
+  the failure shake cue.

@@ -66,7 +66,7 @@ import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
-import { useScalePulse, useShake } from "@/lib/motion";
+import { useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -1181,12 +1181,10 @@ function VerificationResultModal() {
   const { palette } = useTheme();
   const { dismissVerificationResult, verificationResult } = useReceptionWorkspace();
   const success = verificationResult?.tone === "success";
-  const { animatedStyle: pulseStyle, pulse } = useScalePulse();
   const { animatedStyle: shakeStyle, shake } = useShake();
   useEffect(() => {
     if (!verificationResult) return;
-    if (success) pulse();
-    else shake();
+    if (!success) shake();
     AccessibilityInfo.announceForAccessibility(
       [
         success ? "Verification successful." : "Verification failed.",
@@ -1199,7 +1197,7 @@ function VerificationResultModal() {
     );
     const timer = setTimeout(dismissVerificationResult, success ? 1400 : 4000);
     return () => clearTimeout(timer);
-  }, [dismissVerificationResult, pulse, shake, success, verificationResult]);
+  }, [dismissVerificationResult, shake, success, verificationResult]);
   const photo = verificationResult?.photoUrl;
   const backdropColor = success ? "rgba(17,21,15,0.94)" : `${palette.feedback.danger}E6`;
   return (
@@ -1215,7 +1213,7 @@ function VerificationResultModal() {
           { backgroundColor: backdropColor },
         ]}
       >
-        <Reanimated.View style={[styles.verificationModalContent, success ? pulseStyle : shakeStyle]}>
+        <Reanimated.View style={[styles.verificationModalContent, success ? null : shakeStyle]}>
           {photo ? (
             <Image
               source={{ uri: photo }}
