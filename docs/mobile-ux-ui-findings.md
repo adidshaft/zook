@@ -186,6 +186,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   and checkout/dashboard labels that called local test surfaces "sample" or "demo mode".
 - **6/R69 Empty web domain indexes** — removed no-op server-domain `index.ts` files that only
   exported `{}` and had no exact folder-import callers.
+- **6/R70 Empty web domain type placeholders** — removed no-op server-domain `types.ts` files
+  that only exported `{}` and had no exact type-import callers.
 
 ## 1. Functional / correctness
 
