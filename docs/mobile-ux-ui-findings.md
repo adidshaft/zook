@@ -127,6 +127,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   transport error with neutral copy for unsupported demo actions.
 - **6/R43 Web availability copy** — replaced remaining web "coming soon" and "not available yet"
   empty-state labels with neutral published/pending/no-history wording.
+- **6/R44 Cross-app stale helper cleanup** — removed unused web mini-chart/chip/action helper
+  exports and neutralized stale refund/comment wording found by the cue scan.
 
 ## 1. Functional / correctness
 

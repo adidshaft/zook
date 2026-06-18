@@ -65,10 +65,10 @@ export function RefundsSection({
         {
           payment,
           refund: {
-            id: `legacy-${payment.id}`,
+            id: `tracked-${payment.id}`,
             amountPaise: refundAmountFor(payment) || payment.amountPaise,
             status: payment.status,
-            reason: "Recorded before refund tracker",
+            reason: "Recorded before detailed refund tracking",
             createdAt: payment.createdAt,
             processedAt: payment.recordedAt ?? payment.createdAt,
           },

@@ -153,16 +153,6 @@ export function AvatarInitials({
   );
 }
 
-export function ActionRow({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string | undefined;
-}) {
-  return <div className={clsx("flex flex-wrap items-center gap-2", className)}>{children}</div>;
-}
-
 export function StatusPill({
   value,
   tone,

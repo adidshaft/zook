@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { GlassCard, Pill, type PillTone } from "../glass-card";
+import { GlassCard, type PillTone } from "../glass-card";
 import { fadeUpVariants } from "./layout";
 
 export function toneFromStatus(value: string | null | undefined): PillTone {
@@ -103,25 +103,6 @@ export function MetricCard({
   );
 }
 
-export function MetricChip({
-  children,
-  tone = "neutral",
-  icon,
-  className,
-}: {
-  children: React.ReactNode;
-  tone?: PillTone;
-  icon?: React.ReactNode;
-  className?: string | undefined;
-}) {
-  return (
-    <Pill tone={tone} className={clsx("px-3.5 py-1.5", className)}>
-      {icon}
-      {children}
-    </Pill>
-  );
-}
-
 export function ReadoutGrid({
   items,
   columns = 2,
@@ -158,55 +139,4 @@ export function ReadoutGrid({
       ))}
     </dl>
   );
-}
-
-export function MiniTrend({
-  values = [],
-  tone = "lime",
-  label = "No data yet",
-}: {
-  values?: number[];
-  tone?: "lime" | "blue" | "amber";
-  label?: string;
-}) {
-  if (!values.length) {
-    return (
-      <div className="flex h-14 w-full items-center gap-3" role="img" aria-label={label}>
-        <span className="h-px flex-1 border-t border-dashed border-[var(--border)]" />
-        <span className="text-xs text-[var(--text-tertiary)]">No data yet</span>
-      </div>
-    );
-  }
-
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = Math.max(max - min, 1);
-  const points = values
-    .map((value, index) => {
-      const x = (index / Math.max(values.length - 1, 1)) * 100;
-      const y = 42 - ((value - min) / range) * 34;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const stroke = tone === "blue" ? "#7dd3fc" : tone === "amber" ? "#f2c94c" : "#b9f455";
-  return (
-    <svg viewBox="0 0 100 48" role="img" aria-label={label} className="h-14 w-full overflow-visible">
-      <defs>
-        <linearGradient id={`mini-trend-${tone}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polyline
-        points={`0,48 ${points} 100,48`}
-        fill={`url(#mini-trend-${tone})`}
-        stroke="none"
-      />
-      <polyline points={points} fill="none" stroke={stroke} strokeLinecap="round" strokeWidth="3" />
-    </svg>
-  );
-}
-
-export function RevenueMiniChart(props: Parameters<typeof MiniTrend>[0]) {
-  return <MiniTrend {...props} />;
 }

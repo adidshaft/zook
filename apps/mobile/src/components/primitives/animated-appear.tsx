@@ -5,7 +5,7 @@ import { durations, useReduceMotion } from "@/lib/motion";
 
 /**
  * Lightweight on-mount entry animation: fade + slide up.
- * Uses the built-in RN Animated API (works alongside the reanimated-lite stub).
+ * Uses the built-in RN Animated API so it stays compatible with every native target.
  */
 export function AnimatedAppear({
   children,
