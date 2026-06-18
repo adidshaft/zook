@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { paymentModes } from "../constants";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
@@ -170,7 +170,7 @@ export function ReceptionPaymentsScreenBody() {
                 title="Invoice"
                 subtitle={
                   membership?.status
-                    ? `${membership.status.replace(/_/g, " ")} membership selected`
+                    ? `${titleCaseFromCode(membership.status)} membership selected`
                     : "No membership selected"
                 }
                 leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}

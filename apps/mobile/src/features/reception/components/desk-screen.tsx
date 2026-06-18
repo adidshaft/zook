@@ -4,7 +4,7 @@ import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
-import { formatDateTime } from "@/lib/formatting";
+import { formatDateTime, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -145,7 +145,7 @@ export function ReceptionDeskScreenBody() {
                     </Text>
                   </View>
                   <Pill tone={scan.status === "APPROVED" ? "lime" : "amber"}>
-                    {scan.status.replace(/_/g, " ")}
+                    {titleCaseFromCode(scan.status)}
                   </Pill>
                 </Card>
               ))}

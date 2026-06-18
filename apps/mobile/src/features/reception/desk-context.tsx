@@ -50,7 +50,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { formatAgeLabel, formatInr, formatReviewReason } from "@/lib/formatting";
+import { formatAgeLabel, formatInr, formatReviewReason, titleCaseFromCode } from "@/lib/formatting";
 import {
   useApproveAttendance,
   useManualAttendance,
@@ -280,7 +280,7 @@ function useReceptionWorkspaceState({
           id: attempt.id,
           primaryText: attempt.user?.name ?? attempt.user?.email ?? "Member check-in",
           secondaryText: `${attempt.branchName ?? "Main branch"} · ${attempt.plan?.name ?? "Membership"}`,
-          metaText: attempt.status.replace(/_/g, " "),
+          metaText: titleCaseFromCode(attempt.status),
           reason: formatReviewReason(
             Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
             "Desk approval required.",
@@ -601,7 +601,7 @@ function useReceptionWorkspaceState({
       const name = result.match.user?.name ?? result.match.user?.email ?? "member";
       if (result.match.type === "attendance") {
         if (result.match.valid) {
-          const status = (result.match.record?.status ?? "approved").replace(/_/g, " ");
+          const status = titleCaseFromCode(result.match.record?.status ?? "approved");
           presentVerificationResult({
             tone: "success",
             type: "attendance",
@@ -636,7 +636,7 @@ function useReceptionWorkspaceState({
         });
         showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
       } else {
-        const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
+        const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
         const message = `Pickup code found for ${name}, but status is ${status}.`;
         presentVerificationResult({
           tone: "danger",
@@ -670,7 +670,7 @@ function useReceptionWorkspaceState({
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`;
+      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${titleCaseFromCode(payment.payment.mode)}.`;
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
@@ -992,7 +992,7 @@ export function ReceptionWorkspace({
                   </Text>
                   <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
                     {state.member?.email ?? "Search members before recording payments or attendance"}
-                    {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
+                    {state.membership?.status ? ` · ${titleCaseFromCode(state.membership.status)}` : ""}
                   </Text>
                 </View>
                 {state.member ? (

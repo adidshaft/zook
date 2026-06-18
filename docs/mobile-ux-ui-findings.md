@@ -579,3 +579,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile role title-case helpers (`R66`) is closed: auth and role
   switcher copy now reuse shared mobile `titleCaseFromCode` instead of local role formatter
   copies.
+- **[code, fixed]** Duplicate reception status formatting (`R67`) is closed: reception desk,
+  orders, payments, and verification copy now use shared mobile `titleCaseFromCode` instead of
+  local underscore replacement.
