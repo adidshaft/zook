@@ -6,7 +6,6 @@ const orgDomainKey = (orgId: string | undefined | null, domain: string) =>
 
 export const invalidations = {
   member: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.member.all() }),
     home: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.member.homePrefix() }),
     membership: (qc: QueryClient) =>
       qc.invalidateQueries({ queryKey: queryKeys.member.membership() }),
@@ -18,9 +17,6 @@ export const invalidations = {
       qc.invalidateQueries({ queryKey: orgDomainKey(orgId, "attendance") }),
     pending: (qc: QueryClient, orgId?: string | null) =>
       qc.invalidateQueries({ queryKey: queryKeys.attendance.pending(orgId) }),
-  },
-  trainer: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.trainer.all() }),
   },
   owner: {
     all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.owner.all() }),
@@ -62,14 +58,5 @@ export const invalidations = {
     all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.notifications.list() }),
     preferences: (qc: QueryClient) =>
       qc.invalidateQueries({ queryKey: queryKeys.notifications.preferences() }),
-  },
-  ai: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.ai.all() }),
-  },
-  tracking: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.tracking.all() }),
-  },
-  gym: {
-    all: (qc: QueryClient) => qc.invalidateQueries({ queryKey: queryKeys.gym.all() }),
   },
 };

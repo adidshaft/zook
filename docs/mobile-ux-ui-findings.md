@@ -101,6 +101,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R31 No-caller domain hooks** — removed unused mobile domain query hooks and their
   private query-key/invalidation leftovers for engagement, badges, goals, push devices,
   tracking habits, product aliases, and privacy consents.
+- **6/R32 Unused query-key helpers** — trimmed no-caller mobile query-key helpers and
+  invalidation branches left behind after the domain-hook cleanup.
 
 ## 1. Functional / correctness
 

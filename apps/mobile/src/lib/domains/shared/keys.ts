@@ -1,9 +1,7 @@
 export const queryKeys = {
   member: {
-    all: () => ["me"] as const,
     homePrefix: () => ["me", "home"] as const,
     home: (orgId?: string | null) => ["me", "home", orgId] as const,
-    dashboard: (orgId?: string | null) => ["me", "dashboard", orgId] as const,
     classes: (orgId?: string | null, branchId?: string | null) =>
       ["me", "classes", orgId, branchId] as const,
     membership: () => ["me", "memberships"] as const,
@@ -14,12 +12,8 @@ export const queryKeys = {
     diet: () => ["me", "diet"] as const,
   },
   trainer: {
-    all: () => ["trainer"] as const,
-    home: (orgId?: string | null) => ["trainer", "home", orgId] as const,
     clients: (orgId?: string | null, trainerUserId?: string | null) =>
       ["org", orgId, "trainer", trainerUserId, "clients"] as const,
-    client: (clientId: string) => ["trainer", "client", clientId] as const,
-    plans: (orgId?: string | null) => ["trainer", "plans", orgId] as const,
     payouts: (orgId?: string | null, trainerUserId?: string | null, month?: string | null) =>
       ["org", orgId, "trainer", trainerUserId, "payouts", month] as const,
   },
@@ -35,25 +29,18 @@ export const queryKeys = {
       ["org", orgId, "join-requests", branchId] as const,
     setupStatus: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "setup-status", branchId] as const,
-    revenue: (orgId?: string | null) => ["owner", "revenue", orgId] as const,
-    stock: (orgId?: string | null) => ["owner", "stock", orgId] as const,
     billing: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "billing", "subscription", branchId] as const,
-    member: (memberId: string) => ["owner", "member", memberId] as const,
   },
   reception: {
     queue: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "attendance", "live", branchId] as const,
-    members: (orgId?: string | null) => ["reception", "members", orgId] as const,
-    payments: (orgId?: string | null) => ["reception", "payments", orgId] as const,
-    orders: (orgId?: string | null) => ["reception", "orders", orgId] as const,
   },
   attendance: {
     today: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "attendance", "today", branchId] as const,
     pending: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "attendance", "pending", branchId] as const,
-    record: (id: string) => ["attendance", "record", id] as const,
   },
   plans: {
     list: () => ["me", "plans"] as const,
@@ -66,16 +53,13 @@ export const queryKeys = {
     catalogPrefix: (orgId?: string | null) => ["shop", "products", orgId] as const,
     catalog: (orgId?: string | null, branchId?: string | null) =>
       ["shop", "products", orgId, branchId] as const,
-    cart: () => ["shop", "cart"] as const,
     orders: () => ["me", "shop-orders"] as const,
     activeOrders: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "shop", "orders", "active", branchId] as const,
     activeOrdersPrefix: (orgId?: string | null) => ["org", orgId, "shop", "orders"] as const,
-    order: (orderId: string) => ["shop", "order", orderId] as const,
   },
   notifications: {
     list: () => ["me", "notifications"] as const,
-    detail: (id: string) => ["notifications", "detail", id] as const,
     preferences: () => ["me", "notification-preferences"] as const,
   },
   payments: {
@@ -83,20 +67,12 @@ export const queryKeys = {
     list: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "payments", "recent", branchId] as const,
   },
-  ai: {
-    all: () => ["ai"] as const,
-    draft: (clientId: string) => ["ai", "draft", clientId] as const,
-  },
   tracking: {
-    all: () => ["me", "tracking"] as const,
-    history: () => ["tracking", "history"] as const,
     summary: () => ["me", "tracking", "summary"] as const,
     bodyProgress: () => ["me", "tracking", "body-progress"] as const,
     workouts: () => ["me", "tracking", "workouts"] as const,
-    entry: (id: string) => ["tracking", "entry", id] as const,
   },
   gym: {
-    all: () => ["gym"] as const,
     search: (query?: string | null, city?: string | null) =>
       ["gyms", query ?? "", city ?? ""] as const,
     profile: (username: string) => ["gym", username] as const,
