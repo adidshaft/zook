@@ -258,46 +258,6 @@ export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "v
   return <ZookButton {...props} variant="secondary" />;
 }
 
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
-  return <ZookButton {...props} variant="destructive" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
-  return <ZookButton {...props} variant="ghost" />;
-}
-
-export function PrimaryLink({
-  href,
-  children,
-  variant = "primary",
-  style,
-  textStyle,
-  accessibilityLabel,
-}: {
-  href: Href;
-  children: ReactNode;
-  variant?: ButtonVariant;
-  style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<TextStyle>;
-  accessibilityLabel?: string;
-}) {
-  return (
-    <ZookButton
-      href={href}
-      variant={variant}
-      style={style}
-      textStyle={textStyle}
-      accessibilityLabel={accessibilityLabel}
-    >
-      {children}
-    </ZookButton>
-  );
-}
-
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
-  return <PrimaryLink {...props} variant="secondary" />;
-}
-
 const styles = StyleSheet.create({
   button: {
     borderWidth: 1,

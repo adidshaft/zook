@@ -48,6 +48,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   file because there is no mobile story runner or import path for it.
 - **6/R10 Unused primitive wrappers** — removed unused chip, metric, section, and layout helper
   exports so the mobile primitive surface only exposes components with live callers.
+- **6/R11 Unused button aliases** — removed unused `DangerButton`, `GhostButton`,
+  `PrimaryLink`, and `SecondaryLink` wrappers in favor of `ZookButton` variants.
 
 ## 1. Functional / correctness
 
@@ -163,3 +165,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Unused primitive wrappers (`R10`) is closed: unused chip wrappers,
   metric-card aliases, `ActionButtonRow`, `SwipeActionRow`, and `CollapsibleSection` were
   removed after exact reference checks showed no app callers.
+- **[code, fixed]** Unused button aliases (`R11`) is closed: old button/link wrapper exports
+  with no app callers were removed; callers should use `ZookButton` with `variant`/`href`.
