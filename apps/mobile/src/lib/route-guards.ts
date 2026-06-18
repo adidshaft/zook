@@ -49,10 +49,6 @@ export function requiredRolesForPath(pathname: string): Role[] | null {
   return route ? routeRoles[route] : null;
 }
 
-export function requiredRoleForPath(pathname: string): Role | null {
-  return requiredRolesForPath(pathname)?.[0] ?? null;
-}
-
 export function checkRouteAccess(
   pathname: string,
   perms: ReadonlySet<Permission>,

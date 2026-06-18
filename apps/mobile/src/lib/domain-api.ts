@@ -452,34 +452,6 @@ export const plansApi = {
   },
 };
 
-export const shopApi = {
-  createOrder(
-    options: RequestOptions & {
-      orgId: string;
-      items: Array<{ productId: string; quantity: number }>;
-    },
-  ) {
-    return mobileApiFetch("/shop/orders", {
-      method: "POST",
-      token: options.token,
-      orgId: options.orgId,
-      ...(options.branchId ? { branchId: options.branchId } : {}),
-      body: {
-        orgId: options.orgId,
-        items: options.items,
-        ...(options.branchId ? { branchId: options.branchId } : {}),
-      },
-    });
-  },
-  fulfillOrder(options: RequestOptions & { orderId: string }) {
-    return mobileApiFetch(`/orgs/${options.orgId}/shop/orders/${options.orderId}/fulfill`, {
-      method: "POST",
-      token: options.token,
-      orgId: options.orgId,
-    });
-  },
-};
-
 export const gymApi = {
   requestMembership(
     options: RequestOptions & {

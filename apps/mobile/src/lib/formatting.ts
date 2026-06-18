@@ -6,17 +6,6 @@ function toDate(value?: string | Date | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatShortDate(value?: string | Date | null) {
-  const date = toDate(value);
-  if (!date) {
-    return "Not available";
-  }
-  return date.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-  });
-}
-
 export function formatLongDate(value?: string | Date | null) {
   const date = toDate(value);
   if (!date) {

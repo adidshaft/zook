@@ -112,6 +112,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R36 No-caller utility helpers** — removed the unused smart check-in reminder module,
   dropped the unused biometric getter, and made toast/biometric helpers private where only their
   own modules call them.
+- **6/R37 No-caller mobile exports** — removed leftover no-caller formatting, route-role,
+  motion, role-switch, last-values, and shop API exports after direct reference checks showed
+  the live screens use newer domain hooks/helpers instead.
 
 ## 1. Functional / correctness
 

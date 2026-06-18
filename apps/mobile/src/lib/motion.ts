@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AccessibilityInfo } from "react-native";
 import {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -9,19 +8,10 @@ import {
   withTiming,
 } from "@/lib/reanimated-lite";
 
-export const springs = {
-  snappy: { damping: 18, stiffness: 220 },
-  gentle: { damping: 22, stiffness: 150 },
-};
-
 export const durations = {
   fast: 150,
   base: 250,
   slow: 350,
-};
-
-export const easings = {
-  standard: Easing.out(Easing.cubic),
 };
 
 export function useReduceMotion() {
