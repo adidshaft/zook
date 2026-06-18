@@ -6,7 +6,7 @@ import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
@@ -77,7 +77,7 @@ export default function OwnerStockScreen() {
                     key={order.id}
                     title={order.user?.name ?? "Member pickup"}
                     subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
-                    leading={<IconBubble icon="bag-check-outline" tone="lime" />}
+                    leading={<IconBubble icon="bag-check-outline" tone={toneForShopOrderStatus(order.status)} />}
                     trailing={
                       <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                         {formatInr(order.totalPaise)}

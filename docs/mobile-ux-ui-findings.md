@@ -669,3 +669,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Duplicate payment status tone logic (`R99`) is closed: membership payments
   and owner revenue now share payment status tones, and owner revenue shop rows use shared shop
   order tones instead of fixed success/amber cues.
+- **[ui, fixed]** Misleading owner stock pickup order tone (`R100`) is closed: owner stock
+  pickup rows now use the shared shop order status tone instead of a fixed success icon.
