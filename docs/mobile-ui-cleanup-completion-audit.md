@@ -44,7 +44,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `5124b8b chore: remove unused mobile tracking displays`,
   `aebf45c chore: remove trainer ai draft placeholder`, and
   `3ec422b chore: remove unused mobile utility helpers`,
-  `47cd603 chore: remove no-caller mobile exports`.
+  `47cd603 chore: remove no-caller mobile exports`, and
+  `8702d2c chore: trim internal mobile helper exports`.
 
 ### Web UI/UX plan
 
