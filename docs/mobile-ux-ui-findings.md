@@ -979,3 +979,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile trainer draft-prompt icon cue (`R203`) is closed:
   the saved-plan draft prompt now uses a neutral reader icon instead of amber, keeping
   warning emphasis on the card variant and review copy.
+- **[ui, fixed]** Overstated mobile money-summary receipt cue (`R204`) is closed:
+  shared money summary cards now use a neutral receipt icon instead of fixed amber, keeping
+  emphasis on the amount, row details, and any audit/consequence copy.
