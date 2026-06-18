@@ -272,7 +272,7 @@ export default function TrainerClientPlanScreen() {
           {savedPlan ? (
             <Card variant="warning" contentStyle={styles.draftPromptContent}>
               <View style={styles.attentionHeader}>
-                <IconBubble icon="reader-outline" tone="amber" />
+                <IconBubble icon="reader-outline" tone="neutral" />
                 <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
               </View>
             </Card>

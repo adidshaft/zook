@@ -976,3 +976,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile trainer plan-row icon cue (`R202`) is closed:
   active plan-work rows now use a neutral reader icon instead of amber, keeping row action
   emphasis on the Open chip and Client Detail button.
+- **[ui, fixed]** Overstated mobile trainer draft-prompt icon cue (`R203`) is closed:
+  the saved-plan draft prompt now uses a neutral reader icon instead of amber, keeping
+  warning emphasis on the card variant and review copy.
