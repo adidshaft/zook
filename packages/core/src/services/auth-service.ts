@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import type { EmailProvider } from "../providers/email";
 import type { SmsProvider } from "../providers/sms";
-import { getAllowedFixedOtp, getAppEnv } from "../runtime-env";
+import { getAllowedFixedOtp, getAppEnv, getConfiguredFixedOtp } from "../runtime-env";
 import { normalizeLoginIdentifier, type LoginIdentifier } from "../validators";
 
 export interface OtpChallengeRecord {
@@ -235,8 +235,9 @@ export class AuthService {
     userAgent?: string;
     ipAddress?: string;
   }): Promise<{ token: string; refreshToken: string; expiresAt: Date; refreshExpiresAt: Date }> {
-    const fixedOtp = process.env.OTP_FIXED_CODE_DEV?.trim();
-    if (fixedOtp && getAppEnv() === "production" && input.code === fixedOtp) {
+    const configuredFixedOtp = getConfiguredFixedOtp();
+    const allowedFixedOtp = getAllowedFixedOtp();
+    if (configuredFixedOtp && configuredFixedOtp !== allowedFixedOtp && input.code === configuredFixedOtp) {
       await this.repo.recordSecurityEvent?.({
         action: "auth.fixed_otp_rejected",
         userId: input.userId,
@@ -244,9 +245,12 @@ export class AuthService {
           typeof input.identifier === "string" ? input.identifier : input.identifier.value,
         ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
         ...(input.userAgent ? { userAgent: input.userAgent } : {}),
-        metadata: { reason: "fixed_otp_presented_in_production" },
+        metadata: {
+          reason: "fixed_otp_presented_when_disabled",
+          appEnv: getAppEnv(),
+        },
       });
-      throw new Error("Fixed OTP is disabled in production");
+      throw new Error("Fixed OTP is disabled in this environment");
     }
     await this.consumeChallenge(input);
     const token = AuthService.createToken();

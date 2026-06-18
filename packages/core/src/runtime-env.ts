@@ -135,6 +135,10 @@ export function getAllowedFixedOtp(env: NodeJS.ProcessEnv = process.env) {
   return fixedOtp && isFixedOtpAllowed(env) ? fixedOtp : undefined;
 }
 
+export function getConfiguredFixedOtp(env: NodeJS.ProcessEnv = process.env) {
+  return env.OTP_FIXED_CODE_DEV?.trim() || undefined;
+}
+
 function isStrongSecret(value: string) {
   const trimmed = value.trim();
   if (trimmed.length < 32) {
