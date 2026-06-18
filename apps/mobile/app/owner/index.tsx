@@ -12,21 +12,12 @@ import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
-import { formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
+import { formatBranchName, formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
-
-function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!branch) return "Main branch";
-  if (!org) return branch;
-  if (!branch.startsWith(org)) return branch;
-  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || "Main branch";
-}
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
@@ -153,12 +144,15 @@ export default function OwnerCommandScreen() {
     dashboard?.branchScope?.defaultBranch?.name ??
     "Main branch";
   const orgName = roleContext?.org?.name ?? "Gym";
-  const branchLabel = trimBranchName(orgName, branchName);
+  const branchLabel = formatBranchName(orgName, branchName, {
+    collapseOrgMatch: true,
+    fallback: "Main branch",
+  });
   const metrics: MetricTileItem[] = [
     {
       label: "Active members",
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
-      hint: branchLabel,
+      hint: branchLabel ?? undefined,
       tone: "lime",
       icon: "people-outline",
       onPress: () => router.push("/owner/members"),

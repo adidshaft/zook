@@ -288,12 +288,16 @@ export function formatInitials(name?: string | null, fallback?: string | null) {
 export function formatBranchName(
   orgName: string | null | undefined,
   branchName: string | null | undefined,
+  options: { collapseOrgMatch?: boolean; fallback?: string | null } = {},
 ) {
   const org = orgName?.trim();
   const branch = branchName?.trim();
-  if (!branch) return null;
+  if (!branch) return options.fallback ?? null;
   if (!org || !branch.startsWith(org)) return branch;
-  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
+  return (
+    branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() ||
+    (options.collapseOrgMatch ? (options.fallback ?? null) : branch)
+  );
 }
 
 export function formatOrgLocationLine(

@@ -24,18 +24,11 @@ import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useTrainerClients } from "@/lib/domains";
+import { formatBranchName } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, useTheme } from "@/lib/theme";
-
-function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!branch) return null;
-  if (!org || !branch.startsWith(org)) return branch;
-  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || null;
-}
 
 export default function TrainerHomeScreen() {
   const { palette } = useTheme();
@@ -63,7 +56,9 @@ export default function TrainerHomeScreen() {
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
   const orgName = roleContext?.org?.name ?? session?.user.name ?? "Trainer";
-  const branchLabel = trimBranchName(orgName, selectedBranch?.name ?? null);
+  const branchLabel = formatBranchName(orgName, selectedBranch?.name ?? null, {
+    collapseOrgMatch: true,
+  });
   const headerSubtitle = branchLabel ?? orgName;
 
   async function onRefresh() {

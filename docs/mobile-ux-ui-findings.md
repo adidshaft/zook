@@ -778,3 +778,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dead mobile trainer initials helper cleanup (`R136`) is closed: the
   unused trainer initials export was removed after fallback-avatar surfaces moved to shared
   initials formatting.
+- **[code, fixed]** Duplicate mobile app branch-label cleanup (`R137`) is closed: owner and
+  trainer app routes now use the shared mobile branch-name formatter instead of carrying
+  route-local org-prefix trimming helpers.
