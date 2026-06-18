@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { normalizeUsernameInput } from "@zook/core/services";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
@@ -327,7 +328,7 @@ export function StartGymPanel({
                 <input
                   value={username}
                   onChange={(event) =>
-                    setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                    setUsername(normalizeUsernameInput(event.target.value))
                   }
                   placeholder="your-gym"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"

@@ -11,6 +11,10 @@ export function normalizeUsername(username: string): string {
   return usernameSchema.parse(username);
 }
 
+export function normalizeUsernameInput(username: string): string {
+  return username.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+}
+
 export function canPubliclyAccessGym(input: {
   visibility: GymVisibility;
   joinMode: GymJoinMode;

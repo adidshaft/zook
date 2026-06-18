@@ -599,3 +599,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   wording without carrying a local formatter.
 - **[code, fixed]** Duplicate core email enum formatting (`R73`) is closed: staff invite email
   copy now uses shared core `formatEnumLabel` instead of hand-built underscore replacement.
+- **[code, fixed]** Duplicate public username input cleanup (`R74`) is closed: start-gym and
+  gym-profile setup now share core `normalizeUsernameInput` instead of carrying identical
+  keystroke sanitizers.

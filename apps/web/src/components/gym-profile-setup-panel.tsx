@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { normalizeUsernameInput } from "@zook/core/services";
 import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Tags, Image } from "lucide-react";
 import {
   DataTable,
@@ -328,9 +329,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <Field
                 label="Public username"
                 value={form.username}
-                onChange={(value) =>
-                  update("username", value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-                }
+                onChange={(value) => update("username", normalizeUsernameInput(value))}
                 placeholder="irnfitnesssim"
               />
               <Field
