@@ -53,6 +53,7 @@
     "db:a3.1:sql": "tsx scripts/a3.1-durable-queue-sql.ts",
     "db:a3.2:sql": "tsx scripts/a3.2-broadcast-fanout-sql.ts",
     "db:a3.3:sql": "tsx scripts/a3.3-async-push-delivery-sql.ts",
+    "db:a3.4:sql": "tsx scripts/a3.4-renewal-reminder-queue-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",
