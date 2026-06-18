@@ -614,3 +614,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   `toLocale*String` calls.
 - **[code, fixed]** Ad hoc attendance QR time copy (`R79`) is closed: the web attendance QR
   panel now uses shared `formatTime` for expiry, queue, and refresh timestamps.
+- **[code, fixed]** Ad hoc impersonation expiry copy (`R80`) is closed: the web impersonation
+  banner now uses shared `formatTime` instead of inline locale time formatting.
