@@ -21,6 +21,10 @@ const organizationJoinRequestsRouteSource = readFileSync(
   new URL("./api-router/organization-join-requests.ts", import.meta.url),
   "utf8",
 );
+const organizationBillingRouteSource = readFileSync(
+  new URL("./api-router/organization-billing.ts", import.meta.url),
+  "utf8",
+);
 const organizationNotificationsRouteSource = readFileSync(
   new URL("./api-router/organization-notifications.ts", import.meta.url),
   "utf8",
@@ -90,7 +94,9 @@ const sensitiveRoutes = [
   {
     label: "saas subscription cancel",
     needle:
-      'if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]))'
+      'if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "saas-subscription", "cancel"]))',
+    source: organizationBillingRouteSource,
+    sourceLabel: "api-router/organization-billing.ts",
   },
   { label: "autopay cancel", needle: 'pathMatches(path, ["me", "memberships", /.+/, "autopay"])' },
   {

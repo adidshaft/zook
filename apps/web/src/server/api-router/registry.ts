@@ -21,6 +21,7 @@ import { handleMeData } from "./me-data";
 import { handleMemberPlansGoals } from "./member-plans-goals";
 import { handleNotificationsInbox } from "./notifications-inbox";
 import { handleOrganizationAuditLogs } from "./organization-audit-logs";
+import { handleOrganizationBilling } from "./organization-billing";
 import { handleOrganizationBranches } from "./organization-branches";
 import { handleOrganizationJoinRequests } from "./organization-join-requests";
 import { handleOrganizationMembers } from "./organization-members";
@@ -71,6 +72,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleFiles, firstSegments: ["files"] },
   { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleOrganizationAuditLogs, firstSegments: ["orgs"] },
+  { handler: handleOrganizationBilling, firstSegments: ["orgs"] },
   { handler: handleOrganizationBranches, firstSegments: ["orgs"] },
   { handler: handleOrganizationJoinRequests, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
