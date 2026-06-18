@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "./dashboard-primitives";
+import { ConfirmActionButton } from "./confirm-action-button";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
@@ -108,10 +109,14 @@ export function TrainerDietPlansPanel({
   }
 
   async function deletePlan(plan: DietPlan) {
-    if (!window.confirm(`Delete ${plan.title}?`)) return;
-    await webApiFetch(`${path}/${plan.id}`, { method: "DELETE" });
-    setNotice("Diet plan deleted");
-    await loadPlans();
+    try {
+      setError("");
+      await webApiFetch(`${path}/${plan.id}`, { method: "DELETE" });
+      setNotice("Diet plan deleted");
+      await loadPlans();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to delete diet plan.");
+    }
   }
 
   return (
@@ -169,9 +174,16 @@ export function TrainerDietPlansPanel({
                     <ZookButton size="sm" tone="ghost" onClick={() => void updatePlan(plan)}>
                       Edit
                     </ZookButton>
-                    <ZookButton size="sm" tone="danger" onClick={() => void deletePlan(plan)}>
+                    <ConfirmActionButton
+                      className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                      title={`Delete ${plan.title}?`}
+                      description="This removes the diet plan from the client record. Published members will no longer see it."
+                      confirmLabel="Delete"
+                      confirmTone="danger"
+                      onConfirm={() => deletePlan(plan)}
+                    >
                       Delete
-                    </ZookButton>
+                    </ConfirmActionButton>
                   </div>
                 ),
               },
