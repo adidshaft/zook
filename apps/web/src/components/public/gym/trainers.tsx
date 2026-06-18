@@ -72,9 +72,7 @@ function TrainerRow({
             <Pill key={specialty}>{specialty}</Pill>
           ))}
           {profileDetails.certifications.slice(0, 2).map((certification) => (
-            <Pill key={certification} tone="amber">
-              {certification}
-            </Pill>
+            <Pill key={certification}>{certification}</Pill>
           ))}
         </div>
       </div>

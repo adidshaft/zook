@@ -1015,3 +1015,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public app CTA label cue (`R215`) is closed:
   the public home Member apps badge now uses neutral styling instead of amber, keeping
   CTA emphasis on the section heading and store links.
+- **[ui, fixed]** Overstated public gym trainer certification cue (`R216`) is closed:
+  trainer certification chips now use neutral styling instead of amber, matching
+  descriptive specialty chips and avoiding warning-like emphasis on metadata.
