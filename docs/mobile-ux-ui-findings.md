@@ -121,6 +121,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   components where the mobile app imports the named components directly.
 - **6/R40 Redundant mobile comments** — removed duplicate domain-component and skeleton comments
   that restated the surrounding component names or obvious JSX state.
+- **6/R41 Stale QA audit wording** — removed the obsolete AI-draft mention from the
+  unverified submit-path list after the always-off trainer AI drafting surface was removed.
 
 ## 1. Functional / correctness
 
@@ -218,7 +220,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 ## 5. Not yet verified (need device interaction or are gated)
 
 - **[unverified]** **Onboarding & login** — the demo auto-authenticates (session in SecureStore) and sign-out is below the fold, so the first-run/auth screens couldn't be reviewed. Need a logged-out build.
-- **[unverified]** **Submit paths** that render correctly and whose handlers read correct in code, but weren't tapped through end-to-end on device: scan check-in (needs a camera/QR), shop pay-completion (mock), membership renewal purchase, trainer plan create/assign + AI draft, reception record-payment submit, profile photo upload.
+- **[unverified]** **Submit paths** that render correctly and whose handlers read correct in code, but weren't tapped through end-to-end on device: scan check-in (needs a camera/QR), shop pay-completion (mock), membership renewal purchase, trainer plan create/assign, reception record-payment submit, profile photo upload.
 - **[unverified]** **Accessibility pass** — labels exist on most controls, but no systematic audit of tap-target sizes, dynamic-type scaling, or screen-reader order.
 - **[unverified]** **Tablet / large-screen** layout — only phone form factors were checked.
 - **Note (not a bug):** Android shows a red `expo-notifications` warning toast — push notifications require a dev/production build, not Expo Go, on Android SDK 53+. Expected in Expo Go only.
