@@ -3,6 +3,7 @@ import { Parser } from "htmlparser2";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { formatEnumLabel } from "@/lib/format";
 import {
   notificationSchema,
   publicUserEmail,
@@ -3131,9 +3132,9 @@ export function receiptHtml(input: Awaited<ReturnType<typeof ensurePaymentReceip
     issueDate: input.payment.recordedAt ?? input.payment.createdAt,
     rows: [
       { label: "Amount", value: documentAmount(input.payment.amountPaise) },
-      { label: "Payment mode", value: input.payment.mode.replaceAll("_", " ") },
-      { label: "Purpose", value: input.payment.purpose.replaceAll("_", " ") },
-      { label: "Status", value: input.payment.status.replaceAll("_", " ") },
+      { label: "Payment mode", value: formatEnumLabel(input.payment.mode) },
+      { label: "Purpose", value: formatEnumLabel(input.payment.purpose) },
+      { label: "Status", value: formatEnumLabel(input.payment.status) },
       { label: "Reference", value: input.payment.providerRef ?? input.payment.receiptNumber ?? "" },
     ],
   });
@@ -3150,7 +3151,7 @@ export function invoiceHtml(input: Awaited<ReturnType<typeof ensurePaymentInvoic
       { label: "Subtotal", value: documentAmount(input.invoice.subtotalPaise) },
       { label: "GST", value: documentAmount(input.invoice.gstPaise) },
       { label: "Total", value: documentAmount(input.invoice.totalPaise) },
-      { label: "Payment status", value: input.invoice.status.replaceAll("_", " ") },
+      { label: "Payment status", value: formatEnumLabel(input.invoice.status) },
       {
         label: "Payment reference",
         value: input.payment.providerRef ?? input.payment.receiptNumber ?? "",

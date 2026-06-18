@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { buildStorageKey, getStorageProvider } from "@zook/core/providers";
 import { Prisma, prisma, type PrismaClient } from "@zook/db";
 import type { InvoiceKind } from "@zook/db";
+import { formatEnumLabel } from "@/lib/format";
 import { buildFileAssetUrl } from "../files";
 import { MembershipInvoiceTemplate } from "./templates/MembershipInvoiceTemplate";
 import { SaasInvoiceTemplate } from "./templates/SaasInvoiceTemplate";
@@ -30,10 +31,7 @@ type UserForInvoice = {
 };
 
 function moneyLineDescription(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (match) => match.toUpperCase());
+  return formatEnumLabel(value);
 }
 
 function orgAddress(org: OrgForInvoice) {

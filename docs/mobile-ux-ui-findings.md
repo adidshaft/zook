@@ -585,3 +585,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate shop order status formatting (`R68`) is closed: mobile shop
   pickup and history status chips now use shared `titleCaseFromCode` instead of local underscore
   replacement.
+- **[code, fixed]** Duplicate server document enum formatting (`R69`) is closed: invoice PDF
+  descriptions and receipt/invoice HTML rows now use shared web `formatEnumLabel` instead of
+  local underscore replacement.
