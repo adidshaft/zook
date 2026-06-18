@@ -113,7 +113,7 @@ export function AiPanel({
               ]}
               rows={aiUsage}
               rowKey={(usage) => usage.id}
-              empty="AI workflows are coming soon. Draft history will appear here after launch."
+              empty="No assistant draft history to show."
             />
           )}
         </div>

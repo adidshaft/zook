@@ -125,6 +125,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   unverified submit-path list after the always-off trainer AI drafting surface was removed.
 - **6/R42 Offline-demo fallback copy** — replaced the remaining "sample action" offline-demo
   transport error with neutral copy for unsupported demo actions.
+- **6/R43 Web availability copy** — replaced remaining web "coming soon" and "not available yet"
+  empty-state labels with neutral published/pending/no-history wording.
 
 ## 1. Functional / correctness
 

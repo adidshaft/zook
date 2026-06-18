@@ -1525,7 +1525,7 @@ export function PlatformOperationsPanel({
               ]}
               rows={providerEntries}
               rowKey={([category]) => category}
-              empty="Service status is not available yet."
+              empty="No service status checks to show."
             />
           </div>
         </GlassCard>
