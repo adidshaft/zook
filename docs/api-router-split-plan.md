@@ -22,6 +22,17 @@ Keep the public API contract unchanged while moving handler groups into focused 
 3. Handler dispatch order moved to `registry.ts`.
 4. Existing handler implementation moved without route-path or response-shape changes to `core.ts`.
 
+## A4.1 Extraction Status
+
+The first low-risk route group is extracted and covered:
+
+- `GET /api/health`, `GET /api/ready`, `GET /api/status`, and `POST /api/diagnostics/throw`
+  live in `apps/web/src/server/api-router/health-readiness.ts`.
+- `apps/web/src/server/api-router/registry.ts` dispatches `health`, `ready`, `status`, and
+  `diagnostics` directly to that extracted handler before falling through to the monolith.
+- `apps/web/src/server/api-router-health-readiness.test.ts` covers health response behavior,
+  readiness status semantics, and unrelated-route fallthrough.
+
 ## Remaining Suggested Order
 
 1. Extract pure helpers and shared response utilities.
