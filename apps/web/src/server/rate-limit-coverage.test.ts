@@ -16,6 +16,10 @@ const organizationRootRouteSource = readFileSync(
   new URL("./api-router/organization-root.ts", import.meta.url),
   "utf8",
 );
+const organizationJoinRequestsRouteSource = readFileSync(
+  new URL("./api-router/organization-join-requests.ts", import.meta.url),
+  "utf8",
+);
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
@@ -49,7 +53,12 @@ const sensitiveRoutes = [
     source: reportsRouteSource,
     sourceLabel: "api-router/reports.ts",
   },
-  { label: "join request", needle: 'pathMatches(path, ["orgs", /.+/, "join-requests"])' },
+  {
+    label: "join request",
+    needle: 'pathMatches(path, ["orgs", /.+/, "join-requests"])',
+    source: organizationJoinRequestsRouteSource,
+    sourceLabel: "api-router/organization-join-requests.ts",
+  },
   { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
   {
     label: "QR scan",

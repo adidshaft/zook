@@ -19,6 +19,7 @@ import { handleHealthReadiness } from "./health-readiness";
 import { handleMeData } from "./me-data";
 import { handleMemberPlansGoals } from "./member-plans-goals";
 import { handleOrganizationBranches } from "./organization-branches";
+import { handleOrganizationJoinRequests } from "./organization-join-requests";
 import { handleOrganizationMembers } from "./organization-members";
 import { handleOrganizationMembershipPlans } from "./organization-membership-plans";
 import { handleOrganizationOverview } from "./organization-overview";
@@ -46,6 +47,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleFiles, firstSegments: ["files"] },
   { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleOrganizationBranches, firstSegments: ["orgs"] },
+  { handler: handleOrganizationJoinRequests, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembershipPlans, firstSegments: ["orgs"] },
   { handler: handleOrganizationProfile, firstSegments: ["orgs"] },
