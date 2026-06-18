@@ -89,6 +89,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   live callers already use `mobileApiFetch` directly or `domain-api`'s request client.
 - **6/R26 Primitive feedback shim** — removed the unused `feedback.tsx` primitive barrel and
   exported feedback primitives plus network banners directly from the main primitive barrel.
+- **6/R27 Unused skeleton exports** — removed no-caller `TrackingHistorySkeleton` and
+  `SettingsSkeleton` shapes from the mobile skeleton module.
 
 ## 1. Functional / correctness
 

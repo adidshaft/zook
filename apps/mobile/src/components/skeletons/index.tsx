@@ -161,20 +161,6 @@ export function TrainerClientsSkeleton() {
   );
 }
 
-export function TrackingHistorySkeleton() {
-  return (
-    <View style={styles.stack}>
-      <Card variant="compact" contentStyle={styles.chartCard}>
-        <Skeleton width="42%" height={16} borderRadius={8} />
-        <Skeleton width="100%" height={156} borderRadius={18} />
-      </Card>
-      {[0, 1, 2, 3, 4].map((item) => (
-        <RowSkeleton key={item} iconSize={34} action="chip" />
-      ))}
-    </View>
-  );
-}
-
 export function FindGymsSkeleton() {
   return (
     <View style={styles.stack}>
@@ -219,21 +205,6 @@ export function GymDetailSkeleton() {
       </Card>
       {[0, 1].map((item) => (
         <PlanCardSkeleton key={item} />
-      ))}
-    </View>
-  );
-}
-
-export function SettingsSkeleton() {
-  const { palette } = useTheme();
-  return (
-    <View style={styles.stack}>
-      {[0, 1, 2].map((item) => (
-        <Card key={item} variant="compact" contentStyle={styles.listCard}>
-          <RowSkeleton iconSize={34} action="chip" surface={false} />
-          <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
-          <RowSkeleton iconSize={34} action="chip" surface={false} />
-        </Card>
       ))}
     </View>
   );
@@ -309,9 +280,6 @@ const styles = StyleSheet.create({
   },
   listCard: {
     gap: 10,
-  },
-  chartCard: {
-    gap: spacing.md,
   },
   searchBar: {
     flexDirection: "row",
