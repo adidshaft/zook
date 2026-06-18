@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AvatarInitials } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
-import { formatEnumLabel, formatInr, formatInrCompact } from "@/lib/format";
+import { formatEnumLabel, formatInr, formatInrCompact, formatWeekdayDate } from "@/lib/format";
 import {
   ActivityRow,
   BarChart,
@@ -227,11 +227,7 @@ export function DashboardOverview({
 
   const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money", [nextBestActions]);
 
-  const todayLabel = useMemo(() => new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  }), []);
+  const todayLabel = useMemo(() => formatWeekdayDate(new Date()), []);
 
   useEffect(() => {
     const showPanel = () => setShowCustomisationPanel(true);

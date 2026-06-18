@@ -89,6 +89,18 @@ export function formatDate(value: Date | string | null | undefined): string {
   }).format(date);
 }
 
+export function formatWeekdayDate(value: Date | string | null | undefined): string {
+  const date = coerceDate(value);
+  if (!date) {
+    return "Unavailable";
+  }
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
 export function formatDateTime(value: Date | string | null | undefined): string {
   const date = coerceDate(value);
   if (!date) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatIndiaPhoneInput,
   formatNumber,
+  formatWeekdayDate,
   isValidGstin,
   normalizeGstinInput,
   normalizeIndiaPhoneDigits,
@@ -12,6 +13,10 @@ describe("format helpers", () => {
   it("formats plain numbers with the shared Indian locale", () => {
     expect(formatNumber(1234567)).toBe("12,34,567");
     expect(formatNumber(1234.56, { maximumFractionDigits: 1 })).toBe("1,234.6");
+  });
+
+  it("formats weekday date labels", () => {
+    expect(formatWeekdayDate(new Date("2026-06-19T00:00:00+05:30"))).toBe("Friday, 19 Jun");
   });
 
   it("normalizes India phone input to local digits", () => {
