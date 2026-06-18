@@ -847,3 +847,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile member plan schedule cue (`R159`) is closed: upcoming
   plan schedule row icons now use neutral accents instead of informational blue, keeping
   active workout and exercise cues lime.
+- **[ui, fixed]** Overstated mobile assistant context cue (`R160`) is closed: attached
+  profile/client context now uses neutral icon and label treatment instead of informational
+  blue, matching its role as metadata for the prompt.

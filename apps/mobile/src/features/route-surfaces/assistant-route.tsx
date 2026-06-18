@@ -424,8 +424,8 @@ export default function AssistantScreen() {
         {attachSummary && contextSummary ? (
           <Card variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
-              <IconBubble icon="person-outline" tone="blue" size={32} />
-              <Text style={[styles.contextLabel, { color: palette.feedback.info }]}>
+              <IconBubble icon="person-outline" tone="neutral" size={32} />
+              <Text style={[styles.contextLabel, { color: palette.text.secondary }]}>
                 {isTrainer ? "Attached client data" : "Attached profile"}
               </Text>
             </View>
