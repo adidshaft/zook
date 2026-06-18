@@ -250,6 +250,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   cleaned fallback workspace label cannot regress silently.
 - **6/R100 Dashboard disabled-cue guard** — removed stale dashboard-copy scan targets and added
   guard patterns for "coming soon" and "not available yet" dashboard copy regressions.
+- **6/R101 AI launch-gate wording** — replaced release-check "coming soon" guidance with
+  neutral unavailable-state wording for staging AI certification.
 
 ## 1. Functional / correctness
 

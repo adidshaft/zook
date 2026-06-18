@@ -355,7 +355,7 @@ export async function runReleaseEnvChecks(): Promise<CheckResult[]> {
         : warn(
             "AI launch gate",
             "AI_FEATURES_ENABLED=true.",
-            "Use this only for controlled staging certification; launch UI should still treat AI as coming soon."
+            "Use this only for controlled staging certification; launch UI should still show AI as unavailable."
           )
     );
   } else {
