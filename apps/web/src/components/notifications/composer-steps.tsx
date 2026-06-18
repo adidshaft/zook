@@ -10,6 +10,7 @@ import {
   memberLabel,
   memberUserId,
   messageTypes,
+  toneForNotificationStatus,
   type Audience,
   type BranchRow,
   type MemberRow,
@@ -390,7 +391,7 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
           >
             <div className="flex items-center justify-between gap-3">
               <p className="font-medium text-white">{notification.title}</p>
-              <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
+              <Pill tone={toneForNotificationStatus(notification.status)}>
                 {formatEnumLabel(notification.status)}
               </Pill>
             </div>

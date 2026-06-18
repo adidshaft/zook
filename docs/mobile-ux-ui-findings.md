@@ -683,3 +683,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading reception scan feed status tone (`R104`) is closed: live desk scan
   rows now tone approved, pending, flagged, and rejected/failed attendance statuses separately
   instead of showing every non-approved scan as a warning.
+- **[ui, fixed]** Duplicate notification status warning cue (`R105`) is closed: notification
+  history and composer delivery rows now share notification status tones so failed/cancelled,
+  scheduled/pending, and sent/delivered messages are visually distinct.

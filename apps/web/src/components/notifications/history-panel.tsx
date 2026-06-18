@@ -7,7 +7,11 @@ import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import { ZookButton } from "../zook-button";
-import type { NotificationRecipientRow, NotificationRow } from "./shared";
+import {
+  toneForNotificationStatus,
+  type NotificationRecipientRow,
+  type NotificationRow,
+} from "./shared";
 
 export function NotificationHistoryPanel({
   orgId,
@@ -149,7 +153,7 @@ export function NotificationHistoryPanel({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
+                  <Pill tone={toneForNotificationStatus(notification.status)}>
                     {formatEnumLabel(notification.status)}
                   </Pill>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-lime-100">
