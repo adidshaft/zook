@@ -820,3 +820,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web gym-start plan cue (`R150`) is closed: the selected setup
   tier now uses a neutral badge instead of informational blue, matching its role as setup
   metadata beside the billing-next label.
+- **[ui, fixed]** Overstated web staff assignment count cue (`R151`) is closed: the staff
+  roles header count now uses a neutral badge instead of informational blue, keeping status
+  treatment on loading, errors, and row-level status chips.

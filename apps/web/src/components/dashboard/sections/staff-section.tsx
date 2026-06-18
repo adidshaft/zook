@@ -187,7 +187,7 @@ export function StaffSection({
           eyebrow="Team"
           title="Operational roles"
           description="Your team and their roles."
-          badge={<Pill tone="blue">{staffAssignments.length} assignments</Pill>}
+          badge={<Pill>{staffAssignments.length} assignments</Pill>}
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
           Created in Trainer app.
