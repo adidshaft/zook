@@ -677,3 +677,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading web desk pickup status tone (`R102`) is closed: desk pickup order
   chips now distinguish ready/paid, pending, fulfilled, and failed/refunded/cancelled states
   instead of coloring every non-ready order as a warning.
+- **[ui, fixed]** Misleading web member subscription status tone (`R103`) is closed: the member
+  membership surface now tones pending, paused, expired, cancelled, failed, and refunded
+  subscriptions by status instead of showing every non-active subscription as a warning.

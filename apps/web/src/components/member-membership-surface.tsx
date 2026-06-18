@@ -11,6 +11,17 @@ import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getOrigins } from "@/lib/origins";
 import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 
+function toneForMemberSubscriptionStatus(status: string | null | undefined) {
+  if (status === "ACTIVE") return "lime";
+  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") {
+    return "amber";
+  }
+  if (["EXPIRED", "CANCELLED", "REJECTED", "FAILED", "REFUNDED"].includes(status ?? "")) {
+    return "red";
+  }
+  return "blue";
+}
+
 export async function renderMembershipSurface(
   session: AuthSessionSummary,
   locale: PublicLocale = "en",
@@ -87,7 +98,7 @@ export async function renderMembershipSurface(
                   <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
+                        <Pill tone={toneForMemberSubscriptionStatus(subscription.status)}>
                           {formatEnumLabel(subscription.status)}
                         </Pill>
                         {autopay ? <Pill tone="blue">Autopay on</Pill> : null}
