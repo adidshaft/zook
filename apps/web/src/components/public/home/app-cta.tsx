@@ -19,7 +19,7 @@ export function AppCta({
       className="relative grid gap-5 overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--bg-sunken)] px-8 py-9 md:grid-cols-[1.05fr_0.95fr] md:items-center"
     >
       <div>
-        <Pill tone="amber" className="mb-4">
+        <Pill className="mb-4">
           <Smartphone size={11} />
           {t("memberApps")}
         </Pill>

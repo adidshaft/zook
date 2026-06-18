@@ -1012,3 +1012,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web attendance QR method badge cue (`R214`) is closed:
   the read-only attendance panel's Self-approved QR badge now uses neutral styling instead
   of lime, keeping status color on individual attendance rows and approval queues.
+- **[ui, fixed]** Overstated web public app CTA label cue (`R215`) is closed:
+  the public home Member apps badge now uses neutral styling instead of amber, keeping
+  CTA emphasis on the section heading and store links.
