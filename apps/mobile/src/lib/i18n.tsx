@@ -28,7 +28,6 @@ export type TranslationKey =
   | "nav.more"
   | "nav.shop"
   | "nav.inbox"
-  | "nav.assistant"
   | "nav.trainer"
   | "nav.clients"
   | "nav.drafts"
@@ -229,8 +228,6 @@ export type TranslationKey =
   | "more.shop.subtitle"
   | "more.inbox.title"
   | "more.inbox.subtitle"
-  | "more.assistant.title"
-  | "more.assistant.subtitle"
   | "more.profile.title"
   | "more.profile.subtitle"
   | "more.settings.title"
@@ -258,7 +255,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.more": "More",
     "nav.shop": "Shop",
     "nav.inbox": "Inbox",
-    "nav.assistant": "AI",
     "nav.trainer": "Trainer",
     "nav.clients": "Clients",
     "nav.drafts": "Drafts",
@@ -461,8 +457,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.shop.subtitle": "Order gym essentials for desk pickup.",
     "more.inbox.title": "Inbox",
     "more.inbox.subtitle": "Payments, plans, and gym updates.",
-    "more.assistant.title": "Plan assistant",
-    "more.assistant.subtitle": "Ask questions about your training and plans.",
     "more.profile.title": "Profile",
     "more.profile.subtitle": "Membership details and personal info.",
     "more.settings.title": "Settings",
@@ -487,7 +481,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.more": "और",
     "nav.shop": "शॉप",
     "nav.inbox": "इनबॉक्स",
-    "nav.assistant": "AI",
     "nav.trainer": "ट्रेनर",
     "nav.clients": "क्लाइंट",
     "nav.drafts": "ड्राफ्ट",
@@ -692,8 +685,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.shop.subtitle": "जिम के सामान का ऑर्डर डेस्क पर लें.",
     "more.inbox.title": "इनबॉक्स",
     "more.inbox.subtitle": "पेमेंट, प्लान और जिम अपडेट.",
-    "more.assistant.title": "प्लान असिस्टेंट",
-    "more.assistant.subtitle": "अपनी ट्रेनिंग और प्लान के बारे में पूछें.",
     "more.profile.title": "प्रोफाइल",
     "more.profile.subtitle": "मेम्बरशिप और व्यक्तिगत जानकारी.",
     "more.settings.title": "सेटिंग्स",

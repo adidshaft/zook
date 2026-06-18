@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Role } from "@zook/core";
 
 import { AppHeader, Card, ZookButton, ZookScreen } from "@/components/primitives";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type RoleShortcut = {
@@ -74,6 +75,9 @@ function launchRoleShortcut(shortcut: RoleShortcut) {
 
 export default function QaLauncherScreen() {
   const { palette } = useTheme();
+  const visibleRoleShortcuts = isMobileFeatureEnabled("AI_CHAT_ENABLED")
+    ? roleShortcuts
+    : roleShortcuts.filter((shortcut) => shortcut.target !== "/assistant");
 
   return (
     <ZookScreen testID="qa-launcher-screen">
@@ -108,7 +112,7 @@ export default function QaLauncherScreen() {
         <Card contentStyle={styles.section}>
           <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Roles</Text>
           <View style={styles.grid}>
-            {roleShortcuts.map((shortcut) => (
+            {visibleRoleShortcuts.map((shortcut) => (
               <ZookButton
                 key={shortcut.testID}
                 testID={shortcut.testID}

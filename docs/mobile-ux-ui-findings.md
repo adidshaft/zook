@@ -74,6 +74,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   primitives only come through their dedicated barrels.
 - **6/R19 Non-actionable login SSO controls** — removed Apple/Google sign-in buttons and
   "coming soon" login strings from the mobile sign-in card until those backends are live.
+- **6/R20 Disabled assistant route surface** — feature-disabled assistant visits now redirect
+  quietly, the QA shortcut is hidden with the same flag, and stale assistant nav strings are gone.
 
 ## 1. Functional / correctness
 
@@ -229,3 +231,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   shortcuts, icon bubbles, date fields, and OTP inputs stay on their dedicated primitive barrels.
 - **[code, fixed]** Non-actionable login SSO controls (`R19`) is closed: the login surface no
   longer presents Apple/Google controls whose fallback path was an unavailable/coming-soon error.
+- **[code, fixed]** Disabled assistant route surface (`R20`) is closed: `AI_CHAT_ENABLED=false`
+  no longer renders a polished coming-soon route or QA shortcut, and unused assistant translation
+  keys were removed.
