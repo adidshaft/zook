@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Mail, Phone, ShieldCheck } from "lucide-react";
 import { webApiFetch } from "@/lib/api-client";
+import { sanitizeOtpValue } from "@/lib/otp";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 
@@ -222,7 +223,7 @@ export function MemberContactCompletionPanel({
                 type="text"
                 inputMode="numeric"
                 value={code}
-                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(event) => setCode(sanitizeOtpValue(event.target.value))}
                 placeholder="000000"
                 className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/30"
               />

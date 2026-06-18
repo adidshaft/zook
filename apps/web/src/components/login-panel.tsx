@@ -11,6 +11,7 @@ import { ZookButton } from "./zook-button";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import type { WebHost } from "@/lib/host-routing";
 import { getOrigins, webHostFromHeader, type WebOrigins } from "@/lib/origins";
+import { sanitizeOtpValue } from "@/lib/otp";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
 const containerVariants: Variants = {
@@ -77,10 +78,6 @@ function loadScript(src: string) {
       document.head.appendChild(script);
     }
   });
-}
-
-function sanitizeOtpCode(value: string) {
-  return value.replace(/\D/g, "").slice(0, 6);
 }
 
 function isValidEmail(value: string) {
@@ -159,7 +156,7 @@ export function LoginPanel({
   const [identifier, setIdentifier] = useState(
     seededIdentifier,
   );
-  const [code, setCode] = useState(sanitizeOtpCode(initialCode));
+  const [code, setCode] = useState(sanitizeOtpValue(initialCode));
   const [stage, setStage] = useState<"identifier" | "otp">(initialStage);
   const [submitting, setSubmitting] = useState<"request" | "verify" | null>(null);
   const [ssoSubmitting, setSsoSubmitting] = useState<"google" | "apple" | null>(null);
@@ -335,7 +332,7 @@ export function LoginPanel({
     setSubmitting("verify");
     try {
       const trimmedIdentifier = identifier.trim() || selectedIdentifier();
-      const otpCode = sanitizeOtpCode(overrideCode ?? code);
+      const otpCode = sanitizeOtpValue(overrideCode ?? code);
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
@@ -433,7 +430,7 @@ export function LoginPanel({
   }
 
   function handleOtpChange(value: string) {
-    const nextCode = sanitizeOtpCode(value);
+    const nextCode = sanitizeOtpValue(value);
     setCode(nextCode);
     if (nextCode.length === 6 && submitting === null) {
       void verifyOtp(nextCode);

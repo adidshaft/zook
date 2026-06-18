@@ -715,3 +715,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile OTP code cleanup (`R115`) is closed: login and auth
   verification now use the shared tested OTP sanitizer instead of carrying their own six-digit
   digit-normalization helpers.
+- **[code, fixed]** Duplicate web OTP code cleanup (`R116`) is closed: web login and member
+  contact verification now use a shared tested OTP sanitizer instead of slicing six-digit
+  codes inline in each component.
