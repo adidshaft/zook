@@ -633,19 +633,17 @@ function LaunchSurface({ subtitle }: { subtitle: string }) {
             },
           ]}
         />
-        <View style={styles.loadingBrandRow}>
+        <View style={styles.loadingBrandLockup}>
           <BrandMark size="lg" />
-          <View style={styles.loadingBrandLabel}>
-            <Text
-              allowFontScaling={false}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.86}
-              style={[styles.loadingBrandText, { color: palette.text.primary }]}
-            >
-              Zook
-            </Text>
-          </View>
+          <Text
+            allowFontScaling={false}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+            style={[styles.loadingBrandText, { color: palette.text.primary }]}
+          >
+            ZOok
+          </Text>
         </View>
         <Text style={[styles.loadingSubtitle, { color: palette.text.secondary }]}>
           Gym ops, without the clutter.
@@ -722,23 +720,21 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
   },
-  loadingBrandRow: {
-    flexDirection: "row",
+  loadingBrandLockup: {
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     alignSelf: "stretch",
-  },
-  loadingBrandLabel: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 6,
+    justifyContent: "center",
   },
   loadingBrandText: {
     fontFamily: "Inter_800ExtraBold",
-    fontSize: 40,
-    lineHeight: 44,
-    letterSpacing: -0.8,
+    fontSize: 46,
+    lineHeight: 56,
+    letterSpacing: -1.2,
     includeFontPadding: false,
+    minWidth: 176,
+    paddingHorizontal: 8,
+    textAlign: "center",
   },
   loadingSubtitle: {
     fontSize: 15,
