@@ -609,3 +609,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   uses shared mobile `formatUsageLimit` instead of carrying a local Unlimited/number formatter.
 - **[code, fixed]** Ad hoc owner reminder date copy (`R77`) is closed: owner member renewal
   reminders now use shared mobile `formatLongDate` instead of platform-default date formatting.
+- **[code, fixed]** Ad hoc attendance exception date/time copy (`R78`) is closed: the web
+  attendance approval feed now uses shared web date/time formatters instead of inline
+  `toLocale*String` calls.

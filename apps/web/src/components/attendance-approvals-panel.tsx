@@ -6,6 +6,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { HelpHint } from "./ui";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
+import { formatDate, formatTime } from "@/lib/format";
 
 type AttendanceQueueRecord = {
   id: string;
@@ -98,11 +99,11 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
                   <Pill>{record.status}</Pill>
                 </div>
                 <p className="mt-2 text-sm text-[var(--text-tertiary)]">
-                  {record.plan?.name ?? "Membership"} · {new Date(record.checkedInAt).toLocaleTimeString()}
+                  {record.plan?.name ?? "Membership"} · {formatTime(record.checkedInAt)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                   {record.subscription?.endsAt
-                    ? `Expiry ${new Date(record.subscription.endsAt).toLocaleDateString()}`
+                    ? `Expiry ${formatDate(record.subscription.endsAt)}`
                     : "No expiry available"}
                   {record.subscription?.remainingVisits !== undefined && record.subscription?.remainingVisits !== null
                     ? ` · ${record.subscription.remainingVisits} visits left`

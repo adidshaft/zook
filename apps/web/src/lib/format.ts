@@ -82,6 +82,17 @@ export function formatDateTime(value: Date | string | null | undefined): string 
   }).format(date);
 }
 
+export function formatTime(value: Date | string | null | undefined): string {
+  const date = coerceDate(value);
+  if (!date) {
+    return "Unavailable";
+  }
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function formatEnumLabel(value: string | null | undefined): string {
   if (!value) {
     return "Unknown";
