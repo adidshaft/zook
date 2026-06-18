@@ -4,7 +4,7 @@ export * from "./cards";
 export * from "./feedback";
 export * from "./inputs";
 export * from "./layout";
-export * from "./nav";
+export * from "./chips";
 export * from "./switch";
 export * from "./bottom-nav-context";
 export * from "./keyboard-aware-screen";
