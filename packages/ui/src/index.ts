@@ -83,8 +83,6 @@ export const zookTypography = {
 
 export const zookShadows = {
   glass: "0 24px 80px rgba(0, 0, 0, 0.38), 0 10px 28px rgba(0, 0, 0, 0.24)",
-  glowLime:
-    "0 18px 46px rgba(185, 244, 85, 0.16), 0 0 0 1px rgba(185, 244, 85, 0.08)",
   inset:
     "inset 0 1px 0 rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.04)",
 } as const;

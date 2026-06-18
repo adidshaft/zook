@@ -238,6 +238,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   "Sample data" to "Test workspace" and neutralized stale icon-generation "premium" wording.
 - **6/R94 Radio-card selected glow** — removed the selected radio-card glow shadow and deleted
   the now-unused subtle glow palette variables.
+- **6/R95 Dead exported glow tokens** — removed self-only `zookShadows.glowLime` and
+  `opacity.glowAmbient` exports after repo-wide reference checks showed no callers.
 
 ## 1. Functional / correctness
 
