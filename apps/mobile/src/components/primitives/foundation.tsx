@@ -1328,7 +1328,7 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   entryCodeValue: {
-    ...typography.display,
+    ...typography.heroTitle,
     fontVariant: ["tabular-nums"],
   },
   entryCodeDetail: {

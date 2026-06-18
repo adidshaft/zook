@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   valueCopy: {
-    ...typography.display,
+    ...typography.heroTitle,
   },
   footer: {
     gap: 20,

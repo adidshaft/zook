@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
     ...typography.eyebrow,
   },
   coverTitle: {
-    ...typography.display,
+    ...typography.heroTitle,
   },
   coverBody: {
     ...typography.body,

@@ -23,6 +23,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **3.1 Two header systems with different title sizes** — this is now documented as an
   intentional hierarchy: `ScreenHeader` owns tab-root landing titles, while `AppHeader` owns
   compact pushed/detail headers.
+- **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
+  explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 
 ## 1. Functional / correctness
 
@@ -100,3 +102,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 ## 6. Code-health (no user-visible change)
 
 - **[code]** `member-scan-route.tsx` (~1.1k) and `shop-index-route.tsx` (~1.1k) remain large. Styles were already extracted to `*.styles.ts`; the stateful component bodies could be split into sub-components, but they share enough state that doing so risks regressions (this shape caused the earlier hooks-order crash). Refactor with care, behind tests.
+- **[code, fixed]** Typography alias cleanup (`R3`) is closed: `packages/tokens` keeps the
+  documented title hierarchy (`screenTitle`, `headerTitle`, `sectionTitle`, `cardTitle`) and the
+  oversized `heroTitle` escape hatch for onboarding/entry-code moments.

@@ -287,6 +287,6 @@ export const scanStyles = StyleSheet.create({
   },
   checkInMomentTitle: {
     textAlign: "center",
-    ...typography.display,
+    ...typography.heroTitle,
   },
 });

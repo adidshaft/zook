@@ -2,14 +2,16 @@ const screenTitle = { fontSize: 26, fontFamily: "Inter_700Bold", letterSpacing: 
 const headerTitle = { fontSize: 20, fontFamily: "Inter_600SemiBold", letterSpacing: -0.2, lineHeight: 26 };
 const sectionTitle = { fontSize: 17, fontFamily: "Inter_600SemiBold", lineHeight: 22 };
 const cardTitle = { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 20 };
+const heroTitle = { fontSize: 34, fontFamily: "Inter_700Bold", letterSpacing: -0.4, lineHeight: 39 };
 
 export const typography = {
-  // Canonical title scale for product surfaces. Prefer these four tokens for
-  // new work instead of reintroducing aliases for the same sizes.
+  // Canonical title scale for product surfaces. `heroTitle` is reserved for
+  // oversized onboarding/entry-code moments, not ordinary screen hierarchy.
   screenTitle,
   headerTitle,
   sectionTitle,
   cardTitle,
+  heroTitle,
   body: { fontSize: 15, fontFamily: "Inter_400Regular", lineHeight: 21 },
   bodyStrong: { fontSize: 15, fontFamily: "Inter_600SemiBold", lineHeight: 21 },
   caption: { fontSize: 12.5, fontFamily: "Inter_600SemiBold", lineHeight: 16 },
@@ -18,7 +20,6 @@ export const typography = {
   timer: { fontSize: 44, fontFamily: "Inter_800ExtraBold", fontVariant: ["tabular-nums" as const], letterSpacing: 0, lineHeight: 50 },
   navLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 15 },
   button: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
-  display: { fontSize: 34, fontFamily: "Inter_700Bold", letterSpacing: -0.4, lineHeight: 39 },
   eyebrow: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",

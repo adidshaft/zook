@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   pendingCode: {
-    ...typography.display,
+    ...typography.heroTitle,
     fontVariant: ["tabular-nums"],
   },
   codePressed: {
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   approvedCode: {
-    ...typography.display,
+    ...typography.heroTitle,
     fontVariant: ["tabular-nums"],
   },
   codeDetail: {
