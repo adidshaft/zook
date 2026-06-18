@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const attendanceRouteSource = readFileSync(
+  new URL("./api-router/attendance.ts", import.meta.url),
+  "utf8",
+);
 const authRouteSource = readFileSync(new URL("./api-router/auth.ts", import.meta.url), "utf8");
 const couponsReferralsRouteSource = readFileSync(
   new URL("./api-router/coupons-referrals.ts", import.meta.url),
@@ -38,7 +42,12 @@ const sensitiveRoutes = [
   },
   { label: "join request", needle: 'pathMatches(path, ["orgs", /.+/, "join-requests"])' },
   { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
-  { label: "QR scan", needle: 'pathMatches(path, ["attendance", "scan"])' },
+  {
+    label: "QR scan",
+    needle: 'pathMatches(path, ["attendance", "scan"])',
+    source: attendanceRouteSource,
+    sourceLabel: "api-router/attendance.ts",
+  },
   { label: "manual payment", needle: 'pathMatches(path, ["orgs", /.+/, "manual-payments"])' },
   { label: "payment refund", needle: 'pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])' },
   { label: "platform payment refund", needle: 'pathMatches(path, ["platform", "payments", /.+/, "refund"])' },

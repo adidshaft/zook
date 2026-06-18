@@ -1,11 +1,11 @@
 import type { NextRequest, NextResponse } from "next/server";
 import {
   handleAiNotificationsShopPrivacyPlatform,
-  handleAttendance,
   handleMembershipPayments,
   handleOrganizations,
   handleStaffPlansGoals,
 } from "./core";
+import { handleAttendance } from "./attendance";
 import {
   buildRouteHandlerDispatchMap,
   selectRouteHandlers,
