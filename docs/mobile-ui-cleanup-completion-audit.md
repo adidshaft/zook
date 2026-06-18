@@ -82,6 +82,7 @@ fully complete until the human/device/provider gates below have external evidenc
 Latest local verification on this branch includes:
 
 - `pnpm check:launch-gates`
+- `pnpm check:cleanup-audit`
 - `ZOOK_MOBILE_RELEASE_TARGET=local EXPO_PUBLIC_API_MODE=backend EXPO_PUBLIC_MOBILE_API_BASE_URL=http://localhost:3000 EXPO_PUBLIC_WEB_URL=http://localhost:3000 pnpm mobile:release:check`
 - `pnpm --filter @zook/web typecheck`
 - `pnpm --filter @zook/web lint`
