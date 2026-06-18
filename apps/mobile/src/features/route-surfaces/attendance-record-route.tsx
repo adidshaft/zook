@@ -392,7 +392,7 @@ export default function AttendanceResultScreen() {
               </Card>
 
               <Card contentStyle={styles.nextContent}>
-                <IconBubble icon="barbell-outline" tone="lime" size={44} />
+                <IconBubble icon="barbell-outline" tone="neutral" size={44} />
                 <View style={styles.nextCopy}>
                   <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
                   <Text style={[styles.nextBody, { color: palette.text.secondary }]}>

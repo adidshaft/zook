@@ -1003,3 +1003,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile owner member fitness-goal icon cue (`R211`) is closed:
   owner member detail now uses a neutral barbell icon for Fitness goal instead of lime,
   keeping status color on the adjacent subscription pill.
+- **[ui, fixed]** Overstated mobile attendance next-plan icon cue (`R212`) is closed:
+  attendance record Next up cards now use a neutral barbell icon instead of lime, keeping
+  action emphasis on the Open Plan chip.
