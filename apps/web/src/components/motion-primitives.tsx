@@ -9,6 +9,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useEffect, useRef, type ReactNode } from "react";
+import { formatNumber } from "@/lib/format";
 
 const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -164,9 +165,9 @@ export function Counter({
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const rounded = useTransform(spring, (v) => {
-    if (value >= 1000) return Math.round(v).toLocaleString();
+    if (value >= 1000) return formatNumber(Math.round(v));
     if (value % 1 === 0) return Math.round(v).toString();
-    return v.toFixed(1);
+    return formatNumber(v, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
   });
 
   useEffect(() => {
@@ -181,7 +182,10 @@ export function Counter({
     return (
       <span ref={ref} className={className}>
         {prefix}
-        {value.toLocaleString()}
+        {formatNumber(value, {
+          maximumFractionDigits: value % 1 === 0 ? 0 : 1,
+          minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+        })}
         {suffix}
       </span>
     );

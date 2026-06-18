@@ -739,3 +739,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc web dashboard number formatting (`R123`) is closed: dashboard
   chart counters and body-composition metrics now use shared web number formatting instead
   of calling `toLocaleString("en-IN")` inline.
+- **[code, fixed]** Ad hoc web motion counter formatting (`R124`) is closed: shared animated
+  counters now use the same web number formatter as dashboard counters instead of calling
+  `toLocaleString()` inline.
