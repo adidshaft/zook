@@ -12,7 +12,7 @@ import {
 } from "../controller-state";
 import { type DashboardOperationalResources } from "../controller-resources";
 
-export function payloadForPlanForm(form: PlanForm) {
+function payloadForPlanForm(form: PlanForm) {
   return {
     name: form.name,
     description: form.description || undefined,
@@ -37,7 +37,7 @@ function validatePlanName(value: string) {
   return "";
 }
 
-export function payloadForProductForm(form: ProductForm, branchId?: string | null) {
+function payloadForProductForm(form: ProductForm, branchId?: string | null) {
   return {
     branchId: branchId || undefined,
     name: form.name,

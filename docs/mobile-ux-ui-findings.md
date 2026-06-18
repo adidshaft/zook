@@ -500,3 +500,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal product image helpers (`R36`) is closed: shop product image
   normalization helpers `uniqueProductImages` and `productImagesFromForm` are no longer exported
   because exact reference checks showed they are only used inside `product-images.tsx`.
+- **[code, fixed]** Internal plan/product payload helpers (`R37`) is closed: operational
+  action payload builders `payloadForPlanForm` and `payloadForProductForm` are no longer exported
+  because exact reference checks showed only `createPlansProductsActions` is imported externally.
