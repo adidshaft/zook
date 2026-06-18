@@ -23,6 +23,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **3.1 Two header systems with different title sizes** — this is now documented as an
   intentional hierarchy: `ScreenHeader` owns tab-root landing titles, while `AppHeader` owns
   compact pushed/detail headers.
+- **3.2 iOS-only glow shadows are no-ops on Android** — the remaining profile completion and
+  check-in success glow cues now use platform-explicit styles: iOS shadow props, Android
+  elevation.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -73,10 +76,10 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Experience:** Subtle inconsistency in the "weight" of screen titles across the app.
 - **Fix:** Closed as intentional hierarchy: `ScreenHeader` uses `typography.screenTitle` for tab-root landing pages, while `AppHeader` uses `typography.headerTitle` for pushed/detail screens. Both components now carry that contract in code comments.
 
-### 3.2 iOS-only glow shadows are no-ops on Android  **[ui, minor]**
+### 3.2 iOS-only glow shadows are no-ops on Android  **[ui, minor, fixed]**
 - **Fault:** A few elements use `shadowColor`/`shadowOpacity` glows without an Android `elevation` (e.g. the profile KYC progress pip, the scan accent glow). Android can't render `shadow*`.
 - **Experience:** Slightly flatter accents on Android (not broken). The tab bar and cards already handle this; these are leftovers.
-- **Fix:** Add matching `elevation` (or accept the graceful degradation and document it).
+- **Fix:** Profile KYC completion and scan success cues now branch explicitly: iOS keeps shadow props, Android receives matching elevation. Scanner-line glow already uses an opacity rail on Android rather than shadow props.
 
 ---
 

@@ -43,7 +43,7 @@ import {
   removeQueuedAttendanceScan,
 } from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { useTheme } from "@/lib/theme";
+import { elevation, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { scanStyles as styles } from "./member-scan-route.styles";
 
@@ -1143,7 +1143,20 @@ function CheckInMoment({
           <View
             style={[
               styles.checkInMomentTick,
-              { backgroundColor: palette.accent.base, shadowColor: palette.accent.base },
+              { backgroundColor: palette.accent.base },
+              Platform.OS === "android"
+                ? elevation(6, palette.accent.base, {
+                    elevation: 6,
+                    shadowOpacity: 0.24,
+                    shadowRadius: 24,
+                    shadowOffset: { width: 0, height: 8 },
+                  })
+                : {
+                    shadowColor: palette.accent.base,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.28,
+                    shadowRadius: 24,
+                  },
             ]}
           >
             <Ionicons name="checkmark" size={58} color={palette.text.onAccent} />

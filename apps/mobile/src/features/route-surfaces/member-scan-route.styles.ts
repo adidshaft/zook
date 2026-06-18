@@ -275,9 +275,6 @@ export const scanStyles = StyleSheet.create({
     borderRadius: 999,
     height: 104,
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
     width: 104,
   },
   checkInMomentGym: {

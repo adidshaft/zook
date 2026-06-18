@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   DatePickerField,
   Card,
@@ -14,7 +14,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { useI18n } from "@/lib/i18n";
 import { useMyProfile } from "@/lib/domains";
-import { spacing, typography, useTheme } from "@/lib/theme";
+import { elevation, spacing, typography, useTheme } from "@/lib/theme";
 
 type GenderValue = "male" | "female" | "non_binary" | "prefer_not_to_say";
 type LocaleValue = "en" | "hi";
@@ -177,10 +177,18 @@ export function ProfileExtraFields() {
             <View
               style={[
                 styles.completionDot,
-                {
-                  backgroundColor: palette.accent.base,
-                  shadowColor: palette.accent.base,
-                },
+                { backgroundColor: palette.accent.base },
+                Platform.OS === "android"
+                  ? elevation(2, palette.accent.base, {
+                      elevation: 2,
+                      shadowOpacity: 0.18,
+                      shadowRadius: 8,
+                    })
+                  : {
+                      shadowColor: palette.accent.base,
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                    },
               ]}
             />
           </View>
@@ -389,8 +397,6 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   title: {
     ...typography.sectionTitle,
