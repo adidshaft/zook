@@ -40,6 +40,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   assistant, attendance, notifications, login, date-picker, and tracking surfaces.
 - **6/R6 Legacy membership/plan/foundation styles** — removed unused style blocks left behind
   by extracted membership cards, plan detail states, and old primitive button/skeleton code.
+- **6/R7 Primitive alias sprawl** — removed unused card/screen/layout aliases from the mobile
+  primitive barrel so new code has one obvious component name to reach for.
 
 ## 1. Functional / correctness
 
@@ -143,3 +145,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Legacy membership/plan/foundation styles (`R6`) is closed: unused style
   blocks left behind by extracted membership sections, old plan detail states, and replaced
   primitive button/skeleton code were removed.
+- **[code, fixed]** Primitive alias sprawl (`R7`) is closed: unused `FieldCard`, `QueueCard`,
+  `PressableCard`, `KPIBox`, `ProgressRing`, `SectionTitle`, and old screen-shell aliases were
+  removed from the mobile primitive exports.

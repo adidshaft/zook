@@ -9,10 +9,8 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  type ScrollViewProps,
   type StyleProp,
   View,
   type ViewStyle,
@@ -28,7 +26,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
-import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useMyNotifications, useOrgAttendancePending } from "@/lib/domains";
 import { elevation, layout, materials, radii, shadows, spacing, typography, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
@@ -36,12 +33,8 @@ import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { useTonePalette, type PillTone } from "./tone-palette";
 import {
-  DangerButton as SharedDangerButton,
-  GhostButton as SharedGhostButton,
   PrimaryButton as SharedPrimaryButton,
-  PrimaryLink as SharedPrimaryLink,
   SecondaryButton as SharedSecondaryButton,
-  SecondaryLink as SharedSecondaryLink,
   ZookButton as SharedZookButton,
 } from "./buttons";
 export {
@@ -282,68 +275,6 @@ export function ZookScreen({
   );
 }
 
-export function Screen({ children, title }: { children: ReactNode; title?: string }) {
-  return (
-    <ZookScreen>
-      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
-      {children}
-    </ZookScreen>
-  );
-}
-
-export function ScreenShell({
-  children,
-  title,
-  scroll = true,
-  bottomNav = true,
-  stickyAction = false,
-  ambient = true,
-  contentStyle,
-  style,
-  ...scrollProps
-}: {
-  children: ReactNode;
-  title?: string;
-  scroll?: boolean;
-  bottomNav?: boolean;
-  stickyAction?: boolean;
-  ambient?: boolean;
-  contentStyle?: StyleProp<ViewStyle>;
-  style?: StyleProp<ViewStyle>;
-} & Omit<ScrollViewProps, "contentContainerStyle" | "style">) {
-  const computedBottomPadding = useBottomScrollPadding({ hasStickyAction: stickyAction });
-  const contentPaddingBottom = bottomNav ? computedBottomPadding : stickyAction ? layout.stickyActionHeight + spacing.lg : spacing.xl;
-  return (
-    <ZookScreen ambient={ambient} style={style}>
-      {title ? <Text style={styles.shellTitle}>{title}</Text> : null}
-      {scroll ? (
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          {...scrollProps}
-          contentContainerStyle={[
-            styles.screenShellContent,
-            { paddingBottom: contentPaddingBottom },
-            contentStyle,
-          ]}
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View
-          style={[styles.screenShellContent, { paddingBottom: contentPaddingBottom }, contentStyle]}
-        >
-          {children}
-        </View>
-      )}
-    </ZookScreen>
-  );
-}
-
-export function SafeAreaScreen(props: Parameters<typeof ZookScreen>[0]) {
-  return <ZookScreen {...props} />;
-}
-
 export function BrandMark({
   size = "md",
   framed = true,
@@ -512,40 +443,9 @@ export function Card({
   );
 }
 
-export function GlassPanel({
-  children,
-  strong = false,
-  style,
-}: {
-  children: ReactNode;
-  strong?: boolean;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const { palette, mode } = useTheme();
-  return (
-    <View
-      style={[
-        styles.glassPanel,
-        {
-          backgroundColor: strong ? palette.surface.raised : palette.surface.default,
-          borderColor: strong ? palette.border.default : palette.border.subtle,
-        },
-        platformSurfaceShadow(mode, strong, palette.bg.sunken),
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
-
 export const ZookButton = SharedZookButton;
 export const PrimaryButton = SharedPrimaryButton;
 export const SecondaryButton = SharedSecondaryButton;
-export const DangerButton = SharedDangerButton;
-export const GhostButton = SharedGhostButton;
-export const PrimaryLink = SharedPrimaryLink;
-export const SecondaryLink = SharedSecondaryLink;
 
 export function EntryCodeCard({
   code,
@@ -1178,17 +1078,6 @@ const styles = StyleSheet.create({
     borderRadius: 110,
     opacity: 0.26,
   },
-  shellTitle: {
-    color: fallbackColors.text,
-    ...typography.screenTitle,
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.lg,
-  },
-  screenShellContent: {
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.xl,
-    gap: spacing.lg,
-  },
   brandMark: {
     alignItems: "center",
     justifyContent: "center",
@@ -1232,15 +1121,6 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     padding: 18,
     gap: spacing.md,
-  },
-  glassPanel: {
-    backgroundColor: fallbackColors.panel,
-    borderColor: fallbackColors.border,
-    borderWidth: 1,
-    borderCurve: "continuous",
-    borderRadius: radii.panel,
-    padding: spacing.lg,
-    overflow: "hidden",
   },
   pressed: {
     opacity: 0.92,

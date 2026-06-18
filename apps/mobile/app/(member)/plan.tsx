@@ -10,7 +10,6 @@ import {
   Card,
   IconBubble,
   ListRow,
-  PressableCard,
   ProgressBar,
   QueryErrorState,
   ScreenHeader,
@@ -135,10 +134,11 @@ export default function MemberPlanScreen() {
                   <SectionHeader title="More plans" />
                   <View style={styles.stack}>
                   {upcomingPlans.map((assignment, index) => (
-                    <PressableCard
+                    <Card
                       key={assignment.id}
                       testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
                       onPress={() => openAssignment(assignment.id)}
+                      pressable
                       variant="compact"
                     >
                       <ListRow
@@ -147,7 +147,7 @@ export default function MemberPlanScreen() {
                         leading={<IconBubble icon="calendar-outline" tone="blue" />}
                         trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
                       />
-                    </PressableCard>
+                    </Card>
                   ))}
                   </View>
                 </AnimatedAppear>
