@@ -109,7 +109,7 @@ export default function MemberPlanScreen() {
               <AnimatedAppear delay={40}>
                 <SectionHeader title="Today's workout" />
                 {todayPlan ? (
-                  <Card variant="selected" glow contentStyle={styles.todayCard}>
+                  <Card variant="selected" contentStyle={styles.todayCard}>
                     <View style={styles.todayTop}>
                       <IconBubble icon="barbell-outline" tone="lime" size={46} />
                       <View style={styles.todayCopy}>

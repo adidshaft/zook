@@ -214,6 +214,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   screen and gym username cover placeholder while preserving the functional content and cards.
 - **6/R82 Premium/styling wording cleanup** — replaced stale "premium"/"elegant" styling
   comments in global CSS and neutralized the mobile demo gym tagline copy.
+- **6/R83 Mobile card glow call sites** — removed glow-only emphasis from active/selected
+  mobile cards where labels, chips, selected variants, and actions already communicate state.
 
 ## 1. Functional / correctness
 

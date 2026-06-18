@@ -140,7 +140,7 @@ export default function Plans() {
           />
 
           {selectedAssignment ? (
-            <Card variant="selected" glow contentStyle={styles.activePlanContent}>
+            <Card variant="selected" contentStyle={styles.activePlanContent}>
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
                   <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>

@@ -372,7 +372,7 @@ export default function AttendanceResultScreen() {
             </>
           ) : (
             <>
-              <Card glow contentStyle={styles.approvedCodeContent}>
+              <Card contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
                   <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                   {code ? (

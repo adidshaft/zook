@@ -78,7 +78,7 @@ function ActiveCheckInCard({
   }, [activeCheckIn.checkedInAt]);
 
   return (
-    <Card glow contentStyle={styles.activeSessionCard}>
+    <Card contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
         <IconBubble icon="time-outline" tone="lime" size={42} />
         <View style={styles.activeSessionCopy}>
