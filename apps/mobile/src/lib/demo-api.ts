@@ -1015,5 +1015,5 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
-  throw new Error("This sample action is not available yet.");
+  throw new Error("This action is not available in offline demo mode.");
 }

@@ -123,6 +123,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   that restated the surrounding component names or obvious JSX state.
 - **6/R41 Stale QA audit wording** — removed the obsolete AI-draft mention from the
   unverified submit-path list after the always-off trainer AI drafting surface was removed.
+- **6/R42 Offline-demo fallback copy** — replaced the remaining "sample action" offline-demo
+  transport error with neutral copy for unsupported demo actions.
 
 ## 1. Functional / correctness
 
