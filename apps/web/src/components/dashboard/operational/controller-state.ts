@@ -70,8 +70,6 @@ export function createEmptyOfferForm() {
   };
 }
 
-export type OfferForm = ReturnType<typeof createEmptyOfferForm>;
-
 export function createEmptyReferralForm() {
   return {
     code: "",

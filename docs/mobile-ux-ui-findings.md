@@ -133,6 +133,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   ambient motion primitives from the public web helper modules.
 - **6/R46 Web no-caller hooks and exports** — removed unused query-hook modules, a stale server
   barrel export, an unused internal error helper, and redundant join-page visual comments.
+- **6/R47 Web orphan overview components** — removed the no-caller overview wrapper/component
+  cluster and an unused operational offer-form type export.
 
 ## 1. Functional / correctness
 
