@@ -9,7 +9,7 @@ export default function RestDayCard({ planName, streak }: { planName: string; st
       body={`${planName} has no workout scheduled today. Recover well and keep the routine warm.`}
       ctaHref="/scan"
       ctaLabel="Scan into gym"
-      tone="blue"
+      tone="neutral"
     >
       <StreakChip value={streak} />
     </HomeCardShell>

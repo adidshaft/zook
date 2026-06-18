@@ -826,3 +826,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web class capacity cue (`R152`) is closed: scheduled class
   enrollment/capacity detail now uses a neutral badge instead of informational blue, keeping
   class state on the adjacent status chip.
+- **[ui, fixed]** Overstated mobile home empty-state accents (`R153`) are closed: first-run,
+  no-gym, and rest-day cards now use neutral icon accents instead of informational blue,
+  keeping lime and amber for active workout and membership states.
