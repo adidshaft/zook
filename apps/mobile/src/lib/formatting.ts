@@ -31,6 +31,17 @@ export function formatDateTime(value?: string | Date | null) {
   });
 }
 
+export function formatTime(value?: string | Date | null, fallback = "--") {
+  const date = toDate(value);
+  if (!date) {
+    return fallback;
+  }
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function formatRelativeDate(value?: string | Date | null) {
   const date = toDate(value);
   if (!date) {

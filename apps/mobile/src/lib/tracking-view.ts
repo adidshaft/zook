@@ -3,17 +3,7 @@ import type {
   WorkoutLogEntry
 } from "@zook/core";
 
-import { formatCompactMinutes, formatLongDate } from "@/lib/formatting";
-
-function formatTimeLabel(value?: string | null) {
-  if (!value) {
-    return "--";
-  }
-  return new Date(value).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
+import { formatCompactMinutes, formatLongDate, formatTime } from "@/lib/formatting";
 
 export function workoutToEntry(workout: {
   id: string;
@@ -37,8 +27,8 @@ export function workoutToEntry(workout: {
     id: workout.id,
     dateLabel: formatLongDate(workout.startedAt),
     workoutName: workout.title,
-    startTimeLabel: formatTimeLabel(workout.startedAt),
-    endTimeLabel: formatTimeLabel(workout.endedAt),
+    startTimeLabel: formatTime(workout.startedAt),
+    endTimeLabel: formatTime(workout.endedAt),
     durationLabel: formatCompactMinutes(workout.durationMinutes, {
       includeZeroMinutes: true,
       separator: " ",

@@ -618,3 +618,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   banner now uses shared `formatTime` instead of inline locale time formatting.
 - **[code, fixed]** Ad hoc staff invite expiry copy (`R81`) is closed: staff invite acceptance
   now uses shared web `formatDate` instead of inline locale date formatting.
+- **[code, fixed]** Duplicate mobile time-only formatting (`R82`) is closed: tracking entries
+  and attendance detail now share mobile `formatTime` instead of local time helpers.

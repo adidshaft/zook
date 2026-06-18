@@ -22,7 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
-import { formatDurationSeconds } from "@/lib/formatting";
+import { formatDurationSeconds, formatTime } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -77,13 +77,6 @@ function toAttendanceFallbackRecord(
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function formatTime(value?: string | null) {
-  if (!value) return "--:--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--:--";
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
 function titleCaseStatus(status?: string | null) {
@@ -379,12 +372,12 @@ export default function AttendanceResultScreen() {
                 <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
                 <DetailLine
                   label="Check-in"
-                  value={formatTime(record.checkedInAt)}
+                  value={formatTime(record.checkedInAt, "--:--")}
                   icon="time-outline"
                 />
                 <DetailLine
                   label="Check-out"
-                  value={record.checkedOutAt ? formatTime(record.checkedOutAt) : "In progress"}
+                  value={record.checkedOutAt ? formatTime(record.checkedOutAt, "--:--") : "In progress"}
                   icon="stop-circle-outline"
                 />
                 <DetailLine
