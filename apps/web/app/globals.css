@@ -242,7 +242,7 @@ a.bg-\[var\(--accent\)\] *,
   color: inherit !important;
 }
 
-/* Custom premium overrides for hardcoded dark utility properties when in Light Mode */
+/* Light-mode overrides for hardcoded dark utility properties */
 [data-theme="light"] {
   /* Low-contrast green texts in Light Mode */
   .text-lime-100,
@@ -411,7 +411,7 @@ a.bg-\[var\(--accent\)\] *,
   color: var(--text-primary) !important;
 }
 
-/* Elegant borders instead of glowing elements */
+/* Paper mode uses borders instead of glow shadows */
 :root[data-accent="paper"] .zook-lime-glow {
   box-shadow: none !important;
   border: 2px solid var(--border-strong) !important;
@@ -438,5 +438,4 @@ a.bg-\[var\(--accent\)\] *,
     animation: none !important;
   }
 }
-
 

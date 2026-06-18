@@ -126,7 +126,7 @@ function demoGymProfile(username: string) {
       visibility: "PUBLIC",
       amenities: org.amenities,
       address: org.address,
-      tagline: "Premium strength, PT, and recovery operations in one gym cockpit.",
+      tagline: "Strength, PT, and recovery operations in one gym cockpit.",
       gallery: [],
       equipment: ["Dumbbells", "Power racks", "Treadmills", "Cable crossover machine"],
     },

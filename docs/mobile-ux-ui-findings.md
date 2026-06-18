@@ -212,6 +212,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   launch fallback; the branded loading card and spinner remain as the functional loading state.
 - **6/R81 Mobile route background glows** — removed visual-only glow layers from the login
   screen and gym username cover placeholder while preserving the functional content and cards.
+- **6/R82 Premium/styling wording cleanup** — replaced stale "premium"/"elegant" styling
+  comments in global CSS and neutralized the mobile demo gym tagline copy.
 
 ## 1. Functional / correctness
 
