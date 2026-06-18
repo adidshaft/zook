@@ -57,7 +57,7 @@ export function CoachPage({
               <StatusDot tone="lime" size={6} />
               Live signal
             </span>
-            <Pill tone="lime">Trainer</Pill>
+            <Pill>Trainer</Pill>
           </div>
         }
       />

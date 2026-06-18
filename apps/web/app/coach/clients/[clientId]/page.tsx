@@ -105,7 +105,7 @@ export default async function CoachClientPage({
         <Link href="/coach" className="text-sm font-semibold text-[var(--accent)] hover:underline">
           {"<-"} Back to coach
         </Link>
-        <Pill tone="lime">Assigned client</Pill>
+        <Pill>Assigned client</Pill>
       </div>
 
       <GlassCard className="p-6">

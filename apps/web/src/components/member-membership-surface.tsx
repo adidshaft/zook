@@ -60,7 +60,7 @@ export async function renderMembershipSurface(
         <PublicNav locale={locale} />
 
         <GlassCard variant="strong" className="p-6 md:p-8">
-          <Pill tone="lime">Member profile</Pill>
+          <Pill>Member profile</Pill>
           {session.user.privateHandle ? (
             <Pill className="ml-2">
               Private ID: {session.user.privateHandle}

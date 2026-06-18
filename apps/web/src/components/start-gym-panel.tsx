@@ -231,7 +231,7 @@ export function StartGymPanel({
   return (
     <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <GlassCard variant="strong">
-        <Pill tone="lime">Owner setup</Pill>
+        <Pill>Owner setup</Pill>
         <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
           Start your gym on Zook.
         </h1>

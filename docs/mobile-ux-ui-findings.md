@@ -910,3 +910,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Mis-toned web member autopay cue (`R180`) is closed: the `/me` route
   autopay badge now uses the same live lime treatment as the shared member membership
   surface instead of informational blue.
+- **[ui, fixed]** Overstated web page-label cues (`R181`) are closed: Diet, Pricing,
+  Member profile, Owner setup, Trainer, and Assigned client labels now use neutral badges
+  instead of lime, keeping lime for live, ready, saved, and success states.
