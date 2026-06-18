@@ -64,7 +64,7 @@ export function QueueTab({
                         {record.user?.privateHandle ? (
                           <Pill>{record.user.privateHandle}</Pill>
                         ) : null}
-                        {record.entryCode ? <Pill tone="blue">{record.entryCode}</Pill> : null}
+                        {record.entryCode ? <Pill>{record.entryCode}</Pill> : null}
                       </div>
                       <p className="mt-1 text-sm text-white/48">
                         {record.suspiciousFlags?.length
@@ -143,7 +143,7 @@ export function QueueTab({
                 <span className="truncate text-sm font-medium text-white/78">
                   {memberLabel(record)}
                 </span>
-                {record.entryCode ? <Pill tone="blue">{record.entryCode}</Pill> : null}
+                {record.entryCode ? <Pill>{record.entryCode}</Pill> : null}
               </div>
               <span className="text-xs text-white/45">{formatDateTime(record.checkedInAt)}</span>
             </div>

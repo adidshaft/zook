@@ -784,3 +784,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web public avatar fallback cleanup (`R138`) is closed: public
   gym trainer rows and discovery cards now use the shared web avatar-initials primitive
   instead of hand-rendering one-letter fallback blocks.
+- **[ui, fixed]** Overstated web desk entry-code cue (`R139`) is closed: desk queue entry
+  codes now use neutral badge styling instead of informational blue, matching their role as
+  identifiers beside private handles.
