@@ -73,6 +73,9 @@ These are not code-completable from this workspace without external action or ap
 - Product-scope decisions: Part E features, GST/e-invoicing scope, any historical data remediation,
   and broader regional staff-web localization need explicit approval before implementation.
 
+Use `docs/mobile-ui-cleanup-external-evidence-checklist.md` to record the evidence for these gates
+without committing secrets, raw tokens, or unredacted customer/provider data.
+
 ## Completion status
 
 Do not mark the active goal complete from code history alone. Code-side implementation and rollout
