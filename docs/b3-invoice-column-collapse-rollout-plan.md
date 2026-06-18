@@ -69,6 +69,13 @@ Reasoning:
 
 Run this on a staging clone or disposable production snapshot before any backfill:
 
+```sh
+pnpm db:b3:sql drift-audit
+pnpm db:b3:sql mismatch-detail
+```
+
+The helper emits the full drift audit query:
+
 ```sql
 SELECT
   COUNT(*) FILTER (
@@ -161,6 +168,10 @@ invoice before applying destructive changes.
 
 After drift is reviewed, backfill canonical columns on staging:
 
+```sh
+pnpm db:b3:sql backfill-canonical-staging-only
+```
+
 ```sql
 UPDATE "Invoice"
 SET
@@ -188,6 +199,10 @@ WHERE
 ```
 
 Then enforce the canonical uniqueness target on staging:
+
+```sh
+pnpm db:b3:sql canonical-unique-index-staging-only
+```
 
 ```sql
 CREATE UNIQUE INDEX invoice_invoice_number_unique_idx
@@ -222,6 +237,10 @@ Known code areas to update in the compatibility release:
 
 Only after the compatibility release is deployed and staging drift stays at zero:
 
+```sh
+pnpm db:b3:sql destructive-migration-staging-only
+```
+
 ```sql
 ALTER TABLE "Invoice"
 DROP CONSTRAINT IF EXISTS "Invoice_number_key";
@@ -246,6 +265,10 @@ ADD CONSTRAINT "Invoice_invoiceNumber_key" UNIQUE ("invoiceNumber");
 ```
 
 Validation after destructive migration:
+
+```sh
+pnpm db:b3:sql validate-destructive-migration
+```
 
 ```sql
 SELECT column_name
@@ -277,6 +300,10 @@ Rollback is easy before the destructive migration: keep the legacy columns and r
 code to legacy fallbacks.
 
 After columns are dropped, rollback requires re-adding them from canonical values:
+
+```sh
+pnpm db:b3:sql rollback-after-drop
+```
 
 ```sql
 ALTER TABLE "Invoice"

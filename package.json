@@ -57,6 +57,7 @@
     "db:a3.6:sql": "tsx scripts/a3.6-idempotency-expiry-sql.ts",
     "db:b1:sql": "tsx scripts/b1-rbac-multi-branch-role-sql.ts",
     "db:b2:sql": "tsx scripts/b2-status-enum-rollout-sql.ts",
+    "db:b3:sql": "tsx scripts/b3-invoice-column-collapse-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",
