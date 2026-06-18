@@ -686,3 +686,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Duplicate notification status warning cue (`R105`) is closed: notification
   history and composer delivery rows now share notification status tones so failed/cancelled,
   scheduled/pending, and sent/delivered messages are visually distinct.
+- **[ui, fixed]** Misleading member scanner frame success cue (`R106`) is closed: the QR scanner
+  frame now tones idle, checking, accepted, and failed states separately instead of showing a
+  success frame before the server has verified the scan.

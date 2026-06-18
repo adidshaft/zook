@@ -22,6 +22,7 @@ import {
   EmptyState,
   IconBubble,
   AppHeader,
+  type PillTone,
   ProfileShortcut,
   ScannerFrame,
   useRequestPermissionWithRationale,
@@ -75,6 +76,13 @@ type AttendanceResultHref = {
     attendanceRecordId: string;
   };
 };
+
+function toneForScanState(state: ScanState): PillTone {
+  if (state === "accepted") return "lime";
+  if (state === "checking") return "amber";
+  if (state === "failed") return "red";
+  return "neutral";
+}
 
 const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
 const SCAN_CONFIRMATION_VISIBLE_MS = 420;
@@ -838,7 +846,7 @@ export default function Scan() {
                   </View>
                 )}
                 <View pointerEvents="none" style={styles.scannerOverlay}>
-                  <ScannerFrame size={280} tone={scanState === "failed" ? "red" : "lime"}>
+                  <ScannerFrame size={280} tone={toneForScanState(scanState)}>
                     <AnimatedLaser frameSize={280} />
                   </ScannerFrame>
                 </View>
