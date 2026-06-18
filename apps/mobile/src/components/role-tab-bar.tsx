@@ -91,7 +91,13 @@ export function RoleTabBar({
   const indicatorX = useRef(new RNAnimated.Value(0)).current;
   const centerScale = useRef(new RNAnimated.Value(1)).current;
   const itemWidth = visibleRoutes.length > 0 && barWidth > 0 ? barWidth / visibleRoutes.length : 0;
-  const indicatorWidth = Platform.OS === "android" ? 52 : 58;
+  const indicatorWidth = itemWidth > 0 ? Math.min(Math.max(itemWidth - (Platform.OS === "android" ? 12 : 18), 58), 72) : 0;
+  const indicatorHeight = Platform.OS === "android" ? 36 : 44;
+  const indicatorTop = Platform.OS === "android" ? 8 : 16;
+  const indicatorBorderColor =
+    mode === "dark" ? "rgba(185,244,85,0.18)" : "rgba(31,62,36,0.10)";
+  const indicatorBackgroundColor =
+    mode === "dark" ? "rgba(185,244,85,0.16)" : "rgba(31,62,36,0.10)";
 
   useEffect(() => {
     RNAnimated.parallel([
@@ -202,11 +208,14 @@ export function RoleTabBar({
             pointerEvents="none"
             style={[
               styles.activeIndicator,
-              Platform.OS === "android" ? styles.androidActiveIndicator : null,
               {
-                backgroundColor:
-                  mode === "dark" ? palette.surface.accentSoft : "rgba(31,62,36,0.16)",
+                backgroundColor: indicatorBackgroundColor,
+                borderColor: indicatorBorderColor,
+                borderRadius: indicatorHeight / 2,
+                height: indicatorHeight,
+                top: indicatorTop,
                 width: indicatorWidth,
+                shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.16 : 0.05) : 0,
                 transform: [{ translateX: indicatorX }],
               },
             ]}
@@ -409,17 +418,15 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     borderCurve: "continuous",
-    borderRadius: 18,
-    height: 46,
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
     left: 0,
     position: "absolute",
-    top: 15,
+    top: 16,
     zIndex: 1,
-  },
-  androidActiveIndicator: {
-    borderRadius: 999,
-    height: 28,
-    top: 10,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
   },
   tabItem: {
     flex: 1,
