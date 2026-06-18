@@ -108,6 +108,19 @@ export function formatVisitLimit(limit?: number | null, fallback = "Unlimited") 
   return `${limit} ${limit === 1 ? "visit" : "visits"}`;
 }
 
+export function toneForShopOrderStatus(status?: string | null) {
+  if (status === "FULFILLED" || status === "READY_FOR_PICKUP" || status === "PAID") {
+    return "lime" as const;
+  }
+  if (status === "PENDING_PAYMENT") {
+    return "amber" as const;
+  }
+  if (status === "FAILED" || status === "CANCELLED" || status === "REFUNDED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
 export function formatElapsedTimer(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);

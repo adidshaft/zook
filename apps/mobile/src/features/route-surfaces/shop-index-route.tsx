@@ -38,7 +38,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatDateTime, formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
   useCreateShopOrder,
@@ -97,19 +97,6 @@ function iconForCategory(category: Category) {
   if (category === "TOWEL") return "shirt-outline" as const;
   if (category === "SHAKER") return "flask-outline" as const;
   return "nutrition-outline" as const;
-}
-
-function toneForShopOrderStatus(status?: string | null) {
-  if (status === "FULFILLED" || status === "READY_FOR_PICKUP") {
-    return "lime" as const;
-  }
-  if (status === "PENDING_PAYMENT") {
-    return "amber" as const;
-  }
-  if (status === "FAILED" || status === "CANCELLED" || status === "REFUNDED") {
-    return "red" as const;
-  }
-  return "neutral" as const;
 }
 
 function checkoutUrl(url: string) {

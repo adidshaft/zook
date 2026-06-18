@@ -2,7 +2,7 @@ import { Alert, Text, View } from "react-native";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
-import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -90,7 +90,9 @@ export function ReceptionOrdersScreenBody() {
                           {order.items.length} items
                         </Text>
                       </View>
-                      <Pill tone="lime">{titleCaseFromCode(order.status)}</Pill>
+                      <Pill tone={toneForShopOrderStatus(order.status)}>
+                        {titleCaseFromCode(order.status)}
+                      </Pill>
                     </View>
                     <View style={styles.itemGrid}>
                       {order.items.map((item) => {

@@ -655,3 +655,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading owner billing mandate tone (`R94`) is closed: owner billing now
   tones mandate chips by actual mandate status instead of marking every existing mandate as
   lime.
+- **[ui, fixed]** Misleading reception order status tone (`R95`) is closed: reception pickup
+  rows now use the shared shop order status tone instead of showing every order status as lime.
