@@ -4,6 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatInr } from "@/lib/format";
+import { publicJoinHref } from "@/lib/public-join-url";
 import { ZookButton } from "@/components/zook-button";
 
 type CouponValidatePayload = {
@@ -15,22 +16,6 @@ type CouponValidatePayload = {
   };
   error?: { message?: string } | string;
 };
-
-function joinHref(input: {
-  username: string;
-  planId: string;
-  couponCode?: string;
-  referralCode?: string | null | undefined;
-}) {
-  const query = new URLSearchParams({ plan: input.planId });
-  if (input.referralCode) {
-    query.set("ref", input.referralCode);
-  }
-  if (input.couponCode) {
-    query.set("coupon", input.couponCode);
-  }
-  return `/join/${input.username}?${query.toString()}`;
-}
 
 function payloadMessage(payload: CouponValidatePayload) {
   if (typeof payload.error === "string") {
@@ -68,7 +53,7 @@ export function CouponApplyForm({
     if (!code) {
       setValid(false);
       setMessage("Enter a coupon code to apply.");
-      router.replace(joinHref({ username, planId, referralCode }), { scroll: false });
+      router.replace(publicJoinHref({ username, plan: planId, referralCode }), { scroll: false });
       return;
     }
     setBusy(true);
@@ -91,7 +76,7 @@ export function CouponApplyForm({
       setMessage(successMessage);
       toast.success(successMessage);
       router.replace(
-        joinHref({ username, planId, referralCode, couponCode: normalizedCode }),
+        publicJoinHref({ username, plan: planId, referralCode, couponCode: normalizedCode }),
         { scroll: false },
       );
     } catch (error) {

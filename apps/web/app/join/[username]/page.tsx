@@ -12,6 +12,7 @@ import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import { PlanSelector } from "@/components/plan-selector";
+import { publicJoinHref } from "@/lib/public-join-url";
 import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import {
   alternatePublicLocale,
@@ -50,17 +51,13 @@ function joinPath(
   couponCode?: string,
   locale: PublicLocale = "en",
 ) {
-  const query = new URLSearchParams({ plan: planHandle });
-  if (referral) {
-    query.set("ref", referral.code);
-  }
-  if (couponCode) {
-    query.set("coupon", couponCode);
-  }
-  if (locale === "hi") {
-    query.set("lang", "hi");
-  }
-  return `/join/${username}?${query.toString()}`;
+  return publicJoinHref({
+    username,
+    plan: planHandle,
+    referralCode: referral?.code,
+    couponCode,
+    locale,
+  });
 }
 
 function loginRedirect(path: string, locale: PublicLocale = "en") {

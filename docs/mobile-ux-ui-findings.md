@@ -558,3 +558,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mock checkout validity label (`R58`) is closed: mock checkout now
   uses the shared public plan validity summary helper instead of carrying local Hindi/English
   validity copy logic.
+- **[code, fixed]** Duplicate public join URL builders (`R59`) is closed: the join page,
+  plan selector, and coupon form now share `publicJoinHref` for plan/referral/coupon/lang query
+  construction.

@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resolvePlanName } from "@zook/ui";
 import { formatInr } from "@/lib/format";
+import { publicJoinHref } from "@/lib/public-join-url";
 import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 
 type Plan = {
@@ -17,26 +18,6 @@ type Plan = {
 };
 
 type PublicLocale = "en" | "hi";
-
-function joinHref(input: {
-  username: string;
-  planHandle: string;
-  referralCode?: string | null | undefined;
-  couponCode?: string | null | undefined;
-  locale: PublicLocale;
-}) {
-  const query = new URLSearchParams({ plan: input.planHandle });
-  if (input.referralCode) {
-    query.set("ref", input.referralCode);
-  }
-  if (input.couponCode) {
-    query.set("coupon", input.couponCode);
-  }
-  if (input.locale === "hi") {
-    query.set("lang", "hi");
-  }
-  return `/join/${input.username}?${query.toString()}`;
-}
 
 export function PlanSelector({
   plans,
@@ -62,9 +43,9 @@ export function PlanSelector({
 
   const handlePlanChange = (planHandle: string) => {
     startTransition(() => {
-      const nextHref = joinHref({
+      const nextHref = publicJoinHref({
         username,
-        planHandle,
+        plan: planHandle,
         referralCode: referralCode ?? null,
         couponCode: couponCode ?? null,
         locale,
