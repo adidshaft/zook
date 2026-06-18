@@ -3,11 +3,17 @@ import * as SecureStore from "expo-secure-store";
 const inMemoryStorage = new Map<string, string>();
 const SECURE_STORE_KEY_PATTERN = /^[A-Za-z0-9._-]+$/;
 
+export type PhoneRevealScope = "owner" | "reception";
+
 function storageKey(key: string) {
   if (SECURE_STORE_KEY_PATTERN.test(key)) {
     return key;
   }
   return key.replace(/[^A-Za-z0-9._-]/g, "_");
+}
+
+export function phoneRevealStorageKey(scope: PhoneRevealScope, orgId?: string | null) {
+  return `zook_revealed_${scope}_phones_${orgId ?? "none"}`;
 }
 
 export async function secureStoreAvailable() {

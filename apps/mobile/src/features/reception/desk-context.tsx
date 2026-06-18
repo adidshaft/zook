@@ -70,9 +70,9 @@ import { useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
-import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
-import { deskReasonCopy, phoneRevealStorageKey } from "./helpers";
+import { deskReasonCopy } from "./helpers";
 import { receptionWorkspaceStyles as styles } from "./styles";
 
 export { receptionWorkspaceStyles } from "./styles";
@@ -450,7 +450,7 @@ function useReceptionWorkspaceState({
     setRevealedPhones((current) => {
       const next = new Set(current);
       next.add(memberId);
-      void setStoredValue(phoneRevealStorageKey(activeOrgId), JSON.stringify(Array.from(next)));
+      void setStoredValue(phoneRevealStorageKey("reception", activeOrgId), JSON.stringify(Array.from(next)));
       return next;
     });
     if (token && activeOrgId) {
@@ -468,7 +468,7 @@ function useReceptionWorkspaceState({
   useEffect(() => {
     let mounted = true;
     setRevealedPhones(new Set());
-    void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
+    void getStoredValue(phoneRevealStorageKey("reception", activeOrgId)).then((stored) => {
       if (!mounted) return;
       if (!stored) {
         setRevealedPhones(new Set());

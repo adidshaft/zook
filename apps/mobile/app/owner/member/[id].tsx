@@ -14,7 +14,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
 import { formatInitials, formatLongDate, formatRedactedPhone } from "@/lib/formatting";
-import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -33,10 +33,6 @@ type OrgMemberDetailResponse = {
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function phoneRevealStorageKey(orgId?: string | null) {
-  return `zook_revealed_owner_phones_${orgId ?? "none"}`;
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
@@ -113,7 +109,7 @@ export default function OwnerMemberDetail() {
   useEffect(() => {
     let mounted = true;
     setPhoneRevealed(false);
-    void getStoredValue(phoneRevealStorageKey(resolvedOrgId)).then((stored) => {
+    void getStoredValue(phoneRevealStorageKey("owner", resolvedOrgId)).then((stored) => {
       if (!mounted || !id || !stored) return;
       try {
         const parsed = JSON.parse(stored);
@@ -131,11 +127,11 @@ export default function OwnerMemberDetail() {
     if (!id) return;
     setPhoneRevealed(true);
     try {
-      const stored = await getStoredValue(phoneRevealStorageKey(resolvedOrgId));
+      const stored = await getStoredValue(phoneRevealStorageKey("owner", resolvedOrgId));
       const parsed = stored ? JSON.parse(stored) : [];
       const next = new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
       next.add(id);
-      await setStoredValue(phoneRevealStorageKey(resolvedOrgId), JSON.stringify(Array.from(next)));
+      await setStoredValue(phoneRevealStorageKey("owner", resolvedOrgId), JSON.stringify(Array.from(next)));
       if (token && resolvedOrgId) {
         await apiClient.request("/audit-logs", {
           method: "POST",

@@ -537,3 +537,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate approval reason formatter (`R50`) is closed: owner approvals
   and reception desk approval flows now share mobile `formatReviewReason` while keeping their
   existing screen-specific fallback copy.
+- **[code, fixed]** Duplicate phone reveal storage keys (`R51`) is closed: owner member detail
+  and reception desk flows now use shared mobile `phoneRevealStorageKey` while preserving their
+  owner/reception key namespaces.
