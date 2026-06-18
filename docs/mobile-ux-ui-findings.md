@@ -506,3 +506,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal owner preference helpers (`R38`) is closed: dashboard
   customisation defaults and local-storage loading are no longer exported because exact reference
   checks showed only the panel component and owner-preferences hook are imported externally.
+- **[code, fixed]** Internal operational form factories (`R39`) is closed: plan, product,
+  default-policy, and branch form factories are no longer exported because exact reference checks
+  showed they are only called inside `controller-state.ts`.
