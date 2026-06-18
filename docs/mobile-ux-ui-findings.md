@@ -754,3 +754,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile branch-label cleanup (`R128`) is closed: profile,
   reception, and branch selector surfaces now use shared mobile branch and org-location
   formatters instead of carrying local org-prefix trimming helpers.
+- **[code, fixed]** Duplicate web desk initials cleanup (`R129`) is closed: desk queue rows
+  now use the shared web avatar-initials primitive instead of carrying a local one-letter
+  member initial formatter.

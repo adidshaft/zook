@@ -1,4 +1,5 @@
 import { CheckCircle2, XCircle } from "lucide-react";
+import { AvatarInitials } from "../dashboard-primitives";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import { ZookButton } from "../zook-button";
@@ -25,8 +26,8 @@ export function QueueTab({
     return record.profile?.profilePhotoUrl ?? record.user?.profilePhotoUrl ?? null;
   }
 
-  function memberInitial(record: AttendanceQueueRecord) {
-    return (record.user?.name ?? record.user?.email ?? "M").slice(0, 1).toUpperCase();
+  function memberLabel(record: AttendanceQueueRecord) {
+    return record.user?.name ?? record.user?.email ?? "Member";
   }
 
   return (
@@ -54,14 +55,15 @@ export function QueueTab({
                         className="h-16 w-16 shrink-0 rounded-2xl object-cover"
                       />
                     ) : (
-                      <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-amber-200/20 bg-amber-200/10 text-xl font-semibold text-amber-100">
-                        {memberInitial(record)}
-                      </div>
+                      <AvatarInitials
+                        name={memberLabel(record)}
+                        className="h-16 w-16 rounded-2xl border-amber-200/20 bg-amber-200/10 text-xl text-amber-100"
+                      />
                     )}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-white">
-                          {record.user?.name ?? record.user?.email ?? "Member"}
+                          {memberLabel(record)}
                         </p>
                         {record.user?.privateHandle ? (
                           <Pill>{record.user.privateHandle}</Pill>
@@ -137,12 +139,13 @@ export function QueueTab({
                     className="h-10 w-10 shrink-0 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/8 text-sm font-semibold text-white/70">
-                    {memberInitial(record)}
-                  </div>
+                  <AvatarInitials
+                    name={memberLabel(record)}
+                    className="h-10 w-10 rounded-xl border-transparent bg-white/8 text-sm text-white/70"
+                  />
                 )}
                 <span className="truncate text-sm font-medium text-white/78">
-                  {record.user?.name ?? record.user?.email ?? "Member"}
+                  {memberLabel(record)}
                 </span>
                 {record.entryCode ? <Pill tone="blue">{record.entryCode}</Pill> : null}
               </div>
