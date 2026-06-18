@@ -689,3 +689,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading member scanner frame success cue (`R106`) is closed: the QR scanner
   frame now tones idle, checking, accepted, and failed states separately instead of showing a
   success frame before the server has verified the scan.
+- **[code, fixed]** Ad hoc profile activity date formatting (`R107`) is closed: member profile
+  activity rows now use shared mobile activity-date formatting instead of carrying local
+  today/yesterday date math and locale calls.

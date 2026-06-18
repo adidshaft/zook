@@ -33,7 +33,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
-import { formatLongDate, formatRoleLabel, formatVisitLimit } from "@/lib/formatting";
+import { formatActivityDate, formatLongDate, formatRoleLabel, formatVisitLimit } from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -87,19 +87,6 @@ function routeForRole(role?: Role) {
 
 function firstParam(value?: string | string[] | null) {
   return Array.isArray(value) ? value[0] : value ?? undefined;
-}
-
-function formatActivityDate(value?: string | null) {
-  if (!value) return "Recently";
-  const date = new Date(value);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
-  const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-  if (sameDay(date, today)) return `Today, ${time}`;
-  if (sameDay(date, yesterday)) return `Yesterday, ${time}`;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 function normalizeRemoteUrl(value?: string | null) {

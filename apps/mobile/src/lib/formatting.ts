@@ -76,6 +76,22 @@ export function formatRelativeDate(value?: string | Date | null) {
   return formatLongDate(date);
 }
 
+export function formatActivityDate(value?: string | Date | null, fallback = "Recently") {
+  const date = toDate(value);
+  if (!date) {
+    return fallback;
+  }
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
+  const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  if (sameDay(date, today)) return `Today, ${time}`;
+  if (sameDay(date, yesterday)) return `Yesterday, ${time}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
 export function formatInr(valuePaise?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
