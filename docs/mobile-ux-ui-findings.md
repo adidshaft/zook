@@ -488,3 +488,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Public hero ring ornament (`R32`) is closed: removed the decorative
   `HeroRingOrnament` SVG and its only home-hero call site while keeping the useful grid backdrop
   and KPI sparkline.
+- **[code, fixed]** Internal dashboard chart helpers (`R33`) is closed: `AnimatedNumber` and
+  `Sparkline` are no longer exported from `dashboard/charts.tsx` because exact reference checks
+  showed they are only used internally by the KPI tile.

@@ -36,7 +36,7 @@ export type ChartTone = keyof typeof TONE_COLORS;
  * Counter — animated number rolling up from 0 (or current value).
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function AnimatedNumber({
+function AnimatedNumber({
   value,
   format,
   duration = 1.2,
@@ -124,7 +124,7 @@ export function DeltaChip({
  * Sparkline — tiny inline trend chart.
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function Sparkline({
+function Sparkline({
   values,
   tone = "lime",
   width = 96,
