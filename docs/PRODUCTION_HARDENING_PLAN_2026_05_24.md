@@ -737,7 +737,7 @@ Suggested order over ~3 weeks:
 
 ## Out of scope for this plan (explicit)
 
-- AI plan assistant — stays "coming soon", future roadmap.
+- AI plan assistant — stays gated with neutral unavailable-state copy, future roadmap.
 - Class booking UI — future scope.
 - Member messaging — future scope.
 - Family/corporate plans — future scope.
@@ -777,7 +777,7 @@ After Phase 2 + 3: a real platform support console — user search, session revo
 
 ### What would you implement next or improve in the product?
 After this plan lands, the next-best-leverage moves are (rough order):
-1. **AI plan assistant** out of "coming soon" — staging cert + flag flip, then iterate on trainer review UX.
+1. **AI plan assistant** out of its gated state — staging cert + flag flip, then iterate on trainer review UX.
 2. **Class booking UI** — schema and endpoints exist, real-life demand is high in larger gyms.
 3. **Member ↔ trainer messaging** — biggest member retention lever after plans.
 4. **GST e-invoicing** — once invoice volume crosses 5 cr/yr, mandatory in India; we'll already be 80% there from Phase 6.

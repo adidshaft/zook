@@ -285,6 +285,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   "Coming Soon!" placeholder surfaces.
 - **6/R117 AI gate acceptance copy** — updated the web acceptance test for AI plan generation
   gating to assert neutral unavailable copy instead of the removed "coming soon" wording.
+- **6/R118 Hardening plan AI gate wording** — updated the production hardening plan's AI
+  roadmap notes from "coming soon" language to neutral gated-state wording.
 
 ## 1. Functional / correctness
 
