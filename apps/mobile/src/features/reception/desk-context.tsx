@@ -50,7 +50,13 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { formatAgeLabel, formatInr, formatReviewReason, titleCaseFromCode } from "@/lib/formatting";
+import {
+  formatAgeLabel,
+  formatBranchName,
+  formatInr,
+  formatReviewReason,
+  titleCaseFromCode,
+} from "@/lib/formatting";
 import {
   useApproveAttendance,
   useManualAttendance,
@@ -106,14 +112,6 @@ type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 
 const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
 let lastReceptionMemberId: string | null = null;
-
-function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!branch) return null;
-  if (!org || !branch.startsWith(org)) return branch;
-  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
-}
 
 export function useReceptionWorkspace() {
   const value = useContext(ReceptionWorkspaceContext);
@@ -867,7 +865,7 @@ export function ReceptionWorkspace({
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
-  const branchLabel = trimBranchName(
+  const branchLabel = formatBranchName(
     state.activeOrganizationName,
     state.selectedBranchName ?? state.gymSelectorLabel,
   );

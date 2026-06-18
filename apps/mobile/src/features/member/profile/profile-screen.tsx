@@ -33,7 +33,13 @@ import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
-import { formatActivityDate, formatLongDate, formatRoleLabel, formatVisitLimit } from "@/lib/formatting";
+import {
+  formatActivityDate,
+  formatLongDate,
+  formatOrgLocationLine,
+  formatRoleLabel,
+  formatVisitLimit,
+} from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -51,31 +57,6 @@ type ActivityItem = {
   meta: string;
   icon: keyof typeof Ionicons.glyphMap;
 };
-
-/**
- * Compose "org · branch, city" without duplicating the org name when the
- * branch already starts with it (common in single-location gyms where the
- * branch label is e.g. "Aarogya Strength Koregaon Park").
- */
-function formatOrgLocationLine(
-  orgName: string | null | undefined,
-  branchName: string | null | undefined,
-  city: string | null | undefined,
-): string {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!org && !branch) return "No active gym";
-  let location: string;
-  if (org && branch) {
-    const branchWithoutOrgPrefix = branch.startsWith(org)
-      ? branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim()
-      : branch;
-    location = branchWithoutOrgPrefix ? `${org} · ${branchWithoutOrgPrefix}` : org;
-  } else {
-    location = org || branch || "";
-  }
-  return city ? `${location}, ${city}` : location;
-}
 
 function routeForRole(role?: Role) {
   if (role === "PLATFORM_ADMIN") return "/platform";

@@ -751,3 +751,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated inactive mobile autopay cue (`R127`) is closed: inactive autopay
   now uses neutral icon and badge tones instead of blue informational tones, reserving success
   treatment for live recurring renewal.
+- **[code, fixed]** Duplicate mobile branch-label cleanup (`R128`) is closed: profile,
+  reception, and branch selector surfaces now use shared mobile branch and org-location
+  formatters instead of carrying local org-prefix trimming helpers.

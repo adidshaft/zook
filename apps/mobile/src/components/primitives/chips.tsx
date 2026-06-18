@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type
 
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useAuth } from "@/lib/auth";
+import { formatBranchName } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { radii, typography, useTheme } from "@/lib/theme";
 import { useTonePalette, type PillTone } from "./tone-palette";
@@ -19,14 +20,6 @@ function pressWithLightHaptic(callback?: () => void) {
   } catch (error) {
     console.error("Zook chip action failed", error);
   }
-}
-
-function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!branch) return null;
-  if (!org || !branch.startsWith(org)) return branch;
-  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
 }
 
 export function ZookChip({
@@ -160,7 +153,7 @@ export function BranchSelectorChip() {
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization ??
     null;
-  const branchLabel = trimBranchName(
+  const branchLabel = formatBranchName(
     activeOrganization?.name ?? null,
     selectedBranch.name,
   );

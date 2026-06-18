@@ -285,6 +285,31 @@ export function formatInitials(name?: string | null, fallback?: string | null) {
     .join("");
 }
 
+export function formatBranchName(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return null;
+  if (!org || !branch.startsWith(org)) return branch;
+  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
+}
+
+export function formatOrgLocationLine(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+  city: string | null | undefined,
+) {
+  const org = orgName?.trim();
+  const branchLabel = formatBranchName(org, branchName);
+  if (!org && !branchLabel) return "No active gym";
+  const location = org && branchLabel && branchLabel !== org
+    ? `${org} · ${branchLabel}`
+    : org || branchLabel || "";
+  return city ? `${location}, ${city}` : location;
+}
+
 export function formatRedactedPhone(phone?: string | null, fallback = "No phone") {
   if (!phone) return fallback;
   return `****${phone.slice(-4)}`;
