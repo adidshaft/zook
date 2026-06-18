@@ -20,11 +20,6 @@ import {
   ZookButton as SharedZookButton,
 } from "./buttons";
 import type { PressHandler } from "./buttons";
-export {
-  InfoRow,
-  MetricTile,
-  StatusRing,
-} from "./metric-primitives";
 
 type CardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
 export type SemanticSurface =
@@ -40,16 +35,6 @@ type CardGlowTone = "lime" | "amber" | "red" | "success";
 type CardSurface = "content" | "interactive" | "floating";
 type BrandMarkSize = "sm" | "md" | "lg";
 type ThemeMode = "light" | "dark";
-export type { PillTone } from "./tone-palette";
-export { getTonePalette, useTonePalette } from "./tone-palette";
-export { IconBubble } from "./icon-bubble";
-export { ProfileShortcut } from "./profile-shortcut";
-export {
-  BranchSelectorChip,
-  Pill,
-  StatusChip,
-  ZookChip,
-} from "./chips";
 
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -382,10 +367,6 @@ export function Card({
 export const ZookButton = SharedZookButton;
 export const PrimaryButton = SharedPrimaryButton;
 export const SecondaryButton = SharedSecondaryButton;
-
-export { DatePickerField } from "@/components/primitives/date-picker-field";
-export { OtpInput } from "@/components/primitives/otp-input";
-export type { OtpInputHandle } from "@/components/primitives/otp-input";
 
 const styles = StyleSheet.create({
   screen: {

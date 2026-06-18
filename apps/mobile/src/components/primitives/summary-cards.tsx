@@ -4,8 +4,9 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { AuditWarning } from "./audit-warning";
+import { StatusChip } from "./chips";
 import { DetailRow } from "./detail-row";
-import { Card, StatusChip } from "./foundation";
+import { Card } from "./foundation";
 import { IconBubble } from "./icon-bubble";
 import type { PillTone } from "./tone-palette";
 

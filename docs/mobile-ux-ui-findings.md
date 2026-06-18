@@ -69,6 +69,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R17 Legacy bottom nav implementation** — removed the unused `BottomNav` compatibility
   export, old role tab arrays, and their style/import leftovers now that Expo Router tab layouts
   own mobile navigation.
+- **6/R18 Foundation barrel aliases** — removed duplicate foundation re-exports for chips,
+  metric helpers, tone helpers, profile shortcuts, icon bubbles, and input fields so those
+  primitives only come through their dedicated barrels.
 
 ## 1. Functional / correctness
 
@@ -219,3 +222,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Legacy bottom nav implementation (`R17`) is closed: the unused
   `BottomNav` compatibility component, role-specific tab arrays, nav styles, and stale fallback
   colors/imports were removed from the primitive foundation module.
+- **[code, fixed]** Foundation barrel aliases (`R18`) is closed: `foundation.tsx` now exposes
+  the actual foundation surfaces/buttons only, while chips, metrics, tone helpers, profile
+  shortcuts, icon bubbles, date fields, and OTP inputs stay on their dedicated primitive barrels.
