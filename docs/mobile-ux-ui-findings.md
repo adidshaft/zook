@@ -982,3 +982,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile money-summary receipt cue (`R204`) is closed:
   shared money summary cards now use a neutral receipt icon instead of fixed amber, keeping
   emphasis on the amount, row details, and any audit/consequence copy.
+- **[ui, fixed]** Overstated mobile member plan preview icon cues (`R205`) are closed:
+  the Inside this plan loading and exercise-row icons now use neutral styling instead of
+  lime, keeping stronger color on the selected Today's workout card.

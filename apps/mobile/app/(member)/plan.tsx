@@ -162,7 +162,7 @@ export default function MemberPlanScreen() {
                   <Card variant="compact" contentStyle={styles.previewCard}>
                     {exercisePreviewQuery.isLoading ? (
                       <View style={styles.previewLoading}>
-                        <IconBubble icon="barbell-outline" tone="lime" size={42} />
+                        <IconBubble icon="barbell-outline" tone="neutral" size={42} />
                         <View style={styles.previewCopy}>
                           <Text style={[styles.previewTitle, { color: palette.text.primary }]}>
                             Loading exercises
@@ -179,7 +179,7 @@ export default function MemberPlanScreen() {
                             key={exercise.id}
                             title={exercise.name}
                             subtitle={[exercise.sets, exercise.reps].filter(Boolean).join(" · ") || exercise.day || "Coach guided"}
-                            leading={<IconBubble icon={index === 0 ? "flash-outline" : "barbell-outline"} tone="lime" />}
+                            leading={<IconBubble icon={index === 0 ? "flash-outline" : "barbell-outline"} tone="neutral" />}
                           />
                         ))}
                         <ZookButton
