@@ -703,3 +703,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile danger tone normalization (`R111`) is closed: member list
   badges and attention items now share primitive tone normalization instead of mapping
   `danger` to `red` inline.
+- **[code, fixed]** Duplicate member check-in code cleanup (`R112`) is closed: the member
+  scanner now shares one local compaction helper for scanned and manually entered check-in
+  codes instead of repeating uppercase/alphanumeric regex cleanup.

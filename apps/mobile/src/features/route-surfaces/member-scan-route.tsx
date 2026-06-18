@@ -177,8 +177,12 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function compactCheckInCodeInput(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 function normalizeCheckInCode(value: string) {
-  const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const compact = compactCheckInCodeInput(value);
   const match = /^([A-Z]{2})([0-9]{4})$/.exec(compact);
   return match ? `${match[1]}-${match[2]}` : "";
 }
@@ -697,7 +701,7 @@ export default function Scan() {
   }
 
   function handlePrefixChange(value: string) {
-    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const compact = compactCheckInCodeInput(value);
     const letters = compact.replace(/[^A-Z]/g, "").slice(0, 2);
     const digits = compact.replace(/[^0-9]/g, "").slice(0, 4);
     setCodePrefix(letters);
@@ -710,7 +714,7 @@ export default function Scan() {
   }
 
   function handleDigitsChange(value: string) {
-    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const compact = compactCheckInCodeInput(value);
     const pastedMatch = /^([A-Z]{2})([0-9]{1,4})$/.exec(compact);
     if (pastedMatch) {
       setCodePrefix(pastedMatch[1] ?? "");
