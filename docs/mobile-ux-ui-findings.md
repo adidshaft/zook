@@ -83,6 +83,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   auto-dismiss.
 - **6/R23 Mobile SSO auth surface** — removed the unused Apple/Google auth context and mobile
   domain-api methods left behind after the login SSO controls were removed.
+- **6/R24 Empty domain modules** — deleted no-op domain query/mutation files and empty barrels,
+  then trimmed affected exports to only point at modules with live code.
 
 ## 1. Functional / correctness
 
@@ -249,3 +251,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   the failure shake cue.
 - **[code, fixed]** Mobile SSO auth surface (`R23`) is closed: `useAuth()` and `authClient`
   no longer expose Apple/Google sign-in methods with no mobile callers.
+- **[code, fixed]** Empty domain modules (`R24`) is closed: no-op `export {};` files and the
+  empty AI domain barrel were removed from ai, gym, notifications, privacy, reception, tracking,
+  and trainer domains.

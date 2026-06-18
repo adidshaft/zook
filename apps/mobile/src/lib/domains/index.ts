@@ -8,7 +8,6 @@ export * from "./plans";
 export * from "./shop";
 export * from "./payments";
 export * from "./notifications";
-export * from "./ai";
 export * from "./privacy";
 export * from "./tracking";
 export * from "./gym";
