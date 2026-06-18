@@ -13,6 +13,11 @@ import {
   handleStaffPlansGoals,
   handleTracking,
 } from "./core";
+import {
+  buildRouteHandlerDispatchMap,
+  selectRouteHandlers,
+  type RouteHandlerEntry,
+} from "./dispatch";
 import { handleHealthReadiness } from "./health-readiness";
 
 export type ApiRouteHandler = (
@@ -20,18 +25,35 @@ export type ApiRouteHandler = (
   path: string[],
 ) => Promise<NextResponse | undefined>;
 
-export const apiRouteHandlers: ApiRouteHandler[] = [
-  handleHealthReadiness,
-  handleCronJobs,
-  handleAuth,
-  handleMeData,
-  handleTracking,
-  handleFiles,
-  handleOrganizations,
-  handleReports,
-  handleMembershipPayments,
-  handleCouponsReferrals,
-  handleAttendance,
-  handleStaffPlansGoals,
-  handleAiNotificationsShopPrivacyPlatform,
+const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
+  {
+    handler: handleHealthReadiness,
+    firstSegments: ["health", "ready", "status", "diagnostics"],
+  },
+  { handler: handleCronJobs, firstSegments: ["cron"] },
+  { handler: handleAuth, firstSegments: ["auth"] },
+  { handler: handleMeData, firstSegments: ["me"] },
+  { handler: handleTracking, firstSegments: ["me"] },
+  { handler: handleFiles, firstSegments: ["files"] },
+  { handler: handleOrganizations, firstSegments: ["orgs", "platform-referrals"] },
+  { handler: handleReports, firstSegments: ["orgs"] },
+  { handler: handleMembershipPayments, firstSegments: ["me", "orgs", "payments"] },
+  { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
+  { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
+  {
+    handler: handleStaffPlansGoals,
+    firstSegments: ["me", "orgs", "staff-invitations"],
+  },
+  {
+    handler: handleAiNotificationsShopPrivacyPlatform,
+    firstSegments: ["ai", "guardian-consent", "me", "orgs", "platform", "push", "shop", "support"],
+  },
 ];
+
+export const apiRouteHandlers = apiRouteHandlerEntries.map((entry) => entry.handler);
+
+const apiRouteHandlersByFirstSegment = buildRouteHandlerDispatchMap(apiRouteHandlerEntries);
+
+export function getApiRouteHandlersForPath(path: string[]) {
+  return selectRouteHandlers(path, apiRouteHandlers, apiRouteHandlersByFirstSegment);
+}
