@@ -115,6 +115,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R37 No-caller mobile exports** — removed leftover no-caller formatting, route-role,
   motion, role-switch, last-values, and shop API exports after direct reference checks showed
   the live screens use newer domain hooks/helpers instead.
+- **6/R38 Internal helper exports** — removed unused bottom-sheet/privileged PIN helper exports,
+  made profile-photo types internal, and trimmed no-caller owner/reception helper exports.
 
 ## 1. Functional / correctness
 

@@ -26,7 +26,7 @@ import { typography, useTheme } from "@/lib/theme";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
 
-export type ProfilePhotoSavedPayload = {
+type ProfilePhotoSavedPayload = {
   profilePhotoAssetId?: string;
   profilePhotoUrl?: string | null;
   upload?: FileUploadResponse | null;
@@ -34,7 +34,7 @@ export type ProfilePhotoSavedPayload = {
   removed?: boolean;
 };
 
-export type ProfilePhotoControlProps = {
+type ProfilePhotoControlProps = {
   token?: string;
   orgId?: string;
   name?: string | null;

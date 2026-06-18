@@ -1,19 +1,6 @@
-export type DeskView = "desk" | "members" | "payments" | "orders";
-
-export function normalizeView(value: string | string[] | undefined): DeskView {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === "members" || raw === "payments" || raw === "orders") return raw;
-  return "desk";
-}
-
 export function deskReasonCopy(reason?: string | null) {
   if (!reason) return "Desk approval required.";
   return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
-}
-
-export function redactPhone(phone?: string | null) {
-  if (!phone) return "No phone";
-  return `****${phone.slice(-4)}`;
 }
 
 export function ageLabel(dateOfBirth?: string | null) {

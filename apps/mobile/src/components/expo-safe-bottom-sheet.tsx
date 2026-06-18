@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  type ScrollViewProps,
   type ViewProps,
   type DimensionValue,
   type ViewStyle,
@@ -219,10 +218,6 @@ function resolveSnapPoint(snapPoint?: number | string): DimensionValue | undefin
     return snapPoint as DimensionValue;
   }
   return undefined;
-}
-
-export function createBottomSheetScrollProps(props: ScrollViewProps) {
-  return props;
 }
 
 const styles = StyleSheet.create({

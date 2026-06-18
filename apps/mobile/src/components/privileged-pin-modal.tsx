@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,8 +19,6 @@ type PendingPrompt = {
   label: string;
   resolve: (accepted: boolean) => void;
 };
-
-const PrivilegedPinContext = createContext<((label: string) => Promise<boolean>) | null>(null);
 
 export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
   const { mode, palette } = useTheme();
@@ -72,10 +70,8 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [pending]);
 
-  const value = useMemo(() => requestPin, [requestPin]);
-
   return (
-    <PrivilegedPinContext.Provider value={value}>
+    <>
       {children}
       <Modal
         animationType="fade"
@@ -182,16 +178,8 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </PrivilegedPinContext.Provider>
+    </>
   );
-}
-
-export function usePrivilegedPinPrompt() {
-  const requestPin = useContext(PrivilegedPinContext);
-  if (!requestPin) {
-    throw new Error("usePrivilegedPinPrompt must be used inside PrivilegedPinProvider");
-  }
-  return requestPin;
 }
 
 const styles = StyleSheet.create({
