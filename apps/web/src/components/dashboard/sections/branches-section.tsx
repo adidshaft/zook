@@ -115,11 +115,7 @@ export function BranchesSection({
           eyebrow="Branches"
           title="Add a branch"
           description="Set the location, contact number, manager, and working hours members should see."
-          badge={
-            <Pill tone={branches.length > 1 ? "blue" : "lime"}>
-              {branches.length || 1} locations
-            </Pill>
-          }
+          badge={<Pill>{branches.length || 1} locations</Pill>}
         />
         <div className="mt-5 grid gap-3">
           {formError ? <ErrorNotice message={formError} /> : null}

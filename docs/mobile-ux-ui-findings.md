@@ -886,3 +886,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web member private-ID cue (`R172`) is closed: the `/me` route
   private identifier badge now uses neutral styling instead of informational blue, matching
   the shared member membership surface and desk private-ID treatment.
+- **[ui, fixed]** Overstated web dashboard quantity-count cues (`R173`) are closed: branch
+  location, scheduled class, and tracked refund counts now use neutral badges instead of
+  blue/lime quantity-based styling, keeping stronger tones for availability and row states.

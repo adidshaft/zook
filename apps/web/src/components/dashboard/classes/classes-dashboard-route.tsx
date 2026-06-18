@@ -245,7 +245,7 @@ export function ClassesDashboardRoute({
           title="Scheduled classes"
           description="The list updates for the current branch scope and shows live confirmed capacity."
           badge={
-            <Pill tone={classes.length ? "blue" : "neutral"}>
+            <Pill>
               <CalendarDays className="h-3.5 w-3.5" />
               {classes.length} scheduled
             </Pill>

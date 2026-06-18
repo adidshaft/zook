@@ -126,9 +126,7 @@ export function RefundsSection({
         </div>
         <div className="flex flex-wrap gap-2">
           <Pill tone="amber">{refundable.length} available</Pill>
-          <Pill tone={trackedRefunds.length ? "blue" : "neutral"}>
-            {trackedRefunds.length} tracked
-          </Pill>
+          <Pill>{trackedRefunds.length} tracked</Pill>
         </div>
       </div>
       {error ? (
