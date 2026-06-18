@@ -1006,3 +1006,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile attendance next-plan icon cue (`R212`) is closed:
   attendance record Next up cards now use a neutral barbell icon instead of lime, keeping
   action emphasis on the Open Plan chip.
+- **[ui, fixed]** Overstated mobile applied-referral icon cue (`R213`) is closed:
+  the find-gyms applied referral card now uses a neutral gift icon instead of lime, keeping
+  success emphasis on the card variant and applied-code copy.
