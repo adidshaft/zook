@@ -252,6 +252,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   guard patterns for "coming soon" and "not available yet" dashboard copy regressions.
 - **6/R101 AI launch-gate wording** — replaced release-check "coming soon" guidance with
   neutral unavailable-state wording for staging AI certification.
+- **6/R102 Visual cue evidence gate** — added a dedicated external QA checklist section and
+  audit-check requirement for rendered visual-cue regression evidence.
 
 ## 1. Functional / correctness
 

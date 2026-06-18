@@ -82,6 +82,7 @@ if (!existsSync(externalChecklistPath)) {
     "Razorpay Dashboard Configuration",
     "Provider Credential Certification",
     "Physical Device QA",
+    "Visual Cue Regression QA",
     "Store Console and Release Metadata",
     "Product and Finance Decisions",
     "Do not commit secrets",

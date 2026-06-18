@@ -141,6 +141,29 @@ Pass criteria:
 - Reduced-motion setting removes or softens non-essential motion.
 - Push and QR behavior are proven on physical hardware, not only simulators.
 
+## Visual Cue Regression QA
+
+Status: `Not run`
+
+Required evidence:
+
+- Build/deployment ID and exact routes/screens reviewed.
+- Reviewer, date, device/browser, theme, and reduce-motion setting.
+- Redacted screenshots or screen recordings for login, dashboard, scan/check-in, membership, shop,
+  checkout, public gym, and notification flows.
+- Notes for any remaining status dots, loading skeletons, or icon-generation effects that are
+  intentionally retained as functional affordances.
+
+Pass criteria:
+
+- No decorative glow/orb/halo layers remain on app screens unless explicitly approved for a
+  functional state.
+- Disabled or unavailable features do not render polished "coming soon" surfaces or non-actionable
+  CTA controls.
+- Local/demo/test states use neutral operational wording and are not presented as production data.
+- Loading indicators communicate real pending work and do not persist after content is ready.
+- Status dots, badges, and warnings map to a visible state or actionable context.
+
 ## Store Console and Release Metadata
 
 Status: `Not certified`
