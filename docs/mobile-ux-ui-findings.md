@@ -880,3 +880,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web plan-growth link-count cues (`R170`) are closed: coupon,
   offer, and referral link-card counts now use neutral badges instead of informational blue,
   keeping stronger color cues for actual plan and promotion states.
+- **[ui, fixed]** Overstated web member diet macro cue (`R171`) is closed: meal calorie and
+  macro summary badges now use neutral styling instead of informational blue, matching their
+  role as nutritional metadata rather than delivery or health status.

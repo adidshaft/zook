@@ -48,7 +48,7 @@ export default async function MemberDietPage({
                 <h2 className="text-xl font-semibold text-white">{meal.name}</h2>
                 <p className="mt-1 text-sm text-white/50">{meal.timeOfDay ?? "Flexible timing"}</p>
               </div>
-              <Pill tone="blue">
+              <Pill>
                 {meal.calories ?? 0} kcal · {meal.proteinG ?? 0}P/{meal.carbsG ?? 0}C/{meal.fatsG ?? 0}F
               </Pill>
             </div>
