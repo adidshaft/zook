@@ -4,10 +4,9 @@ import { BranchSelectorChip, EmptyState, Card, IconBubble, ListRow, MetricTile, 
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
-import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
@@ -77,7 +76,7 @@ export default function OwnerStockScreen() {
                   <ListRow
                     key={order.id}
                     title={order.user?.name ?? "Member pickup"}
-                    subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
+                    subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
                     leading={<IconBubble icon="bag-check-outline" tone="lime" />}
                     trailing={
                       <Text style={[styles.rowAmount, { color: palette.text.primary }]}>

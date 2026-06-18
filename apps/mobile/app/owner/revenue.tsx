@@ -17,11 +17,10 @@ import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-scre
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 import { RevenueSummary } from "@/features/owner/components/revenue-summary";
-import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
@@ -97,8 +96,8 @@ export default function OwnerRevenueScreen() {
                   ? payments.map((payment) => (
                       <ListRow
                         key={payment.id}
-                        title={payment.user?.name ?? titleCase(payment.purpose)}
-                        subtitle={`${titleCase(payment.mode)} · ${titleCase(payment.status)}`}
+                        title={payment.user?.name ?? titleCaseFromCode(payment.purpose)}
+                        subtitle={`${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}`}
                         leading={<IconBubble icon="card-outline" tone={payment.status === "SUCCEEDED" ? "lime" : "amber"} />}
                         trailing={
                           <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
@@ -113,7 +112,7 @@ export default function OwnerRevenueScreen() {
                       <ListRow
                         key={order.id}
                         title={order.user?.name ?? "Shop pickup order"}
-                        subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
+                        subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
                         leading={<IconBubble icon="bag-outline" tone="lime" />}
                         trailing={
                           <Text style={[styles.rowAmount, { color: palette.text.primary }]}>

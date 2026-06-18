@@ -9,11 +9,12 @@ import { MetricGrid } from "@/components/domain/metric-grid";
 import { BranchSelectorChip, EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
-import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
+import { cleanReviewReason } from "@/features/owner/helpers";
 import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { layout, spacing, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -46,7 +47,7 @@ export default function OwnerApprovalsScreen() {
   const attendanceItems: ApprovalItem[] = attentionAttempts.map((record) => ({
     id: record.id,
     primaryText: record.user?.name ?? record.user?.email ?? "Member check-in",
-    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCase(record.status)}`,
+    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCaseFromCode(record.status)}`,
     reason: cleanReviewReason(
       Array.isArray(record.suspiciousFlags) ? record.suspiciousFlags.join(", ") : null,
     ),

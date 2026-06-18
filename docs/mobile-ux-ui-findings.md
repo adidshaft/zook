@@ -531,3 +531,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   now use shared mobile `formatAgeLabel` instead of carrying date-of-birth age math locally.
 - **[code, fixed]** Reception age wrapper (`R48`) is closed: reception screens now import
   shared `formatAgeLabel` directly instead of routing through a feature-local wrapper.
+- **[code, fixed]** Duplicate owner title formatter (`R49`) is closed: owner revenue, stock,
+  and approval screens now use shared `titleCaseFromCode` instead of a feature-local `titleCase`
+  helper.
