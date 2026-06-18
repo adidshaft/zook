@@ -112,7 +112,7 @@ export default function TrainerClientOverviewScreen() {
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
           <AppHeader
             title="Client Detail"
-            subtitle=""
+            subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}

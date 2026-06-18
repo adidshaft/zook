@@ -634,3 +634,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Fake trainer check-in fallback (`R87`) is closed: trainer client detail now
   shows a formatted real last workout time or an honest empty state instead of the hard-coded
   `Today 7:14 AM` cue.
+- **[ui, fixed]** Empty trainer detail header cue (`R88`) is closed: the overview tab now uses
+  the same client-name subtitle as the plan and sessions tabs instead of passing an empty
+  subtitle prop.
