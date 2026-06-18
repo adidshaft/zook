@@ -280,7 +280,7 @@ export const platformBroadcastSchema = z.object({
   expiresAt: z.string().datetime().optional().nullable(),
 });
 
-const platformFlagPatchSchema = z.object({
+export const platformFlagPatchSchema = z.object({
   key: z.string().trim().min(2).max(120),
   enabled: z.boolean().optional(),
   description: z.string().trim().max(500).optional(),
@@ -8757,68 +8757,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       },
     });
     return ok({ attempt: processedReplay });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "flags"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    const flags = await prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
-    const defaults = [
-      {
-        key: "ai.assistant",
-        enabled: false,
-        description: "Allow AI assistant chat requests without redeploying.",
-        rolloutPercent: 0,
-        overrideOrgIds: [],
-        updatedAt: new Date(),
-        updatedByUserId: null,
-      },
-      {
-        key: "platform.impersonation",
-        enabled: false,
-        description: "Allow platform admins to start audited support impersonation sessions.",
-        rolloutPercent: 0,
-        overrideOrgIds: [],
-        updatedAt: new Date(),
-        updatedByUserId: null,
-      },
-    ];
-    const existingKeys = new Set(flags.map((flag) => flag.key));
-    return ok({
-      flags: [...flags, ...defaults.filter((flag) => !existingKeys.has(flag.key))],
-    });
-  }
-  if (request.method === "PATCH" && pathMatches(path, ["platform", "flags"])) {
-    const ctx = await getRequestContext(request);
-    const actorUserId = requirePlatformAdmin(ctx);
-    const body = platformFlagPatchSchema.parse(await readJson(request));
-    const flag = await prisma.featureFlag.upsert({
-      where: { key: body.key },
-      create: clean({
-        key: body.key,
-        enabled: body.enabled ?? false,
-        description: body.description,
-        rolloutPercent: body.rolloutPercent ?? 0,
-        overrideOrgIds: body.overrideOrgIds ?? [],
-        updatedByUserId: actorUserId,
-      }),
-      update: clean({
-        enabled: body.enabled,
-        description: body.description,
-        rolloutPercent: body.rolloutPercent,
-        overrideOrgIds: body.overrideOrgIds,
-        updatedByUserId: actorUserId,
-      }),
-    });
-    await writeAuditLog({
-      request,
-      actorUserId,
-      action: "platform.feature_flag_updated",
-      entityType: "feature_flag",
-      entityId: flag.key,
-      riskLevel: flag.key === "platform.impersonation" ? "CRITICAL" : "HIGH",
-      metadata: { enabled: flag.enabled, rolloutPercent: flag.rolloutPercent },
-    });
-    return ok({ flag });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "saas-pricing"])) {
     const ctx = await getRequestContext(request);
