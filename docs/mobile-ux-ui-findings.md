@@ -262,6 +262,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   replaced web AI read-only "preview/opened up" launch copy with current-state review wording.
 - **6/R106 Dashboard fallback copy key** — renamed the dashboard fallback workspace message key
   from `sampleData` to `fallbackWorkspace` while keeping the visible "Test workspace" label.
+- **6/R107 Payment proof placeholder cue** — fixed the payment-proof asset-id input's invalid
+  placeholder color utility so its helper cue follows the shared dashboard input treatment.
 
 ## 1. Functional / correctness
 

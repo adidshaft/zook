@@ -65,7 +65,7 @@ export function PaymentProofUpload({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="zook-focus min-h-11 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)]"
+          className="zook-focus min-h-11 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
         {status ? <span className="text-xs text-[var(--text-tertiary)]">{status}</span> : null}
       </div>
