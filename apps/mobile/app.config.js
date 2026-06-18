@@ -336,6 +336,7 @@ module.exports = () => {
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       AI_CHAT_ENABLED: process.env.EXPO_PUBLIC_AI_CHAT_ENABLED?.trim() ?? "",
       AI_DRAFT_ENABLED: process.env.EXPO_PUBLIC_AI_DRAFT_ENABLED?.trim() ?? "",
+      QA_SHORTCUTS_ENABLED: process.env.EXPO_PUBLIC_QA_SHORTCUTS_ENABLED?.trim() ?? "",
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
         ...(baseConfig.extra?.eas ?? {}),

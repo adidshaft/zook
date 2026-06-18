@@ -23,6 +23,7 @@ import {
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 type BusyAction = "otp" | null;
@@ -86,6 +87,7 @@ export default function Login() {
   const { requestOtp, verifyOtp } = useAuth();
   const { t } = useI18n();
   const { palette } = useTheme();
+  const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
@@ -459,7 +461,7 @@ export default function Login() {
                   </Text>
                   .
                 </Text>
-                {__DEV__ ? (
+                {showQaShortcuts ? (
                   <ZookButton
                     testID="login-qa-shortcuts"
                     variant="ghost"

@@ -32,6 +32,7 @@ import { useAuth } from "@/lib/auth";
 import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
   useActiveMembership,
   useMemberHome,
@@ -158,6 +159,7 @@ function membershipProgressLabel(input: {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const { mode, palette } = useTheme();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
@@ -741,7 +743,7 @@ export default function ProfileScreen() {
               >
                 Settings
               </ZookButton>
-              {__DEV__ ? (
+              {showQaShortcuts ? (
                 <ZookButton
                   testID="profile-qa-shortcuts"
                   variant="secondary"

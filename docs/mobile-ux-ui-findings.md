@@ -159,6 +159,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R58 Top-level scaffold README cleanup** — removed the remaining tracked one-line README
   placeholders from app, artifact, docs, plans, package, and script grouping folders while
   preserving READMEs with substantive guidance.
+- **6/R59 Visible QA shortcut gating** — hid login/profile "QA shortcuts" buttons behind an
+  explicit `EXPO_PUBLIC_QA_SHORTCUTS_ENABLED` development flag while preserving direct QA
+  deep links for screenshot automation.
 
 ## 1. Functional / correctness
 
