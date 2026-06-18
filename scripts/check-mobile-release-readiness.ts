@@ -155,8 +155,8 @@ async function main() {
   );
   results.push(
     extra.releaseProfile === target && extra.apiMode === "backend" && extra.offlineDemo === false
-      ? pass("Release mode", `${target} build uses backend mode with sample mode disabled.`)
-      : fail("Release mode", "Release profile, API mode, or sample mode is unsafe."),
+      ? pass("Release mode", `${target} build uses backend mode with offline demo disabled.`)
+      : fail("Release mode", "Release profile, API mode, or offline demo setting is unsafe."),
   );
   results.push(
     isAbsoluteHttpUrl(mobileApiBaseUrl) && (!isProduction || !isLocalhostUrl(mobileApiBaseUrl))

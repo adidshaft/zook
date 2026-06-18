@@ -244,6 +244,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `StatusDot` now that the component no longer carries pulse motion.
 - **6/R97 Primitive status-dot halo** — removed the decorative halo shadow from the
   dashboard primitive `StatusDot` while preserving the status color cue.
+- **6/R98 Release-readiness wording** — changed stale "sample mode" release-check output to
+  the actual `offlineDemo` terminology used by the mobile config.
 
 ## 1. Functional / correctness
 
