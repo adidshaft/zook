@@ -649,3 +649,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading owner member subscription pill (`R92`) is closed: owner member
   detail now uses shared membership status tones and a formatted empty-plan label instead of a
   fixed lime pill with raw status text.
+- **[ui, fixed]** Misleading shop order status tone (`R93`) is closed: shop pickup and order
+  history now share order status tone logic instead of forcing the active pickup card status to
+  lime.

@@ -99,6 +99,19 @@ function iconForCategory(category: Category) {
   return "nutrition-outline" as const;
 }
 
+function toneForShopOrderStatus(status?: string | null) {
+  if (status === "FULFILLED" || status === "READY_FOR_PICKUP") {
+    return "lime" as const;
+  }
+  if (status === "PENDING_PAYMENT") {
+    return "amber" as const;
+  }
+  if (status === "FAILED" || status === "CANCELLED" || status === "REFUNDED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
 function checkoutUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : toWebUrl(url);
 }
@@ -708,7 +721,7 @@ export default function Shop() {
           >
             <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
-          <StatusChip status={titleCaseFromCode(order.status)} tone="lime" />
+          <StatusChip status={titleCaseFromCode(order.status)} tone={toneForShopOrderStatus(order.status)} />
         </Card>
         {canShowPickupQr ? (
           <Card variant="compact" contentStyle={styles.pickupQrContent}>
@@ -1030,13 +1043,7 @@ export default function Shop() {
                     trailing={
                       <StatusChip
                         status={titleCaseFromCode(historyOrder.status)}
-                        tone={
-                          historyOrder.status === "FULFILLED" || historyOrder.status === "READY_FOR_PICKUP"
-                            ? "lime"
-                            : historyOrder.status === "PENDING_PAYMENT"
-                              ? "amber"
-                              : "neutral"
-                        }
+                        tone={toneForShopOrderStatus(historyOrder.status)}
                       />
                     }
                   />
