@@ -597,3 +597,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate profile role display labels (`R72`) is closed: member profile
   role-switching copy now uses shared mobile `formatRoleLabel`, preserving Reception/platform
   wording without carrying a local formatter.
+- **[code, fixed]** Duplicate core email enum formatting (`R73`) is closed: staff invite email
+  copy now uses shared core `formatEnumLabel` instead of hand-built underscore replacement.
