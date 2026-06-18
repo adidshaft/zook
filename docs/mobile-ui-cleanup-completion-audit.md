@@ -48,7 +48,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `8702d2c chore: trim internal mobile helper exports`, and
   `ece052c chore: remove unused profile default exports`, and
   `e94673a chore: remove redundant mobile comments`, and
-  `de2c5e2 docs: remove stale mobile ai draft audit note`.
+  `de2c5e2 docs: remove stale mobile ai draft audit note`, and
+  `ab36047 fix: neutralize offline demo fallback copy`.
 
 ### Web UI/UX plan
 
