@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const routerSource = readFileSync(new URL("./api-router/cron.ts", import.meta.url), "utf8");
 const cronStart = routerSource.indexOf('pathMatches(path, ["cron", "renewal-reminders"])');
 const cronEnd = routerSource.indexOf('pathMatches(path, ["cron", "refund-reconcile"])');
 const cronBody =
