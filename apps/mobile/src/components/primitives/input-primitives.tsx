@@ -14,7 +14,8 @@ import {
 } from "react-native";
 
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
-import { Card, pressWithHaptics } from "./foundation";
+import { pressWithHaptics } from "./buttons";
+import { Card } from "./foundation";
 import { IconBubble } from "./icon-bubble";
 import { useTonePalette, type PillTone } from "./tone-palette";
 

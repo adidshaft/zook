@@ -31,7 +31,7 @@ export type HapticWeight =
   | "error"
   | "none";
 
-type PressHandler = () => void | Promise<void>;
+export type PressHandler = () => void | Promise<void>;
 
 type ButtonPalette = {
   backgroundColor: string;

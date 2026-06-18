@@ -64,6 +64,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   variants, and made the raw `TextField` base private to the input primitive module.
 - **6/R15 Internal-only row/header helpers** — removed public `DetailRow` exports and folded
   `SectionLabel` into `SectionHeader` after confirming no app callers.
+- **6/R16 Duplicate haptic press helper** — consolidated `pressWithHaptics` and its types in
+  `buttons.tsx` so foundation/input primitives use the same helper.
 
 ## 1. Functional / correctness
 
@@ -208,3 +210,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal-only row/header helpers (`R15`) is closed: `DetailRow` is no
   longer exposed from primitive barrels, and `SectionLabel` was folded into `SectionHeader`
   before deleting the standalone file.
+- **[code, fixed]** Duplicate haptic press helper (`R16`) is closed: `buttons.tsx` now owns
+  `pressWithHaptics`, `HapticWeight`, and `PressHandler`; foundation/input primitives import
+  that shared helper instead of carrying a second implementation.

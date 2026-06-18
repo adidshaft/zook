@@ -32,17 +32,18 @@ import type { Palette } from "@/lib/theme";
 import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import {
+  pressWithHaptics,
   PrimaryButton as SharedPrimaryButton,
   SecondaryButton as SharedSecondaryButton,
   ZookButton as SharedZookButton,
 } from "./buttons";
+import type { PressHandler } from "./buttons";
 export {
   InfoRow,
   MetricTile,
   StatusRing,
 } from "./metric-primitives";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 type CardVariant = "default" | "compact" | "selected" | "success" | "warning" | "danger";
 export type SemanticSurface =
   | "screen"
@@ -185,28 +186,6 @@ function variantForSemanticSurface(surface?: SemanticSurface): CardVariant | und
   if (surface === "dangerCard") return "danger";
   if (surface === "taskCard") return "selected";
   return undefined;
-}
-
-export type HapticWeight = "light" | "medium" | "heavy" | "selection" | "success" | "warning" | "error" | "none";
-
-type PressHandler = () => void | Promise<void>;
-
-export function pressWithHaptics(callback?: PressHandler, weight: HapticWeight = "light") {
-  if (weight !== "none") {
-    if (weight === "selection") void Haptics.selectionAsync();
-    else if (weight === "success") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    else if (weight === "warning") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    else if (weight === "error") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    else if (weight === "heavy") void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    else if (weight === "medium") void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    else void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }
-  const result = callback?.();
-  if (result && typeof (result as Promise<void>).catch === "function") {
-    void (result as Promise<void>).catch((error) => {
-      console.error("Zook press action failed", error);
-    });
-  }
 }
 
 export function ZookScreen({
