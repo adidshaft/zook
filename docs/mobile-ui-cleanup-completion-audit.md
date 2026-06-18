@@ -13,29 +13,84 @@ fully complete until the human/device/provider gates below have external evidenc
 
 ### Mobile leftovers
 
-- `R1` Android elevation cleanup: `a46bfdd R1: add Android elevation to scan action`
-- `R2` mobile header hierarchy decision: `c9aa14b R2: document mobile header hierarchy`
-- `R3` mobile typography aliases: `942d400 R3: prune mobile typography aliases`
-- `R4` contrast audit token source: `951d65f R4: use real tokens in contrast audit`
+- `R1` Android elevation cleanup: `66f92cd R1: add Android elevation to scan tab action`,
+  followed by `a46bfdd R1: add Android elevation to scan action`.
+- `R2` mobile header hierarchy decision: `967d7bc R2: document the mobile header scale split`,
+  followed by `c9aa14b R2: document mobile header hierarchy`.
+- `R3` mobile typography aliases: `8154aca R3: collapse typography aliases onto canonical scale`,
+  `b9444d5 R3: prune legacy typography aliases`, `942d400 R3: prune mobile typography aliases`,
+  and `5c8d251 R3: align branch selector in mobile headers`.
+- `R4` contrast audit/token/nav selected state: `e68f638 R4: audit real token palettes for
+  contrast`, `2c972e4 R4: align mobile tab highlights across nested routes`, and
+  `951d65f R4: use real tokens in contrast audit`.
 - Follow-up mobile UX fixes are also on the branch, including branch-selector alignment, owner
   access actions, Apple sign-in iOS-only behavior, loading wordmark visibility, and bottom-bar
   selected-state consistency.
 
 ### Web UI/UX plan
 
-- Blockers `WB1` through `WB4` are represented in branch history.
-- High-priority web work `WH1` through `WH8` is represented in branch history.
-- Medium/polish/systemic web work landed across `WM*`, `WP*`, and `WS*` commits.
+- Blockers are covered by:
+  `71cf0db WB1: confirm + error handling on destructive money actions`,
+  `2e05369 WB1: confirm + harden destructive actions`,
+  `d1b30e2 WB1: confirm payment history refunds`,
+  `ee81cd9 WB2: replace dead guardian consent redirects`,
+  `560fb4f WB3: add checkout failure and expiry recovery`, and
+  `77dfcdc WB4: add standalone otp verification route`.
+- High-priority web work is covered by:
+  `0eafd17 WH1: remove dead dashboard search control`,
+  `18d1d19 WH2: link dashboard bell to notifications`,
+  `66595c9 WH3: preserve funnel tier and referral plan context`,
+  `d944d92 WH4: add coach shell nav and remove dead me links`,
+  `1ae9366 WH5: trap focus in dashboard menu and confirms`,
+  `cd2fffc WH6: make notification preview and step validation explicit`,
+  `33306b2 WH6: remove duplicate notification wizard framing`,
+  `4fc5040 WH7: strengthen public metadata and noindex rules`, and
+  `8808953 WH8: add inventory load more affordance`.
+- Medium/polish/systemic web work is covered by `WM*`, `WP*`, and `WS*` commits, including:
+  `ceab894 WM1`, `d282b3e WM3`, `fbf8911 WM4`, `e88e8f5 WM5`, `cd25594 WM6`,
+  `aaad283 WM8`, `1c1475a WM9`, `7862bb4 WM10`, `8531bdf WM12`,
+  `06c7678 WP1`, `e1d218b WP2`, `a6b1656 WP3`, `dca85b5 WP4`, `98d6c9c WP6`,
+  `47a88bc WP7`, `1d74924 WP8`, `1cb6c28 WP9`,
+  `1b7ad66 WS1`, `ffc6f32 WS1`, `39e6113 WS1`, `7a6da6f WS1`,
+  `d5524f2 WS2`, `d5c7bf6 WS2`, `3a12eb9 WS2`, `3fb4b50 WS2`, `e4c7743 WS2`,
+  `697d6ed WS2`, `ce13221 WS3`, `3806393 WS4`, `434d1b1 WS5`,
+  `eb9f8a9 WS6`, `442fe28 WS6`, `d65841c WS6`, and `4cec462 WS6`.
 - `docs/launch-readiness-report.md` records the web UX phases as code-side done, including Hindi
   parity, axe coverage, public metadata, destructive-action confirmation, and dashboard flow fixes.
 
 ### Product plan Part A and Part B
 
-- Part A P0 atomicity/security work landed through `A1.*` and `A2.*` commits.
-- Part A P1/API/queue work landed through `A3.*` and `A4.*` commits.
-- Part B data-model rollouts are documented and scripted for `B1` through `B6`.
+- Part A P0 atomicity/security work landed through `A1.*` and `A2.*` commits:
+  `1a7bc1e`, `f34d239`, `bda447d`, `b82ed9d`, `084aeee`, `aafb1d5`, `83e4598`,
+  `159935d`, `ebfed4f`, `3658b4b`, `8732d51`, `32fe70d`, `d62bd4f`,
+  `f58f8fd`, `d77decf`, `5ee78a7`, `af43c27`, `99babca`, `4140dae`,
+  `2599d72`, `40f88e3`, `6385827`, and `f535583`.
+- Part A P1/API/queue work landed through `A3.*` and `A4.*` commits:
+  `05b2cd4`, `7e7128b`, `5ca4078`, `b4e8467`, `fc1bb16`, `a146154`,
+  `deb7643`, `c5a7217`, `028ae64`, `9f2427d`, `3196394`, `64ff7ae`,
+  `6c46e58`, `6d9f8ee`, `219e362`, and the `A4.1` route extraction series from
+  `d36b12b` through `a373067`.
+- Part B data-model rollouts are documented and scripted for `B1` through `B6`:
+  proposal commits `9de123d`, `423732d`, `71a52c6`, `b17109f`, `28b28ec`, `06aaf2a`,
+  and preflight SQL commits `00b5bf5`, `0db64d5`, `c651c4d`, `303d1c8`, `4fe0772`,
+  `a726ed9`.
 - Destructive or production-sensitive DB changes were intentionally not applied directly. Each
   rollout uses staging SQL, duplicate/orphan audits, validation queries, and rollback notes.
+
+## Verification evidence
+
+Latest local verification on this branch includes:
+
+- `pnpm check:launch-gates`
+- `ZOOK_MOBILE_RELEASE_TARGET=local EXPO_PUBLIC_API_MODE=backend EXPO_PUBLIC_MOBILE_API_BASE_URL=http://localhost:3000 EXPO_PUBLIC_WEB_URL=http://localhost:3000 pnpm mobile:release:check`
+- `pnpm --filter @zook/web typecheck`
+- `pnpm --filter @zook/web lint`
+- `pnpm --filter @zook/web test`
+- `pnpm --filter @zook/mobile typecheck`
+- `pnpm --filter @zook/mobile lint`
+- `pnpm --filter @zook/mobile test`
+- `pnpm typecheck`
+- `git diff --check`
 
 ## Proposed migrations and staging-only artifacts
 
