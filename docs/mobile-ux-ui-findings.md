@@ -170,6 +170,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R62 Public checkout test-mode label** — changed the simulated checkout CTA from
   "sample mode" to "test mode" in public English/Hindi copy so it matches the surrounding
   no-real-money payment explanation.
+- **6/R63 Public status provider wording** — replaced the public status page's "mock mode"
+  degradation label with provider-neutral test-provider wording.
 
 ## 1. Functional / correctness
 

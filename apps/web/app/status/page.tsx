@@ -121,7 +121,7 @@ export default async function StatusPage({
   const uptimeLabel =
     publicStatus === "operational"
       ? "All systems operational"
-      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in mock mode or degraded`;
+      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in test-provider mode or degraded`;
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
