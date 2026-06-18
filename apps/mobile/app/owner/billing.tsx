@@ -41,6 +41,19 @@ function activeMembersCopy(count: number) {
   return `${count} ${noun} currently ${verb} toward your plan limits`;
 }
 
+function toneForMandateStatus(status?: string | null) {
+  if (status === "ACTIVE" || status === "AUTHENTICATED") {
+    return "lime" as const;
+  }
+  if (status === "FAILED" || status === "CANCELLED") {
+    return "red" as const;
+  }
+  if (status === "CREATED" || status === "PENDING" || status === "HALTED" || status === "PAUSED") {
+    return "amber" as const;
+  }
+  return "neutral" as const;
+}
+
 function resolveCheckoutUrl(value?: string | null, target: "owner-billing" = "owner-billing") {
   if (!value) return null;
   const resolved = value.startsWith("http://") || value.startsWith("https://") ? value : toWebUrl(value);
@@ -203,7 +216,10 @@ export default function OwnerBillingScreen() {
                         : "No payment mandate is set up yet."}
                     </Text>
                   </View>
-                  <StatusChip status={titleCaseFromCode(mandate?.status ?? "MISSING")} tone={mandate ? "lime" : "amber"} />
+                  <StatusChip
+                    status={titleCaseFromCode(mandate?.status ?? "MISSING")}
+                    tone={mandate ? toneForMandateStatus(mandate.status) : "amber"}
+                  />
                 </View>
                 {mandate?.nextChargeAt ? (
                   <ListRow

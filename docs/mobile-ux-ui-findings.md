@@ -652,3 +652,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading shop order status tone (`R93`) is closed: shop pickup and order
   history now share order status tone logic instead of forcing the active pickup card status to
   lime.
+- **[ui, fixed]** Misleading owner billing mandate tone (`R94`) is closed: owner billing now
+  tones mandate chips by actual mandate status instead of marking every existing mandate as
+  lime.
