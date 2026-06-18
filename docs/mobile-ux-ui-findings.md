@@ -991,3 +991,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile approval queue row icon cue (`R207`) is closed:
   shared approval queue cards now use a neutral checkmark icon instead of amber, keeping
   urgency on queue headings, counts, reasons, and approve/reject actions.
+- **[ui, fixed]** Overstated mobile platform hero icon cue (`R208`) is closed:
+  the platform billing hero now uses a neutral shield icon instead of amber, keeping state
+  color on fetch freshness and subscription status chips.
