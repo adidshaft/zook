@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { resolvePublicLocale } from "@/lib/public-i18n";
+import { planValiditySummaryLabel } from "@/lib/public-plan-labels";
 
 function getMetadataString(metadata: unknown, key: string) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
@@ -40,23 +41,6 @@ function safePaymentReturnUrl(value?: string) {
   } catch {
     return null;
   }
-}
-
-function planValidityLabel(
-  plan: { durationDays: number | null; visitLimit: number | null },
-  locale: "en" | "hi",
-) {
-  const parts = [
-    plan.durationDays ? `${plan.durationDays} ${locale === "hi" ? "दिन" : "days"}` : null,
-    plan.visitLimit
-      ? locale === "hi"
-        ? `${plan.visitLimit} विज़िट`
-        : `${plan.visitLimit} visit${plan.visitLimit === 1 ? "" : "s"}`
-      : locale === "hi"
-        ? "असीमित विज़िट"
-        : "Unlimited visits",
-  ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : locale === "hi" ? "जिम की निर्धारित वैधता" : "Gym-defined validity";
 }
 
 export default async function MockCheckoutPage({
@@ -134,7 +118,7 @@ export default async function MockCheckoutPage({
         purpose: session.purpose,
         status: session.status,
         planName: plan?.name ?? (session.id === "demo" ? copy.testMembership : null),
-        validityLabel: plan ? planValidityLabel(plan, locale) : null,
+        validityLabel: plan ? planValiditySummaryLabel(plan, locale) : null,
         activationLabel: copy.confirmationRequired,
       }
     : null;

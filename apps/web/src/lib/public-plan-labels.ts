@@ -5,6 +5,11 @@ export type PublicPlanLabelInput = {
   type: string;
 };
 
+export type PublicPlanValiditySummaryInput = {
+  durationDays: number | null;
+  visitLimit: number | null;
+};
+
 export function planValidityLabel(plan: PublicPlanLabelInput, locale: PublicLocale) {
   if (plan.durationDays) {
     return locale === "hi" ? `${plan.durationDays} दिन` : `${plan.durationDays} days`;
@@ -22,4 +27,21 @@ export function planVisitLabel(visitLimit: number | null, locale: PublicLocale) 
   return locale === "hi"
     ? `${visitLimit} विज़िट`
     : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
+}
+
+export function planValiditySummaryLabel(
+  plan: PublicPlanValiditySummaryInput,
+  locale: PublicLocale,
+) {
+  const parts = [
+    plan.durationDays ? `${plan.durationDays} ${locale === "hi" ? "दिन" : "days"}` : null,
+    plan.visitLimit
+      ? locale === "hi"
+        ? `${plan.visitLimit} विज़िट`
+        : `${plan.visitLimit} visit${plan.visitLimit === 1 ? "" : "s"}`
+      : locale === "hi"
+        ? "असीमित विज़िट"
+        : "Unlimited visits",
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : locale === "hi" ? "जिम की निर्धारित वैधता" : "Gym-defined validity";
 }
