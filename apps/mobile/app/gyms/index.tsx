@@ -250,7 +250,7 @@ export default function FindGyms() {
                             { backgroundColor: palette.surface.accentSoft },
                           ]}
                         >
-                          <IconBubble icon="business-outline" tone="lime" size={34} />
+                          <IconBubble icon="business-outline" tone="neutral" size={34} />
                         </View>
                       )}
                       <View style={styles.gymCopy}>

@@ -961,3 +961,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile reception today-count cues (`R197`) are closed:
   the desk Today metric and live-feed count now use neutral styling instead of lime,
   keeping stronger color on pending, flagged, and row-level attendance status.
+- **[ui, fixed]** Overstated mobile gym thumbnail fallback cue (`R198`) is closed:
+  gym cards without cover art now use a neutral business icon instead of lime, keeping
+  join-mode status color on the adjacent pill.
