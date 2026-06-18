@@ -515,3 +515,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dead notification role threading (`R41`) is closed: notification composer
   permission checks no longer accept or forward a `roles` parameter because exact reference checks
   showed the helper only reads explicit notification permissions.
+- **[code, fixed]** Dead desk bottom nav (`R42`) is closed: removed the unused
+  `DeskBottomNav` component and its private `deskTabs` icon config because exact reference checks
+  showed the desk panel config's only external caller uses `withBranch`.
