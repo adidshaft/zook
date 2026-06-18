@@ -8,7 +8,6 @@ import {
   handleMeData,
   handleMembershipPayments,
   handleOrganizations,
-  handleReports,
   handleStaffPlansGoals,
   handleTracking,
 } from "./core";
@@ -19,6 +18,7 @@ import {
 } from "./dispatch";
 import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
+import { handleReports } from "./reports";
 
 export type ApiRouteHandler = (
   request: NextRequest,

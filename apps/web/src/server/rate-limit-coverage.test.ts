@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
+const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
   { label: "OTP request", needle: 'pathMatches(path, ["auth", "request-otp"])' },
@@ -14,7 +15,12 @@ const sensitiveRoutes = [
     source: filesRouteSource,
     sourceLabel: "api-router/files.ts",
   },
-  { label: "report export", needle: 'path[2] === "reports"' },
+  {
+    label: "report export",
+    needle: 'path[2] === "reports"',
+    source: reportsRouteSource,
+    sourceLabel: "api-router/reports.ts",
+  },
   { label: "join request", needle: 'pathMatches(path, ["orgs", /.+/, "join-requests"])' },
   { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
   { label: "QR scan", needle: 'pathMatches(path, ["attendance", "scan"])' },
