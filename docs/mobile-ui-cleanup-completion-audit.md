@@ -36,11 +36,12 @@ fully complete until the human/device/provider gates below have external evidenc
   `ff0f2d0 chore: remove primitive feedback shim`,
   `36713b0 chore: remove unused mobile skeleton exports`,
   `109d592 chore: flatten mobile card primitive barrel`,
-  `e656f18 chore: remove mobile primitive category shims`, and
+  `e656f18 chore: remove mobile primitive category shims`,
   `f1fd888 chore: remove placeholder mobile readmes`,
   `d6bddba chore: remove unused mobile domain hooks`,
-  `20be054 chore: trim unused mobile query keys`, and
-  `2a24111 chore: narrow mobile domain component exports`.
+  `20be054 chore: trim unused mobile query keys`,
+  `2a24111 chore: narrow mobile domain component exports`, and
+  `5124b8b chore: remove unused mobile tracking displays`.
 
 ### Web UI/UX plan
 
