@@ -264,6 +264,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   from `sampleData` to `fallbackWorkspace` while keeping the visible "Test workspace" label.
 - **6/R107 Payment proof placeholder cue** — fixed the payment-proof asset-id input's invalid
   placeholder color utility so its helper cue follows the shared dashboard input treatment.
+- **6/R108 Web fallback data labels** — replaced remaining user-facing dashboard/platform
+  "Demo" fallback labels with neutral test/live-data wording.
 
 ## 1. Functional / correctness
 
