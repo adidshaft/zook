@@ -92,6 +92,25 @@ export function formatActivityDate(value?: string | Date | null, fallback = "Rec
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+export function formatClassSchedule(startTime?: string | Date | null, endTime?: string | Date | null) {
+  const start = toDate(startTime);
+  const end = toDate(endTime);
+  if (!start || !end) {
+    return "Schedule not available";
+  }
+  return `${start.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })} · ${start.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })} - ${end.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+}
+
 export function formatInr(valuePaise?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

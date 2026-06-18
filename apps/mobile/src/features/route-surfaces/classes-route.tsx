@@ -13,23 +13,8 @@ import {
 } from "@/components/primitives";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useEnrollInClass, useMyClasses } from "@/lib/domains";
+import { formatClassSchedule } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
-
-function formatSchedule(startTime: string, endTime: string) {
-  const start = new Date(startTime);
-  const end = new Date(endTime);
-  return `${start.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  })} · ${start.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-  })} - ${end.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-  })}`;
-}
 
 function enrollmentLabel(status?: string | null, remainingCapacity?: number) {
   if (status === "confirmed") return "Booked";
@@ -143,7 +128,7 @@ export default function ClassesRoute() {
                         {entry.name}
                       </Text>
                       <Text style={[styles.classSchedule, { color: palette.text.secondary }]}>
-                        {formatSchedule(entry.startTime, entry.endTime)}
+                        {formatClassSchedule(entry.startTime, entry.endTime)}
                       </Text>
                     </View>
                     <Pill

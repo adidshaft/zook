@@ -695,3 +695,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate attendance status label formatting (`R108`) is closed: attendance
   record details now use shared mobile enum label formatting instead of a route-local status
   title-case helper.
+- **[code, fixed]** Ad hoc class schedule formatting (`R109`) is closed: the mobile classes
+  route now uses shared class schedule formatting instead of carrying local date/time locale
+  calls.
