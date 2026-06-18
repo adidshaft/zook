@@ -85,7 +85,7 @@ export default function PlatformMobile() {
             eyebrow="Platform operator"
             title="Platform billing"
             subtitle={`${session?.user.name ?? "Platform team"} · SaaS health and mandate state`}
-            chip={<StatusChip status="Live overview" tone="lime" />}
+            chip={<StatusChip status="Live overview" tone="neutral" />}
             centered
             showProfileShortcut={false}
           />
@@ -151,7 +151,7 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
-              <StatusChip status={`${rows.length} shown`} tone="amber" />
+              <StatusChip status={`${rows.length} shown`} tone="neutral" />
             </View>
             {rows.map((row) => {
               const status = row.subscriptionStatus ?? row.orgStatus;

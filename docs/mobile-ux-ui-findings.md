@@ -949,3 +949,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web platform header-label cues (`R193`) are closed:
   Production and Platform team header badges now use neutral styling instead of
   lime/amber, keeping stronger colors for live health, selected navigation, and warnings.
+- **[ui, fixed]** Overstated mobile platform metadata cues (`R194`) are closed:
+  the platform Live overview and shown-count chips now use neutral styling instead of
+  lime/amber, keeping color on fetch freshness and subscription row status.
