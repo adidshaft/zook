@@ -760,3 +760,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Understated web member autopay cue (`R130`) is closed: the member web
   membership surface now uses success tone for active/authenticated autopay instead of
   informational blue, matching the mobile recurring-renewal cue.
+- **[code, fixed]** Duplicate web desk member-label cleanup (`R131`) is closed: desk queue
+  and member surfaces now share the same member label helper instead of carrying separate
+  name/email/fallback logic.

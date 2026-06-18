@@ -5,7 +5,7 @@ import { GlassCard, Pill } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { AttendanceQueueRecord } from "./types";
-import { ageLabel } from "./utils";
+import { ageLabel, memberLabel } from "./utils";
 
 export function QueueTab({
   copy,
@@ -24,10 +24,6 @@ export function QueueTab({
 }) {
   function recordPhoto(record: AttendanceQueueRecord) {
     return record.profile?.profilePhotoUrl ?? record.user?.profilePhotoUrl ?? null;
-  }
-
-  function memberLabel(record: AttendanceQueueRecord) {
-    return record.user?.name ?? record.user?.email ?? "Member";
   }
 
   return (
