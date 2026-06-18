@@ -2,7 +2,6 @@ import type { NextRequest, NextResponse } from "next/server";
 import {
   handleAiNotificationsShopPrivacyPlatform,
   handleAttendance,
-  handleAuth,
   handleCronJobs,
   handleCouponsReferrals,
   handleMeData,
@@ -15,6 +14,7 @@ import {
   selectRouteHandlers,
   type RouteHandlerEntry,
 } from "./dispatch";
+import { handleAuth } from "./auth";
 import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
 import { handleReports } from "./reports";

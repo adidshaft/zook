@@ -2,12 +2,23 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const authRouteSource = readFileSync(new URL("./api-router/auth.ts", import.meta.url), "utf8");
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
-  { label: "OTP request", needle: 'pathMatches(path, ["auth", "request-otp"])' },
-  { label: "OTP verify", needle: 'pathMatches(path, ["auth", "verify-otp"])' },
+  {
+    label: "OTP request",
+    needle: 'pathMatches(path, ["auth", "request-otp"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
+  {
+    label: "OTP verify",
+    needle: 'pathMatches(path, ["auth", "verify-otp"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
   { label: "organization create", needle: 'pathMatches(path, ["orgs"])' },
   {
     label: "file upload",
@@ -55,13 +66,13 @@ describe("rate-limit route coverage", () => {
   });
 
   it("does not exempt seeded demo OTP flows from identifier rate limits", () => {
-    const requestStart = routerSource.indexOf('pathMatches(path, ["auth", "request-otp"])');
-    const requestBody = routerSource.slice(requestStart, requestStart + 1400);
+    const requestStart = authRouteSource.indexOf('pathMatches(path, ["auth", "request-otp"])');
+    const requestBody = authRouteSource.slice(requestStart, requestStart + 1400);
     expect(requestBody).toContain('"otpRequestByIdentifier"');
     expect(requestBody).not.toContain("if (!seededDemoLogin)");
 
-    const verifyStart = routerSource.indexOf('pathMatches(path, ["auth", "verify-otp"])');
-    const verifyBody = routerSource.slice(verifyStart, verifyStart + 1400);
+    const verifyStart = authRouteSource.indexOf('pathMatches(path, ["auth", "verify-otp"])');
+    const verifyBody = authRouteSource.slice(verifyStart, verifyStart + 1400);
     expect(verifyBody).toContain('"otpVerifyByIdentifier"');
     expect(verifyBody).not.toContain("if (!isSeededDemoIdentifier(body.identifier))");
   });
