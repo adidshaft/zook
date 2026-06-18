@@ -55,7 +55,7 @@ export default function PlatformLoading() {
               <ZookLogo />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Pill tone="lime">Production</Pill>
-                <Pill tone="blue">Platform</Pill>
+                <Pill>Platform</Pill>
               </div>
             </GlassCard>
             <nav className="rounded-2xl border border-white/10 bg-black/58 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
@@ -79,7 +79,7 @@ export default function PlatformLoading() {
               <div>
                 <div className="flex flex-wrap gap-2 lg:hidden">
                   <Pill tone="lime">Production</Pill>
-                  <Pill tone="blue">Loading section</Pill>
+                  <Pill>Loading section</Pill>
                 </div>
                 <h1 className="mt-3 text-xl font-semibold tracking-tight text-white md:text-2xl lg:mt-0">
                   Platform operations

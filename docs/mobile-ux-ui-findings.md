@@ -874,3 +874,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web branch active-count cue (`R168`) is closed: the branch list
   header active-count aggregate now uses a neutral badge instead of informational blue,
   keeping active/default/paused color on each branch row status pill.
+- **[ui, fixed]** Overstated web platform section-label cues (`R169`) are closed: platform
+  shell and loading section labels now use neutral badges instead of informational blue,
+  keeping environment and team/state cues on their existing tones.

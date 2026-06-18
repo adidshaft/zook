@@ -186,7 +186,7 @@ export default async function PlatformPage({
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Pill tone="lime">Production</Pill>
-                <Pill tone="blue">{activeNavLabel}</Pill>
+                <Pill>{activeNavLabel}</Pill>
               </div>
             </GlassCard>
             <PlatformNavigation sectionKey={sectionKey} />
@@ -200,7 +200,7 @@ export default async function PlatformPage({
                 <div className="flex flex-wrap items-center gap-2 lg:hidden">
                   <Pill tone="lime">Production</Pill>
                   <Pill tone="amber">Platform team</Pill>
-                  <Pill tone="blue">{activeNavLabel}</Pill>
+                  <Pill>{activeNavLabel}</Pill>
                 </div>
                 <div className="mt-3 min-w-0 lg:mt-0">
                   <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
