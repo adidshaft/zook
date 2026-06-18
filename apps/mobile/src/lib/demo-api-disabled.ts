@@ -12,5 +12,5 @@ export function createDemoTransport(): DemoTransport {
 }
 
 export async function demoMobileApiFetch<T>(): Promise<T> {
-  throw new Error("Demo data is not included in this build.");
+  throw new Error("Test data is not included in this build.");
 }

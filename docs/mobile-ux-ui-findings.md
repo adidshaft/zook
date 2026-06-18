@@ -272,6 +272,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `DemoBanner` to `TestDataBanner` and removed the now-unused `app.demoMode` translations.
 - **6/R111 Terms test-data wording** — replaced public Terms "demo data" wording with
   "test data" in English and Hindi acceptable-use copy.
+- **6/R112 Disabled mobile test-data errors** — changed disabled offline-demo replacement
+  module errors from "Demo data" to "Test data" while preserving the Metro replacement wiring.
 
 ## 1. Functional / correctness
 

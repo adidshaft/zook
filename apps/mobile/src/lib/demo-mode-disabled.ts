@@ -25,5 +25,5 @@ export function getOfflineDemoInitialRoute() {
 }
 
 export function getOfflineDemoSession(): AuthSessionSummary {
-  throw new Error("Demo data is not included in this build.");
+  throw new Error("Test data is not included in this build.");
 }
