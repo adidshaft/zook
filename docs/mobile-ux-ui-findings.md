@@ -175,6 +175,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R64 Disabled demo replacement naming** — renamed mobile's no-demo Metro replacement
   modules from `*-empty` to `*-disabled` so production bundle aliases describe the disabled
   demo behavior directly.
+- **6/R65 Scan helper label** — renamed the gated local scan helper from "Use sample data" to
+  "Use test check-in" so the dev-only control describes its actual attendance action.
 
 ## 1. Functional / correctness
 
