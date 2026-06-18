@@ -988,3 +988,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile owner stock row icon cue (`R206`) is closed:
   low-stock product rows now use a neutral cube icon instead of amber, keeping warning
   emphasis on the Low stock metric and Reorder action.
+- **[ui, fixed]** Overstated mobile approval queue row icon cue (`R207`) is closed:
+  shared approval queue cards now use a neutral checkmark icon instead of amber, keeping
+  urgency on queue headings, counts, reasons, and approve/reject actions.
