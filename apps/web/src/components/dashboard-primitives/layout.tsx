@@ -103,10 +103,8 @@ export function DashboardPageShell({
 
 export function StatusDot({
   tone = "neutral",
-  pulse = false,
 }: {
   tone?: PillTone;
-  pulse?: boolean;
 }) {
   const tones: Record<PillTone, string> = {
     neutral: "bg-[var(--text-tertiary)] shadow-[0_0_0_4px_var(--border-subtle)]",
@@ -120,7 +118,6 @@ export function StatusDot({
       className={clsx(
         "inline-block h-2.5 w-2.5 rounded-full",
         tones[tone],
-        pulse ? "animate-pulse" : null,
       )}
       aria-hidden="true"
     />

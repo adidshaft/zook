@@ -188,6 +188,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   exported `{}` and had no exact folder-import callers.
 - **6/R70 Empty web domain type placeholders** — removed no-op server-domain `types.ts` files
   that only exported `{}` and had no exact type-import callers.
+- **6/R71 Dead web status-dot pulse API** — removed the unused `StatusDot` pulse prop so the
+  shared dashboard primitive no longer carries an uncalled animated status affordance.
 
 ## 1. Functional / correctness
 
