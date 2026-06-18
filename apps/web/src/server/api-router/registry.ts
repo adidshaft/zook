@@ -1,7 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 import {
   handleMembershipPayments,
-  handleOrganizations,
   handleStaffPlansGoals,
 } from "./core";
 import { handleAi } from "./ai";
@@ -82,7 +81,6 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleOrganizationOverview, firstSegments: ["orgs"] },
   { handler: handleOrganizationPermissions, firstSegments: ["orgs"] },
   { handler: handleOrganizationRoot, firstSegments: ["orgs"] },
-  { handler: handleOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleReports, firstSegments: ["orgs"] },
   { handler: handleMembershipPayments, firstSegments: ["me", "orgs", "payments"] },
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },

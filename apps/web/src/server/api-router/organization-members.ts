@@ -1,20 +1,26 @@
-import { publicUserEmail } from "@zook/core";
+import { normalizePhoneNumber, publicUserEmail } from "@zook/core";
+import { computeSubscriptionWindow } from "@zook/core/services";
 import { prisma } from "@zook/db";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { getRequestContext, requireOrgPermission } from "../access";
+import { getRequestContext, requireAuth, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
-import { forbiddenError, notFoundError } from "../errors";
+import { forbiddenError, notFoundError, validationError } from "../errors";
+import { createUniqueMemberSlug } from "../member-slug";
 import { assertRateLimit } from "../rate-limit";
-import { ok } from "../response";
+import { ok, readJson } from "../response";
 import {
   assertBranchAccessForContext,
   attendanceWithEntryCode,
+  clean,
+  createDirectNotification,
+  ensureOrganizationMembership,
   pageResult,
   parseCursorPagination,
   pathMatches,
   queryBranchId,
+  resolveOrgBranch,
   serializeUserForClient,
 } from "./core";
 
@@ -282,6 +288,196 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
 }
 
 export async function handleOrganizationMembers(request: NextRequest, path: string[]) {
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "members", "import"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    await assertRateLimit(
+      "fileUploadByActor",
+      `member-import:${orgId}:${userId}`,
+      "Too many import attempts. Try again later.",
+    );
+    const body = z
+      .object({
+        csv: z.string().min(1).max(500_000),
+        planId: z.string().optional(),
+        sendWelcomeNotification: z.boolean().default(true),
+        activateSubscription: z.boolean().default(false),
+      })
+      .parse(await readJson(request));
+
+    const lines = body.csv
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length < 2) {
+      throw validationError("CSV must contain a header row and at least one data row.");
+    }
+    const headerLine = lines[0]!.toLowerCase();
+    const headers = headerLine.split(",").map((h) => h.trim().replace(/^["']|["']$/g, ""));
+    const nameIndex = headers.findIndex(
+      (h) => h === "name" || h === "full name" || h === "member name",
+    );
+    const emailIndex = headers.findIndex((h) => h === "email" || h === "email address");
+    const phoneIndex = headers.findIndex(
+      (h) => h === "phone" || h === "mobile" || h === "phone number",
+    );
+    if (nameIndex < 0 || emailIndex < 0) {
+      throw validationError("CSV must include 'name' and 'email' columns.");
+    }
+
+    const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!organization) {
+      throw notFoundError("Gym not found");
+    }
+
+    let plan: Awaited<ReturnType<typeof prisma.membershipPlan.findFirst>> | null = null;
+    if (body.planId) {
+      plan = await prisma.membershipPlan.findFirst({
+        where: { id: body.planId, orgId, active: true },
+      });
+      if (!plan) {
+        throw notFoundError("Membership plan not found");
+      }
+    }
+
+    const dataLines = lines.slice(1);
+    const maxRows = 500;
+    if (dataLines.length > maxRows) {
+      throw validationError(`Import limited to ${maxRows} members at a time.`);
+    }
+
+    const results: Array<{
+      row: number;
+      status: "created" | "existing" | "error";
+      email?: string;
+      error?: string;
+    }> = [];
+    const importedUserIds: string[] = [];
+    const branch = await resolveOrgBranch(orgId);
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const line = dataLines[i]!;
+      const columns = line.split(",").map((col) => col.trim().replace(/^["']|["']$/g, ""));
+      const name = columns[nameIndex]?.trim();
+      const email = columns[emailIndex]?.trim().toLowerCase();
+      const phone =
+        phoneIndex >= 0 ? normalizePhoneNumber(columns[phoneIndex]?.trim() ?? "") : undefined;
+
+      if (!name || !email) {
+        results.push({ row: i + 2, status: "error", error: "Missing name or email" });
+        continue;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        results.push({ row: i + 2, status: "error", email, error: "Invalid email format" });
+        continue;
+      }
+
+      try {
+        let user = await prisma.user.findUnique({ where: { email } });
+        let isNewUser = false;
+        if (!user) {
+          user = await prisma.user.create({
+            data: clean({
+              email,
+              name,
+              slug: await createUniqueMemberSlug(),
+              phone: phone || undefined,
+              marketingOptIn: true,
+            }),
+          });
+          isNewUser = true;
+        }
+
+        await ensureOrganizationMembership({
+          orgId,
+          userId: user.id,
+          marketingOptIn: user.marketingOptIn,
+        });
+
+        if (plan && body.activateSubscription) {
+          const existingSub = await prisma.memberSubscription.findFirst({
+            where: { orgId, memberUserId: user.id, status: { in: ["ACTIVE", "PENDING_PAYMENT"] } },
+          });
+          if (!existingSub) {
+            const window = computeSubscriptionWindow(
+              clean({
+                id: plan.id,
+                orgId: plan.orgId,
+                branchId: branch.id,
+                name: plan.name,
+                type: plan.type,
+                pricePaise: plan.pricePaise,
+                durationDays: plan.durationDays ?? undefined,
+                visitLimit: plan.visitLimit ?? undefined,
+                validityDays: plan.validityDays ?? undefined,
+                startDate: plan.startDate ?? undefined,
+                endDate: plan.endDate ?? undefined,
+                active: plan.active,
+                publicVisible: plan.publicVisible,
+              }),
+            );
+            await prisma.memberSubscription.create({
+              data: clean({
+                orgId,
+                branchId: branch.id,
+                memberUserId: user.id,
+                planId: plan.id,
+                status: "ACTIVE",
+                startsAt: window.startsAt,
+                endsAt: window.endsAt,
+                remainingVisits: window.remainingVisits,
+                activatedById: userId,
+                notes: "bulk_import",
+              }),
+            });
+          }
+        }
+
+        importedUserIds.push(user.id);
+        results.push({ row: i + 2, status: isNewUser ? "created" : "existing", email });
+      } catch (error) {
+        results.push({
+          row: i + 2,
+          status: "error",
+          email,
+          error: error instanceof Error ? error.message : "Unexpected error",
+        });
+      }
+    }
+
+    if (body.sendWelcomeNotification && importedUserIds.length > 0) {
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "TRANSACTIONAL",
+        title: `Welcome to ${organization.name}`,
+        body: "You have been added as a member. Open Zook to check your membership details.",
+        audience: "selected_members",
+        userIds: importedUserIds,
+      });
+    }
+
+    const created = results.filter((r) => r.status === "created").length;
+    const existing = results.filter((r) => r.status === "existing").length;
+    const errors = results.filter((r) => r.status === "error").length;
+
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "members.bulk_imported",
+      entityType: "organization",
+      entityId: orgId,
+      metadata: { totalRows: dataLines.length, created, existing, errors },
+    });
+
+    return ok({ results, summary: { total: dataLines.length, created, existing, errors } });
+  }
+
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
