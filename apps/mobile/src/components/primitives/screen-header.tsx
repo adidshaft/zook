@@ -99,7 +99,14 @@ export function ScreenHeader({
       ) : null}
       <Reanimated.View style={[styles.titleBlock, titleStyle]}>
         <View style={styles.titleRow}>
-          <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.title,
+              titleAccessory ? styles.titleWithAccessory : null,
+              { color: palette.text.primary },
+            ]}
+          >
             {title}
           </Text>
           {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
@@ -227,6 +234,7 @@ const styles = StyleSheet.create({
     maxWidth: Platform.OS === "android" ? 56 : 76,
   },
   titleBlock: {
+    alignSelf: "stretch",
     gap: spacing.xs,
     width: "100%",
   },
@@ -234,8 +242,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     minWidth: 0,
+    position: "relative",
     width: "100%",
   },
   title: {
@@ -245,11 +254,15 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  titleWithAccessory: {
+    maxWidth: "58%",
+  },
   titleAccessory: {
     alignItems: "flex-end",
-    flexShrink: 0,
-    marginLeft: "auto",
+    maxWidth: "42%",
     minWidth: 0,
+    position: "absolute",
+    right: 0,
   },
   subtitle: {
     ...typography.small,
