@@ -223,7 +223,7 @@ export default function OwnerMemberDetail() {
 
               <Card contentStyle={styles.sectionContent}>
                 <View style={styles.sectionRow}>
-                  <IconBubble icon="barbell-outline" tone="lime" size={42} />
+                  <IconBubble icon="barbell-outline" tone="neutral" size={42} />
                   <View style={styles.sectionCopy}>
                     <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
                       Fitness goal

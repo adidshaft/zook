@@ -1000,3 +1000,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile membership browser-return icon cue (`R210`) is closed:
   the checkout browser-return card now uses a neutral open icon instead of amber, keeping
   action emphasis on the Check status button and purchase focus states.
+- **[ui, fixed]** Overstated mobile owner member fitness-goal icon cue (`R211`) is closed:
+  owner member detail now uses a neutral barbell icon for Fitness goal instead of lime,
+  keeping status color on the adjacent subscription pill.
