@@ -9881,18 +9881,25 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
           })
         : [];
       const planNameById = new Map(plans.map((p) => [p.id, p.name]));
+      const existingReminders = expiringSubscriptions.length
+        ? await prisma.subscriptionReminder.findMany({
+            where: {
+              subscriptionId: { in: expiringSubscriptions.map((sub) => sub.id) },
+              kind: "SUBSCRIPTION_EXPIRING",
+              status: { in: ["PENDING", "SENT"] },
+              dueAt: { gte: windowStart, lt: windowEnd },
+            },
+            select: { subscriptionId: true },
+          })
+        : [];
+      const remindedSubscriptionIds = new Set(
+        existingReminders
+          .map((reminder) => reminder.subscriptionId)
+          .filter((subscriptionId): subscriptionId is string => Boolean(subscriptionId)),
+      );
 
       for (const sub of expiringSubscriptions) {
-        const existingReminder = await prisma.subscriptionReminder.findFirst({
-          where: {
-            subscriptionId: sub.id,
-            kind: "SUBSCRIPTION_EXPIRING",
-            status: { in: ["PENDING", "SENT"] },
-            dueAt: { gte: windowStart, lt: windowEnd },
-          },
-        });
-
-        if (existingReminder) {
+        if (remindedSubscriptionIds.has(sub.id)) {
           totalSkipped++;
           continue;
         }
@@ -9947,23 +9954,43 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
         },
         take: 500,
       });
+      const existingTrialReminders = trialSubscriptions.length
+        ? await prisma.subscriptionReminder.findMany({
+            where: {
+              orgId: { in: trialSubscriptions.map((sub) => sub.orgId) },
+              kind: "SAAS_TRIAL_END",
+              status: { in: ["PENDING", "SENT"] },
+              metadata: { path: ["daysRemaining"], equals: daysAhead },
+            },
+            select: { orgId: true },
+          })
+        : [];
+      const remindedTrialOrgIds = new Set(
+        existingTrialReminders
+          .map((reminder) => reminder.orgId)
+          .filter((orgId): orgId is string => Boolean(orgId)),
+      );
+      const owners = trialSubscriptions.length
+        ? await prisma.organizationRoleAssignment.findMany({
+            where: {
+              orgId: { in: [...new Set(trialSubscriptions.map((sub) => sub.orgId))] },
+              role: "OWNER",
+            },
+            orderBy: [{ orgId: "asc" }, { createdAt: "asc" }],
+          })
+        : [];
+      const ownerByOrgId = new Map<string, (typeof owners)[number]>();
+      for (const owner of owners) {
+        if (!ownerByOrgId.has(owner.orgId)) {
+          ownerByOrgId.set(owner.orgId, owner);
+        }
+      }
       for (const sub of trialSubscriptions) {
-        const existingReminder = await prisma.subscriptionReminder.findFirst({
-          where: {
-            orgId: sub.orgId,
-            kind: "SAAS_TRIAL_END",
-            status: { in: ["PENDING", "SENT"] },
-            metadata: { path: ["daysRemaining"], equals: daysAhead },
-          },
-        });
-        if (existingReminder) {
+        if (remindedTrialOrgIds.has(sub.orgId)) {
           totalSkipped++;
           continue;
         }
-        const owner = await prisma.organizationRoleAssignment.findFirst({
-          where: { orgId: sub.orgId, role: "OWNER" },
-          orderBy: { createdAt: "asc" },
-        });
+        const owner = ownerByOrgId.get(sub.orgId);
         if (!owner) {
           totalSkipped++;
           continue;
