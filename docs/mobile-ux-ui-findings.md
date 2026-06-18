@@ -283,6 +283,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R116 Readiness signposting guidance** — updated the May readiness workflow so deferred
   AI, WhatsApp, and language features use neutral gated/unavailable states instead of
   "Coming Soon!" placeholder surfaces.
+- **6/R117 AI gate acceptance copy** — updated the web acceptance test for AI plan generation
+  gating to assert neutral unavailable copy instead of the removed "coming soon" wording.
 
 ## 1. Functional / correctness
 

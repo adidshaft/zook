@@ -1438,7 +1438,7 @@ test("AI plan assistant is launch-gated while trainer manual plans remain assign
     },
   });
   expect(gatedDraft.status()).toBe(503);
-  expect(await gatedDraft.text()).toContain("coming soon");
+  expect(await gatedDraft.text()).toContain("AI features are unavailable");
   expect(await prisma.aIUsageLog.count({ where: { userId: trainer.id } })).toBe(aiLogCountBefore);
 
   const manualPlanPayload = await expectApiOk<{
