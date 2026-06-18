@@ -44,6 +44,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   primitive barrel so new code has one obvious component name to reach for.
 - **6/R8 Redundant primitive barrel shim** — removed the top-level `components/primitives.tsx`
   re-export now that imports resolve directly to the primitives directory barrel.
+- **6/R9 Orphaned primitive story file** — removed the standalone mobile primitive story/demo
+  file because there is no mobile story runner or import path for it.
 
 ## 1. Functional / correctness
 
@@ -153,3 +155,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Redundant primitive barrel shim (`R8`) is closed: the one-line
   `components/primitives.tsx` re-export was removed, leaving `components/primitives/index.tsx`
   as the single barrel for `@/components/primitives` imports.
+- **[code, fixed]** Orphaned primitive story file (`R9`) is closed: the unused
+  `mobile-ux-primitives.stories.tsx` demo component was removed after confirming no Storybook
+  script/config or app import references it.
