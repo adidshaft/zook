@@ -236,6 +236,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   after app/component code stopped referencing the full glow token.
 - **6/R93 Fallback workspace wording** — changed the web dashboard fallback label from
   "Sample data" to "Test workspace" and neutralized stale icon-generation "premium" wording.
+- **6/R94 Radio-card selected glow** — removed the selected radio-card glow shadow and deleted
+  the now-unused subtle glow palette variables.
 
 ## 1. Functional / correctness
 

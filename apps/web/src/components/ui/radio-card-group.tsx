@@ -176,7 +176,7 @@ function RadioCard({
       className={clsx(
         "zook-focus group min-h-16 rounded-[22px] border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
         selected
-          ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)] shadow-[var(--shadow-glow-accent-subtle)]"
+          ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)]"
           : "border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]",
         className,
       )}
