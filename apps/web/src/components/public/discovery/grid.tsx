@@ -20,7 +20,7 @@ export function GymDiscoveryGrid({
   if (!gyms.length) {
     return (
       <GlassCard className="text-center">
-        <Pill tone="amber">{t("noResults")}</Pill>
+        <Pill>{t("noResults")}</Pill>
         <h2 className="mt-4 text-2xl font-semibold text-white">{t("noGyms")}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">{t("noGymsCopy")}</p>
         <ZookButtonLink href={localizedPath("/start-gym", locale)} className="mt-6">

@@ -943,3 +943,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public plan recommendation cue (`R191`) is closed: public
   gym plan badges now use neutral styling instead of lime for the recommended plan, keeping
   recommendation emphasis on the selected card treatment.
+- **[ui, fixed]** Overstated web public no-results label cue (`R192`) is closed: the gym
+  discovery no-results badge now uses neutral styling instead of amber, keeping warning
+  color for unavailable and approval-required states.
