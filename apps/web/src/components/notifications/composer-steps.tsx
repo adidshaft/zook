@@ -355,8 +355,8 @@ export function ReviewStep({
       </div>
       <div className="grid gap-3 md:grid-cols-4">
         <Pill>{preview?.resolvedRecipients ?? 0} matched</Pill>
-        <Pill tone="lime">{preview?.willDeliver ?? 0} will receive</Pill>
-        <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
+        <Pill>{preview?.willDeliver ?? 0} will receive</Pill>
+        <Pill>{preview?.blockedByOptOut ?? 0} opted out</Pill>
       </div>
       {preview?.blockedByOptOut ? (
         <p className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
@@ -366,9 +366,9 @@ export function ReviewStep({
       ) : null}
       <div className="grid gap-3 md:grid-cols-4">
         <Pill>{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
-        <Pill tone="lime">{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
-        <Pill tone="amber">{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
-        <Pill tone="neutral">{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
+        <Pill>{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
+        <Pill>{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
+        <Pill>{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
       </div>
     </div>
   );

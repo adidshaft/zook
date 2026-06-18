@@ -925,3 +925,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web attendance exception-count cue (`R185`) is closed: the
   exception-feed aggregate count now uses a neutral badge instead of lime, keeping amber on
   the individual suspicious flag chips that actually need review.
+- **[ui, fixed]** Overstated web notification preview-count cues (`R186`) are closed:
+  delivery and quota preview counts now use neutral badges instead of lime/amber, keeping
+  the opt-out warning treatment on the explanatory callout.
