@@ -850,3 +850,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile assistant context cue (`R160`) is closed: attached
   profile/client context now uses neutral icon and label treatment instead of informational
   blue, matching its role as metadata for the prompt.
+- **[ui, fixed]** Overstated web notification audience-total cue (`R161`) is closed: the
+  composer preview matched-recipient total now uses a neutral badge instead of informational
+  blue, keeping delivery outcome colors on receive and opt-out states.

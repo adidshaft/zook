@@ -354,7 +354,7 @@ export function ReviewStep({
         <p className="mt-2 text-sm text-white/65">{body || "Message"}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-4">
-        <Pill tone="blue">{preview?.resolvedRecipients ?? 0} matched</Pill>
+        <Pill>{preview?.resolvedRecipients ?? 0} matched</Pill>
         <Pill tone="lime">{preview?.willDeliver ?? 0} will receive</Pill>
         <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
       </div>
