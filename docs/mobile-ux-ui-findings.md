@@ -928,3 +928,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification preview-count cues (`R186`) are closed:
   delivery and quota preview counts now use neutral badges instead of lime/amber, keeping
   the opt-out warning treatment on the explanatory callout.
+- **[ui, fixed]** Overstated web notification selected-recipient cue (`R187`) is closed:
+  the selected-recipient count now uses a neutral badge instead of lime, keeping recipient
+  choice represented by the selector state and list contents.

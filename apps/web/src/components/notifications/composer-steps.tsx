@@ -144,7 +144,7 @@ export function AudienceStep({
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-white/70">Selected recipients</p>
-            <Pill tone={selectedUserIds.length ? "lime" : "neutral"}>
+            <Pill>
               {selectedUserIds.length} selected
             </Pill>
           </div>
