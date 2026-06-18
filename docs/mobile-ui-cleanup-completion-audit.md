@@ -102,7 +102,9 @@ fully complete until the human/device/provider gates below have external evidenc
   `3672de40` (static status-dot naming),
   `a97b9d70` (primitive status-dot halo),
   `404ae284` (release-readiness demo wording), and
-  `f695bbda` (dashboard sample-data copy guard).
+  `f695bbda` (dashboard sample-data copy guard),
+  `424b2afb` (dashboard disabled-cue copy guard), and
+  `efbcfedf` (AI launch-gate unavailable-state wording).
 
 ### Product plan Part A and Part B
 
