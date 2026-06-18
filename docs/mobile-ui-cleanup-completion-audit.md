@@ -46,7 +46,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `3ec422b chore: remove unused mobile utility helpers`,
   `47cd603 chore: remove no-caller mobile exports`, and
   `8702d2c chore: trim internal mobile helper exports`, and
-  `ece052c chore: remove unused profile default exports`.
+  `ece052c chore: remove unused profile default exports`, and
+  `e94673a chore: remove redundant mobile comments`.
 
 ### Web UI/UX plan
 
