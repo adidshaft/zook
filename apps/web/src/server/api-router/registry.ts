@@ -13,6 +13,7 @@ import { handleCouponsReferrals } from "./coupons-referrals";
 import { handleCronJobs } from "./cron";
 import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
+import { handleManualPayments } from "./manual-payments";
 import { handleMeData } from "./me-data";
 import { handleMemberMemberships } from "./member-memberships";
 import { handleMemberPlansGoals } from "./member-plans-goals";
@@ -92,6 +93,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
+  { handler: handleManualPayments, firstSegments: ["orgs"] },
   { handler: handleClasses, firstSegments: ["orgs"] },
   { handler: handleProducts, firstSegments: ["orgs"] },
   { handler: handleShopOrders, firstSegments: ["orgs", "shop"] },

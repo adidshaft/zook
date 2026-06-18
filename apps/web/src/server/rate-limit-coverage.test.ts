@@ -13,6 +13,10 @@ const couponsReferralsRouteSource = readFileSync(
   "utf8",
 );
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
+const manualPaymentsRouteSource = readFileSync(
+  new URL("./api-router/manual-payments.ts", import.meta.url),
+  "utf8",
+);
 const membershipSubscriptionActionsRouteSource = readFileSync(
   new URL("./api-router/membership-subscription-actions.ts", import.meta.url),
   "utf8",
@@ -98,7 +102,12 @@ const sensitiveRoutes = [
     source: attendanceRouteSource,
     sourceLabel: "api-router/attendance.ts",
   },
-  { label: "manual payment", needle: 'pathMatches(path, ["orgs", /.+/, "manual-payments"])' },
+  {
+    label: "manual payment",
+    needle: "async function handleManualPaymentRequest",
+    source: manualPaymentsRouteSource,
+    sourceLabel: "api-router/manual-payments.ts",
+  },
   {
     label: "payment refund",
     needle: 'pathMatches(path, ["orgs", /.+/, "payments", /.+/, "refund"])',
