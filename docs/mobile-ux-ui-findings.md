@@ -184,6 +184,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   runtime identifiers unchanged.
 - **6/R68 Cross-app local test wording** — replaced remaining web/core/mobile build diagnostics
   and checkout/dashboard labels that called local test surfaces "sample" or "demo mode".
+- **6/R69 Empty web domain indexes** — removed no-op server-domain `index.ts` files that only
+  exported `{}` and had no exact folder-import callers.
 
 ## 1. Functional / correctness
 
