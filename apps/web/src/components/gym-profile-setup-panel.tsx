@@ -522,7 +522,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               eyebrow="Join QR"
               title="Gym profile QR"
               description="Print this QR at reception, on posters, or on Instagram. It opens the public gym profile first; members can continue to membership purchase from there."
-              badge={<Pill tone="lime">/{form.username}</Pill>}
+              badge={<Pill>/{form.username}</Pill>}
             />
             <div className="mt-5 grid gap-5 md:grid-cols-[200px_1fr]">
               <div className="rounded-[28px] border border-[var(--border)] bg-white p-4 max-w-[200px] mx-auto md:mx-0">

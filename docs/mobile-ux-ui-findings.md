@@ -931,3 +931,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification selected-recipient cue (`R187`) is closed:
   the selected-recipient count now uses a neutral badge instead of lime, keeping recipient
   choice represented by the selector state and list contents.
+- **[ui, fixed]** Overstated web gym profile username cue (`R188`) is closed: the Join QR
+  public-username badge now uses neutral styling instead of lime, keeping stronger colors
+  on visibility and unsaved-change state.
