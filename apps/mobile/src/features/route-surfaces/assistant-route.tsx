@@ -311,18 +311,6 @@ export default function AssistantScreen() {
                 <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
               </Pressable>
             }
-            chip={
-              <View
-                style={[
-                  styles.comingSoonBadge,
-                  { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
-                ]}
-              >
-                <Text style={[styles.comingSoonBadgeText, { color: palette.accent.base }]}>
-                  Coming Soon!
-                </Text>
-              </View>
-            }
             showProfileShortcut={false}
           />
           <Card variant="compact" contentStyle={styles.emptyContent}>
@@ -336,24 +324,6 @@ export default function AssistantScreen() {
               </Text>
             </View>
           </Card>
-          <View style={styles.suggestionRow}>
-            {suggestedPrompts.map((prompt) => (
-              <View
-                key={prompt}
-                style={[
-                  styles.suggestionChipDisabled,
-                  {
-                    borderColor: palette.border.subtle,
-                    backgroundColor: chipSurface,
-                  },
-                ]}
-              >
-                <Text style={[styles.suggestionText, { color: palette.text.primary }]}>
-                  {prompt}
-                </Text>
-              </View>
-            ))}
-          </View>
         </ScrollView>
       </ZookScreen>
     );
@@ -650,17 +620,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  comingSoonBadge: {
-    minHeight: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  comingSoonBadgeText: {
-    ...typography.caption,
-  },
   iconButton: {
     width: 44,
     height: 44,
@@ -707,15 +666,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  suggestionChipDisabled: {
-    minHeight: 40,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: "center",
-    opacity: 0.7,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },

@@ -28,6 +28,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   elevation.
 - **3.3 Pickup QR used decorative continuous motion** — the pickup QR is now static so scanners
   and users get a steady target; the unused pulse animation exports were removed.
+- **3.4 Disabled assistant prompts looked actionable** — the coming-soon assistant state no
+  longer renders inert prompt chips or a duplicate status badge.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -87,6 +89,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Fault:** `PickupQrCode` wrapped the QR surface in a continuous breathing scale animation. That movement made a scannable code feel less stable without carrying state or urgency.
 - **Experience:** The pickup screen had a subtle decorative cue exactly where users and scanners need a steady target.
 - **Fix:** Render the QR as a static surface and remove the unused continuous pulse helpers (`PulseHalo`, `useBreathingScale`).
+
+### 3.4 Disabled assistant prompts looked actionable  **[ui, minor, fixed]**
+- **Fault:** When `AI_CHAT_ENABLED` is off, the assistant coming-soon screen still rendered suggested prompt chips and a separate "Coming Soon!" badge. The chips were visual-only and could not be tapped.
+- **Experience:** Users saw affordances that looked like useful starter prompts on a screen where chat is unavailable.
+- **Fix:** Keep the explanatory empty state, but remove the inert prompt chips and duplicate badge from the disabled route. Enabled assistant prompts are unchanged.
 
 ---
 
