@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useContext, useEffect, useMemo, useRef } from "react";
 import { Animated as RNAnimated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,6 +24,18 @@ const parentTabRouteByChildRoute: Record<string, string> = {
   diet: "plan",
   stock: "more",
 };
+
+function resolveParentRouteName(
+  focusedRouteName: string | undefined,
+  visibleRoutes: Array<{ name: string }>,
+) {
+  if (!focusedRouteName) return undefined;
+  const mappedParent = parentTabRouteByChildRoute[focusedRouteName];
+  if (mappedParent) return mappedParent;
+  if (visibleRoutes.some((route) => route.name === focusedRouteName)) return focusedRouteName;
+  const prefixMatch = visibleRoutes.find((route) => focusedRouteName.startsWith(`${route.name}/`));
+  return prefixMatch?.name;
+}
 
 const TabBarBackdrop = memo(function TabBarBackdrop({
   height,
@@ -65,19 +77,13 @@ export function RoleTabBar({
   const focusedOptions = descriptors[state.routes[state.index]?.key ?? ""]?.options;
   const focusedTabBarStyle = focusedOptions?.tabBarStyle;
   const focusedRouteName = state.routes[state.index]?.name;
-  const [barWidth, setBarWidth] = useState(0);
   const visibleRoutes = state.routes.filter((route: any) => {
     const options = descriptors[route.key]?.options;
     const itemStyle = options?.tabBarItemStyle;
     return options?.href !== null && itemStyle?.display !== "none";
   });
-  const parentRouteName =
-    (focusedRouteName ? parentTabRouteByChildRoute[focusedRouteName] : undefined) ?? undefined;
+  const parentRouteName = resolveParentRouteName(focusedRouteName, visibleRoutes);
   const activeRouteName = parentRouteName ?? focusedRouteName;
-  const activeVisibleIndex = Math.max(
-    0,
-    visibleRoutes.findIndex((route: any) => route.name === activeRouteName),
-  );
   const hideForFocusedRoute =
     focusedTabBarStyle?.display === "none" ||
     (!parentRouteName &&
@@ -88,19 +94,7 @@ export function RoleTabBar({
 
   const translateY = useRef(new RNAnimated.Value(0)).current;
   const opacity = useRef(new RNAnimated.Value(1)).current;
-  const indicatorX = useRef(new RNAnimated.Value(0)).current;
   const centerScale = useRef(new RNAnimated.Value(1)).current;
-  const itemWidth = visibleRoutes.length > 0 && barWidth > 0 ? barWidth / visibleRoutes.length : 0;
-  const tabRailHeight = Platform.OS === "android" ? 56 : 60;
-  const indicatorHorizontalInset = Platform.OS === "android" ? 14 : 16;
-  const indicatorWidth =
-    itemWidth > 0 ? Math.min(Math.max(itemWidth - indicatorHorizontalInset, 58), 72) : 0;
-  const indicatorHeight = 44;
-  const indicatorTop = Math.max(0, Math.round((tabRailHeight - indicatorHeight) / 2));
-  const indicatorBorderColor =
-    mode === "dark" ? "rgba(185,244,85,0.22)" : "rgba(31,62,36,0.12)";
-  const indicatorBackgroundColor =
-    mode === "dark" ? "rgba(185,244,85,0.18)" : "rgba(31,62,36,0.12)";
 
   useEffect(() => {
     RNAnimated.parallel([
@@ -116,22 +110,6 @@ export function RoleTabBar({
       }),
     ]).start();
   }, [opacity, translateY, visible]);
-
-  useEffect(() => {
-    if (!itemWidth || focusedIsCenter) return;
-    const target = activeVisibleIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
-    if (reduceMotion) {
-      indicatorX.setValue(target);
-      return;
-    }
-    RNAnimated.spring(indicatorX, {
-      toValue: target,
-      damping: 18,
-      stiffness: 220,
-      mass: 1,
-      useNativeDriver: true,
-    }).start();
-  }, [activeVisibleIndex, focusedIsCenter, indicatorWidth, indicatorX, itemWidth, reduceMotion]);
 
   const materialStyle = useMemo(
     () =>
@@ -163,7 +141,6 @@ export function RoleTabBar({
     >
       <TabBarBackdrop height={backdropHeight} color={palette.bg.app} mode={mode} />
       <View
-        onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
         style={[
           styles.tabBarContainer,
           Platform.OS === "android" ? styles.androidTabBarContainer : null,
@@ -206,24 +183,6 @@ export function RoleTabBar({
             { backgroundColor: Platform.OS === "ios" ? glass.hairline : tonal.topHairline },
           ]}
         />
-        {!focusedIsCenter && itemWidth > 0 ? (
-          <RNAnimated.View
-            pointerEvents="none"
-            style={[
-              styles.activeIndicator,
-              {
-                backgroundColor: indicatorBackgroundColor,
-                borderColor: indicatorBorderColor,
-                borderRadius: indicatorHeight / 2,
-                height: indicatorHeight,
-                top: indicatorTop,
-                width: indicatorWidth,
-                shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.16 : 0.05) : 0,
-                transform: [{ translateX: indicatorX }],
-              },
-            ]}
-          />
-        ) : null}
         {visibleRoutes.map((route: any) => {
           const { options } = descriptors[route.key];
           const label =
@@ -239,6 +198,16 @@ export function RoleTabBar({
           const tabAccessibilityLabel = badge && badge > 0
             ? `${stringLabel}, ${badge} unread ${badge === 1 ? "item" : "items"}`
             : stringLabel;
+          const selectedTabStyle =
+            isFocused && !focusedIsCenter
+              ? {
+                  backgroundColor:
+                    mode === "dark" ? "rgba(185,244,85,0.16)" : "rgba(31,62,36,0.1)",
+                  borderColor:
+                    mode === "dark" ? "rgba(185,244,85,0.24)" : "rgba(31,62,36,0.14)",
+                  shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.14 : 0.06) : 0,
+                }
+              : null;
 
           const onPress = () => {
             void Haptics.impactAsync(
@@ -336,7 +305,13 @@ export function RoleTabBar({
               android_ripple={{ color: palette.surface.accentSoft, borderless: true }}
               style={styles.tabItem}
             >
-              <View style={styles.tabItemWrapper}>
+              <View
+                style={[
+                  styles.tabItemWrapper,
+                  Platform.OS === "android" ? styles.androidTabItemWrapper : null,
+                  selectedTabStyle,
+                ]}
+              >
                 {badge && badge > 0 ? (
                   <View style={[styles.badge, { backgroundColor: palette.feedback.danger }]}>
                     <Text
@@ -419,18 +394,6 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 2,
   },
-  activeIndicator: {
-    borderCurve: "continuous",
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 44,
-    left: 0,
-    position: "absolute",
-    top: 16,
-    zIndex: 1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-  },
   tabItem: {
     flex: 1,
     alignItems: "center",
@@ -440,12 +403,22 @@ const styles = StyleSheet.create({
   },
   tabItemWrapper: {
     alignItems: "center",
+    borderColor: "transparent",
+    borderCurve: "continuous",
+    borderRadius: 22,
+    borderWidth: 1,
     justifyContent: "center",
-    borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 2,
+    minHeight: 44,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     width: "100%",
     position: "relative",
+  },
+  androidTabItemWrapper: {
+    borderRadius: 18,
+    minHeight: 42,
   },
   tabLabel: {
     ...typography.navLabel,
