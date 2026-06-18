@@ -49,6 +49,7 @@
     "db:fk-inventory": "tsx scripts/generate-fk-inventory.ts",
     "db:a1.5:sql": "tsx scripts/a1.5-single-active-subscription-sql.ts",
     "db:a1.6:sql": "tsx scripts/a1.6-attendance-per-day-sql.ts",
+    "db:a1.7:sql": "tsx scripts/a1.7-visit-deduction-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",
