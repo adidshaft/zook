@@ -151,6 +151,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   primitives after confirming there is no tracked Storybook configuration or live import path.
 - **6/R55 Web AI preview wording** — replaced owner-dashboard "coming soon" assistant copy and
   badge with neutral activity/review wording that matches the current read-only panel behavior.
+- **6/R56 Token legacy alias surface** — removed the no-caller `@zook/tokens` legacy alias
+  module after confirming live consumers import the current palette/token primitives directly.
 
 ## 1. Functional / correctness
 

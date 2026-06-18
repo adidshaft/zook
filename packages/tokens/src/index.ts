@@ -6,4 +6,3 @@ export * from "./layout";
 export * from "./opacity";
 export * from "./shadows";
 export * from "./materials";
-export * from "./legacy";
