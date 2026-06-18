@@ -20,6 +20,11 @@ const googleSignInPlugins = googleIosUrlScheme
       ],
     ]
   : [];
+function resolveAppleSignInPlugins() {
+  return process.env.EAS_BUILD_PLATFORM?.trim().toLowerCase() === "android"
+    ? []
+    : ["expo-apple-authentication"];
+}
 
 const baseConfig = {
   name: "Zook",
@@ -102,7 +107,6 @@ const baseConfig = {
       },
     ],
     "expo-secure-store",
-    "expo-apple-authentication",
     ...googleSignInPlugins,
     [
       "expo-build-properties",
@@ -283,12 +287,13 @@ module.exports = () => {
   }
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ?? process.env.EAS_PROJECT_ID ?? baseConfig.extra?.eas?.projectId;
+  const plugins = [...(baseConfig.plugins ?? []), ...resolveAppleSignInPlugins()];
 
   return {
     ...baseConfig,
     plugins: shouldConfigureNativeSentry
       ? [
-          ...(baseConfig.plugins ?? []),
+          ...plugins,
           [
             "@sentry/react-native/expo",
             {
@@ -298,7 +303,7 @@ module.exports = () => {
             },
           ],
         ]
-      : baseConfig.plugins,
+      : plugins,
     scheme: "zook",
     version: appVersion,
     runtimeVersion: {

@@ -174,6 +174,24 @@ async function main() {
       : fail("Apple Sign In", "iOS config must keep Apple Sign In enabled."),
   );
   results.push(
+    pluginConfig(plugins, "expo-apple-authentication")
+      ? pass("Apple Sign In plugin", "Default/iOS config includes native Apple Sign In.")
+      : fail("Apple Sign In plugin", "Default/iOS config is missing the Apple Sign In plugin."),
+  );
+  const previousBuildPlatform = process.env.EAS_BUILD_PLATFORM;
+  process.env.EAS_BUILD_PLATFORM = "android";
+  const androidTargetConfig = createConfig();
+  if (previousBuildPlatform === undefined) {
+    delete process.env.EAS_BUILD_PLATFORM;
+  } else {
+    process.env.EAS_BUILD_PLATFORM = previousBuildPlatform;
+  }
+  results.push(
+    pluginConfig(androidTargetConfig.plugins as ExpoPlugin[] | undefined, "expo-apple-authentication")
+      ? fail("Android Apple Sign In", "Android-targeted config must not include Apple Sign In.")
+      : pass("Android Apple Sign In", "Android-targeted config excludes Apple Sign In."),
+  );
+  results.push(
     Array.isArray(ios.associatedDomains) &&
       ios.associatedDomains.includes("applinks:zookfit.in") &&
       ios.associatedDomains.includes("applinks:app.zookfit.in")
