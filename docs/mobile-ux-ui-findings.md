@@ -660,3 +660,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading reception membership status tones (`R96`) is closed: reception
   member and payment pickers now use shared membership status tones and formatted labels instead
   of raw enum text with only active/amber coloring.
+- **[ui, fixed]** Misleading owner billing subscription tone (`R97`) is closed: owner billing
+  now tones SaaS subscription chips by actual trial/payment/suspended/cancelled status instead
+  of treating every non-active state as amber.

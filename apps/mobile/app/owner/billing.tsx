@@ -41,6 +41,19 @@ function activeMembersCopy(count: number) {
   return `${count} ${noun} currently ${verb} toward your plan limits`;
 }
 
+function toneForSaasSubscriptionStatus(status?: string | null) {
+  if (status === "ACTIVE" || status === "TRIAL_ACTIVE") {
+    return "lime" as const;
+  }
+  if (status === "TRIAL_EXPIRING" || status === "PAYMENT_PENDING") {
+    return "amber" as const;
+  }
+  if (status === "TRIAL_EXPIRED" || status === "SUSPENDED" || status === "CANCELLED" || status === "DELETED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
 function toneForMandateStatus(status?: string | null) {
   if (status === "ACTIVE" || status === "AUTHENTICATED") {
     return "lime" as const;
@@ -186,7 +199,7 @@ export default function OwnerBillingScreen() {
                   </View>
                   <StatusChip
                     status={titleCaseFromCode(subscription?.status ?? "UNKNOWN")}
-                    tone={subscription?.status === "ACTIVE" ? "lime" : "amber"}
+                    tone={toneForSaasSubscriptionStatus(subscription?.status)}
                   />
                 </View>
                 <ListRow
