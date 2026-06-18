@@ -626,3 +626,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate public plan summary labels (`R84`) is closed: public gym plan
   cards now reuse localized `planValidityLabel`/`planVisitLabel` instead of assembling visit
   copy inline.
+- **[code, fixed]** Duplicate mobile shop order date formatting (`R85`) is closed: shop order
+  history now uses shared mobile `formatDateTime` with its existing `Recently` fallback.

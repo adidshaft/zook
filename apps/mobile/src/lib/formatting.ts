@@ -18,12 +18,16 @@ export function formatLongDate(value?: string | Date | null, fallback = "Not ava
   });
 }
 
-export function formatDateTime(value?: string | Date | null) {
+export function formatDateTime(
+  value?: string | Date | null,
+  fallback = "Not available",
+  locale?: string,
+) {
   const date = toDate(value);
   if (!date) {
-    return "Not available";
+    return fallback;
   }
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     day: "numeric",
     month: "short",
     hour: "numeric",

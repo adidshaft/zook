@@ -38,7 +38,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
   useCreateShopOrder,
@@ -123,18 +123,6 @@ function pickupQrPayload(order: ShopOrderViewRecord) {
     type: "shop_pickup",
     orderId: order.id,
     code: order.pickupCode,
-  });
-}
-
-function formatOrderDate(value?: string | null) {
-  if (!value) return "Recently";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently";
-  return date.toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
   });
 }
 
@@ -1037,7 +1025,7 @@ export default function Shop() {
                     title={`${formatInr(historyOrder.totalPaise)} · ${historyOrder.items.length} ${
                       historyOrder.items.length === 1 ? "item" : "items"
                     }`}
-                    subtitle={formatOrderDate(historyOrder.createdAt)}
+                    subtitle={formatDateTime(historyOrder.createdAt, "Recently", "en-IN")}
                     onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
                     trailing={
                       <StatusChip
