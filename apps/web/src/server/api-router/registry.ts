@@ -26,6 +26,7 @@ import { handleOrganizationBranches } from "./organization-branches";
 import { handleOrganizationJoinRequests } from "./organization-join-requests";
 import { handleOrganizationMembers } from "./organization-members";
 import { handleOrganizationMembershipPlans } from "./organization-membership-plans";
+import { handleOrganizationNotifications } from "./organization-notifications";
 import { handleOrganizationOverview } from "./organization-overview";
 import { handleOrganizationPermissions } from "./organization-permissions";
 import { handleOrganizationProfile } from "./organization-profile";
@@ -66,6 +67,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleOrganizationJoinRequests, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembershipPlans, firstSegments: ["orgs"] },
+  { handler: handleOrganizationNotifications, firstSegments: ["orgs"] },
   { handler: handleOrganizationProfile, firstSegments: ["orgs"] },
   { handler: handleOrganizationOverview, firstSegments: ["orgs"] },
   { handler: handleOrganizationPermissions, firstSegments: ["orgs"] },

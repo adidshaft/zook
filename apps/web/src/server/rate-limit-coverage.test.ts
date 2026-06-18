@@ -21,6 +21,10 @@ const organizationJoinRequestsRouteSource = readFileSync(
   new URL("./api-router/organization-join-requests.ts", import.meta.url),
   "utf8",
 );
+const organizationNotificationsRouteSource = readFileSync(
+  new URL("./api-router/organization-notifications.ts", import.meta.url),
+  "utf8",
+);
 const privacyRouteSource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 const staffRouteSource = readFileSync(new URL("./api-router/staff.ts", import.meta.url), "utf8");
@@ -98,8 +102,18 @@ const sensitiveRoutes = [
     source: aiRouteSource,
     sourceLabel: "api-router/ai.ts",
   },
-  { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
-  { label: "notification send", needle: 'pathMatches(path, ["orgs", /.+/, "notifications"])' },
+  {
+    label: "notification preview",
+    needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])',
+    source: organizationNotificationsRouteSource,
+    sourceLabel: "api-router/organization-notifications.ts",
+  },
+  {
+    label: "notification send",
+    needle: 'pathMatches(path, ["orgs", /.+/, "notifications"])',
+    source: organizationNotificationsRouteSource,
+    sourceLabel: "api-router/organization-notifications.ts",
+  },
   {
     label: "data export",
     needle: 'pathMatches(path, ["me", "data-export-request"])',
