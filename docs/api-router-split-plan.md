@@ -1,8 +1,8 @@
 # API Router Split Plan
 
-Last updated: 2026-05-17
+Last updated: 2026-06-18
 
-`apps/web/src/server/api-router.ts` is now a compatibility shim. Runtime wrapping and handler ordering live in `apps/web/src/server/api-router/runtime.ts` and `apps/web/src/server/api-router/registry.ts`; the behavior-preserving handler body lives in `apps/web/src/server/api-router/core.ts`.
+`apps/web/src/server/api-router.ts` is now a compatibility shim. Runtime wrapping and handler ordering live in `apps/web/src/server/api-router/runtime.ts` and `apps/web/src/server/api-router/registry.ts`; shared helper/schema support lives in `apps/web/src/server/api-router/core.ts`.
 
 ## Goal
 
@@ -20,30 +20,73 @@ Keep the public API contract unchanged while moving handler groups into focused 
 1. Public import path preserved at `apps/web/src/server/api-router.ts`.
 2. Request ID, CSRF/mutation guard, idempotency, error reporting, and logging moved to `runtime.ts`.
 3. Handler dispatch order moved to `registry.ts`.
-4. Existing handler implementation moved without route-path or response-shape changes to `core.ts`.
+4. Existing handler implementation was first moved without route-path or response-shape changes to `core.ts`.
+5. Route groups were then extracted from `core.ts` into focused handler modules while preserving dispatch order.
 
 ## A4.1 Extraction Status
 
-The first low-risk route group is extracted and covered:
+Complete as of 2026-06-18.
 
-- `GET /api/health`, `GET /api/ready`, `GET /api/status`, and `POST /api/diagnostics/throw`
-  live in `apps/web/src/server/api-router/health-readiness.ts`.
-- `apps/web/src/server/api-router/registry.ts` dispatches `health`, `ready`, `status`, and
-  `diagnostics` directly to that extracted handler before falling through to the monolith.
-- `apps/web/src/server/api-router-health-readiness.test.ts` covers health response behavior,
-  readiness status semantics, and unrelated-route fallthrough.
+- `core.ts` no longer exports a catch-all API route handler. It remains as shared helpers,
+  schemas, runtime guards, and cross-cutting utilities used by the focused modules.
+- `registry.ts` now dispatches directly to domain handlers before falling through to
+  unmatched-route handling.
+- Extracted modules include:
+  - `ai.ts`
+  - `attendance.ts`
+  - `auth.ts`
+  - `classes.ts`
+  - `coupons-referrals.ts`
+  - `cron.ts`
+  - `files.ts`
+  - `health-readiness.ts`
+  - `manual-payments.ts`
+  - `me-data.ts`
+  - `member-memberships.ts`
+  - `member-plans-goals.ts`
+  - `membership-payments.ts`
+  - `membership-subscription-actions.ts`
+  - `notifications-inbox.ts`
+  - `organization-audit-logs.ts`
+  - `organization-billing.ts`
+  - `organization-branches.ts`
+  - `organization-join-requests.ts`
+  - `organization-members.ts`
+  - `organization-membership-plans.ts`
+  - `organization-notifications.ts`
+  - `organization-overview.ts`
+  - `organization-payments.ts`
+  - `organization-permissions.ts`
+  - `organization-profile.ts`
+  - `organization-root.ts`
+  - `payment-sessions.ts`
+  - `personal-training.ts`
+  - `plans-challenges.ts`
+  - `platform-audit.ts`
+  - `platform-broadcasts.ts`
+  - `platform-flags.ts`
+  - `platform-moderation.ts`
+  - `platform-monitoring.ts`
+  - `platform-org-admin.ts`
+  - `platform-payments.ts`
+  - `platform-settings.ts`
+  - `platform-users.ts`
+  - `privacy.ts`
+  - `products.ts`
+  - `public-organizations.ts`
+  - `push-devices.ts`
+  - `reports.ts`
+  - `shop-orders.ts`
+  - `staff.ts`
+  - `support.ts`
+  - `tracking.ts`
+  - `trainer-client-wellness.ts`
+  - `trainer-operations.ts`
 
-## Remaining Suggested Order
+## Follow-Up Hardening
 
-1. Extract pure helpers and shared response utilities.
-2. Extract auth/session handlers.
-3. Extract public gym, join, and checkout handlers.
-4. Extract member/mobile handlers.
-5. Extract reception handlers.
-6. Extract trainer handlers.
-7. Extract owner dashboard handlers.
-8. Extract platform handlers.
-9. Extract provider diagnostics and health/ready handlers.
+The split preserved behavior and route contracts. Future work should continue improving
+route-specific coverage where a module has only indirect test coverage.
 
 ## Required Tests Per Extraction
 
