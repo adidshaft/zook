@@ -3,15 +3,10 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card, Pill, ZookButton } from "@/components/primitives";
-import { formatInitials } from "@/lib/formatting";
+import { formatInitials, formatRedactedPhone } from "@/lib/formatting";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
-
-function redactPhone(phone?: string | null) {
-  if (!phone) return "No phone";
-  return `****${phone.slice(-4)}`;
-}
 
 function statusTone(status: MemberRowItem["status"]) {
   if (status === "active") return "lime";
@@ -62,7 +57,7 @@ export function MemberListRow({
         </Text>
         <View style={styles.metaRow}>
           <Text numberOfLines={1} style={[styles.phoneText, { color: palette.text.secondary }]}>
-            {item.phoneRevealed ? (item.phone ?? "No phone") : redactPhone(item.phone)}
+            {item.phoneRevealed ? (item.phone ?? "No phone") : formatRedactedPhone(item.phone)}
           </Text>
           {showReveal ? (
             <Pressable

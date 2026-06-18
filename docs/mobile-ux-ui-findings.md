@@ -524,3 +524,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   and member-list rows now use shared mobile `formatInitials` instead of carrying local copies.
 - **[code, fixed]** Duplicate gym join-mode tones (`R45`) is closed: gym search and gym
   profile now share mobile `joinModeTone` instead of carrying identical local tone helpers.
+- **[code, fixed]** Duplicate mobile phone redaction helpers (`R46`) is closed: owner member
+  detail and member-list rows now use shared `formatRedactedPhone` while preserving their fallback
+  labels.

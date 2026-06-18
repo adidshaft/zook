@@ -98,6 +98,11 @@ export function formatInitials(name?: string | null, fallback?: string | null) {
     .join("");
 }
 
+export function formatRedactedPhone(phone?: string | null, fallback = "No phone") {
+  if (!phone) return fallback;
+  return `****${phone.slice(-4)}`;
+}
+
 export function joinModeLabel(
   mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
 ) {

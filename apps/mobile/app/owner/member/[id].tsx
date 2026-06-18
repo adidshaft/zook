@@ -13,7 +13,7 @@ import {
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
-import { formatInitials, formatLongDate } from "@/lib/formatting";
+import { formatInitials, formatLongDate, formatRedactedPhone } from "@/lib/formatting";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -33,11 +33,6 @@ type OrgMemberDetailResponse = {
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function redactPhone(phone?: string | null) {
-  if (!phone) return "Not available";
-  return `****${phone.slice(-4)}`;
 }
 
 function phoneRevealStorageKey(orgId?: string | null) {
@@ -262,7 +257,7 @@ export default function OwnerMemberDetail() {
                         selectable={phoneRevealed}
                         style={[styles.rowValue, { color: palette.text.primary }]}
                       >
-                        {phoneRevealed ? phone : redactPhone(phone)}
+                        {phoneRevealed ? phone : formatRedactedPhone(phone, "Not available")}
                       </Text>
                     </View>
                     {!phoneRevealed ? (
