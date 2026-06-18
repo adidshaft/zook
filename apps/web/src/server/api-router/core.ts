@@ -1454,9 +1454,16 @@ function isIdempotentOperation(path: string[], method: string) {
     ["attendance", "scan"],
     ["orgs", /.+/, "manual-payments"],
     ["orgs", /.+/, "manual-payments", "general"],
+    ["orgs", /.+/, "payments", /.+/, "refund"],
+    ["platform", "payments", /.+/, "refund"],
     ["orgs", /.+/, "payments", /.+/, "receipt"],
     ["orgs", /.+/, "payments", /.+/, "invoice"],
     ["orgs", /.+/, "shop", "orders", /.+/, "manual-payment"],
+    ["orgs", /.+/, "saas-subscription", "cancel"],
+    ["orgs", /.+/, "subscriptions", /.+/, "switch"],
+    ["me", "subscriptions", /.+/, "switch"],
+    ["me", "memberships", /.+/, "switch"],
+    ["me", "memberships", /.+/, "autopay"],
     ["me", "payments", /.+/, "receipt"],
     ["me", "payments", /.+/, "invoice"],
     ["orgs", /.+/, "classes"],
@@ -1483,7 +1490,7 @@ export async function withIdempotency(
   const operation = `${request.method} /api/${path.join("/")}`;
   const requestHash = sha256(idempotencyKey);
   const createdAfter = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const idempotency = (prisma as any).requestIdempotency;
+  const idempotency = prisma.requestIdempotency;
   const existing = await idempotency.findFirst({
     where: {
       userId: ctx.userId ?? null,
