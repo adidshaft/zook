@@ -21,7 +21,7 @@ import {
   useOwnerBillingSubscription,
   useUpgradeSaasSubscription,
 } from "@/lib/domains/owner";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode } from "@/lib/formatting";
 import { toWebUrl } from "@/lib/api";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -31,12 +31,8 @@ type BillingCycle = "MONTHLY" | "YEARLY";
 
 const tiers: Tier[] = ["STARTER", "GROWTH", "PRO"];
 
-function formatLimit(value?: number | null) {
-  return value == null ? "Unlimited" : String(value);
-}
-
 function usageLine(used?: number, limit?: number | null) {
-  return `${used ?? 0} / ${formatLimit(limit)}`;
+  return `${used ?? 0} / ${formatUsageLimit(limit)}`;
 }
 
 function activeMembersCopy(count: number) {

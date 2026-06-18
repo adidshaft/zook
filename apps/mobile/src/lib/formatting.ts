@@ -76,6 +76,16 @@ export function formatCompactNumber(value?: number | null) {
   }).format(value ?? 0);
 }
 
+export function formatUsageLimit(
+  limit?: number | null,
+  options: { compact?: boolean; unlimitedLabel?: string } = {},
+) {
+  if (limit == null) {
+    return options.unlimitedLabel ?? "Unlimited";
+  }
+  return options.compact ? formatCompactNumber(limit) : String(limit);
+}
+
 export function formatElapsedTimer(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);

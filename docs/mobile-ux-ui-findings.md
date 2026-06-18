@@ -605,3 +605,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile duration math (`R75`) is closed: member home,
   attendance detail, and tracking summaries now share mobile duration formatters instead of
   each carrying local hour/minute calculations.
+- **[code, fixed]** Duplicate mobile billing limit labels (`R76`) is closed: owner billing now
+  uses shared mobile `formatUsageLimit` instead of carrying a local Unlimited/number formatter.
