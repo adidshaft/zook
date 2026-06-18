@@ -59,14 +59,6 @@ export function MetricTile({
   );
 }
 
-export function StatCard(props: Parameters<typeof MetricTile>[0]) {
-  return <MetricTile {...props} />;
-}
-
-export function MetricCard(props: Parameters<typeof MetricTile>[0]) {
-  return <MetricTile {...props} />;
-}
-
 export function InfoRow({
   label,
   value,
@@ -152,18 +144,6 @@ export function StatusRing({
       </View>
     </View>
   );
-}
-
-export function ConfirmationRing({
-  tone = "lime",
-  icon = "checkmark",
-  label,
-}: {
-  tone?: PillTone;
-  icon?: IconName;
-  label?: string;
-}) {
-  return <StatusRing tone={tone} icon={icon} label={label} size={132} progress={0.86} />;
 }
 
 const styles = StyleSheet.create({

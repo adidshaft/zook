@@ -1,9 +1,6 @@
 export {
-  ActiveGymPill,
   BranchSelectorChip,
-  ModeChip,
   Pill,
-  PriorityChip,
   RoleChip,
   StatusChip,
   ZookChip,

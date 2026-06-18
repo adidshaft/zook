@@ -38,11 +38,8 @@ import {
   ZookButton as SharedZookButton,
 } from "./buttons";
 export {
-  ConfirmationRing,
   InfoRow,
-  MetricCard,
   MetricTile,
-  StatCard,
   StatusRing,
 } from "./metric-primitives";
 
@@ -67,11 +64,8 @@ export { getTonePalette, useTonePalette } from "./tone-palette";
 export { IconBubble } from "./icon-bubble";
 export { ProfileShortcut } from "./profile-shortcut";
 export {
-  ActiveGymPill,
   BranchSelectorChip,
-  ModeChip,
   Pill,
-  PriorityChip,
   RoleChip,
   StatusChip,
   ZookChip,

@@ -1,13 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useContext, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { useContext, type ReactNode } from "react";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { layout, radii, spacing, typography, useTheme, elevation } from "@/lib/theme";
+import { layout, radii, spacing, useTheme, elevation } from "@/lib/theme";
 import { useStickyActionOffset } from "@/lib/use-layout-padding";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { Card, pressWithHaptics } from "./foundation";
-import { ZookChip } from "./chips";
 import { useTonePalette, type PillTone } from "./tone-palette";
 
 function platformSurfaceShadow(
@@ -57,25 +54,6 @@ export function ScannerFrame({
   );
 }
 
-export function SwipeActionRow({
-  children,
-  action,
-  revealed = false,
-}: {
-  children: ReactNode;
-  action: ReactNode;
-  revealed?: boolean;
-}) {
-  return (
-    <View style={styles.swipeActionRow}>
-      <View style={[styles.swipeActionContent, revealed ? styles.swipeActionContentRevealed : null]}>
-        {children}
-      </View>
-      {revealed ? <View style={styles.swipeAction}>{action}</View> : null}
-    </View>
-  );
-}
-
 export function StickyActionBar({
   bottomOffset,
   children,
@@ -110,72 +88,6 @@ export function StickyActionBar({
     >
       {children}
     </View>
-  );
-}
-
-export function CollapsibleSection({
-  title,
-  eyebrow,
-  subtitle,
-  count,
-  open: controlledOpen,
-  onOpenChange,
-  defaultOpen = true,
-  children,
-}: {
-  title: string;
-  eyebrow?: string;
-  subtitle?: string;
-  count?: number | string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  children: ReactNode;
-}) {
-  const { palette } = useTheme();
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
-  const open = controlledOpen ?? uncontrolledOpen;
-
-  function toggleOpen() {
-    const nextOpen = !open;
-    if (controlledOpen === undefined) {
-      setUncontrolledOpen(nextOpen);
-    }
-    onOpenChange?.(nextOpen);
-  }
-
-  return (
-    <Card contentStyle={styles.collapsibleContent}>
-      <Pressable
-        onPress={() => pressWithHaptics(toggleOpen)}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        style={({ pressed }) => [styles.collapsibleHeader, pressed ? styles.pressed : null]}
-      >
-        <View style={styles.collapsibleCopy}>
-          {eyebrow ? (
-            <Text style={[typography.eyebrow, { color: palette.text.tertiary }]}>{eyebrow}</Text>
-          ) : null}
-          <Text style={[styles.collapsibleTitle, { color: palette.text.primary }]}>{title}</Text>
-          {subtitle ? (
-            <Text style={[styles.collapsibleSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
-          ) : null}
-        </View>
-        <View style={styles.collapsibleTrailing}>
-          {count !== undefined ? <ZookChip tone={open ? "lime" : "neutral"}>{count}</ZookChip> : null}
-          <Ionicons
-            name={open ? "chevron-up" : "chevron-down"}
-            size={22}
-            color={palette.text.tertiary}
-          />
-        </View>
-      </Pressable>
-      {open ? (
-        <View style={[styles.collapsibleBody, { borderTopColor: palette.border.subtle }]}>
-          {children}
-        </View>
-      ) : null}
-    </Card>
   );
 }
 
@@ -228,23 +140,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderBottomRightRadius: 16,
   },
-  swipeActionRow: {
-    minHeight: 62,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: spacing.sm,
-  },
-  swipeActionContent: {
-    flex: 1,
-  },
-  swipeActionContentRevealed: {
-    flex: 0.76,
-  },
-  swipeAction: {
-    minWidth: 72,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   stickyActionBar: {
     position: "absolute",
     zIndex: 60,
@@ -257,40 +152,5 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: spacing.sm,
     overflow: "visible",
-  },
-  collapsibleContent: {
-    padding: 0,
-    gap: 0,
-  },
-  collapsibleHeader: {
-    minHeight: 62,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  collapsibleCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  collapsibleTitle: {
-    ...typography.cardTitle,
-  },
-  collapsibleSubtitle: {
-    ...typography.small,
-  },
-  collapsibleTrailing: {
-    alignItems: "flex-end",
-    gap: spacing.sm,
-  },
-  collapsibleBody: {
-    borderTopWidth: 1,
-    padding: 14,
-    gap: spacing.md,
-  },
-  pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }],
   },
 });

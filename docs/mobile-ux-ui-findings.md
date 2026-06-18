@@ -46,6 +46,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   re-export now that imports resolve directly to the primitives directory barrel.
 - **6/R9 Orphaned primitive story file** — removed the standalone mobile primitive story/demo
   file because there is no mobile story runner or import path for it.
+- **6/R10 Unused primitive wrappers** — removed unused chip, metric, section, and layout helper
+  exports so the mobile primitive surface only exposes components with live callers.
 
 ## 1. Functional / correctness
 
@@ -158,3 +160,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Orphaned primitive story file (`R9`) is closed: the unused
   `mobile-ux-primitives.stories.tsx` demo component was removed after confirming no Storybook
   script/config or app import references it.
+- **[code, fixed]** Unused primitive wrappers (`R10`) is closed: unused chip wrappers,
+  metric-card aliases, `ActionButtonRow`, `SwipeActionRow`, and `CollapsibleSection` were
+  removed after exact reference checks showed no app callers.

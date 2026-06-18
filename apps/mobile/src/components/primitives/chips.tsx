@@ -129,49 +129,11 @@ export function StatusChip({ status, children, tone, ...props }: StatusChipProps
   );
 }
 
-export function ActiveGymPill({ label }: { label: string }) {
-  return (
-    <ZookChip tone="lime" icon="business-outline">
-      {label}
-    </ZookChip>
-  );
-}
-
 export function RoleChip({ role }: { role: Role | string }) {
   const label = String(role).replace(/_/g, " ").toLowerCase();
   return (
     <ZookChip tone="neutral" icon="shield-checkmark-outline" textStyle={styles.capitalize}>
       {label}
-    </ZookChip>
-  );
-}
-
-export function PriorityChip({ priority }: { priority: "High" | "Medium" | "Low" }) {
-  const tone: PillTone = priority === "High" ? "red" : priority === "Medium" ? "amber" : "neutral";
-  return <ZookChip tone={tone}>{priority}</ZookChip>;
-}
-
-export function ModeChip({
-  mode,
-  selected = false,
-}: {
-  mode:
-    | "Direct UPI"
-    | "Manual Approval"
-    | "Open Join"
-    | "Desk Pickup"
-    | "Cash"
-    | "Bank"
-    | "Card"
-    | "Manual";
-  selected?: boolean;
-}) {
-  return (
-    <ZookChip
-      tone={selected ? "lime" : "neutral"}
-      icon={selected ? "checkmark-circle-outline" : undefined}
-    >
-      {mode}
     </ZookChip>
   );
 }

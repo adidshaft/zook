@@ -3,10 +3,6 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { spacing, useTheme } from "@/lib/theme";
 
-export function ActionButtonRow({ children }: { children: ReactNode }) {
-  return <View style={styles.actionButtonRow}>{children}</View>;
-}
-
 export function SectionLabel({ title, action }: { title: string; action?: ReactNode }) {
   const { palette } = useTheme();
 
@@ -33,10 +29,5 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0,
     lineHeight: 18,
-  },
-  actionButtonRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
   },
 });
