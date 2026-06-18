@@ -1,5 +1,5 @@
-import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
+import { withBranchScope, type DashboardBranchFilter } from "@/server/domains/shared/filters";
 
 export function shopBranchFilter(filters: DashboardBranchFilter = {}) {
-  return filters.branchId ? { branchId: filters.branchId } : {};
+  return withBranchScope({}, filters);
 }
