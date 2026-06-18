@@ -907,3 +907,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web platform support visible-count cues (`R179`) are closed:
   loaded user and payment support-console counts now use neutral badges instead of
   informational blue, keeping amber for loading state.
+- **[ui, fixed]** Mis-toned web member autopay cue (`R180`) is closed: the `/me` route
+  autopay badge now uses the same live lime treatment as the shared member membership
+  surface instead of informational blue.
