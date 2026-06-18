@@ -631,7 +631,17 @@ function LaunchSurface({ subtitle }: { subtitle: string }) {
         />
         <View style={styles.loadingBrandRow}>
           <BrandMark size="lg" />
-          <Text style={[styles.loadingBrandText, { color: palette.text.primary }]}>Zook</Text>
+          <View style={styles.loadingBrandLabel}>
+            <Text
+              allowFontScaling={false}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.86}
+              style={[styles.loadingBrandText, { color: palette.text.primary }]}
+            >
+              Zook
+            </Text>
+          </View>
         </View>
         <Text style={[styles.loadingSubtitle, { color: palette.text.secondary }]}>
           Gym ops, without the clutter.
@@ -712,11 +722,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    alignSelf: "stretch",
+  },
+  loadingBrandLabel: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 6,
   },
   loadingBrandText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 42,
-    letterSpacing: 0,
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 40,
+    lineHeight: 44,
+    letterSpacing: -0.8,
+    includeFontPadding: false,
   },
   loadingSubtitle: {
     fontSize: 15,
