@@ -142,7 +142,7 @@ export function MemberDetailDrawer({
                     confirmLabel="Switch plan"
                     onConfirm={() => updateSubscription("switch")}
                     disabled={!switchPlanId || Boolean(subscriptionBusy)}
-                    className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--accent-fill)] bg-[var(--accent-fill)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition duration-200 active:translate-y-px disabled:pointer-events-none disabled:opacity-45"
+                    className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--accent-fill)] bg-[var(--accent-fill)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] transition duration-200 active:translate-y-px disabled:pointer-events-none disabled:opacity-45"
                   >
                     {subscriptionBusy === "switch" ? "Switching..." : "Switch"}
                   </ConfirmActionButton>

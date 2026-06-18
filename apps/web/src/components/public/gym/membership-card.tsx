@@ -39,7 +39,7 @@ export function GymMembershipCard({
       {hasPublicPlans ? (
         <Link
           href="#plans"
-          className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition hover:bg-[var(--accent-soft)]"
+          className="zook-focus mt-6 inline-flex w-full justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:bg-[var(--accent-soft)]"
         >
           {t("viewPlans")}
         </Link>

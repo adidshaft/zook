@@ -11,7 +11,7 @@ type ZookButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ZookButtonState = "idle" | "loading" | "success";
 
 const toneClasses: Record<ZookButtonTone, string> = {
-  lime: "zook-button-lime border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-fill)]",
+  lime: "zook-button-lime border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-fill)]",
   secondary:
     "border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-raised)] active:bg-[var(--surface)]",
   ghost:

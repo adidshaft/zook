@@ -226,6 +226,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   layers and the login-only opt-out prop so screens use the plain app background.
 - **6/R88 Mobile button glow shadow** — removed the decorative primary-button glow shadow path
   and deleted now-unused mobile glow shadow tokens.
+- **6/R89 Web primary control glow shadows** — removed glow-token shadows from filled web
+  buttons, tab pills, and public gym CTAs where color, borders, focus, and hover states remain.
 
 ## 1. Functional / correctness
 
