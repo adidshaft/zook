@@ -51,6 +51,15 @@ fully complete until the human/device/provider gates below have external evidenc
   `de2c5e2 docs: remove stale mobile ai draft audit note`,
   `ab36047 fix: neutralize offline demo fallback copy`, and
   `548e93c docs: update mobile cleanup audit for demo fallback`.
+- Later cue-removal and code-surface cleanup evidence includes:
+  `b4914acf` (mobile button glow shadow),
+  `d30ab4c3` (mobile screen ambient layers),
+  `13800705` (product placeholder glow),
+  `2f5150ce` (scanner line glow layer),
+  `13426641` (dead mobile card glow API),
+  `4e9c3201` (mobile card glow emphasis),
+  `be1f2c4f` (mobile route background glows), and
+  `f21dd724` (launch fallback background orbs).
 
 ### Web UI/UX plan
 
@@ -82,6 +91,18 @@ fully complete until the human/device/provider gates below have external evidenc
   `eb9f8a9 WS6`, `442fe28 WS6`, `d65841c WS6`, and `4cec462 WS6`.
 - `docs/launch-readiness-report.md` records the web UX phases as code-side done, including Hindi
   parity, axe coverage, public metadata, destructive-action confirmation, and dashboard flow fixes.
+- Later web cue-removal and copy-guard evidence includes:
+  `a3296b3f` (web primary control glow shadows),
+  `702dbba5` (web selected card glow),
+  `41316816` (dead web glow utility),
+  `b0ab6d7e` (dead full glow token),
+  `ee42324c` (fallback workspace wording),
+  `4ee7beb1` (radio-card selected glow),
+  `31acabe2` (dead exported glow tokens),
+  `3672de40` (static status-dot naming),
+  `a97b9d70` (primitive status-dot halo),
+  `404ae284` (release-readiness demo wording), and
+  `f695bbda` (dashboard sample-data copy guard).
 
 ### Product plan Part A and Part B
 
