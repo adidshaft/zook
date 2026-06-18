@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { AvatarInitials } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
 import { ZookButton, ZookButtonLink } from "../zook-button";
 import type { DeskCopy } from "./copy";
@@ -93,9 +94,10 @@ export function MemberTab({
                   className="h-20 w-20 shrink-0 rounded-3xl object-cover"
                 />
               ) : (
-                <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl bg-lime-300/15 text-2xl font-semibold text-lime-100">
-                  {memberLabel(selectedMember).slice(0, 1)}
-                </div>
+                <AvatarInitials
+                  name={memberLabel(selectedMember)}
+                  className="h-20 w-20 rounded-3xl border-transparent bg-lime-300/15 text-2xl text-lime-100"
+                />
               )}
               <div className="min-w-0">
                 {selectedMember.user?.privateHandle ? (

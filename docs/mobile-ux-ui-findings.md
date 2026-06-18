@@ -763,3 +763,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web desk member-label cleanup (`R131`) is closed: desk queue
   and member surfaces now share the same member label helper instead of carrying separate
   name/email/fallback logic.
+- **[code, fixed]** Duplicate web desk avatar fallback cleanup (`R132`) is closed: the desk
+  member detail now uses the shared web avatar-initials primitive instead of rendering its
+  own one-letter fallback block.
