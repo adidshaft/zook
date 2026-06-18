@@ -1,6 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
 import {
-  handleAiNotificationsShopPrivacyPlatform,
   handleMembershipPayments,
   handleOrganizations,
   handleStaffPlansGoals,
@@ -36,6 +35,7 @@ import { handlePlatformBroadcasts } from "./platform-broadcasts";
 import { handlePlatformFlags } from "./platform-flags";
 import { handlePlatformModeration } from "./platform-moderation";
 import { handlePlatformMonitoring } from "./platform-monitoring";
+import { handlePlatformOrgAdmin } from "./platform-org-admin";
 import { handlePlatformPayments } from "./platform-payments";
 import { handlePlatformSettings } from "./platform-settings";
 import { handlePlatformUsers } from "./platform-users";
@@ -95,16 +95,13 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handlePlatformFlags, firstSegments: ["platform"] },
   { handler: handlePlatformModeration, firstSegments: ["platform"] },
   { handler: handlePlatformMonitoring, firstSegments: ["platform"] },
+  { handler: handlePlatformOrgAdmin, firstSegments: ["platform"] },
   { handler: handlePlatformPayments, firstSegments: ["platform"] },
   { handler: handlePlatformSettings, firstSegments: ["platform"] },
   { handler: handlePlatformUsers, firstSegments: ["platform"] },
   {
     handler: handleStaffPlansGoals,
     firstSegments: ["me", "orgs", "staff-invitations"],
-  },
-  {
-    handler: handleAiNotificationsShopPrivacyPlatform,
-    firstSegments: ["me", "orgs", "platform", "shop"],
   },
 ];
 

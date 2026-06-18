@@ -15,6 +15,10 @@ const platformPaymentsSource = readFileSync(
   new URL("./api-router/platform-payments.ts", import.meta.url),
   "utf8",
 );
+const platformOrgAdminSource = readFileSync(
+  new URL("./api-router/platform-org-admin.ts", import.meta.url),
+  "utf8",
+);
 const shopOrdersSource = readFileSync(
   new URL("./domains/shop-orders/read-models.ts", import.meta.url),
   "utf8",
@@ -55,6 +59,7 @@ describe("list pagination coverage", () => {
     expectRouteListBounded(
       'pathMatches(path, ["platform", "subscriptions"])',
       "prisma.saaSSubscription.findMany",
+      platformOrgAdminSource,
     );
   });
 
