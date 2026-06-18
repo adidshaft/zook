@@ -934,3 +934,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web gym profile username cue (`R188`) is closed: the Join QR
   public-username badge now uses neutral styling instead of lime, keeping stronger colors
   on visibility and unsaved-change state.
+- **[ui, fixed]** Overstated web staff invite label cue (`R189`) is closed: the staff invite
+  form label now uses a neutral badge instead of lime, keeping success emphasis for accepted
+  invites and completed actions.
