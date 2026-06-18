@@ -64,7 +64,7 @@ For each:
    - `AppHeader`, `AppHeader` → `header.tsx` (new)
    - `BottomNav` → delete (no longer used after #09)
    - `DockTab*`, role tabs → delete (no longer used after #05/#06/#07/#09)
-   - Anything else still imported → move to the appropriate split file (`cards.tsx`, `buttons.tsx`, `feedback.tsx`)
+   - Anything else still imported → move to the appropriate split file (`cards.tsx`, `buttons.tsx`, `feedback-primitives.tsx`)
 
 2. **If it's no longer imported** — delete.
 

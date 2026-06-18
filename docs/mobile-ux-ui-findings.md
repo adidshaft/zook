@@ -87,6 +87,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   then trimmed affected exports to only point at modules with live code.
 - **6/R25 Mobile api-client alias** — removed the unused one-line `apiClient` re-export shim;
   live callers already use `mobileApiFetch` directly or `domain-api`'s request client.
+- **6/R26 Primitive feedback shim** — removed the unused `feedback.tsx` primitive barrel and
+  exported feedback primitives plus network banners directly from the main primitive barrel.
 
 ## 1. Functional / correctness
 

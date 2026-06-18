@@ -1,7 +1,7 @@
 export * from "./buttons";
 export * from "./app-header";
 export * from "./cards";
-export * from "./feedback";
+export * from "./feedback-primitives";
 export * from "./inputs";
 export * from "./layout";
 export * from "./chips";
@@ -18,4 +18,5 @@ export * from "./confirm-sheet";
 export * from "./permission-sheet";
 export * from "./icon";
 export * from "./offline-banner";
+export * from "./network-banner";
 export * from "./screen-header";
