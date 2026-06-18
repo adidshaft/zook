@@ -497,3 +497,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal dashboard prefetch helpers (`R35`) is closed: dashboard shell
   `withCursor` and `resourcePathsForDashboardHref` are no longer exported because only
   `prefetchDashboardHref` is imported outside the prefetch module.
+- **[code, fixed]** Internal product image helpers (`R36`) is closed: shop product image
+  normalization helpers `uniqueProductImages` and `productImagesFromForm` are no longer exported
+  because exact reference checks showed they are only used inside `product-images.tsx`.

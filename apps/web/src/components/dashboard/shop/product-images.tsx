@@ -15,7 +15,7 @@ export const productCategories: ProductCategory[] = [
   "OTHER",
 ];
 
-export function uniqueProductImages(values: Array<string | null | undefined>) {
+function uniqueProductImages(values: Array<string | null | undefined>) {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {
@@ -28,7 +28,7 @@ export function uniqueProductImages(values: Array<string | null | undefined>) {
   return result;
 }
 
-export function productImagesFromForm(form: ProductFormState) {
+function productImagesFromForm(form: ProductFormState) {
   return uniqueProductImages([...form.imagePreviewUrls, form.imagePreviewUrl]);
 }
 
