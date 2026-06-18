@@ -543,3 +543,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile status tone helpers (`R52`) is closed: platform billing
   rows and member-list rows now use the shared `StatusChip` status-label tone resolver instead
   of carrying local status-to-tone mappings.
+- **[code, fixed]** Duplicate platform INR formatter (`R53`) is closed: mobile platform
+  billing now uses shared `formatInr` instead of carrying a local rupee formatter.

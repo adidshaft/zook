@@ -15,6 +15,7 @@ import {
 } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { formatInr } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type PlatformSubscriptionsPayload = {
@@ -42,15 +43,6 @@ type PlatformSubscriptionsPayload = {
     referredCount: number;
   }>;
 };
-
-function formatInr(paise?: number | null) {
-  if (!paise) return "₹0";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
-}
 
 function formatDate(value?: string | null) {
   if (!value) return "Not scheduled";
