@@ -45,20 +45,6 @@ export function toneFromStatus(value: string | null | undefined): PillTone {
   return "neutral";
 }
 
-export function toneFromSeverity(value: string | null | undefined): PillTone {
-  const normalized = value?.toLowerCase() ?? "";
-  if (normalized.includes("critical") || normalized.includes("high")) {
-    return "red";
-  }
-  if (normalized.includes("medium") || normalized.includes("moderate")) {
-    return "amber";
-  }
-  if (normalized.includes("low") || normalized.includes("info")) {
-    return "blue";
-  }
-  return "neutral";
-}
-
 export function MetricCard({
   label,
   value,

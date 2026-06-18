@@ -135,6 +135,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   barrel export, an unused internal error helper, and redundant join-page visual comments.
 - **6/R47 Web orphan overview components** — removed the no-caller overview wrapper/component
   cluster and an unused operational offer-form type export.
+- **6/R48 Web primitive export trim** — removed unused dashboard skeleton/table-loader,
+  date/money input, and severity-tone helper exports from the web primitive modules.
 
 ## 1. Functional / correctness
 

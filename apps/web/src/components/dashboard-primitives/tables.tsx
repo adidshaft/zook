@@ -13,31 +13,6 @@ export type DataTableColumn<Row> = {
   render: (row: Row) => React.ReactNode;
 };
 
-export function Skeleton({ className }: { className?: string | undefined }) {
-  return (
-    <div
-      className={clsx(
-        "relative overflow-hidden rounded-full bg-[var(--bg-sunken)] before:absolute before:inset-y-[-40%] before:left-[-30%] before:w-1/3 before:rotate-12 before:bg-[var(--border)] before:content-[''] before:animate-[zook-shimmer_1200ms_linear_infinite]",
-        className,
-      )}
-    />
-  );
-}
-
-export function TableLoader({ label = "Rows are loading" }: { label?: string }) {
-  return (
-    <div role="status" aria-label={label} className="grid gap-2">
-      {[0, 1, 2, 3, 4].map((item) => (
-        <div key={item} className="grid grid-cols-[1.2fr_0.9fr_0.8fr] gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)]/30 p-3">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3 justify-self-end" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function DataTable<Row>({
   columns,
   rows,
