@@ -3,7 +3,7 @@ import type {
   WorkoutLogEntry
 } from "@zook/core";
 
-import { formatLongDate } from "@/lib/formatting";
+import { formatCompactMinutes, formatLongDate } from "@/lib/formatting";
 
 function formatTimeLabel(value?: string | null) {
   if (!value) {
@@ -13,16 +13,6 @@ function formatTimeLabel(value?: string | null) {
     hour: "numeric",
     minute: "2-digit"
   });
-}
-
-function formatDuration(minutes?: number | null) {
-  const totalMinutes = minutes ?? 0;
-  const hours = Math.floor(totalMinutes / 60);
-  const remainingMinutes = totalMinutes % 60;
-  if (!hours) {
-    return `${remainingMinutes}m`;
-  }
-  return `${hours}h ${remainingMinutes}m`;
 }
 
 export function workoutToEntry(workout: {
@@ -49,7 +39,10 @@ export function workoutToEntry(workout: {
     workoutName: workout.title,
     startTimeLabel: formatTimeLabel(workout.startedAt),
     endTimeLabel: formatTimeLabel(workout.endedAt),
-    durationLabel: formatDuration(workout.durationMinutes),
+    durationLabel: formatCompactMinutes(workout.durationMinutes, {
+      includeZeroMinutes: true,
+      separator: " ",
+    }),
     focusLabel: workout.workoutType,
     effortLabel: workout.intensity ?? "Logged",
     notes: workout.notes ?? "No notes yet.",
@@ -76,7 +69,10 @@ export function buildTrackingSummaryMetrics(input: {
     {
       id: "worked-out",
       label: "Active time",
-      value: formatDuration(input.totalDuration),
+      value: formatCompactMinutes(input.totalDuration, {
+        includeZeroMinutes: true,
+        separator: " ",
+      }),
       detail: input.totalDuration > 0 ? "This week" : "No sessions yet",
       tone: "lime"
     },

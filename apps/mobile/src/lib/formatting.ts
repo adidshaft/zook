@@ -76,6 +76,56 @@ export function formatCompactNumber(value?: number | null) {
   }).format(value ?? 0);
 }
 
+export function formatElapsedTimer(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatCompactMinutes(
+  minutes?: number | null,
+  options: { includeZeroMinutes?: boolean; separator?: string } = {},
+) {
+  const totalMinutes = Math.max(0, Math.floor(minutes ?? 0));
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  if (!hours) {
+    return `${remainingMinutes}m`;
+  }
+  const separator = options.separator ?? "";
+  if (remainingMinutes || options.includeZeroMinutes) {
+    return `${hours}h${separator}${remainingMinutes}m`;
+  }
+  return `${hours}h`;
+}
+
+export function formatDurationSeconds(
+  totalSeconds?: number | null,
+  options: {
+    fallback?: string;
+    includeZeroMinutes?: boolean;
+    minimumMinutes?: number;
+    separator?: string;
+  } = {},
+) {
+  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
+    return options.fallback ?? "In progress";
+  }
+  const minutes = Math.max(
+    options.minimumMinutes ?? 0,
+    Math.floor(Math.max(0, totalSeconds) / 60),
+  );
+  return formatCompactMinutes(minutes, {
+    includeZeroMinutes: options.includeZeroMinutes,
+    separator: options.separator,
+  });
+}
+
 export function titleCaseFromCode(value?: string | null) {
   if (!value) {
     return "Unknown";

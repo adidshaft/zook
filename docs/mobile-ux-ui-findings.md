@@ -602,3 +602,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate public username input cleanup (`R74`) is closed: start-gym and
   gym-profile setup now share core `normalizeUsernameInput` instead of carrying identical
   keystroke sanitizers.
+- **[code, fixed]** Duplicate mobile duration math (`R75`) is closed: member home,
+  attendance detail, and tracking summaries now share mobile duration formatters instead of
+  each carrying local hour/minute calculations.

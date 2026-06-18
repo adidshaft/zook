@@ -32,20 +32,11 @@ import { useAuth } from "@/lib/auth";
 import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { formatCompactMinutes, formatElapsedTimer } from "@/lib/formatting";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
-
-function formatDuration(totalSeconds: number) {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
 
 function secondsSince(value: string) {
   const startedAt = new Date(value).getTime();
@@ -91,7 +82,7 @@ function ActiveCheckInCard({
         </View>
       </View>
       <Text style={[styles.activeSessionTimer, { color: palette.accent.base }]}>
-        {formatDuration(elapsedSeconds)}
+        {formatElapsedTimer(elapsedSeconds)}
       </Text>
       <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
         Re-scan the branch QR to check out, or stop it here.
@@ -248,7 +239,7 @@ export default function HomeScreen() {
                   <StatStrip
                     items={[
                       { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
-                      { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
+                      { label: "Active", value: formatCompactMinutes(activeMinutes), icon: "time-outline" },
                       { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
                       { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
                     ]}
@@ -281,15 +272,6 @@ function countThisWeek(records: Array<{ checkedInAt?: string | null }>) {
     const timestamp = record.checkedInAt ? new Date(record.checkedInAt).getTime() : Number.NaN;
     return Number.isFinite(timestamp) && timestamp >= weekStart;
   }).length;
-}
-
-function formatMinutes(minutes: number) {
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  return remaining ? `${hours}h${remaining}m` : `${hours}h`;
 }
 
 const styles = StyleSheet.create({

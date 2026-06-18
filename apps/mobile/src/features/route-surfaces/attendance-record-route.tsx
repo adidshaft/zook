@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { formatDurationSeconds } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -83,18 +84,6 @@ function formatTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--:--";
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
-function formatDuration(totalSeconds?: number | null) {
-  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
-    return "In progress";
-  }
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${Math.max(minutes, 1)}m`;
 }
 
 function titleCaseStatus(status?: string | null) {
@@ -400,7 +389,11 @@ export default function AttendanceResultScreen() {
                 />
                 <DetailLine
                   label="Duration"
-                  value={formatDuration(record.durationSeconds)}
+                  value={formatDurationSeconds(record.durationSeconds, {
+                    includeZeroMinutes: true,
+                    minimumMinutes: 1,
+                    separator: " ",
+                  })}
                   icon="timer-outline"
                 />
                 <DetailLine label="Branch" value={branchName} icon="shield-checkmark-outline" />
