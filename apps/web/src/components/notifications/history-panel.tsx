@@ -107,7 +107,7 @@ export function NotificationHistoryPanel({
               Delivery history for recent member messages, audience, and delivery state.
             </p>
           </div>
-          <Pill tone="blue">{visibleNotifications.length} messages</Pill>
+          <Pill>{visibleNotifications.length} messages</Pill>
         </div>
         {statusFilter ? (
           <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/52">

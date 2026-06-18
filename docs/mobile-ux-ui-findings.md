@@ -829,3 +829,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile home empty-state accents (`R153`) are closed: first-run,
   no-gym, and rest-day cards now use neutral icon accents instead of informational blue,
   keeping lime and amber for active workout and membership states.
+- **[ui, fixed]** Overstated web notification history count cue (`R154`) is closed: the
+  visible-message count now uses a neutral badge instead of informational blue, keeping
+  delivery and notification states on the row-level status pills.
