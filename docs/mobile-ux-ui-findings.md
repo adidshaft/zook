@@ -162,6 +162,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R59 Visible QA shortcut gating** — hid login/profile "QA shortcuts" buttons behind an
   explicit `EXPO_PUBLIC_QA_SHORTCUTS_ENABLED` development flag while preserving direct QA
   deep links for screenshot automation.
+- **6/R60 Scan sample-data gating** — hid the local-only "Use sample data" scan helper behind
+  the same explicit QA shortcut flag so ordinary dev/product review builds do not show sample
+  attendance controls.
 
 ## 1. Functional / correctness
 

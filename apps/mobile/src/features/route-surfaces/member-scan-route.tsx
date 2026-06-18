@@ -35,7 +35,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/domains";
-import { getMobileAppEnv } from "@/lib/runtime-mode";
+import { getMobileAppEnv, isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
   enqueueAttendanceScan,
   getQueuedAttendanceScans,
@@ -221,6 +221,8 @@ function readScannedAttendancePayload(
 export default function Scan() {
   const { mode, palette } = useTheme();
   const isDark = mode === "dark";
+  const showDevSampleScan =
+    __DEV__ && getMobileAppEnv() === "local" && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const codePlaceholderColor = palette.text.tertiary;
   const cameraBadgeSurface = isDark ? palette.bg.elevated : palette.surface.raised;
   const getVerificationItemStyle = (state: VerificationStep["state"]) => {
@@ -1074,7 +1076,7 @@ export default function Scan() {
             </Card>
           ) : null}
 
-          {__DEV__ && getMobileAppEnv() === "local" ? (
+          {showDevSampleScan ? (
             <Pressable
               testID="scan-dev-sample"
               onPress={() => void completeDevScan()}
