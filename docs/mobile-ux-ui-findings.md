@@ -147,6 +147,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   domain, query-hook, and overview component folders.
 - **6/R53 App-wide scaffold README cleanup** — removed remaining one-line placeholder README
   files across app route, component, public asset, test, and website folders.
+- **6/R54 Web orphan UI stories** — removed no-runner Storybook demo files for shared web UI
+  primitives after confirming there is no tracked Storybook configuration or live import path.
 
 ## 1. Functional / correctness
 
