@@ -358,7 +358,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
       issues.push({
         level: "warning",
         code: `STAGING_IMPLICIT_${key}`,
-        message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect an intentional mock mode.`,
+        message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect intentional test-provider mode.`,
       });
     }
     if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "memory" && !env.RATE_LIMIT_PROVIDER?.trim()) {

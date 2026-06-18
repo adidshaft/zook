@@ -177,6 +177,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   demo behavior directly.
 - **6/R65 Scan helper label** — renamed the gated local scan helper from "Use sample data" to
   "Use test check-in" so the dev-only control describes its actual attendance action.
+- **6/R66 Runtime diagnostics mock wording** — changed staging implicit-provider diagnostics
+  from "mock mode" to "test-provider mode" to match the cleaned public status language.
 
 ## 1. Functional / correctness
 
