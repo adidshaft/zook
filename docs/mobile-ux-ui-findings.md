@@ -131,6 +131,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   exports and neutralized stale refund/comment wording found by the cue scan.
 - **6/R45 Web unused public helpers** — removed no-caller locale-label/list exports and unused
   ambient motion primitives from the public web helper modules.
+- **6/R46 Web no-caller hooks and exports** — removed unused query-hook modules, a stale server
+  barrel export, an unused internal error helper, and redundant join-page visual comments.
 
 ## 1. Functional / correctness
 

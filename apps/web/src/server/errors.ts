@@ -67,10 +67,6 @@ export function featureUnavailableError(message = "Feature unavailable", details
   return new ApiRouteError(503, "feature_unavailable", message, details);
 }
 
-export function internalError(message = "Internal error") {
-  return new ApiRouteError(500, "internal_error", message);
-}
-
 export function toErrorResponse(error: unknown) {
   if (error instanceof ApiRouteError) {
     const response = fail(error.code, error.message, error.status, error.details);

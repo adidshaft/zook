@@ -373,9 +373,7 @@ export default async function JoinPage({
               {t("reviewMembership")}
             </h1>
 
-            {/* Elegant Gym Identity Card */}
             <div className="relative mt-5 overflow-hidden rounded-3xl border border-[var(--border-focus)]/25 bg-gradient-to-br from-[var(--surface-raised)]/90 to-[var(--bg-sunken)]/90 p-5 md:p-6 shadow-md transition-all duration-300 hover:shadow-lg">
-              {/* Decorative radial ambient glow behind the logo */}
               <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[var(--accent-soft)]/20 blur-3xl pointer-events-none" />
               
               <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
