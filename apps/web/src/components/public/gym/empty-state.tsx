@@ -16,7 +16,7 @@ export function GymNotFound({
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
       <div className="mx-auto grid max-w-5xl gap-5 px-4 sm:px-6">
         <GlassCard className="mx-auto max-w-xl text-center">
-          <Pill tone="amber">{t("gymNotFound")}</Pill>
+          <Pill>{t("gymNotFound")}</Pill>
           <h1 className="mt-5 text-3xl font-semibold text-[var(--text-primary)]">{t("gymNotFound")}</h1>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("gymNotFoundCopy")}</p>
           <Link

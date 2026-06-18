@@ -1018,3 +1018,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated public gym trainer certification cue (`R216`) is closed:
   trainer certification chips now use neutral styling instead of amber, matching
   descriptive specialty chips and avoiding warning-like emphasis on metadata.
+- **[ui, fixed]** Overstated public gym not-found label cue (`R217`) is closed:
+  the missing-gym page now uses a neutral label instead of amber for the repeated
+  Gym not found text, keeping the primary state on the heading and recovery action.
