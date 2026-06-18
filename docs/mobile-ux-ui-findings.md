@@ -195,6 +195,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   background, border, text, and icon treatment.
 - **6/R73 Plan selector pending cue** — removed the decorative pulsing blur and stale comments
   from the public plan selector pending overlay while keeping the spinner and status label.
+- **6/R74 Public hero ring motion** — kept the public home hero ring ornament but removed its
+  infinite orbital rotations so the first viewport no longer carries always-on decorative motion.
 
 ## 1. Functional / correctness
 

@@ -1,11 +1,10 @@
 "use client";
 
 /**
- * Decorative SVG ornaments for the public home page.
+ * SVG ornaments for the public home page.
  * - GridBackdrop: a subtle radially-faded grid that sits behind the hero
  *   to give the page a sense of place without competing with copy.
- * - HeroRingOrnament: an animated orbital ring + check-in pulse, used to
- *   the right of the dashboard preview to suggest "always-on operations".
+ * - HeroRingOrnament: a static orbital ring beside the dashboard preview.
  */
 
 import { motion } from "framer-motion";
@@ -69,7 +68,7 @@ export function HeroRingOrnament({ className }: { className?: string }) {
             <stop offset="100%" stopColor="var(--feedback-info)" stopOpacity="0.55" />
           </linearGradient>
         </defs>
-        <motion.circle
+        <circle
           cx="90"
           cy="90"
           r="78"
@@ -77,11 +76,8 @@ export function HeroRingOrnament({ className }: { className?: string }) {
           stroke="url(#zk-ring)"
           strokeWidth="1.5"
           strokeDasharray="4 6"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 60, ease: "linear" }}
-          style={{ transformOrigin: "90px 90px" }}
         />
-        <motion.circle
+        <circle
           cx="90"
           cy="90"
           r="58"
@@ -89,9 +85,6 @@ export function HeroRingOrnament({ className }: { className?: string }) {
           stroke="url(#zk-ring-inner)"
           strokeWidth="1"
           strokeDasharray="2 4"
-          animate={{ rotate: -360 }}
-          transition={{ repeat: Infinity, duration: 80, ease: "linear" }}
-          style={{ transformOrigin: "90px 90px" }}
         />
         <circle cx="90" cy="12" r="3.5" fill="var(--accent-strong)" />
         <circle cx="90" cy="12" r="6.5" fill="var(--accent-strong)" opacity="0.25" />
