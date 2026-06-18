@@ -1,6 +1,7 @@
+import { formatReviewReason } from "@/lib/formatting";
+
 export function deskReasonCopy(reason?: string | null) {
-  if (!reason) return "Desk approval required.";
-  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
+  return formatReviewReason(reason, "Desk approval required.");
 }
 
 export function phoneRevealStorageKey(orgId?: string | null) {

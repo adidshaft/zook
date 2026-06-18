@@ -115,6 +115,11 @@ export function formatAgeLabel(dateOfBirth?: string | Date | null, fallback = "D
   return `${age} years`;
 }
 
+export function formatReviewReason(reason?: string | null, fallback = "Desk approval is required.") {
+  if (!reason) return fallback;
+  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
+}
+
 export function joinModeLabel(
   mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
 ) {

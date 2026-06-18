@@ -534,3 +534,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate owner title formatter (`R49`) is closed: owner revenue, stock,
   and approval screens now use shared `titleCaseFromCode` instead of a feature-local `titleCase`
   helper.
+- **[code, fixed]** Duplicate approval reason formatter (`R50`) is closed: owner approvals
+  and reception desk approval flows now share mobile `formatReviewReason` while keeping their
+  existing screen-specific fallback copy.
