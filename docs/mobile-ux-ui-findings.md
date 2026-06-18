@@ -153,6 +153,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   badge with neutral activity/review wording that matches the current read-only panel behavior.
 - **6/R56 Token legacy alias surface** — removed the no-caller `@zook/tokens` legacy alias
   module after confirming live consumers import the current palette/token primitives directly.
+- **6/R57 Package scaffold README cleanup** — removed one-line placeholder README files from
+  package source, config, token, UI, and migration folders while keeping the substantive Figma
+  package READMEs.
 
 ## 1. Functional / correctness
 
