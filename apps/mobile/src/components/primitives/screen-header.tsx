@@ -242,27 +242,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     minWidth: 0,
-    position: "relative",
     width: "100%",
   },
   title: {
     // Tab-root screens intentionally use the larger landing-page title scale;
     // pushed screens route through AppHeader's compact headerTitle token.
     ...typography.screenTitle,
+    flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
   titleWithAccessory: {
-    maxWidth: "58%",
+    paddingRight: spacing.sm,
   },
   titleAccessory: {
     alignItems: "flex-end",
-    maxWidth: "42%",
+    flexShrink: 1,
+    marginLeft: "auto",
+    maxWidth: "54%",
     minWidth: 0,
-    position: "absolute",
-    right: 0,
   },
   subtitle: {
     ...typography.small,
