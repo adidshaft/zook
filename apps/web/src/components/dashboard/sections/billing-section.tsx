@@ -457,7 +457,7 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <Pill tone="blue">{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
+              <Pill>{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
               <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Plan packaging</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 Zook plans are enforced by gym size, team size, branches, inventory, messaging, and
@@ -570,7 +570,7 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <Pill tone="blue">Refer another gym</Pill>
+              <Pill>Refer another gym</Pill>
               <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Your platform referral code</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 Share this code with another gym owner. When they sign up using it, both gyms get

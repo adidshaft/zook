@@ -805,3 +805,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public amenity tags (`R145`) are closed: public gym
   facilities and equipment now share neutral tag styling instead of blue/lime status-like
   colors for plain content metadata.
+- **[ui, fixed]** Overstated web billing section labels (`R146`) are closed: billing plan
+  packaging and referral section labels now use neutral badges instead of informational blue,
+  keeping stronger color cues for actual billing state and actions.
