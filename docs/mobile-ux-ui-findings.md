@@ -34,6 +34,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
   palettes instead of reaching around the package boundary or duplicating values.
+- **6/R5 Stale mobile stylesheet keys** — removed unused/empty style entries left behind in
+  assistant, attendance, notifications, login, date-picker, and tracking surfaces.
 
 ## 1. Functional / correctness
 
@@ -126,3 +128,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   oversized `heroTitle` escape hatch for onboarding/entry-code moments.
 - **[code, fixed]** Contrast audit drift (`R4`) is closed: the audit uses the real
   `@zook/tokens` palettes as its source of truth.
+- **[code, fixed]** Stale mobile stylesheet keys (`R5`) is closed: unused styles from earlier
+  UI states were removed from assistant, attendance, notifications, login, date-picker, and
+  tracking files.

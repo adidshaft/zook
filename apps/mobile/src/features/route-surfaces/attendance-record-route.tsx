@@ -574,14 +574,6 @@ const styles = StyleSheet.create({
   warningBody: {
     ...typography.small,
   },
-  historyLink: {
-    minHeight: 34,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  historyText: {
-    ...typography.small,
-  },
   approvedCodeContent: {
     padding: 14,
     gap: spacing.md,

@@ -871,9 +871,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  busyText: {
-    ...typography.button,
-  },
   messageText: {
     ...typography.body,
     textAlign: "center",

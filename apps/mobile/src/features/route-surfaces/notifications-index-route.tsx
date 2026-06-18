@@ -633,24 +633,9 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.bodyStrong,
   },
-  loadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-  },
-  loadingText: {
-    ...typography.body,
-  },
-  dateGroup: {
-    gap: 8,
-  },
   dateGroupLabel: {
     ...typography.caption,
     paddingHorizontal: 4,
-  },
-  list: {
-    gap: 8,
   },
   pressed: {
     opacity: 0.92,

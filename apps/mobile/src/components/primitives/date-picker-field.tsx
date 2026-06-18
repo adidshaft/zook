@@ -258,9 +258,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -6 },
     elevation: 4,
   },
-  androidCard: {
-    borderRadius: 24,
-  },
   cardContent: {
     gap: spacing.lg,
   },

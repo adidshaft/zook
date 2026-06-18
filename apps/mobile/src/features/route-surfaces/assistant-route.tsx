@@ -648,11 +648,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     alignSelf: "flex-start",
   },
-  controlChipActive: {},
   controlChipText: {
     ...typography.caption,
   },
-  controlChipTextActive: {},
   copyStatus: {
     ...typography.small,
   },
@@ -778,17 +776,5 @@ const styles = StyleSheet.create({
   emptyBody: {
     ...typography.body,
     textAlign: "center",
-  },
-  comingSoonCta: {
-    minHeight: 44,
-    borderRadius: 14,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  comingSoonCtaText: {
-    ...typography.bodyStrong,
   },
 });
