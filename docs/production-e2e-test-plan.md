@@ -187,7 +187,7 @@ Add these to the pass before signing off production:
 52. [x] [web] Download payments report.
 53. [x] [web] Download membership sales report.
 54. [x] [web] Download expiry report.
-55. [x] [web] Confirm downloaded files contain demo data only.
+55. [x] [web] Confirm downloaded files contain test data only.
 56. [x] [web] Log out.
 57. [x] [web] Log in as `admin@zook.local` with OTP `000000`.
 58. [x] [web] Confirm admin lands on dashboard.
@@ -284,7 +284,7 @@ Add these to the pass before signing off production:
 149. [x] [web] Confirm no real payment captures occurred.
 150. [ ] [web] Confirm no real external emails/SMS were sent unless intentionally tested.
 151. [x] [web] Record bugs with account used, platform, page/screen, action, expected result, actual result, and screenshot.
-152. [x] [web] Decide whether to keep the demo transaction history or reseed/reset demo data.
+152. [x] [web] Decide whether to keep the test transaction history or reseed/reset test data.
 
 ## Current Mobile Evidence
 

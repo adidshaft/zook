@@ -290,6 +290,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R119 Runtime QA test-data wording** — updated runtime/deployment/QA docs so missing
   backend checks refer to fatal config states instead of silent test data, and neutralized the
   mobile-runtime AI gate note.
+- **6/R120 QA test-provider wording** — updated manual/production QA docs from `mock mode`
+  and `demo data` phrasing to test-provider/test-data wording while preserving explicit local
+  mock checkout route names.
 
 ## 1. Functional / correctness
 

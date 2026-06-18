@@ -143,7 +143,7 @@ Before starting:
 
 1. Open `/checkout/[sessionId]` for a valid pending session.
 2. Confirm provider checkout state and order/payment summary.
-3. Open `/checkout/mock/[sessionId]` only in local or explicitly allowed mock mode.
+3. Open `/checkout/mock/[sessionId]` only in local or explicitly allowed test-provider mode.
 4. Complete mock checkout and confirm backend fulfillment.
 5. Open an invalid session and confirm safe not-found/error state.
 6. Refresh the checkout success/return page and confirm fulfillment is idempotent.
