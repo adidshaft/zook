@@ -229,7 +229,7 @@ export default function Plans() {
                   icon={
                     planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"
                   }
-                  tone={planKind(assignment).includes("diet") ? "blue" : "lime"}
+                  tone="neutral"
                   size={42}
                 />
                 <Text style={[styles.libraryTitle, { color: palette.text.primary }]}>

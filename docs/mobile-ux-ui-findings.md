@@ -898,3 +898,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web pricing tier-label cues (`R176`) are closed: pricing tier
   name badges now use neutral styling instead of lime/blue tier-based color, keeping the
   promotional emphasis on the existing Popular label.
+- **[ui, fixed]** Overstated mobile assigned-plan type cues (`R177`) are closed: assigned
+  plan library icons now use neutral styling instead of blue/lime category color, keeping
+  plan type readable through the icon shape and plan title.
