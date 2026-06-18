@@ -143,6 +143,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   removed the now-unused plan exercise type file.
 - **6/R51 Mobile skeleton alias** — replaced the remaining `LoadingSkeleton` alias callers with
   the canonical `Skeleton` primitive and removed the wrapper export.
+- **6/R52 Web placeholder README cleanup** — removed one-line scaffold README files from web
+  domain, query-hook, and overview component folders.
 
 ## 1. Functional / correctness
 
