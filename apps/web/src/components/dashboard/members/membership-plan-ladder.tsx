@@ -76,7 +76,7 @@ export function MembershipPlanLadder({
                     />
                     <StatusPill
                       value={plan.publicVisible ? "Public" : "Private"}
-                      tone={plan.publicVisible ? "blue" : "neutral"}
+                      tone="neutral"
                     />
                   </div>
                 ),

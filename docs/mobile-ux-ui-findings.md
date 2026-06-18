@@ -892,3 +892,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web settings hub card-label cues (`R174`) are closed: normal
   settings card badges now use neutral styling instead of informational blue, keeping amber
   only for cards that need action.
+- **[ui, fixed]** Overstated web public-visibility cues (`R175`) are closed: public/visible
+  badges for plans, member profiles, and body-composition entries now use neutral styling
+  instead of informational blue, keeping color on active, paused, private, and marketing states.

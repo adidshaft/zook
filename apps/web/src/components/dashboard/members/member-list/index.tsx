@@ -99,7 +99,7 @@ export function MemberList({
           <div className="flex flex-wrap gap-2">
             <StatusPill
               value={row.profile.publicVisibility ? "Visible" : "Private"}
-              tone={row.profile.publicVisibility ? "blue" : "neutral"}
+              tone="neutral"
             />
             <StatusPill
               value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}

@@ -102,7 +102,7 @@ export function MembershipCatalogSection({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill
                       value={plan.publicVisible ? "Public" : "Private"}
-                      tone={plan.publicVisible ? "blue" : "neutral"}
+                      tone="neutral"
                     />
                     <StatusPill
                       value={plan.active ? "Active" : "Paused"}

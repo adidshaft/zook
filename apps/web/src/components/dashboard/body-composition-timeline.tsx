@@ -63,7 +63,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
               <div className="grid gap-3 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(entry.measuredAt)}</p>
-                  <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "blue"}>
+                  <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "neutral"}>
                     {entry.visibility ? formatEnumLabel(entry.visibility) : "Visible"}
                   </Pill>
                 </div>
