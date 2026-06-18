@@ -139,6 +139,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "google", "callback"])) {
     const body = googleAuthCallbackSchema.parse(await readJson(request));
+    await assertRateLimit(
+      "ssoCallbackByIp",
+      getClientIp(request),
+      "Too many sign-in attempts from this IP.",
+    );
     const payload = await verifyRemoteJwt({
       token: body.idToken,
       jwksUrl: "https://www.googleapis.com/oauth2/v3/certs",
@@ -169,6 +174,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "apple", "callback"])) {
     const body = appleAuthCallbackSchema.parse(await readJson(request));
+    await assertRateLimit(
+      "ssoCallbackByIp",
+      getClientIp(request),
+      "Too many sign-in attempts from this IP.",
+    );
     const payload = await verifyRemoteJwt({
       token: body.identityToken,
       jwksUrl: "https://appleid.apple.com/auth/keys",

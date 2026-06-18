@@ -67,6 +67,18 @@ const sensitiveRoutes = [
     sourceLabel: "api-router/auth.ts",
   },
   {
+    label: "Google SSO callback",
+    needle: 'pathMatches(path, ["auth", "google", "callback"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
+  {
+    label: "Apple SSO callback",
+    needle: 'pathMatches(path, ["auth", "apple", "callback"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
+  {
     label: "organization create",
     needle: 'pathMatches(path, ["orgs"])',
     source: organizationRootRouteSource,
