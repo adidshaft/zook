@@ -349,15 +349,7 @@ export function NotificationComposerPanel({
       />
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
       <GlassCard>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold">Send a message</h2>
-            <p className="mt-2 text-sm text-white/50">
-              Choose the purpose, audience, message, then review delivery.
-            </p>
-          </div>
-        </div>
-        <div className="mt-5 grid gap-4">
+        <div className="grid gap-4">
           {step === 1 ? (
             <MessageTypeStep
               type={type}
