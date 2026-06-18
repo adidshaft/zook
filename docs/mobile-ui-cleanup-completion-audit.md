@@ -42,7 +42,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `20be054 chore: trim unused mobile query keys`,
   `2a24111 chore: narrow mobile domain component exports`, and
   `5124b8b chore: remove unused mobile tracking displays`,
-  `aebf45c chore: remove trainer ai draft placeholder`.
+  `aebf45c chore: remove trainer ai draft placeholder`, and
+  `3ec422b chore: remove unused mobile utility helpers`.
 
 ### Web UI/UX plan
 
