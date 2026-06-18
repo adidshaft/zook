@@ -17,8 +17,8 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
       
       {gallery.length ? (
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Photos & Gallery</h2>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">Explore our premium facilities, workout floor, and training space.</p>
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("galleryTitle")}</h2>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">{t("galleryCopy")}</p>
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-6">
             {gallery.slice(0, 15).map((imageUrl, index) => (
               <div 
