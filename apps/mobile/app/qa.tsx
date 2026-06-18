@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Role } from "@zook/core";
 
@@ -75,9 +75,14 @@ function launchRoleShortcut(shortcut: RoleShortcut) {
 
 export default function QaLauncherScreen() {
   const { palette } = useTheme();
+  const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const visibleRoleShortcuts = isMobileFeatureEnabled("AI_CHAT_ENABLED")
     ? roleShortcuts
     : roleShortcuts.filter((shortcut) => shortcut.target !== "/assistant");
+
+  if (!qaShortcutsEnabled) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <ZookScreen testID="qa-launcher-screen">

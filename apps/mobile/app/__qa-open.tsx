@@ -1,10 +1,11 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { Redirect, useLocalSearchParams, router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { deleteStoredValue } from "@/lib/storage";
 import type {
   OrgMemberRecord,
@@ -54,11 +55,15 @@ function fallbackRoute(kind: QaOpenKind) {
 
 export default function QaOpenRoute() {
   const { palette } = useTheme();
+  const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const { activeOrgId, session, status, token } = useAuth();
   const { selectBranch } = useBranchSelection();
   const { kind } = useLocalSearchParams<{ kind?: string | string[] }>();
 
   useEffect(() => {
+    if (!qaShortcutsEnabled) {
+      return;
+    }
     const resolvedKind = firstParam(kind) as QaOpenKind | undefined;
     if (!resolvedKind) {
       router.replace("/" as never);
@@ -181,7 +186,11 @@ export default function QaOpenRoute() {
     return () => {
       cancelled = true;
     };
-  }, [activeOrgId, kind, selectBranch, session?.user.id, status, token]);
+  }, [activeOrgId, kind, qaShortcutsEnabled, selectBranch, session?.user.id, status, token]);
+
+  if (!qaShortcutsEnabled) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <View testID="qa-open-screen" style={[styles.container, { backgroundColor: palette.bg.app }]}>

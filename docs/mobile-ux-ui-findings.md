@@ -591,3 +591,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate body-progress visibility label (`R70`) is closed: the dashboard
   body-composition timeline now uses shared web `formatEnumLabel` instead of local underscore
   replacement.
+- **[code, fixed]** Direct mobile QA shortcut surfaces (`R71`) is closed: the QA launcher and
+  internal `__qa-*` helper routes now self-gate behind the same local feature flag used by the
+  visible shortcut buttons.

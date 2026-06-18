@@ -1,10 +1,11 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { Redirect, useLocalSearchParams, router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import type { Role } from "@zook/core";
 import { isOrgRole } from "@zook/core/permissions";
 
 import { useAuth } from "@/lib/auth";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { routeForRole } from "@/lib/route-guards";
 import { useTheme } from "@/lib/theme";
 
@@ -69,6 +70,7 @@ function targetWithView(target: string, view?: string | string[]) {
 
 export default function QaRoleRoute() {
   const { palette } = useTheme();
+  const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const { payload, role, target, view } = useLocalSearchParams<{
     payload?: string | string[];
     role?: string | string[];
@@ -78,6 +80,9 @@ export default function QaRoleRoute() {
   const { session, status, switchOrg, switchRole } = useAuth();
 
   useEffect(() => {
+    if (!qaShortcutsEnabled) {
+      return;
+    }
     const decodedPayload = decodePayload(payload);
     const nextRole = String(decodedPayload?.role ?? firstParam(role) ?? "").toUpperCase() as Role;
     const requestedTarget = safeTarget(decodedPayload?.target ?? target);
@@ -128,7 +133,11 @@ export default function QaRoleRoute() {
     })().catch(() => {
       router.replace((`/__demo-role?${fallbackQuery}`) as never);
     });
-  }, [payload, role, session, status, switchOrg, switchRole, target, view]);
+  }, [payload, qaShortcutsEnabled, role, session, status, switchOrg, switchRole, target, view]);
+
+  if (!qaShortcutsEnabled) {
+    return <Redirect href="/login" />;
+  }
 
   return (
     <View testID="qa-role-screen" style={[styles.container, { backgroundColor: palette.bg.app }]}>
