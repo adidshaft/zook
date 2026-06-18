@@ -38,7 +38,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
   useCreateShopOrder,
@@ -720,7 +720,7 @@ export default function Shop() {
           >
             <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
-          <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
+          <StatusChip status={titleCaseFromCode(order.status)} tone="lime" />
         </Card>
         {canShowPickupQr ? (
           <Card variant="compact" contentStyle={styles.pickupQrContent}>
@@ -1041,7 +1041,7 @@ export default function Shop() {
                     onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
                     trailing={
                       <StatusChip
-                        status={historyOrder.status.replace(/_/g, " ")}
+                        status={titleCaseFromCode(historyOrder.status)}
                         tone={
                           historyOrder.status === "FULFILLED" || historyOrder.status === "READY_FOR_PICKUP"
                             ? "lime"

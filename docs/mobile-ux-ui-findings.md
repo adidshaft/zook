@@ -582,3 +582,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate reception status formatting (`R67`) is closed: reception desk,
   orders, payments, and verification copy now use shared mobile `titleCaseFromCode` instead of
   local underscore replacement.
+- **[code, fixed]** Duplicate shop order status formatting (`R68`) is closed: mobile shop
+  pickup and history status chips now use shared `titleCaseFromCode` instead of local underscore
+  replacement.
