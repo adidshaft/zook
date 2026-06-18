@@ -156,6 +156,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R57 Package scaffold README cleanup** — removed one-line placeholder README files from
   package source, config, token, UI, and migration folders while keeping the substantive Figma
   package READMEs.
+- **6/R58 Top-level scaffold README cleanup** — removed the remaining tracked one-line README
+  placeholders from app, artifact, docs, plans, package, and script grouping folders while
+  preserving READMEs with substantive guidance.
 
 ## 1. Functional / correctness
 
