@@ -201,6 +201,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   pulsing animation to a static status dot while preserving color, size, and layout.
 - **6/R76 Line chart endpoint pulse** — removed the dashboard line chart's infinite endpoint
   halo loop and stale motion comments while keeping the static endpoint marker.
+- **6/R77 Public hero pointer glow** — removed the one-off cursor-following spotlight from the
+  public hero dashboard card and deleted the now-unused visual helper export.
 
 ## 1. Functional / correctness
 

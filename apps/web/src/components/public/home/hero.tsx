@@ -4,7 +4,6 @@ import { HeroRingOrnament, MiniSparkline } from "@/components/hero-ornaments";
 import {
   Counter,
   MotionSurface,
-  PointerSpotlight,
   Reveal,
   Stagger,
   StaggerItem,
@@ -68,7 +67,6 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
         <div aria-hidden className="absolute -inset-6 -z-10 rounded-[40px] border border-[var(--border-subtle)]" />
         <HeroRingOrnament className="absolute -right-6 -top-12 z-0 hidden lg:block" />
         <GlassCard variant="strong" className="group relative overflow-hidden p-6 text-[var(--text-primary)]">
-          <PointerSpotlight className="hidden lg:block" />
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-tertiary)]">{t("ownerDashboard")}</p>
