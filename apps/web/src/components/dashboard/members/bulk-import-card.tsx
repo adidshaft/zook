@@ -80,7 +80,7 @@ export function BulkImportCard({
         eyebrow="Onboarding"
         title="Bulk member import"
         description="Upload a CSV file with member details to add them all at once. CSV must include 'name' and 'email' columns. Optional: 'phone'."
-        badge={<Pill tone="blue">CSV</Pill>}
+        badge={<Pill>CSV</Pill>}
       />
       <div className="mt-5 grid gap-4">
         <div className="flex flex-wrap items-center gap-3">

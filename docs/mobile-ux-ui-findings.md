@@ -796,3 +796,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification template cue (`R142`) is closed: saved
   notification template type metadata now uses neutral badge styling instead of informational
   blue, keeping stronger tones for operational delivery states and budgets.
+- **[ui, fixed]** Overstated web dashboard header-label cue (`R143`) is closed: shop
+  product creation and member bulk-import header labels now use neutral badge styling instead
+  of informational blue, matching their role as form-mode and file-format metadata.

@@ -41,7 +41,7 @@ export function ProductCreateForm({
             {scopeLabel}. Product photos should be clear and square or slightly wide.
           </p>
         </div>
-        <Pill tone="blue">Create</Pill>
+        <Pill>Create</Pill>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <label className="grid gap-1 text-xs font-medium text-white/50">
