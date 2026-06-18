@@ -15,8 +15,8 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
   return (
     <div className="space-y-6">
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} tone="blue" />
-        <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} tone="lime" />
+        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} />
+        <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} />
       </section>
       
       {gallery.length ? (
@@ -51,12 +51,10 @@ function TagCard({
   title,
   empty,
   items,
-  tone,
 }: {
   title: string;
   empty: string;
   items: string[];
-  tone: "blue" | "lime";
 }) {
   return (
     <GlassCard>
@@ -64,7 +62,7 @@ function TagCard({
       <div className="mt-5 flex flex-wrap gap-2">
         {items.length ? (
           items.map((item) => (
-            <Pill key={item} tone={tone} className="transition-transform duration-200 hover:scale-105">
+            <Pill key={item} className="transition-transform duration-200 hover:scale-105">
               {item}
             </Pill>
           ))

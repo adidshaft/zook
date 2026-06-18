@@ -802,3 +802,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web trainer diet surface cue (`R144`) is closed: the trainer
   diet-plan panel fallback "Web dashboard" badge now uses neutral styling, keeping lime
   reserved for actual success notices.
+- **[ui, fixed]** Overstated web public amenity tags (`R145`) are closed: public gym
+  facilities and equipment now share neutral tag styling instead of blue/lime status-like
+  colors for plain content metadata.
