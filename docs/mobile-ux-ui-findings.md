@@ -663,3 +663,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading owner billing subscription tone (`R97`) is closed: owner billing
   now tones SaaS subscription chips by actual trial/payment/suspended/cancelled status instead
   of treating every non-active state as amber.
+- **[ui, fixed]** Duplicate owner billing setup status cue (`R98`) is closed: owner home and
+  billing now share SaaS subscription tone logic and the setup card uses formatted status copy
+  instead of raw enum text with a fixed amber tone.

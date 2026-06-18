@@ -21,7 +21,7 @@ import {
   useOwnerBillingSubscription,
   useUpgradeSaasSubscription,
 } from "@/lib/domains/owner";
-import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { toWebUrl } from "@/lib/api";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -39,19 +39,6 @@ function activeMembersCopy(count: number) {
   const noun = count === 1 ? "member" : "members";
   const verb = count === 1 ? "counts" : "count";
   return `${count} ${noun} currently ${verb} toward your plan limits`;
-}
-
-function toneForSaasSubscriptionStatus(status?: string | null) {
-  if (status === "ACTIVE" || status === "TRIAL_ACTIVE") {
-    return "lime" as const;
-  }
-  if (status === "TRIAL_EXPIRING" || status === "PAYMENT_PENDING") {
-    return "amber" as const;
-  }
-  if (status === "TRIAL_EXPIRED" || status === "SUSPENDED" || status === "CANCELLED" || status === "DELETED") {
-    return "red" as const;
-  }
-  return "neutral" as const;
 }
 
 function toneForMandateStatus(status?: string | null) {

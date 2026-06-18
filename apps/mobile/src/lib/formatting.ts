@@ -121,6 +121,19 @@ export function toneForShopOrderStatus(status?: string | null) {
   return "neutral" as const;
 }
 
+export function toneForSaasSubscriptionStatus(status?: string | null) {
+  if (status === "ACTIVE" || status === "TRIAL_ACTIVE") {
+    return "lime" as const;
+  }
+  if (status === "TRIAL_EXPIRING" || status === "PAYMENT_PENDING") {
+    return "amber" as const;
+  }
+  if (status === "TRIAL_EXPIRED" || status === "SUSPENDED" || status === "CANCELLED" || status === "DELETED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
 export function formatElapsedTimer(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);

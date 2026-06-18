@@ -12,7 +12,7 @@ import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
-import { formatCompactNumber, formatInr } from "@/lib/formatting";
+import { formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
@@ -245,7 +245,10 @@ export default function OwnerCommandScreen() {
                           gym can operate normally.
                         </Text>
                       </View>
-                      <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
+                      <StatusChip
+                        status={subscription ? titleCaseFromCode(subscription.status) : "Setup"}
+                        tone={toneForSaasSubscriptionStatus(subscription?.status)}
+                      />
                     </View>
                     <ZookButton
                       size="sm"
