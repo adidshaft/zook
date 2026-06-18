@@ -8,14 +8,14 @@ const scanTargets = [
   "apps/web/app/desk",
   "apps/web/src/components/dashboard",
   "apps/web/src/components/dashboard-shell.tsx",
-  "apps/web/src/components/desk-panel.tsx",
-  "apps/web/src/components/notification-composer-panel.tsx",
   "apps/web/messages/dashboard",
 ];
 
 const bannedCopy = [
+  /\bcoming soon\b/i,
   /\bmvp\b/i,
   /\bdefault branch\b/i,
+  /\bnot available yet\b/i,
   /\bsample data\b/i,
   /\bsample view\b/i,
   /\btest mode\b/i,

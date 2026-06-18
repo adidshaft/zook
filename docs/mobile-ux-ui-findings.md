@@ -248,6 +248,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   the actual `offlineDemo` terminology used by the mobile config.
 - **6/R99 Dashboard copy guard** — added "sample data" to the dashboard copy guard so the
   cleaned fallback workspace label cannot regress silently.
+- **6/R100 Dashboard disabled-cue guard** — removed stale dashboard-copy scan targets and added
+  guard patterns for "coming soon" and "not available yet" dashboard copy regressions.
 
 ## 1. Functional / correctness
 
