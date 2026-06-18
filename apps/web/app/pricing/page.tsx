@@ -5,6 +5,7 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
+import { formatInr } from "@/lib/format";
 import {
   alternatePublicLocale,
   localizedPath,
@@ -64,10 +65,6 @@ const tierHighlights: Record<SaasTier, string[]> = {
     "Best for multi-branch operators and serious scale",
   ],
 };
-
-function formatInr(paise: number) {
-  return `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;
-}
 
 function planPrice(plan: SaasPlanDefinition) {
   if (plan.tier === "FREE") {

@@ -545,3 +545,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   of carrying local status-to-tone mappings.
 - **[code, fixed]** Duplicate platform INR formatter (`R53`) is closed: mobile platform
   billing now uses shared `formatInr` instead of carrying a local rupee formatter.
+- **[code, fixed]** Duplicate web INR formatters (`R54`) is closed: pricing and trainer
+  payouts now use shared web `formatInr` instead of carrying local rupee formatters.

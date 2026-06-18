@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { GlassCard } from "@/components/glass-card";
 import { webApiFetch } from "@/lib/api-client";
+import { formatInr } from "@/lib/format";
 import type { DashboardRoutePanelBaseProps } from "../route-panels";
 
 type StaffUser = { id: string; name: string; email: string };
@@ -18,10 +19,6 @@ type Payout = {
   trainer?: StaffUser | null;
   lines: PayoutLine[];
 };
-
-function formatInr(paise: number) {
-  return `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;
-}
 
 export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
