@@ -13,7 +13,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ImageAssetUpload } from "./image-asset-upload";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
-import { formatEnumLabel } from "@/lib/format";
+import { formatEnumLabel, formatIndiaPhoneInput } from "@/lib/format";
 import {
   amenityOptions,
   ChipPicker,
@@ -126,24 +126,6 @@ function appOrigin() {
     return "";
   }
   return window.location.origin;
-}
-
-function formatIndiaPhone(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
-    return trimmed;
-  }
-  let clean = value;
-  if (clean.startsWith("+91")) {
-    clean = clean.slice(3);
-  }
-  let digits = clean.replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) {
-    digits = digits.slice(2);
-  } else if (digits.length === 11 && digits.startsWith("0")) {
-    digits = digits.slice(1);
-  }
-  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
 }
 
 export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
@@ -360,7 +342,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <Field
                 label="Contact phone"
                 value={form.contactPhone}
-                onChange={(value) => update("contactPhone", formatIndiaPhone(value))}
+                onChange={(value) => update("contactPhone", formatIndiaPhoneInput(value))}
               />
               <SelectField
                 label="Gym type"

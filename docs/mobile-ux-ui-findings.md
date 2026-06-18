@@ -570,3 +570,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate SaaS limit label helpers (`R63`) is closed: billing and platform
   subscription views now share web `formatUsageLimit`, and the no-caller server limit formatter
   was removed.
+- **[code, fixed]** Duplicate India phone input formatter (`R64`) is closed: start-gym and
+  gym-profile setup now share web `formatIndiaPhoneInput` instead of carrying identical local
+  input formatters.

@@ -30,6 +30,24 @@ export function formatUsageLimit(
   return options.compact ? formatCompactNumber(limit) : String(limit);
 }
 
+export function formatIndiaPhoneInput(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
+    return trimmed;
+  }
+  let clean = value;
+  if (clean.startsWith("+91")) {
+    clean = clean.slice(3);
+  }
+  let digits = clean.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
+}
+
 function coerceDate(value: Date | string | null | undefined) {
   if (!value) {
     return null;
