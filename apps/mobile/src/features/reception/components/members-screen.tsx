@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { MemberList } from "@/components/domain/member-list";
 import { AuditWarning, Card, FormField, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
-import { ageLabel } from "../helpers";
+import { formatAgeLabel } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -141,7 +141,7 @@ export function ReceptionMembersScreenBody() {
                   title="Desk actions"
                   subtitle={
                     member?.name
-                      ? `${member.name} selected · ${ageLabel(member.dateOfBirth)}`
+                      ? `${member.name} selected · ${formatAgeLabel(member.dateOfBirth)}`
                       : "Search or select a member"
                   }
                 />

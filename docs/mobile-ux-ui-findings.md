@@ -529,3 +529,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   labels.
 - **[code, fixed]** Feature-local mobile age formatter (`R47`) is closed: reception surfaces
   now use shared mobile `formatAgeLabel` instead of carrying date-of-birth age math locally.
+- **[code, fixed]** Reception age wrapper (`R48`) is closed: reception screens now import
+  shared `formatAgeLabel` directly instead of routing through a feature-local wrapper.

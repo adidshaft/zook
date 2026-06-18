@@ -50,7 +50,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { formatInr } from "@/lib/formatting";
+import { formatAgeLabel, formatInr } from "@/lib/formatting";
 import {
   useApproveAttendance,
   useManualAttendance,
@@ -72,7 +72,7 @@ import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
-import { ageLabel, deskReasonCopy, phoneRevealStorageKey } from "./helpers";
+import { deskReasonCopy, phoneRevealStorageKey } from "./helpers";
 import { receptionWorkspaceStyles as styles } from "./styles";
 
 export { receptionWorkspaceStyles } from "./styles";
@@ -254,7 +254,7 @@ function useReceptionWorkspaceState({
           phone: record.user?.phone,
           avatarUrl: record.user?.profilePhotoUrl ?? record.profile.profilePhotoUrl,
           status,
-          meta: ageLabel(record.user?.dateOfBirth),
+          meta: formatAgeLabel(record.user?.dateOfBirth),
           phoneRevealed: revealedPhones.has(record.profile.userId),
           badges:
             multiSelectMode && isMultiChecked
