@@ -19,6 +19,12 @@ type RoleTabBarProps = {
   centerAction?: { routeName: string };
 };
 
+const parentTabRouteByChildRoute: Record<string, string> = {
+  billing: "more",
+  diet: "plan",
+  stock: "more",
+};
+
 const TabBarBackdrop = memo(function TabBarBackdrop({
   height,
   color,
@@ -56,6 +62,8 @@ export function RoleTabBar({
   const reduceMotion = useReduceMotion();
   const { visible } = useContext(BottomNavVisibilityContext);
   const backdropHeight = 100 + insets.bottom;
+  const focusedOptions = descriptors[state.routes[state.index]?.key ?? ""]?.options;
+  const focusedTabBarStyle = focusedOptions?.tabBarStyle;
   const focusedRouteName = state.routes[state.index]?.name;
   const [barWidth, setBarWidth] = useState(0);
   const visibleRoutes = state.routes.filter((route: any) => {
@@ -63,13 +71,20 @@ export function RoleTabBar({
     const itemStyle = options?.tabBarItemStyle;
     return options?.href !== null && itemStyle?.display !== "none";
   });
-  const focusedVisibleIndex = Math.max(
+  const parentRouteName =
+    (focusedRouteName ? parentTabRouteByChildRoute[focusedRouteName] : undefined) ?? undefined;
+  const activeRouteName = parentRouteName ?? focusedRouteName;
+  const activeVisibleIndex = Math.max(
     0,
-    visibleRoutes.findIndex((route: any) => route.name === focusedRouteName),
+    visibleRoutes.findIndex((route: any) => route.name === activeRouteName),
   );
-  const focusedIsCenter = centerAction?.routeName === focusedRouteName;
+  const hideForFocusedRoute =
+    focusedTabBarStyle?.display === "none" ||
+    (!parentRouteName &&
+      (focusedOptions?.href === null || focusedOptions?.tabBarItemStyle?.display === "none"));
   const glass = materials.glassBar(mode);
   const tonal = materials.tonalBar(mode);
+  const focusedIsCenter = centerAction?.routeName === activeRouteName;
 
   const translateY = useRef(new RNAnimated.Value(0)).current;
   const opacity = useRef(new RNAnimated.Value(1)).current;
@@ -95,7 +110,7 @@ export function RoleTabBar({
 
   useEffect(() => {
     if (!itemWidth || focusedIsCenter) return;
-    const target = focusedVisibleIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
+    const target = activeVisibleIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
     if (reduceMotion) {
       indicatorX.setValue(target);
       return;
@@ -107,7 +122,7 @@ export function RoleTabBar({
       mass: 1,
       useNativeDriver: true,
     }).start();
-  }, [focusedIsCenter, focusedVisibleIndex, indicatorWidth, indicatorX, itemWidth, reduceMotion]);
+  }, [activeVisibleIndex, focusedIsCenter, indicatorWidth, indicatorX, itemWidth, reduceMotion]);
 
   const materialStyle = useMemo(
     () =>
@@ -123,6 +138,10 @@ export function RoleTabBar({
           },
     [glass.hairline, tonal.backgroundColor, tonal.elevation, tonal.topHairline],
   );
+
+  if (hideForFocusedRoute) {
+    return null;
+  }
 
   return (
     <RNAnimated.View
@@ -186,7 +205,7 @@ export function RoleTabBar({
               Platform.OS === "android" ? styles.androidActiveIndicator : null,
               {
                 backgroundColor:
-                  mode === "dark" ? palette.surface.accentSoft : "rgba(31,62,36,0.14)",
+                  mode === "dark" ? palette.surface.accentSoft : "rgba(31,62,36,0.16)",
                 width: indicatorWidth,
                 transform: [{ translateX: indicatorX }],
               },
@@ -201,7 +220,7 @@ export function RoleTabBar({
               : options.title !== undefined
                 ? options.title
                 : route.name;
-          const isFocused = focusedRouteName === route.name;
+          const isFocused = activeRouteName === route.name;
           const color = isFocused ? palette.accent.base : palette.text.tertiary;
           const badge = badges?.[route.name];
           const stringLabel = typeof label === "string" ? label : route.name;
@@ -318,7 +337,14 @@ export function RoleTabBar({
                   </View>
                 ) : null}
                 {icon}
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.92} style={[styles.tabLabel, { color }]}>{stringLabel}</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.92}
+                  style={[styles.tabLabel, isFocused ? styles.tabLabelActive : null, { color }]}
+                >
+                  {stringLabel}
+                </Text>
               </View>
             </Pressable>
           );
@@ -417,6 +443,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: "100%",
     textAlign: "center",
+  },
+  tabLabelActive: {
+    fontFamily: "Inter_700Bold",
   },
   centerActionContainer: {
     flex: 1.1,
