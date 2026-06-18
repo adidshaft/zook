@@ -66,7 +66,43 @@ type PaymentSessionMetadata = {
   joinRequestId?: string;
 };
 
+type DeferredNotificationInput = {
+  orgId?: string;
+  createdById?: string;
+  type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
+  title: string;
+  body: string;
+  audience: string;
+  metadata?: Prisma.InputJsonValue;
+  userIds: string[];
+  pushEnabled?: boolean;
+};
+
+type MembershipEnsureInput = {
+  orgId: string;
+  userId: string;
+  joinedAt?: Date;
+  profilePhotoUrl?: string | null;
+  marketingOptIn?: boolean;
+};
+
+type MembershipOpsClient = Pick<
+  typeof prisma,
+  "memberSubscription" | "referralReward" | "referralCode" | "referralPolicy"
+>;
+
+type ReferralRewardClient = Pick<
+  MembershipOpsClient,
+  "memberSubscription" | "referralReward"
+>;
+
+type ReferralFulfillmentClient = Pick<
+  MembershipOpsClient,
+  "memberSubscription" | "referralReward" | "referralCode" | "referralPolicy"
+>;
+
 async function applyReferralRewardToSubscription(input: {
+  client: ReferralRewardClient;
   rewardType: "DAYS" | "VISITS";
   rewardValue: number;
   subscription: {
@@ -80,7 +116,7 @@ async function applyReferralRewardToSubscription(input: {
       input.subscription.endsAt && input.subscription.endsAt.getTime() > Date.now()
         ? input.subscription.endsAt
         : new Date();
-    return prisma.memberSubscription.update({
+    return input.client.memberSubscription.update({
       where: { id: input.subscription.id },
       data: {
         endsAt: new Date(baseEnd.getTime() + input.rewardValue * 24 * 60 * 60 * 1000),
@@ -88,13 +124,14 @@ async function applyReferralRewardToSubscription(input: {
     });
   }
 
-  return prisma.memberSubscription.update({
+  return input.client.memberSubscription.update({
     where: { id: input.subscription.id },
     data: { remainingVisits: (input.subscription.remainingVisits ?? 0) + input.rewardValue },
   });
 }
 
 async function applyPendingReferralRewardsForSubscription(input: {
+  client: MembershipOpsClient;
   orgId: string;
   referrerUserId: string;
   subscription: {
@@ -103,7 +140,7 @@ async function applyPendingReferralRewardsForSubscription(input: {
     remainingVisits: number | null;
   };
 }) {
-  const rewards = await prisma.referralReward.findMany({
+  const rewards = await input.client.referralReward.findMany({
     where: {
       orgId: input.orgId,
       referrerUserId: input.referrerUserId,
@@ -116,11 +153,12 @@ async function applyPendingReferralRewardsForSubscription(input: {
   let subscription = input.subscription;
   for (const reward of rewards) {
     subscription = await applyReferralRewardToSubscription({
+      client: input.client,
       rewardType: reward.rewardType as "DAYS" | "VISITS",
       rewardValue: reward.rewardValue,
       subscription,
     });
-    await prisma.referralReward.update({
+    await input.client.referralReward.update({
       where: { id: reward.id },
       data: {
         appliedToSubId: input.subscription.id,
@@ -198,35 +236,28 @@ async function assertPaymentSessionTargetIntegrity(input: {
 }
 
 async function fulfillReferralReward(input: {
+  client: ReferralFulfillmentClient;
   orgId: string;
   referralCodeId: string;
   redemptionId: string;
-  createNotification: (input: {
-    orgId?: string;
-    createdById?: string;
-    type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
-    title: string;
-    body: string;
-    audience: string;
-    metadata?: Prisma.InputJsonValue;
-    userIds: string[];
-    pushEnabled?: boolean;
-  }) => Promise<unknown>;
 }) {
   const [referralCode, policy, existingReward] = await Promise.all([
-    prisma.referralCode.findUnique({ where: { id: input.referralCodeId } }),
-    prisma.referralPolicy.upsert({
+    input.client.referralCode.findUnique({ where: { id: input.referralCodeId } }),
+    input.client.referralPolicy.upsert({
       where: { orgId: input.orgId },
       update: {},
       create: { orgId: input.orgId },
     }),
-    prisma.referralReward.findUnique({ where: { redemptionId: input.redemptionId } }),
+    input.client.referralReward.findUnique({ where: { redemptionId: input.redemptionId } }),
   ]);
   if (!referralCode || existingReward || policy.referrerRewardType === "NONE" || !policy.enabled) {
-    return existingReward;
+    return {
+      reward: existingReward,
+      notification: null as DeferredNotificationInput | null,
+    };
   }
 
-  const activeSubscription = await prisma.memberSubscription.findFirst({
+  const activeSubscription = await input.client.memberSubscription.findFirst({
     where: {
       orgId: input.orgId,
       memberUserId: referralCode.referrerUserId,
@@ -240,6 +271,7 @@ async function fulfillReferralReward(input: {
 
   if (activeSubscription) {
     await applyReferralRewardToSubscription({
+      client: input.client,
       rewardType,
       rewardValue: policy.referrerRewardValue,
       subscription: activeSubscription,
@@ -248,7 +280,7 @@ async function fulfillReferralReward(input: {
     appliedAt = new Date();
   }
 
-  const reward = await prisma.referralReward.create({
+  const reward = await input.client.referralReward.create({
     data: {
       orgId: input.orgId,
       referralCodeId: input.referralCodeId,
@@ -262,19 +294,21 @@ async function fulfillReferralReward(input: {
       ...(appliedAt ? {} : { expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) }),
     },
   });
-  await input.createNotification({
-    orgId: input.orgId,
-    type: "ENGAGEMENT",
-    title: appliedAt ? "Referral reward earned" : "Referral reward saved",
-    body: appliedAt
-      ? `You earned +${policy.referrerRewardValue} ${rewardType.toLowerCase()} from a referral.`
-      : `You have a pending referral reward waiting for your next active membership.`,
-    audience: "selected_member",
-    userIds: [referralCode.referrerUserId],
-    pushEnabled: true,
-    metadata: { referralRewardId: reward.id, referralCodeId: input.referralCodeId },
-  });
-  return reward;
+  return {
+    reward,
+    notification: {
+      orgId: input.orgId,
+      type: "ENGAGEMENT",
+      title: appliedAt ? "Referral reward earned" : "Referral reward saved",
+      body: appliedAt
+        ? `You earned +${policy.referrerRewardValue} ${rewardType.toLowerCase()} from a referral.`
+        : "You have a pending referral reward waiting for your next active membership.",
+      audience: "selected_member",
+      userIds: [referralCode.referrerUserId],
+      pushEnabled: true,
+      metadata: { referralRewardId: reward.id, referralCodeId: input.referralCodeId },
+    } satisfies DeferredNotificationInput,
+  };
 }
 
 export async function applyPaymentSessionStatus(input: {
@@ -284,36 +318,24 @@ export async function applyPaymentSessionStatus(input: {
   providerRef?: string;
   paymentMode: PaymentMode;
   expectedAmountPaise?: number;
-  createNotification: (input: {
-    orgId?: string;
-    createdById?: string;
-    type: "TRANSACTIONAL" | "OPERATIONAL" | "PROMOTIONAL" | "ENGAGEMENT" | "PLAN" | "SECURITY";
-    title: string;
-    body: string;
-    audience: string;
-    metadata?: Prisma.InputJsonValue;
-    userIds: string[];
-    pushEnabled?: boolean;
-  }) => Promise<unknown>;
-  ensureMembership: (input: {
-    orgId: string;
-    userId: string;
-    joinedAt?: Date;
-    profilePhotoUrl?: string | null;
-    marketingOptIn?: boolean;
-  }) => Promise<void>;
+  createNotification: (input: DeferredNotificationInput) => Promise<unknown>;
+  ensureMembership: (
+    input: MembershipEnsureInput,
+    tx?: Prisma.TransactionClient,
+  ) => Promise<void>;
 }) {
   async function findPaymentBySessionOrProviderRef(
+    client: Pick<typeof prisma, "payment">,
     inputRef: { sessionId: string; provider: string; providerRef?: string },
   ) {
-    const existingBySession = await prisma.payment.findUnique({ where: { sessionId: inputRef.sessionId } });
+    const existingBySession = await client.payment.findUnique({ where: { sessionId: inputRef.sessionId } });
     if (existingBySession) {
       return existingBySession;
     }
     if (!inputRef.providerRef) {
       return null;
     }
-    return prisma.payment.findFirst({
+    return client.payment.findFirst({
       where: { provider: inputRef.provider, providerRef: inputRef.providerRef },
       orderBy: { createdAt: "asc" },
     });
@@ -355,6 +377,364 @@ export async function applyPaymentSessionStatus(input: {
   const metadata = ((currentSession.metadata ?? {}) as PaymentSessionMetadata) ?? {};
   await assertPaymentSessionTargetIntegrity({ session: currentSession, metadata });
 
+  if (nextState.status === "SUCCEEDED" && metadata.subscriptionId) {
+    const subscriptionId = metadata.subscriptionId;
+    const membershipFulfillment = await prisma.$transaction(
+      async (tx) => {
+        const notifications: DeferredNotificationInput[] = [];
+        const session = await tx.paymentSession.update({
+          where: { id: input.sessionId },
+          data: clean({
+            provider: input.provider,
+            providerRef: input.providerRef ?? currentSession.providerRef ?? undefined,
+            status: nextState.status,
+            completedAt,
+          }),
+        });
+        const resolvedProviderRef = input.providerRef ?? session.providerRef ?? session.id;
+        let payment = await findPaymentBySessionOrProviderRef(tx, {
+          sessionId: session.id,
+          provider: input.provider,
+          providerRef: resolvedProviderRef,
+        });
+
+        payment = payment
+          ? await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                ...(payment.sessionId ? {} : { sessionId: session.id }),
+                ...(payment.branchId || session.branchId
+                  ? { branchId: payment.branchId ?? session.branchId }
+                  : {}),
+                status: "SUCCEEDED",
+                mode: input.paymentMode,
+                provider: input.provider,
+                providerRef: resolvedProviderRef,
+                recordedAt: payment.recordedAt ?? new Date(),
+              },
+            })
+          : await tx.payment.create({
+              data: {
+                ...(session.orgId ? { orgId: session.orgId } : {}),
+                ...(session.branchId ? { branchId: session.branchId } : {}),
+                ...(session.userId ? { userId: session.userId } : {}),
+                sessionId: session.id,
+                purpose: session.purpose,
+                amountPaise: session.amountPaise,
+                currency: session.currency,
+                status: "SUCCEEDED",
+                mode: input.paymentMode,
+                provider: input.provider,
+                providerRef: resolvedProviderRef,
+                recordedAt: new Date(),
+              },
+            }).catch(async (error) => {
+              if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+                throw error;
+              }
+              const replayed = await findPaymentBySessionOrProviderRef(tx, {
+                sessionId: session.id,
+                provider: input.provider,
+                providerRef: resolvedProviderRef,
+              });
+              if (!replayed) {
+                throw error;
+              }
+              return replayed;
+            });
+
+        if (!payment.orgId && session.orgId) {
+          payment = await tx.payment.update({
+            where: { id: payment.id },
+            data: {
+              orgId: session.orgId,
+              ...(session.branchId ? { branchId: session.branchId } : {}),
+              userId: session.userId,
+              purpose: session.purpose,
+              amountPaise: session.amountPaise,
+              currency: session.currency,
+            },
+          });
+        }
+
+        const [planSub, user] = await Promise.all([
+          tx.memberSubscription.findUnique({ where: { id: subscriptionId } }),
+          session.userId ? tx.user.findUnique({ where: { id: session.userId } }) : Promise.resolve(null),
+        ]);
+        const plan = planSub
+          ? await tx.membershipPlan.findUnique({ where: { id: planSub.planId } })
+          : null;
+
+        if (
+          planSub &&
+          plan &&
+          session.userId &&
+          user &&
+          planSub.orgId === session.orgId &&
+          planSub.memberUserId === session.userId &&
+          planSub.status !== "ACTIVE"
+        ) {
+          assertMinorConsentGranted({
+            isMinor: user.isMinor,
+            guardianPending: user.guardianPending,
+            action: "membership activation",
+          });
+          let reservedReferralRedemption = false;
+          if (metadata.referralCodeId) {
+            const [policy, referralCode, existingReferralRedemption] = await Promise.all([
+              tx.referralPolicy.upsert({
+                where: { orgId: planSub.orgId },
+                update: {},
+                create: { orgId: planSub.orgId },
+              }),
+              tx.referralCode.findUnique({ where: { id: metadata.referralCodeId } }),
+              tx.referralRedemption.findFirst({
+                where: {
+                  orgId: planSub.orgId,
+                  referralCodeId: metadata.referralCodeId,
+                  referredUserId: session.userId,
+                },
+              }),
+            ]);
+            if (!existingReferralRedemption) {
+              const reservation = await tx.referralCode.updateMany({
+                where: {
+                  id: metadata.referralCodeId,
+                  orgId: planSub.orgId,
+                  status: "active",
+                  OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+                  monthlyUseCount: { lt: policy.maxReferralsPerMonth },
+                  AND: [
+                    {
+                      OR: [
+                        { maxUses: null },
+                        { redemptionCount: { lt: referralCode?.maxUses ?? 0 } },
+                      ],
+                    },
+                  ],
+                },
+                data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
+              });
+              if (reservation.count !== 1) {
+                throw new Error("Referral code has reached its limit");
+              }
+              reservedReferralRedemption = true;
+            }
+          }
+
+          const window = computeSubscriptionWindow(toMembershipPlanInput(plan));
+          const renewalSource = metadata.renewalOfSubscriptionId
+            ? await tx.memberSubscription.findFirst({
+                where: {
+                  id: metadata.renewalOfSubscriptionId,
+                  orgId: planSub.orgId,
+                  memberUserId: planSub.memberUserId,
+                },
+              })
+            : null;
+          const renewalStartsAt =
+            renewalSource?.endsAt && renewalSource.endsAt.getTime() > Date.now()
+              ? renewalSource.endsAt
+              : window.startsAt;
+          const renewalEndsAt =
+            renewalSource && window.endsAt
+              ? new Date(
+                  renewalStartsAt.getTime() + (window.endsAt.getTime() - window.startsAt.getTime()),
+                )
+              : window.endsAt;
+          const activated = await tx.memberSubscription.updateMany({
+            where: {
+              id: subscriptionId,
+              status: { not: "ACTIVE" },
+            },
+            data: clean({
+              status: "ACTIVE",
+              startsAt: renewalStartsAt,
+              endsAt: renewalEndsAt,
+              remainingVisits: window.remainingVisits,
+              paymentId: payment.id,
+              activatedById: session.userId,
+            }),
+          });
+          if (activated.count === 1) {
+            await input.ensureMembership(
+              {
+                orgId: planSub.orgId,
+                userId: session.userId,
+                profilePhotoUrl: user.profilePhotoUrl,
+                marketingOptIn: user.marketingOptIn,
+              },
+              tx,
+            );
+            const activatedSubscription = await tx.memberSubscription.findUnique({
+              where: { id: subscriptionId },
+            });
+            if (activatedSubscription) {
+              await applyPendingReferralRewardsForSubscription({
+                client: tx,
+                orgId: planSub.orgId,
+                referrerUserId: session.userId,
+                subscription: activatedSubscription,
+              });
+            }
+            if (metadata.offerId) {
+              await tx.offer.update({
+                where: { id: metadata.offerId },
+                data: { redemptionCount: { increment: 1 } },
+              });
+            }
+            if (metadata.couponId) {
+              const existingCouponRedemption = await tx.couponRedemption.findUnique({
+                where: {
+                  paymentSessionId_couponId_userId: {
+                    paymentSessionId: session.id,
+                    couponId: metadata.couponId,
+                    userId: session.userId,
+                  },
+                },
+              });
+              if (!existingCouponRedemption) {
+                const coupon = await tx.coupon.findFirst({
+                  where: { id: metadata.couponId, orgId: planSub.orgId },
+                });
+                if (!coupon) {
+                  throw new Error("Coupon not found");
+                }
+                if (coupon.perUserLimit !== null) {
+                  const userRedemptions = await tx.couponRedemption.count({
+                    where: { orgId: planSub.orgId, couponId: coupon.id, userId: session.userId },
+                  });
+                  if (userRedemptions >= coupon.perUserLimit) {
+                    throw new Error("Coupon per-user limit reached");
+                  }
+                }
+                const reservation = await tx.coupon.updateMany({
+                  where: {
+                    id: coupon.id,
+                    orgId: planSub.orgId,
+                    active: true,
+                    OR: [{ validFrom: null }, { validFrom: { lte: new Date() } }],
+                    AND: [
+                      { OR: [{ validUntil: null }, { validUntil: { gt: new Date() } }] },
+                      {
+                        OR: [
+                          { maxRedemptions: null },
+                          { redemptionCount: { lt: coupon.maxRedemptions ?? 0 } },
+                        ],
+                      },
+                    ],
+                  },
+                  data: { redemptionCount: { increment: 1 } },
+                });
+                if (reservation.count !== 1) {
+                  throw new Error("Coupon has reached its redemption limit");
+                }
+                await tx.couponRedemption.create({
+                  data: {
+                    orgId: planSub.orgId,
+                    couponId: metadata.couponId,
+                    userId: session.userId,
+                    subscriptionId: planSub.id,
+                    paymentSessionId: session.id,
+                    discountPaise:
+                      metadata.couponDiscountPaise ??
+                      Math.max(plan.pricePaise - session.amountPaise, 0),
+                  },
+                });
+              }
+            }
+            if (metadata.referralCodeId) {
+              const existingReferralRedemption = await tx.referralRedemption.findFirst({
+                where: {
+                  orgId: planSub.orgId,
+                  referralCodeId: metadata.referralCodeId,
+                  referredUserId: session.userId,
+                },
+              });
+              let redemption = existingReferralRedemption;
+              if (!existingReferralRedemption) {
+                redemption = await tx.referralRedemption.create({
+                  data: {
+                    orgId: planSub.orgId,
+                    referralCodeId: metadata.referralCodeId,
+                    referredUserId: session.userId,
+                    subscriptionId: planSub.id,
+                    metadata: clean({
+                      referralDiscountPaise: metadata.referralDiscountPaise,
+                    }) as Prisma.InputJsonValue,
+                  },
+                });
+                if (!reservedReferralRedemption) {
+                  await tx.referralCode.update({
+                    where: { id: metadata.referralCodeId },
+                    data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
+                  });
+                }
+              } else if (!existingReferralRedemption.subscriptionId) {
+                redemption = await tx.referralRedemption.update({
+                  where: { id: existingReferralRedemption.id },
+                  data: {
+                    subscriptionId: planSub.id,
+                    metadata: clean({
+                      ...(((existingReferralRedemption.metadata ?? {}) as Record<string, unknown>) ?? {}),
+                      referralDiscountPaise: metadata.referralDiscountPaise,
+                      completedByPaymentSessionId: session.id,
+                    }) as Prisma.InputJsonValue,
+                  },
+                });
+              }
+              if (redemption) {
+                const referralReward = await fulfillReferralReward({
+                  client: tx,
+                  orgId: planSub.orgId,
+                  referralCodeId: metadata.referralCodeId,
+                  redemptionId: redemption.id,
+                });
+                if (referralReward.notification) {
+                  notifications.push(referralReward.notification);
+                }
+              }
+            }
+            notifications.push({
+              orgId: planSub.orgId,
+              createdById: session.userId,
+              type: "TRANSACTIONAL",
+              title: "Membership activated",
+              body: `Your ${plan.name} membership is now active.`,
+              audience: "selected_member",
+              userIds: [session.userId],
+              pushEnabled: true,
+              metadata: { subscriptionId: planSub.id, paymentId: payment.id },
+            });
+          }
+        }
+
+        return { session, payment, notifications };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
+
+    for (const notification of membershipFulfillment.notifications) {
+      await input.createNotification(notification);
+    }
+
+    if (membershipFulfillment.payment.orgId) {
+      const [org, user] = await Promise.all([
+        prisma.organization.findUnique({ where: { id: membershipFulfillment.payment.orgId } }),
+        membershipFulfillment.payment.userId
+          ? prisma.user.findUnique({ where: { id: membershipFulfillment.payment.userId } })
+          : null,
+      ]);
+      if (org) {
+        await ensurePaymentInvoiceDocument({ org, payment: membershipFulfillment.payment, user });
+      }
+    }
+
+    return membershipFulfillment;
+  }
+
   const session = await prisma.paymentSession.update({
     where: { id: input.sessionId },
     data: clean({
@@ -366,7 +746,7 @@ export async function applyPaymentSessionStatus(input: {
   });
 
   const resolvedProviderRef = input.providerRef ?? session.providerRef ?? session.id;
-  let payment = await findPaymentBySessionOrProviderRef({
+  let payment = await findPaymentBySessionOrProviderRef(prisma, {
     sessionId: session.id,
     provider: input.provider,
     providerRef: resolvedProviderRef,
@@ -407,7 +787,7 @@ export async function applyPaymentSessionStatus(input: {
           if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
             throw error;
           }
-          const replayed = await findPaymentBySessionOrProviderRef({
+          const replayed = await findPaymentBySessionOrProviderRef(prisma, {
             sessionId: session.id,
             provider: input.provider,
             providerRef: resolvedProviderRef,
@@ -430,258 +810,6 @@ export async function applyPaymentSessionStatus(input: {
           currency: session.currency,
         },
       });
-    }
-
-    if (metadata.subscriptionId) {
-      const [planSub, user] = await Promise.all([
-        prisma.memberSubscription.findUnique({ where: { id: metadata.subscriptionId } }),
-        session.userId
-          ? prisma.user.findUnique({ where: { id: session.userId } })
-          : Promise.resolve(null),
-      ]);
-      const plan = planSub
-        ? await prisma.membershipPlan.findUnique({ where: { id: planSub.planId } })
-        : null;
-
-      if (
-        planSub &&
-        plan &&
-        session.userId &&
-        user &&
-        planSub.orgId === session.orgId &&
-        planSub.memberUserId === session.userId &&
-        planSub.status !== "ACTIVE"
-      ) {
-        assertMinorConsentGranted({
-          isMinor: user.isMinor,
-          guardianPending: user.guardianPending,
-          action: "membership activation",
-        });
-        let reservedReferralRedemption = false;
-        if (metadata.referralCodeId) {
-          const [policy, referralCode, existingReferralRedemption] = await Promise.all([
-            prisma.referralPolicy.upsert({
-              where: { orgId: planSub.orgId },
-              update: {},
-              create: { orgId: planSub.orgId },
-            }),
-            prisma.referralCode.findUnique({ where: { id: metadata.referralCodeId } }),
-            prisma.referralRedemption.findFirst({
-              where: {
-                orgId: planSub.orgId,
-                referralCodeId: metadata.referralCodeId,
-                referredUserId: session.userId,
-              },
-            }),
-          ]);
-          if (!existingReferralRedemption) {
-            const reservation = await prisma.referralCode.updateMany({
-              where: {
-                id: metadata.referralCodeId,
-                orgId: planSub.orgId,
-                status: "active",
-                OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-                monthlyUseCount: { lt: policy.maxReferralsPerMonth },
-                AND: [
-                  {
-                    OR: [
-                      { maxUses: null },
-                      { redemptionCount: { lt: referralCode?.maxUses ?? 0 } },
-                    ],
-                  },
-                ],
-              },
-              data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
-            });
-            if (reservation.count !== 1) {
-              throw new Error("Referral code has reached its limit");
-            }
-            reservedReferralRedemption = true;
-          }
-        }
-        const window = computeSubscriptionWindow(toMembershipPlanInput(plan));
-        const renewalSource = metadata.renewalOfSubscriptionId
-          ? await prisma.memberSubscription.findFirst({
-              where: {
-                id: metadata.renewalOfSubscriptionId,
-                orgId: planSub.orgId,
-                memberUserId: planSub.memberUserId,
-              },
-            })
-          : null;
-        const renewalStartsAt =
-          renewalSource?.endsAt && renewalSource.endsAt.getTime() > Date.now()
-            ? renewalSource.endsAt
-            : window.startsAt;
-        const renewalEndsAt =
-          renewalSource && window.endsAt
-            ? new Date(
-                renewalStartsAt.getTime() + (window.endsAt.getTime() - window.startsAt.getTime()),
-              )
-            : window.endsAt;
-        const activated = await prisma.memberSubscription.updateMany({
-          where: {
-            id: metadata.subscriptionId,
-            status: { not: "ACTIVE" },
-          },
-          data: clean({
-            status: "ACTIVE",
-            startsAt: renewalStartsAt,
-            endsAt: renewalEndsAt,
-            remainingVisits: window.remainingVisits,
-            paymentId: payment.id,
-            activatedById: session.userId,
-          }),
-        });
-        if (activated.count !== 1) {
-          return { session, payment };
-        }
-        await input.ensureMembership({
-          orgId: planSub.orgId,
-          userId: session.userId,
-          profilePhotoUrl: user.profilePhotoUrl,
-          marketingOptIn: user.marketingOptIn,
-        });
-        const activatedSubscription = await prisma.memberSubscription.findUnique({
-          where: { id: metadata.subscriptionId },
-        });
-        if (activatedSubscription) {
-          await applyPendingReferralRewardsForSubscription({
-            orgId: planSub.orgId,
-            referrerUserId: session.userId,
-            subscription: activatedSubscription,
-          });
-        }
-        if (metadata.offerId) {
-          await prisma.offer.update({
-            where: { id: metadata.offerId },
-            data: { redemptionCount: { increment: 1 } },
-          });
-        }
-        if (metadata.couponId) {
-          const existingCouponRedemption = await prisma.couponRedemption.findUnique({
-            where: {
-              paymentSessionId_couponId_userId: {
-                paymentSessionId: session.id,
-                couponId: metadata.couponId,
-                userId: session.userId,
-              },
-            },
-          });
-          if (!existingCouponRedemption) {
-            const coupon = await prisma.coupon.findFirst({
-              where: { id: metadata.couponId, orgId: planSub.orgId },
-            });
-            if (!coupon) {
-              throw new Error("Coupon not found");
-            }
-            if (coupon.perUserLimit !== null) {
-              const userRedemptions = await prisma.couponRedemption.count({
-                where: { orgId: planSub.orgId, couponId: coupon.id, userId: session.userId },
-              });
-              if (userRedemptions >= coupon.perUserLimit) {
-                throw new Error("Coupon per-user limit reached");
-              }
-            }
-            const reservation = await prisma.coupon.updateMany({
-              where: {
-                id: coupon.id,
-                orgId: planSub.orgId,
-                active: true,
-                OR: [{ validFrom: null }, { validFrom: { lte: new Date() } }],
-                AND: [
-                  { OR: [{ validUntil: null }, { validUntil: { gt: new Date() } }] },
-                  { OR: [{ maxRedemptions: null }, { redemptionCount: { lt: coupon.maxRedemptions ?? 0 } }] },
-                ],
-              },
-              data: { redemptionCount: { increment: 1 } },
-            });
-            if (reservation.count !== 1) {
-              throw new Error("Coupon has reached its redemption limit");
-            }
-            try {
-              await prisma.couponRedemption.create({
-                data: {
-                  orgId: planSub.orgId,
-                  couponId: metadata.couponId,
-                  userId: session.userId,
-                  subscriptionId: planSub.id,
-                  paymentSessionId: session.id,
-                  discountPaise:
-                    metadata.couponDiscountPaise ??
-                    Math.max(plan.pricePaise - session.amountPaise, 0),
-                },
-              });
-            } catch (error) {
-              await prisma.coupon.update({
-                where: { id: coupon.id },
-                data: { redemptionCount: { decrement: 1 } },
-              });
-              throw error;
-            }
-          }
-        }
-        if (metadata.referralCodeId) {
-          const existingReferralRedemption = await prisma.referralRedemption.findFirst({
-            where: {
-              orgId: planSub.orgId,
-              referralCodeId: metadata.referralCodeId,
-              referredUserId: session.userId,
-            },
-          });
-          let redemption = existingReferralRedemption;
-          if (!existingReferralRedemption) {
-            redemption = await prisma.referralRedemption.create({
-              data: {
-                orgId: planSub.orgId,
-                referralCodeId: metadata.referralCodeId,
-                referredUserId: session.userId,
-                subscriptionId: planSub.id,
-                metadata: clean({
-                  referralDiscountPaise: metadata.referralDiscountPaise,
-                }) as Prisma.InputJsonValue,
-              },
-            });
-            if (!reservedReferralRedemption) {
-              await prisma.referralCode.update({
-                where: { id: metadata.referralCodeId },
-                data: { redemptionCount: { increment: 1 }, monthlyUseCount: { increment: 1 } },
-              });
-            }
-          } else if (!existingReferralRedemption.subscriptionId) {
-            redemption = await prisma.referralRedemption.update({
-              where: { id: existingReferralRedemption.id },
-              data: {
-                subscriptionId: planSub.id,
-                metadata: clean({
-                  ...(((existingReferralRedemption.metadata ?? {}) as Record<string, unknown>) ?? {}),
-                  referralDiscountPaise: metadata.referralDiscountPaise,
-                  completedByPaymentSessionId: session.id,
-                }) as Prisma.InputJsonValue,
-              },
-            });
-          }
-          if (redemption) {
-            await fulfillReferralReward({
-              orgId: planSub.orgId,
-              referralCodeId: metadata.referralCodeId,
-              redemptionId: redemption.id,
-              createNotification: input.createNotification,
-            });
-          }
-        }
-        await input.createNotification({
-          orgId: planSub.orgId,
-          createdById: session.userId,
-          type: "TRANSACTIONAL",
-          title: "Membership activated",
-          body: `Your ${plan.name} membership is now active.`,
-          audience: "selected_member",
-          userIds: [session.userId],
-          pushEnabled: true,
-          metadata: { subscriptionId: planSub.id, paymentId: payment.id },
-        });
-      }
     }
 
     if (metadata.shopOrderId) {
@@ -953,7 +1081,7 @@ export async function applyAutopayProviderEvent(input: {
     joinedAt?: Date;
     profilePhotoUrl?: string | null;
     marketingOptIn?: boolean;
-  }) => Promise<void>;
+  }, tx?: Prisma.TransactionClient) => Promise<void>;
 }) {
   if (!isAutopayProviderEvent(input.event)) {
     return null;

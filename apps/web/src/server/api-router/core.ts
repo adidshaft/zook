@@ -1353,6 +1353,10 @@ const orgRoleLabels: Record<OrgRole, string> = {
 };
 
 type RoleAssignmentClient = Pick<typeof prisma, "organizationRoleAssignment">;
+type MembershipEnsureClient = Pick<
+  typeof prisma,
+  "organizationUser" | "organizationRoleAssignment" | "memberProfile"
+>;
 
 async function assertSingleRoleForOrgUser(
   client: RoleAssignmentClient,
@@ -3261,18 +3265,18 @@ async function assertContactIdentifierAvailable(
   }
 }
 
-async function ensureOrganizationMembership(input: {
-  orgId: string;
-  userId: string;
-  joinedAt?: Date;
-  profilePhotoUrl?: string | null;
-  marketingOptIn?: boolean;
-  skipSaasMemberLimit?: boolean;
-}) {
-  if (!input.skipSaasMemberLimit) {
-    await assertSaasMemberCapacity(input.orgId, input.userId);
-  }
-  await prisma.organizationUser.upsert({
+async function ensureOrganizationMembershipWithClient(
+  client: MembershipEnsureClient,
+  input: {
+    orgId: string;
+    userId: string;
+    joinedAt?: Date;
+    profilePhotoUrl?: string | null;
+    marketingOptIn?: boolean;
+    skipSaasMemberLimit?: boolean;
+  },
+) {
+  await client.organizationUser.upsert({
     where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
     update: { status: "active", leftAt: null },
     create: {
@@ -3282,12 +3286,12 @@ async function ensureOrganizationMembership(input: {
       status: "active",
     },
   });
-  await assertSingleRoleForOrgUser(prisma, {
+  await assertSingleRoleForOrgUser(client, {
     orgId: input.orgId,
     userId: input.userId,
     nextRole: "MEMBER",
   });
-  await prisma.organizationRoleAssignment.upsert({
+  await client.organizationRoleAssignment.upsert({
     where: {
       orgId_userId_role: {
         orgId: input.orgId,
@@ -3298,7 +3302,7 @@ async function ensureOrganizationMembership(input: {
     update: {},
     create: { orgId: input.orgId, userId: input.userId, role: "MEMBER" },
   });
-  await prisma.memberProfile.upsert({
+  await client.memberProfile.upsert({
     where: { orgId_userId: { orgId: input.orgId, userId: input.userId } },
     update: clean({
       profilePhotoUrl: input.profilePhotoUrl ?? undefined,
@@ -3311,6 +3315,20 @@ async function ensureOrganizationMembership(input: {
       marketingOptIn: input.marketingOptIn,
     }),
   });
+}
+
+async function ensureOrganizationMembership(input: {
+  orgId: string;
+  userId: string;
+  joinedAt?: Date;
+  profilePhotoUrl?: string | null;
+  marketingOptIn?: boolean;
+  skipSaasMemberLimit?: boolean;
+}) {
+  if (!input.skipSaasMemberLimit) {
+    await assertSaasMemberCapacity(input.orgId, input.userId);
+  }
+  await ensureOrganizationMembershipWithClient(prisma, input);
 }
 
 async function createDirectNotification(input: {
@@ -3716,7 +3734,10 @@ async function processVerifiedPaymentWebhookEvent(input: {
             paymentMode: "CARD",
             expectedAmountPaise: saasBillingProcessed.mandate.amountPaise,
             createNotification: createDirectNotification,
-            ensureMembership: ensureOrganizationMembership,
+            ensureMembership: (membershipInput, tx) =>
+              tx
+                ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+                : ensureOrganizationMembership(membershipInput),
           })
         : null;
     await prisma.paymentEvent.update({
@@ -3761,7 +3782,10 @@ async function processVerifiedPaymentWebhookEvent(input: {
       ? await applyAutopayProviderEvent({
           event: parsed,
           createNotification: createDirectNotification,
-          ensureMembership: ensureOrganizationMembership,
+          ensureMembership: (membershipInput, tx) =>
+            tx
+              ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+              : ensureOrganizationMembership(membershipInput),
         })
       : null;
   } catch (error) {
@@ -3875,18 +3899,21 @@ async function processVerifiedPaymentWebhookEvent(input: {
 
   let processed;
   try {
-    processed = await applyPaymentSessionStatus({
-      sessionId: paymentSession.id,
-      nextStatus: parsed?.paymentStatus ?? "FAILED",
+      processed = await applyPaymentSessionStatus({
+        sessionId: paymentSession.id,
+        nextStatus: parsed?.paymentStatus ?? "FAILED",
       provider: parsed?.provider ?? paymentSession.provider,
       ...((parsed?.providerPaymentId ?? parsed?.providerOrderId)
         ? { providerRef: parsed?.providerPaymentId ?? parsed?.providerOrderId }
         : {}),
-      paymentMode: "CARD",
-      ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
-      createNotification: createDirectNotification,
-      ensureMembership: ensureOrganizationMembership,
-    });
+        paymentMode: "CARD",
+        ...(parsed?.amountPaise !== undefined ? { expectedAmountPaise: parsed.amountPaise } : {}),
+        createNotification: createDirectNotification,
+        ensureMembership: (membershipInput, tx) =>
+          tx
+            ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+            : ensureOrganizationMembership(membershipInput),
+      });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Payment application failed.";
     await prisma.paymentEvent.update({
@@ -11028,7 +11055,10 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
       providerRef: `mock_${sessionId}`,
       paymentMode: "MOCK_ONLINE",
       createNotification: createDirectNotification,
-      ensureMembership: ensureOrganizationMembership,
+      ensureMembership: (membershipInput, tx) =>
+        tx
+          ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+          : ensureOrganizationMembership(membershipInput),
     });
     await prisma.paymentEvent.update({
       where: {
@@ -11160,7 +11190,10 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
         paymentMode: "OTHER",
         expectedAmountPaise: 0,
         createNotification: createDirectNotification,
-        ensureMembership: ensureOrganizationMembership,
+        ensureMembership: (membershipInput, tx) =>
+          tx
+            ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+            : ensureOrganizationMembership(membershipInput),
       });
       const activatedSubscription = await prisma.memberSubscription.findUnique({
         where: { id: subscription.id },
@@ -11318,7 +11351,10 @@ export async function handleMembershipPayments(request: NextRequest, path: strin
         paymentMode: "OTHER",
         expectedAmountPaise: 0,
         createNotification: createDirectNotification,
-        ensureMembership: ensureOrganizationMembership,
+        ensureMembership: (membershipInput, tx) =>
+          tx
+            ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+            : ensureOrganizationMembership(membershipInput),
       });
       const activatedSubscription = await prisma.memberSubscription.findUnique({
         where: { id: subscription.id },

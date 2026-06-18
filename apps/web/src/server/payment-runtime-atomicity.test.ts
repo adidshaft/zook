@@ -17,10 +17,14 @@ describe("payment runtime atomicity", () => {
   it("guards membership activation side effects behind a single status transition", () => {
     const fnStart = paymentRuntimeSource.indexOf("export async function applyPaymentSessionStatus");
     expect(fnStart).toBeGreaterThanOrEqual(0);
-    const fnBody = paymentRuntimeSource.slice(fnStart, fnStart + 9800);
+    const fnBody = paymentRuntimeSource.slice(fnStart);
 
-    expect(fnBody).toContain("const activated = await prisma.memberSubscription.updateMany");
+    expect(fnBody).toContain("if (nextState.status === \"SUCCEEDED\" && metadata.subscriptionId)");
+    expect(fnBody).toContain("await prisma.$transaction(");
+    expect(fnBody).toContain("isolationLevel: Prisma.TransactionIsolationLevel.Serializable");
+    expect(fnBody).toContain("const activated = await tx.memberSubscription.updateMany");
     expect(fnBody).toContain("status: { not: \"ACTIVE\" }");
-    expect(fnBody).toContain("if (activated.count !== 1) {");
+    expect(fnBody).toContain("await input.ensureMembership(");
+    expect(fnBody).toContain("notifications.push({");
   });
 });
