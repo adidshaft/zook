@@ -135,13 +135,11 @@ export function ZookScreen({
   children,
   bottomInset = false,
   style,
-  ambient = true,
   testID,
 }: {
   children: ReactNode;
   bottomInset?: boolean;
   style?: StyleProp<ViewStyle>;
-  ambient?: boolean;
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
@@ -159,30 +157,6 @@ export function ZookScreen({
         style,
       ]}
     >
-      {ambient ? (
-        <>
-          <View
-            pointerEvents="none"
-            style={[
-              styles.ambientGlow,
-              Platform.OS === "android" ? styles.androidAmbientGlow : null,
-              {
-                backgroundColor: palette.surface.accentSoft,
-              },
-            ]}
-          />
-          <View
-            pointerEvents="none"
-            style={[
-              styles.ambientWash,
-              Platform.OS === "android" ? styles.androidAmbientWash : null,
-              {
-                backgroundColor: palette.surface.default,
-              },
-            ]}
-          />
-        </>
-      ) : null}
       {children}
     </View>
   );
@@ -356,41 +330,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: fallbackColors.bg,
-  },
-  ambientGlow: {
-    position: "absolute",
-    top: -120,
-    right: -72,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: "rgba(185,244,85,0.075)",
-    opacity: 0.82,
-  },
-  ambientWash: {
-    position: "absolute",
-    top: 148,
-    left: -120,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    opacity: 0.42,
-  },
-  androidAmbientGlow: {
-    top: -88,
-    right: -108,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    opacity: 0.5,
-  },
-  androidAmbientWash: {
-    top: 184,
-    left: -148,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    opacity: 0.26,
   },
   brandMark: {
     alignItems: "center",

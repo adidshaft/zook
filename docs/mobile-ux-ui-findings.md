@@ -222,6 +222,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   and no-op Android override while keeping the animated scan line itself.
 - **6/R86 Product placeholder glow** — removed the product-card placeholder glow layer and
   deleted the now-unused `glowColor` tone-palette field.
+- **6/R87 Screen ambient background layers** — removed the default `ZookScreen` ambient glow/wash
+  layers and the login-only opt-out prop so screens use the plain app background.
 
 ## 1. Functional / correctness
 

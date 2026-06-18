@@ -274,7 +274,7 @@ export default function Login() {
   }
 
   return (
-    <ZookScreen ambient={false} testID="login-screen">
+    <ZookScreen testID="login-screen">
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
