@@ -152,7 +152,7 @@ export function AiPanel({
         <SectionHeader
           eyebrow="Draft output"
           title="Launch readiness"
-          description="A safe preview of AI usage signals before the assistant is opened up to the gym."
+          description="Review AI usage signals and assisted-plan output for this gym."
         />
         <ReadoutGrid
           className="mt-5"

@@ -24,9 +24,6 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
   },
-  demoScreen: {
-    paddingTop: 0,
-  },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",

@@ -258,6 +258,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   from `sampleMembership` to `testMembership` while preserving the test payment route behavior.
 - **6/R104 Scan helper test naming** — renamed the local QA scan helper flag and test id from
   sample-oriented names to test-check-in names so internal cues match the visible copy.
+- **6/R105 Reception and AI cue cleanup** — removed an unused reception `demoScreen` style and
+  replaced web AI read-only "preview/opened up" launch copy with current-state review wording.
 
 ## 1. Functional / correctness
 
