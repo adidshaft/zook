@@ -33,6 +33,7 @@ import { handleOrganizationPermissions } from "./organization-permissions";
 import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
 import { handlePaymentSessions } from "./payment-sessions";
+import { handlePersonalTraining } from "./personal-training";
 import { handlePlatformAudit } from "./platform-audit";
 import { handlePlatformBroadcasts } from "./platform-broadcasts";
 import { handlePlatformFlags } from "./platform-flags";
@@ -96,6 +97,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
   { handler: handleManualPayments, firstSegments: ["orgs"] },
+  { handler: handlePersonalTraining, firstSegments: ["orgs"] },
   { handler: handleTrainerClientWellness, firstSegments: ["orgs"] },
   { handler: handleTrainerOperations, firstSegments: ["orgs"] },
   { handler: handleClasses, firstSegments: ["orgs"] },
