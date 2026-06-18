@@ -865,3 +865,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web desk pickup aggregate cue (`R165`) is closed: the fulfilled
   today summary count now uses a neutral badge instead of informational blue, keeping
   fulfilled state color on individual order rows.
+- **[ui, fixed]** Overstated mobile permission rationale cue (`R166`) is closed: permission
+  sheet header icons now use neutral accents instead of informational blue, leaving the
+  permission action as the interactive emphasis.

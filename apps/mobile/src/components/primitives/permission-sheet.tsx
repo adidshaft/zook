@@ -158,7 +158,7 @@ export function useRequestPermissionWithRationale(kind: PermissionKind) {
     >
       <BottomSheetView style={styles.sheet}>
         <View style={styles.header}>
-          <IconBubble icon={copy.icon} tone="blue" size={42} />
+          <IconBubble icon={copy.icon} tone="neutral" size={42} />
           <View style={styles.copy}>
             <Text style={[styles.title, { color: palette.text.primary }]}>{copy.title}</Text>
             <Text style={[styles.body, { color: palette.text.secondary }]}>{copy.body}</Text>
