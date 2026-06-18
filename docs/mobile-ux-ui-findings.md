@@ -1009,3 +1009,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile applied-referral icon cue (`R213`) is closed:
   the find-gyms applied referral card now uses a neutral gift icon instead of lime, keeping
   success emphasis on the card variant and applied-code copy.
+- **[ui, fixed]** Overstated web attendance QR method badge cue (`R214`) is closed:
+  the read-only attendance panel's Self-approved QR badge now uses neutral styling instead
+  of lime, keeping status color on individual attendance rows and approval queues.
