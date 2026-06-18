@@ -85,6 +85,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   domain-api methods left behind after the login SSO controls were removed.
 - **6/R24 Empty domain modules** — deleted no-op domain query/mutation files and empty barrels,
   then trimmed affected exports to only point at modules with live code.
+- **6/R25 Mobile api-client alias** — removed the unused one-line `apiClient` re-export shim;
+  live callers already use `mobileApiFetch` directly or `domain-api`'s request client.
 
 ## 1. Functional / correctness
 

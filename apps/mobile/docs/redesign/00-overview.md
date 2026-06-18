@@ -99,7 +99,7 @@ apps/mobile/
     │   └── expo-safe-bottom-sheet.tsx
     └── lib/
         ├── auth.tsx              # Auth provider (754 line useAuth)
-        ├── api.ts, api-client.tsx, domain-api.ts
+        ├── api.ts, domain-api.ts
         ├── query-hooks.ts        # 1,583 lines, 50 hooks — split in plan #04
         ├── route-guards.ts       # path → required role/permission
         ├── theme.ts              # tokens; rewrite in plan #03
