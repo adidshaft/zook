@@ -17,6 +17,7 @@ import { handleCronJobs } from "./cron";
 import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
 import { handleMeData } from "./me-data";
+import { handleMemberPlansGoals } from "./member-plans-goals";
 import { handleReports } from "./reports";
 import { handleTracking } from "./tracking";
 
@@ -34,6 +35,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleAuth, firstSegments: ["auth"] },
   { handler: handleMeData, firstSegments: ["me"] },
   { handler: handleTracking, firstSegments: ["me"] },
+  { handler: handleMemberPlansGoals, firstSegments: ["me"] },
   { handler: handleFiles, firstSegments: ["files"] },
   { handler: handleOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleReports, firstSegments: ["orgs"] },

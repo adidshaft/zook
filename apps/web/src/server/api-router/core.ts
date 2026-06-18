@@ -148,7 +148,7 @@ import {
   markPayoutPaid,
   upsertPayoutConfig,
 } from "../domains/payouts";
-import { extractPlanExercises, getPlanExercisesForUser } from "../domains/plans";
+import { extractPlanExercises } from "../domains/plans";
 import { getOrganizationActiveShopOrders } from "../domains/shop-orders";
 
 const joinRequestSchema = z.object({
@@ -1014,14 +1014,14 @@ const planAssignSchema = z.object({
   audience: z.enum(["selected_member"]).default("selected_member"),
 });
 
-const planProgressInputSchema = z.object({
+export const planProgressInputSchema = z.object({
   orgId: z.string().optional(),
   progressJson: z.record(z.string(), z.any()).default({}),
   completionPct: z.number().int().min(0).max(100).default(0),
   feedback: z.string().max(500).optional(),
 });
 
-const planCompletionInputSchema = z.object({
+export const planCompletionInputSchema = z.object({
   orgId: z.string().optional(),
   exercises: z
     .array(
@@ -1874,7 +1874,7 @@ async function ensureBadgeRows(codes: string[]) {
   );
 }
 
-async function getBadgePayloads(userId: string, orgId?: string) {
+export async function getBadgePayloads(userId: string, orgId?: string) {
   const userBadges = await prisma.userBadge.findMany({
     where: clean({ userId, orgId }),
     orderBy: { awardedAt: "desc" },
@@ -2287,7 +2287,7 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
 
 export const ADMIN_DETAIL_LIST_LIMIT = 50;
 export const ANALYTICS_SUMMARY_LIST_LIMIT = 500;
-const USER_HISTORY_LIST_LIMIT = 50;
+export const USER_HISTORY_LIST_LIMIT = 50;
 
 function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const existing = map.get(key);
@@ -2584,7 +2584,7 @@ async function listOrganizationAuditLogsPage(orgId: string, request: NextRequest
   return { auditLogs: page.items, nextCursor: page.nextCursor, limit };
 }
 
-async function listPlanAssignmentsForUser(userId: string, assignmentId?: string) {
+export async function listPlanAssignmentsForUser(userId: string, assignmentId?: string) {
   const assignments = await prisma.planAssignment.findMany({
     where: clean({
       assignedToUserId: userId,
@@ -4864,7 +4864,7 @@ function aiConsentAllowed(user: { aiConsent: boolean }) {
   return user.aiConsent || process.env.NODE_ENV === "development";
 }
 
-function planRequiresExercises(type: PlanType) {
+export function planRequiresExercises(type: PlanType) {
   return [
     "WORKOUT",
     "EXERCISE_ROUTINE",
@@ -11734,135 +11734,6 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
       });
     }
     return ok({ ok: true, progress, notified: recipientIds.length });
-  }
-  if (request.method === "GET" && pathMatches(path, ["me", "plans"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    return ok({ plans: await listPlanAssignmentsForUser(userId) });
-  }
-  if (request.method === "GET" && pathMatches(path, ["me", "plans", /.+/, "exercises"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const detail = await getPlanExercisesForUser(userId, path[2]!);
-    if (!detail) {
-      throw notFoundError("Plan assignment not found");
-    }
-    return ok(detail);
-  }
-  if (request.method === "GET" && pathMatches(path, ["me", "plans", /.+/])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const plans = await listPlanAssignmentsForUser(userId, path[2]!);
-    const assignment = plans[0];
-    if (!assignment) {
-      throw notFoundError("Plan assignment not found");
-    }
-    return ok({ assignment });
-  }
-  if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "progress"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const body = planProgressInputSchema.parse(await readJson(request));
-    const assignment = await prisma.planAssignment.findFirst({
-      where: { id: path[2]!, assignedToUserId: userId, active: true },
-    });
-    if (!assignment) {
-      throw notFoundError("Plan assignment not found");
-    }
-    if (body.orgId && body.orgId !== assignment.orgId) {
-      throw forbiddenError("Progress organization does not match the plan assignment.");
-    }
-    const progress = await prisma.planProgress.upsert({
-      where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
-      update: clean({
-        progressJson: body.progressJson as Prisma.InputJsonValue,
-        completionPct: body.completionPct,
-        feedback: body.feedback,
-      }),
-      create: clean({
-        orgId: assignment.orgId,
-        assignmentId: path[2]!,
-        userId,
-        progressJson: body.progressJson as Prisma.InputJsonValue,
-        completionPct: body.completionPct,
-        feedback: body.feedback,
-      }),
-    });
-    return ok({ progress });
-  }
-  if (request.method === "POST" && pathMatches(path, ["me", "plans", /.+/, "complete"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const body = planCompletionInputSchema.parse(await readJson(request));
-    const detail = await getPlanExercisesForUser(userId, path[2]!);
-    if (!detail) {
-      throw notFoundError("Plan assignment not found");
-    }
-    if (planRequiresExercises(detail.plan.type as PlanType) && !detail.exercises.length) {
-      throw validationError("Workout plans need at least one exercise before completion.");
-    }
-    if (body.orgId && body.orgId !== detail.assignment.orgId) {
-      throw forbiddenError("Completion organization does not match the plan assignment.");
-    }
-    const completedExercises = body.exercises.length
-      ? body.exercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)
-      : detail.exercises.map((exercise) => exercise.name);
-    const progressJson = {
-      ...body.progressJson,
-      completedExercises,
-      exerciseProgress: body.exercises,
-      completedAt: new Date().toISOString(),
-    };
-    const progress = await prisma.planProgress.upsert({
-      where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
-      update: clean({
-        progressJson: progressJson as Prisma.InputJsonValue,
-        completionPct: 100,
-        feedback: body.feedback,
-      }),
-      create: clean({
-        orgId: detail.assignment.orgId,
-        assignmentId: path[2]!,
-        userId,
-        progressJson: progressJson as Prisma.InputJsonValue,
-        completionPct: 100,
-        feedback: body.feedback,
-      }),
-    });
-    return ok({ progress, completedExercises });
-  }
-  if (request.method === "GET" && pathMatches(path, ["me", "goals"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    return ok({
-      goals: await prisma.userGoal.findMany({
-        where: { userId, active: true },
-        orderBy: { updatedAt: "desc" },
-        take: USER_HISTORY_LIST_LIMIT,
-      }),
-    });
-  }
-  if (request.method === "POST" && pathMatches(path, ["me", "goals"])) {
-    const userId = requireAuth(await getRequestContext(request));
-    const body = (await readJson(request)) as {
-      orgId?: string;
-      type: string;
-      title: string;
-      targetValue?: number;
-      period?: string;
-    };
-    const goal = await prisma.userGoal.create({
-      data: clean({
-        orgId: body.orgId,
-        userId,
-        type: body.type,
-        title: body.title,
-        targetValue: body.targetValue,
-        period: body.period,
-      }),
-    });
-    return ok({ goal });
-  }
-  if (request.method === "GET" && pathMatches(path, ["me", "badges"])) {
-    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
-    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
-    const userId = requireAuth(ctx);
-    assertActiveContextOrg(ctx, requestedOrgId);
-    return ok({ badges: await getBadgePayloads(userId, requestedOrgId ?? ctx.orgId) });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
     return ok({
