@@ -230,6 +230,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   buttons, tab pills, and public gym CTAs where color, borders, focus, and hover states remain.
 - **6/R90 Web selected card glow** — removed the selected `GlassCard` glow shadow and deleted
   the unused success card variant.
+- **6/R91 Dead web glow utility** — removed the unused `.zook-lime-glow` global utility and
+  its paper-mode override after reference checks showed no app callers.
 
 ## 1. Functional / correctness
 

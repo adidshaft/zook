@@ -126,10 +126,6 @@ label {
     var(--shadow-inset);
 }
 
-.zook-lime-glow {
-  box-shadow: var(--shadow-glow-accent);
-}
-
 .metric {
   font-variant-numeric: tabular-nums;
 }
@@ -411,12 +407,6 @@ a.bg-\[var\(--accent\)\] *,
   color: var(--text-primary) !important;
 }
 
-/* Paper mode uses borders instead of glow shadows */
-:root[data-accent="paper"] .zook-lime-glow {
-  box-shadow: none !important;
-  border: 2px solid var(--border-strong) !important;
-}
-
 /* Native CSS Transitions and Animations for Dashboard Performance */
 @keyframes fadeIn {
   from {
@@ -438,4 +428,3 @@ a.bg-\[var\(--accent\)\] *,
     animation: none !important;
   }
 }
-
