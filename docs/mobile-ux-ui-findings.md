@@ -107,6 +107,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   types that only their own modules consume; app callers still import the item types they use.
 - **6/R34 Tracking display exports** — removed unused tracking header/history-summary display
   exports and the unused history-series builder so the progress surface only keeps live helpers.
+- **6/R35 Trainer AI draft cue** — removed the always-off trainer AI drafting card and updated
+  the trainer QA flow to exercise the live manual plan builder instead of stale AI draft naming.
 
 ## 1. Functional / correctness
 

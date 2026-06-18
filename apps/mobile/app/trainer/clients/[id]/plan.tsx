@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -15,7 +15,6 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { AiDraftPanel } from "@/features/trainer/components/ai-draft-panel";
 import {
   clientDetailTabs,
   fitnessGoalFor,
@@ -47,7 +46,7 @@ function exerciseNameForTemplate(templateId: PlanTemplateId) {
 
 export default function TrainerClientPlanScreen() {
   const router = useRouter();
-  const { id = "", focus } = useLocalSearchParams<{ id: string; focus?: string }>();
+  const { id = "" } = useLocalSearchParams<{ id: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -71,12 +70,6 @@ export default function TrainerClientPlanScreen() {
   const [calorieTarget, setCalorieTarget] = useState("2000");
   const [proteinG, setProteinG] = useState("120");
   const [dietStatus, setDietStatus] = useState("");
-
-  useEffect(() => {
-    if (focus === "ai") {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
-    }
-  }, [focus]);
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
@@ -300,7 +293,6 @@ export default function TrainerClientPlanScreen() {
             </SecondaryButton>
           </Card>
           {dietStatus ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></Card> : null}
-          <AiDraftPanel clientId={id} />
         </ScrollView>
       </ZookScreen>
     </>

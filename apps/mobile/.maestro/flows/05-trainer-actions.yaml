@@ -26,8 +26,7 @@ tags:
       id: "trainer-client-detail-screen"
     timeout: 15000
 - tapOn:
-    id: "trainer-ai-draft-button"
-    optional: true
+    id: "trainer-create-plan-button"
 - extendedWaitUntil:
     visible:
       id: "trainer-client-plan-screen"
@@ -41,7 +40,7 @@ tags:
 - tapOn:
     id: "trainer-save-draft-button"
     optional: true
-- takeScreenshot: /tmp/zook-maestro/trainer/ai-draft.png
+- takeScreenshot: /tmp/zook-maestro/trainer/manual-plan.png
 - tapOn:
     id: "back-button"
     optional: true
