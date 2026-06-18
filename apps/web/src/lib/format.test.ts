@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatIndiaPhoneInput,
+  formatNumber,
   isValidGstin,
   normalizeGstinInput,
   normalizeIndiaPhoneDigits,
@@ -8,6 +9,11 @@ import {
 } from "./format";
 
 describe("format helpers", () => {
+  it("formats plain numbers with the shared Indian locale", () => {
+    expect(formatNumber(1234567)).toBe("12,34,567");
+    expect(formatNumber(1234.56, { maximumFractionDigits: 1 })).toBe("1,234.6");
+  });
+
   it("normalizes India phone input to local digits", () => {
     expect(normalizeIndiaPhoneDigits("+91 98765 43210")).toBe("9876543210");
     expect(normalizeIndiaPhoneDigits("09876543210")).toBe("9876543210");

@@ -20,6 +20,10 @@ export function formatCompactNumber(value: number): string {
   }).format(value);
 }
 
+export function formatNumber(value: number, options: Intl.NumberFormatOptions = {}): string {
+  return new Intl.NumberFormat("en-IN", options).format(value);
+}
+
 export function formatUsageLimit(
   limit: number | null | undefined,
   options: { compact?: boolean; unlimitedLabel?: string } = {},

@@ -3,7 +3,7 @@
 import { Camera } from "lucide-react";
 import { EmptyState, SectionHeader, StatusPill } from "../dashboard-primitives";
 import { Pill } from "../glass-card";
-import { formatDate, formatEnumLabel } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatNumber } from "@/lib/format";
 import type { BodyProgressEntryRow } from "@/components/dashboard/types";
 
 function numericLabel(value: string | number | null | undefined, suffix: string) {
@@ -14,7 +14,7 @@ function numericLabel(value: string | number | null | undefined, suffix: string)
   if (!Number.isFinite(numericValue)) {
     return "--";
   }
-  return `${numericValue.toLocaleString("en-IN", { maximumFractionDigits: 1 })}${suffix}`;
+  return `${formatNumber(numericValue, { maximumFractionDigits: 1 })}${suffix}`;
 }
 
 export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntryRow[] }) {

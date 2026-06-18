@@ -9,6 +9,7 @@ import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } fro
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
+import { formatNumber } from "@/lib/format";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -52,7 +53,11 @@ function AnimatedNumber({
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const display = useTransform(spring, (v) =>
-    format ? format(v) : value % 1 === 0 ? Math.round(v).toLocaleString("en-IN") : v.toFixed(1),
+    format
+      ? format(v)
+      : value % 1 === 0
+        ? formatNumber(Math.round(v))
+        : formatNumber(v, { maximumFractionDigits: 1, minimumFractionDigits: 1 }),
   );
 
   useEffect(() => {
@@ -66,7 +71,12 @@ function AnimatedNumber({
   if (reduce) {
     return (
       <span ref={ref} {...(className != null ? { className } : {})}>
-        {format ? format(value) : value.toLocaleString("en-IN")}
+        {format
+          ? format(value)
+          : formatNumber(value, {
+              maximumFractionDigits: value % 1 === 0 ? 0 : 1,
+              minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+            })}
       </span>
     );
   }

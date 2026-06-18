@@ -736,3 +736,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc mobile date-picker label formatting (`R122`) is closed: the shared
   date picker now uses mobile's centralized long-date formatter instead of carrying its own
   date-label formatter.
+- **[code, fixed]** Ad hoc web dashboard number formatting (`R123`) is closed: dashboard
+  chart counters and body-composition metrics now use shared web number formatting instead
+  of calling `toLocaleString("en-IN")` inline.
