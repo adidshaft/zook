@@ -28,22 +28,29 @@ function collectAuditRefs(audit: string) {
 }
 
 const results: CheckResult[] = [];
+let checkedCommitRefCount = 0;
 
 if (!existsSync(auditPath)) {
   results.push(fail("Cleanup audit", "docs/mobile-ui-cleanup-completion-audit.md is missing."));
 } else {
   const audit = readFileSync(auditPath, "utf8");
   const refs = collectAuditRefs(audit);
+  checkedCommitRefCount = refs.length;
   results.push(
     refs.length > 0
       ? pass("Cleanup audit commit refs", `${refs.length} commit reference(s) found.`)
       : fail("Cleanup audit commit refs", "No commit references were found in the completion audit."),
   );
+  const missingRefs = refs.filter((ref) => !commitExists(ref));
   for (const ref of refs) {
+    if (!missingRefs.includes(ref)) {
+      continue;
+    }
+    results.push(fail("Cleanup audit commit ref", `${ref} does not resolve to a commit in this repository.`));
+  }
+  if (refs.length > 0 && missingRefs.length === 0) {
     results.push(
-      commitExists(ref)
-        ? pass("Cleanup audit commit ref", `${ref} resolves to a commit.`)
-        : fail("Cleanup audit commit ref", `${ref} does not resolve to a commit in this repository.`),
+      pass("Cleanup audit commit refs", `${refs.length} referenced commit(s) resolve successfully.`),
     );
   }
 
@@ -87,7 +94,7 @@ if (!existsSync(externalChecklistPath)) {
   }
 }
 
-for (const result of results) {
+for (const result of results.filter((entry) => entry.status !== "pass")) {
   renderResult(result);
 }
 
@@ -97,4 +104,7 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("\nMobile UI cleanup audit check passed.");
+const passingCheckCount = results.filter((result) => result.status === "pass").length;
+console.log(
+  `Mobile UI cleanup audit check passed: ${checkedCommitRefCount} commit ref(s), ${passingCheckCount} check(s).`,
+);
