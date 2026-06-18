@@ -2,12 +2,18 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
   { label: "OTP request", needle: 'pathMatches(path, ["auth", "request-otp"])' },
   { label: "OTP verify", needle: 'pathMatches(path, ["auth", "verify-otp"])' },
   { label: "organization create", needle: 'pathMatches(path, ["orgs"])' },
-  { label: "file upload", needle: 'pathMatches(path, ["files", "upload"])' },
+  {
+    label: "file upload",
+    needle: 'pathMatches(path, ["files", "upload"])',
+    source: filesRouteSource,
+    sourceLabel: "api-router/files.ts",
+  },
   { label: "report export", needle: 'path[2] === "reports"' },
   { label: "join request", needle: 'pathMatches(path, ["orgs", /.+/, "join-requests"])' },
   { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
@@ -33,10 +39,12 @@ const sensitiveRoutes = [
 ];
 
 describe("rate-limit route coverage", () => {
-  it.each(sensitiveRoutes)("$label consumes a rate-limit bucket", ({ needle }) => {
-    const routeStart = routerSource.indexOf(needle);
-    expect(routeStart, `${needle} was not found in api-router/core.ts`).toBeGreaterThanOrEqual(0);
-    const routeBody = routerSource.slice(routeStart, routeStart + 1800);
+  it.each(sensitiveRoutes)("$label consumes a rate-limit bucket", ({ needle, source, sourceLabel }) => {
+    const routeSource = source ?? routerSource;
+    const label = sourceLabel ?? "api-router/core.ts";
+    const routeStart = routeSource.indexOf(needle);
+    expect(routeStart, `${needle} was not found in ${label}`).toBeGreaterThanOrEqual(0);
+    const routeBody = routeSource.slice(routeStart, routeStart + 1800);
     expect(routeBody).toContain("assertRateLimit");
   });
 

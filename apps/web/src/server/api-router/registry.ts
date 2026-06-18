@@ -5,7 +5,6 @@ import {
   handleAuth,
   handleCronJobs,
   handleCouponsReferrals,
-  handleFiles,
   handleMeData,
   handleMembershipPayments,
   handleOrganizations,
@@ -18,6 +17,7 @@ import {
   selectRouteHandlers,
   type RouteHandlerEntry,
 } from "./dispatch";
+import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
 
 export type ApiRouteHandler = (
