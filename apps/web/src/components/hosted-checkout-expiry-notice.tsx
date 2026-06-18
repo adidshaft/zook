@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-
-function formatCountdown(remainingMs: number) {
-  const safeMs = Math.max(0, remainingMs);
-  const minutes = Math.floor(safeMs / 60_000);
-  const seconds = Math.floor((safeMs % 60_000) / 1000);
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
-}
+import { formatCountdownMs } from "@/lib/format";
 
 export function HostedCheckoutExpiryNotice({
   expiresAt,
@@ -75,7 +69,7 @@ export function HostedCheckoutExpiryNotice({
 
   return (
     <div className="mt-5 rounded-[22px] border border-[var(--feedback-warning)] bg-[var(--surface-warning-soft)] px-4 py-3 text-sm text-[var(--text-primary)]">
-      This payment link expires in {formatCountdown(remainingMs)}.
+      This payment link expires in {formatCountdownMs(remainingMs)}.
     </div>
   );
 }

@@ -745,3 +745,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc web overview date label formatting (`R125`) is closed: the owner
   dashboard overview now uses shared weekday-date formatting instead of carrying an inline
   `toLocaleDateString("en-IN")` call.
+- **[code, fixed]** Ad hoc web checkout countdown formatting (`R126`) is closed: hosted
+  checkout expiry notices now use shared tested countdown formatting instead of carrying a
+  component-local minutes/seconds formatter.

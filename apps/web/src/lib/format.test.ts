@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCountdownMs,
   formatIndiaPhoneInput,
   formatNumber,
   formatWeekdayDate,
@@ -17,6 +18,11 @@ describe("format helpers", () => {
 
   it("formats weekday date labels", () => {
     expect(formatWeekdayDate(new Date("2026-06-19T00:00:00+05:30"))).toBe("Friday, 19 Jun");
+  });
+
+  it("formats countdown durations", () => {
+    expect(formatCountdownMs(65_400)).toBe("1m 05s");
+    expect(formatCountdownMs(-1)).toBe("0m 00s");
   });
 
   it("normalizes India phone input to local digits", () => {

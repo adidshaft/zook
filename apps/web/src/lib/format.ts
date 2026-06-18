@@ -126,6 +126,13 @@ export function formatTime(value: Date | string | null | undefined): string {
   }).format(date);
 }
 
+export function formatCountdownMs(remainingMs: number): string {
+  const safeMs = Math.max(0, remainingMs);
+  const minutes = Math.floor(safeMs / 60_000);
+  const seconds = Math.floor((safeMs % 60_000) / 1000);
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+}
+
 export function formatEnumLabel(value: string | null | undefined): string {
   if (!value) {
     return "Unknown";
