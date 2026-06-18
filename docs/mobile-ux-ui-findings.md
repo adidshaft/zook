@@ -266,6 +266,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   placeholder color utility so its helper cue follows the shared dashboard input treatment.
 - **6/R108 Web fallback data labels** — replaced remaining user-facing dashboard/platform
   "Demo" fallback labels with neutral test/live-data wording.
+- **6/R109 Mobile offline data banner** — changed the offline demo banner's visible label from
+  "Demo data" to "Test data" while leaving the local-only runtime guard behavior unchanged.
 
 ## 1. Functional / correctness
 

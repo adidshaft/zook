@@ -26,7 +26,7 @@ export function DemoBanner() {
           textAlign: "center",
         }}
       >
-        Demo data
+        Test data
       </Text>
     </View>
   );
