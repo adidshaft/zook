@@ -552,3 +552,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   labels.
 - **[code, fixed]** Reception reason wrapper (`R56`) is closed: reception desk context now calls
   shared `formatReviewReason` directly and the empty feature-local helper module was removed.
+- **[code, fixed]** Duplicate public plan labels (`R57`) is closed: the join page and plan
+  selector now share public plan validity/visit label helpers instead of carrying duplicate
+  Hindi/English copy logic.

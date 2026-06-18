@@ -12,6 +12,7 @@ import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import { PlanSelector } from "@/components/plan-selector";
+import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import {
   alternatePublicLocale,
   joinModeLabelForLocale,
@@ -68,25 +69,6 @@ function loginRedirect(path: string, locale: PublicLocale = "en") {
     query.set("lang", "hi");
   }
   return `/login?${query.toString()}`;
-}
-
-function validityLabel(plan: { durationDays: number | null; type: string }, locale: PublicLocale) {
-  if (plan.durationDays) {
-    return locale === "hi" ? `${plan.durationDays} दिन` : `${plan.durationDays} days`;
-  }
-  if (plan.type === "TRIAL") {
-    return locale === "hi" ? "ट्रायल एक्सेस" : "Trial access";
-  }
-  return locale === "hi" ? "विज़िट पैक" : "Visit pack";
-}
-
-function visitLabel(visitLimit: number | null, locale: PublicLocale) {
-  if (!visitLimit) {
-    return locale === "hi" ? "असीमित विज़िट" : "Unlimited visits";
-  }
-  return locale === "hi"
-    ? `${visitLimit} विज़िट`
-    : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
 async function getViewerJoinState(orgId: string) {
@@ -444,7 +426,7 @@ export default async function JoinPage({
                       {resolvePlanName(selectedPlan)}
                     </h3>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)}
+                      {planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)}
                     </p>
                   </div>
                   <span className="text-lg font-bold text-[var(--accent-strong)]">
@@ -526,7 +508,7 @@ export default async function JoinPage({
                         {t("plan")}
                       </th>
                       <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
-                        {resolvePlanName(selectedPlan)} ({validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)})
+                        {resolvePlanName(selectedPlan)} ({planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)})
                       </td>
                     </tr>
                     <BreakdownRow label="Base Price" value={formatInr(selectedPlan.pricePaise)} />

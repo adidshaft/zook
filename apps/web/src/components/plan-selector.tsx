@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resolvePlanName } from "@zook/ui";
 import { formatInr } from "@/lib/format";
+import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 
 type Plan = {
   id: string;
@@ -35,25 +36,6 @@ function joinHref(input: {
     query.set("lang", "hi");
   }
   return `/join/${input.username}?${query.toString()}`;
-}
-
-function validityLabel(plan: { durationDays: number | null; type: string }, locale: PublicLocale) {
-  if (plan.durationDays) {
-    return locale === "hi" ? `${plan.durationDays} दिन` : `${plan.durationDays} days`;
-  }
-  if (plan.type === "TRIAL") {
-    return locale === "hi" ? "ट्रायल एक्सेस" : "Trial access";
-  }
-  return locale === "hi" ? "विज़िट पैक" : "Visit pack";
-}
-
-function visitLabel(visitLimit: number | null, locale: PublicLocale) {
-  if (!visitLimit) {
-    return locale === "hi" ? "असीमित विज़िट" : "Unlimited visits";
-  }
-  return locale === "hi"
-    ? `${visitLimit} विज़िट`
-    : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
 export function PlanSelector({
@@ -126,7 +108,7 @@ export function PlanSelector({
                       {resolvePlanName(plan)}
                     </p>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {validityLabel(plan, locale)} · {visitLabel(plan.visitLimit, locale)}
+                      {planValidityLabel(plan, locale)} · {planVisitLabel(plan.visitLimit, locale)}
                     </p>
                   </div>
                   <span className="font-semibold text-[var(--accent-strong)] shrink-0">
