@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { isOrgRole, platformPermissions, type RequestContext } from "@zook/core";
+import { mergeRequestLogContext } from "./request-state";
 import { resolveSessionSummaryFromToken } from "./session";
 
 export const sessionCookieName = "zook_session";
@@ -54,7 +55,7 @@ export async function createRequestContext(
     ])
   );
 
-  return {
+  const context = {
     userId: session.user.id,
     ...(session.originalUser ? { originalUserId: session.originalUser.id } : {}),
     ...(session.impersonation ? { impersonationSessionId: session.impersonation.id } : {}),
@@ -66,6 +67,8 @@ export async function createRequestContext(
     ...(ipAddress ? { ipAddress } : {}),
     ...(request.headers.get("user-agent") ? { userAgent: request.headers.get("user-agent") as string } : {})
   };
+  mergeRequestLogContext(context);
+  return context;
 }
 
 export const getRequestContext = createRequestContext;

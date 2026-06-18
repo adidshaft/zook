@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 
 type RequestState = {
   requestId: string;
+  userId?: string;
+  orgId?: string;
 };
 
 const requestStateStorage = new AsyncLocalStorage<RequestState>();
@@ -21,4 +23,17 @@ export function getRequestState() {
 
 export function currentRequestId() {
   return getRequestState()?.requestId;
+}
+
+export function mergeRequestLogContext(context: Pick<RequestState, "userId" | "orgId">) {
+  const state = getRequestState();
+  if (!state) {
+    return;
+  }
+  if (context.userId) {
+    state.userId = context.userId;
+  }
+  if (context.orgId) {
+    state.orgId = context.orgId;
+  }
 }
