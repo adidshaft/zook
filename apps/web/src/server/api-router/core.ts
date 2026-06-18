@@ -320,7 +320,7 @@ const platformSaasPlanPatchSchema = z.object({
   entitlements: saasEntitlementsSchema.optional(),
 });
 
-const platformSaasPricingSchema = z.object({
+export const platformSaasPricingSchema = z.object({
   starter: platformSaasPlanPatchSchema,
   growth: platformSaasPlanPatchSchema,
   pro: platformSaasPlanPatchSchema,
@@ -330,7 +330,7 @@ const platformSubscriptionNoteSchema = z.object({
   note: z.string().trim().max(1000),
 });
 
-const platformReferralPolicySchema = z.object({
+export const platformReferralPolicySchema = z.object({
   enabled: z.boolean().default(true),
   referrerRewardType: z.enum(["TRIAL_DAYS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
   referrerRewardValue: z.number().int().min(0).max(10_000_000).default(30),
@@ -1192,7 +1192,7 @@ function addDaysToDate(date: Date, days: number) {
   return next;
 }
 
-async function getSaasPlanCatalog() {
+export async function getSaasPlanCatalog() {
   const setting = await prisma.platformSetting.findUnique({ where: { key: "saas.pricing" } });
   return saasPlanCatalogFromSetting(setting?.value);
 }
@@ -8757,85 +8757,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       },
     });
     return ok({ attempt: processedReplay });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "saas-pricing"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    const planCatalog = await getSaasPlanCatalog();
-    return ok({ pricing: pricingFromPlanCatalog(planCatalog), planCatalog });
-  }
-  if (request.method === "PATCH" && pathMatches(path, ["platform", "saas-pricing"])) {
-    const ctx = await getRequestContext(request);
-    const actorUserId = requirePlatformAdmin(ctx);
-    const body = platformSaasPricingSchema.parse(await readJson(request));
-    const setting = await prisma.platformSetting.upsert({
-      where: { key: "saas.pricing" },
-      create: {
-        key: "saas.pricing",
-        value: body as Prisma.InputJsonValue,
-        updatedById: actorUserId,
-      },
-      update: {
-        value: body as Prisma.InputJsonValue,
-        updatedById: actorUserId,
-      },
-    });
-    await writeAuditLog({
-      request,
-      actorUserId,
-      action: "platform.saas_pricing_updated",
-      entityType: "platform_setting",
-      entityId: setting.id,
-      riskLevel: "HIGH",
-      metadata: { key: setting.key },
-    });
-    const planCatalog = await getSaasPlanCatalog();
-    return ok({ pricing: pricingFromPlanCatalog(planCatalog), planCatalog, setting });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "referral-policy"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    const setting = await prisma.platformSetting.findUnique({ where: { key: "platform.referralPolicy" } });
-    return ok({
-      policy:
-        setting?.value ??
-        ({
-          enabled: true,
-          referrerRewardType: "TRIAL_DAYS",
-          referrerRewardValue: 30,
-          referredRewardType: "TRIAL_DAYS",
-          referredRewardValue: 30,
-          maxRedemptionsPerOrg: 25,
-          expiresInDays: 180,
-        } satisfies z.infer<typeof platformReferralPolicySchema>),
-    });
-  }
-  if (request.method === "PATCH" && pathMatches(path, ["platform", "referral-policy"])) {
-    const ctx = await getRequestContext(request);
-    const actorUserId = requirePlatformAdmin(ctx);
-    const body = platformReferralPolicySchema.parse(await readJson(request));
-    const setting = await prisma.platformSetting.upsert({
-      where: { key: "platform.referralPolicy" },
-      create: {
-        key: "platform.referralPolicy",
-        value: body as Prisma.InputJsonValue,
-        updatedById: actorUserId,
-      },
-      update: {
-        value: body as Prisma.InputJsonValue,
-        updatedById: actorUserId,
-      },
-    });
-    await writeAuditLog({
-      request,
-      actorUserId,
-      action: "platform.referral_policy_updated",
-      entityType: "platform_setting",
-      entityId: setting.id,
-      riskLevel: "HIGH",
-      metadata: body,
-    });
-    return ok({ policy: body, setting });
   }
   if (request.method === "POST" && pathMatches(path, ["platform", "orgs", /.+/, "trial", "extend"])) {
     const ctx = await getRequestContext(request);
