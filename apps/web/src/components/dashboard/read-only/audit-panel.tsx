@@ -58,7 +58,7 @@ export function AuditPanel({
           eyebrow="Activity"
           title="Admin activity"
           description="Sensitive changes, who made them, and when they happened."
-          badge={<Pill tone="blue">{auditLogs.length || auditLogCount} entries</Pill>}
+          badge={<Pill>{auditLogs.length || auditLogCount} entries</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
         />
         <div className="mt-5">

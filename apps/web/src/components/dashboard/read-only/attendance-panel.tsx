@@ -107,7 +107,7 @@ export function AttendancePanel({
           eyebrow="Attendance"
           title="Recent attendance scans"
           description="Recent member check-ins for the selected gym."
-          badge={<Pill tone="blue">{attendanceRecords.length} loaded</Pill>}
+          badge={<Pill>{attendanceRecords.length} loaded</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
         />
         <div className="mt-5">

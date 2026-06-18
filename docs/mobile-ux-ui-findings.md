@@ -814,3 +814,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web membership plan count cues (`R148`) are closed: membership
   plan ladder and catalog header counts now use neutral badges instead of informational blue,
   keeping status color on the plan rows themselves.
+- **[ui, fixed]** Overstated web dashboard table-count cues (`R149`) are closed: audit,
+  attendance, and payment history header counts now use neutral badges instead of
+  informational blue, keeping loading, error, and row status treatment separate.

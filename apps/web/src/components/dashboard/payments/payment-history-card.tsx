@@ -33,7 +33,7 @@ export function PaymentHistoryCard({
         eyebrow="Payments"
         title="Payment history"
         description="Membership, shop, online, and desk payments are shown here."
-        badge={<Pill tone="blue">{payments.length} loaded</Pill>}
+        badge={<Pill>{payments.length} loaded</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
       />
       <div className="mt-5">
