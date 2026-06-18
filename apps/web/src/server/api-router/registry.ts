@@ -20,6 +20,7 @@ import { handleMeData } from "./me-data";
 import { handleMemberPlansGoals } from "./member-plans-goals";
 import { handleOrganizationBranches } from "./organization-branches";
 import { handleOrganizationMembers } from "./organization-members";
+import { handleOrganizationMembershipPlans } from "./organization-membership-plans";
 import { handleOrganizationOverview } from "./organization-overview";
 import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
@@ -46,6 +47,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleOrganizationBranches, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
+  { handler: handleOrganizationMembershipPlans, firstSegments: ["orgs"] },
   { handler: handleOrganizationProfile, firstSegments: ["orgs"] },
   { handler: handleOrganizationOverview, firstSegments: ["orgs"] },
   { handler: handleOrganizationRoot, firstSegments: ["orgs"] },
