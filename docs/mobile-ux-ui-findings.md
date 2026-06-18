@@ -66,6 +66,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `SectionLabel` into `SectionHeader` after confirming no app callers.
 - **6/R16 Duplicate haptic press helper** — consolidated `pressWithHaptics` and its types in
   `buttons.tsx` so foundation/input primitives use the same helper.
+- **6/R17 Legacy bottom nav implementation** — removed the unused `BottomNav` compatibility
+  export, old role tab arrays, and their style/import leftovers now that Expo Router tab layouts
+  own mobile navigation.
 
 ## 1. Functional / correctness
 
@@ -213,3 +216,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate haptic press helper (`R16`) is closed: `buttons.tsx` now owns
   `pressWithHaptics`, `HapticWeight`, and `PressHandler`; foundation/input primitives import
   that shared helper instead of carrying a second implementation.
+- **[code, fixed]** Legacy bottom nav implementation (`R17`) is closed: the unused
+  `BottomNav` compatibility component, role-specific tab arrays, nav styles, and stale fallback
+  colors/imports were removed from the primitive foundation module.
