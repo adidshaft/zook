@@ -1,10 +1,10 @@
-import { darkPalette } from "./palette.ts";
-import { layout } from "./layout.ts";
-import { opacity } from "./opacity.ts";
-import { radii } from "./radii.ts";
-import { shadows, shadowIntensity } from "./shadows.ts";
-import { spacing } from "./spacing.ts";
-import { typography } from "./typography.ts";
+import { darkPalette } from "./palette";
+import { layout } from "./layout";
+import { opacity } from "./opacity";
+import { radii } from "./radii";
+import { shadows, shadowIntensity } from "./shadows";
+import { spacing } from "./spacing";
+import { typography } from "./typography";
 
 const lime = (value: number) => `rgba(185,244,85,${value})`;
 const amber = (value: number) => `rgba(242,201,76,${value})`;

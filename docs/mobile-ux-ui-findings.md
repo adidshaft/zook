@@ -25,6 +25,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   compact pushed/detail headers.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
+- **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
+  palettes instead of reaching around the package boundary or duplicating values.
 
 ## 1. Functional / correctness
 
@@ -105,3 +107,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Typography alias cleanup (`R3`) is closed: `packages/tokens` keeps the
   documented title hierarchy (`screenTitle`, `headerTitle`, `sectionTitle`, `cardTitle`) and the
   oversized `heroTitle` escape hatch for onboarding/entry-code moments.
+- **[code, fixed]** Contrast audit drift (`R4`) is closed: the audit uses the real
+  `@zook/tokens` palettes as its source of truth.

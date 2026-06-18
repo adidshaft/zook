@@ -1,4 +1,4 @@
-import { darkPalette } from "./palette.ts";
+import { darkPalette } from "./palette";
 
 export type ElevationLevel = 1 | 2 | 3 | 4 | 6;
 

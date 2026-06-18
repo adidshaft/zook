@@ -1,5 +1,5 @@
-import { darkPalette, lightPalette, type Palette } from "./palette.ts";
-import { shadows } from "./shadows.ts";
+import { darkPalette, lightPalette, type Palette } from "./palette";
+import { shadows } from "./shadows";
 
 export type ThemeMode = "light" | "dark";
 

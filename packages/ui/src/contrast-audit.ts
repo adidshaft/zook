@@ -1,4 +1,4 @@
-import { darkPalette, lightPalette, type Palette as TokenPalette } from "../../tokens/src/palette";
+import { darkPalette, lightPalette, type Palette as TokenPalette } from "@zook/tokens";
 
 import { contrast } from "./contrast";
 
