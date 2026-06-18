@@ -172,6 +172,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   no-real-money payment explanation.
 - **6/R63 Public status provider wording** — replaced the public status page's "mock mode"
   degradation label with provider-neutral test-provider wording.
+- **6/R64 Disabled demo replacement naming** — renamed mobile's no-demo Metro replacement
+  modules from `*-empty` to `*-disabled` so production bundle aliases describe the disabled
+  demo behavior directly.
 
 ## 1. Functional / correctness
 
