@@ -275,7 +275,6 @@ export default function Login() {
 
   return (
     <ZookScreen ambient={false} testID="login-screen">
-      <View pointerEvents="none" style={[styles.accentGlow, { backgroundColor: palette.surface.accentSoft }]} />
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -505,15 +504,6 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 48,
     gap: 16,
-  },
-  accentGlow: {
-    borderRadius: 999,
-    height: 360,
-    opacity: 0.8,
-    position: "absolute",
-    right: -140,
-    top: -96,
-    width: 360,
   },
   heroSection: {
     gap: 8,

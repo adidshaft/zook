@@ -351,7 +351,6 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : null}
-                  <View style={[styles.coverGlow, { backgroundColor: palette.surface.accentSoft }]} />
                   <Text style={[styles.coverEyebrow, { color: palette.accent.base }]}>{gym.tagline ?? gym.name}</Text>
                   <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{plans.length} plans available</Text>
                   <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
@@ -964,14 +963,6 @@ const styles = StyleSheet.create({
   },
   gymLogoFallbackText: {
     ...typography.headerTitle,
-  },
-  coverGlow: {
-    position: "absolute",
-    top: -44,
-    right: -24,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
   },
   coverEyebrow: {
     ...typography.eyebrow,
