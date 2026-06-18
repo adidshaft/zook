@@ -75,12 +75,12 @@ export default async function MockCheckoutPage({
   const copy =
     locale === "hi"
       ? {
-          sampleMembership: "टेस्ट सदस्यता",
+          testMembership: "टेस्ट सदस्यता",
           confirmationRequired: "पुष्टि आवश्यक",
           testBanner: "टेस्ट मोड - यह असली पेमेंट नहीं है. किसी भी परिणाम पर क्लिक करके सिमुलेट करें.",
         }
       : {
-          sampleMembership: "Test membership",
+          testMembership: "Test membership",
           confirmationRequired: "Confirmation required",
           testBanner: "TEST MODE - No real payment. Click any outcome to simulate.",
         };
@@ -133,7 +133,7 @@ export default async function MockCheckoutPage({
         amountPaise: session.amountPaise,
         purpose: session.purpose,
         status: session.status,
-        planName: plan?.name ?? (session.id === "demo" ? copy.sampleMembership : null),
+        planName: plan?.name ?? (session.id === "demo" ? copy.testMembership : null),
         validityLabel: plan ? planValidityLabel(plan, locale) : null,
         activationLabel: copy.confirmationRequired,
       }

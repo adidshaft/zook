@@ -254,6 +254,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   neutral unavailable-state wording for staging AI certification.
 - **6/R102 Visual cue evidence gate** — added a dedicated external QA checklist section and
   audit-check requirement for rendered visual-cue regression evidence.
+- **6/R103 Mock checkout fallback naming** — renamed the local mock-checkout fallback label key
+  from `sampleMembership` to `testMembership` while preserving the test payment route behavior.
 
 ## 1. Functional / correctness
 
