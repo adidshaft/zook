@@ -8,7 +8,7 @@ import {
   SectionHeader,
   StatusPill,
 } from "../../dashboard-primitives";
-import { GlassCard, Pill } from "../../glass-card";
+import { GlassCard } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import { ZookButton } from "../../zook-button";
 import { formatCompactNumber, formatEnumLabel, formatInr } from "@/lib/format";
@@ -44,12 +44,11 @@ export function AiPanel({
       <GlassCard>
         <SectionHeader
           eyebrow="Assistant"
-          title="AI assistant preview"
-          description="Coming soon for owners. Existing draft history is shown here only when the team has created assisted content."
-          badge={<Pill tone="amber">Coming soon</Pill>}
+          title="AI assistant activity"
+          description="Review assisted draft history and usage signals for this gym."
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Trainer and owner AI workflows are being staged carefully before launch.
+          Draft creation is managed from trainer mobile workflows; owner web shows reviewable activity.
         </ManagedOn>
         <div className="mt-5">
           {aiUsageState.error ? (
