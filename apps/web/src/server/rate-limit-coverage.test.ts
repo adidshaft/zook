@@ -33,6 +33,10 @@ const organizationPaymentsRouteSource = readFileSync(
   new URL("./api-router/organization-payments.ts", import.meta.url),
   "utf8",
 );
+const paymentSessionsRouteSource = readFileSync(
+  new URL("./api-router/payment-sessions.ts", import.meta.url),
+  "utf8",
+);
 const privacyRouteSource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
 const platformPaymentsRouteSource = readFileSync(
   new URL("./api-router/platform-payments.ts", import.meta.url),
@@ -78,7 +82,12 @@ const sensitiveRoutes = [
     source: organizationJoinRequestsRouteSource,
     sourceLabel: "api-router/organization-join-requests.ts",
   },
-  { label: "payment session", needle: 'pathMatches(path, ["payments", "session", /.+/])' },
+  {
+    label: "payment session",
+    needle: 'pathMatches(path, ["payments", "session", /.+/])',
+    source: paymentSessionsRouteSource,
+    sourceLabel: "api-router/payment-sessions.ts",
+  },
   {
     label: "QR scan",
     needle: 'pathMatches(path, ["attendance", "scan"])',

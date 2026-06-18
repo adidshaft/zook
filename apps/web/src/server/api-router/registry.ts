@@ -31,6 +31,7 @@ import { handleOrganizationPayments } from "./organization-payments";
 import { handleOrganizationPermissions } from "./organization-permissions";
 import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
+import { handlePaymentSessions } from "./payment-sessions";
 import { handlePlatformAudit } from "./platform-audit";
 import { handlePlatformBroadcasts } from "./platform-broadcasts";
 import { handlePlatformFlags } from "./platform-flags";
@@ -84,7 +85,8 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleOrganizationPermissions, firstSegments: ["orgs"] },
   { handler: handleOrganizationRoot, firstSegments: ["orgs"] },
   { handler: handleReports, firstSegments: ["orgs"] },
-  { handler: handleMembershipPayments, firstSegments: ["me", "orgs", "payments"] },
+  { handler: handlePaymentSessions, firstSegments: ["payments"] },
+  { handler: handleMembershipPayments, firstSegments: ["me", "orgs"] },
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
