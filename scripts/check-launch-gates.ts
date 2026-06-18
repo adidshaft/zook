@@ -19,6 +19,7 @@ const bannedMarkerWords = [
 ];
 const bannedMarkerPattern = new RegExp(`\\b(${bannedMarkerWords.join("|")})\\b`);
 const loadingEllipsisPattern = /\bLoading(?:\.\.\.|\u2026)/;
+const fixedOtpPattern = /(?<!#)\b000000\b/g;
 
 function walk(dir: string, files: string[] = []) {
   for (const entry of readdirSync(dir)) {
@@ -50,7 +51,7 @@ function checkLaunchScreenshotRoutes(files: string[]): GateFailure[] {
     const routePatterns = [
       { pattern: /path:\s*["'`]\/checkout\/mock\//g, message: "Do not include mock checkout in default launch/public screenshot routes." },
       { pattern: /["'`]\/checkout\/mock\//g, message: "Mock checkout routes require an explicit debug-only flow, not launch screenshots." },
-      { pattern: /\b000000\b/g, message: "Do not expose fixed dev OTP values in screenshot automation." },
+      { pattern: fixedOtpPattern, message: "Do not expose fixed dev OTP values in screenshot automation." },
       { pattern: /TEST MODE|No real payment|Open debugbar|Downloading 100%|React has detected/g, message: "Remove debug/runtime text from launch screenshot automation." },
     ];
 
@@ -84,7 +85,7 @@ function checkPublicLaunchLeakage(files: string[]): GateFailure[] {
     const source = readFileSync(file, "utf8");
     const failures: GateFailure[] = [];
     const blockedPatterns = [
-      { pattern: /\b000000\b/g, message: "Fixed OTP values must not be visible from public auth surfaces." },
+      { pattern: fixedOtpPattern, message: "Fixed OTP values must not be visible from public auth surfaces." },
       { pattern: /TEST MODE|No real payment|testCode|devBannerCode|Open debugbar|React has detected/g, message: "Debug/test copy must not be visible from public launch auth surfaces." },
       { pattern: /href=\{?`?["']?\/checkout\/mock\//g, message: "Public launch paths must not link directly to mock checkout." },
     ];

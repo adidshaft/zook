@@ -148,6 +148,9 @@ When evidence exists outside the repo, pass references into the static gate so t
 ZOOK_REAL_DEVICE_PUSH_EVIDENCE=/tmp/zook-qa/.../push.md \
 ZOOK_QR_LOW_LIGHT_EVIDENCE=/tmp/zook-qa/.../qr-low-light.md \
 ZOOK_CHECKOUT_WEBHOOK_EVIDENCE=razorpay:event-id-or-runbook-link \
+ZOOK_PROVIDER_CERT_EVIDENCE=provider-certification-ticket-or-redacted-path \
+ZOOK_STORE_METADATA_EVIDENCE=store-console-ticket-or-redacted-path \
+ZOOK_PRODUCT_SCOPE_APPROVAL=product-finance-approval-ticket \
 ZOOK_MOBILE_RELEASE_ENV_FILE=.env.production.local \
 pnpm mobile:release:check
 ```
