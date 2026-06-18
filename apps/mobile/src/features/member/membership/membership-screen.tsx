@@ -49,7 +49,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
 import {
   useGeneratePaymentDocument,
   useGymProfile,
@@ -969,7 +969,7 @@ function RenewalSheet({
               },
               {
                 label: "Visits",
-                value: selectedPlan.visitLimit ? `${selectedPlan.visitLimit} visits` : "Unlimited",
+                value: formatVisitLimit(selectedPlan.visitLimit),
               },
             ]}
             consequence="The renewed membership activates after payment confirmation from the provider or gym desk."

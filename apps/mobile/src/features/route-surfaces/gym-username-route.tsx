@@ -41,6 +41,7 @@ import { gymApi } from "@/lib/domain-api";
 import {
   formatInr,
   formatLongDate,
+  formatVisitLimit,
   joinModeLabel,
   joinModeTone,
   titleCaseFromCode,
@@ -652,7 +653,7 @@ export default function GymProfileScreen() {
                 const badges = [
                   ...(pricedPlan.badges ?? []),
                   hasReferralPrice ? "Referral price" : null,
-                  plan.visitLimit ? `${plan.visitLimit} visits` : null,
+                  plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
                 ].filter((item): item is string => Boolean(item));
 
                 return (
@@ -888,7 +889,7 @@ function buildPlanHighlights(plan: {
 }) {
   const highlights = [
     plan.durationDays ? `${plan.durationDays} days` : null,
-    plan.visitLimit ? `${plan.visitLimit} visits` : null,
+    plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
     plan.validityDays ? `${plan.validityDays} validity days` : null,
     plan.startDate && plan.endDate
       ? `${formatLongDate(plan.startDate)} to ${formatLongDate(plan.endDate)}`

@@ -620,3 +620,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   now uses shared web `formatDate` instead of inline locale date formatting.
 - **[code, fixed]** Duplicate mobile time-only formatting (`R82`) is closed: tracking entries
   and attendance detail now share mobile `formatTime` instead of local time helpers.
+- **[code, fixed]** Duplicate mobile visit-limit labels (`R83`) is closed: member renewal and
+  gym profile plan highlights now use shared mobile `formatVisitLimit` instead of hand-built
+  visit copy.

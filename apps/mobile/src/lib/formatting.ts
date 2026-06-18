@@ -97,6 +97,13 @@ export function formatUsageLimit(
   return options.compact ? formatCompactNumber(limit) : String(limit);
 }
 
+export function formatVisitLimit(limit?: number | null, fallback = "Unlimited") {
+  if (!limit) {
+    return fallback;
+  }
+  return `${limit} ${limit === 1 ? "visit" : "visits"}`;
+}
+
 export function formatElapsedTimer(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);
