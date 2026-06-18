@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { trainerProfileDetails } from "@/lib/public-gym-profile";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
@@ -56,9 +57,10 @@ function TrainerRow({
           unoptimized
         />
       ) : (
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-accent-soft)] text-sm font-semibold text-[var(--accent-strong)]">
-          {trainer.name.slice(0, 1)}
-        </div>
+        <AvatarInitials
+          name={trainer.name}
+          className="h-11 w-11 rounded-2xl bg-[var(--surface-accent-soft)] text-sm text-[var(--accent-strong)]"
+        />
       )}
       <div className="min-w-0">
         <p className="font-medium text-[var(--text-primary)]">{trainer.name}</p>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { formatInr } from "@/lib/format";
@@ -53,9 +54,10 @@ export function GymDiscoveryGrid({
                 {gym.logoUrl ? (
                   <img src={gym.logoUrl} alt={logoAlt(gym.name)} loading="lazy" decoding="async" className="h-12 w-12 rounded-2xl border border-white/10 object-cover" />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-lime-300/12 text-sm font-semibold text-lime-100">
-                    {gym.name.slice(0, 1)}
-                  </div>
+                  <AvatarInitials
+                    name={gym.name}
+                    className="h-12 w-12 rounded-2xl border-white/10 bg-lime-300/12 text-sm text-lime-100"
+                  />
                 )}
                 <div>
                   <h2 className="font-semibold text-white">{gym.name}</h2>

@@ -781,3 +781,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile app branch-label cleanup (`R137`) is closed: owner and
   trainer app routes now use the shared mobile branch-name formatter instead of carrying
   route-local org-prefix trimming helpers.
+- **[code, fixed]** Duplicate web public avatar fallback cleanup (`R138`) is closed: public
+  gym trainer rows and discovery cards now use the shared web avatar-initials primitive
+  instead of hand-rendering one-letter fallback blocks.
