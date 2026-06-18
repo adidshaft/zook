@@ -26,13 +26,13 @@ export type OrganizationSummary = {
   staffCount: number;
 };
 
-export type DashboardChartPoint = {
+type DashboardChartPoint = {
   date: string;
   label: string;
   value: number;
 };
 
-export type DashboardPlanMixPoint = {
+type DashboardPlanMixPoint = {
   label: string;
   value: number;
   tone: "lime" | "sky" | "amber" | "violet";
@@ -393,7 +393,7 @@ export type BodyProgressEntryRow = {
   visibility?: string | null;
 };
 
-export type ShopOrderItemRow = {
+type ShopOrderItemRow = {
   id: string;
   productId: string;
   quantity: number;

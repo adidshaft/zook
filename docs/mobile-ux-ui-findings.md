@@ -509,3 +509,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Internal operational form factories (`R39`) is closed: plan, product,
   default-policy, and branch form factories are no longer exported because exact reference checks
   showed they are only called inside `controller-state.ts`.
+- **[code, fixed]** Internal dashboard leaf types (`R40`) is closed: chart point,
+  plan-mix point, and shop-order item aliases are no longer exported because exact reference checks
+  showed they are only used to compose exported dashboard models inside `types.ts`.
