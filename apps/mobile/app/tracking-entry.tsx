@@ -199,5 +199,11 @@ export default function TrackingEntryScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
 });

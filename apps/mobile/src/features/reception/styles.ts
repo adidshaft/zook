@@ -7,8 +7,8 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 16,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding + 80,
   },
   contentNoScroll: {
@@ -16,8 +16,8 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 16,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     minHeight: 0,
   },
   animatedContentNoScroll: {
@@ -31,7 +31,19 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    gap: spacing.md,
+  },
+  headerMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.md,
+  },
+  workspaceChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
   },
   deskHeader: {
     minHeight: 64,
@@ -132,7 +144,7 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     minHeight: 0,
   },
   liveFeed: {
-    gap: 8,
+    gap: spacing.sm,
   },
   liveFeedItem: {
     minHeight: 62,
@@ -165,7 +177,7 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   auditTrail: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
   auditText: {
     ...typography.small,
@@ -173,7 +185,7 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   suggestionRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
   suggestionChip: {
     minHeight: 40,

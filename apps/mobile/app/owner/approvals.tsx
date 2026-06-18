@@ -14,7 +14,7 @@ import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, spacing, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function OwnerApprovalsScreen() {
@@ -211,14 +211,14 @@ export default function OwnerApprovalsScreen() {
 const styles = StyleSheet.create({
   headerContext: {
     alignItems: "flex-start",
-    gap: 6,
+    gap: spacing.xs,
   },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    gap: 14,
+    gap: spacing.lg,
     paddingBottom: 96,
   },
 });

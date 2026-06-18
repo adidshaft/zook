@@ -17,7 +17,7 @@ import {
   type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { useTrainerClients } from "@/lib/domains";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerClientSessionsScreen() {
   const router = useRouter();
@@ -82,8 +82,8 @@ export default function TrainerClientSessionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   backIcon: { fontSize: 26, lineHeight: 28 },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

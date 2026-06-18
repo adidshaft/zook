@@ -1,14 +1,14 @@
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { AttentionCard } from "@/components/domain/attention";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
   AnimatedAppear,
   EmptyState,
   Card,
+  HeaderMeta,
   IconBubble,
   ListRow,
   OperationalQueueCard,
@@ -22,10 +22,20 @@ import {
 import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { fitnessGoalFor } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
 import { useTrainerClients } from "@/lib/domains";
+import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useSharedValue } from "@/lib/reanimated-lite";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, spacing, useTheme } from "@/lib/theme";
+
+function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return null;
+  if (!org || !branch.startsWith(org)) return branch;
+  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || null;
+}
 
 export default function TrainerHomeScreen() {
   const { palette } = useTheme();
@@ -33,6 +43,8 @@ export default function TrainerHomeScreen() {
   const queryClient = useQueryClient();
   const bottomPadding = useBottomScrollPadding();
   const { activeOrgId, session } = useAuth();
+  const roleContext = useRoleContext();
+  const { selectedBranch } = useBranchSelection();
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const clientsQuery = useTrainerClients();
@@ -50,6 +62,9 @@ export default function TrainerHomeScreen() {
     .sort((a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime())
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
+  const orgName = roleContext?.org?.name ?? session?.user.name ?? "Trainer";
+  const branchLabel = trimBranchName(orgName, selectedBranch?.name ?? null);
+  const headerSubtitle = branchLabel ?? orgName;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -75,9 +90,18 @@ export default function TrainerHomeScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <ScreenHeader
-            title="Trainer"
-            subtitle={session?.user.name ?? undefined}
-            contextSlot={<RoleSwitcherContextPill />}
+            title="Today"
+            subtitle={headerSubtitle}
+            meta={
+              <View style={styles.headerMetaRow}>
+                {branchLabel ? (
+                  <HeaderMeta icon="business-outline">{orgName}</HeaderMeta>
+                ) : null}
+                {session?.user.name ? (
+                  <HeaderMeta icon="person-outline">{session.user.name}</HeaderMeta>
+                ) : null}
+              </View>
+            }
             scrollY={scrollY}
             trailing={<ProfileShortcut />}
           />
@@ -228,12 +252,18 @@ export default function TrainerHomeScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: 16,
+    gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  headerActions: { alignItems: "center", flexDirection: "row", gap: 8 },
+  headerMetaRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  headerActions: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
   iconButton: {
     alignItems: "center",
     borderRadius: 14,
@@ -250,5 +280,5 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

@@ -113,7 +113,14 @@ export default function TrackingHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   stack: { gap: spacing.md },
   bodyCard: { gap: 10 },
   cardTitle: typography.cardTitle,

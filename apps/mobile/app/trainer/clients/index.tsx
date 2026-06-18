@@ -6,13 +6,12 @@ import { MemberList, type MemberListFilter, type MemberRowItem } from "@/compone
 import {
   AppHeader,
   SectionHeader,
-  StatusChip,
   ZookScreen,
 } from "@/components/primitives";
 import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { layout } from "@/lib/theme";
+import { layout, spacing } from "@/lib/theme";
 
 export default function TrainerClientsScreen() {
   const router = useRouter();
@@ -82,10 +81,8 @@ export default function TrainerClientsScreen() {
             header={
               <>
                 <AppHeader
-                  eyebrow="Trainer"
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
-                  chip={<StatusChip status="Trainer" tone="neutral" />}
                 />
                 <SectionHeader title="Clients" />
               </>
@@ -100,10 +97,10 @@ export default function TrainerClientsScreen() {
 const styles = StyleSheet.create({
   container: {
     alignSelf: "center",
-    maxWidth: layout.contentWidth,
-    width: "100%",
     flex: 1,
-    paddingHorizontal: 16,
+    maxWidth: layout.contentWidth,
+    paddingHorizontal: spacing.md,
+    width: "100%",
     paddingTop: layout.screenContentTopPadding,
   },
 });

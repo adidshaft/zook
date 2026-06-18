@@ -8,7 +8,7 @@ import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { layout, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
   const { palette } = useTheme();
@@ -96,17 +96,17 @@ export default function OwnerStockScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerContext: { alignItems: "flex-start", gap: 6 },
+  headerContext: { alignItems: "flex-start", gap: spacing.xs },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    gap: 14,
+    gap: spacing.lg,
     paddingBottom: 96,
   },
-  stack: { gap: 12 },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  stack: { gap: spacing.md },
+  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },
   rowAmount: typography.bodyStrong,
 });

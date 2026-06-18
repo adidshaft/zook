@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 
 import { useBranchSelection } from "@/lib/branch-selection";
+import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { radii, typography, useTheme } from "@/lib/theme";
 import { useTonePalette, type PillTone } from "./tone-palette";
@@ -19,6 +20,14 @@ function pressWithLightHaptic(callback?: () => void) {
   } catch (error) {
     console.error("Zook chip action failed", error);
   }
+}
+
+function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return null;
+  if (!org || !branch.startsWith(org)) return branch;
+  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
 }
 
 export function ZookChip({
@@ -169,6 +178,7 @@ export function ModeChip({
 
 export function BranchSelectorChip() {
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
+  const { session, activeOrgId } = useAuth();
   const { t } = useI18n();
   const { palette } = useTheme();
 
@@ -181,6 +191,14 @@ export function BranchSelectorChip() {
     branches.findIndex((branch) => branch.id === selectedBranch.id),
   );
   const canSwitch = branches.length > 1;
+  const activeOrganization =
+    session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
+    session?.activeOrganization ??
+    null;
+  const branchLabel = trimBranchName(
+    activeOrganization?.name ?? null,
+    selectedBranch.name,
+  );
 
   return (
     <Pressable
@@ -207,7 +225,7 @@ export function BranchSelectorChip() {
     >
       <Ionicons name="business-outline" size={14} color={palette.accent.base} />
       <Text numberOfLines={1} style={[styles.branchSelectorText, { color: palette.text.primary }]}>
-        {selectedBranch.name}
+        {branchLabel ?? selectedBranch.name}
       </Text>
       {canSwitch ? (
         <View style={[styles.branchSelectorCount, { backgroundColor: palette.bg.app }]}>
@@ -257,8 +275,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   branchSelectorText: {
-    maxWidth: 170,
+    maxWidth: 112,
     ...typography.caption,
+    flexShrink: 1,
   },
   branchSelectorCount: {
     minWidth: 30,

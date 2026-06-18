@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   body: typography.body,

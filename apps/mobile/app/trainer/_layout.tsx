@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 
-const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans" | "/trainer/payouts"> = {
+const viewRedirectTargets: Record<string, "/trainer" | "/trainer/clients" | "/trainer/plans" | "/trainer/payouts"> = {
+  home: "/trainer",
   clients: "/trainer/clients",
   plans: "/trainer/plans",
   payouts: "/trainer/payouts",
@@ -17,7 +18,7 @@ export default function TrainerLayout() {
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
     const target = view ? viewRedirectTargets[view] : undefined;
-    if (target && pathname === "/trainer") router.replace(target as never);
+    if (target && pathname !== target) router.replace(target as never);
   }, [params.view, pathname, router]);
 
   return (
@@ -65,7 +66,7 @@ export default function TrainerLayout() {
       />
       <Tabs.Screen
         name="clients/[id]"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
     </Tabs>
   );

@@ -37,9 +37,11 @@ import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
 import {
+  BranchSelectorChip,
   FormField,
   Card,
   AnimatedAppear,
+  HeaderMeta,
   IconBubble,
   PrimaryButton,
   ProfileShortcut,
@@ -105,6 +107,14 @@ type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 
 const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
 let lastReceptionMemberId: string | null = null;
+
+function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return null;
+  if (!org || !branch.startsWith(org)) return branch;
+  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || branch;
+}
 
 export function useReceptionWorkspace() {
   const value = useContext(ReceptionWorkspaceContext);
@@ -312,6 +322,7 @@ function useReceptionWorkspaceState({
   const activeRole = roleContext?.role;
   const isDemo = Boolean(roleContext?.isDemo);
   const canSwitchBranches = branches.length > 1;
+  const activeOrganizationName = activeOrganization?.name ?? "Active gym";
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
     : "Active gym";
@@ -725,6 +736,7 @@ function useReceptionWorkspaceState({
 
   return {
     activeRole,
+    activeOrganizationName,
     approvalItems,
     approvalQueue,
     approveAttendance,
@@ -778,6 +790,7 @@ function useReceptionWorkspaceState({
     recordPaymentMutation,
     refreshing,
     rejectAttendance,
+    selectedBranchName: selectedBranch?.name ?? null,
     rejectAttendanceMutation,
     revealMemberPhone,
     router,
@@ -843,10 +856,24 @@ export function ReceptionWorkspace({
   const { mode, palette } = useTheme();
   const scrollY = useSharedValue(0);
   const isDark = mode === "dark";
+  const isHomeScreen =
+    testID === "reception-home-screen" &&
+    !isDetailView &&
+    !showMemberContext &&
+    !initialMemberId &&
+    !initialRecordId;
   const headerControlStyle = {
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
+  const branchLabel = trimBranchName(
+    state.activeOrganizationName,
+    state.selectedBranchName ?? state.gymSelectorLabel,
+  );
+  const homeSubtitle =
+    branchLabel ?? state.activeOrganizationName;
+  const deskLabel =
+    state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk";
 
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
@@ -873,9 +900,19 @@ export function ReceptionWorkspace({
         >
           <View style={noScroll ? styles.contentNoScroll : undefined}>
             <ScreenHeader
-              title={title}
-              subtitle={subtitle}
-              contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
+              title={isHomeScreen ? "Today" : title}
+              subtitle={isHomeScreen ? homeSubtitle : subtitle}
+              meta={
+                isHomeScreen ? (
+                  <View style={styles.headerMetaRow}>
+                    {branchLabel && branchLabel !== state.activeOrganizationName ? (
+                      <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
+                    ) : null}
+                    <HeaderMeta icon="scan-outline">{deskLabel}</HeaderMeta>
+                  </View>
+                ) : undefined
+              }
+              contextSlot={!isHomeScreen ? <RoleSwitcherContextPill /> : undefined}
               scrollY={scrollY}
               trailing={
                 isDetailView ? (
@@ -906,34 +943,40 @@ export function ReceptionWorkspace({
               }
             />
 
-            <Pressable
-              testID="reception-gym-selector"
-              onPress={state.openBranchSwitcher}
-              accessibilityRole="button"
-              accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
-              disabled={!state.canSwitchBranches}
-              style={({ pressed }) => [
-                styles.gymSelector,
-                {
-                  borderColor: palette.border.default,
-                  backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-                },
-                pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
-              ]}
-            >
-              <Ionicons name="business-outline" size={22} color={palette.text.primary} />
-              <View style={styles.gymSelectorCopy}>
-                <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
-                  {state.gymSelectorLabel}
-                </Text>
-                <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-                  {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
-                </Text>
+            {isHomeScreen ? (
+              <View style={styles.workspaceChipRow}>
+                <BranchSelectorChip />
               </View>
-              {state.canSwitchBranches ? (
-                <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
-              ) : null}
-            </Pressable>
+            ) : (
+              <Pressable
+                testID="reception-gym-selector"
+                onPress={state.openBranchSwitcher}
+                accessibilityRole="button"
+                accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
+                disabled={!state.canSwitchBranches}
+                style={({ pressed }) => [
+                  styles.gymSelector,
+                  {
+                    borderColor: palette.border.default,
+                    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+                  },
+                  pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
+                ]}
+              >
+                <Ionicons name="business-outline" size={22} color={palette.text.primary} />
+                <View style={styles.gymSelectorCopy}>
+                  <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
+                    {state.gymSelectorLabel}
+                  </Text>
+                  <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
+                    {deskLabel}
+                  </Text>
+                </View>
+                {state.canSwitchBranches ? (
+                  <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
+                ) : null}
+              </Pressable>
+            )}
 
             {showMemberContext ? (
               <Card variant="compact" padding={12} contentStyle={styles.memberContext}>

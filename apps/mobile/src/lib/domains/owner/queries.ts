@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { useActivePermissions, useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { queryString } from "@/lib/domains/shared/request";
@@ -41,8 +41,10 @@ export function useOwnerDashboard(orgId?: string) {
 
 export function useOwnerBillingSubscription(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
   return useQuery({
     queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
     queryFn: () =>
@@ -54,7 +56,11 @@ export function useOwnerBillingSubscription(orgId?: string) {
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         },
       ),
-    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(resolvedOrgId) &&
+      canManageBilling,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -62,8 +68,10 @@ export function useOwnerBillingSubscription(orgId?: string) {
 
 export function useOwnerSetupStatus(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
   return useQuery({
     queryKey: queryKeys.owner.setupStatus(resolvedOrgId, selectedBranchId),
     queryFn: () =>
@@ -72,7 +80,11 @@ export function useOwnerSetupStatus(orgId?: string) {
         orgId: resolvedOrgId,
         ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
-    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(resolvedOrgId) &&
+      canManageBilling,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
@@ -126,8 +138,10 @@ export function useOrgMembers(orgId?: string) {
 export function usePrefetchOwnerWorkspace(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
 
   return () => {
     if (status !== "authenticated" || !token || !resolvedOrgId) return;
@@ -137,15 +151,17 @@ export function usePrefetchOwnerWorkspace(orgId?: string) {
       queryFn: () => mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/dashboard`, request),
       staleTime: 60_000,
     });
-    void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
-      queryFn: () =>
-        mobileApiFetch<OwnerBillingSubscriptionData>(
-          `/orgs/${resolvedOrgId}/billing/subscription`,
-          request,
-        ),
-      staleTime: 60_000,
-    });
+    if (canManageBilling) {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
+        queryFn: () =>
+          mobileApiFetch<OwnerBillingSubscriptionData>(
+            `/orgs/${resolvedOrgId}/billing/subscription`,
+            request,
+          ),
+        staleTime: 60_000,
+      });
+    }
     void queryClient.prefetchQuery({
       queryKey: queryKeys.owner.members(resolvedOrgId, null, selectedBranchId),
       queryFn: () => mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, request),

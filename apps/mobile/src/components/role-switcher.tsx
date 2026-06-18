@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
-    maxWidth: 280,
+    maxWidth: Platform.OS === "android" ? 232 : 280,
     minHeight: 36,
     minWidth: 0,
     paddingLeft: 6,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   contextRole: {
     ...typography.caption,
-    maxWidth: 72,
+    maxWidth: Platform.OS === "android" ? 54 : 72,
   },
   contextTriggerPressed: {
     opacity: 0.84,

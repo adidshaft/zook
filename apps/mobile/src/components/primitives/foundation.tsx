@@ -261,6 +261,7 @@ export function ZookScreen({
             pointerEvents="none"
             style={[
               styles.ambientGlow,
+              Platform.OS === "android" ? styles.androidAmbientGlow : null,
               {
                 backgroundColor: palette.surface.accentSoft,
               },
@@ -270,6 +271,7 @@ export function ZookScreen({
             pointerEvents="none"
             style={[
               styles.ambientWash,
+              Platform.OS === "android" ? styles.androidAmbientWash : null,
               {
                 backgroundColor: palette.surface.default,
               },
@@ -1199,6 +1201,22 @@ const styles = StyleSheet.create({
     borderRadius: 130,
     opacity: 0.42,
   },
+  androidAmbientGlow: {
+    top: -88,
+    right: -108,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.5,
+  },
+  androidAmbientWash: {
+    top: 184,
+    left: -148,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.26,
+  },
   shellTitle: {
     color: fallbackColors.text,
     ...typography.screenTitle,
@@ -1435,8 +1453,10 @@ const styles = StyleSheet.create({
   },
   bottomNavItemActive: {
     borderWidth: 1,
+    borderRadius: 999,
   },
   memberBottomNavItemActive: {
+    borderWidth: 1,
   },
   memberBottomNavItemRaisedActive: {
     borderWidth: 3,
@@ -1466,6 +1486,7 @@ const styles = StyleSheet.create({
     color: fallbackColors.bg,
   },
   bottomNavTextActive: {
+    fontFamily: "Inter_700Bold",
     color: fallbackColors.lime,
   },
   memberBottomNavTextRaisedActive: {

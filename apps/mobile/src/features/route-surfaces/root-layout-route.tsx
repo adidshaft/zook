@@ -173,6 +173,11 @@ function LayoutContent() {
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
+  const isQaHelperRoute =
+    pathname === "/__demo-role" ||
+    pathname === "/__qa-role" ||
+    pathname === "/__qa-reset" ||
+    pathname === "/__qa-open";
 
   useEffect(() => {
     return setAuthQueryClient(queryClient);
@@ -187,8 +192,7 @@ function LayoutContent() {
         }
         await clearExpiredSession();
         queryClient.clear();
-        if (isQaResetInFlight()) {
-          router.replace("/login" as never);
+        if (isQaResetInFlight() || isQaHelperRoute) {
           return;
         }
         showToast({
@@ -221,7 +225,7 @@ function LayoutContent() {
         }
       },
     });
-  }, [clearExpiredSession, queryClient, refresh, router, t]);
+  }, [clearExpiredSession, isQaHelperRoute, queryClient, refresh, router, t]);
 
   useEffect(() => {
     const handleUrl = (url: string | null) => {

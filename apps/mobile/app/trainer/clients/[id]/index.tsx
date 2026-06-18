@@ -195,7 +195,7 @@ export default function TrainerClientOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   backIcon: { fontSize: 26, lineHeight: 28 },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   clientAvatar: { alignItems: "center", borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
   clientAvatarText: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientAvatarDot: { borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
-  clientHeroCopy: { flex: 1, gap: 8, minWidth: 0 },
+  clientHeroCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   clientHeroName: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   clientStatusText: { fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
@@ -214,5 +214,5 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 15, lineHeight: 20 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
   cardTitle: { ...typography.cardTitle },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

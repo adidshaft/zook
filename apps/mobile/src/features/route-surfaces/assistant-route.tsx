@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding + 92,
   },

@@ -6,25 +6,34 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, Card, EmptyState, HeaderMeta, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { layout, typography, useTheme } from "@/lib/theme";
-import { useAuth } from "@/lib/auth";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
+
+function trimBranchName(orgName: string | null | undefined, branchName: string | null | undefined) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return "Main branch";
+  if (!org) return branch;
+  if (!branch.startsWith(org)) return branch;
+  return branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() || "Main branch";
+}
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const roleContext = useRoleContext();
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
@@ -134,6 +143,7 @@ export default function OwnerCommandScreen() {
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
   const subscription = billingQuery.data?.subscription;
   const billingReady =
+    !canManageBilling ||
     subscription?.status === "ACTIVE" ||
     (mandateStatus &&
       ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
@@ -143,11 +153,13 @@ export default function OwnerCommandScreen() {
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
     "Main branch";
+  const orgName = roleContext?.org?.name ?? "Gym";
+  const branchLabel = trimBranchName(orgName, branchName);
   const metrics: MetricTileItem[] = [
     {
       label: "Active members",
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
-      hint: branchName,
+      hint: branchLabel,
       tone: "lime",
       icon: "people-outline",
       onPress: () => router.push("/owner/members"),
@@ -210,13 +222,8 @@ export default function OwnerCommandScreen() {
         >
           <ScreenHeader
             title="Today"
-            subtitle={branchName}
-            contextSlot={
-              <View style={styles.headerContext}>
-                <RoleSwitcherContextPill />
-                <BranchSelectorChip />
-              </View>
-            }
+            subtitle={orgName}
+            meta={<HeaderMeta icon="business-outline">{branchLabel}</HeaderMeta>}
             scrollY={scrollY}
           />
           <AnimatedAppear delay={0}>
@@ -286,30 +293,26 @@ export default function OwnerCommandScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerContext: {
-    alignItems: "flex-start",
-    gap: 6,
-  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    gap: 16,
+    gap: spacing.md,
     paddingBottom: 96,
   },
   billingCard: {
-    gap: 12,
+    gap: spacing.sm,
   },
   billingHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.sm,
   },
   billingCopy: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: spacing.xxs,
   },
   billingTitle: {
     ...typography.cardTitle,

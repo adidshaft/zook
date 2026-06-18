@@ -6,7 +6,8 @@ import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 
-const viewRedirectTargets: Record<string, "/reception/members" | "/reception/payments" | "/reception/orders"> = {
+const viewRedirectTargets: Record<string, "/reception" | "/reception/members" | "/reception/payments" | "/reception/orders"> = {
+  home: "/reception",
   members: "/reception/members",
   payments: "/reception/payments",
   orders: "/reception/orders",
@@ -25,9 +26,9 @@ export default function ReceptionLayout() {
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
-    if (!rawView || pathname !== "/reception") return;
+    if (!rawView) return;
     const target = viewRedirectTargets[rawView];
-    if (target) router.replace(target);
+    if (target && pathname !== target) router.replace(target as never);
   }, [params.view, pathname, router]);
 
   return (
@@ -89,11 +90,11 @@ export default function ReceptionLayout() {
       />
       <Tabs.Screen
         name="members/[id]"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
         name="verification/[recordId]"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
     </Tabs>
   );

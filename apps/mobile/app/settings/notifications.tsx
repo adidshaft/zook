@@ -86,7 +86,14 @@ function ComingSoonRow({ title }: { title: string }) {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   stack: { gap: spacing.md },
   row: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
   title: typography.cardTitle,

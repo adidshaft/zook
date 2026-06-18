@@ -16,7 +16,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { dietApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { useMyDiet } from "@/lib/domains/tracking/queries";
-import { typography, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export function DietPanel() {
@@ -158,17 +158,17 @@ export function DietPanel() {
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 12 },
+  stack: { gap: spacing.md },
   rollupRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   rollupLabel: typography.caption,
   rollupValue: typography.cardTitle,
   mealRow: { borderTopWidth: 1, gap: 3, paddingTop: 10 },
   mealTitle: typography.bodyStrong,
   mealMeta: typography.caption,
-  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   presetChip: { borderRadius: 18, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 8 },
   presetText: typography.caption,
-  macroRow: { flexDirection: "row", gap: 8 },
+  macroRow: { flexDirection: "row", gap: spacing.sm },
   macroField: { flex: 1 },
   validationText: typography.caption,
 });

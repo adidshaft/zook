@@ -759,8 +759,8 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   stickyHeader: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   stack: {
-    gap: 10,
+    gap: spacing.sm,
   },
   stateContent: {
     minHeight: 72,
@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   activePlanContent: {
-    gap: 14,
+    gap: spacing.lg,
     padding: 16,
   },
   activePlanTop: {
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
     minWidth: 76,
   },
   progressContent: {
-    gap: 14,
+    gap: spacing.lg,
   },
   progressHeader: {
     flexDirection: "row",
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     ...typography.metric,
   },
   featuredContent: {
-    gap: 14,
+    gap: spacing.lg,
   },
   featuredTop: {
     flexDirection: "row",
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: 7,
+    gap: spacing.sm,
   },
   metaDot: {
     ...typography.small,
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   libraryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: spacing.sm,
   },
   fullWidth: {
     width: "100%",
@@ -968,7 +968,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     padding: 12,
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: "center",
   },
   libraryTitle: {

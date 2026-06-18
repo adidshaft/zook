@@ -10,7 +10,7 @@ import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
-import { layout } from "@/lib/theme";
+import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     flex: 1,
   },
 });

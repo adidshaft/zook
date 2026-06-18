@@ -54,6 +54,13 @@ function titleCase(value: string) {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   sectionLabel: typography.caption,
 });

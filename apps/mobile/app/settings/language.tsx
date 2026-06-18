@@ -53,7 +53,14 @@ export default function LanguageSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   comingSoonHeader: { ...typography.small, marginTop: spacing.sm },
   languagePreviewRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   languagePreview: {

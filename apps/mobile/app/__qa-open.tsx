@@ -23,6 +23,8 @@ type QaOpenKind =
   | "reception-member-detail"
   | "reception-verification";
 
+const demoReceptionVerificationIds = ["attendance-flagged", "attendance-pending"] as const;
+
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -153,12 +155,20 @@ export default function QaOpenRoute() {
           queue.records.find((candidate) => candidate.status === "FLAGGED") ??
           queue.records.find((candidate) => candidate.status === "PENDING_APPROVAL") ??
           queue.records[0];
-        if (record?.branchId) {
-          await selectBranch(record.branchId).catch(() => undefined);
+        const recordId =
+          record?.id ??
+          demoReceptionVerificationIds.find((candidate) =>
+            queue.records.some((attempt) => attempt.id === candidate),
+          ) ??
+          demoReceptionVerificationIds[0];
+        const branchId =
+          record?.branchId ??
+          queue.records.find((attempt) => attempt.id === recordId)?.branchId ??
+          null;
+        if (branchId) {
+          await selectBranch(branchId).catch(() => undefined);
         }
-        router.replace(
-          (record?.id ? `/reception/verification/${record.id}` : fallbackRoute(resolvedKind)) as never,
-        );
+        router.replace((`/reception/verification/${recordId}`) as never);
       }
     }
 

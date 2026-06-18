@@ -8,8 +8,9 @@ import { useOrgJoinRequests } from "@/lib/domains/owner";
 
 const viewRedirectTargets: Record<
   string,
-  "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing"
+  "/owner" | "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing"
 > = {
+  home: "/owner",
   members: "/owner/members",
   approvals: "/owner/approvals",
   revenue: "/owner/revenue",
@@ -32,9 +33,9 @@ export default function OwnerLayout() {
 
   useEffect(() => {
     const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
-    if (!rawView || pathname !== "/owner") return;
+    if (!rawView) return;
     const target = viewRedirectTargets[rawView];
-    if (target) router.replace(target as never);
+    if (target && pathname !== target) router.replace(target as never);
   }, [params.view, pathname, router]);
 
   return (
@@ -122,7 +123,7 @@ export default function OwnerLayout() {
       />
       <Tabs.Screen
         name="member/[id]"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
     </Tabs>
   );

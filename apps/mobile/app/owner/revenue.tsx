@@ -22,7 +22,7 @@ import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr } from "@/lib/formatting";
-import { layout, typography, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
   const { palette } = useTheme();
@@ -136,16 +136,16 @@ export default function OwnerRevenueScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerContext: { alignItems: "flex-start", gap: 6 },
+  headerContext: { alignItems: "flex-start", gap: spacing.xs },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    gap: 14,
+    gap: spacing.lg,
     paddingBottom: 96,
   },
-  loadingCard: { gap: 12 },
-  stack: { gap: 12 },
+  loadingCard: { gap: spacing.md },
+  stack: { gap: spacing.md },
   rowAmount: typography.bodyStrong,
 });

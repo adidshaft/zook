@@ -17,7 +17,7 @@ import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
@@ -57,10 +57,8 @@ export default function TrainerPlansScreen() {
           }
         >
           <AppHeader
-            eyebrow="Trainer"
             title="Plan work"
             subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SectionHeader
             title="Active plan work"
@@ -100,12 +98,12 @@ export default function TrainerPlansScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: 10,
+    gap: spacing.sm,
     maxWidth: layout.contentWidth,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  summaryCard: { alignItems: "center", flexDirection: "row", gap: 12 },
+  summaryCard: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   summaryCopy: { flex: 1, minWidth: 0 },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

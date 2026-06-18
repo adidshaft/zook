@@ -8,7 +8,6 @@ import {
   AppHeader,
   QueryErrorState,
   SectionHeader,
-  StatusChip,
   ZookScreen,
 } from "@/components/primitives";
 import { useTrainerPayouts } from "@/lib/domains";
@@ -43,7 +42,7 @@ export default function TrainerPayoutsScreen() {
             />
           }
         >
-          <AppHeader title="Payouts" subtitle="Live PT earnings and paid history" chip={<StatusChip status="Trainer" tone="neutral" />} />
+          <AppHeader title="Payouts" subtitle="Live PT earnings and paid history" />
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
@@ -79,11 +78,11 @@ export default function TrainerPayoutsScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingTop: layout.screenContentTopPadding, width: "100%" },
-  hero: { gap: 8 },
+  hero: { gap: spacing.xs },
   label: { ...typography.caption },
   total: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40 },
   meta: { ...typography.body },
-  loadingCard: { gap: 10 },
-  stack: { gap: 10 },
+  loadingCard: { gap: spacing.sm },
+  stack: { gap: spacing.sm },
   lineAmount: { ...typography.bodyStrong },
 });

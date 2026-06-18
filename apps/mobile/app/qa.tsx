@@ -9,6 +9,7 @@ type RoleShortcut = {
   label: string;
   role: Role;
   target: string;
+  view?: string;
   testID: string;
 };
 
@@ -46,10 +47,10 @@ const roleShortcuts: readonly RoleShortcut[] = [
   { label: "Admin approvals", role: "ADMIN", target: "/owner/approvals", testID: "qa-admin-approvals" },
   { label: "Admin stock", role: "ADMIN", target: "/owner/stock", testID: "qa-admin-stock" },
   { label: "Admin more", role: "ADMIN", target: "/owner/more", testID: "qa-admin-more" },
-  { label: "Trainer home", role: "TRAINER", target: "/trainer", testID: "qa-trainer-home" },
-  { label: "Trainer clients", role: "TRAINER", target: "/trainer?view=clients", testID: "qa-trainer-clients" },
-  { label: "Trainer plans", role: "TRAINER", target: "/trainer?view=plans", testID: "qa-trainer-plans" },
-  { label: "Trainer payouts", role: "TRAINER", target: "/trainer?view=payouts", testID: "qa-trainer-payouts" },
+  { label: "Trainer home", role: "TRAINER", target: "/trainer", view: "home", testID: "qa-trainer-home" },
+  { label: "Trainer clients", role: "TRAINER", target: "/trainer", view: "clients", testID: "qa-trainer-clients" },
+  { label: "Trainer plans", role: "TRAINER", target: "/trainer", view: "plans", testID: "qa-trainer-plans" },
+  { label: "Trainer payouts", role: "TRAINER", target: "/trainer", view: "payouts", testID: "qa-trainer-payouts" },
   { label: "Trainer client detail", role: "TRAINER", target: "/__qa-open?kind=trainer-client-detail", testID: "qa-trainer-client-detail" },
   { label: "Trainer client plan", role: "TRAINER", target: "/__qa-open?kind=trainer-client-plan", testID: "qa-trainer-client-plan" },
   { label: "Trainer client sessions", role: "TRAINER", target: "/__qa-open?kind=trainer-client-sessions", testID: "qa-trainer-client-sessions" },
@@ -66,6 +67,7 @@ function launchRoleShortcut(shortcut: RoleShortcut) {
   const query = new URLSearchParams({
     role: shortcut.role,
     target: shortcut.target,
+    ...(shortcut.view ? { view: shortcut.view } : {}),
   }).toString();
   router.replace((`/__qa-role?${query}`) as never);
 }

@@ -85,10 +85,16 @@ export function ScreenHeader({
         </Text>
       </Reanimated.View>
 
-      <View style={styles.utilityRow}>
-        {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : <View />}
-        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-      </View>
+      {contextSlot || context || trailing ? (
+        <View style={styles.utilityRow}>
+          {contextSlot || context ? (
+            <View style={styles.utilityLeading}>
+              {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : null}
+            </View>
+          ) : null}
+          {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+        </View>
+      ) : null}
       <Reanimated.View style={[styles.titleBlock, titleStyle]}>
         <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
         {subtitle ? (
@@ -154,20 +160,30 @@ export function HeaderMeta({
 const styles = StyleSheet.create({
   root: {
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: Platform.OS === "android" ? spacing.sm : spacing.md,
     paddingTop: spacing.xs,
     width: "100%",
   },
   utilityRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
-    height: 44,
-    justifyContent: "space-between",
+    gap: Platform.OS === "android" ? spacing.xs : spacing.sm,
+    minHeight: 0,
+  },
+  utilityLeading: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    minWidth: 0,
   },
   trailing: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xs,
+    marginLeft: "auto",
+    minHeight: 36,
   },
   contextPill: {
     alignItems: "center",
@@ -176,7 +192,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
-    maxWidth: layout.contentWidth - 112,
+    maxWidth: "100%",
     minHeight: 36,
     minWidth: 0,
     paddingLeft: 6,
@@ -201,7 +217,7 @@ const styles = StyleSheet.create({
   },
   roleTag: {
     ...typography.caption,
-    maxWidth: 76,
+    maxWidth: Platform.OS === "android" ? 56 : 76,
   },
   titleBlock: {
     gap: spacing.xs,

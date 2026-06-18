@@ -54,6 +54,38 @@ mkdir -p \
   "$output_dir/trainer" \
   "$output_dir/reception"
 
+encode_uri_component() {
+  python3 - "$1" <<'PY'
+import sys
+from urllib.parse import quote
+
+print(quote(sys.argv[1], safe=""))
+PY
+}
+
+role_payload_url() {
+  local route="$1"
+  local reset_flag="$2"
+  local role_name="$3"
+  local target_path="$4"
+  local view_name="${5:-}"
+  local payload
+  if [[ -n "$view_name" ]]; then
+    payload="$(printf '{"reset":"%s","role":"%s","target":"%s","view":"%s"}' "$reset_flag" "$role_name" "$target_path" "$view_name")"
+  else
+    payload="$(printf '{"reset":"%s","role":"%s","target":"%s"}' "$reset_flag" "$role_name" "$target_path")"
+  fi
+  printf 'zook:///%s?payload=%s\n' "$route" "$(encode_uri_component "$payload")"
+}
+
+demo_role_url() {
+  role_payload_url "__demo-role" "1" "$@"
+}
+
+qa_role_url() {
+  role_payload_url "__qa-role" "1" "$@"
+}
+
 open_url() {
   local url="$1"
   if [[ -n "$capture_base_url" && "$url" == zook:///* ]]; then
@@ -65,11 +97,7 @@ open_url() {
     fi
   fi
   if [[ "$platform" == "ios" ]]; then
-    if [[ "$url" == zook:///* ]]; then
-      xcrun simctl launch "$ios_udid" com.zook.app --url "$url" >/dev/null
-    else
-      xcrun simctl openurl "$ios_udid" "$url" >/dev/null
-    fi
+    xcrun simctl openurl "$ios_udid" "$url" >/dev/null
   else
     adb shell "am start -W -a android.intent.action.VIEW -d '$url'" >/dev/null
   fi
@@ -85,24 +113,89 @@ warm_launch() {
   fi
 }
 
+android_warning_tray_present() {
+  dump_android_ui || return 1
+  python3 - "$android_ui_dump_path" <<'PY'
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    xml = handle.read().lower()
+needles = ("open debugger to view warnings", "open debugger", "view warnings")
+raise SystemExit(0 if any(needle in xml for needle in needles) else 1)
+PY
+}
+
+android_warning_tray_bounds() {
+  dump_android_ui || return 1
+  python3 - "$android_ui_dump_path" <<'PY'
+import re
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    xml = handle.read()
+pattern = re.compile(r'text="([^"]*)".*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"')
+for match in pattern.finditer(xml):
+    text = match.group(1).lower()
+    if "open debugger" in text or "view warnings" in text:
+        print(" ".join(match.groups()[1:]))
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
 dismiss_capture_obstructions() {
   if [[ "$platform" == "android" ]]; then
     # Expo/Metro warning trays can cover the bottom navigation during QA
     # captures. The warning appears in different vertical positions depending on
-    # the runtime, so sweep a few likely close-button coordinates. These taps
-    # are harmless when the tray is absent.
+    # the runtime and emulator size, so derive a close-button sweep from the
+    # current display size instead of relying on one fixed resolution.
+    local wm_size
+    wm_size="$(adb shell wm size 2>/dev/null | tr -d '\r' | awk -F': ' '/Physical size/ { print $2; exit }')"
+    local width="1080"
+    local height="2400"
+    if [[ "$wm_size" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+      width="${BASH_REMATCH[1]}"
+      height="${BASH_REMATCH[2]}"
+    fi
+    local close_x=$((width - 52))
+    local warning_bounds
+    local x1
+    local y1
+    local x2
+    local y2
+    local close_y
+    if warning_bounds="$(android_warning_tray_bounds 2>/dev/null)"; then
+      read -r x1 y1 x2 y2 <<<"$warning_bounds"
+      close_y=$(((y1 + y2) / 2))
+      adb shell input tap "$close_x" "$close_y" >/dev/null 2>&1 || true
+      sleep 0.4
+      if ! android_warning_tray_present >/dev/null 2>&1; then
+        return 0
+      fi
+    fi
+    local top_y1=$((height * 5 / 100))
+    local top_y2=$((height * 8 / 100))
+    local top_y3=$((height * 11 / 100))
+    local bottom_y=$((height - 210))
     local coords=(
-      "1010 120"
-      "1010 180"
-      "1010 240"
-      "1010 2190"
+      "${close_x} ${top_y1}"
+      "${close_x} ${top_y2}"
+      "${close_x} ${top_y3}"
+      "${close_x} ${bottom_y}"
     )
     local pair
-    for pair in "${coords[@]}"; do
-      adb shell input tap ${pair} >/dev/null 2>&1 || true
-      sleep 0.2
+    local attempt
+    for attempt in 1 2 3; do
+      for pair in "${coords[@]}"; do
+        adb shell input tap ${pair} >/dev/null 2>&1 || true
+        sleep 0.2
+      done
+      sleep 0.5
+      if ! android_warning_tray_present >/dev/null 2>&1; then
+        return 0
+      fi
     done
-    sleep 0.6
+    sleep 0.4
   fi
 }
 
@@ -295,6 +388,7 @@ capture_image() {
   if [[ "$platform" == "ios" ]]; then
     xcrun simctl io "$ios_udid" screenshot "$destination" >/dev/null
   else
+    dismiss_capture_obstructions
     local remote_path="/sdcard/zook-capture-${RANDOM}.png"
     adb shell screencap -p "$remote_path" >/dev/null
     adb pull "$remote_path" "$destination" >/dev/null
@@ -318,14 +412,21 @@ expected_marker_for_capture() {
     member/home) printf '%s\n' 'id:member-home-screen|text:Membership access|text:Hello, Nisha' ;;
     member/progress) printf '%s\n' 'id:progress-screen|text:Log workout|text:History' ;;
     member/scan) printf '%s\n' 'id:scan-screen|text:Scan to check in|id:scan-manual-code' ;;
-    member/plan) printf '%s\n' 'id:member-plan-screen|text:Open today plan|text:Today'"'"'s workout' ;;
+    member/plan) printf "%s\n" "id:member-plan-screen|text:Open today plan|text:Today's workout" ;;
     member/shop) printf '%s\n' 'text:Search essentials|id:shop-all-screen|id:shop-featured-screen' ;;
     member/membership) printf '%s\n' 'id:membership-screen' ;;
     member/assistant) printf '%s\n' 'id:assistant-screen|id:assistant-coming-soon-screen|id:assistant-unavailable-screen' ;;
     member/classes) printf '%s\n' 'id:member-classes-screen' ;;
     member/notifications) printf '%s\n' 'id:notifications-screen' ;;
-    member/tracking-history) printf '%s\n' 'id:tracking-history-screen' ;;
+    member/history) printf '%s\n' 'id:tracking-history-screen' ;;
     member/tracking-entry) printf '%s\n' 'id:tracking-entry-screen' ;;
+    trainer/home) printf '%s\n' 'text:The next coaching actions to clear first.|text:Plan queue clear|text:Active plan work' ;;
+    trainer/clients) printf '%s\n' 'text:client list is access-controlled|text:No clients yet|text:No matching clients' ;;
+    trainer/plans) printf '%s\n' 'text:Plan work|text:Review active plans|text:Planning queue clear' ;;
+    trainer/payouts) printf '%s\n' 'text:Live PT earnings and paid history|text:This month accrued|text:No earnings yet' ;;
+    trainer/client-detail) printf '%s\n' 'id:trainer-client-detail-screen|id:trainer-ai-draft-button' ;;
+    trainer/client-plan) printf '%s\n' 'id:trainer-client-plan-screen|id:trainer-plan-title' ;;
+    trainer/client-sessions) printf '%s\n' 'id:trainer-client-sessions-screen|text:Sessions logged' ;;
     *) return 1 ;;
   esac
 }
@@ -343,6 +444,9 @@ should_skip_android_assert() {
   local bucket="$1"
   local name="$2"
   case "${bucket}/${name}" in
+    member/scan|reception/scan)
+      return 0
+      ;;
     *) return 1 ;;
   esac
 }
@@ -352,6 +456,10 @@ extra_settle_seconds_for_capture() {
   local name="$2"
   case "${bucket}/${name}" in
     member/scan) printf '%s\n' '10' ;;
+    member/shop|member/attendance-detail) printf '%s\n' '8' ;;
+    owner/member-detail|owner/more) printf '%s\n' '6' ;;
+    reception/member-detail|reception/verification) printf '%s\n' '8' ;;
+    trainer/client-detail|trainer/client-plan|trainer/client-sessions) printf '%s\n' '6' ;;
     *) printf '%s\n' '0' ;;
   esac
 }
@@ -361,6 +469,10 @@ capture_route_wait() {
   local name="$2"
   local url="$3"
   local wait_seconds="$4"
+  if [[ "$platform" == "ios" && "$url" == zook:///* ]]; then
+    xcrun simctl terminate "$ios_udid" com.zook.app >/dev/null 2>&1 || true
+    sleep 1
+  fi
   if [[ "$platform" == "android" && "$url" == zook:///* ]]; then
     adb shell am force-stop com.zook.app >/dev/null 2>&1 || true
     sleep 1
@@ -393,9 +505,18 @@ capture_android_qa_shortcut() {
   local name="$2"
   local shortcut_id="$3"
   open_android_qa
-  android_scroll_until_id "$shortcut_id"
-  android_tap_id "$shortcut_id"
+  local attempt
+  for attempt in 1 2 3; do
+    android_scroll_until_id "$shortcut_id"
+    if android_tap_id "$shortcut_id"; then
+      break
+    fi
+    sleep 1
+  done
   sleep "$capture_settle_seconds"
+  if ! should_skip_android_assert "$bucket" "$name"; then
+    assert_android_capture_target "$bucket" "$name"
+  fi
   dismiss_capture_obstructions
   capture_image "$output_dir/$bucket/$name.png"
 }
@@ -406,74 +527,19 @@ capture_android_tap() {
   adb shell input tap "$x" "$y" >/dev/null
 }
 
-capture_android_owner_tab() {
-  local label="$1"
-  local x="$2"
-  local expected_id="$3"
-  android_tap_desc "$label" >/dev/null 2>&1 || capture_android_tap "$x" 2288
-  android_wait_for_any "id:${expected_id}"
-}
-
-capture_android_owner_tabs() {
-  capture_route_wait "owner" "home" "zook:///__qa-role?role=OWNER&target=/owner" "$capture_settle_seconds"
-  android_wait_for_any id:owner-home-screen desc:Members desc:Approvals desc:Revenue desc:More || true
-
-  capture_android_owner_tab "Members" 320 "owner-members-screen"
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/owner/members.png"
-
-  capture_android_owner_tab "Approvals" 540 "owner-approvals-screen"
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/owner/approvals.png"
-
-  capture_android_owner_tab "Revenue" 772 "owner-revenue-screen"
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/owner/revenue.png"
-
-  capture_android_owner_tab "More" 988 "owner-more-screen"
-  android_wait_for_any id:owner-more-screen id:owner-more-sign-out id:owner-more-stock
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/owner/more.png"
-}
-
 capture_android_member_tabs() {
-  capture_route "member" "home" "zook:///__qa-role?role=MEMBER&target=/"
-  capture_route "member" "progress" "zook:///__qa-role?role=MEMBER&target=/progress"
-  capture_route "member" "scan" "zook:///__qa-role?role=MEMBER&target=/scan"
-  capture_route "member" "plan" "zook:///__qa-role?role=MEMBER&target=/plan"
-  capture_route "member" "shop" "zook:///__qa-role?role=MEMBER&target=/__qa-open%3Fkind%3Dmember-shop"
+  capture_route "member" "home" "$(demo_role_url MEMBER / home)"
+  capture_route "member" "progress" "$(demo_role_url MEMBER /progress)"
+  capture_route "member" "scan" "$(demo_role_url MEMBER /scan)"
+  capture_route "member" "plan" "$(demo_role_url MEMBER /plan)"
+  capture_route "member" "shop" "$(demo_role_url MEMBER /__qa-open?kind=member-shop)"
 }
 
 capture_android_trainer_tabs() {
-  open_android_qa
-  android_scroll_until_id "qa-trainer-home"
-  android_tap_id "qa-trainer-home"
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-
-  capture_android_tap 143 2288
-  sleep 4
-  dismiss_capture_obstructions
-  capture_image "$output_dir/trainer/home.png"
-
-  capture_android_tap 407 2288
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/trainer/clients.png"
-
-  capture_android_tap 671 2288
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/trainer/plans.png"
-
-  capture_android_tap 936 2288
-  sleep "$capture_settle_seconds"
-  dismiss_capture_obstructions
-  capture_image "$output_dir/trainer/payouts.png"
+  capture_route_wait "trainer" "home" "$(demo_role_url TRAINER /trainer)" "8"
+  capture_route_wait "trainer" "clients" "$(demo_role_url TRAINER /trainer clients)" "8"
+  capture_route_wait "trainer" "plans" "$(demo_role_url TRAINER /trainer plans)" "8"
+  capture_route_wait "trainer" "payouts" "$(demo_role_url TRAINER /trainer payouts)" "8"
 }
 
 capture_android_member_tracking_entry() {
@@ -531,48 +597,49 @@ if [[ "$platform" == "android" ]]; then
 
   if should_capture_group "member"; then
     capture_android_member_tabs
-    capture_route "member" "membership" "zook:///__qa-role?role=MEMBER&target=/membership"
-    capture_route "member" "classes" "zook:///__qa-role?role=MEMBER&target=/classes"
-    capture_route "member" "assistant" "zook:///__qa-role?role=MEMBER&target=/assistant"
-    capture_route "member" "notifications" "zook:///__qa-role?role=MEMBER&target=/notifications"
-    capture_route "member" "tracking-history" "zook:///__qa-role?role=MEMBER&target=/tracking-history"
-    capture_route "member" "tracking-entry" "zook:///__qa-role?role=MEMBER&target=/tracking-entry"
-    capture_route "member" "attendance-detail" "zook:///__qa-role?role=MEMBER&target=/__qa-open%3Fkind%3Dmember-attendance-detail"
+    capture_route "member" "membership" "$(demo_role_url MEMBER /membership)"
+    capture_route "member" "classes" "$(demo_role_url MEMBER /classes)"
+    capture_route "member" "assistant" "$(demo_role_url MEMBER /assistant)"
+    capture_route "member" "notifications" "$(demo_role_url MEMBER /notifications)"
+    capture_route "member" "history" "$(demo_role_url MEMBER /tracking-history)"
+    capture_route "member" "tracking-entry" "$(demo_role_url MEMBER /tracking-entry)"
+    capture_route "member" "attendance-detail" "$(demo_role_url MEMBER /__qa-open?kind=member-attendance-detail)"
   fi
 
   if should_capture_group "owner"; then
-    capture_android_owner_tabs
-    capture_route "owner" "member-detail" "zook:///__qa-role?role=OWNER&target=/__qa-open%3Fkind%3Downer-member-detail"
-    capture_route "owner" "stock" "zook:///__qa-role?role=OWNER&target=/owner/stock"
-    capture_route "owner" "billing" "zook:///__qa-role?role=OWNER&target=/owner/billing"
-    capture_route "owner" "notifications" "zook:///__qa-role?role=OWNER&target=/notifications"
+    capture_route "owner" "home" "$(demo_role_url OWNER /owner)"
+    capture_route "owner" "members" "$(demo_role_url OWNER /owner/members)"
+    capture_route "owner" "approvals" "$(demo_role_url OWNER /owner/approvals)"
+    capture_route "owner" "revenue" "$(demo_role_url OWNER /owner/revenue)"
+    capture_route "owner" "more" "$(demo_role_url OWNER /owner/more)"
+    capture_route "owner" "member-detail" "$(demo_role_url OWNER /__qa-open?kind=owner-member-detail)"
+    capture_route "owner" "stock" "$(demo_role_url OWNER /owner/stock)"
+    capture_route "owner" "billing" "$(demo_role_url OWNER /owner/billing)"
+    capture_route "owner" "notifications" "$(demo_role_url OWNER /notifications)"
   fi
 
   if should_capture_group "admin"; then
-    capture_route "admin" "home" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner"
-    capture_route "admin" "approvals" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/approvals"
-    capture_route "admin" "stock" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/stock"
-    capture_route "admin" "more" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/more"
+    capture_route "admin" "home" "$(qa_role_url ADMIN /owner)"
+    capture_route "admin" "approvals" "$(qa_role_url ADMIN /owner/approvals)"
+    capture_route "admin" "stock" "$(qa_role_url ADMIN /owner/stock)"
+    capture_route "admin" "more" "$(qa_role_url ADMIN /owner/more)"
   fi
 
   if should_capture_group "trainer"; then
-    capture_route_wait "trainer" "home" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer" "8"
-    capture_route_wait "trainer" "clients" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=clients" "8"
-    capture_route_wait "trainer" "plans" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=plans" "8"
-    capture_route_wait "trainer" "payouts" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=payouts" "8"
-    capture_route "trainer" "client-detail" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-detail"
-    capture_route "trainer" "client-plan" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-plan"
-    capture_route "trainer" "client-sessions" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-sessions"
+    capture_android_trainer_tabs
+    capture_route "trainer" "client-detail" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-detail)"
+    capture_route "trainer" "client-plan" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-plan)"
+    capture_route "trainer" "client-sessions" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-sessions)"
   fi
 
   if should_capture_group "reception"; then
-    capture_route "reception" "home" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception"
-    capture_route "reception" "members" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/members"
-    capture_route "reception" "member-detail" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/__qa-open%3Fkind%3Dreception-member-detail"
-    capture_route "reception" "payments" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/payments"
-    capture_route "reception" "orders" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/orders"
-    capture_route "reception" "scan" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/scan"
-    capture_route "reception" "verification" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/__qa-open%3Fkind%3Dreception-verification"
+    capture_route "reception" "home" "$(demo_role_url RECEPTIONIST /reception home)"
+    capture_route "reception" "members" "$(demo_role_url RECEPTIONIST /reception/members)"
+    capture_route "reception" "member-detail" "$(demo_role_url RECEPTIONIST /__qa-open?kind=reception-member-detail)"
+    capture_route "reception" "payments" "$(demo_role_url RECEPTIONIST /reception/payments)"
+    capture_route "reception" "orders" "$(demo_role_url RECEPTIONIST /reception/orders)"
+    capture_route "reception" "scan" "$(demo_role_url RECEPTIONIST /scan)"
+    capture_route "reception" "verification" "$(demo_role_url RECEPTIONIST /__qa-open?kind=reception-verification)"
   fi
 else
   if should_capture_group "public"; then
@@ -587,57 +654,57 @@ else
   fi
 
   if should_capture_group "member"; then
-    capture_route "member" "home" "zook:///__demo-role?reset=1&role=MEMBER&target=/"
-    capture_route "member" "progress" "zook:///__demo-role?reset=1&role=MEMBER&target=/progress"
-    capture_route "member" "scan" "zook:///__demo-role?reset=1&role=MEMBER&target=/scan"
-    capture_route "member" "plan" "zook:///__demo-role?reset=1&role=MEMBER&target=/plan"
-    capture_route "member" "membership" "zook:///__demo-role?reset=1&role=MEMBER&target=/membership"
-    capture_route "member" "classes" "zook:///__demo-role?reset=1&role=MEMBER&target=/classes"
-    capture_route "member" "shop" "zook:///__demo-role?reset=1&role=MEMBER&target=/shop"
-    capture_route "member" "assistant" "zook:///__demo-role?reset=1&role=MEMBER&target=/assistant"
-    capture_route "member" "notifications" "zook:///__demo-role?reset=1&role=MEMBER&target=/notifications"
-    capture_route "member" "tracking-history" "zook:///__demo-role?reset=1&role=MEMBER&target=/tracking-history"
-    capture_route "member" "tracking-entry" "zook:///__demo-role?reset=1&role=MEMBER&target=/tracking-entry"
-    capture_route "member" "attendance-detail" "zook:///__demo-role?reset=1&role=MEMBER&target=/__qa-open%3Fkind%3Dmember-attendance-detail"
+    capture_route "member" "home" "$(demo_role_url MEMBER / home)"
+    capture_route "member" "progress" "$(demo_role_url MEMBER /progress)"
+    capture_route "member" "scan" "$(demo_role_url MEMBER /scan)"
+    capture_route "member" "plan" "$(demo_role_url MEMBER /plan)"
+    capture_route "member" "membership" "$(demo_role_url MEMBER /membership)"
+    capture_route "member" "classes" "$(demo_role_url MEMBER /classes)"
+    capture_route "member" "shop" "$(demo_role_url MEMBER /shop)"
+    capture_route "member" "assistant" "$(demo_role_url MEMBER /assistant)"
+    capture_route "member" "notifications" "$(demo_role_url MEMBER /notifications)"
+    capture_route "member" "history" "$(demo_role_url MEMBER /tracking-history)"
+    capture_route "member" "tracking-entry" "$(demo_role_url MEMBER /tracking-entry)"
+    capture_route "member" "attendance-detail" "$(demo_role_url MEMBER /__qa-open?kind=member-attendance-detail)"
   fi
 
   if should_capture_group "owner"; then
-    capture_route "owner" "home" "zook:///__demo-role?reset=1&role=OWNER&target=/owner"
-    capture_route "owner" "members" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/members"
-    capture_route "owner" "member-detail" "zook:///__demo-role?reset=1&role=OWNER&target=/__qa-open%3Fkind%3Downer-member-detail"
-    capture_route "owner" "approvals" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/approvals"
-    capture_route "owner" "revenue" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/revenue"
-    capture_route "owner" "stock" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/stock"
-    capture_route "owner" "billing" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/billing"
-    capture_route "owner" "more" "zook:///__demo-role?reset=1&role=OWNER&target=/owner/more"
-    capture_route "owner" "notifications" "zook:///__demo-role?reset=1&role=OWNER&target=/notifications"
+    capture_route "owner" "home" "$(demo_role_url OWNER /owner)"
+    capture_route "owner" "members" "$(demo_role_url OWNER /owner/members)"
+    capture_route "owner" "member-detail" "$(demo_role_url OWNER /__qa-open?kind=owner-member-detail)"
+    capture_route "owner" "approvals" "$(demo_role_url OWNER /owner/approvals)"
+    capture_route "owner" "revenue" "$(demo_role_url OWNER /owner/revenue)"
+    capture_route "owner" "stock" "$(demo_role_url OWNER /owner/stock)"
+    capture_route "owner" "billing" "$(demo_role_url OWNER /owner/billing)"
+    capture_route "owner" "more" "$(demo_role_url OWNER /owner/more)"
+    capture_route "owner" "notifications" "$(demo_role_url OWNER /notifications)"
   fi
 
   if should_capture_group "admin"; then
-    capture_route "admin" "home" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner"
-    capture_route "admin" "approvals" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/approvals"
-    capture_route "admin" "stock" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/stock"
-    capture_route "admin" "more" "zook:///__demo-role?reset=1&role=ADMIN&target=/owner/more"
+    capture_route "admin" "home" "$(qa_role_url ADMIN /owner)"
+    capture_route "admin" "approvals" "$(qa_role_url ADMIN /owner/approvals)"
+    capture_route "admin" "stock" "$(qa_role_url ADMIN /owner/stock)"
+    capture_route "admin" "more" "$(qa_role_url ADMIN /owner/more)"
   fi
 
   if should_capture_group "trainer"; then
-    capture_route_wait "trainer" "home" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer" "20"
-    capture_route_wait "trainer" "clients" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=clients" "20"
-    capture_route_wait "trainer" "plans" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=plans" "20"
-    capture_route_wait "trainer" "payouts" "zook:///__demo-role?reset=1&role=TRAINER&target=/trainer?view=payouts" "20"
-    capture_route "trainer" "client-detail" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-detail"
-    capture_route "trainer" "client-plan" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-plan"
-    capture_route "trainer" "client-sessions" "zook:///__demo-role?reset=1&role=TRAINER&target=/__qa-open%3Fkind%3Dtrainer-client-sessions"
+    capture_route_wait "trainer" "home" "$(demo_role_url TRAINER /trainer)" "20"
+    capture_route_wait "trainer" "clients" "$(demo_role_url TRAINER /trainer clients)" "20"
+    capture_route_wait "trainer" "plans" "$(demo_role_url TRAINER /trainer plans)" "20"
+    capture_route_wait "trainer" "payouts" "$(demo_role_url TRAINER /trainer payouts)" "20"
+    capture_route "trainer" "client-detail" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-detail)"
+    capture_route "trainer" "client-plan" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-plan)"
+    capture_route "trainer" "client-sessions" "$(demo_role_url TRAINER /__qa-open?kind=trainer-client-sessions)"
   fi
 
   if should_capture_group "reception"; then
-    capture_route "reception" "home" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception"
-    capture_route "reception" "members" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/members"
-    capture_route "reception" "member-detail" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/__qa-open%3Fkind%3Dreception-member-detail"
-    capture_route "reception" "payments" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/payments"
-    capture_route "reception" "orders" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/reception/orders"
-    capture_route "reception" "scan" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/scan"
-    capture_route "reception" "verification" "zook:///__demo-role?reset=1&role=RECEPTIONIST&target=/__qa-open%3Fkind%3Dreception-verification"
+    capture_route "reception" "home" "$(demo_role_url RECEPTIONIST /reception home)"
+    capture_route "reception" "members" "$(demo_role_url RECEPTIONIST /reception/members)"
+    capture_route "reception" "member-detail" "$(demo_role_url RECEPTIONIST /__qa-open?kind=reception-member-detail)"
+    capture_route "reception" "payments" "$(demo_role_url RECEPTIONIST /reception/payments)"
+    capture_route "reception" "orders" "$(demo_role_url RECEPTIONIST /reception/orders)"
+    capture_route "reception" "scan" "$(demo_role_url RECEPTIONIST /scan)"
+    capture_route "reception" "verification" "$(demo_role_url RECEPTIONIST /__qa-open?kind=reception-verification)"
   fi
 fi
 

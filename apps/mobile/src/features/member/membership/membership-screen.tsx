@@ -1022,8 +1022,8 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding,
   },
   headerContext: {
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   progressSection: {
-    gap: 6,
+    gap: spacing.xs,
   },
   progressBar: {
     height: 6,
@@ -1144,7 +1144,7 @@ const styles = StyleSheet.create({
   membershipMetaLine: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: spacing.xs,
     alignSelf: "flex-start",
   },
   membershipMetaText: {
@@ -1172,7 +1172,7 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   stack: {
-    gap: 8,
+    gap: spacing.sm,
   },
   historyContent: {
     paddingVertical: 12,
