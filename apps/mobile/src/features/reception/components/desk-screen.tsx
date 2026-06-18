@@ -7,6 +7,21 @@ import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { formatDateTime, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
+import type { PillTone } from "@/components/primitives";
+
+function toneForAttendanceStatus(status?: string | null): PillTone {
+  if (status === "APPROVED") return "lime";
+  if (status === "REJECTED" || status === "FAILED") return "red";
+  if (status === "FLAGGED") return "red";
+  if (status === "PENDING_APPROVAL") return "amber";
+  return "neutral";
+}
+
+function iconForAttendanceStatus(status?: string | null) {
+  if (status === "APPROVED") return "checkmark-circle-outline" as const;
+  if (status === "REJECTED" || status === "FAILED") return "close-circle-outline" as const;
+  return "alert-circle-outline" as const;
+}
 
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
@@ -123,32 +138,33 @@ export function ReceptionDeskScreenBody() {
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
                 <EmptyState title="No scans yet" body="Approved check-ins will appear here." />
               ) : null}
-              {recentScans.map((scan) => (
-                <Card
-                  key={scan.id}
-                  variant="compact"
-                  padding={12}
-                  contentStyle={styles.liveFeedItem}
-                >
-                  <IconBubble
-                    icon={scan.status === "APPROVED" ? "checkmark-circle-outline" : "alert-circle-outline"}
-                    tone={scan.status === "APPROVED" ? "lime" : "amber"}
-                    size={34}
-                  />
-                  <View style={styles.liveFeedCopy}>
-                    <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
-                      {scan.user?.name ?? scan.user?.email ?? "Member"}
-                    </Text>
-                    <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                      {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
-                      {scan.plan?.name ?? "Membership"}
-                    </Text>
-                  </View>
-                  <Pill tone={scan.status === "APPROVED" ? "lime" : "amber"}>
-                    {titleCaseFromCode(scan.status)}
-                  </Pill>
-                </Card>
-              ))}
+              {recentScans.map((scan) => {
+                const statusTone = toneForAttendanceStatus(scan.status);
+                return (
+                  <Card
+                    key={scan.id}
+                    variant="compact"
+                    padding={12}
+                    contentStyle={styles.liveFeedItem}
+                  >
+                    <IconBubble
+                      icon={iconForAttendanceStatus(scan.status)}
+                      tone={statusTone}
+                      size={34}
+                    />
+                    <View style={styles.liveFeedCopy}>
+                      <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
+                        {scan.user?.name ?? scan.user?.email ?? "Member"}
+                      </Text>
+                      <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
+                        {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
+                        {scan.plan?.name ?? "Membership"}
+                      </Text>
+                    </View>
+                    <Pill tone={statusTone}>{titleCaseFromCode(scan.status)}</Pill>
+                  </Card>
+                );
+              })}
             </View>
 
             <SectionHeader

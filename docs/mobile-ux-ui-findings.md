@@ -680,3 +680,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading web member subscription status tone (`R103`) is closed: the member
   membership surface now tones pending, paused, expired, cancelled, failed, and refunded
   subscriptions by status instead of showing every non-active subscription as a warning.
+- **[ui, fixed]** Misleading reception scan feed status tone (`R104`) is closed: live desk scan
+  rows now tone approved, pending, flagged, and rejected/failed attendance statuses separately
+  instead of showing every non-approved scan as a warning.
