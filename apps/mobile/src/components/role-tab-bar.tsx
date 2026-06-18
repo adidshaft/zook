@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { useReduceMotion } from "@/lib/motion";
-import { materials, typography, useTheme } from "@/lib/theme";
+import { elevation, materials, typography, useTheme } from "@/lib/theme";
 
 const AnimatedPressable = RNAnimated.createAnimatedComponent(Pressable);
 
@@ -91,6 +91,18 @@ export function RoleTabBar({
   const glass = materials.glassBar(mode);
   const tonal = materials.tonalBar(mode);
   const focusedIsCenter = centerAction?.routeName === activeRouteName;
+  const centerActionShadow =
+    Platform.OS === "android"
+      ? elevation(6, palette.accent.base, {
+          elevation: 6,
+          shadowOpacity: mode === "dark" ? 0.24 : 0.16,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 8 },
+        })
+      : {
+          shadowColor: palette.accent.base,
+          shadowOpacity: mode === "dark" ? 0.32 : 0.18,
+        };
 
   const translateY = useRef(new RNAnimated.Value(0)).current;
   const opacity = useRef(new RNAnimated.Value(1)).current;
@@ -273,11 +285,10 @@ export function RoleTabBar({
                   style={[
                     styles.centerActionButton,
                     Platform.OS === "android" ? styles.androidCenterActionButton : null,
+                    centerActionShadow,
                     {
                       backgroundColor: palette.accent.base,
                       borderColor: palette.bg.app,
-                      shadowColor: palette.accent.base,
-                      shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.32 : 0.18) : 0,
                     },
                     { transform: [{ scale: centerScale }] },
                   ]}
