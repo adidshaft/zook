@@ -835,3 +835,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile owner member contact cues (`R155`) are closed: member
   detail email and phone row icons now use neutral accents instead of informational blue,
   keeping stronger color for subscription and workout state.
+- **[ui, fixed]** Overstated mobile trainer dashboard row cues (`R156`) are closed: recent
+  feedback and manual plan-builder leading icons now use neutral accents instead of
+  informational blue, keeping completion and mode state on the trailing chips.

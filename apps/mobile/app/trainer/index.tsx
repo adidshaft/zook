@@ -208,7 +208,7 @@ export default function TrainerHomeScreen() {
                   <ListRow
                     title={feedback.clientName}
                     subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
-                    leading={<IconBubble icon="chatbubble-ellipses-outline" tone="blue" />}
+                    leading={<IconBubble icon="chatbubble-ellipses-outline" tone="neutral" />}
                     trailing={<StatusChip status={`${feedback.completionPct}%`} tone="lime" />}
                   />
                 </Pressable>
@@ -233,7 +233,7 @@ export default function TrainerHomeScreen() {
               <ListRow
                 title="Create plans manually"
                 subtitle="Use saved templates and publish only when the plan is ready."
-                leading={<IconBubble icon="reader-outline" tone="blue" />}
+                leading={<IconBubble icon="reader-outline" tone="neutral" />}
                 trailing={<StatusChip status="Manual" tone="neutral" />}
               />
             </Card>
