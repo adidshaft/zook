@@ -101,7 +101,7 @@ export function MemberTab({
               )}
               <div className="min-w-0">
                 {selectedMember.user?.privateHandle ? (
-                  <Pill tone="blue">
+                  <Pill>
                     {copy.privateId}: {selectedMember.user.privateHandle}
                   </Pill>
                 ) : null}

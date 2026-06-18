@@ -766,3 +766,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web desk avatar fallback cleanup (`R132`) is closed: the desk
   member detail now uses the shared web avatar-initials primitive instead of rendering its
   own one-letter fallback block.
+- **[ui, fixed]** Overstated web private-ID cue (`R133`) is closed: member private-ID
+  badges on the web membership and desk member surfaces now use neutral treatment instead
+  of informational blue, matching their role as identifiers rather than status.
