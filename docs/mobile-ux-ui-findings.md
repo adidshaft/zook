@@ -997,3 +997,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile profile referral icon cue (`R209`) is closed:
   the member profile referral card now uses a neutral gift icon instead of amber, keeping
   action emphasis on the share button and success color on applied referral states.
+- **[ui, fixed]** Overstated mobile membership browser-return icon cue (`R210`) is closed:
+  the checkout browser-return card now uses a neutral open icon instead of amber, keeping
+  action emphasis on the Check status button and purchase focus states.
