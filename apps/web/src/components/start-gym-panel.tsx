@@ -7,7 +7,12 @@ import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import { equipmentOptions, gymTypes } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
-import { formatIndiaPhoneInput, joinModeLabel, normalizeIndianPincodeInput } from "@/lib/format";
+import {
+  formatIndiaPhoneInput,
+  joinModeLabel,
+  normalizeIndiaPhoneDigits,
+  normalizeIndianPincodeInput,
+} from "@/lib/format";
 
 const amenityOptions = [
   "Certified trainers",
@@ -92,21 +97,6 @@ function safeOwnerEmail(value: string) {
   return value;
 }
 
-function normalizeIndiaPhone(value: string) {
-  let clean = value;
-  if (clean.startsWith("+91")) {
-    clean = clean.slice(3);
-  }
-  const digits = clean.replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return digits.slice(2);
-  }
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return digits.slice(1);
-  }
-  return digits.slice(0, 10);
-}
-
 export function StartGymPanel({
   ownerEmail,
   initialTier = "STARTER",
@@ -141,7 +131,7 @@ export function StartGymPanel({
       ? Boolean(
           name.trim() &&
           username.trim() &&
-          normalizeIndiaPhone(contactPhone).length === 10 &&
+          normalizeIndiaPhoneDigits(contactPhone).length === 10 &&
           contactEmail.trim() &&
           (!gstNumber.trim() || GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())),
         )
@@ -170,7 +160,7 @@ export function StartGymPanel({
     if (
       !name.trim() ||
       !username.trim() ||
-      normalizeIndiaPhone(contactPhone).length !== 10 ||
+      normalizeIndiaPhoneDigits(contactPhone).length !== 10 ||
       !address.trim() ||
       !city.trim() ||
       !state.trim() ||

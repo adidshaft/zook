@@ -30,11 +30,7 @@ export function formatUsageLimit(
   return options.compact ? formatCompactNumber(limit) : String(limit);
 }
 
-export function formatIndiaPhoneInput(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
-    return trimmed;
-  }
+export function normalizeIndiaPhoneDigits(value: string): string {
   let clean = value;
   if (clean.startsWith("+91")) {
     clean = clean.slice(3);
@@ -45,7 +41,16 @@ export function formatIndiaPhoneInput(value: string): string {
   } else if (digits.length === 11 && digits.startsWith("0")) {
     digits = digits.slice(1);
   }
-  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
+  return digits.slice(0, 10);
+}
+
+export function formatIndiaPhoneInput(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
+    return trimmed;
+  }
+  const digits = normalizeIndiaPhoneDigits(value);
+  return digits ? `+91 ${digits}` : "+91 ";
 }
 
 export function normalizeIndianPincodeInput(value: string): string {
