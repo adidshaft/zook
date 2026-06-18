@@ -919,3 +919,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public label cues (`R183`) are closed: gym discovery,
   after-joining, and India operations labels now use neutral badges instead of lime,
   keeping stronger colors for empty, unavailable, and join-state feedback.
+- **[ui, fixed]** Overstated web loading label cue (`R184`) is closed: the global loading
+  skeleton badge now uses neutral styling instead of lime, keeping loading represented by
+  the skeleton layout rather than a success-colored label.
