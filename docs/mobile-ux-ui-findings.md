@@ -565,3 +565,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   and read-only reports now share web `formatInrCompact` for K/L rupee chart labels.
 - **[code, fixed]** Duplicate staff invite role formatter (`R61`) is closed: staff invite copy
   now uses shared web `formatEnumLabel` instead of carrying a local role formatter.
+- **[code, fixed]** Duplicate dashboard rupee formatter (`R62`) is closed: dashboard overview
+  now uses shared web `formatInr` for full rupee labels alongside `formatInrCompact`.

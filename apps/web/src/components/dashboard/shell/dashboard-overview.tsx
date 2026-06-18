@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AvatarInitials } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
-import { formatInrCompact } from "@/lib/format";
+import { formatInr, formatInrCompact } from "@/lib/format";
 import {
   ActivityRow,
   BarChart,
@@ -50,10 +50,6 @@ type AttentionRow = {
   tone: "lime" | "amber" | "sky" | "rose";
   href: string;
 };
-
-function formatInr(paise: number) {
-  return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
 
 export function DashboardOverview({
   activeOrg,
