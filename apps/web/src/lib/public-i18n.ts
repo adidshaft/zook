@@ -223,8 +223,6 @@ export const publicMessages = {
     referralCopy:
       "Have a referral or invite code? Apply it during payment so the gym can track the source and any eligible discount.",
     shareJoinLink: "Share join link",
-    reviews: "Reviews",
-    reviewsPending: "Member reviews will appear here once the gym enables them.",
     choosePlan: "Choose plan",
     changingPlan: "Changing the plan...",
     verifyEmail: "Verify email",
@@ -472,8 +470,6 @@ export const publicMessages = {
     referralCopy:
       "रेफरल या आमंत्रण कोड है? भुगतान के दौरान लगाएं ताकि जिम स्रोत और छूट ट्रैक कर सके.",
     shareJoinLink: "जॉइन लिंक शेयर करें",
-    reviews: "रिव्यू",
-    reviewsPending: "जिम सक्षम करेगा तो सदस्य रिव्यू यहां दिखेंगे.",
     choosePlan: "प्लान चुनें",
     changingPlan: "प्लान बदला जा रहा है...",
     verifyEmail: "ईमेल सत्यापित करें",
