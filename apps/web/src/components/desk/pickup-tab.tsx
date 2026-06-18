@@ -6,6 +6,14 @@ import type { DeskCopy } from "./copy";
 import type { ShopOrder } from "./types";
 import { orderItemsSummary } from "./utils";
 
+function toneForPickupOrderStatus(status: ShopOrder["status"]) {
+  if (status === "READY_FOR_PICKUP" || status === "PAID") return "lime";
+  if (status === "PENDING_PAYMENT") return "amber";
+  if (["CANCELLED", "FAILED", "REFUNDED"].includes(status)) return "red";
+  if (status === "FULFILLED") return "blue";
+  return "neutral";
+}
+
 export function PickupTab({
   copy,
   activeOrders,
@@ -99,7 +107,7 @@ export function PickupTab({
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone={order.status === "READY_FOR_PICKUP" ? "lime" : "amber"}>
+                    <Pill tone={toneForPickupOrderStatus(order.status)}>
                       {formatEnumLabel(order.status)}
                     </Pill>
                     <Pill tone={payAtDesk ? "amber" : "lime"}>

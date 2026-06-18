@@ -674,3 +674,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading payment/order leading icon tones (`R101`) is closed: membership
   payment rows and reception pickup rows now tone their leading icons from the same status
   helpers used by their visible status chips.
+- **[ui, fixed]** Misleading web desk pickup status tone (`R102`) is closed: desk pickup order
+  chips now distinguish ready/paid, pending, fulfilled, and failed/refunded/cancelled states
+  instead of coloring every non-ready order as a warning.
