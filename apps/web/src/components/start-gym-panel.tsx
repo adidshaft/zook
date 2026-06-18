@@ -7,7 +7,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import { equipmentOptions, gymTypes } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
-import { formatIndiaPhoneInput, joinModeLabel } from "@/lib/format";
+import { formatIndiaPhoneInput, joinModeLabel, normalizeIndianPincodeInput } from "@/lib/format";
 
 const amenityOptions = [
   "Certified trainers",
@@ -462,7 +462,7 @@ export function StartGymPanel({
                 <input
                   value={pincode}
                   onChange={(event) =>
-                    setPincode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))
+                    setPincode(normalizeIndianPincodeInput(event.target.value))
                   }
                   placeholder="6-digit pincode"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"

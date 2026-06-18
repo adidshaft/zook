@@ -48,6 +48,10 @@ export function formatIndiaPhoneInput(value: string): string {
   return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
 }
 
+export function normalizeIndianPincodeInput(value: string): string {
+  return value.replace(/[^0-9]/g, "").slice(0, 6);
+}
+
 function coerceDate(value: Date | string | null | undefined) {
   if (!value) {
     return null;

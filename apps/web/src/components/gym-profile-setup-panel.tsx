@@ -14,7 +14,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ImageAssetUpload } from "./image-asset-upload";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
-import { formatEnumLabel, formatIndiaPhoneInput } from "@/lib/format";
+import { formatEnumLabel, formatIndiaPhoneInput, normalizeIndianPincodeInput } from "@/lib/format";
 import {
   amenityOptions,
   ChipPicker,
@@ -389,7 +389,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <Field
                 label="Pincode"
                 value={form.pincode}
-                onChange={(value) => update("pincode", value.replace(/[^0-9]/g, "").slice(0, 6))}
+                onChange={(value) => update("pincode", normalizeIndianPincodeInput(value))}
               />
             </div>
             <DataTable

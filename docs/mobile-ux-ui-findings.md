@@ -718,3 +718,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web OTP code cleanup (`R116`) is closed: web login and member
   contact verification now use a shared tested OTP sanitizer instead of slicing six-digit
   codes inline in each component.
+- **[code, fixed]** Duplicate web pincode input cleanup (`R117`) is closed: gym onboarding
+  and profile setup now share tested Indian pincode normalization instead of repeating inline
+  digit-only six-character cleanup.
