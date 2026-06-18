@@ -5,7 +5,6 @@ import {
   BarChart3, 
   Calendar, 
   CircleAlert, 
-  Sparkles, 
   TrendingUp,
   IndianRupee,
   Users,
@@ -504,7 +503,7 @@ export function ReportsPanel({
 
                     <GlassCard className="p-5">
                       <div className="flex items-center gap-2">
-                        <Sparkles size={16} className="text-[var(--accent)]" />
+                        <CircleAlert size={16} className="text-[var(--accent)]" />
                         <h2 className="text-base font-semibold text-[var(--text-primary)]">What deserves a second look</h2>
                       </div>
                       <div className="mt-4 grid gap-2">

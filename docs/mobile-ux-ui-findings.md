@@ -482,3 +482,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ambient web blur layers (`R30`) is closed: removed purely ornamental
   full-screen coach background blobs and the join-review card accent blob while preserving the
   actual card surfaces and content hierarchy.
+- **[code, fixed]** Shared dashboard hero flair (`R31`) is closed: removed the reusable
+  `SectionHero` corner blur blob and replaced remaining setup/report sparkle icons with tags and
+  alert icons that match the surfaces' actual meaning.

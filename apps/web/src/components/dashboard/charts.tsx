@@ -718,11 +718,6 @@ export function SectionHero({
         className="absolute inset-x-0 top-0 h-px opacity-60"
         style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full blur-3xl"
-        style={{ background: `color-mix(in srgb, ${color} 8%, transparent)` }}
-      />
       <div className="flex items-start gap-4">
         {Icon ? (
           <div

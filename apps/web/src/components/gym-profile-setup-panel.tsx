@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Sparkles, Image } from "lucide-react";
+import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Tags, Image } from "lucide-react";
 import {
   DataTable,
   EmptyState,
@@ -250,7 +250,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
   const tabItems = [
     { id: "basic" as const, label: "Basic Details", icon: Info },
     { id: "location" as const, label: "Address & Branches", icon: MapPin },
-    { id: "features" as const, label: "Facilities & Tags", icon: Sparkles },
+    { id: "features" as const, label: "Facilities & Tags", icon: Tags },
     { id: "media" as const, label: "Photos & Logo", icon: Image },
     { id: "qr" as const, label: "QR & Public Links", icon: QrCode },
   ];
