@@ -40,16 +40,17 @@ fully complete until the human/device/provider gates below have external evidenc
   `f1fd888 chore: remove placeholder mobile readmes`,
   `d6bddba chore: remove unused mobile domain hooks`,
   `20be054 chore: trim unused mobile query keys`,
-  `2a24111 chore: narrow mobile domain component exports`, and
+  `2a24111 chore: narrow mobile domain component exports`,
   `5124b8b chore: remove unused mobile tracking displays`,
-  `aebf45c chore: remove trainer ai draft placeholder`, and
+  `aebf45c chore: remove trainer ai draft placeholder`,
   `3ec422b chore: remove unused mobile utility helpers`,
-  `47cd603 chore: remove no-caller mobile exports`, and
-  `8702d2c chore: trim internal mobile helper exports`, and
-  `ece052c chore: remove unused profile default exports`, and
-  `e94673a chore: remove redundant mobile comments`, and
-  `de2c5e2 docs: remove stale mobile ai draft audit note`, and
-  `ab36047 fix: neutralize offline demo fallback copy`.
+  `47cd603 chore: remove no-caller mobile exports`,
+  `8702d2c chore: trim internal mobile helper exports`,
+  `ece052c chore: remove unused profile default exports`,
+  `e94673a chore: remove redundant mobile comments`,
+  `de2c5e2 docs: remove stale mobile ai draft audit note`,
+  `ab36047 fix: neutralize offline demo fallback copy`, and
+  `548e93c docs: update mobile cleanup audit for demo fallback`.
 
 ### Web UI/UX plan
 
