@@ -588,3 +588,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate server document enum formatting (`R69`) is closed: invoice PDF
   descriptions and receipt/invoice HTML rows now use shared web `formatEnumLabel` instead of
   local underscore replacement.
+- **[code, fixed]** Duplicate body-progress visibility label (`R70`) is closed: the dashboard
+  body-composition timeline now uses shared web `formatEnumLabel` instead of local underscore
+  replacement.

@@ -3,7 +3,7 @@
 import { Camera } from "lucide-react";
 import { EmptyState, SectionHeader, StatusPill } from "../dashboard-primitives";
 import { Pill } from "../glass-card";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatEnumLabel } from "@/lib/format";
 import type { BodyProgressEntryRow } from "@/components/dashboard/types";
 
 function numericLabel(value: string | number | null | undefined, suffix: string) {
@@ -64,7 +64,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(entry.measuredAt)}</p>
                   <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "blue"}>
-                    {entry.visibility ? entry.visibility.replaceAll("_", " ") : "Visible"}
+                    {entry.visibility ? formatEnumLabel(entry.visibility) : "Visible"}
                   </Pill>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-xs">
