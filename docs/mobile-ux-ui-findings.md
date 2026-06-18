@@ -631,3 +631,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile remaining-visit copy (`R86`) is closed: active membership
   and profile progress labels now use shared mobile `formatVisitLimit` instead of hand-built
   visit pluralization.
+- **[ui, fixed]** Fake trainer check-in fallback (`R87`) is closed: trainer client detail now
+  shows a formatted real last workout time or an honest empty state instead of the hard-coded
+  `Today 7:14 AM` cue.

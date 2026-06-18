@@ -26,6 +26,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
+import { formatDateTime } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -46,6 +47,7 @@ export default function TrainerClientOverviewScreen() {
   const fitnessGoal = fitnessGoalFor(client);
   const averageCompletion = averageCompletionFor(client);
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
+  const lastWorkoutStartedAt = recentWorkouts[0]?.startedAt;
   const activePlans = client?.summary?.activePlans ?? 0;
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
@@ -172,7 +174,11 @@ export default function TrainerClientOverviewScreen() {
             <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />} />
             <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
             <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
-            <ListRow title="Last check-in" subtitle={recentWorkouts[0]?.startedAt ?? "Today 7:14 AM"} trailing={<StatusChip status="Tracked" tone="neutral" />} />
+            <ListRow
+              title="Last check-in"
+              subtitle={formatDateTime(lastWorkoutStartedAt, "No workout logged", "en-IN")}
+              trailing={<StatusChip status={lastWorkoutStartedAt ? "Tracked" : "No log"} tone="neutral" />}
+            />
             <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Needs feedback" : `${averageCompletion}%`} tone="amber" />} />
           </Card>
 
