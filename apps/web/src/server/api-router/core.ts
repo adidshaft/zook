@@ -121,7 +121,6 @@ import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment
 import { deliverPushForNotification } from "../push-runtime";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { getActiveMembershipData } from "../domains/members";
-import { getOrganizationDashboardData } from "../domains/overview";
 import {
   getOrganizationPaymentsPage,
   getOrganizationRecentPayments,
@@ -6640,53 +6639,6 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
       session: updatedSession,
     });
   }
-  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "dashboard"])) {
-    const orgId = path[1]!;
-    const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    const requestedBranchId = queryBranchId(request);
-    const branchId = await assertBranchAccessForContext(ctx, orgId, requestedBranchId);
-    return ok(
-      await getOrganizationDashboardData(
-        orgId,
-        clean({
-          branchId,
-          allBranches: isAllBranchesRequest(requestedBranchId),
-          allBranchesAllowed:
-            ctx.isPlatformAdmin || ctx.roles.some((role) => role === "OWNER" || role === "ADMIN"),
-        }),
-      ),
-    );
-  }
-  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "setup-status"])) {
-    const orgId = path[1]!;
-    const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    const [
-      membershipPlanCount,
-      qrTokenCount,
-      attendanceCount,
-      staffCount,
-      memberCount,
-      shopProductCount,
-    ] = await Promise.all([
-      prisma.membershipPlan.count({ where: { orgId, active: true } }),
-      prisma.attendanceQrToken.count({ where: { orgId } }),
-      prisma.attendanceRecord.count({ where: { orgId } }),
-      prisma.organizationRoleAssignment.count({
-        where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
-      }),
-      prisma.memberProfile.count({ where: { orgId } }),
-      prisma.product.count({ where: { orgId, active: true } }),
-    ]);
-    return ok({
-      hasMembershipPlans: membershipPlanCount > 0,
-      hasQrDisplayed: qrTokenCount > 0 || attendanceCount > 0,
-      staffCount,
-      memberCount,
-      hasShopProducts: shopProductCount > 0,
-    });
-  }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -6796,24 +6748,6 @@ export async function handleOrganizations(request: NextRequest, path: string[]) 
         workouts,
       },
     });
-  }
-  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "reports", "summary"])) {
-    const orgId = path[1]!;
-    const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "ORG_VIEW_REPORTS");
-    const requestedBranchId = queryBranchId(request);
-    const branchId = await assertBranchAccessForContext(ctx, orgId, requestedBranchId);
-    return ok(
-      await getOrganizationDashboardData(
-        orgId,
-        clean({
-          branchId,
-          allBranches: isAllBranchesRequest(requestedBranchId),
-          allBranchesAllowed:
-            ctx.isPlatformAdmin || ctx.roles.some((role) => role === "OWNER" || role === "ADMIN"),
-        }),
-      ),
-    );
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "members", "import"])) {
     const orgId = path[1]!;
