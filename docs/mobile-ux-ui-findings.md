@@ -895,3 +895,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web public-visibility cues (`R175`) are closed: public/visible
   badges for plans, member profiles, and body-composition entries now use neutral styling
   instead of informational blue, keeping color on active, paused, private, and marketing states.
+- **[ui, fixed]** Overstated web pricing tier-label cues (`R176`) are closed: pricing tier
+  name badges now use neutral styling instead of lime/blue tier-based color, keeping the
+  promotional emphasis on the existing Popular label.

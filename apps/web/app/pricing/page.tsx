@@ -187,9 +187,7 @@ export default async function PricingPage({
               className="flex flex-col p-5"
             >
               <div className="flex items-center justify-between gap-3">
-                <Pill tone={plan.tier === "FREE" ? "lime" : plan.tier === "PRO" ? "blue" : "neutral"}>
-                  {plan.name}
-                </Pill>
+                <Pill>{plan.name}</Pill>
                 {plan.tier === "GROWTH" ? (
                   <span className="rounded-full bg-[var(--accent-fill)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-on-accent)]">
                     Popular
