@@ -109,6 +109,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   exports and the unused history-series builder so the progress surface only keeps live helpers.
 - **6/R35 Trainer AI draft cue** — removed the always-off trainer AI drafting card and updated
   the trainer QA flow to exercise the live manual plan builder instead of stale AI draft naming.
+- **6/R36 No-caller utility helpers** — removed the unused smart check-in reminder module,
+  dropped the unused biometric getter, and made toast/biometric helpers private where only their
+  own modules call them.
 
 ## 1. Functional / correctness
 

@@ -226,11 +226,7 @@ async function authenticateBiometric() {
   return result.success;
 }
 
-export async function getBiometricUnlockEnabled() {
-  return (await getStoredValue(BIOMETRIC_ENABLED_STORAGE_KEY)) === "1";
-}
-
-export async function setStoredBiometricUnlockEnabled(enabled: boolean) {
+async function setStoredBiometricUnlockEnabled(enabled: boolean) {
   if (enabled && !(await biometricAvailable())) {
     return false;
   }
