@@ -55,6 +55,21 @@ export const clientDetailTabs: Array<{ label: string; value: ClientDetailTab }> 
 
 export type ClientDetailTab = "overview" | "plan" | "sessions";
 
+export function trainerClientDetailPath(clientId: string, tab: ClientDetailTab) {
+  return `/trainer/clients/${clientId}${tab === "overview" ? "" : `/${tab}`}`;
+}
+
+export function selectedTrainerClient(
+  clients: TrainerClientRecord[] | undefined,
+  clientId: string,
+) {
+  return (
+    clients?.find((candidate) => candidate.memberUserId === clientId || candidate.id === clientId) ??
+    clients?.[0] ??
+    null
+  );
+}
+
 export function planCountLabel(count: number) {
   return `${count} active ${count === 1 ? "plan" : "plans"}`;
 }

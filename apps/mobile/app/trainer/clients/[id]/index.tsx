@@ -22,6 +22,9 @@ import {
   fitnessGoalFor,
   initialsFor,
   planCountLabel,
+  selectedTrainerClient,
+  trainerClientDetailPath,
+  type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
@@ -37,12 +40,7 @@ export default function TrainerClientOverviewScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
-  const client =
-    clientsQuery.data?.clients.find(
-      (candidate) => candidate.memberUserId === id || candidate.id === id,
-    ) ??
-    clientsQuery.data?.clients[0] ??
-    null;
+  const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
   const fitnessGoal = fitnessGoalFor(client);
   const averageCompletion = averageCompletionFor(client);
@@ -106,6 +104,10 @@ export default function TrainerClientOverviewScreen() {
     }
   }
 
+  function selectTab(tab: ClientDetailTab) {
+    router.replace(trainerClientDetailPath(id, tab) as never);
+  }
+
   return (
     <>
       <ZookScreen testID="trainer-client-detail-screen">
@@ -129,7 +131,7 @@ export default function TrainerClientOverviewScreen() {
             }
             chip={<StatusChip status="Trainer" tone="neutral" />}
           />
-          <SegmentedControl options={clientDetailTabs} value="overview" onChange={(tab) => router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never)} />
+          <SegmentedControl options={clientDetailTabs} value="overview" onChange={selectTab} />
 
           {!clientsQuery.isLoading && !client ? (
             <Card variant="compact" contentStyle={styles.notFoundContent}>

@@ -637,3 +637,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Empty trainer detail header cue (`R88`) is closed: the overview tab now uses
   the same client-name subtitle as the plan and sessions tabs instead of passing an empty
   subtitle prop.
+- **[code, fixed]** Duplicate trainer client tab logic (`R89`) is closed: overview, plan, and
+  sessions now share client selection and detail route helpers instead of repeating fallback
+  lookup and tab path construction.

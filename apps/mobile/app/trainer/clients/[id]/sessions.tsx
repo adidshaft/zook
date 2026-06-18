@@ -14,6 +14,8 @@ import {
   clientDetailTabs,
   planCountLabel,
   progressTimelineFor,
+  selectedTrainerClient,
+  trainerClientDetailPath,
   type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { useTrainerClients } from "@/lib/domains";
@@ -24,19 +26,14 @@ export default function TrainerClientSessionsScreen() {
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
-  const client =
-    clientsQuery.data?.clients.find(
-      (candidate) => candidate.memberUserId === id || candidate.id === id,
-    ) ??
-    clientsQuery.data?.clients[0] ??
-    null;
+  const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const activePlans = client?.summary?.activePlans ?? 0;
   const averageCompletion = averageCompletionFor(client);
   const progressTimeline = progressTimelineFor(client);
 
   function selectTab(tab: ClientDetailTab) {
-    router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never);
+    router.replace(trainerClientDetailPath(id, tab) as never);
   }
 
   return (

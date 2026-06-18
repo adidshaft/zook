@@ -19,6 +19,8 @@ import {
   clientDetailTabs,
   fitnessGoalFor,
   planTemplates,
+  selectedTrainerClient,
+  trainerClientDetailPath,
   type ClientDetailTab,
   type PlanTemplateId,
 } from "@/features/trainer/helpers";
@@ -53,12 +55,7 @@ export default function TrainerClientPlanScreen() {
   const { palette } = useTheme();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
-  const client =
-    clientsQuery.data?.clients.find(
-      (candidate) => candidate.memberUserId === id || candidate.id === id,
-    ) ??
-    clientsQuery.data?.clients[0] ??
-    null;
+  const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const fitnessGoal = fitnessGoalFor(client);
   const [status, setStatus] = useState("");
@@ -205,7 +202,7 @@ export default function TrainerClientPlanScreen() {
   }
 
   function selectTab(tab: ClientDetailTab) {
-    router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never);
+    router.replace(trainerClientDetailPath(id, tab) as never);
   }
 
   return (
