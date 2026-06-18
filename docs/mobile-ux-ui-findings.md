@@ -473,3 +473,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dashboard tip decoration (`R27`) is closed: removed the owner tip card's
   decorative blurred accent blob, replaced its sparkle link icon with a members icon, and deleted
   the unused global `zook-shimmer` keyframe.
+- **[code, fixed]** Customisation panel decoration (`R28`) is closed: removed the owner/trainer
+  customisation panels' decorative blurred accent blobs and replaced generic sparkle setting icons
+  with assistant, money, and palette icons that match the actual controls.

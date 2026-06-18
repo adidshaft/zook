@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, ClipboardList, Settings2, Sparkles, Users } from "lucide-react";
+import { Bell, ClipboardList, IndianRupee, Palette, Settings2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/glass-card";
 
@@ -69,11 +69,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
   }
 
   return (
-    <GlassCard className="relative overflow-hidden p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] blur-3xl"
-      />
+    <GlassCard className="p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Settings2 size={16} className="text-[var(--accent-strong)]" />
@@ -125,14 +121,14 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           onChange={(value) => update("autoNotifyOnPlanChange", value)}
         />
         <SwitchRow
-          icon={<Sparkles size={14} className="text-[var(--feedback-success)]" />}
+          icon={<IndianRupee size={14} className="text-[var(--feedback-success)]" />}
           label="Show revenue snippet"
           description="Display your monthly trainer payout at a glance"
           checked={prefs.showRevenueCard}
           onChange={(value) => update("showRevenueCard", value)}
         />
         <SegmentRow
-          icon={<Sparkles size={14} className="text-[var(--accent-strong)]" />}
+          icon={<Palette size={14} className="text-[var(--accent-strong)]" />}
           label="Accent colour"
           description="Used across charts and chips"
           value={prefs.preferredAccent}

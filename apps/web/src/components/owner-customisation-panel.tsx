@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import {
   BarChart3,
   Bell,
+  Bot,
   Eye,
   EyeOff,
   LayoutDashboard,
   PieChart,
   Settings2,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -103,7 +103,7 @@ const WIDGET_META: ReadonlyArray<WidgetMeta> = [
     key: "aiUsage",
     label: "AI usage tile",
     description: "Assistant quota for this month",
-    icon: Sparkles,
+    icon: Bot,
   },
   {
     key: "staffActivity",
@@ -176,11 +176,7 @@ export function OwnerCustomisationPanel() {
   const visibleCount = Object.values(prefs.widgets).filter(Boolean).length;
 
   return (
-    <GlassCard className="relative overflow-hidden p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] blur-3xl"
-      />
+    <GlassCard className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Settings2 size={16} className="text-[var(--accent-strong)]" />
