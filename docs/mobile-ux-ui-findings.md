@@ -748,3 +748,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc web checkout countdown formatting (`R126`) is closed: hosted
   checkout expiry notices now use shared tested countdown formatting instead of carrying a
   component-local minutes/seconds formatter.
+- **[ui, fixed]** Overstated inactive mobile autopay cue (`R127`) is closed: inactive autopay
+  now uses neutral icon and badge tones instead of blue informational tones, reserving success
+  treatment for live recurring renewal.

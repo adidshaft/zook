@@ -23,7 +23,7 @@ export function AutopayCard({
   return (
     <Card variant="compact" contentStyle={styles.autopayContent}>
       <View style={styles.autopayHeader}>
-        <IconBubble icon="repeat-outline" tone={live ? "lime" : "blue"} size={36} />
+        <IconBubble icon="repeat-outline" tone={live ? "lime" : "neutral"} size={36} />
         <View style={styles.autopayCopy}>
           <Text style={[styles.autopayTitle, { color: palette.text.primary }]}>Autopay</Text>
           <Text style={[styles.autopayBody, { color: palette.text.secondary }]}>
@@ -39,7 +39,7 @@ export function AutopayCard({
             </Text>
           ) : null}
         </View>
-        <Pill tone={live ? "lime" : "blue"}>
+        <Pill tone={live ? "lime" : "neutral"}>
           {live ? titleCaseFromCode(subscription.autopay?.status ?? "ACTIVE") : "Off"}
         </Pill>
       </View>
