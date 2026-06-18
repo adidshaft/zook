@@ -208,6 +208,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   start-gym flow.
 - **6/R79 Dashboard chart comment drift** — updated the shared dashboard section-header comment
   to describe the component plainly instead of preserving stale "premium" visual language.
+- **6/R80 Mobile launch background orbs** — removed decorative background orbs from the native
+  launch fallback; the branded loading card and spinner remain as the functional loading state.
 
 ## 1. Functional / correctness
 

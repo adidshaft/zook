@@ -599,22 +599,6 @@ function LaunchSurface({ subtitle }: { subtitle: string }) {
   return (
     <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
       <View
-        pointerEvents="none"
-        style={[
-          styles.loadingOrb,
-          styles.loadingOrbPrimary,
-          { backgroundColor: mode === "dark" ? "rgba(185,244,85,0.12)" : "rgba(31,62,36,0.10)" },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.loadingOrb,
-          styles.loadingOrbSecondary,
-          { backgroundColor: mode === "dark" ? "rgba(125,211,252,0.10)" : "rgba(125,211,252,0.14)" },
-        ]}
-      />
-      <View
         style={[
           styles.loadingCard,
           {
@@ -689,22 +673,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: 24,
     position: "relative",
-  },
-  loadingOrb: {
-    position: "absolute",
-    borderRadius: 999,
-  },
-  loadingOrbPrimary: {
-    width: 260,
-    height: 260,
-    top: 88,
-    right: -84,
-  },
-  loadingOrbSecondary: {
-    width: 220,
-    height: 220,
-    bottom: 112,
-    left: -72,
   },
   loadingCard: {
     width: "100%",
