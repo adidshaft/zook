@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { GlassCard, Pill } from "./glass-card";
 import { AvatarInitials, StatusDot } from "./dashboard-primitives";
 import { webApiFetch } from "@/lib/api-client";
+import { formatTime } from "@/lib/format";
 
 type PendingAttendanceRecord = {
   id: string;
@@ -230,7 +231,7 @@ export function AttendanceQrPanel({
               <div className="flex flex-wrap gap-2">
                 <Pill tone="lime">Check-in ready</Pill>
                 {branchName ? <Pill>{branchName}</Pill> : null}
-                {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
+                {expiresAt ? <Pill>Expires {formatTime(expiresAt)}</Pill> : null}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 p-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
@@ -277,7 +278,6 @@ export function AttendanceQrPanel({
         <div className="mt-3 grid gap-2">
           {(queueRecords.length ? queueRecords.slice(0, 4) : []).map((record) => {
             const name = record.user?.name ?? "Member review";
-            const checkedInAt = record.checkedInAt ? new Date(record.checkedInAt) : null;
             const flagged = record.status === "FLAGGED";
             return (
               <div key={record.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2">
@@ -289,7 +289,7 @@ export function AttendanceQrPanel({
                   </p>
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">
-                  {checkedInAt ? checkedInAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
+                  {record.checkedInAt ? formatTime(record.checkedInAt) : "--"}
                 </p>
                 <StatusDot tone={flagged ? "red" : "amber"} />
               </div>
@@ -309,7 +309,7 @@ export function AttendanceQrPanel({
         <span>Token ID: {qrPayload ? qrPayload.slice(-8) : "--"}</span>
         <span>
           Last refreshed:{" "}
-          {lastRefreshedAt ? lastRefreshedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
+          {lastRefreshedAt ? formatTime(lastRefreshedAt) : "--"}
         </span>
         <button onClick={() => void loadToken()} className="inline-flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent)]">
           <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> Refresh

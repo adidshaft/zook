@@ -612,3 +612,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc attendance exception date/time copy (`R78`) is closed: the web
   attendance approval feed now uses shared web date/time formatters instead of inline
   `toLocale*String` calls.
+- **[code, fixed]** Ad hoc attendance QR time copy (`R79`) is closed: the web attendance QR
+  panel now uses shared `formatTime` for expiry, queue, and refresh timestamps.
