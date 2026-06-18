@@ -32,6 +32,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   longer renders inert prompt chips or a duplicate status badge.
 - **3.5 Raised bottom-nav action used continuous pulse** — the raised member action keeps its
   static emphasis but no longer renders a looping halo.
+- **3.6 Onboarding splash carried decorative cue clutter** — removed the ambient orbs, feature
+  chips, frame layer, and faux scan glyph so the intro focuses on the Zook mark and tap affordance.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -119,6 +121,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Fault:** The raised member nav action rendered a looping halo behind the icon. It did not communicate loading, focus, or a state change.
 - **Experience:** A persistent moving cue competed with normal navigation scanning.
 - **Fix:** Remove the looping halo while keeping the raised button's static accent fill, icon sizing, and press feedback.
+
+### 3.6 Onboarding splash carried decorative cue clutter  **[ui, minor, fixed]**
+- **Fault:** The splash screen layered ambient orb shapes, a separate frame, feature chips, and a faux scanner glyph around the Zook mark.
+- **Experience:** First launch felt busier than the rest of the cleaned mobile surfaces and repeated product cues before users reached onboarding.
+- **Fix:** Keep the brand mark, one concise value sentence, and the tap-to-continue affordance; remove the decorative layers and their styles.
 
 ---
 
