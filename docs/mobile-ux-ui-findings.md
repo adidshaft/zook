@@ -1033,3 +1033,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform incident checklist usage cue (`R221`) is closed:
   the static Use during live support badge now uses neutral styling instead of amber,
   keeping warning color for actual incident conditions and safety queues.
+- **[ui, fixed]** Overstated assisted-plan metadata cues (`R222`) are closed:
+  assisted coaching plan badges now use neutral styling instead of amber in the
+  coaching library and staff plan-production views, keeping warning color for review needs.

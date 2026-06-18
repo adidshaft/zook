@@ -56,7 +56,7 @@ export function CoachingLibrarySection({
                       value={plan.reviewed ? "Reviewed" : "Needs review"}
                       tone={plan.reviewed ? "lime" : "amber"}
                     />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
+                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
                   </div>
                 ),
               },

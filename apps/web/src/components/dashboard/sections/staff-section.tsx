@@ -382,7 +382,7 @@ export function StaffSection({
           title="Plan production"
           description="Trainer-written and assisted plans appear here so owners can review the delivery load."
           badge={
-            <Pill tone="amber">
+            <Pill>
               {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
             </Pill>
           }
@@ -407,7 +407,7 @@ export function StaffSection({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <StatusPill value={formatEnumLabel(plan.status)} />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
+                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
                     <ConfirmActionButton
                       title={
                         plan.assignmentCount > 0
