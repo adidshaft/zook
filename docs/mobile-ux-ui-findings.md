@@ -228,6 +228,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   and deleted now-unused mobile glow shadow tokens.
 - **6/R89 Web primary control glow shadows** — removed glow-token shadows from filled web
   buttons, tab pills, and public gym CTAs where color, borders, focus, and hover states remain.
+- **6/R90 Web selected card glow** — removed the selected `GlassCard` glow shadow and deleted
+  the unused success card variant.
 
 ## 1. Functional / correctness
 
