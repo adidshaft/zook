@@ -31,6 +31,7 @@ import { handleOrganizationOverview } from "./organization-overview";
 import { handleOrganizationPermissions } from "./organization-permissions";
 import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
+import { handlePlatformAudit } from "./platform-audit";
 import { handlePlatformMonitoring } from "./platform-monitoring";
 import { handlePlatformUsers } from "./platform-users";
 import { handlePrivacy } from "./privacy";
@@ -84,6 +85,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleProducts, firstSegments: ["orgs"] },
   { handler: handleShopOrders, firstSegments: ["orgs", "shop"] },
   { handler: handleSupport, firstSegments: ["support"] },
+  { handler: handlePlatformAudit, firstSegments: ["platform"] },
   { handler: handlePlatformMonitoring, firstSegments: ["platform"] },
   { handler: handlePlatformUsers, firstSegments: ["platform"] },
   {

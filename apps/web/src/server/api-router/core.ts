@@ -8758,26 +8758,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     });
     return ok({ attempt: processedReplay });
   }
-  if (request.method === "GET" && pathMatches(path, ["platform", "audit"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    const { limit, cursor } = parseCursorPagination(request, 100, 200);
-    const orgId = request.nextUrl.searchParams.get("org") || undefined;
-    const userId = request.nextUrl.searchParams.get("user") || undefined;
-    const riskLevel = request.nextUrl.searchParams.get("risk") || undefined;
-    const logs = await prisma.auditLog.findMany({
-      where: clean({
-        orgId,
-        actorUserId: userId,
-        riskLevel: riskLevel as Prisma.AuditLogWhereInput["riskLevel"],
-      }),
-      orderBy: { createdAt: "desc" },
-      take: limit + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    });
-    const page = pageResult(logs, limit);
-    return ok({ auditLogs: page.items, nextCursor: page.nextCursor, limit });
-  }
   if (request.method === "GET" && pathMatches(path, ["platform", "broadcasts"])) {
     const ctx = await getRequestContext(request);
     requirePlatformAdmin(ctx);
