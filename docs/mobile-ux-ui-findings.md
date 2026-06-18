@@ -913,3 +913,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web page-label cues (`R181`) are closed: Diet, Pricing,
   Member profile, Owner setup, Trainer, and Assigned client labels now use neutral badges
   instead of lime, keeping lime for live, ready, saved, and success states.
+- **[ui, fixed]** Overstated web media/profile count cues (`R182`) are closed: body-photo,
+  product-photo, and member-profile header counts now use neutral badges instead of lime,
+  keeping stronger colors on row-level status and latest/private cues.

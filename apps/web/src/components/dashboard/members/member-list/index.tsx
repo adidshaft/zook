@@ -140,7 +140,7 @@ export function MemberList({
         title="Member roster"
         description="Profiles come from the member directory."
         badge={
-          <Pill tone="lime">
+          <Pill>
             {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length} profiles
           </Pill>
         }

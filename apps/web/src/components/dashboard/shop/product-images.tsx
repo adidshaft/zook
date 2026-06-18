@@ -61,7 +61,7 @@ export function ProductPhotosField({
             Add up to 6 clear photos. The first photo appears first in the shop.
           </p>
         </div>
-        <Pill tone={images.length ? "lime" : "neutral"}>{images.length}/6 photos</Pill>
+        <Pill>{images.length}/6 photos</Pill>
       </div>
       {images.length < 6 ? (
         <ImageAssetUpload

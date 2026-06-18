@@ -28,7 +28,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
         title="Photo timeline"
         description="Trainer-visible body progress entries from member tracking, including private progress photos when the member has attached them."
         badge={
-          <Pill tone={entriesWithPhotos ? "lime" : "neutral"}>
+          <Pill>
             {entriesWithPhotos} photo{entriesWithPhotos === 1 ? "" : "s"}
           </Pill>
         }
