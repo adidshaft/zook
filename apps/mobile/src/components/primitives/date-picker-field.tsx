@@ -6,6 +6,7 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatLongDate } from "@/lib/formatting";
 import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -37,13 +38,7 @@ export function DatePickerField({
   const fallbackDate = value ?? maximumDate ?? new Date();
   const [draft, setDraft] = useState(fallbackDate);
   const isDark = mode === "dark";
-  const formatted = value
-    ? new Intl.DateTimeFormat(undefined, {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(value)
-    : placeholder;
+  const formatted = value ? formatLongDate(value) : placeholder;
   const fieldSurface = mode === "dark" ? palette.surface.default : palette.surface.accentSoft;
   const sheetSurface =
     Platform.OS === "ios"

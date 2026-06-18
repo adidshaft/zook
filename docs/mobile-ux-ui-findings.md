@@ -733,3 +733,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated empty contact warning cue (`R121`) is closed: the member contact
   completion badge now uses neutral for zero contacts, warning for partially complete contact
   setup, and success only when both contact methods are present.
+- **[code, fixed]** Ad hoc mobile date-picker label formatting (`R122`) is closed: the shared
+  date picker now uses mobile's centralized long-date formatter instead of carrying its own
+  date-label formatter.
