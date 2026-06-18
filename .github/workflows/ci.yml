@@ -76,6 +76,9 @@ jobs:
       - name: Launch gates
         run: pnpm check:launch-gates
 
+      - name: Cleanup audit
+        run: pnpm check:cleanup-audit
+
       - name: Dashboard dev-speak grep
         run: |
           targets=(
