@@ -889,3 +889,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web dashboard quantity-count cues (`R173`) are closed: branch
   location, scheduled class, and tracked refund counts now use neutral badges instead of
   blue/lime quantity-based styling, keeping stronger tones for availability and row states.
+- **[ui, fixed]** Overstated web settings hub card-label cues (`R174`) are closed: normal
+  settings card badges now use neutral styling instead of informational blue, keeping amber
+  only for cards that need action.

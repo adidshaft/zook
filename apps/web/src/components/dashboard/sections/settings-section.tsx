@@ -177,7 +177,7 @@ export function SettingsSection({
                   <Icon size={18} />
                 </span>
                 {card.badge ? (
-                  <Pill tone={card.urgent ? "amber" : "blue"}>{card.badge}</Pill>
+                  <Pill tone={card.urgent ? "amber" : "neutral"}>{card.badge}</Pill>
                 ) : null}
               </div>
               <h3 className="mt-4 text-base font-semibold text-[var(--text-primary)]">
