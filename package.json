@@ -16,7 +16,7 @@
     "check:cleanup-audit": "tsx scripts/check-mobile-ui-cleanup-audit.ts",
     "check:launch-gates": "tsx scripts/check-launch-gates.ts",
     "typecheck": "turbo typecheck",
-    "lint": "turbo lint && pnpm check:i18n && pnpm check:launch-gates",
+    "lint": "turbo lint && pnpm check:i18n && pnpm check:launch-gates && pnpm check:cleanup-audit",
     "test": "turbo test",
     "test:unit": "vitest run -c vitest.config.ts",
     "test:web": "node scripts/run-web-tests.mjs",
