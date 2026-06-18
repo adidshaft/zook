@@ -26,6 +26,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **3.2 iOS-only glow shadows are no-ops on Android** — the remaining profile completion and
   check-in success glow cues now use platform-explicit styles: iOS shadow props, Android
   elevation.
+- **3.3 Pickup QR used decorative continuous motion** — the pickup QR is now static so scanners
+  and users get a steady target; the unused pulse animation exports were removed.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -80,6 +82,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Fault:** A few elements use `shadowColor`/`shadowOpacity` glows without an Android `elevation` (e.g. the profile KYC progress pip, the scan accent glow). Android can't render `shadow*`.
 - **Experience:** Slightly flatter accents on Android (not broken). The tab bar and cards already handle this; these are leftovers.
 - **Fix:** Profile KYC completion and scan success cues now branch explicitly: iOS keeps shadow props, Android receives matching elevation. Scanner-line glow already uses an opacity rail on Android rather than shadow props.
+
+### 3.3 Pickup QR used decorative continuous motion  **[ui, minor, fixed]**
+- **Fault:** `PickupQrCode` wrapped the QR surface in a continuous breathing scale animation. That movement made a scannable code feel less stable without carrying state or urgency.
+- **Experience:** The pickup screen had a subtle decorative cue exactly where users and scanners need a steady target.
+- **Fix:** Render the QR as a static surface and remove the unused continuous pulse helpers (`PulseHalo`, `useBreathingScale`).
 
 ---
 

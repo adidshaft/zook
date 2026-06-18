@@ -71,22 +71,3 @@ export function useShake() {
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
   return { animatedStyle, shake };
 }
-
-export function useBreathingScale(enabled = true) {
-  const reduceMotion = useReduceMotion();
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (!enabled || reduceMotion) {
-      scale.value = 1;
-      return;
-    }
-    scale.value = withRepeat(
-      withTiming(1.02, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true,
-    );
-  }, [enabled, reduceMotion, scale]);
-
-  return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-}
