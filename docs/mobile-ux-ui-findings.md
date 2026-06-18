@@ -1030,3 +1030,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated membership catalog live label cue (`R220`) is closed:
   the create-plan form's static Live label now uses neutral styling instead of lime,
   keeping success color for actual state changes and published plan outcomes.
+- **[ui, fixed]** Overstated platform incident checklist usage cue (`R221`) is closed:
+  the static Use during live support badge now uses neutral styling instead of amber,
+  keeping warning color for actual incident conditions and safety queues.

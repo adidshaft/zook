@@ -1540,7 +1540,7 @@ export function PlatformOperationsPanel({
             eyebrow="Incident mode"
             title="Production incident checklist"
             description="A simple first-response lane for provider outages, payment trouble, safety escalations, and tenant-impacting issues."
-            badge={<Pill tone="amber">Use during live support</Pill>}
+            badge={<Pill>Use during live support</Pill>}
           />
           <div className="mt-5 grid gap-3">
             {incidentChecklist.map((item, index) => (
