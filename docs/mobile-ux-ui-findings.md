@@ -985,3 +985,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile member plan preview icon cues (`R205`) are closed:
   the Inside this plan loading and exercise-row icons now use neutral styling instead of
   lime, keeping stronger color on the selected Today's workout card.
+- **[ui, fixed]** Overstated mobile owner stock row icon cue (`R206`) is closed:
+  low-stock product rows now use a neutral cube icon instead of amber, keeping warning
+  emphasis on the Low stock metric and Reorder action.

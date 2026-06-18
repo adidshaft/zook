@@ -23,7 +23,7 @@ export function StockRow({
     <ListRow
       title={product.name}
       subtitle={`${product.stock ?? 0} left · threshold ${product.lowStockThreshold ?? 0}`}
-      leading={<IconBubble icon="cube-outline" tone="amber" />}
+      leading={<IconBubble icon="cube-outline" tone="neutral" />}
       trailing={
         <Pressable
           onPress={onReorder}
