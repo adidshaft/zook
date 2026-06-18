@@ -623,3 +623,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile visit-limit labels (`R83`) is closed: member renewal and
   gym profile plan highlights now use shared mobile `formatVisitLimit` instead of hand-built
   visit copy.
+- **[code, fixed]** Duplicate public plan summary labels (`R84`) is closed: public gym plan
+  cards now reuse localized `planValidityLabel`/`planVisitLabel` instead of assembling visit
+  copy inline.

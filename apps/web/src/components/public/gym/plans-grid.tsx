@@ -2,6 +2,7 @@ import Link from "next/link";
 import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { formatEnumLabel, formatInr } from "@/lib/format";
+import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import { priceSummary } from "@/lib/public-gym-profile";
 import { localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan } from "./types";
@@ -62,12 +63,7 @@ export function GymPlansGrid({
             </div>
             <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{plan.description}</p>
             <p className="mt-4 text-sm text-[var(--text-tertiary)]">
-              {plan.durationDays
-                ? `${plan.durationDays} ${t("days")}`
-                : plan.type === "TRIAL"
-                  ? t("trial")
-                  : t("visitPack")}{" "}
-              · {plan.visitLimit || t("unlimited")} {plan.visitLimit === 1 ? t("visit") : t("visits")}
+              {planValidityLabel(plan, locale)} · {planVisitLabel(plan.visitLimit, locale)}
             </p>
           </GlassCard>
         </Link>
