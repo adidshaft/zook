@@ -955,3 +955,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile shop checkout step cues (`R195`) are closed:
   checkout sequence chips 2 and 3 now use the same neutral styling as step 1 instead of
   amber/lime, keeping color for actual payment, pickup, and error status.
+- **[ui, fixed]** Overstated mobile profile activity icon cues (`R196`) are closed:
+  recent activity row icons now use neutral styling instead of fixed lime, keeping activity
+  meaning in the row title/meta and color on actual membership or role status.

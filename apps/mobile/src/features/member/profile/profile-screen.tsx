@@ -623,7 +623,7 @@ export default function ProfileScreen() {
               {recentActivity.length ? (
                 recentActivity.map((item) => (
                   <View key={item.id} style={styles.activityRow}>
-                    <IconBubble icon={item.icon} tone="lime" size={36} />
+                    <IconBubble icon={item.icon} tone="neutral" size={36} />
                     <View style={styles.activityCopy}>
                       <Text numberOfLines={1} style={[styles.activityTitle, { color: palette.text.primary }]}>
                         {item.title}
