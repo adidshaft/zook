@@ -1024,3 +1024,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative public home feature-grid color cues (`R218`) are closed:
   owner/member feature rows now share neutral icon and hover styling instead of lime
   and amber variants, removing category color that did not communicate state.
+- **[ui, fixed]** Overstated public plans coming-soon label cue (`R219`) is closed:
+  the empty public plans section now uses a neutral label instead of amber, keeping
+  the informational availability state from reading like a warning.
