@@ -284,7 +284,7 @@ export default function AssistantScreen() {
       <ZookScreen testID="assistant-unavailable-screen">
         <View style={styles.content}>
           <Card variant="compact" contentStyle={styles.emptyContent}>
-            <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
+            <IconBubble icon="chatbubble-ellipses-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Plan assistant</Text>
               <Text style={styles.emptyBody}>
@@ -340,7 +340,7 @@ export default function AssistantScreen() {
           }
           chip={
             <View style={[styles.aiMark, { backgroundColor: palette.accent.fill }]}>
-              <Ionicons name="sparkles" size={18} color={palette.text.onAccent} />
+              <Ionicons name="chatbubble-ellipses" size={18} color={palette.text.onAccent} />
             </View>
           }
           showProfileShortcut={false}
@@ -470,7 +470,7 @@ export default function AssistantScreen() {
                     { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
                   ]}
                 >
-                  <Ionicons name="sparkles" size={14} color={palette.accent.base} />
+                  <Ionicons name="chatbubble-ellipses" size={14} color={palette.accent.base} />
                 </View>
               ) : null}
               <Text
@@ -501,7 +501,7 @@ export default function AssistantScreen() {
                   { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
                 ]}
               >
-                <Ionicons name="sparkles" size={14} color={palette.accent.base} />
+                <Ionicons name="chatbubble-ellipses" size={14} color={palette.accent.base} />
               </View>
               <Text style={[styles.typingText, { color: palette.text.secondary }]}>Thinking...</Text>
             </View>

@@ -467,3 +467,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** No-caller confirmation sheet (`R25`) is closed: the unused
   `useConfirmSheet` bottom-sheet helper and its primitive barrel export were removed after exact
   reference checks found no app callers.
+- **[code, fixed]** Decorative sparkle icons (`R26`) is closed: assistant, engagement
+  notification, and first-run home states now use domain-specific chat, heart, and compass icons
+  instead of generic sparkle flair.

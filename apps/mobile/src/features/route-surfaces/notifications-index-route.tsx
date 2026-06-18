@@ -63,7 +63,7 @@ function iconForType(type?: string | null): keyof typeof Ionicons.glyphMap {
   if (type === "PLAN") return "barbell-outline";
   if (type === "OPERATIONAL") return "settings-outline";
   if (type === "TRANSACTIONAL") return "card-outline";
-  if (type === "ENGAGEMENT") return "sparkles-outline";
+  if (type === "ENGAGEMENT") return "heart-outline";
   return "notifications-outline";
 }
 
