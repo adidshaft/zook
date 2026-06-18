@@ -36,6 +36,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   chips, frame layer, and faux scan glyph so the intro focuses on the Zook mark and tap affordance.
 - **3.7 Settings/onboarding showed future-feature chips** — removed non-actionable coming-soon
   language previews and the WhatsApp notification card from mobile settings/onboarding flows.
+- **3.8 Empty data states used future-feature wording** — replaced plan exercise and trainer-bio
+  "coming soon" fallbacks with neutral empty-state copy.
 - **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
   explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
 - **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
@@ -137,6 +139,11 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Fault:** Language onboarding/settings displayed disabled future-language chips, and notification settings had a separate WhatsApp "Coming Soon!" card.
 - **Experience:** Users saw non-actionable controls on screens meant for active preferences.
 - **Fix:** Remove the future-feature chip rows/cards and leave only currently configurable preferences.
+
+### 3.8 Empty data states used future-feature wording  **[ui, minor, fixed]**
+- **Fault:** The member Plan tab and public gym trainer cards used "coming soon" copy for missing exercise/bio data.
+- **Experience:** Normal empty data looked like an unfinished app feature.
+- **Fix:** Use neutral empty-state copy: "No exercises yet" and "No bio added yet."
 
 ---
 

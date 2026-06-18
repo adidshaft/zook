@@ -195,8 +195,8 @@ export default function MemberPlanScreen() {
                     ) : (
                       <EmptyState
                         icon="barbell-outline"
-                        title="Exercises coming soon"
-                        body="Your trainer's exercise details will appear here once they publish them."
+                        title="No exercises yet"
+                        body="Assigned exercise details will appear here once your coach publishes them."
                       />
                     )}
                   </Card>
