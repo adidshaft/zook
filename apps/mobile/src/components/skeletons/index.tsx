@@ -213,7 +213,6 @@ export function GymDetailSkeleton() {
 export function HomeSkeleton() {
   return (
     <View style={styles.stack}>
-      {/* Banner Skeleton */}
       <Card variant="compact" contentStyle={styles.row}>
         <Skeleton width={34} height={34} borderRadius={17} />
         <View style={styles.copy}>
@@ -223,7 +222,6 @@ export function HomeSkeleton() {
         <Skeleton width={58} height={28} borderRadius={14} />
       </Card>
 
-      {/* Main Home Card Skeleton */}
       <Card variant="selected" contentStyle={styles.membershipCard}>
         <View style={styles.row}>
           <Skeleton width={46} height={46} borderRadius={23} />

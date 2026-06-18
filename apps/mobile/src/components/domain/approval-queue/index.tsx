@@ -8,7 +8,6 @@ import type { ApprovalQueueProps } from "./types";
 
 export type { ApprovalItem } from "./types";
 
-// Supports loading, error, empty, and populated approval states.
 export function ApprovalQueue({
   approvingId,
   emptyState = { title: "All caught up", subtitle: "No pending approvals." },

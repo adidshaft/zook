@@ -119,6 +119,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   made profile-photo types internal, and trimmed no-caller owner/reception helper exports.
 - **6/R39 Profile component default exports** — removed unused default exports from profile
   components where the mobile app imports the named components directly.
+- **6/R40 Redundant mobile comments** — removed duplicate domain-component and skeleton comments
+  that restated the surrounding component names or obvious JSX state.
 
 ## 1. Functional / correctness
 
