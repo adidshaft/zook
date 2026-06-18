@@ -195,8 +195,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   background, border, text, and icon treatment.
 - **6/R73 Plan selector pending cue** — removed the decorative pulsing blur and stale comments
   from the public plan selector pending overlay while keeping the spinner and status label.
-- **6/R74 Public hero ring motion** — kept the public home hero ring ornament but removed its
-  infinite orbital rotations so the first viewport no longer carries always-on decorative motion.
+- **6/R74 Public hero ring motion** — removed the public home hero ring's infinite orbital
+  rotations; the static ring was later removed entirely in `R32`.
 - **6/R75 Dashboard pulse-dot motion** — changed the shared web `PulseDot` from an infinite
   pulsing animation to a static status dot while preserving color, size, and layout.
 - **6/R76 Line chart endpoint pulse** — removed the dashboard line chart's infinite endpoint
@@ -485,3 +485,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Shared dashboard hero flair (`R31`) is closed: removed the reusable
   `SectionHero` corner blur blob and replaced remaining setup/report sparkle icons with tags and
   alert icons that match the surfaces' actual meaning.
+- **[code, fixed]** Public hero ring ornament (`R32`) is closed: removed the decorative
+  `HeroRingOrnament` SVG and its only home-hero call site while keeping the useful grid backdrop
+  and KPI sparkline.

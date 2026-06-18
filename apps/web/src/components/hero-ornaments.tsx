@@ -1,13 +1,11 @@
 "use client";
 
 /**
- * SVG ornaments for the public home page.
+ * SVG support visuals for the public home page.
  * - GridBackdrop: a subtle radially-faded grid that sits behind the hero
  *   to give the page a sense of place without competing with copy.
- * - HeroRingOrnament: a static orbital ring beside the dashboard preview.
+ * - MiniSparkline: a compact trend glyph for the KPI bar.
  */
-
-import { motion } from "framer-motion";
 
 export function GridBackdrop({ className }: { className?: string }) {
   return (
@@ -43,53 +41,6 @@ export function GridBackdrop({ className }: { className?: string }) {
       </defs>
       <rect width="100%" height="100%" fill="url(#zk-grid)" mask="url(#zk-grid-mask)" />
     </svg>
-  );
-}
-
-export function HeroRingOrnament({ className }: { className?: string }) {
-  return (
-    <div className={`pointer-events-none relative ${className ?? ""}`} aria-hidden>
-      <motion.svg
-        width="180"
-        height="180"
-        viewBox="0 0 180 180"
-        initial={{ opacity: 0, scale: 0.92, rotate: -8 }}
-        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <defs>
-          <linearGradient id="zk-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0" />
-            <stop offset="60%" stopColor="var(--accent)" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="color-mix(in srgb, var(--accent) 40%, transparent)" stopOpacity="0.4" />
-          </linearGradient>
-          <linearGradient id="zk-ring-inner" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--feedback-info)" stopOpacity="0" />
-            <stop offset="100%" stopColor="var(--feedback-info)" stopOpacity="0.55" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx="90"
-          cy="90"
-          r="78"
-          fill="none"
-          stroke="url(#zk-ring)"
-          strokeWidth="1.5"
-          strokeDasharray="4 6"
-        />
-        <circle
-          cx="90"
-          cy="90"
-          r="58"
-          fill="none"
-          stroke="url(#zk-ring-inner)"
-          strokeWidth="1"
-          strokeDasharray="2 4"
-        />
-        <circle cx="90" cy="12" r="3.5" fill="var(--accent-strong)" />
-        <circle cx="90" cy="12" r="6.5" fill="var(--accent-strong)" opacity="0.25" />
-      </motion.svg>
-    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import { ArrowRight, ArrowUpRight, CheckCircle2, QrCode, Store, Zap } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
-import { HeroRingOrnament, MiniSparkline } from "@/components/hero-ornaments";
+import { MiniSparkline } from "@/components/hero-ornaments";
 import {
   Counter,
   MotionSurface,
@@ -65,7 +65,6 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
       </Reveal>
       <Reveal y={32} delay={0.15} className="relative">
         <div aria-hidden className="absolute -inset-6 -z-10 rounded-[40px] border border-[var(--border-subtle)]" />
-        <HeroRingOrnament className="absolute -right-6 -top-12 z-0 hidden lg:block" />
         <GlassCard variant="strong" className="group relative overflow-hidden p-6 text-[var(--text-primary)]">
           <div className="flex items-center justify-between">
             <div>
