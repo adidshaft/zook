@@ -42,6 +42,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   by extracted membership cards, plan detail states, and old primitive button/skeleton code.
 - **6/R7 Primitive alias sprawl** — removed unused card/screen/layout aliases from the mobile
   primitive barrel so new code has one obvious component name to reach for.
+- **6/R8 Redundant primitive barrel shim** — removed the top-level `components/primitives.tsx`
+  re-export now that imports resolve directly to the primitives directory barrel.
 
 ## 1. Functional / correctness
 
@@ -148,3 +150,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Primitive alias sprawl (`R7`) is closed: unused `FieldCard`, `QueueCard`,
   `PressableCard`, `KPIBox`, `ProgressRing`, `SectionTitle`, and old screen-shell aliases were
   removed from the mobile primitive exports.
+- **[code, fixed]** Redundant primitive barrel shim (`R8`) is closed: the one-line
+  `components/primitives.tsx` re-export was removed, leaving `components/primitives/index.tsx`
+  as the single barrel for `@/components/primitives` imports.
