@@ -89,8 +89,6 @@ interface AuthContextValue {
   proactiveLogin?: { identifier?: string; triggeredAt: number };
   biometricEnabled: boolean;
   requestOtp: (identifier: string) => Promise<RequestOtpResult>;
-  signInWithApple: (identityToken: string, fullName?: string) => Promise<void>;
-  signInWithGoogle: (idToken: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<string | void>;
@@ -625,58 +623,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [hydrate, maybePromptForBiometric],
   );
 
-  const completeTokenSignIn = useCallback(
-    async (
-      tokenValue: string,
-      expiresAtValue?: string | null,
-      refreshTokenValue?: string | null,
-      refreshExpiresAtValue?: string | null,
-    ) => {
-      const expiresAt = normalizeSessionExpiresAt(expiresAtValue);
-      await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
-      await Promise.all([
-        setStoredValue(SESSION_STORAGE_KEY, tokenValue),
-        setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
-        refreshTokenValue
-          ? setStoredValue(REFRESH_SESSION_STORAGE_KEY, refreshTokenValue)
-          : Promise.resolve(),
-        refreshExpiresAtValue
-          ? setStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY, refreshExpiresAtValue)
-          : Promise.resolve(),
-      ]);
-      refreshTokenRef.current = refreshTokenValue ?? undefined;
-      await hydrate(tokenValue, activeOrgId, activeRole);
-      await maybePromptForBiometric();
-    },
-    [activeOrgId, activeRole, hydrate, maybePromptForBiometric],
-  );
-
-  const signInWithApple = useCallback(
-    async (identityToken: string, fullName?: string) => {
-      const result = await authClient.signInWithApple(identityToken, fullName);
-      await completeTokenSignIn(
-        result.token,
-        result.expiresAt,
-        result.refreshToken,
-        result.refreshExpiresAt,
-      );
-    },
-    [completeTokenSignIn],
-  );
-
-  const signInWithGoogle = useCallback(
-    async (idToken: string) => {
-      const result = await authClient.signInWithGoogle(idToken);
-      await completeTokenSignIn(
-        result.token,
-        result.expiresAt,
-        result.refreshToken,
-        result.refreshExpiresAt,
-      );
-    },
-    [completeTokenSignIn],
-  );
-
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
     logoutCleanupsRef.current.add(cleanup);
     return () => {
@@ -831,8 +777,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       proactiveLogin,
       biometricEnabled,
       requestOtp,
-      signInWithApple,
-      signInWithGoogle,
       verifyOtp,
       logout,
       refresh,
@@ -867,8 +811,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       setDefaultRole,
       setBiometricEnabled,
-      signInWithApple,
-      signInWithGoogle,
       status,
       switchOrg,
       switchRole,

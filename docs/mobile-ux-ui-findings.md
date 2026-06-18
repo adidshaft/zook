@@ -81,6 +81,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R22 Reception success pulse** — removed the extra success scale animation from the
   verification result modal; success already has modal copy, haptics/toast, announcement, and
   auto-dismiss.
+- **6/R23 Mobile SSO auth surface** — removed the unused Apple/Google auth context and mobile
+  domain-api methods left behind after the login SSO controls were removed.
 
 ## 1. Functional / correctness
 
@@ -245,3 +247,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Reception success pulse (`R22`) is closed: the verification result modal no
   longer scales on success, and the now-unused `useScalePulse` helper was removed while keeping
   the failure shake cue.
+- **[code, fixed]** Mobile SSO auth surface (`R23`) is closed: `useAuth()` and `authClient`
+  no longer expose Apple/Google sign-in methods with no mobile callers.
