@@ -832,3 +832,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web notification history count cue (`R154`) is closed: the
   visible-message count now uses a neutral badge instead of informational blue, keeping
   delivery and notification states on the row-level status pills.
+- **[ui, fixed]** Overstated mobile owner member contact cues (`R155`) are closed: member
+  detail email and phone row icons now use neutral accents instead of informational blue,
+  keeping stronger color for subscription and workout state.

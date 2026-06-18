@@ -70,7 +70,7 @@ function ContactRow({
   const { palette } = useTheme();
   return (
     <View style={styles.contactRow}>
-      <IconBubble icon={icon} tone="blue" size={40} />
+      <IconBubble icon={icon} tone="neutral" size={40} />
       <View style={styles.contactCopy}>
         <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>{label}</Text>
         <Text selectable style={[styles.rowValue, { color: palette.text.primary }]}>
@@ -247,7 +247,7 @@ export default function OwnerMemberDetail() {
                 <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
                 {phone ? (
                   <View style={styles.contactRow}>
-                    <IconBubble icon="call-outline" tone="blue" size={40} />
+                    <IconBubble icon="call-outline" tone="neutral" size={40} />
                     <View style={styles.contactCopy}>
                       <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
                         Phone
