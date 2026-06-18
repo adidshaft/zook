@@ -9,7 +9,9 @@ import { equipmentOptions, gymTypes } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
 import {
   formatIndiaPhoneInput,
+  isValidGstin,
   joinModeLabel,
+  normalizeGstinInput,
   normalizeIndiaPhoneDigits,
   normalizeIndianPincodeInput,
 } from "@/lib/format";
@@ -72,8 +74,6 @@ const INDIAN_STATES = [
   "Puducherry",
 ];
 
-const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-
 type CreateOrgResponse = {
   org: {
     id: string;
@@ -133,7 +133,7 @@ export function StartGymPanel({
           username.trim() &&
           normalizeIndiaPhoneDigits(contactPhone).length === 10 &&
           contactEmail.trim() &&
-          (!gstNumber.trim() || GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())),
+          (!gstNumber.trim() || isValidGstin(normalizeGstinInput(gstNumber))),
         )
       : step === 1
         ? Boolean(address.trim() && city.trim() && state.trim() && /^\d{6}$/.test(pincode))
@@ -152,8 +152,8 @@ export function StartGymPanel({
   }
 
   async function createGym() {
-    const normalizedGstNumber = gstNumber.trim().toUpperCase();
-    if (normalizedGstNumber && !GSTIN_PATTERN.test(normalizedGstNumber)) {
+    const normalizedGstNumber = normalizeGstinInput(gstNumber);
+    if (normalizedGstNumber && !isValidGstin(normalizedGstNumber)) {
       setMessage("GST number must be a valid 15-character GSTIN.");
       return;
     }
@@ -214,9 +214,10 @@ export function StartGymPanel({
 
   function goNext() {
     if (!canContinue) {
+      const normalizedGstNumber = normalizeGstinInput(gstNumber);
       setMessage(
         step === 0
-          ? gstNumber.trim() && !GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())
+          ? normalizedGstNumber && !isValidGstin(normalizedGstNumber)
             ? "GST number must be a valid 15-character GSTIN."
             : "Add gym name, public username, 10-digit phone, and contact email to continue."
           : "Add address, city, state, and a 6-digit pincode so members can find the gym.",
@@ -373,12 +374,7 @@ export function StartGymPanel({
                 <input
                   value={gstNumber}
                   onChange={(event) =>
-                    setGstNumber(
-                      event.target.value
-                        .toUpperCase()
-                        .replace(/[^0-9A-Z]/g, "")
-                        .slice(0, 15),
-                    )
+                    setGstNumber(normalizeGstinInput(event.target.value))
                   }
                   placeholder="22AAAAA0000A1Z5"
                   aria-describedby="gst-helper"

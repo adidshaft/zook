@@ -57,6 +57,14 @@ export function normalizeIndianPincodeInput(value: string): string {
   return value.replace(/[^0-9]/g, "").slice(0, 6);
 }
 
+export function normalizeGstinInput(value: string): string {
+  return value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 15);
+}
+
+export function isValidGstin(value: string): boolean {
+  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(value);
+}
+
 function coerceDate(value: Date | string | null | undefined) {
   if (!value) {
     return null;

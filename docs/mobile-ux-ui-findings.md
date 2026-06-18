@@ -724,3 +724,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate web India phone cleanup (`R118`) is closed: gym onboarding and
   shared phone input formatting now use one tested local-digit normalizer instead of carrying
   separate country-code stripping logic.
+- **[code, fixed]** Duplicate web GSTIN cleanup (`R119`) is closed: gym onboarding now uses
+  shared tested GSTIN normalization and validation instead of repeating uppercase, stripping,
+  and pattern checks inline.
