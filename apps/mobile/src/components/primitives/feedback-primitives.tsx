@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Reanimated, {
   Easing,
   interpolate,
@@ -9,26 +9,9 @@ import Reanimated, {
 } from "@/lib/reanimated-lite";
 import { useEffect, type ReactNode } from "react";
 
-import { useI18n } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 import { ZookButton } from "./buttons";
 import { IconBubble } from "./icon-bubble";
-
-export function LoadingState({ title, body }: { title?: string; body?: string }) {
-  const { t } = useI18n();
-  const { palette } = useTheme();
-  return (
-    <View style={styles.loadingState}>
-      <ActivityIndicator size="large" color={palette.accent.base} />
-      <Text style={[styles.stateTitle, { color: palette.text.primary }]}>
-        {title ?? t("empty.loading")}
-      </Text>
-      <Text style={[styles.stateBody, { color: palette.text.secondary }]}>
-        {body ?? t("empty.loadingBody")}
-      </Text>
-    </View>
-  );
-}
 
 export function ErrorState({
   title = "Something needs attention",
@@ -141,12 +124,6 @@ export function LoadingSkeleton(props: Parameters<typeof Skeleton>[0]) {
 }
 
 const styles = StyleSheet.create({
-  loadingState: {
-    padding: spacing.xxxl,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-  },
   stateTitle: {
     ...typography.headerTitle,
     textAlign: "center",

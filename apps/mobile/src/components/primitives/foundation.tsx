@@ -31,7 +31,6 @@ import { elevation, layout, materials, radii, shadows, spacing, typography, useT
 import type { Palette } from "@/lib/theme";
 import { darkPalette } from "@zook/tokens";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { useTonePalette, type PillTone } from "./tone-palette";
 import {
   PrimaryButton as SharedPrimaryButton,
   SecondaryButton as SharedSecondaryButton,
@@ -66,11 +65,9 @@ export { ProfileShortcut } from "./profile-shortcut";
 export {
   BranchSelectorChip,
   Pill,
-  RoleChip,
   StatusChip,
   ZookChip,
 } from "./chips";
-import { ZookChip } from "./chips";
 
 // Metro resolves static image requires at build time.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -440,39 +437,6 @@ export function Card({
 export const ZookButton = SharedZookButton;
 export const PrimaryButton = SharedPrimaryButton;
 export const SecondaryButton = SharedSecondaryButton;
-
-export function EntryCodeCard({
-  code,
-  status,
-  detail,
-  tone = "lime",
-}: {
-  code: string;
-  status?: string;
-  detail?: string;
-  tone?: PillTone;
-}) {
-  const { palette: themePalette } = useTheme();
-  const palette = useTonePalette(tone);
-  return (
-    <Card
-      glow={tone === "lime"}
-      style={[styles.entryCodeCard, { borderColor: palette.borderColor }]}
-      contentStyle={styles.entryCodeContent}
-    >
-      <Text style={[styles.entryCodeLabel, { color: themePalette.text.secondary }]}>
-        Entry Code
-      </Text>
-      <Text style={[styles.entryCodeValue, { color: palette.color }]}>{code}</Text>
-      {status ? <ZookChip tone={tone}>{status}</ZookChip> : null}
-      {detail ? (
-        <Text style={[styles.entryCodeDetail, { color: themePalette.text.secondary }]}>
-          {detail}
-        </Text>
-      ) : null}
-    </Card>
-  );
-}
 
 type DockTab = {
   href: Href;
@@ -1122,24 +1086,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-  entryCodeCard: {
-  },
-  entryCodeContent: {
-    alignItems: "center",
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  entryCodeLabel: {
-    ...typography.small,
-  },
-  entryCodeValue: {
-    ...typography.heroTitle,
-    fontVariant: ["tabular-nums"],
-  },
-  entryCodeDetail: {
-    ...typography.small,
-    textAlign: "center",
   },
   bottomNav: {
     position: "absolute",

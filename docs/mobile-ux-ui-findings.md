@@ -1,6 +1,6 @@
 # Mobile UX/UI findings — remaining backlog
 
-Compiled while auditing the Zook mobile app across **all four roles, both light & dark, on iOS (simulator) and Android (emulator)**. Everything in this doc is **not yet fixed** — the items already fixed are on branch `mobile-ui-cleanup` (30 commits). Each entry below states what's **at fault**, the **user experience** impact, and the **fix**.
+Compiled while auditing the Zook mobile app across **all four roles, both light & dark, on iOS (simulator) and Android (emulator)**. Everything in this doc is **not yet fixed** — the items already fixed are on branch `mobile-ui-cleanup`. Each entry below states what's **at fault**, the **user experience** impact, and the **fix**.
 
 Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than it should · **[ui]** = visual/consistency · **[confirm]** = likely a demo-fixture artifact, verify against the real backend before touching · **[unverified]** = couldn't exercise (tooling/auth-gated).
 
@@ -52,6 +52,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `PrimaryLink`, and `SecondaryLink` wrappers in favor of `ZookButton` variants.
 - **6/R12 Generic button alias** — replaced the remaining internal `Button` alias call sites
   with `ZookButton` and removed the alias export.
+- **6/R13 No-caller primitive wrappers** — removed the remaining unused `RoleChip`,
+  `LoadingState`, and `EntryCodeCard` primitive wrappers after exact reference checks.
 
 ## 1. Functional / correctness
 
@@ -171,3 +173,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   with no app callers were removed; callers should use `ZookButton` with `variant`/`href`.
 - **[code, fixed]** Generic button alias (`R12`) is closed: internal `Button` alias usage in
   empty states and confirm sheets now uses `ZookButton` directly.
+- **[code, fixed]** No-caller primitive wrappers (`R13`) is closed: `RoleChip`,
+  `LoadingState`, and `EntryCodeCard` were removed along with their barrel exports and
+  now-unused imports/styles.

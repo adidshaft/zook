@@ -1,7 +1,6 @@
 export {
   ErrorState,
   LoadingSkeleton,
-  LoadingState,
   QueryErrorState,
   Skeleton,
 } from "./feedback-primitives";

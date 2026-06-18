@@ -1,6 +1,5 @@
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import type { Role } from "@zook/core";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 
@@ -129,15 +128,6 @@ export function StatusChip({ status, children, tone, ...props }: StatusChipProps
   );
 }
 
-export function RoleChip({ role }: { role: Role | string }) {
-  const label = String(role).replace(/_/g, " ").toLowerCase();
-  return (
-    <ZookChip tone="neutral" icon="shield-checkmark-outline" textStyle={styles.capitalize}>
-      {label}
-    </ZookChip>
-  );
-}
-
 export function BranchSelectorChip() {
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const { session, activeOrgId } = useAuth();
@@ -219,9 +209,6 @@ const styles = StyleSheet.create({
   },
   chipText: {
     ...typography.caption,
-  },
-  capitalize: {
-    textTransform: "capitalize",
   },
   branchSelectorChip: {
     minHeight: 32,

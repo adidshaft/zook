@@ -1,7 +1,6 @@
 export {
   BranchSelectorChip,
   Pill,
-  RoleChip,
   StatusChip,
   ZookChip,
 } from "./chips";
