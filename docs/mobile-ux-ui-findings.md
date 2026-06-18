@@ -522,3 +522,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   uses shared `titleCaseFromCode` for role labels instead of carrying a local title-case helper.
 - **[code, fixed]** Duplicate member initials helpers (`R44`) is closed: owner member detail
   and member-list rows now use shared mobile `formatInitials` instead of carrying local copies.
+- **[code, fixed]** Duplicate gym join-mode tones (`R45`) is closed: gym search and gym
+  profile now share mobile `joinModeTone` instead of carrying identical local tone helpers.

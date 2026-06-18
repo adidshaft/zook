@@ -17,7 +17,7 @@ import {
 import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
-import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
+import { joinModeLabel, joinModeTone, titleCaseFromCode } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/domains";
 import { useAuth } from "@/lib/auth";
@@ -261,7 +261,7 @@ export default function FindGyms() {
                           {gym.city}, {gym.state}
                         </Text>
                       </View>
-                      <Pill tone={toneForJoinMode(gym.joinMode)}>
+                      <Pill tone={joinModeTone(gym.joinMode)}>
                         {joinModeLabel(gym.joinMode)}
                       </Pill>
                     </View>
@@ -297,13 +297,6 @@ export default function FindGyms() {
       </ZookScreen>
     </>
   );
-}
-
-function toneForJoinMode(joinMode?: string) {
-  if (joinMode === "OPEN_JOIN") return "lime" as const;
-  if (joinMode === "APPROVAL_REQUIRED") return "amber" as const;
-  if (joinMode === "INVITE_ONLY") return "violet" as const;
-  return "neutral" as const;
 }
 
 const styles = StyleSheet.create({

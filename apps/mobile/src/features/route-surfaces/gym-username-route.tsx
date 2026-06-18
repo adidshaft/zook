@@ -38,7 +38,13 @@ import { toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
+import {
+  formatInr,
+  formatLongDate,
+  joinModeLabel,
+  joinModeTone,
+  titleCaseFromCode,
+} from "@/lib/formatting";
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -293,7 +299,7 @@ export default function GymProfileScreen() {
               </Pressable>
             }
             trailing={
-              <Pill tone={toneForJoinMode(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
+              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
             }
           />
         ) : (
@@ -890,19 +896,6 @@ function buildPlanHighlights(plan: {
   ].filter(Boolean) as string[];
 
   return highlights.length ? highlights : ["Flexible membership", "Secure payment"];
-}
-
-function toneForJoinMode(joinMode?: string) {
-  if (joinMode === "OPEN_JOIN") {
-    return "lime" as const;
-  }
-  if (joinMode === "APPROVAL_REQUIRED") {
-    return "amber" as const;
-  }
-  if (joinMode === "INVITE_ONLY") {
-    return "violet" as const;
-  }
-  return "neutral" as const;
 }
 
 const styles = StyleSheet.create({

@@ -106,3 +106,10 @@ export function joinModeLabel(
   if (mode === "INVITE_ONLY") return "Invite only";
   return titleCaseFromCode(mode);
 }
+
+export function joinModeTone(mode?: string | null) {
+  if (mode === "OPEN_JOIN") return "lime" as const;
+  if (mode === "APPROVAL_REQUIRED") return "amber" as const;
+  if (mode === "INVITE_ONLY") return "violet" as const;
+  return "neutral" as const;
+}
