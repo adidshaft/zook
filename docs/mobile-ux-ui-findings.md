@@ -105,6 +105,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   invalidation branches left behind after the domain-hook cleanup.
 - **6/R33 Internal domain prop types** — stopped publicly re-exporting domain component prop
   types that only their own modules consume; app callers still import the item types they use.
+- **6/R34 Tracking display exports** — removed unused tracking header/history-summary display
+  exports and the unused history-series builder so the progress surface only keeps live helpers.
 
 ## 1. Functional / correctness
 

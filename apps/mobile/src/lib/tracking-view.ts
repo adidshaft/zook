@@ -1,7 +1,5 @@
 import type {
   TrackingSummaryMetric,
-  TrackingWindow,
-  WorkoutHistorySeries,
   WorkoutLogEntry
 } from "@zook/core";
 
@@ -110,57 +108,4 @@ export function buildTrackingSummaryMetrics(input: {
       tone: "violet"
     }
   ];
-}
-
-export function buildHistorySeries(
-  workouts: Array<{
-    id: string;
-    title: string;
-    workoutType: string;
-    startedAt: string;
-    endedAt?: string | null;
-    durationMinutes?: number | null;
-    intensity?: string | null;
-    notes?: string | null;
-    exercises?: Array<{
-      id: string;
-      exerciseName: string;
-      setsCompleted?: number | null;
-      reps?: number | null;
-      weightKg?: string | number | null;
-      completed: boolean;
-    }>;
-  }>,
-  window: TrackingWindow = "WEEKLY"
-): WorkoutHistorySeries {
-  const now = Date.now();
-  const windowDays: Record<TrackingWindow, number> = {
-    TODAY: 1,
-    WEEKLY: 7,
-    MONTHLY: 30,
-    YEARLY: 365
-  };
-  const cutoffDays = windowDays[window] ?? 7;
-  const filteredWorkouts = workouts.filter((workout) => {
-    const startedAt = new Date(workout.startedAt).getTime();
-    if (!Number.isFinite(startedAt)) {
-      return false;
-    }
-    const ageDays = (now - startedAt) / 86_400_000;
-    return ageDays >= 0 && ageDays <= cutoffDays;
-  });
-  const entries = filteredWorkouts.map(workoutToEntry);
-  const totalDuration = filteredWorkouts.reduce(
-    (sum, workout) => sum + (workout.durationMinutes ?? 0),
-    0
-  );
-
-  return {
-    key: window,
-    label: window,
-    totalDurationLabel: formatDuration(totalDuration),
-    sessionCountLabel: `${filteredWorkouts.length} sessions`,
-    completionLabel: `${filteredWorkouts.reduce((sum, workout) => sum + (workout.exercises?.length ?? 0), 0)} exercises logged`,
-    entries
-  };
 }
