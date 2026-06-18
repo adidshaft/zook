@@ -940,3 +940,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web referral code label cue (`R190`) is closed: referral landing
   code badges now use neutral styling instead of amber, keeping warning color for unavailable
   or approval-required join states.
+- **[ui, fixed]** Overstated web public plan recommendation cue (`R191`) is closed: public
+  gym plan badges now use neutral styling instead of lime for the recommended plan, keeping
+  recommendation emphasis on the selected card treatment.

@@ -50,7 +50,7 @@ export function GymPlansGrid({
           >
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
+                <Pill>
                   {plan.id === recommendedPlanId ? t("mostPopular") : formatEnumLabel(plan.type)}
                 </Pill>
                 <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-[var(--text-primary)]">
