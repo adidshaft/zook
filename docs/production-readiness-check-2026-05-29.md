@@ -60,10 +60,13 @@ gates), and `pnpm --filter @zook/mobile test` (31 tests) — all green. No new d
   "Coming Soon!" chips for Tamil/Telugu/Kannada/Marathi/Bengali in native script; English + Hindi
   remain the selectable launch languages.
 - ✅ **B4 tab-bar perf** — done in first batch (memoized backdrop).
-- ⚠️ **D1 classes / D2 multi-branch — no code needed.** Group classes currently have **no
-  front-end at all** (backend/API only), so they are already effectively "not launched / hidden" —
-  nothing half-shipped is visible to users. Multi-branch: keep single-branch positioning for
-  launch (copy/positioning decision, not code). Recorded as resolved.
+- ✅ **D1 classes — shipped.** Owner web scheduling plus member mobile booking are now visible
+  and backed by the existing classes API.
+- ✅ **D2 multi-branch — finished for selected branch scope.** Shop stock, payments, revenue,
+  classes, and mobile owner/member queries now carry selected branch context where applicable.
+- ✅ **D3 staff web i18n decision — English + Hindi for launch.** Dashboard and desk layouts load
+  `apps/web/messages/dashboard/{en,hi}.json` from `User.preferredLocale`; broader regional staff
+  web localization remains fast-follow, matching the launch language decision.
 - ⚠️ **E1 config reconcile — needs founder.** Flipping the local `.env.production.local`
   `SMS_PROVIDER` to match the deployed `msg91` requires the real MSG91 credentials (which would
   otherwise fail preflight), and the file is gitignored. Founder action; documented here.
@@ -88,9 +91,10 @@ emphasis (A4 — lives in Razorpay's hosted checkout, not our code).
   tab-bar lime is an *intentional mode-invariant brand color* (light-mode `accent.base` is dark
   green, which would break the lime scan button). A full static-vs-theme color-system merge is a
   larger refactor, not a launch-week change.
-- ⏸ **Device-only work (B2/B3/B5), live money path (WS-A), store metadata (WS-E3), classes /
-  multi-branch (WS-D), characterful font (A3), UPI-first (A4 — lives in Razorpay's hosted
-  checkout config, not our RN code).** Not code-completable from here.
+- ⏸ **Device-only work (B2/B3/B5), live money path (WS-A), store metadata (WS-E3),
+  characterful font (A3), broader regional staff-web localization, and UPI-first
+  (A4 — lives in Razorpay's hosted checkout config, not our RN code).** Not code-completable
+  from here.
 
 ## Correction to my earlier assessment
 
@@ -196,19 +200,18 @@ Make the deferred features *intentional and visible*, not dead buttons or hidden
 
 These have backend logic but no clean front. Each needs a yes/no, not silent half-shipping.
 
-- [ ] **D1 — Group classes.** `class-service.ts` + API `/orgs/{id}/classes(/enroll)`
-      (`core.ts:13294+`) are fully built, but **no web or mobile UI exists**. Group classes
-      (yoga/Zumba/spin) are core for Indian gyms. **Decide:** build minimal create/list/book UI
-      this week (mostly front-end; backend is ready), or explicitly hide/flag the routes so it
-      isn't half-shipped. Recommend: hide for launch, fast-follow the UI — unless classes are a
-      launch selling point.
-- [ ] **D2 — Multi-branch.** `/dashboard/branches` exists but branch-scoped shop stock,
-      payments, and revenue are incomplete. **Decide:** market as single-branch for launch (and
-      say so), or finish branch scoping. Recommend: single-branch positioning for launch.
-- [ ] **D3 — 🟡 Web dashboard i18n.** Staff-facing web is effectively English-only while
-      mobile has Hindi. Decide if reception/owner web needs Hindi for launch (likely fast-follow).
+- [x] **D1 — Group classes.** Decision: ship the minimal UI. Owner web can create/list classes
+      and member mobile can browse/book branch-scoped classes.
+- [x] **D2 — Multi-branch.** Decision: finish selected-branch scoping. Shop stock, payments,
+      revenue, classes, and owner/member mobile reads now honor selected branch context where
+      applicable.
+- [x] **D3 — 🟡 Web dashboard i18n.** Decision: support English + Hindi for staff web launch.
+      Dashboard and desk layouts resolve `User.preferredLocale` and load matching dashboard
+      message bundles; Tamil/Telugu/Kannada/Marathi/Bengali staff-web localization remains a
+      fast-follow, consistent with the launch language decision.
 
-**Exit:** explicit ship/hide decision recorded for classes and multi-branch.
+**Exit:** explicit ship/hide decisions recorded for classes, multi-branch, and staff-web Hindi
+scope.
 
 ---
 
@@ -233,11 +236,12 @@ These have backend logic but no clean front. Each needs a yes/no, not silent hal
 - **Day 1:** A1–A4 (money path, blocking) + E1/E2 (config + commit so QA tests the real build).
 - **Day 2–3:** B2/B3 device walkthrough + animation audit (the big one); fold in C1–C3 as
   screens are touched. Confirm B1 scanner on device.
-- **Day 3:** D1/D2 ship-or-hide decisions; execute the "hide" path if chosen (cheap).
+- **Day 3:** D1/D2/D3 ship-or-hide/scope decisions; execute the chosen paths.
 - **Day 4:** B5 real-device push + low-light QR; B4 tab-bar perf; E4 UPI check; C4 copy sweep.
 - **Day 5:** E3 store metadata + screenshots; regression pass (`pnpm lint && pnpm typecheck &&
   pnpm test:unit`); final `/api/ready` check; submit.
-- **Fast-follow (post-launch):** B6 rename, D3 web i18n, classes UI if deferred, regional languages.
+- **Fast-follow (post-launch):** B6 rename, broader regional staff-web localization, and any
+  classes/multi-branch expansion beyond the launch-selected scope.
 
 ---
 
