@@ -134,6 +134,26 @@ export function toneForSaasSubscriptionStatus(status?: string | null) {
   return "neutral" as const;
 }
 
+export function toneForPaymentStatus(status?: string | null) {
+  if (status === "SUCCEEDED") {
+    return "lime" as const;
+  }
+  if (status === "CREATED" || status === "PENDING" || status === "REQUIRES_ACTION") {
+    return "amber" as const;
+  }
+  if (
+    status === "FAILED" ||
+    status === "CANCELLED" ||
+    status === "EXPIRED" ||
+    status === "REFUNDED" ||
+    status === "PARTIALLY_REFUNDED" ||
+    status === "DISPUTED"
+  ) {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
 export function formatElapsedTimer(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safeSeconds / 3600);

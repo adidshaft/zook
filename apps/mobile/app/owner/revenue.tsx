@@ -20,7 +20,7 @@ import { RevenueSummary } from "@/features/owner/components/revenue-summary";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode, toneForPaymentStatus, toneForShopOrderStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
@@ -98,7 +98,7 @@ export default function OwnerRevenueScreen() {
                         key={payment.id}
                         title={payment.user?.name ?? titleCaseFromCode(payment.purpose)}
                         subtitle={`${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}`}
-                        leading={<IconBubble icon="card-outline" tone={payment.status === "SUCCEEDED" ? "lime" : "amber"} />}
+                        leading={<IconBubble icon="card-outline" tone={toneForPaymentStatus(payment.status)} />}
                         trailing={
                           <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                             {formatInr(payment.amountPaise)}
@@ -113,7 +113,7 @@ export default function OwnerRevenueScreen() {
                         key={order.id}
                         title={order.user?.name ?? "Shop pickup order"}
                         subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
-                        leading={<IconBubble icon="bag-outline" tone="lime" />}
+                        leading={<IconBubble icon="bag-outline" tone={toneForShopOrderStatus(order.status)} />}
                         trailing={
                           <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                             {formatInr(order.totalPaise)}

@@ -1,9 +1,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, IconBubble, Pill, SectionHeader } from "@/components/primitives";
-import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatDateTime, formatInr, titleCaseFromCode, toneForPaymentStatus } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { toneForStatus } from "./helpers";
 import type { InvoiceRecord, MembershipPaymentRecord, PaymentDocumentKind } from "./types";
 
 export function PaymentsSection({
@@ -62,9 +61,7 @@ export function PaymentsSection({
                     {formatDateTime(payment.recordedAt ?? payment.createdAt)}
                   </Text>
                   <View style={styles.paymentMetaRow}>
-                    <Pill
-                      tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}
-                    >
+                    <Pill tone={toneForPaymentStatus(payment.status)}>
                       {titleCaseFromCode(payment.status ?? "CREATED")}
                     </Pill>
                     <Text numberOfLines={2} style={[styles.documentHint, { color: palette.text.secondary }]}>

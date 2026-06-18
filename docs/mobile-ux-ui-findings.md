@@ -666,3 +666,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Duplicate owner billing setup status cue (`R98`) is closed: owner home and
   billing now share SaaS subscription tone logic and the setup card uses formatted status copy
   instead of raw enum text with a fixed amber tone.
+- **[ui, fixed]** Duplicate payment status tone logic (`R99`) is closed: membership payments
+  and owner revenue now share payment status tones, and owner revenue shop rows use shared shop
+  order tones instead of fixed success/amber cues.
