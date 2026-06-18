@@ -94,7 +94,6 @@ function CameraActiveBottomNavHider() {
 function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
   const progress = useRef(new RNAnimated.Value(0)).current;
-  const isIOS = Platform.OS === "ios";
   // Sweep edge-to-edge within the frame with a small inset so the line never
   // clips the corner brackets. Derived from the real frame size instead of a
   // magic constant so it always spans the full scan window.
@@ -144,18 +143,9 @@ function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
     <RNAnimated.View
       style={[
         styles.scanLineRail,
-        isIOS
-          ? { shadowColor: palette.accent.base, shadowOpacity: 0.82 }
-          : styles.scanLineRailAndroid,
         animatedStyle,
       ]}
     >
-      <View
-        style={[
-          styles.scanLineGlow,
-          { backgroundColor: palette.accent.base, opacity: isIOS ? 0.34 : 0.18 },
-        ]}
-      />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
     </RNAnimated.View>
   );

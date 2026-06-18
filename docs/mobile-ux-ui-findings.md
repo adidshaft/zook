@@ -218,6 +218,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   mobile cards where labels, chips, selected variants, and actions already communicate state.
 - **6/R84 Dead mobile card glow API** — removed the now-unused `Card` glow/glowTone API and
   deleted amber/red glow token entries that no longer had app callers.
+- **6/R85 Scanner line glow layer** — removed the decorative scanner-line glow/shadow layer
+  and no-op Android override while keeping the animated scan line itself.
 
 ## 1. Functional / correctness
 

@@ -125,19 +125,6 @@ export const scanStyles = StyleSheet.create({
     height: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  scanLineRailAndroid: {
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  scanLineGlow: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 18,
-    borderRadius: 999,
   },
   scanLineCore: {
     width: "100%",
