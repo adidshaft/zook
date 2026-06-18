@@ -1027,3 +1027,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated public plans coming-soon label cue (`R219`) is closed:
   the empty public plans section now uses a neutral label instead of amber, keeping
   the informational availability state from reading like a warning.
+- **[ui, fixed]** Overstated membership catalog live label cue (`R220`) is closed:
+  the create-plan form's static Live label now uses neutral styling instead of lime,
+  keeping success color for actual state changes and published plan outcomes.

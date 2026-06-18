@@ -58,7 +58,7 @@ export function MembershipCatalogSection({
               Publishes into join, sales, and approval flows.
             </p>
           </div>
-          <Pill tone="lime">Live</Pill>
+          <Pill>Live</Pill>
         </div>
         <PlanFormFields form={planForm} setForm={setPlanForm} showShapeHint />
         <ZookButton
