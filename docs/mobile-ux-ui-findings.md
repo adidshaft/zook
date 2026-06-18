@@ -193,6 +193,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R72 Gym profile tab pulse cue** — removed the pulsing active-tab dot and stale decorative
   comments from the gym profile setup panel; active tab selection remains visible through
   background, border, text, and icon treatment.
+- **6/R73 Plan selector pending cue** — removed the decorative pulsing blur and stale comments
+  from the public plan selector pending overlay while keeping the spinner and status label.
 
 ## 1. Functional / correctness
 

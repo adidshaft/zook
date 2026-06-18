@@ -97,7 +97,6 @@ export function PlanSelector({
         {choosePlanLabel}
       </p>
 
-      {/* Plan selection grid container */}
       <div className="relative mt-2.5">
         <div
           className={`grid gap-2.5 md:grid-cols-2 transition-all duration-300 ${isPending ? "opacity-40 pointer-events-none filter blur-[1px]" : ""} ${
@@ -139,13 +138,10 @@ export function PlanSelector({
           })}
         </div>
 
-        {/* Premium transition loader overlay */}
         {isPending && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-[22px] bg-black/40 backdrop-blur-sm transition-all duration-300 animate-fade-in">
             <div className="flex flex-col items-center gap-3">
-              {/* Spinner wrapper */}
               <div className="relative flex h-12 w-12 items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-[var(--accent-fill)]/20 blur-lg animate-pulse" />
                 <div className="absolute h-10 w-10 rounded-full border-4 border-white/20 border-t-[var(--accent-strong)] animate-spin" />
               </div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-white bg-black/60 px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
