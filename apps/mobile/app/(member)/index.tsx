@@ -17,6 +17,7 @@ import {
   AnimatedAppear,
   HeaderMeta,
   IconBubble,
+  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   StatStrip,
@@ -209,6 +210,7 @@ export default function HomeScreen() {
         >
           <ScreenHeader
             title={`Hello, ${firstName}`}
+            trailing={<ProfileShortcut />}
             meta={
               streakDays > 0 ? (
                 <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>

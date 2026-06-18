@@ -143,11 +143,13 @@ export function DeskWorkspace({
         <PickupTab
           copy={copy}
           activeOrders={state.pickupOrders}
+          orderSort={state.orderSort}
           fulfilledToday={state.fulfilledToday}
           verifiedOrderIds={state.verifiedOrderIds}
           skippedCodeOrderIds={state.skippedCodeOrderIds}
           busyId={state.busyId}
           onVerifyPickupCode={(order) => void actions.verifyPickupCode(order)}
+          onOrderSortChange={actions.setOrderSort}
           onSkipCode={actions.skipPickupCode}
           onJumpToShopPayment={actions.jumpToShopPayment}
           onFulfillOrder={(orderId) => void actions.fulfillOrder(orderId)}

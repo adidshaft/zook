@@ -788,20 +788,20 @@ const styles = StyleSheet.create({
   productPrice: {
     ...typography.bodyStrong,
     flex: 1,
+    minWidth: 0,
   },
   productAdd: {
-    minHeight: 36,
+    width: 108,
+    height: 44,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 11,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
   },
   productAddCompact: {
-    minHeight: 32,
-    paddingHorizontal: 9,
+    height: 44,
   },
   productAddText: {
     ...typography.caption,

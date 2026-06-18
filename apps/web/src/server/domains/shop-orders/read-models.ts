@@ -47,9 +47,18 @@ export async function getMyShopOrders(userId: string) {
   const items = await prisma.shopOrderItem.findMany({
     where: { orderId: { in: orders.map((order) => order.id) } },
   });
+  const products = await prisma.product.findMany({
+    where: { id: { in: [...new Set(items.map((item) => item.productId))] } },
+  });
+  const productsById = new Map(products.map((product) => [product.id, product]));
 
   return orders.map((order) => ({
     ...order,
-    items: items.filter((item) => item.orderId === order.id),
+    items: items
+      .filter((item) => item.orderId === order.id)
+      .map((item) => ({
+        ...item,
+        product: productsById.get(item.productId) ?? null,
+      })),
   }));
 }

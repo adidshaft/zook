@@ -35,6 +35,7 @@ export function useDeskWorkspace({
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
+  const [orderSort, setOrderSort] = useState<"newest" | "oldest" | "status">("newest");
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
     purpose: "MEMBERSHIP",
@@ -83,7 +84,31 @@ export function useDeskWorkspace({
   const members = useMemo(() => membersState.data?.members ?? [], [membersState.data?.members]);
   const pendingRecords = pendingState.data?.records ?? [];
   const todayRecords = todayState.data?.records ?? [];
-  const activeOrders = ordersState.data?.orders ?? [];
+  const activeOrders = useMemo(() => {
+    const orders = [...(ordersState.data?.orders ?? [])];
+    if (orderSort === "oldest") {
+      return orders.sort(
+        (left, right) =>
+          new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime(),
+      );
+    }
+    if (orderSort === "status") {
+      const rank: Record<string, number> = {
+        READY_FOR_PICKUP: 0,
+        PENDING_PAYMENT: 1,
+        PAID: 2,
+      };
+      return orders.sort(
+        (left, right) =>
+          (rank[left.status] ?? 9) - (rank[right.status] ?? 9) ||
+          new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
+      );
+    }
+    return orders.sort(
+      (left, right) =>
+        new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
+    );
+  }, [orderSort, ordersState.data?.orders]);
   const payAtDeskOrders = activeOrders.filter(
     (order) => order.status === "PENDING_PAYMENT" && !order.paymentId,
   );
@@ -453,6 +478,7 @@ export function useDeskWorkspace({
       busyId,
       toast,
       memberQuery,
+      orderSort,
       filteredMembers,
       selectedMember,
       paymentForm,
@@ -471,6 +497,7 @@ export function useDeskWorkspace({
     },
     actions: {
       setMemberQuery,
+      setOrderSort,
       setMessageDraft,
       setPickupDraft,
       selectMember,

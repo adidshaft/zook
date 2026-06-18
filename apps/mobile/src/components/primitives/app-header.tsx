@@ -90,7 +90,7 @@ export function AppHeader({
         ) : null}
         {contextSlot ? <View style={styles.headerContextSlot}>{contextSlot}</View> : null}
       </View>
-      {trailing ? <View style={styles.headerSide}>{trailing}</View> : null}
+      {trailing ? <View style={[styles.headerSide, styles.headerTrailingSide]}>{trailing}</View> : null}
     </View>
   );
 }
@@ -120,6 +120,9 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerTrailingSide: {
+    alignItems: "flex-end",
   },
   appHeaderBack: {
     alignItems: "center",

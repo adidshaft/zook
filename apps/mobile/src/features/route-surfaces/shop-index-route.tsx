@@ -28,6 +28,7 @@ import {
   AppHeader,
   MoneySummaryCard,
   ProductCard,
+  ProfileShortcut,
   SearchBar,
   SectionHeader,
   Skeleton,
@@ -46,6 +47,7 @@ import {
   type ShopOrderRecord,
 } from "@/lib/domains";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { paymentsApi } from "@/lib/domain-api";
 import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
@@ -124,6 +126,18 @@ function pickupQrPayload(order: ShopOrderViewRecord) {
   });
 }
 
+function formatOrderDate(value?: string | null) {
+  if (!value) return "Recently";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return date.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function optimisticOrderFromCart(input: {
   orderId: string;
   totalPaise: number;
@@ -158,7 +172,7 @@ export default function Shop() {
     focus?: string | string[];
     qaBrowse?: string | string[];
   }>();
-  const { activeOrgId, session } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
@@ -234,6 +248,7 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const recentOrders = (ordersQuery.data?.orders ?? []).slice(0, 3);
   // Called unconditionally (before any state-based early return) to keep hook order stable.
   const contentPaddingBottom = useBottomScrollPadding({ hasStickyAction: itemCount > 0 });
   const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
@@ -443,6 +458,14 @@ export default function Shop() {
     if (!order) return;
     setCheckingCheckoutStatus(true);
     try {
+      if (checkoutSession?.id && token) {
+        await paymentsApi.refreshPaymentSession({
+          token,
+          sessionId: checkoutSession.id,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        });
+      }
       const refreshed = await ordersQuery.refetch();
       const refreshedOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
       if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
@@ -462,10 +485,26 @@ export default function Shop() {
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] });
+      showToast({
+        tone: "amber",
+        haptic: "warning",
+        message: "Payment is still pending. Try again in a moment.",
+      });
     } finally {
       setCheckingCheckoutStatus(false);
     }
-  }, [cartStorageKey, checkoutContextStorageKey, order, ordersQuery, queryClient, router]);
+  }, [
+    activeOrgId,
+    cartStorageKey,
+    checkoutContextStorageKey,
+    checkoutSession?.id,
+    order,
+    ordersQuery,
+    queryClient,
+    router,
+    selectedBranchId,
+    token,
+  ]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -647,6 +686,7 @@ export default function Shop() {
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -745,6 +785,7 @@ export default function Shop() {
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -810,6 +851,7 @@ export default function Shop() {
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={
             <View style={styles.headerChipStack}>
               <BranchSelectorChip />
@@ -956,32 +998,63 @@ export default function Shop() {
               leading={router.canGoBack() ? headerBackButton : undefined}
               showProfileShortcut={false}
               trailing={
-                <Pressable
-                  testID="shop-open-cart"
-                  onPress={() => router.push("/shop/cart" as never)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("shop.openCart")}
-                  style={[
-                    styles.cartIcon,
-                    {
-                      borderColor: palette.border.subtle,
-                      backgroundColor: palette.bg.elevated,
-                    },
-                  ]}
-                >
-                  <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
-                  {itemCount ? (
-                    <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
-                      <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
-                        {itemCount}
-                      </Text>
-                    </View>
-                  ) : null}
-                </Pressable>
+                <View style={styles.headerActions}>
+                  <ProfileShortcut />
+                  <Pressable
+                    testID="shop-open-cart"
+                    onPress={() => router.push("/shop/cart" as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("shop.openCart")}
+                    style={[
+                      styles.cartIcon,
+                      {
+                        borderColor: palette.border.subtle,
+                        backgroundColor: palette.bg.elevated,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
+                    {itemCount ? (
+                      <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
+                        <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
+                          {itemCount}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                </View>
               }
             />
 
             <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
+
+            {recentOrders.length ? (
+              <Card variant="compact" contentStyle={styles.orderHistoryContent}>
+                <SectionHeader title="Order history" subtitle="Recent desk pickups and payments" />
+                {recentOrders.map((historyOrder) => (
+                  <ListRow
+                    key={historyOrder.id}
+                    title={`${formatInr(historyOrder.totalPaise)} · ${historyOrder.items.length} ${
+                      historyOrder.items.length === 1 ? "item" : "items"
+                    }`}
+                    subtitle={formatOrderDate(historyOrder.createdAt)}
+                    onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
+                    trailing={
+                      <StatusChip
+                        status={historyOrder.status.replace(/_/g, " ")}
+                        tone={
+                          historyOrder.status === "FULFILLED" || historyOrder.status === "READY_FOR_PICKUP"
+                            ? "lime"
+                            : historyOrder.status === "PENDING_PAYMENT"
+                              ? "amber"
+                              : "neutral"
+                        }
+                      />
+                    }
+                  />
+                ))}
+              </Card>
+            ) : null}
 
             <ScrollView
               horizontal

@@ -29,6 +29,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
 import {
@@ -249,7 +250,9 @@ export default function ProfileScreen() {
       ? Math.max(0, referralCode.maxUses - (referralCode.redemptionCount ?? 0))
       : 0;
   const referralBenefit =
-    referralPolicy?.referrerRewardType === "DAYS"
+    activeRole === "TRAINER"
+      ? "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link."
+      : referralPolicy?.referrerRewardType === "DAYS"
       ? `You'll get ${referralPolicy.referrerRewardValue ?? 7} free days for every friend who joins.`
       : referralPolicy?.referrerRewardType === "VISITS"
         ? `You'll get ${referralPolicy.referrerRewardValue ?? 1} visits for every friend who joins.`
@@ -454,16 +457,29 @@ export default function ProfileScreen() {
 
   async function shareReferral() {
     if (!referralCode) return;
-    const link = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const rawLink = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const link = rawLink
+      ? /^https?:\/\//i.test(rawLink)
+        ? rawLink
+        : toWebUrl(rawLink)
+      : "";
     await Share.share({
-      message: link ? `${referralCode.code} ${link}` : referralCode.code,
+      message: link
+        ? `Join ${activeOrganization?.name ?? "my gym"} with my referral code ${referralCode.code}: ${link}`
+        : `Use my referral code ${referralCode.code} at ${activeOrganization?.name ?? "my gym"}.`,
     });
   }
 
   async function copyReferral() {
     if (!referralCode) return;
-    await Clipboard.setStringAsync(referralCode.code);
-    Alert.alert("Referral copied", "Your referral code is ready to share.");
+    const rawLink = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const link = rawLink
+      ? /^https?:\/\//i.test(rawLink)
+        ? rawLink
+        : toWebUrl(rawLink)
+      : referralCode.code;
+    await Clipboard.setStringAsync(link);
+    Alert.alert("Referral copied", link === referralCode.code ? "Your referral code is ready to share." : "Your referral link is ready to share.");
   }
 
   return (

@@ -539,6 +539,16 @@ export const gymApi = {
 };
 
 export const paymentsApi = {
+  refreshPaymentSession<T = { session: { id: string; status: string }; payment?: unknown | null }>(
+    options: RequestOptions & { sessionId: string },
+  ) {
+    return mobileApiFetch<T>(`/payments/session/${options.sessionId}/refresh`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+    });
+  },
   completeMockPayment(options: RequestOptions & { sessionId: string }) {
     return mobileApiFetch(`/payments/mock/${options.sessionId}/complete`, {
       method: "POST",

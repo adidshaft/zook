@@ -34,6 +34,7 @@ export function MemberTab({
 }) {
   const [showPhone, setShowPhone] = useState(false);
   const phone = selectedMember?.user?.phone;
+  const emergencyContact = selectedMember?.user?.emergencyContact;
   const activeCheckIn = selectedMember?.activeCheckIn;
   const selectedPhoto =
     selectedMember?.profile.profilePhotoUrl ?? selectedMember?.user?.profilePhotoUrl ?? null;
@@ -166,6 +167,28 @@ export function MemberTab({
                     </p>
                   ) : null}
                 </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                  Emergency contact
+                </p>
+                {emergencyContact?.name || emergencyContact?.phone ? (
+                  <div className="mt-2 text-sm text-white/68">
+                    <p className="font-medium text-white">
+                      {emergencyContact.name || "Contact"}
+                    </p>
+                    {emergencyContact.phone ? (
+                      <a
+                        href={`tel:${emergencyContact.phone}`}
+                        className="mt-1 inline-block text-white/58 underline-offset-4 hover:underline"
+                      >
+                        {emergencyContact.phone}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-white/42">Not added by member.</p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <ZookButtonLink

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { memo, useContext, useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { Animated as RNAnimated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,31 +36,6 @@ function resolveParentRouteName(
   const prefixMatch = visibleRoutes.find((route) => focusedRouteName.startsWith(`${route.name}/`));
   return prefixMatch?.name;
 }
-
-const TabBarBackdrop = memo(function TabBarBackdrop({
-  height,
-  color,
-  mode,
-}: {
-  height: number;
-  color: string;
-  mode: "light" | "dark";
-}) {
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height,
-        backgroundColor: color,
-        opacity: Platform.OS === "ios" ? (mode === "dark" ? 0.22 : 0.12) : 1,
-      }}
-    />
-  );
-});
 
 export function RoleTabBar({
   state,
@@ -151,7 +126,6 @@ export function RoleTabBar({
         { transform: [{ translateY }], opacity },
       ]}
     >
-      <TabBarBackdrop height={backdropHeight} color={palette.bg.app} mode={mode} />
       <View
         style={[
           styles.tabBarContainer,

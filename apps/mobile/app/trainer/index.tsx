@@ -225,7 +225,7 @@ export default function TrainerHomeScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={200}>
-            <SectionHeader title="AI draft" />
+            <SectionHeader title="Plan builder" />
             <Card
               variant="compact"
               pressable
@@ -236,9 +236,9 @@ export default function TrainerHomeScreen() {
               }
             >
               <ListRow
-                title="AI drafting is off"
-                subtitle="Create and edit plans manually."
-                leading={<IconBubble icon="sparkles-outline" tone="blue" />}
+                title="Create plans manually"
+                subtitle="Use saved templates and publish only when the plan is ready."
+                leading={<IconBubble icon="reader-outline" tone="blue" />}
                 trailing={<StatusChip status="Manual" tone="neutral" />}
               />
             </Card>

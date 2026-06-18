@@ -57,6 +57,27 @@ function assertCanCompleteMockPayment(
   }
 }
 
+function assertCanReadPaymentSession(
+  ctx: Awaited<ReturnType<typeof getRequestContext>>,
+  session: {
+    orgId: string | null;
+    userId: string | null;
+  },
+  userId: string,
+) {
+  const canReadOwnSession = Boolean(session.userId && session.userId === userId);
+  const canReadOrgSession = Boolean(
+    session.orgId &&
+      ctx.orgId === session.orgId &&
+      ctx.permissions.includes("PAYMENTS_VIEW") &&
+      ctx.orgStatus !== "SUSPENDED" &&
+      ctx.orgStatus !== "CANCELLED",
+  );
+  if (!canReadOwnSession && !canReadOrgSession) {
+    throw forbiddenError("No payment session access.");
+  }
+}
+
 export async function handlePaymentSessions(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["payments", "checkout"])) {
     const ctx = await getRequestContext(request);
@@ -132,18 +153,53 @@ export async function handlePaymentSessions(request: NextRequest, path: string[]
       `${userId}:${path[2]!}`,
       "Too many payment session checks. Please wait before trying again.",
     );
-    const canReadOwnSession = Boolean(session.userId && session.userId === userId);
-    const canReadOrgSession = Boolean(
-      session.orgId &&
-        ctx.orgId === session.orgId &&
-        ctx.permissions.includes("PAYMENTS_VIEW") &&
-        ctx.orgStatus !== "SUSPENDED" &&
-        ctx.orgStatus !== "CANCELLED",
-    );
-    if (!canReadOwnSession && !canReadOrgSession) {
-      throw forbiddenError("No payment session access.");
-    }
+    assertCanReadPaymentSession(ctx, session, userId);
     return ok({ session });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["payments", "session", /.+/, "refresh"])) {
+    const session = await prisma.paymentSession.findUnique({ where: { id: path[2]! } });
+    if (!session) {
+      return fail("NOT_FOUND", "Payment session not found", 404);
+    }
+    const ctx = await getRequestContext(request, session.orgId ? { orgId: session.orgId } : {});
+    const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "paymentSessionByActor",
+      `${userId}:${path[2]!}:refresh`,
+      "Too many payment session checks. Please wait before trying again.",
+    );
+    assertCanReadPaymentSession(ctx, session, userId);
+
+    if (["SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED", "REFUNDED"].includes(session.status)) {
+      return ok({ session, refreshed: false });
+    }
+
+    const provider = getPaymentProviderOrThrow();
+    const providerStatus = await provider.getPaymentStatus(
+      session.providerRef
+        ? { providerOrderId: session.providerRef }
+        : { paymentSessionId: session.id },
+    );
+
+    if (providerStatus === session.status) {
+      return ok({ session, refreshed: true });
+    }
+
+    const processed = await applyPaymentSessionStatus({
+      sessionId: session.id,
+      nextStatus: providerStatus,
+      provider: provider.providerName,
+      providerRef: session.providerRef ?? session.id,
+      paymentMode: provider.providerName === "mock" ? "MOCK_ONLINE" : "CARD",
+      expectedAmountPaise: session.amountPaise,
+      createNotification: createDirectNotification,
+      ensureMembership: (membershipInput, tx) =>
+        tx
+          ? ensureOrganizationMembershipWithClient(tx, membershipInput)
+          : ensureOrganizationMembership(membershipInput),
+    });
+    return ok({ session: processed.session, payment: processed.payment ?? null, refreshed: true });
   }
 
   if (request.method === "POST" && pathMatches(path, ["payments", "webhooks", "razorpay"])) {

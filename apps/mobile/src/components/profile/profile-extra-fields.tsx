@@ -32,7 +32,7 @@ const genderOptions: Array<{ label: string; value: GenderValue }> = [
   { label: "Male", value: "male" },
   { label: "Female", value: "female" },
   { label: "Non-binary", value: "non_binary" },
-  { label: "Prefer not to say", value: "prefer_not_to_say" },
+  { label: "Not specified", value: "prefer_not_to_say" },
 ];
 
 const localeOptions: Array<{ label: string; value: LocaleValue }> = [

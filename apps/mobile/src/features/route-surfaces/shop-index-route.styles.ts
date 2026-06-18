@@ -34,6 +34,11 @@ export const shopStyles = StyleSheet.create({
     alignSelf: "flex-start",
     gap: 6,
   },
+  headerActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
   browserReturnContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -50,6 +55,9 @@ export const shopStyles = StyleSheet.create({
   },
   browserReturnBody: {
     ...typography.body,
+  },
+  orderHistoryContent: {
+    gap: spacing.sm,
   },
   cartBadge: {
     position: "absolute",

@@ -7,7 +7,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import type { ShopOrderRow } from "@/components/dashboard/types";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { ShopOrderPaymentControl } from "../payments/shop-order-payment-control";
 import type { ResourceState } from "./types";
 
@@ -83,6 +83,11 @@ export function ShopOrdersSection({
                     <span className="text-xs text-white/38">{orderDeskNote(order)}</span>
                   </div>
                 ),
+              },
+              {
+                id: "created",
+                header: "Created",
+                render: (order) => formatDateTime(order.createdAt),
               },
               {
                 id: "pickup",

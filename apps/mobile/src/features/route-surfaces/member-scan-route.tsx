@@ -22,6 +22,7 @@ import {
   EmptyState,
   IconBubble,
   AppHeader,
+  ProfileShortcut,
   ScannerFrame,
   useRequestPermissionWithRationale,
   ZookButton,
@@ -752,6 +753,9 @@ export default function Scan() {
             title="Scan to check in"
             contextSlot={<RoleSwitcherChip />}
             subtitle="Point your camera at the QR code at your gym"
+            showBack
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+            trailing={<ProfileShortcut />}
             showProfileShortcut={false}
           />
 

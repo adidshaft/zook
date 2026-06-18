@@ -24,6 +24,5 @@ export function useStickyActionOffset(): number {
     return spacing.md;
   }
   const bottomInset = Math.max(insets.bottom, 12);
-  const floatingNavHeight = Math.max(layout.bottomNavHeight, 92);
-  return bottomInset + floatingNavHeight + spacing.md;
+  return bottomInset + layout.bottomNavHeight + spacing.xs;
 }
