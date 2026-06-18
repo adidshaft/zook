@@ -68,7 +68,7 @@ export function PickupTab({
               <option value="status">Status</option>
             </select>
           </label>
-          <Pill tone="blue">
+          <Pill>
             {fulfilledToday} {copy.fulfilledToday}
           </Pill>
         </div>

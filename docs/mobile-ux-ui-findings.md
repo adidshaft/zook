@@ -862,3 +862,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web platform inventory-count cues (`R164`) are closed: platform
   broadcast, impersonation, and assistant activity header counts now use neutral badges
   instead of informational blue, keeping status and severity colors in the rows.
+- **[ui, fixed]** Overstated web desk pickup aggregate cue (`R165`) is closed: the fulfilled
+  today summary count now uses a neutral badge instead of informational blue, keeping
+  fulfilled state color on individual order rows.
