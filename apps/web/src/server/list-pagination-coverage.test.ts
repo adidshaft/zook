@@ -10,6 +10,7 @@ const memberPlansGoalsSource = readFileSync(
   new URL("./api-router/member-plans-goals.ts", import.meta.url),
   "utf8",
 );
+const privacySource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
 const shopOrdersSource = readFileSync(
   new URL("./domains/shop-orders/read-models.ts", import.meta.url),
   "utf8",
@@ -37,7 +38,11 @@ describe("list pagination coverage", () => {
       "prisma.userGoal.findMany",
       memberPlansGoalsSource,
     );
-    expectRouteListBounded('pathMatches(path, ["me", "consents"])', "prisma.consentRecord.findMany");
+    expectRouteListBounded(
+      'pathMatches(path, ["me", "consents"])',
+      "prisma.consentRecord.findMany",
+      privacySource,
+    );
     expectRouteListBounded(
       'pathMatches(path, ["platform", "payments", /.+/])',
       "prisma.paymentEvent.findMany",

@@ -20,6 +20,7 @@ const organizationJoinRequestsRouteSource = readFileSync(
   new URL("./api-router/organization-join-requests.ts", import.meta.url),
   "utf8",
 );
+const privacyRouteSource = readFileSync(new URL("./api-router/privacy.ts", import.meta.url), "utf8");
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 const staffRouteSource = readFileSync(new URL("./api-router/staff.ts", import.meta.url), "utf8");
 
@@ -93,8 +94,18 @@ const sensitiveRoutes = [
   { label: "AI request", needle: 'pathMatches(path, ["ai", "generate-plan"])' },
   { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
   { label: "notification send", needle: 'pathMatches(path, ["orgs", /.+/, "notifications"])' },
-  { label: "data export", needle: 'pathMatches(path, ["me", "data-export-request"])' },
-  { label: "account deletion", needle: 'pathMatches(path, ["me", "account-deletion-request"])' },
+  {
+    label: "data export",
+    needle: 'pathMatches(path, ["me", "data-export-request"])',
+    source: privacyRouteSource,
+    sourceLabel: "api-router/privacy.ts",
+  },
+  {
+    label: "account deletion",
+    needle: 'pathMatches(path, ["me", "account-deletion-request"])',
+    source: privacyRouteSource,
+    sourceLabel: "api-router/privacy.ts",
+  },
 ];
 
 describe("rate-limit route coverage", () => {
