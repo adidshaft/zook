@@ -51,6 +51,7 @@ import { handleProducts } from "./products";
 import { handleShopOrders } from "./shop-orders";
 import { handleSupport } from "./support";
 import { handleTracking } from "./tracking";
+import { handleTrainerOperations } from "./trainer-operations";
 
 export type ApiRouteHandler = (
   request: NextRequest,
@@ -94,6 +95,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
   { handler: handleManualPayments, firstSegments: ["orgs"] },
+  { handler: handleTrainerOperations, firstSegments: ["orgs"] },
   { handler: handleClasses, firstSegments: ["orgs"] },
   { handler: handleProducts, firstSegments: ["orgs"] },
   { handler: handleShopOrders, firstSegments: ["orgs", "shop"] },
