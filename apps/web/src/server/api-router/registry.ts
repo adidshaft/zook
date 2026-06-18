@@ -5,6 +5,7 @@ import {
   handleOrganizations,
   handleStaffPlansGoals,
 } from "./core";
+import { handleAi } from "./ai";
 import { handleAttendance } from "./attendance";
 import {
   buildRouteHandlerDispatchMap,
@@ -48,6 +49,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
     handler: handleHealthReadiness,
     firstSegments: ["health", "ready", "status", "diagnostics"],
   },
+  { handler: handleAi, firstSegments: ["ai", "orgs"] },
   { handler: handleCronJobs, firstSegments: ["cron"] },
   { handler: handleAuth, firstSegments: ["auth"] },
   { handler: handleMeData, firstSegments: ["me"] },
@@ -82,7 +84,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   },
   {
     handler: handleAiNotificationsShopPrivacyPlatform,
-    firstSegments: ["ai", "me", "orgs", "platform", "shop"],
+    firstSegments: ["me", "orgs", "platform", "shop"],
   },
 ];
 

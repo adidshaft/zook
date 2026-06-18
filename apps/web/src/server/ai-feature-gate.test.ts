@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const routerSource = readFileSync(new URL("./api-router/ai.ts", import.meta.url), "utf8");
 
 describe("AI feature gate", () => {
   it("uses the feature_unavailable contract for the launch gate", () => {

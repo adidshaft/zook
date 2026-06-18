@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const routerSource = readFileSync(new URL("./api-router/core.ts", import.meta.url), "utf8");
+const aiRouteSource = readFileSync(new URL("./api-router/ai.ts", import.meta.url), "utf8");
 const attendanceRouteSource = readFileSync(
   new URL("./api-router/attendance.ts", import.meta.url),
   "utf8",
@@ -91,7 +92,12 @@ const sensitiveRoutes = [
     source: staffRouteSource,
     sourceLabel: "api-router/staff.ts",
   },
-  { label: "AI request", needle: 'pathMatches(path, ["ai", "generate-plan"])' },
+  {
+    label: "AI request",
+    needle: 'pathMatches(path, ["ai", "generate-plan"])',
+    source: aiRouteSource,
+    sourceLabel: "api-router/ai.ts",
+  },
   { label: "notification preview", needle: 'pathMatches(path, ["orgs", /.+/, "notifications", "preview"])' },
   { label: "notification send", needle: 'pathMatches(path, ["orgs", /.+/, "notifications"])' },
   {
