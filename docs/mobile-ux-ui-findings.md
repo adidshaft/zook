@@ -973,3 +973,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile reception payment row icons (`R201`) are closed:
   the payment collection Member and Invoice rows now use neutral leading icons instead of
   lime/amber, keeping state on the verified/missing pill, membership text, and amount due.
+- **[ui, fixed]** Overstated mobile trainer plan-row icon cue (`R202`) is closed:
+  active plan-work rows now use a neutral reader icon instead of amber, keeping row action
+  emphasis on the Open chip and Client Detail button.

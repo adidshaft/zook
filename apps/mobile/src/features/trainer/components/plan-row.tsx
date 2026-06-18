@@ -12,7 +12,7 @@ export function PlanRow({ client }: { client: TrainerClientRecord }) {
       <ListRow
         title={client.user?.name ?? "Client"}
         subtitle={`${activePlans} active ${activePlans === 1 ? "plan" : "plans"} · ${fitnessGoalFor(client)}`}
-        leading={<IconBubble icon="reader-outline" tone="amber" />}
+        leading={<IconBubble icon="reader-outline" tone="neutral" />}
         trailing={<StatusChip status="Open" tone="amber" />}
       />
       <ZookButton
