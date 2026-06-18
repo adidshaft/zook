@@ -99,7 +99,7 @@ export function MobileDashboardMenu({
               <nav className="grid gap-4">
                 {visibleNavGroups.map((group) => (
                   <div key={group.key} className="grid gap-1">
-                    <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)] opacity-60">
+                    <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                       {translatedGroupLabel(copy, group.key)}
                     </p>
                     {group.items.map((item) => {
