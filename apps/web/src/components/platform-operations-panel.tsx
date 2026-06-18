@@ -1157,7 +1157,7 @@ export function PlatformOperationsPanel({
               eyebrow="Broadcasts"
               title="Platform broadcasts"
               description="Create operational notices and publish them to active gyms."
-              badge={<Pill tone="blue">{broadcasts.length} loaded</Pill>}
+              badge={<Pill>{broadcasts.length} loaded</Pill>}
               action={
                 <ZookButton size="sm" onClick={() => void createBroadcast()}>
                   New broadcast
@@ -1314,7 +1314,7 @@ export function PlatformOperationsPanel({
             eyebrow="Impersonations"
             title="Support impersonation history"
             description="Recent audited sessions started by platform support."
-            badge={<Pill tone="blue">{impersonations.length} sessions</Pill>}
+            badge={<Pill>{impersonations.length} sessions</Pill>}
           />
           <div className="mt-5">
             <DataTable
@@ -1884,7 +1884,7 @@ export function PlatformOperationsPanel({
               eyebrow="Assistant"
               title="Recent assistant activity"
               description="A quick view of assisted drafts across gyms."
-              badge={<Pill tone="blue">{usage.length} events</Pill>}
+              badge={<Pill>{usage.length} events</Pill>}
             />
             <div className="mt-5">
               {usageState.error ? (

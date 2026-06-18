@@ -859,3 +859,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile push-opened notification cue (`R163`) is closed: the
   push/deep-link callout icon now uses a neutral accent instead of informational blue,
   keeping notification type colors on list rows and details.
+- **[ui, fixed]** Overstated web platform inventory-count cues (`R164`) are closed: platform
+  broadcast, impersonation, and assistant activity header counts now use neutral badges
+  instead of informational blue, keeping status and severity colors in the rows.
