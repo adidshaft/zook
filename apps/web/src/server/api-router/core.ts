@@ -2407,6 +2407,10 @@ function pageResult<T extends { id: string }>(items: T[], limit: number) {
   };
 }
 
+const ADMIN_DETAIL_LIST_LIMIT = 50;
+const ANALYTICS_SUMMARY_LIST_LIMIT = 500;
+const USER_HISTORY_LIST_LIMIT = 50;
+
 function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const existing = map.get(key);
   if (existing) {
@@ -12133,7 +12137,13 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "COUPONS_MANAGE");
-    return ok({ coupons: await prisma.coupon.findMany({ where: { orgId } }) });
+    return ok({
+      coupons: await prisma.coupon.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
+      }),
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "coupons"])) {
     const orgId = path[1]!;
@@ -12262,8 +12272,16 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
         orderBy: { redemptionCount: "desc" },
         take: 25,
       }),
-      prisma.referralRedemption.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
-      prisma.referralReward.findMany({ where: { orgId, createdAt: { gte: startOfMonth } } }),
+      prisma.referralRedemption.findMany({
+        where: { orgId, createdAt: { gte: startOfMonth } },
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
+      prisma.referralReward.findMany({
+        where: { orgId, createdAt: { gte: startOfMonth } },
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
       prisma.referralRedemption.findMany({
         where: { orgId, createdAt: { gte: last24h } },
         select: { referralCodeId: true, referredUserId: true, metadata: true },
@@ -13814,7 +13832,11 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "ORG_MANAGE_PERMISSIONS");
     return ok({
-      permissions: await prisma.organizationRolePermission.findMany({ where: { orgId } }),
+      permissions: await prisma.organizationRolePermission.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
     });
   }
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "permissions"])) {
@@ -15366,7 +15388,13 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
   }
   if (request.method === "GET" && pathMatches(path, ["me", "goals"])) {
     const userId = requireAuth(await getRequestContext(request));
-    return ok({ goals: await prisma.userGoal.findMany({ where: { userId, active: true } }) });
+    return ok({
+      goals: await prisma.userGoal.findMany({
+        where: { userId, active: true },
+        orderBy: { updatedAt: "desc" },
+        take: USER_HISTORY_LIST_LIMIT,
+      }),
+    });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "goals"])) {
     const userId = requireAuth(await getRequestContext(request));
@@ -15398,7 +15426,11 @@ export async function handleStaffPlansGoals(request: NextRequest, path: string[]
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
     return ok({
-      challenges: await prisma.challenge.findMany({ where: { orgId: path[1]!, active: true } }),
+      challenges: await prisma.challenge.findMany({
+        where: { orgId: path[1]!, active: true },
+        orderBy: { startsAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
+      }),
     });
   }
   return undefined;
@@ -16952,18 +16984,36 @@ export async function handleAiNotificationsShopPrivacyPlatform(
     const userId = requireAuth(await getRequestContext(request));
     const [consents, guardianConsents, exportRequests, exportJobs, deletionRequests, deletionJobs] =
       await Promise.all([
-        prisma.consentRecord.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+        prisma.consentRecord.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
+        }),
         prisma.guardianConsent.findMany({
           where: { minorUserId: userId },
           orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
         }),
-        prisma.dataExportRequest.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
-        prisma.dataExportJob.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+        prisma.dataExportRequest.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
+        }),
+        prisma.dataExportJob.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
+        }),
         prisma.accountDeletionRequest.findMany({
           where: { userId },
           orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
         }),
-        prisma.accountDeletionJob.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+        prisma.accountDeletionJob.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: USER_HISTORY_LIST_LIMIT,
+        }),
       ]);
     return ok({
       consents,
@@ -17179,13 +17229,25 @@ export async function handleAiNotificationsShopPrivacyPlatform(
         orderBy: { createdAt: "desc" },
         take: 25,
       }),
-      prisma.organizationUser.findMany({ where: { userId }, orderBy: { joinedAt: "desc" } }),
-      prisma.organizationRoleAssignment.findMany({ where: { userId } }),
+      prisma.organizationUser.findMany({
+        where: { userId },
+        orderBy: { joinedAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
+      }),
+      prisma.organizationRoleAssignment.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
+      }),
       prisma.organization.findMany({
         where: {
           id: {
             in: (
-              await prisma.organizationUser.findMany({ where: { userId }, select: { orgId: true } })
+              await prisma.organizationUser.findMany({
+                where: { userId },
+                select: { orgId: true },
+                take: ADMIN_DETAIL_LIST_LIMIT,
+              })
             ).map((item) => item.orgId),
           },
         },
@@ -17417,8 +17479,13 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       prisma.paymentEvent.findMany({
         where: { paymentId },
         orderBy: { createdAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
       }),
-      prisma.paymentRefund.findMany({ where: { paymentId }, orderBy: { createdAt: "desc" } }),
+      prisma.paymentRefund.findMany({
+        where: { paymentId },
+        orderBy: { createdAt: "desc" },
+        take: ADMIN_DETAIL_LIST_LIMIT,
+      }),
       payment.userId ? prisma.user.findUnique({ where: { id: payment.userId } }) : null,
       payment.orgId ? prisma.organization.findUnique({ where: { id: payment.orgId } }) : null,
     ]);
@@ -17426,6 +17493,7 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       ? await prisma.paymentWebhookAttempt.findMany({
           where: { paymentEventId: { in: events.map((event) => event.id) } },
           orderBy: { startedAt: "desc" },
+          take: ADMIN_DETAIL_LIST_LIMIT,
         })
       : [];
     return ok({
@@ -18169,9 +18237,21 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       trainerGroups,
       productGroups,
     ] = await Promise.all([
-      prisma.saaSSubscription.findMany({ where: orgScope }),
-      prisma.saaSBillingMandate.findMany({ where: orgScope }),
-      prisma.orgReferralPartnership.findMany({ where: { sourceOrgId: { in: orgIds } } }),
+      prisma.saaSSubscription.findMany({
+        where: orgScope,
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
+      prisma.saaSBillingMandate.findMany({
+        where: orgScope,
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
+      prisma.orgReferralPartnership.findMany({
+        where: { sourceOrgId: { in: orgIds } },
+        orderBy: { createdAt: "desc" },
+        take: ANALYTICS_SUMMARY_LIST_LIMIT,
+      }),
       getSaasPlanCatalog(),
       prisma.memberProfile.groupBy({ by: ["orgId"], where: orgScope, _count: { _all: true } }),
       prisma.branch.groupBy({

@@ -16,11 +16,13 @@ export async function getOrganizationActiveShopOrders(
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  const [items, users, products] = await Promise.all([
+  const [items, users] = await Promise.all([
     prisma.shopOrderItem.findMany({ where: { orderId: { in: orders.map((order) => order.id) } } }),
     prisma.user.findMany({ where: { id: { in: orders.map((order) => order.userId) } } }),
-    prisma.product.findMany({ where: { orgId } }),
   ]);
+  const products = await prisma.product.findMany({
+    where: { orgId, id: { in: [...new Set(items.map((item) => item.productId))] } },
+  });
   const usersById = new Map(users.map((user) => [user.id, user]));
   const productsById = new Map(products.map((product) => [product.id, product]));
 
