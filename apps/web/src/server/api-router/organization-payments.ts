@@ -3,7 +3,7 @@ import { prisma } from "@zook/db";
 import { getRequestContext, requireOrgAnyPermission, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
 import { notFoundError } from "../errors";
-import { getOrganizationRecentPayments } from "../domains/payments";
+import { getOrganizationRecentPayments } from "../domains/payments/read-models";
 import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";
 import {

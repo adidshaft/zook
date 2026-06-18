@@ -2,7 +2,7 @@ import { prisma } from "@zook/db";
 import type { NextRequest } from "next/server";
 
 import { getRequestContext, requireOrgPermission } from "../access";
-import { getOrganizationDashboardData } from "../domains/overview";
+import { getOrganizationDashboardData } from "../domains/overview/read-models";
 import { ok } from "../response";
 import {
   assertBranchAccessForContext,

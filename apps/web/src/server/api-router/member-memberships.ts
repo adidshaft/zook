@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@zook/db";
 import { getRequestContext, requireAuth } from "../access";
-import { getActiveMembershipData } from "../domains/members";
+import { getActiveMembershipData } from "../domains/members/read-models";
 import { ok } from "../response";
 import { pathMatches } from "./core";
 

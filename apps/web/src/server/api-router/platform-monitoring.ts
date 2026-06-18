@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@zook/db";
 import { getRequestContext, requirePlatformAdmin } from "../access";
-import { getPlatformProviderDiagnostics } from "../domains/overview";
+import { getPlatformProviderDiagnostics } from "../domains/overview/read-models";
 import { ok } from "../response";
 import { pathMatches } from "./core";
 

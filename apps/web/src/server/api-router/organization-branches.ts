@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getRequestContext, requireOrgPermission } from "../access";
-import { invalidateOrganizationDashboardCache } from "../domains/overview";
+import { invalidateOrganizationDashboardCache } from "../domains/overview/read-models";
 import { conflictError, notFoundError, validationError } from "../errors";
 import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";

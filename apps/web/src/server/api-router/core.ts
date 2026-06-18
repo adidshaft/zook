@@ -77,7 +77,7 @@ import {
 } from "../files";
 import { applyAutopayProviderEvent, applyPaymentSessionStatus } from "../payment-runtime";
 import { deliverPushForNotification } from "../push-runtime";
-import { getOrganizationPaymentsPage } from "../domains/payments";
+import { getOrganizationPaymentsPage } from "../domains/payments/read-models";
 import {
   pricingFromPlanCatalog,
   saasPlanCatalogFromSetting,

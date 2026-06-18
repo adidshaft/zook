@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { getRequestContext, requireAuth, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
-import { getOrganizationActiveShopOrders } from "../domains/shop-orders";
+import { getOrganizationActiveShopOrders } from "../domains/shop-orders/read-models";
 import { notFoundError, validationError } from "../errors";
 import { ok, readJson } from "../response";
 import {

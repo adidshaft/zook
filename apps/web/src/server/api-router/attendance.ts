@@ -31,8 +31,8 @@ import { assertMinorConsentGranted } from "../minor-gates";
 import {
   getOrganizationAttendanceToday,
   getOrganizationPendingAttendance,
-} from "../domains/attendance";
-import { invalidateOrganizationDashboardCache } from "../domains/overview";
+} from "../domains/attendance/read-models";
+import { invalidateOrganizationDashboardCache } from "../domains/overview/read-models";
 import {
   applyAttendanceUsage,
   assertBranchAccessForContext,

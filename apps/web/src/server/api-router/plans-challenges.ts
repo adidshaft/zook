@@ -6,7 +6,7 @@ import { Prisma, prisma } from "@zook/db";
 
 import { getRequestContext, requireAuth, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
-import { extractPlanExercises } from "../domains/plans";
+import { extractPlanExercises } from "../domains/plans/read-models";
 import { conflictError, forbiddenError, notFoundError, validationError } from "../errors";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { ok, readJson } from "../response";

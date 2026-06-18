@@ -11,7 +11,7 @@ import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-desti
 import { getOrigins } from "@/lib/origins";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { getOrganizationMembers } from "@/server/domains/members/read-models";
-import { getOrganizationPaymentsPage } from "@/server/domains/payments";
+import { getOrganizationPaymentsPage } from "@/server/domains/payments/read-models";
 import type { DashboardRoutePanelBaseProps } from "./dashboard/route-panels";
 
 type DashboardRouteProps = {

@@ -4,7 +4,7 @@ import {
   getOrganizationDashboardData,
   getOrganizationDashboardFastData,
   getPlatformDashboardData,
-} from "@/server/domains/overview";
+} from "@/server/domains/overview/read-models";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";

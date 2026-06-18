@@ -7,7 +7,7 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getPlatformDashboardShellData } from "@/lib/data";
-import { getPlatformProviderDiagnostics } from "@/server/domains/overview";
+import { getPlatformProviderDiagnostics } from "@/server/domains/overview/read-models";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 
 export const dynamic = "force-dynamic";

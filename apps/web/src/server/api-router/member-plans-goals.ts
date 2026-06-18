@@ -3,7 +3,7 @@ import { Prisma, prisma } from "@zook/db";
 import type { NextRequest } from "next/server";
 
 import { getRequestContext, requireAuth } from "../access";
-import { getPlanExercisesForUser } from "../domains/plans";
+import { getPlanExercisesForUser } from "../domains/plans/read-models";
 import { forbiddenError, notFoundError, validationError } from "../errors";
 import { ok, readJson } from "../response";
 import {
