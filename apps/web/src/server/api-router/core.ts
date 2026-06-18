@@ -355,7 +355,7 @@ const platformOrgTransferSchema = z.object({
   reason: z.string().trim().min(2).max(240),
 });
 
-const platformModerationDecisionSchema = z.object({
+export const platformModerationDecisionSchema = z.object({
   id: z.string(),
   decision: z.enum(["APPROVED", "REMOVED"]),
   reason: z.string().trim().min(2).max(240),
@@ -9005,41 +9005,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       metadata: { totalRows: results.length },
     });
     return ok({ results, summary: { total: results.length, created: results.filter((r) => r.status === "created").length, existing: results.filter((r) => r.status === "existing").length, errors: results.filter((r) => r.status === "error").length } });
-  }
-  if (request.method === "GET" && pathMatches(path, ["platform", "moderation"])) {
-    const ctx = await getRequestContext(request);
-    requirePlatformAdmin(ctx);
-    return ok({
-      flags: await prisma.contentModerationFlag.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      }),
-    });
-  }
-  if (request.method === "POST" && pathMatches(path, ["platform", "moderation"])) {
-    const ctx = await getRequestContext(request);
-    const actorUserId = requirePlatformAdmin(ctx);
-    const body = platformModerationDecisionSchema.parse(await readJson(request));
-    const flag = await prisma.contentModerationFlag.update({
-      where: { id: body.id },
-      data: {
-        status: body.decision,
-        reason: body.reason,
-        reviewedByUserId: actorUserId,
-        reviewedAt: new Date(),
-      },
-    });
-    await writeAuditLog({
-      request,
-      orgId: flag.orgId,
-      actorUserId,
-      action: "platform.moderation_decided",
-      entityType: "content_moderation_flag",
-      entityId: flag.id,
-      riskLevel: body.decision === "REMOVED" ? "HIGH" : "MEDIUM",
-      metadata: { decision: body.decision, reason: body.reason },
-    });
-    return ok({ flag });
   }
   if (request.method === "GET" && pathMatches(path, ["platform", "orgs"])) {
     const ctx = await getRequestContext(request);
