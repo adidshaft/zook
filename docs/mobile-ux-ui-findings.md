@@ -844,3 +844,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile public gym address cue (`R158`) is closed: the public
   gym profile address row now uses neutral styling instead of informational blue, keeping
   stronger color on join, referral, and payment state.
+- **[ui, fixed]** Overstated mobile member plan schedule cue (`R159`) is closed: upcoming
+  plan schedule row icons now use neutral accents instead of informational blue, keeping
+  active workout and exercise cues lime.

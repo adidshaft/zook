@@ -144,7 +144,7 @@ export default function MemberPlanScreen() {
                       <ListRow
                         title={planTitle(assignment)}
                         subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
-                        leading={<IconBubble icon="calendar-outline" tone="blue" />}
+                        leading={<IconBubble icon="calendar-outline" tone="neutral" />}
                         trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
                       />
                     </Card>
