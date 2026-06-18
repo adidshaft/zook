@@ -479,3 +479,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Public sparkle nav icons (`R29`) is closed: replaced decorative sparkle
   icons in the public operations pill and gym facilities tab with location and building icons that
   describe the linked context.
+- **[code, fixed]** Ambient web blur layers (`R30`) is closed: removed purely ornamental
+  full-screen coach background blobs and the join-review card accent blob while preserving the
+  actual card surfaces and content hierarchy.
