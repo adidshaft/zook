@@ -256,6 +256,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   audit-check requirement for rendered visual-cue regression evidence.
 - **6/R103 Mock checkout fallback naming** — renamed the local mock-checkout fallback label key
   from `sampleMembership` to `testMembership` while preserving the test payment route behavior.
+- **6/R104 Scan helper test naming** — renamed the local QA scan helper flag and test id from
+  sample-oriented names to test-check-in names so internal cues match the visible copy.
 
 ## 1. Functional / correctness
 

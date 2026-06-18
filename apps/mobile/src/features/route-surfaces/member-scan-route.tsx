@@ -211,7 +211,7 @@ function readScannedAttendancePayload(
 export default function Scan() {
   const { mode, palette } = useTheme();
   const isDark = mode === "dark";
-  const showDevSampleScan =
+  const showDevTestScan =
     __DEV__ && getMobileAppEnv() === "local" && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const codePlaceholderColor = palette.text.tertiary;
   const cameraBadgeSurface = isDark ? palette.bg.elevated : palette.surface.raised;
@@ -1066,9 +1066,9 @@ export default function Scan() {
             </Card>
           ) : null}
 
-          {showDevSampleScan ? (
+          {showDevTestScan ? (
             <Pressable
-              testID="scan-dev-sample"
+              testID="scan-dev-test"
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
               accessibilityLabel="Use test check-in"
