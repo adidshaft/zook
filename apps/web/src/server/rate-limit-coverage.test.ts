@@ -12,6 +12,10 @@ const couponsReferralsRouteSource = readFileSync(
   "utf8",
 );
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
+const organizationRootRouteSource = readFileSync(
+  new URL("./api-router/organization-root.ts", import.meta.url),
+  "utf8",
+);
 const reportsRouteSource = readFileSync(new URL("./api-router/reports.ts", import.meta.url), "utf8");
 
 const sensitiveRoutes = [
@@ -27,7 +31,12 @@ const sensitiveRoutes = [
     source: authRouteSource,
     sourceLabel: "api-router/auth.ts",
   },
-  { label: "organization create", needle: 'pathMatches(path, ["orgs"])' },
+  {
+    label: "organization create",
+    needle: 'pathMatches(path, ["orgs"])',
+    source: organizationRootRouteSource,
+    sourceLabel: "api-router/organization-root.ts",
+  },
   {
     label: "file upload",
     needle: 'pathMatches(path, ["files", "upload"])',

@@ -22,6 +22,7 @@ import { handleOrganizationBranches } from "./organization-branches";
 import { handleOrganizationMembers } from "./organization-members";
 import { handleOrganizationOverview } from "./organization-overview";
 import { handleOrganizationProfile } from "./organization-profile";
+import { handleOrganizationRoot } from "./organization-root";
 import { handlePublicOrganizations } from "./public-organizations";
 import { handleReports } from "./reports";
 import { handleTracking } from "./tracking";
@@ -47,6 +48,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
   { handler: handleOrganizationProfile, firstSegments: ["orgs"] },
   { handler: handleOrganizationOverview, firstSegments: ["orgs"] },
+  { handler: handleOrganizationRoot, firstSegments: ["orgs"] },
   { handler: handleOrganizations, firstSegments: ["orgs", "platform-referrals"] },
   { handler: handleReports, firstSegments: ["orgs"] },
   { handler: handleMembershipPayments, firstSegments: ["me", "orgs", "payments"] },
