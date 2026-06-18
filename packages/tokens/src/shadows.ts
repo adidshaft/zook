@@ -76,12 +76,6 @@ export const shadows = {
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 18 },
   }),
-  glowAmberSoft: elevation(1, darkPalette.feedback.warning, {
-    shadowOpacity: 0.06,
-  }),
-  glowRedSoft: elevation(1, darkPalette.feedback.danger, {
-    shadowOpacity: 0.06,
-  }),
   card: elevation(1, "#000000", {
     shadowOpacity: 0.08,
     shadowRadius: 18,

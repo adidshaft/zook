@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { elevation, materials, radii, shadows, spacing, useTheme } from "@/lib/theme";
+import { elevation, materials, radii, spacing, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
 import {
   pressWithHaptics,
@@ -31,7 +31,6 @@ export type SemanticSurface =
   | "successCard"
   | "moneyFlowCard"
   | "handoffCard";
-type CardGlowTone = "lime" | "amber" | "red" | "success";
 type CardSurface = "content" | "interactive" | "floating";
 type BrandMarkSize = "sm" | "md" | "lg";
 type ThemeMode = "light" | "dark";
@@ -49,13 +48,6 @@ const brandMarkSizes: Record<BrandMarkSize, number> = {
   sm: 32,
   md: 44,
   lg: 56,
-};
-
-const glassGlowStyles: Record<CardGlowTone, ViewStyle> = {
-  lime: shadows.glowLimeSoft,
-  success: shadows.glowLimeSoft,
-  amber: shadows.glowAmberSoft,
-  red: shadows.glowRedSoft,
 };
 
 function platformSurfaceShadow(
@@ -227,8 +219,6 @@ export function Card({
   children,
   style,
   contentStyle,
-  glow = false,
-  glowTone,
   variant = "default",
   padding,
   radius,
@@ -245,8 +235,6 @@ export function Card({
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
-  glow?: boolean;
-  glowTone?: CardGlowTone;
   variant?: CardVariant;
   semanticSurface?: SemanticSurface;
   padding?: number;
@@ -267,7 +255,6 @@ export function Card({
 }) {
   const { mode, palette } = useTheme();
   const resolvedVariant = variantForSemanticSurface(semanticSurface) ?? variant;
-  const resolvedGlowTone = glowTone ?? (glow ? "lime" : undefined);
   const resolvedRadius = radius ?? (resolvedVariant === "compact" ? radii.smallCard : radii.mainCard);
   const resolvedSurface = surface ?? (pressable || onPress ? "interactive" : "content");
   const surfaceColors = glassSurfaceColors(mode, palette, resolvedVariant, resolvedSurface);
@@ -275,8 +262,7 @@ export function Card({
   const shouldElevate =
     mode === "light" ||
     resolvedSurface === "floating" ||
-    resolvedSurface === "interactive" ||
-    Boolean(resolvedGlowTone);
+    resolvedSurface === "interactive";
 
   // Android draws `elevation` shadows behind the view; when the same view
   // has `overflow: hidden`, the shadow gets clipped *inside* the card and
@@ -290,7 +276,6 @@ export function Card({
       shouldElevate,
       palette.bg.sunken,
     ),
-    resolvedGlowTone ? glassGlowStyles[resolvedGlowTone] : null,
     disabled ? styles.disabled : null,
     style,
   ];
@@ -301,7 +286,6 @@ export function Card({
       borderColor: surfaceColors.borderColor,
       borderRadius: resolvedRadius,
     },
-    resolvedGlowTone ? styles.glassCardGlowBorder : null,
   ];
   const inner = (
     <View style={innerStyle}>
@@ -436,9 +420,6 @@ const styles = StyleSheet.create({
     right: 16,
     top: 0,
     zIndex: 1,
-  },
-  glassCardGlowBorder: {
-    borderColor: fallbackColors.limeBorder,
   },
   glassCardBlurLayer: {
     zIndex: 0,

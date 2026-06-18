@@ -216,6 +216,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   comments in global CSS and neutralized the mobile demo gym tagline copy.
 - **6/R83 Mobile card glow call sites** — removed glow-only emphasis from active/selected
   mobile cards where labels, chips, selected variants, and actions already communicate state.
+- **6/R84 Dead mobile card glow API** — removed the now-unused `Card` glow/glowTone API and
+  deleted amber/red glow token entries that no longer had app callers.
 
 ## 1. Functional / correctness
 
