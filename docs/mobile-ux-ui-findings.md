@@ -139,6 +139,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   date/money input, and severity-tone helper exports from the web primitive modules.
 - **6/R49 Web domain barrel cleanup** — replaced no-caller server domain forwarding-barrel
   imports with direct read-model/shared module imports and removed the empty forwarding files.
+- **6/R50 Web internal read-model types** — made no-caller server read-model types internal and
+  removed the now-unused plan exercise type file.
 
 ## 1. Functional / correctness
 

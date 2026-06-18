@@ -44,10 +44,6 @@ export async function getOrganizationDashboardData(
   );
 }
 
-export type OrganizationDashboardReadModel = Awaited<
-  ReturnType<typeof getOrganizationDashboardData>
->;
-
 export async function getOrganizationDashboardFastData(
   orgId: string,
   filters: DashboardBranchFilter = {},
