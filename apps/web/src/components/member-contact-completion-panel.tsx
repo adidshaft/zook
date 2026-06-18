@@ -72,6 +72,7 @@ export function MemberContactCompletionPanel({
   const copy = contactCopy(activeKind);
   const Icon = copy.icon;
   const completedCount = [contacts.email, contacts.phone].filter(Boolean).length;
+  const completionTone = completedCount === 2 ? "lime" : completedCount === 1 ? "amber" : "neutral";
   const activeValue = contacts[activeKind];
   const canRequest = Boolean(draft.trim()) && pending !== "request";
   const canVerify = Boolean(challenge && code.trim().length === 6) && pending !== "verify";
@@ -142,9 +143,7 @@ export function MemberContactCompletionPanel({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone={completedCount === 2 ? "lime" : "amber"}>
-              {completedCount}/2 contacts
-            </Pill>
+            <Pill tone={completionTone}>{completedCount}/2 contacts</Pill>
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-white">Account contact</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">{statusText}</p>

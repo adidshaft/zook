@@ -730,3 +730,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Premature contact verification cue (`R120`) is closed: the member contact
   completion panel no longer shows a fixed "OTP verified" badge, and its shield tone now
   follows the actual number of completed contact methods.
+- **[ui, fixed]** Overstated empty contact warning cue (`R121`) is closed: the member contact
+  completion badge now uses neutral for zero contacts, warning for partially complete contact
+  setup, and success only when both contact methods are present.
