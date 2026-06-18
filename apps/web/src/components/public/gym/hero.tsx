@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { Pill } from "@/components/glass-card";
-import { joinModeLabelForLocale, publicT, type PublicLocale } from "@/lib/public-i18n";
+import { joinModeLabelForLocale, joinModeTone, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
 
 export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
@@ -52,7 +52,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
             />
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <Pill tone="lime">{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
+            <Pill tone={joinModeTone(org.joinMode)}>{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
             {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
           </div>
         </div>

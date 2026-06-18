@@ -787,3 +787,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web desk entry-code cue (`R139`) is closed: desk queue entry
   codes now use neutral badge styling instead of informational blue, matching their role as
   identifiers beside private handles.
+- **[ui, fixed]** Inconsistent web public join-mode cue (`R140`) is closed: public gym hero
+  and discovery cards now share join-mode tone mapping, reserving success for open join and
+  warning for approval-required gyms.

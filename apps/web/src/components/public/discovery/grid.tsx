@@ -4,7 +4,7 @@ import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { formatInr } from "@/lib/format";
-import { joinModeLabelForLocale, localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
+import { joinModeLabelForLocale, joinModeTone, localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { GymResult } from "@/lib/public-gym-discovery";
 
 export function GymDiscoveryGrid({
@@ -67,7 +67,7 @@ export function GymDiscoveryGrid({
                   </p>
                 </div>
               </div>
-              <Pill tone="blue">{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
+              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {(gym.amenities ?? []).slice(0, 4).map((amenity) => <Pill key={amenity}>{amenity}</Pill>)}

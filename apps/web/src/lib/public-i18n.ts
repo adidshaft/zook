@@ -56,6 +56,12 @@ export function joinModeLabelForLocale(mode: string | null | undefined, locale: 
   return mode ? mode.replace(/[-_]+/g, " ").toLowerCase() : "Unknown";
 }
 
+export function joinModeTone(mode: string | null | undefined) {
+  if (mode === "OPEN_JOIN") return "lime" as const;
+  if (mode === "APPROVAL_REQUIRED") return "amber" as const;
+  return "neutral" as const;
+}
+
 export const publicMessages = {
   en: {
     languageSwitch: "हिंदी",
