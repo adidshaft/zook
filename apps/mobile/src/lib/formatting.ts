@@ -103,6 +103,18 @@ export function formatRedactedPhone(phone?: string | null, fallback = "No phone"
   return `****${phone.slice(-4)}`;
 }
 
+export function formatAgeLabel(dateOfBirth?: string | Date | null, fallback = "DOB not added") {
+  const date = toDate(dateOfBirth);
+  if (!date) return fallback;
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDelta = today.getMonth() - date.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < date.getDate())) {
+    age -= 1;
+  }
+  return `${age} years`;
+}
+
 export function joinModeLabel(
   mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
 ) {

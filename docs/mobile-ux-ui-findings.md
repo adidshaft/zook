@@ -527,3 +527,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile phone redaction helpers (`R46`) is closed: owner member
   detail and member-list rows now use shared `formatRedactedPhone` while preserving their fallback
   labels.
+- **[code, fixed]** Feature-local mobile age formatter (`R47`) is closed: reception surfaces
+  now use shared mobile `formatAgeLabel` instead of carrying date-of-birth age math locally.
