@@ -244,9 +244,8 @@ simulator; motion brief and physical; reduce-motion path verified.
 - Login: brand mark + a single glass card (cardSurface; iOS may use a subtle BlurView
   here since the screen is static) containing the method toggle, input, and CTA; OTP
   step uses the existing `OtpInput` restyled to 6 boxes with continuous corners,
-  focused box shows `border.focus` + slight scale; background: `bg.app` with ONE
-  large soft radial accent glow (a positioned View with accentSoft, blurRadius via
-  opacity gradient — no image asset).
+  focused box shows `border.focus` + slight scale; background stays `bg.app` with
+  no decorative radial glow layer or image asset.
 - Value props: full-bleed slides, display-scale headline, page dots → springy
   segmented progress; "Skip" stays top-right.
 - Keep ALL auth logic untouched — visual-only changes in these files.

@@ -278,6 +278,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   fallback workspace labels cannot regress to the old wording silently.
 - **6/R114 Mobile banner docs** — updated mobile redesign/premium-pass docs from the old
   `DemoBanner`/`demo-banner` references to the current `TestDataBanner` test-data banner.
+- **6/R115 Auth plan glow guidance** — updated the premium auth/onboarding plan so future
+  login work keeps a plain `bg.app` background instead of reintroducing a radial glow layer.
 
 ## 1. Functional / correctness
 
