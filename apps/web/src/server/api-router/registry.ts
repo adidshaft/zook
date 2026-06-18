@@ -19,6 +19,7 @@ import { handleHealthReadiness } from "./health-readiness";
 import { handleMeData } from "./me-data";
 import { handleMemberMemberships } from "./member-memberships";
 import { handleMemberPlansGoals } from "./member-plans-goals";
+import { handleMembershipSubscriptionActions } from "./membership-subscription-actions";
 import { handleNotificationsInbox } from "./notifications-inbox";
 import { handleOrganizationAuditLogs } from "./organization-audit-logs";
 import { handleOrganizationBilling } from "./organization-billing";
@@ -88,6 +89,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleOrganizationRoot, firstSegments: ["orgs"] },
   { handler: handleReports, firstSegments: ["orgs"] },
   { handler: handlePaymentSessions, firstSegments: ["payments"] },
+  { handler: handleMembershipSubscriptionActions, firstSegments: ["me", "orgs"] },
   { handler: handleMembershipPayments, firstSegments: ["me", "orgs"] },
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },

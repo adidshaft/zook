@@ -13,6 +13,10 @@ const couponsReferralsRouteSource = readFileSync(
   "utf8",
 );
 const filesRouteSource = readFileSync(new URL("./api-router/files.ts", import.meta.url), "utf8");
+const membershipSubscriptionActionsRouteSource = readFileSync(
+  new URL("./api-router/membership-subscription-actions.ts", import.meta.url),
+  "utf8",
+);
 const organizationRootRouteSource = readFileSync(
   new URL("./api-router/organization-root.ts", import.meta.url),
   "utf8",
@@ -107,8 +111,18 @@ const sensitiveRoutes = [
     source: platformPaymentsRouteSource,
     sourceLabel: "api-router/platform-payments.ts",
   },
-  { label: "member subscription switch", needle: 'pathMatches(path, ["me", "subscriptions", /.+/, "switch"])' },
-  { label: "org subscription switch", needle: 'pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "switch"])' },
+  {
+    label: "member subscription switch",
+    needle: 'pathMatches(path, ["me", "subscriptions", /.+/, "switch"])',
+    source: membershipSubscriptionActionsRouteSource,
+    sourceLabel: "api-router/membership-subscription-actions.ts",
+  },
+  {
+    label: "org subscription switch",
+    needle: 'pathMatches(path, ["orgs", /.+/, "subscriptions", /.+/, "switch"])',
+    source: membershipSubscriptionActionsRouteSource,
+    sourceLabel: "api-router/membership-subscription-actions.ts",
+  },
   {
     label: "saas subscription cancel",
     needle:
@@ -116,7 +130,12 @@ const sensitiveRoutes = [
     source: organizationBillingRouteSource,
     sourceLabel: "api-router/organization-billing.ts",
   },
-  { label: "autopay cancel", needle: 'pathMatches(path, ["me", "memberships", /.+/, "autopay"])' },
+  {
+    label: "autopay cancel",
+    needle: 'pathMatches(path, ["me", "memberships", /.+/, "autopay"])',
+    source: membershipSubscriptionActionsRouteSource,
+    sourceLabel: "api-router/membership-subscription-actions.ts",
+  },
   {
     label: "coupon validate",
     needle: 'pathMatches(path, ["orgs", /.+/, "coupons", "validate"])',
