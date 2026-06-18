@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import * as AppleAuthentication from "expo-apple-authentication";
-import Constants from "expo-constants";
 import { router, useLocalSearchParams } from "expo-router";
 import { ApiError } from "@zook/core/api";
 import {
-  ActivityIndicator,
   Keyboard,
   LayoutAnimation,
   Linking,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -29,7 +25,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
-type BusyAction = "otp" | "apple" | "google" | null;
+type BusyAction = "otp" | null;
 type LoginMethod = "phone" | "email";
 type MessageTone = "neutral" | "danger" | "success";
 
@@ -38,35 +34,11 @@ const PRIVACY_URL = "https://zookfit.in/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
-let googleSignInConfigured = false;
-let googleSignInModule:
-  | typeof import("@react-native-google-signin/google-signin")
-  | null
-  | undefined;
-async function getGoogleSigninModule() {
-  if (googleSignInModule !== undefined) {
-    return googleSignInModule;
-  }
-  try {
-    googleSignInModule = await import("@react-native-google-signin/google-signin");
-  } catch {
-    googleSignInModule = null;
-  }
-  return googleSignInModule;
-}
-
 function sanitizeOtpCode(value: string) {
   return value
     .normalize("NFKC")
     .replace(/[^0-9]/g, "")
     .slice(0, 6);
-}
-
-function isCanceledAuthError(error: unknown) {
-  return (
-    error instanceof Error &&
-    ("code" in error ? String(error.code) === "ERR_REQUEST_CANCELED" : false)
-  );
 }
 
 function readRetryAfterSeconds(error: ApiError) {
@@ -110,26 +82,8 @@ function isValidEmailIdentifier(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
-async function configureGoogleSignIn() {
-  if (googleSignInConfigured) return;
-  const module = await getGoogleSigninModule();
-  if (!module) {
-    throw new Error("Google sign-in is not available in Expo Go.");
-  }
-  module.GoogleSignin.configure({
-    scopes: ["email", "profile"],
-    webClientId:
-      (Constants.expoConfig?.extra?.googleWebClientId as string | undefined) ??
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId:
-      (Constants.expoConfig?.extra?.googleIosClientId as string | undefined) ??
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  });
-  googleSignInConfigured = true;
-}
-
 export default function Login() {
-  const { requestOtp, signInWithApple, signInWithGoogle, verifyOtp } = useAuth();
+  const { requestOtp, verifyOtp } = useAuth();
   const { t } = useI18n();
   const { palette } = useTheme();
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
@@ -317,81 +271,6 @@ export default function Login() {
     }
   }
 
-  async function handleAppleSignIn() {
-    setBusyAction("apple");
-    clearMessage();
-    try {
-      const available = await AppleAuthentication.isAvailableAsync();
-      if (!available) {
-        showMessage(t("auth.appleUnavailable"), "danger");
-        return;
-      }
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-      if (!credential.identityToken) {
-        showMessage(t("auth.appleNoToken"), "danger");
-        return;
-      }
-      const fullName = [
-        credential.fullName?.givenName,
-        credential.fullName?.middleName,
-        credential.fullName?.familyName,
-      ]
-        .filter(Boolean)
-        .join(" ");
-      await signInWithApple(credential.identityToken, fullName || undefined);
-      showMessage(t("auth.signedIn"), "success");
-    } catch (error) {
-      if (isCanceledAuthError(error)) return;
-      showMessage(
-        error instanceof ApiError && error.status === 501
-          ? t("auth.appleComingSoon")
-          : getApiErrorMessage(error),
-        "danger",
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setBusyAction("google");
-    clearMessage();
-    try {
-      await configureGoogleSignIn();
-      const module = await getGoogleSigninModule();
-      if (!module) {
-        showMessage(t("auth.googleUnavailable"), "danger");
-        return;
-      }
-      if (Platform.OS === "android") {
-        await module.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      }
-      const response = await module.GoogleSignin.signIn();
-      if (response.type !== "success") return;
-      const idToken = response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
-      if (!idToken) {
-        showMessage(t("auth.googleNoToken"), "danger");
-        return;
-      }
-      await signInWithGoogle(idToken);
-      showMessage(t("auth.signedIn"), "success");
-    } catch (error) {
-      showMessage(
-        error instanceof ApiError && error.status === 501
-          ? t("auth.googleComingSoon")
-          : getApiErrorMessage(error),
-        "danger",
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
   return (
     <ZookScreen ambient={false} testID="login-screen">
       <View pointerEvents="none" style={[styles.accentGlow, { backgroundColor: palette.surface.accentSoft }]} />
@@ -559,29 +438,6 @@ export default function Login() {
               </View>
             ) : (
               <>
-                <View style={styles.dividerRow}>
-                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
-                  <Text style={[styles.dividerText, { color: palette.text.tertiary }]}>
-                    {t("auth.orContinueWith")}
-                  </Text>
-                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
-                </View>
-                <View style={styles.ssoRow}>
-                  {Platform.OS === "ios" ? (
-                    <AppleSsoButton
-                      testID="login-apple"
-                      busy={busyAction === "apple"}
-                      disabled={busy}
-                      onPress={() => void handleAppleSignIn()}
-                    />
-                  ) : null}
-                  <GoogleSsoButton
-                    testID="login-google"
-                    busy={busyAction === "google"}
-                    disabled={busy}
-                    onPress={() => void handleGoogleSignIn()}
-                  />
-                </View>
                 <Text style={[styles.legalText, { color: palette.text.tertiary }]}>
                   By continuing you agree to our{" "}
                   <Text
@@ -637,92 +493,6 @@ export default function Login() {
         ) : null}
       </KeyboardAwareScreen>
     </ZookScreen>
-  );
-}
-
-function AppleSsoButton({
-  busy,
-  disabled,
-  onPress,
-  testID,
-}: {
-  busy: boolean;
-  disabled: boolean;
-  onPress: () => void;
-  testID?: string;
-}) {
-  const { mode } = useTheme();
-  if (Platform.OS !== "ios") {
-    return null;
-  }
-  return (
-    <View style={[styles.nativeSsoShell, disabled ? styles.ssoButtonDisabled : null]}>
-      <AppleAuthentication.AppleAuthenticationButton
-        testID={testID}
-        accessibilityLabel="Apple"
-        buttonStyle={
-          mode === "dark"
-            ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-            : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-        }
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-        style={styles.nativeSsoButton}
-        cornerRadius={14}
-        onPress={() => {
-          if (!disabled) onPress();
-        }}
-      />
-      {busy ? (
-        <View pointerEvents="none" style={styles.ssoBusyOverlay}>
-          <ActivityIndicator size="small" color={mode === "dark" ? "#000000" : "#FFFFFF"} />
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function GoogleSsoButton({
-  busy,
-  disabled,
-  onPress,
-  testID,
-}: {
-  busy: boolean;
-  disabled: boolean;
-  onPress: () => void;
-  testID?: string;
-}) {
-  const { palette } = useTheme();
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel="Google"
-      accessibilityState={{ busy, disabled }}
-      disabled={disabled || busy}
-      onPress={() => {
-        if (!disabled) onPress();
-      }}
-      style={[
-        styles.fallbackSsoButton,
-        {
-          backgroundColor: palette.surface.default,
-          borderColor: palette.border.default,
-        },
-        disabled ? styles.ssoButtonDisabled : null,
-      ]}
-    >
-      {busy ? (
-        <ActivityIndicator size="small" color={palette.text.primary} />
-      ) : (
-        <View style={styles.busyRow}>
-          <Text style={styles.googleFallbackMark}>G</Text>
-          <Text style={[styles.fallbackSsoLabel, { color: palette.text.primary }]}>
-            Sign in with Google
-          </Text>
-        </View>
-      )}
-    </Pressable>
   );
 }
 
@@ -809,67 +579,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 132,
   },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    ...typography.caption,
-  },
-  ssoRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  nativeSsoShell: {
-    flex: 1,
-    minHeight: 48,
-    position: "relative",
-  },
-  nativeSsoButton: {
-    width: "100%",
-    minHeight: 48,
-    borderRadius: 14,
-  },
-  fallbackSsoButton: {
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fallbackSsoLabel: {
-    ...typography.button,
-  },
-  googleFallbackMark: {
-    color: "#4285F4",
-    fontFamily: "Inter_700Bold",
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  ssoButtonDisabled: {
-    opacity: 0.6,
-  },
-  ssoBusyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   legalText: {
     ...typography.caption,
     textAlign: "center",
   },
   legalLink: {
     fontFamily: "Inter_700Bold",
-  },
-  busyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
   },
   messageText: {
     ...typography.body,

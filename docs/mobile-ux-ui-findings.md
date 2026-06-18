@@ -72,6 +72,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **6/R18 Foundation barrel aliases** — removed duplicate foundation re-exports for chips,
   metric helpers, tone helpers, profile shortcuts, icon bubbles, and input fields so those
   primitives only come through their dedicated barrels.
+- **6/R19 Non-actionable login SSO controls** — removed Apple/Google sign-in buttons and
+  "coming soon" login strings from the mobile sign-in card until those backends are live.
 
 ## 1. Functional / correctness
 
@@ -225,3 +227,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Foundation barrel aliases (`R18`) is closed: `foundation.tsx` now exposes
   the actual foundation surfaces/buttons only, while chips, metrics, tone helpers, profile
   shortcuts, icon bubbles, date fields, and OTP inputs stay on their dedicated primitive barrels.
+- **[code, fixed]** Non-actionable login SSO controls (`R19`) is closed: the login surface no
+  longer presents Apple/Google controls whose fallback path was an unavailable/coming-soon error.
