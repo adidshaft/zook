@@ -199,6 +199,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   infinite orbital rotations so the first viewport no longer carries always-on decorative motion.
 - **6/R75 Dashboard pulse-dot motion** — changed the shared web `PulseDot` from an infinite
   pulsing animation to a static status dot while preserving color, size, and layout.
+- **6/R76 Line chart endpoint pulse** — removed the dashboard line chart's infinite endpoint
+  halo loop and stale motion comments while keeping the static endpoint marker.
 
 ## 1. Functional / correctness
 

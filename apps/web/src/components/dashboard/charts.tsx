@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Premium dashboard primitives — SVG charts and KPI tiles that animate
- * on mount. All charts are zero-dep, hand-rolled SVG with smooth motion
- * via framer-motion. They respect prefers-reduced-motion.
+ * Dashboard primitives — SVG charts and KPI tiles with reduced-motion-aware
+ * mount transitions.
  */
 
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
@@ -441,7 +440,6 @@ export function LineChart({
           </text>
         );
       })}
-      {/* area + line */}
       <motion.path
         d={area}
         fill={`url(#line-area-${id})`}
@@ -459,18 +457,6 @@ export function LineChart({
         initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ duration: 1.2, ease: EASE }}
-      />
-      {/* last point pulse */}
-      <motion.circle
-        cx={last[0]}
-        cy={last[1]}
-        r="11"
-        fill={color}
-        opacity="0.18"
-        initial={reduce ? { scale: 1, opacity: 0.18 } : { scale: 0 }}
-        animate={{ scale: [0.6, 1.4, 0.9], opacity: [0.3, 0, 0.3] }}
-        transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut", delay: 1 }}
-        style={{ transformOrigin: `${last[0]}px ${last[1]}px` }}
       />
       <motion.circle
         cx={last[0]}
