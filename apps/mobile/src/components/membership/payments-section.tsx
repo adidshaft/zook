@@ -45,7 +45,7 @@ export function PaymentsSection({
             return (
               <Card key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>
-                  <IconBubble icon="receipt-outline" tone="lime" size={34} />
+                  <IconBubble icon="receipt-outline" tone={toneForPaymentStatus(payment.status)} size={34} />
                 </View>
                 <View style={styles.paymentCopy}>
                   <View style={styles.paymentHeader}>

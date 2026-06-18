@@ -671,3 +671,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   order tones instead of fixed success/amber cues.
 - **[ui, fixed]** Misleading owner stock pickup order tone (`R100`) is closed: owner stock
   pickup rows now use the shared shop order status tone instead of a fixed success icon.
+- **[ui, fixed]** Misleading payment/order leading icon tones (`R101`) is closed: membership
+  payment rows and reception pickup rows now tone their leading icons from the same status
+  helpers used by their visible status chips.

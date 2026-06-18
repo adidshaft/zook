@@ -80,7 +80,7 @@ export function ReceptionOrdersScreenBody() {
                     contentStyle={styles.queueCard}
                   >
                     <View style={styles.queueHeader}>
-                      <IconBubble icon="bag-handle-outline" tone="lime" size={38} />
+                      <IconBubble icon="bag-handle-outline" tone={toneForShopOrderStatus(order.status)} size={38} />
                       <View style={styles.queueCopy}>
                         <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
                           {order.user?.name ?? "Member pickup"}
