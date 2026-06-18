@@ -91,6 +91,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   exported feedback primitives plus network banners directly from the main primitive barrel.
 - **6/R27 Unused skeleton exports** — removed no-caller `TrackingHistorySkeleton` and
   `SettingsSkeleton` shapes from the mobile skeleton module.
+- **6/R28 Primitive card barrel imports** — flattened the card primitive barrel so it directly
+  re-exports card helpers instead of creating unused local bindings.
 
 ## 1. Functional / correctness
 
