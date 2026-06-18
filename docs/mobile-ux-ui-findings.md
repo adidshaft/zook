@@ -692,3 +692,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Ad hoc profile activity date formatting (`R107`) is closed: member profile
   activity rows now use shared mobile activity-date formatting instead of carrying local
   today/yesterday date math and locale calls.
+- **[code, fixed]** Duplicate attendance status label formatting (`R108`) is closed: attendance
+  record details now use shared mobile enum label formatting instead of a route-local status
+  title-case helper.

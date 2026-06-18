@@ -22,7 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
-import { formatDurationSeconds, formatTime } from "@/lib/formatting";
+import { formatDurationSeconds, formatTime, titleCaseFromCode } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -77,14 +77,6 @@ function toAttendanceFallbackRecord(
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function titleCaseStatus(status?: string | null) {
-  if (status === "PENDING_APPROVAL") return "Pending";
-  if (status === "APPROVED") return "Approved";
-  if (status === "FLAGGED") return "Flagged";
-  if (status === "REJECTED") return "Rejected";
-  return "Recorded";
 }
 
 const fallbackDefaultBranchName = ["Default", "Branch"].join(" ");
@@ -393,7 +385,7 @@ export default function AttendanceResultScreen() {
                 <DetailLine label="Plan" value={planName} icon="reader-outline" />
                 <DetailLine
                   label="Status"
-                  value={titleCaseStatus(record.status)}
+                  value={titleCaseFromCode(record.status ?? "RECORDED")}
                   icon="checkmark-circle-outline"
                   highlight
                 />
