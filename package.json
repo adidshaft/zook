@@ -47,6 +47,7 @@
     "db:studio": "tsx scripts/prisma-db.ts studio --schema prisma/schema.prisma",
     "db:seed": "pnpm --filter @zook/db db:seed",
     "db:fk-inventory": "tsx scripts/generate-fk-inventory.ts",
+    "db:a1.5:sql": "tsx scripts/a1.5-single-active-subscription-sql.ts",
     "icons:generate": "node scripts/generate-zook-icons.mjs",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:pilot": "tsx scripts/seed-pilot.ts",
