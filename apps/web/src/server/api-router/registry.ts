@@ -1,5 +1,4 @@
 import type { NextRequest, NextResponse } from "next/server";
-import { handleStaffPlansGoals } from "./core";
 import { handleAi } from "./ai";
 import { handleAttendance } from "./attendance";
 import {
@@ -34,6 +33,7 @@ import { handleOrganizationProfile } from "./organization-profile";
 import { handleOrganizationRoot } from "./organization-root";
 import { handlePaymentSessions } from "./payment-sessions";
 import { handlePersonalTraining } from "./personal-training";
+import { handlePlansChallenges } from "./plans-challenges";
 import { handlePlatformAudit } from "./platform-audit";
 import { handlePlatformBroadcasts } from "./platform-broadcasts";
 import { handlePlatformFlags } from "./platform-flags";
@@ -98,6 +98,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
   { handler: handleManualPayments, firstSegments: ["orgs"] },
   { handler: handlePersonalTraining, firstSegments: ["orgs"] },
+  { handler: handlePlansChallenges, firstSegments: ["orgs"] },
   { handler: handleTrainerClientWellness, firstSegments: ["orgs"] },
   { handler: handleTrainerOperations, firstSegments: ["orgs"] },
   { handler: handleClasses, firstSegments: ["orgs"] },
@@ -113,10 +114,6 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handlePlatformPayments, firstSegments: ["platform"] },
   { handler: handlePlatformSettings, firstSegments: ["platform"] },
   { handler: handlePlatformUsers, firstSegments: ["platform"] },
-  {
-    handler: handleStaffPlansGoals,
-    firstSegments: ["me", "orgs", "staff-invitations"],
-  },
 ];
 
 export const apiRouteHandlers = apiRouteHandlerEntries.map((entry) => entry.handler);
