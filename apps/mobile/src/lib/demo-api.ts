@@ -97,7 +97,7 @@ function demoProfile() {
       weightKg: 78,
       dietPreference: profile?.dietPreference ?? "Vegetarian",
       allergies: profile?.allergyNote ?? "None added",
-      summaryNote: "Sample profile saved on this device.",
+      summaryNote: "Local test profile saved on this device.",
       latestMeasurementAt: nowIso(),
     },
   };
@@ -414,7 +414,7 @@ export async function demoMobileApiFetch<T>(
       )
     ) {
       throw new Error(
-        "Use a seeded @zook.local account or +91 98765 43210 with OTP 000000 for demo mode.",
+        "Use a seeded @zook.local account or +91 98765 43210 with OTP 000000 for local test mode.",
       );
     }
     return {
@@ -997,16 +997,16 @@ export async function demoMobileApiFetch<T>(
           { title: "Recovery", body: "Keep effort moderate and review discomfort." },
         ],
       },
-      createdPlan: { id: "offline-ai-plan", title: "Sample workout draft" },
+      createdPlan: { id: "offline-ai-plan", title: "Local workout draft" },
     } as T;
   }
 
   if (pathname === "/ai/chat") {
     return {
       answer:
-        "Sample answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+        "Local answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
       response:
-        "Sample answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
+        "Local answer: keep the workout moderate today, hydrate, and ask your trainer to review any pain or fatigue before increasing load.",
       usage: {
         provider: "offline-demo",
         requestType: "CHAT",
@@ -1015,5 +1015,5 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
-  throw new Error("This action is not available in offline demo mode.");
+  throw new Error("This action is not available in local test mode.");
 }

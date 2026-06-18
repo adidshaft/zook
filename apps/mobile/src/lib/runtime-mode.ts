@@ -169,11 +169,11 @@ export function getMobileRuntimeConfigError() {
   }
 
   if (apiMode === "offline-demo" && !isDemoBundleIncluded()) {
-    return "Sample mode is not included in this app build.";
+    return "Local test mode is not included in this app build.";
   }
 
   if (apiMode === "offline-demo" && appEnv !== "local") {
-    return "Sample mode is only available in local builds.";
+    return "Local test mode is only available in local builds.";
   }
 
   return undefined;

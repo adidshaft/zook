@@ -179,6 +179,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   "Use test check-in" so the dev-only control describes its actual attendance action.
 - **6/R66 Runtime diagnostics mock wording** — changed staging implicit-provider diagnostics
   from "mock mode" to "test-provider mode" to match the cleaned public status language.
+- **6/R67 Mobile local test wording** — replaced remaining mobile runtime/offline transport
+  "sample" and "demo mode" user-facing copy with local test wording while keeping internal
+  runtime identifiers unchanged.
 
 ## 1. Functional / correctness
 
