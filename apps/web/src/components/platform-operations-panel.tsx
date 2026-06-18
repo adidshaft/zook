@@ -792,7 +792,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
-                description="Find members, staff, owners, and demo accounts across the platform."
+                description="Find members, staff, owners, and seeded test accounts across the platform."
                 badge={
                   <Pill tone={usersState.loading ? "amber" : "blue"}>
                     {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
@@ -968,7 +968,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment ledger"
-                description="Demo and live payment records appear here immediately after checkout or desk payment creation."
+                description="Test and live payment records appear here immediately after checkout or desk payment creation."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "blue"}>
                     {paymentsState.loading && !paymentRows.length
@@ -998,7 +998,7 @@ export function PlatformOperationsPanel({
                         <div>
                           <p className="font-medium text-white">{payment.id}</p>
                           <p className="mt-1 text-xs text-white/45">
-                            {payment.providerRef ?? payment.provider ?? "Manual/demo"}
+                            {payment.providerRef ?? payment.provider ?? "Manual entry"}
                           </p>
                         </div>
                       ),
@@ -1066,7 +1066,7 @@ export function PlatformOperationsPanel({
                       {
                         label: "Status",
                         value: formatEnumLabel(selectedPayment.payment.status),
-                        meta: selectedPayment.payment.provider ?? "manual/demo",
+                        meta: selectedPayment.payment.provider ?? "Manual entry",
                       },
                       {
                         label: "Refunds",
@@ -1080,7 +1080,7 @@ export function PlatformOperationsPanel({
                       {
                         label: "Events",
                         value: formatCompactNumber(selectedPayment.events.length),
-                        meta: "Provider and mock events",
+                        meta: "Provider and test events",
                       },
                     ]}
                   />
