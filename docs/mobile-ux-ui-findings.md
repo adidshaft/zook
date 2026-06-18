@@ -240,6 +240,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   the now-unused subtle glow palette variables.
 - **6/R95 Dead exported glow tokens** — removed self-only `zookShadows.glowLime` and
   `opacity.glowAmbient` exports after repo-wide reference checks showed no callers.
+- **6/R96 Static status dot naming** — renamed the shared web `PulseDot` helper to
+  `StatusDot` now that the component no longer carries pulse motion.
 
 ## 1. Functional / correctness
 

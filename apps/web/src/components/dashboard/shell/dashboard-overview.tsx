@@ -28,8 +28,8 @@ import {
   KPITile,
   LegendItem,
   LineChart,
-  PulseDot,
   SectionHero,
+  StatusDot,
 } from "../charts";
 import {
   useOwnerPrefs,
@@ -266,7 +266,7 @@ export function DashboardOverview({
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              <PulseDot tone={accent} size={6} />
+              <StatusDot tone={accent} size={6} />
               Live
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">

@@ -12,7 +12,7 @@ import {
   Smartphone,
   Users,
 } from "lucide-react";
-import { ActivityRow, KPITile, PulseDot, SectionHero } from "@/components/dashboard/charts";
+import { ActivityRow, KPITile, SectionHero, StatusDot } from "@/components/dashboard/charts";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { TrainerCustomisationPanel } from "@/components/trainer-customisation-panel";
 
@@ -54,7 +54,7 @@ export function CoachPage({
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              <PulseDot tone="lime" size={6} />
+              <StatusDot tone="lime" size={6} />
               Live signal
             </span>
             <Pill tone="lime">Trainer</Pill>

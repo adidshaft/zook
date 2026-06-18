@@ -802,7 +802,7 @@ export function ActivityRow({
   );
 }
 
-export function PulseDot({ tone = "lime", size = 8 }: { tone?: ChartTone; size?: number }) {
+export function StatusDot({ tone = "lime", size = 8 }: { tone?: ChartTone; size?: number }) {
   const color = TONE_COLORS[tone];
   return (
     <span className="inline-flex rounded-full" style={{ width: size, height: size, background: color }} />
