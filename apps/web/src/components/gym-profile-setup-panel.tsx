@@ -309,7 +309,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
         ) : null}
       </GlassCard>
 
-      {/* Premium Horizontal Sub-Tab bar */}
       <div className="flex justify-start overflow-x-auto no-scrollbar rounded-3xl border border-[var(--border)] bg-[var(--surface)]/95 p-1.5 backdrop-blur-xl">
         <div className="flex gap-1.5 w-full">
           {tabItems.map((tab) => {
@@ -328,16 +327,12 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               >
                 <Icon size={14} className={`shrink-0 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
                 <span>{tab.label}</span>
-                {isActive && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-strong)] animate-pulse shrink-0 ml-0.5" />
-                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Active Tab Panel Content */}
       <div className="relative min-h-[400px]">
         {activeTab === "basic" && (
           <GlassCard>

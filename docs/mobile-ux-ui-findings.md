@@ -190,6 +190,9 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   that only exported `{}` and had no exact type-import callers.
 - **6/R71 Dead web status-dot pulse API** — removed the unused `StatusDot` pulse prop so the
   shared dashboard primitive no longer carries an uncalled animated status affordance.
+- **6/R72 Gym profile tab pulse cue** — removed the pulsing active-tab dot and stale decorative
+  comments from the gym profile setup panel; active tab selection remains visible through
+  background, border, text, and icon treatment.
 
 ## 1. Functional / correctness
 
