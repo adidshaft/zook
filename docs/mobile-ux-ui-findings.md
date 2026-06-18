@@ -838,3 +838,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile trainer dashboard row cues (`R156`) are closed: recent
   feedback and manual plan-builder leading icons now use neutral accents instead of
   informational blue, keeping completion and mode state on the trailing chips.
+- **[ui, fixed]** Overstated mobile invoice document cue (`R157`) is closed: membership
+  invoice row document icons now use neutral accents instead of informational blue, keeping
+  status color tied to payment rows and chips.

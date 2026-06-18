@@ -108,7 +108,7 @@ export function PaymentsSection({
           <View style={styles.stack}>
             {invoices.map((invoice) => (
               <Card key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
-                <IconBubble icon="newspaper-outline" tone="blue" size={34} />
+                <IconBubble icon="newspaper-outline" tone="neutral" size={34} />
                 <View style={styles.invoiceCopy}>
                   <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
                     {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
