@@ -823,3 +823,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web staff assignment count cue (`R151`) is closed: the staff
   roles header count now uses a neutral badge instead of informational blue, keeping status
   treatment on loading, errors, and row-level status chips.
+- **[ui, fixed]** Overstated web class capacity cue (`R152`) is closed: scheduled class
+  enrollment/capacity detail now uses a neutral badge instead of informational blue, keeping
+  class state on the adjacent status chip.

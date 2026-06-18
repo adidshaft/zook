@@ -290,7 +290,7 @@ export function ClassesDashboardRoute({
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                  <Pill tone="blue">
+                  <Pill>
                     <Users className="h-3.5 w-3.5" />
                     {entry.enrollmentCount}/{entry.maxCapacity}
                   </Pill>
