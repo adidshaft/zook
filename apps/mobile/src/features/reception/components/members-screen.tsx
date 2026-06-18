@@ -2,8 +2,9 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MemberList } from "@/components/domain/member-list";
+import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
-import { formatAgeLabel } from "@/lib/formatting";
+import { formatAgeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -149,8 +150,8 @@ export function ReceptionMembersScreenBody() {
                   title="Membership"
                   subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
                   trailing={
-                    <Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>
-                      {membership?.status ?? "No membership"}
+                    <Pill tone={membership ? toneForStatus(membership.status) : "amber"}>
+                      {membership ? titleCaseFromCode(membership.status) : "No membership"}
                     </Pill>
                   }
                 />

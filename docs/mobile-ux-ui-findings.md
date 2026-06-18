@@ -657,3 +657,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   lime.
 - **[ui, fixed]** Misleading reception order status tone (`R95`) is closed: reception pickup
   rows now use the shared shop order status tone instead of showing every order status as lime.
+- **[ui, fixed]** Misleading reception membership status tones (`R96`) is closed: reception
+  member and payment pickers now use shared membership status tones and formatted labels instead
+  of raw enum text with only active/amber coloring.

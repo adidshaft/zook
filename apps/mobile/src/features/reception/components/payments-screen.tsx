@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
+import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
@@ -143,9 +144,15 @@ export function ReceptionPaymentsScreenBody() {
                             </Text>
                           </View>
                           <Pill
-                            tone={record.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}
+                            tone={
+                              record.activeSubscription
+                                ? toneForStatus(record.activeSubscription.status)
+                                : "amber"
+                            }
                           >
-                            {record.activeSubscription?.status ?? "No plan"}
+                            {record.activeSubscription
+                              ? titleCaseFromCode(record.activeSubscription.status)
+                              : "No plan"}
                           </Pill>
                         </Pressable>
                       ))}
