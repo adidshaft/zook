@@ -20,7 +20,6 @@ import {
   averageCompletionFor,
   clientDetailTabs,
   fitnessGoalFor,
-  initialsFor,
   planCountLabel,
   selectedTrainerClient,
   trainerClientDetailPath,
@@ -29,7 +28,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
-import { formatDateTime } from "@/lib/formatting";
+import { formatDateTime, formatInitials } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -146,7 +145,7 @@ export default function TrainerClientOverviewScreen() {
           <Card variant="compact" contentStyle={styles.clientHeroContent}>
             <View style={styles.clientHeroTop}>
               <View style={[styles.clientAvatar, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
-                <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{initialsFor(clientName)}</Text>
+                <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{formatInitials(clientName, "ZK")}</Text>
                 <View style={[styles.clientAvatarDot, { backgroundColor: palette.accent.base, borderColor: palette.bg.elevated }]} />
               </View>
               <View style={styles.clientHeroCopy}>

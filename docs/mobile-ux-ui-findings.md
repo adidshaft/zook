@@ -775,3 +775,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile public-gym initials cleanup (`R135`) is closed: public
   gym and trainer fallback avatars now use the shared mobile initials formatter instead of
   a route-local name-splitting helper.
+- **[code, fixed]** Dead mobile trainer initials helper cleanup (`R136`) is closed: the
+  unused trainer initials export was removed after fallback-avatar surfaces moved to shared
+  initials formatting.

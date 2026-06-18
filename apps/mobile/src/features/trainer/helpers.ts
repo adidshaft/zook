@@ -74,16 +74,6 @@ export function planCountLabel(count: number) {
   return `${count} active ${count === 1 ? "plan" : "plans"}`;
 }
 
-export function initialsFor(name?: string | null) {
-  const cleanName = name?.trim();
-  if (!cleanName) return "ZK";
-  return cleanName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
 export function fitnessGoalFor(client?: TrainerClientRecord | null) {
   return client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
 }
