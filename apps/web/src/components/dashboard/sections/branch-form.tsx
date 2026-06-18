@@ -46,7 +46,7 @@ export function BranchForm({
 
   return (
     <div className="grid gap-4">
-      {isStepLayout && <Pill tone="blue" className="w-fit">Step 1 · Location</Pill>}
+      {isStepLayout && <Pill className="w-fit">Step 1 · Location</Pill>}
       
       {variant === "full" && (
         <div className="grid gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
@@ -104,7 +104,7 @@ export function BranchForm({
         </div>
       )}
 
-      {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 2 · Details</Pill>}
+      {isStepLayout && <Pill className="w-fit mt-2">Step 2 · Details</Pill>}
 
       <div className="grid gap-3 md:grid-cols-2">
         <TextInput
@@ -214,7 +214,7 @@ export function BranchForm({
 
       {variant === "full" && (
         <>
-          {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 3 · Plans and Products</Pill>}
+          {isStepLayout && <Pill className="w-fit mt-2">Step 3 · Plans and Products</Pill>}
           <div className="grid gap-2">
             <span className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
               Commerce setup
@@ -250,7 +250,7 @@ export function BranchForm({
         </>
       )}
 
-      {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 4 · Working Hours</Pill>}
+      {isStepLayout && <Pill className="w-fit mt-2">Step 4 · Working Hours</Pill>}
       <BranchHoursEditor
         value={form.hoursText}
         onChange={(hoursText) => setForm((current) => ({ ...current, hoursText }))}

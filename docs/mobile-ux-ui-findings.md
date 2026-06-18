@@ -808,3 +808,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web billing section labels (`R146`) are closed: billing plan
   packaging and referral section labels now use neutral badges instead of informational blue,
   keeping stronger color cues for actual billing state and actions.
+- **[ui, fixed]** Overstated web branch-form step cues (`R147`) are closed: create-branch
+  step markers now use neutral badges instead of informational blue, matching their role as
+  structural wayfinding rather than state.
