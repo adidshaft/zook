@@ -60,6 +60,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `LoadingState`, and `EntryCodeCard` primitive wrappers after exact reference checks.
 - **6/R14 Unused public primitive exports** — removed unused `ChipGroup` and old summary-card
   variants, and made the raw `TextField` base private to the input primitive module.
+- **6/R15 Internal-only row/header helpers** — removed public `DetailRow` exports and folded
+  `SectionLabel` into `SectionHeader` after confirming no app callers.
 
 ## 1. Functional / correctness
 
@@ -196,3 +198,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   `AlertCard`, `TaskResultCard`, and `WebHandoffCard` were removed after exact reference checks,
   and `TextField` is no longer exported as a public primitive because only `Input`,
   `FormField`, `SearchBar`, and `SearchField` use it internally.
+- **[code, fixed]** Internal-only row/header helpers (`R15`) is closed: `DetailRow` is no
+  longer exposed from primitive barrels, and `SectionLabel` was folded into `SectionHeader`
+  before deleting the standalone file.
