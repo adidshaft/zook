@@ -348,7 +348,7 @@ pnpm dev:web
 ### Mock payment not completing
 
 - `ALLOW_MOCK_PAYMENT_COMPLETION` is set to `false` by default
-- For local testing, leave it as-is — mock mode auto-enables it when `APP_ENV=local`
+- For local testing, leave it as-is — test-provider mode auto-enables it when `APP_ENV=local`
 - For staging, explicitly set `ALLOW_MOCK_PAYMENT_COMPLETION="true"` in `.env`
 
 ---
