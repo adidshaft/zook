@@ -57,7 +57,7 @@ async function renderMembershipSurface(session: AuthSessionSummary, locale: Publ
         <GlassCard variant="strong" className="p-6 md:p-8">
           <Pill tone="lime">Member profile</Pill>
           {session.user.privateHandle ? (
-            <Pill tone="blue" className="ml-2">
+            <Pill className="ml-2">
               Private ID: {session.user.privateHandle}
             </Pill>
           ) : null}

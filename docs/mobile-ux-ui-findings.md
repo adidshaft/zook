@@ -883,3 +883,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web member diet macro cue (`R171`) is closed: meal calorie and
   macro summary badges now use neutral styling instead of informational blue, matching their
   role as nutritional metadata rather than delivery or health status.
+- **[ui, fixed]** Overstated web member private-ID cue (`R172`) is closed: the `/me` route
+  private identifier badge now uses neutral styling instead of informational blue, matching
+  the shared member membership surface and desk private-ID treatment.
