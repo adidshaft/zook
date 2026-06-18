@@ -5,13 +5,36 @@ import { zookDemoFixtures } from "@zook/core";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
+import { publicAbsoluteUrl, publicSocialImage } from "@/lib/public-metadata";
 import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
 
-export const metadata: Metadata = {
-  title: "Referral link | Zook",
-  description: "Continue to a gym membership page from a Zook referral link.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}): Promise<Metadata> {
+  const { code } = await params;
+  const normalizedCode = code.trim().toUpperCase();
+  return {
+    title: "Referral link | Zook",
+    description: "Continue to a gym membership page from a Zook referral link.",
+    robots: { index: false, follow: false },
+    alternates: { canonical: `/r/${normalizedCode}` },
+    openGraph: {
+      title: "Referral link | Zook",
+      description: "Continue to a gym membership page from a Zook referral link.",
+      type: "website",
+      url: publicAbsoluteUrl(`/r/${normalizedCode}`),
+      images: [{ url: publicSocialImage(), alt: "Referral link | Zook" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Referral link | Zook",
+      description: "Continue to a gym membership page from a Zook referral link.",
+      images: [publicSocialImage()],
+    },
+  };
+}
 
 async function referralUsername(code: string) {
   const normalizedCode = code.trim().toUpperCase();

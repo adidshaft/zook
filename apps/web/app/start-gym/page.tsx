@@ -6,6 +6,7 @@ import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { StartGymPanel } from "@/components/start-gym-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { publicT, resolvePublicLocale } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
@@ -13,6 +14,19 @@ export const metadata: Metadata = {
   title: "Start your gym | Zook",
   description: "Create a gym on Zook and continue into billing setup.",
   robots: { index: false, follow: false },
+  alternates: { canonical: "/start-gym" },
+  openGraph: {
+    title: "Start your gym on Zook",
+    description: "Create a gym on Zook and continue into billing setup.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Start your gym on Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Start your gym on Zook",
+    description: "Create a gym on Zook and continue into billing setup.",
+    images: [publicSocialImage()],
+  },
 };
 
 function normalizeTier(value?: string | string[]) {

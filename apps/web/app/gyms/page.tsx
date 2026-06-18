@@ -10,6 +10,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 import {
   searchGyms,
   toPositivePage,
@@ -23,6 +24,18 @@ const defaultMetadata: Metadata = {
   title: "Find a gym | Zook",
   description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
   alternates: { canonical: "/gyms" },
+  openGraph: {
+    title: "Find a gym | Zook",
+    description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Find a gym | Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Find a gym | Zook",
+    description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
+    images: [publicSocialImage()],
+  },
 };
 
 type GymSearchParams = Promise<{
@@ -60,6 +73,18 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical: city ? `/gyms?city=${encodeURIComponent(city)}` : q ? `/gyms?q=${encodeURIComponent(q)}` : "/gyms",
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: [{ url: publicSocialImage(), alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [publicSocialImage()],
     },
   };
 }

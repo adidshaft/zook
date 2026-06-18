@@ -160,6 +160,15 @@ export async function generateMetadata({
         },
       ],
     },
+    twitter: {
+      card: "summary_large_image",
+      title: `Join ${data.org.name} | Zook`,
+      description: `Continue membership signup for ${data.org.name}.`,
+      images: [
+        data.org.coverImageUrl ??
+          publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+      ],
+    },
   };
 }
 

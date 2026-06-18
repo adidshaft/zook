@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginPanel } from "@/components/login-panel";
@@ -10,6 +11,26 @@ import {
   resolvePublicLocale,
 } from "@/lib/public-i18n";
 import { getOrigins, webHostFromHeader } from "@/lib/origins";
+import { publicSocialImage } from "@/lib/public-metadata";
+
+export const metadata: Metadata = {
+  title: "Verify OTP | Zook",
+  description: "Verify your one-time code to continue signing in to Zook.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/verify-otp" },
+  openGraph: {
+    title: "Verify OTP on Zook",
+    description: "Verify your one-time code to continue signing in to Zook.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Verify OTP on Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Verify OTP on Zook",
+    description: "Verify your one-time code to continue signing in to Zook.",
+    images: [publicSocialImage()],
+  },
+};
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Prisma, prisma } from "@zook/db";
 import { CheckoutStatusEffect } from "@/components/checkout-status-effect";
@@ -5,6 +6,7 @@ import { HostedCheckoutExpiryNotice } from "@/components/hosted-checkout-expiry-
 import { RazorpayCheckoutPanel } from "@/components/razorpay-checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
 import { formatInr, formatEnumLabel, formatDateTime } from "@/lib/format";
+import { publicSocialImage } from "@/lib/public-metadata";
 
 function readCheckoutData(metadata: unknown) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
@@ -58,6 +60,24 @@ function readStringMetadata(metadata: unknown, key: string) {
   const value = readMetadataObject(metadata)[key];
   return typeof value === "string" ? value : null;
 }
+
+export const metadata: Metadata = {
+  title: "Checkout | Zook",
+  description: "Complete your secure Zook payment checkout.",
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: "Checkout | Zook",
+    description: "Complete your secure Zook payment checkout.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Checkout | Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Checkout | Zook",
+    description: "Complete your secure Zook payment checkout.",
+    images: [publicSocialImage()],
+  },
+};
 
 export default async function HostedCheckoutPage({
   params,
