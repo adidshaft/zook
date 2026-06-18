@@ -769,3 +769,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web private-ID cue (`R133`) is closed: member private-ID
   badges on the web membership and desk member surfaces now use neutral treatment instead
   of informational blue, matching their role as identifiers rather than status.
+- **[code, fixed]** Duplicate mobile profile-shortcut initials cleanup (`R134`) is closed:
+  the profile shortcut now uses the shared mobile initials formatter instead of carrying a
+  local name-splitting helper.

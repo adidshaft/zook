@@ -3,19 +3,11 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { useAuth } from "@/lib/auth";
+import { formatInitials } from "@/lib/formatting";
 import { typography } from "@/lib/theme";
 import { pressWithHaptics } from "./buttons";
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
-
-function initialsForName(name?: string | null) {
-  return String(name ?? "")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function ProfileShortcut({
   size = 44,
@@ -30,7 +22,7 @@ export function ProfileShortcut({
   if (status !== "authenticated") return null;
 
   const name = session?.user.name ?? "";
-  const initials = initialsForName(name);
+  const initials = formatInitials(name);
   const photoUrl = session?.user.profilePhotoUrl?.trim();
   const remotePhotoUrl = photoUrl && /^https?:\/\//.test(photoUrl) ? photoUrl : undefined;
 
