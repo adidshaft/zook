@@ -276,6 +276,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   module errors from "Demo data" to "Test data" while preserving the Metro replacement wiring.
 - **6/R113 Dashboard demo-data guard** — added `demo data` to the dashboard copy guard so
   fallback workspace labels cannot regress to the old wording silently.
+- **6/R114 Mobile banner docs** — updated mobile redesign/premium-pass docs from the old
+  `DemoBanner`/`demo-banner` references to the current `TestDataBanner` test-data banner.
 
 ## 1. Functional / correctness
 

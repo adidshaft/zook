@@ -160,7 +160,7 @@ import { useOwnerDashboard } from "@/lib/domains/owner";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { CommandMetrics } from "@/features/owner/components/command-metrics";
 import { AttentionCard } from "@/features/owner/components/attention-card";
-import { DemoBanner } from "@/components/demo-banner";
+import { TestDataBanner } from "@/components/test-data-banner";
 
 export default function OwnerCommandScreen() {
   const dashboard = useOwnerDashboard();
@@ -168,7 +168,7 @@ export default function OwnerCommandScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="owner-command-screen">
-        <DemoBanner />
+        <TestDataBanner />
         <ScrollView
           refreshControl={<RefreshControl refreshing={dashboard.isRefetching} onRefresh={dashboard.refetch} />}
         >

@@ -135,8 +135,8 @@ apply rule "one thing per row":
 - **Trainer / Reception / Progress / Plan / You / Members etc.**: same pattern; titles
   are the screen name; kill all decorative subtitles ("Profile, membership, settings,
   and tools" on You — delete).
-- **Demo banner** (`src/components/demo-banner.tsx`): restyle from a full-width strip
-  to a slim floating capsule ("Demo data") top-center overlaying the header utility
+- **Test-data banner** (`src/components/test-data-banner.tsx`): restyle from a full-width strip
+  to a slim floating capsule ("Test data") top-center overlaying the header utility
   row's safe area, 28px tall, warningSoft surface — it must not consume a layout row.
 
 ### U1.4 Pushed screens stay native, but get glass
