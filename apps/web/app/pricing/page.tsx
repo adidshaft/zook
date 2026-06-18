@@ -5,7 +5,7 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
-import { formatInr } from "@/lib/format";
+import { formatInr, formatUsageLimit } from "@/lib/format";
 import {
   alternatePublicLocale,
   localizedPath,
@@ -15,7 +15,6 @@ import {
 import { publicSocialImage } from "@/lib/public-metadata";
 import {
   defaultSaasPlanCatalog,
-  formatSaasLimit,
   type SaasPlanDefinition,
   type SaasTier,
 } from "@/server/domains/billing/saas-plans";
@@ -94,12 +93,12 @@ function yearlyMonthlyEquivalent(plan: SaasPlanDefinition) {
 function detailsForPlan(plan: SaasPlanDefinition) {
   const e = plan.entitlements;
   const details = [
-    `Members: ${formatSaasLimit(e.memberLimit)}`,
-    `Branches: ${formatSaasLimit(e.branchLimit)}`,
-    `Staff users: ${formatSaasLimit(e.staffLimit)}`,
-    `Trainers: ${formatSaasLimit(e.trainerLimit)}`,
-    `Products: ${formatSaasLimit(e.productLimit)}`,
-    `Notifications/month: ${formatSaasLimit(e.notificationMonthlyLimit)}`,
+    `Members: ${formatUsageLimit(e.memberLimit, { unlimitedLabel: "unlimited" })}`,
+    `Branches: ${formatUsageLimit(e.branchLimit, { unlimitedLabel: "unlimited" })}`,
+    `Staff users: ${formatUsageLimit(e.staffLimit, { unlimitedLabel: "unlimited" })}`,
+    `Trainers: ${formatUsageLimit(e.trainerLimit, { unlimitedLabel: "unlimited" })}`,
+    `Products: ${formatUsageLimit(e.productLimit, { unlimitedLabel: "unlimited" })}`,
+    `Notifications/month: ${formatUsageLimit(e.notificationMonthlyLimit, { unlimitedLabel: "unlimited" })}`,
     `Reports: ${e.reports.replaceAll("_", " ")}`,
     `Referrals: ${e.referrals.replaceAll("_", " ")}`,
     `Support: ${e.support.replaceAll("_", " ")}`,

@@ -567,3 +567,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   now uses shared web `formatEnumLabel` instead of carrying a local role formatter.
 - **[code, fixed]** Duplicate dashboard rupee formatter (`R62`) is closed: dashboard overview
   now uses shared web `formatInr` for full rupee labels alongside `formatInrCompact`.
+- **[code, fixed]** Duplicate SaaS limit label helpers (`R63`) is closed: billing and platform
+  subscription views now share web `formatUsageLimit`, and the no-caller server limit formatter
+  was removed.

@@ -18,6 +18,7 @@ import {
   formatDateTime,
   formatEnumLabel,
   formatInr,
+  formatUsageLimit,
 } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
@@ -2072,16 +2073,13 @@ type PlatformPlanCatalog = Record<
   }
 >;
 
-function limitLabel(limit?: number | null) {
-  return limit == null ? "unlimited" : formatCompactNumber(limit);
-}
-
 function PlatformSubscriptionsSection() {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
   const [planCatalog, setPlanCatalog] = useState<PlatformPlanCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const limitFormatOptions = { compact: true, unlimitedLabel: "unlimited" };
 
   useEffect(() => {
     let mounted = true;
@@ -2170,14 +2168,14 @@ function PlatformSubscriptionsSection() {
                       <StatusPill value={tier} tone={tier === "PRO" ? "lime" : "blue"} />
                     </div>
                     <p className="mt-3 text-xs leading-5 text-white/52">
-                      {limitLabel(plan.entitlements.memberLimit)} members ·{" "}
-                      {limitLabel(plan.entitlements.branchLimit)} branches ·{" "}
-                      {limitLabel(plan.entitlements.staffLimit)} staff ·{" "}
-                      {limitLabel(plan.entitlements.productLimit)} products
+                      {formatUsageLimit(plan.entitlements.memberLimit, limitFormatOptions)} members ·{" "}
+                      {formatUsageLimit(plan.entitlements.branchLimit, limitFormatOptions)} branches ·{" "}
+                      {formatUsageLimit(plan.entitlements.staffLimit, limitFormatOptions)} staff ·{" "}
+                      {formatUsageLimit(plan.entitlements.productLimit, limitFormatOptions)} products
                     </p>
                     <p className="mt-2 text-xs leading-5 text-white/42">
-                      {limitLabel(plan.entitlements.notificationMonthlyLimit)} message recipients/mo ·{" "}
-                      {limitLabel(plan.entitlements.aiTextMonthlyLimit)} AI text/mo ·{" "}
+                      {formatUsageLimit(plan.entitlements.notificationMonthlyLimit, limitFormatOptions)} message recipients/mo ·{" "}
+                      {formatUsageLimit(plan.entitlements.aiTextMonthlyLimit, limitFormatOptions)} AI text/mo ·{" "}
                       {formatEnumLabel(plan.entitlements.support ?? "standard")} support
                     </p>
                   </div>
@@ -2215,9 +2213,9 @@ function PlatformSubscriptionsSection() {
                         {row.usage ? (
                           <p className="mt-1 text-xs text-white/45">
                             {formatCompactNumber(row.usage.activeMemberCount ?? 0)} /{" "}
-                            {limitLabel(row.entitlements?.memberLimit)} members ·{" "}
+                            {formatUsageLimit(row.entitlements?.memberLimit, limitFormatOptions)} members ·{" "}
                             {formatCompactNumber(row.usage.branchCount ?? 0)} /{" "}
-                            {limitLabel(row.entitlements?.branchLimit)} branches
+                            {formatUsageLimit(row.entitlements?.branchLimit, limitFormatOptions)} branches
                           </p>
                         ) : null}
                       </div>

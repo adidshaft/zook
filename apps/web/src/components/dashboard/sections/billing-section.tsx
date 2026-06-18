@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatInr, formatUsageLimit } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
@@ -164,12 +164,8 @@ const billingProfileFields: Array<[string, keyof Pick<
   ["Pincode", "pincode"],
 ];
 
-function formatLimit(limit: number | null) {
-  return limit === null ? "Unlimited" : formatEnumLabel(String(limit));
-}
-
 function usageLine(used: number, limit: number | null) {
-  return `${formatEnumLabel(String(used))} / ${formatLimit(limit)}`;
+  return `${formatEnumLabel(String(used))} / ${formatUsageLimit(limit)}`;
 }
 
 export function BillingSection({

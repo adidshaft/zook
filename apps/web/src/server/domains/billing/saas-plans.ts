@@ -200,7 +200,3 @@ export function pricingFromPlanCatalog(catalog: Record<SaasTier, SaasPlanDefinit
     >,
   );
 }
-
-export function formatSaasLimit(limit: number | null) {
-  return limit === null ? "unlimited" : String(limit);
-}

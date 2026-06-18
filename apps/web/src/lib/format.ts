@@ -20,6 +20,16 @@ export function formatCompactNumber(value: number): string {
   }).format(value);
 }
 
+export function formatUsageLimit(
+  limit: number | null | undefined,
+  options: { compact?: boolean; unlimitedLabel?: string } = {},
+): string {
+  if (limit == null) {
+    return options.unlimitedLabel ?? "Unlimited";
+  }
+  return options.compact ? formatCompactNumber(limit) : String(limit);
+}
+
 function coerceDate(value: Date | string | null | undefined) {
   if (!value) {
     return null;
