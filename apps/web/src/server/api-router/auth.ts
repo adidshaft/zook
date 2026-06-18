@@ -227,6 +227,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     return response;
   }
   if (request.method === "GET" && pathMatches(path, ["auth", "refresh"])) {
+    await assertRateLimit(
+      "authRefreshByIp",
+      getClientIp(request),
+      "Too many session refresh attempts from this IP.",
+    );
     const redirectTarget = request.nextUrl.searchParams.get("redirect");
     const safeRedirect =
       redirectTarget?.startsWith("/") && !redirectTarget.startsWith("//")
@@ -247,6 +252,11 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     }
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "refresh"])) {
+    await assertRateLimit(
+      "authRefreshByIp",
+      getClientIp(request),
+      "Too many session refresh attempts from this IP.",
+    );
     const body = await readJson(request).catch(() => ({}));
     const refreshToken =
       typeof body === "object" && body && "refreshToken" in body

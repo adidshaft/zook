@@ -79,6 +79,18 @@ const sensitiveRoutes = [
     sourceLabel: "api-router/auth.ts",
   },
   {
+    label: "browser session refresh",
+    needle: 'request.method === "GET" && pathMatches(path, ["auth", "refresh"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
+  {
+    label: "API session refresh",
+    needle: 'request.method === "POST" && pathMatches(path, ["auth", "refresh"])',
+    source: authRouteSource,
+    sourceLabel: "api-router/auth.ts",
+  },
+  {
     label: "organization create",
     needle: 'pathMatches(path, ["orgs"])',
     source: organizationRootRouteSource,

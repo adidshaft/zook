@@ -42,6 +42,7 @@ export const defaultRateLimitRules = {
   otpVerifyByEmail: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByIdentifier: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByIp: { limit: 12, windowMs: 10 * 60 * 1000 },
+  authRefreshByIp: { limit: 120, windowMs: 10 * 60 * 1000 },
   ssoCallbackByIp: { limit: 30, windowMs: 10 * 60 * 1000 },
   aiRequestByUser: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationSendByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
