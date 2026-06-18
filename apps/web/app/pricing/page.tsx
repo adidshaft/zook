@@ -5,7 +5,7 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
-import { formatInr, formatUsageLimit } from "@/lib/format";
+import { formatEnumLabel, formatInr, formatUsageLimit } from "@/lib/format";
 import {
   alternatePublicLocale,
   localizedPath,
@@ -99,10 +99,10 @@ function detailsForPlan(plan: SaasPlanDefinition) {
     `Trainers: ${formatUsageLimit(e.trainerLimit, { unlimitedLabel: "unlimited" })}`,
     `Products: ${formatUsageLimit(e.productLimit, { unlimitedLabel: "unlimited" })}`,
     `Notifications/month: ${formatUsageLimit(e.notificationMonthlyLimit, { unlimitedLabel: "unlimited" })}`,
-    `Reports: ${e.reports.replaceAll("_", " ")}`,
-    `Referrals: ${e.referrals.replaceAll("_", " ")}`,
-    `Support: ${e.support.replaceAll("_", " ")}`,
-    `Onboarding: ${e.onboarding.replaceAll("_", " ")}`,
+    `Reports: ${formatEnumLabel(e.reports)}`,
+    `Referrals: ${formatEnumLabel(e.referrals)}`,
+    `Support: ${formatEnumLabel(e.support)}`,
+    `Onboarding: ${formatEnumLabel(e.onboarding)}`,
     e.multiBranch ? "Multi-branch controls included" : "Single-branch focused",
     e.apiAccess ? "API access included" : "API access not included",
   ];

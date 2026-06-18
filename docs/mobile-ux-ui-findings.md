@@ -573,3 +573,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate India phone input formatter (`R64`) is closed: start-gym and
   gym-profile setup now share web `formatIndiaPhoneInput` instead of carrying identical local
   input formatters.
+- **[code, fixed]** Duplicate web enum display formatting (`R65`) is closed: pricing,
+  public plan cards, and dashboard overview now use shared `formatEnumLabel` instead of
+  hand-rolled underscore replacement.

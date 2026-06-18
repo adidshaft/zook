@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AvatarInitials } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
-import { formatInr, formatInrCompact } from "@/lib/format";
+import { formatEnumLabel, formatInr, formatInrCompact } from "@/lib/format";
 import {
   ActivityRow,
   BarChart,
@@ -143,7 +143,7 @@ export function DashboardOverview({
           {
             icon: AlertTriangle,
             title: "Gym is not active",
-            subtitle: `Current status: ${activeOrg.status.replaceAll("_", " ").toLowerCase()}`,
+            subtitle: `Current status: ${formatEnumLabel(activeOrg.status)}`,
             tone: "rose" as const,
             href: "/dashboard/settings",
           },
