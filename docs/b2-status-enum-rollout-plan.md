@@ -24,12 +24,14 @@ The current schema still has these status-like string fields:
 | `PaymentRefund` | `status` | `"REQUESTED"` | `PaymentRefundStatus` |
 | `ReferralCode` | `status` | `"active"` | `ReferralCodeStatus` |
 | `ReferralReward` | `status` | `"pending"` | `ReferralRewardStatus` |
+| `OrgReferralPartnership` | `status` | `"active"` | `OrgReferralPartnershipStatus` |
 | `TrainerCommission` | `status` | `"pending"` | `TrainerCommissionStatus` |
 | `TrainerPayout` | `status` | `"pending"` | `TrainerPayoutStatus` |
 | `Class` | `status` | `"scheduled"` | `ClassStatus` |
 | `ClassEnrollment` | `status` | `"confirmed"` | `ClassEnrollmentStatus` |
 | `OrganizationAbuseFlag` | `severity` | none | `OrganizationAbuseFlagSeverity` |
 | `OrganizationAbuseFlag` | `status` | `"open"` | `OrganizationAbuseFlagStatus` |
+| `WhatsAppDevice` | `status` | `"ACTIVE"` | `WhatsAppDeviceStatus` |
 
 The plan also calls out `ReferralCode`, `ReferralReward`, and abuse-flag severity because these
 fields drive fraud and staff workflows where typo states are especially risky.
@@ -92,6 +94,13 @@ enum ReferralRewardStatus {
   CANCELLED
 }
 
+enum OrgReferralPartnershipStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+  ENDED
+}
+
 enum TrainerCommissionStatus {
   PENDING
   APPROVED
@@ -134,14 +143,27 @@ enum OrganizationAbuseFlagStatus {
   RESOLVED
   DISMISSED
 }
+
+enum WhatsAppDeviceStatus {
+  ACTIVE
+  INACTIVE
+  REVOKED
+}
 ```
 
 ## Preflight value audit
 
 Run this on a staging clone or disposable production snapshot before creating enum types:
 
+```sh
+pnpm db:b2:sql value-audit
+pnpm db:b2:sql invalid-value-audit
+```
+
+The helper emits the full audit query:
+
 ```sql
-SELECT 'OrganizationUser.status' AS field, "status", COUNT(*) FROM "OrganizationUser" GROUP BY "status"
+SELECT 'OrganizationUser.status' AS field, "status" AS value, COUNT(*) FROM "OrganizationUser" GROUP BY "status"
 UNION ALL
 SELECT 'DataExportRequest.status', "status", COUNT(*) FROM "DataExportRequest" GROUP BY "status"
 UNION ALL
@@ -155,6 +177,8 @@ SELECT 'ReferralCode.status', "status", COUNT(*) FROM "ReferralCode" GROUP BY "s
 UNION ALL
 SELECT 'ReferralReward.status', "status", COUNT(*) FROM "ReferralReward" GROUP BY "status"
 UNION ALL
+SELECT 'OrgReferralPartnership.status', "status", COUNT(*) FROM "OrgReferralPartnership" GROUP BY "status"
+UNION ALL
 SELECT 'TrainerCommission.status', "status", COUNT(*) FROM "TrainerCommission" GROUP BY "status"
 UNION ALL
 SELECT 'TrainerPayout.status', "status", COUNT(*) FROM "TrainerPayout" GROUP BY "status"
@@ -166,7 +190,9 @@ UNION ALL
 SELECT 'OrganizationAbuseFlag.severity', "severity", COUNT(*) FROM "OrganizationAbuseFlag" GROUP BY "severity"
 UNION ALL
 SELECT 'OrganizationAbuseFlag.status', "status", COUNT(*) FROM "OrganizationAbuseFlag" GROUP BY "status"
-ORDER BY field, "status";
+UNION ALL
+SELECT 'WhatsAppDevice.status', "status", COUNT(*) FROM "WhatsAppDevice" GROUP BY "status"
+ORDER BY field, value;
 ```
 
 If any value is not represented in the proposed enums, stop and choose one of:
@@ -180,6 +206,12 @@ If any value is not represented in the proposed enums, stop and choose one of:
 Do this in phases, not as one giant production migration.
 
 ### Phase 1: create enum types
+
+Generate the proposed type creation SQL:
+
+```sh
+pnpm db:b2:sql create-types-staging-only
+```
 
 Example for one field:
 
@@ -196,6 +228,12 @@ CREATE TYPE "PaymentRefundStatusNew" AS ENUM (
 Repeat for each target enum after the value audit is clean.
 
 ### Phase 2: cast with explicit normalization
+
+Generate the proposed column cast SQL:
+
+```sh
+pnpm db:b2:sql cast-columns-staging-only
+```
 
 Example for lowercase legacy fields:
 
@@ -276,6 +314,7 @@ Then run smoke flows:
 - class creation, cancellation, enrollment, and cancellation
 - privacy export/delete request lifecycle
 - abuse-flag creation and resolution
+- WhatsApp opt-in and opt-out device lifecycle
 
 ## Rollback
 
@@ -304,6 +343,7 @@ depends on them.
 - root typecheck passes if `packages/db` generated types changed
 - mobile DTO compatibility is verified if response casing changes
 - rollback SQL was tested on staging
+- `pnpm db:b2:sql invalid-value-audit` returns zero rows on the staging snapshot
 
 ## Out of scope in this proposal
 
