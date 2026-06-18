@@ -2042,18 +2042,6 @@ export async function listOrganizationAttendancePage(orgId: string, request: Nex
   };
 }
 
-async function listOrganizationAuditLogsPage(orgId: string, request: NextRequest) {
-  const { limit, cursor } = parseCursorPagination(request, 100, 200);
-  const logs = await prisma.auditLog.findMany({
-    where: { orgId },
-    orderBy: { createdAt: "desc" },
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-  });
-  const page = pageResult(logs, limit);
-  return { auditLogs: page.items, nextCursor: page.nextCursor, limit };
-}
-
 export async function listPlanAssignmentsForUser(userId: string, assignmentId?: string) {
   const assignments = await prisma.planAssignment.findMany({
     where: clean({
@@ -10312,12 +10300,6 @@ export async function handleAiNotificationsShopPrivacyPlatform(
       },
     });
     return ok({ unregistered: true, device: updated });
-  }
-  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "audit-logs"])) {
-    const orgId = path[1]!;
-    const ctx = await getRequestContext(request, { orgId });
-    requireOrgPermission(ctx, orgId, "PRIVACY_VIEW_AUDIT");
-    return ok(await listOrganizationAuditLogsPage(orgId, request));
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "products"])) {
     const orgId = path[1]!;

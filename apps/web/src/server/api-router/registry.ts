@@ -19,6 +19,7 @@ import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
 import { handleMeData } from "./me-data";
 import { handleMemberPlansGoals } from "./member-plans-goals";
+import { handleOrganizationAuditLogs } from "./organization-audit-logs";
 import { handleOrganizationBranches } from "./organization-branches";
 import { handleOrganizationJoinRequests } from "./organization-join-requests";
 import { handleOrganizationMembers } from "./organization-members";
@@ -49,6 +50,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleMemberPlansGoals, firstSegments: ["me"] },
   { handler: handleFiles, firstSegments: ["files"] },
   { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
+  { handler: handleOrganizationAuditLogs, firstSegments: ["orgs"] },
   { handler: handleOrganizationBranches, firstSegments: ["orgs"] },
   { handler: handleOrganizationJoinRequests, firstSegments: ["orgs"] },
   { handler: handleOrganizationMembers, firstSegments: ["orgs"] },
