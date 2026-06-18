@@ -240,7 +240,7 @@ export function StartGymPanel({
           web. Mobile stays focused on daily execution.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Pill tone="blue">{initialTier} plan selected</Pill>
+          <Pill>{initialTier} plan selected</Pill>
           <Pill tone="neutral">Billing setup opens next</Pill>
         </div>
         <div className="mt-8 grid gap-3">

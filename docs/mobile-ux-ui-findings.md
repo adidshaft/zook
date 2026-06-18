@@ -817,3 +817,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web dashboard table-count cues (`R149`) are closed: audit,
   attendance, and payment history header counts now use neutral badges instead of
   informational blue, keeping loading, error, and row status treatment separate.
+- **[ui, fixed]** Overstated web gym-start plan cue (`R150`) is closed: the selected setup
+  tier now uses a neutral badge instead of informational blue, matching its role as setup
+  metadata beside the billing-next label.
