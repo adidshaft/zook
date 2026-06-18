@@ -11,21 +11,6 @@ import type { PillTone } from "./tone-palette";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-type TaskResultTone = "success" | "pending" | "failure" | "blocked";
-
-function toneForTaskResult(tone: TaskResultTone): PillTone {
-  if (tone === "success") return "lime";
-  if (tone === "pending") return "amber";
-  return "red";
-}
-
-function iconForTaskResult(tone: TaskResultTone): IconName {
-  if (tone === "success") return "checkmark-circle-outline";
-  if (tone === "pending") return "time-outline";
-  if (tone === "blocked") return "ban-outline";
-  return "alert-circle-outline";
-}
-
 export function OperationalQueueCard({
   title,
   subtitle,
@@ -73,87 +58,6 @@ export function OperationalQueueCard({
   );
 }
 
-export function AlertCard({
-  title,
-  message,
-  tone = "amber",
-  icon,
-  action,
-}: {
-  title: string;
-  message?: string;
-  tone?: PillTone;
-  icon?: IconName;
-  action?: ReactNode;
-}) {
-  const { palette } = useTheme();
-
-  return (
-    <Card variant={tone === "red" ? "danger" : tone === "amber" ? "warning" : "selected"}>
-      <View style={styles.alertCardRow}>
-        <IconBubble icon={icon ?? "alert-circle-outline"} tone={tone} size={38} />
-        <View style={styles.alertCardCopy}>
-          <Text style={[styles.alertCardTitle, { color: palette.text.primary }]}>{title}</Text>
-          {message ? <Text style={[styles.alertCardMessage, { color: palette.text.secondary }]}>{message}</Text> : null}
-        </View>
-        {action}
-      </View>
-    </Card>
-  );
-}
-
-export function TaskResultCard({
-  title,
-  message,
-  tone,
-  detailRows,
-  primaryAction,
-  secondaryAction,
-  icon,
-}: {
-  title: string;
-  message?: string;
-  tone: TaskResultTone;
-  detailRows?: Array<{ label: string; value: string }>;
-  primaryAction?: ReactNode;
-  secondaryAction?: ReactNode;
-  icon?: IconName;
-}) {
-  const { palette } = useTheme();
-  const statusTone = toneForTaskResult(tone);
-  const semanticSurface =
-    tone === "success"
-      ? "successCard"
-      : tone === "pending"
-        ? "warningCard"
-        : "dangerCard";
-
-  return (
-    <Card semanticSurface={semanticSurface} accessibilityLabel={[title, message].filter(Boolean).join(". ")}>
-      <View style={styles.taskResultHeader}>
-        <IconBubble icon={icon ?? iconForTaskResult(tone)} tone={statusTone} size={48} />
-        <View style={styles.taskResultCopy}>
-          <Text style={[styles.taskResultTitle, { color: palette.text.primary }]}>{title}</Text>
-          {message ? <Text style={[styles.taskResultMessage, { color: palette.text.secondary }]}>{message}</Text> : null}
-        </View>
-      </View>
-      {detailRows?.length ? (
-        <View style={styles.taskResultDetails}>
-          {detailRows.map((row) => (
-            <DetailRow key={row.label} label={row.label} value={row.value} />
-          ))}
-        </View>
-      ) : null}
-      {primaryAction || secondaryAction ? (
-        <View style={styles.taskResultActions}>
-          {secondaryAction}
-          {primaryAction}
-        </View>
-      ) : null}
-    </Card>
-  );
-}
-
 export function MoneySummaryCard({
   title,
   amount,
@@ -189,34 +93,6 @@ export function MoneySummaryCard({
   );
 }
 
-export function WebHandoffCard({
-  title,
-  description,
-  destination,
-  action,
-}: {
-  title: string;
-  description: string;
-  destination: string;
-  action?: ReactNode;
-}) {
-  const { palette } = useTheme();
-
-  return (
-    <Card semanticSurface="handoffCard" accessibilityLabel={`${title}. Opens ${destination} on web.`}>
-      <View style={styles.webHandoffRow}>
-        <IconBubble icon="desktop-outline" tone="blue" size={44} />
-        <View style={styles.webHandoffCopy}>
-          <Text style={[styles.webHandoffTitle, { color: palette.text.primary }]}>{title}</Text>
-          <Text style={[styles.webHandoffDescription, { color: palette.text.secondary }]}>{description}</Text>
-          <StatusChip tone="blue" status={destination} accessibilityLabel={`Web destination ${destination}`} />
-        </View>
-      </View>
-      {action}
-    </Card>
-  );
-}
-
 const styles = StyleSheet.create({
   operationalQueueRow: {
     alignItems: "center",
@@ -237,48 +113,6 @@ const styles = StyleSheet.create({
   operationalQueueMeta: {
     ...typography.caption,
   },
-  alertCardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  alertCardCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  alertCardTitle: {
-    ...typography.bodyStrong,
-  },
-  alertCardMessage: {
-    ...typography.small,
-  },
-  taskResultHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  taskResultCopy: {
-    flex: 1,
-    gap: 4,
-    minWidth: 0,
-  },
-  taskResultTitle: {
-    ...typography.headerTitle,
-    letterSpacing: 0,
-  },
-  taskResultMessage: {
-    ...typography.body,
-  },
-  taskResultDetails: {
-    gap: 0,
-  },
-  taskResultActions: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    justifyContent: "flex-end",
-  },
   moneySummaryHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
@@ -293,21 +127,5 @@ const styles = StyleSheet.create({
   },
   moneySummaryRows: {
     gap: 0,
-  },
-  webHandoffRow: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  webHandoffCopy: {
-    flex: 1,
-    gap: spacing.sm,
-    minWidth: 0,
-  },
-  webHandoffTitle: {
-    ...typography.bodyStrong,
-  },
-  webHandoffDescription: {
-    ...typography.small,
   },
 });

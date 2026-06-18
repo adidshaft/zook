@@ -56,6 +56,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   with `ZookButton` and removed the alias export.
 - **6/R13 No-caller primitive wrappers** — removed the remaining unused `RoleChip`,
   `LoadingState`, and `EntryCodeCard` primitive wrappers after exact reference checks.
+- **6/R14 Unused public primitive exports** — removed unused `ChipGroup` and old summary-card
+  variants, and made the raw `TextField` base private to the input primitive module.
 
 ## 1. Functional / correctness
 
@@ -183,3 +185,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** No-caller primitive wrappers (`R13`) is closed: `RoleChip`,
   `LoadingState`, and `EntryCodeCard` were removed along with their barrel exports and
   now-unused imports/styles.
+- **[code, fixed]** Unused public primitive exports (`R14`) is closed: `ChipGroup`,
+  `AlertCard`, `TaskResultCard`, and `WebHandoffCard` were removed after exact reference checks,
+  and `TextField` is no longer exported as a public primitive because only `Input`,
+  `FormField`, `SearchBar`, and `SearchField` use it internally.

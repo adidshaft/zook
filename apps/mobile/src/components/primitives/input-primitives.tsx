@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useState, type ReactNode } from "react";
@@ -17,19 +16,11 @@ import {
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 import { Card, pressWithHaptics } from "./foundation";
 import { IconBubble } from "./icon-bubble";
-import { getTonePalette, useTonePalette, type PillTone } from "./tone-palette";
+import { useTonePalette, type PillTone } from "./tone-palette";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
-
-export type ChipGroupOption<T extends string> = {
-  value: T;
-  label: string;
-  description?: string;
-  icon?: IconName;
-  tone?: PillTone;
-};
 
 export function ListRow({
   title,
@@ -109,7 +100,7 @@ type TextFieldProps = Omit<TextInputProps, "style"> & {
   trailing?: ReactNode;
 };
 
-export function TextField({
+function TextField({
   label,
   hint,
   error,
@@ -540,84 +531,6 @@ export function SegmentedControl<T extends string>({
   );
 }
 
-export function ChipGroup<T extends string>({
-  accessibilityLabel,
-  disabled = false,
-  options,
-  value,
-  onChange,
-}: {
-  accessibilityLabel: string;
-  disabled?: boolean;
-  options: Array<ChipGroupOption<T>>;
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  const { palette: themePalette, mode } = useTheme();
-  return (
-    <View accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel} style={styles.chipGroup}>
-      {options.map((option) => {
-        const selected = option.value === value;
-        const tone = option.tone ?? (selected ? "lime" : "neutral");
-        const palette = getTonePalette(tone, mode, themePalette);
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="radio"
-            accessibilityLabel={option.label}
-            accessibilityState={{ selected, disabled }}
-            disabled={disabled}
-            onPress={() => {
-              if (option.value !== value) {
-                void Haptics.selectionAsync();
-                onChange(option.value);
-              }
-            }}
-            android_ripple={{ color: themePalette.surface.accentSoft, borderless: false }}
-            style={({ pressed }) => [
-              styles.chipGroupOption,
-              {
-                borderColor: selected ? palette.borderColor : themePalette.border.subtle,
-                backgroundColor: selected
-                  ? palette.backgroundColor
-                  : mode === "dark"
-                    ? themePalette.surface.default
-                    : themePalette.bg.elevated,
-              },
-              selected ? styles.chipGroupOptionSelected : null,
-              disabled ? styles.chipGroupOptionDisabled : null,
-              pressed && !disabled ? styles.pressed : null,
-            ]}
-          >
-            {option.icon ? <Ionicons name={option.icon} size={16} color={palette.color} /> : null}
-            <View style={styles.chipGroupCopy}>
-              <Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={[
-                  styles.chipGroupLabel,
-                  { color: selected ? palette.color : themePalette.text.primary },
-                ]}
-              >
-                {option.label}
-              </Text>
-              {option.description ? (
-                <Text
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                  style={[styles.chipGroupDescription, { color: themePalette.text.secondary }]}
-                >
-                  {option.description}
-                </Text>
-              ) : null}
-            </View>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   pressed: {
     opacity: 0.92,
@@ -625,38 +538,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-  chipGroup: {
-    gap: spacing.sm,
-  },
-  chipGroupOption: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: radii.input,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  chipGroupOptionSelected: {
-    shadowColor: "#B9F455",
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  chipGroupOptionDisabled: {
-    opacity: 0.55,
-  },
-  chipGroupCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  chipGroupLabel: {
-    ...typography.bodyStrong,
-  },
-  chipGroupDescription: {
-    ...typography.caption,
   },
   listRow: {
     minHeight: 62,
