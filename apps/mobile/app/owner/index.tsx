@@ -222,7 +222,7 @@ export default function OwnerCommandScreen() {
           <ScreenHeader
             title="Today"
             subtitle={orgName}
-            trailing={<BranchSelectorChip />}
+            titleAccessory={<BranchSelectorChip />}
             scrollY={scrollY}
           />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}

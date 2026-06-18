@@ -6,7 +6,7 @@ import type { SharedValue } from "react-native-reanimated";
 
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
-import { layout, materials, spacing, typography, useTheme } from "@/lib/theme";
+import { materials, spacing, typography, useTheme } from "@/lib/theme";
 
 type HeaderContext = {
   orgName: string;
@@ -17,6 +17,7 @@ type HeaderContext = {
 export function ScreenHeader({
   title,
   subtitle,
+  titleAccessory,
   context,
   contextSlot,
   trailing,
@@ -26,6 +27,7 @@ export function ScreenHeader({
 }: {
   title: string;
   subtitle?: string;
+  titleAccessory?: ReactNode;
   context?: HeaderContext;
   contextSlot?: ReactNode;
   trailing?: ReactNode;
@@ -96,7 +98,10 @@ export function ScreenHeader({
         </View>
       ) : null}
       <Reanimated.View style={[styles.titleBlock, titleStyle]}>
-        <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+          {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
+        </View>
         {subtitle ? (
           <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
         ) : null}
@@ -222,10 +227,21 @@ const styles = StyleSheet.create({
   titleBlock: {
     gap: spacing.xs,
   },
+  titleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minWidth: 0,
+  },
   title: {
     // Tab-root screens intentionally use the larger landing-page title scale;
     // pushed screens route through AppHeader's compact headerTitle token.
     ...typography.screenTitle,
+    flexShrink: 0,
+  },
+  titleAccessory: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   subtitle: {
     ...typography.small,
