@@ -18,6 +18,7 @@ export function GymMembershipCard({
 }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const hasPublicPlans = plans.length > 0;
+  const qrAlt = locale === "hi" ? `${org.name} को Zook पर join करें` : `Join ${org.name} on Zook`;
   return (
     <GlassCard variant="strong" className="h-fit">
       <p className="text-sm text-[var(--text-tertiary)]">{t("membershipPreview")}</p>
@@ -26,7 +27,7 @@ export function GymMembershipCard({
       <div className="mx-auto mt-5 w-40 rounded-[24px] border border-[var(--border)] bg-white p-3">
         <Image
           src={`/qr/${org.username}?target=join`}
-          alt={`Join ${org.name} on Zook`}
+          alt={qrAlt}
           width={160}
           height={160}
           sizes="160px"

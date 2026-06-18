@@ -21,7 +21,7 @@ export function GymTrainers({
         <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("visibleTrainers")}</h2>
         <div className="mt-5 grid gap-3">
           {trainers.length ? (
-            trainers.map((trainer) => <TrainerRow key={trainer.userId} trainer={trainer} />)
+            trainers.map((trainer) => <TrainerRow key={trainer.userId} trainer={trainer} locale={locale} />)
           ) : (
             <p className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm leading-6 text-[var(--text-tertiary)]">
               {t("trainersPending")}
@@ -36,16 +36,19 @@ export function GymTrainers({
 
 function TrainerRow({
   trainer,
+  locale,
 }: {
   trainer: PublicGymTrainer;
+  locale: PublicLocale;
 }) {
   const profileDetails = trainerProfileDetails(trainer.specialties);
+  const photoAlt = locale === "hi" ? `${trainer.name} की profile photo` : `${trainer.name} profile photo`;
   return (
     <div className="flex items-start gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
       {trainer.profilePhotoUrl ? (
         <Image
           src={trainer.profilePhotoUrl}
-          alt={`${trainer.name} profile photo`}
+          alt={photoAlt}
           width={44}
           height={44}
           sizes="44px"
