@@ -937,3 +937,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web staff invite label cue (`R189`) is closed: the staff invite
   form label now uses a neutral badge instead of lime, keeping success emphasis for accepted
   invites and completed actions.
+- **[ui, fixed]** Overstated web referral code label cue (`R190`) is closed: referral landing
+  code badges now use neutral styling instead of amber, keeping warning color for unavailable
+  or approval-required join states.

@@ -90,7 +90,7 @@ export default async function ReferralPage({
         <ZookLogo />
       </div>
       <GlassCard className="max-w-lg text-center">
-        <Pill tone="amber">Referral {normalizedCode}</Pill>
+        <Pill>Referral {normalizedCode}</Pill>
         <h1 className="mt-5 text-3xl font-semibold">Open Zook to join this gym</h1>
         <p className="mt-3 text-sm leading-6 text-white/55">
           Continue to the gym membership page. Your referral code will be applied there.
