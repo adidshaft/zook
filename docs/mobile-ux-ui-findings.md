@@ -476,3 +476,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Customisation panel decoration (`R28`) is closed: removed the owner/trainer
   customisation panels' decorative blurred accent blobs and replaced generic sparkle setting icons
   with assistant, money, and palette icons that match the actual controls.
+- **[code, fixed]** Public sparkle nav icons (`R29`) is closed: replaced decorative sparkle
+  icons in the public operations pill and gym facilities tab with location and building icons that
+  describe the linked context.

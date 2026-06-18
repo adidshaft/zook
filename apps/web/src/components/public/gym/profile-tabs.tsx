@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Sparkles, Smartphone, Dumbbell } from "lucide-react";
+import { Building2, Users, Smartphone, Dumbbell } from "lucide-react";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan, PublicGymTrainer } from "./types";
 import { GymPlansGrid } from "./plans-grid";
@@ -48,7 +48,7 @@ export function GymProfileTabs({
     {
       id: "facilities" as TabId,
       label: t("facilities"),
-      icon: Sparkles,
+      icon: Building2,
       content: <GymFacilities org={org} locale={locale} />,
     },
     {
