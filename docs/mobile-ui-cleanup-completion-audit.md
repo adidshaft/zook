@@ -26,6 +26,18 @@ fully complete until the human/device/provider gates below have external evidenc
 - Follow-up mobile UX fixes are also on the branch, including branch-selector alignment, owner
   access actions, Apple sign-in iOS-only behavior, loading wordmark visibility, and bottom-bar
   selected-state consistency.
+- Later mobile cleanup follow-ups are tracked in `docs/mobile-ux-ui-findings.md` and include:
+  `01481b9 fix: hide disabled assistant surface`,
+  `7a20087 chore: remove primitive nav shim`,
+  `625e6ee fix: remove reception success pulse cue`,
+  `737b3d2 chore: remove unused mobile sso auth surface`,
+  `27c6db6 chore: remove empty mobile domain modules`,
+  `afaf468 chore: remove unused mobile api-client alias`,
+  `ff0f2d0 chore: remove primitive feedback shim`,
+  `36713b0 chore: remove unused mobile skeleton exports`,
+  `109d592 chore: flatten mobile card primitive barrel`,
+  `e656f18 chore: remove mobile primitive category shims`, and
+  `f1fd888 chore: remove placeholder mobile readmes`.
 
 ### Web UI/UX plan
 
