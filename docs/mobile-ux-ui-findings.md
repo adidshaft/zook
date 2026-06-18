@@ -260,6 +260,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   sample-oriented names to test-check-in names so internal cues match the visible copy.
 - **6/R105 Reception and AI cue cleanup** — removed an unused reception `demoScreen` style and
   replaced web AI read-only "preview/opened up" launch copy with current-state review wording.
+- **6/R106 Dashboard fallback copy key** — renamed the dashboard fallback workspace message key
+  from `sampleData` to `fallbackWorkspace` while keeping the visible "Test workspace" label.
 
 ## 1. Functional / correctness
 

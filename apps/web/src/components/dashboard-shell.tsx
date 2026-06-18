@@ -113,7 +113,7 @@ export function DashboardShell({
   const runtimeLabel = data.connected
     ? copy.dashboard.liveWorkspace
     : data.fallbackMode === "demo"
-      ? copy.dashboard.sampleData
+      ? copy.dashboard.fallbackWorkspace
       : "";
 
   if (!activeOrg) {
