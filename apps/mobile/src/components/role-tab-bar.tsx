@@ -91,13 +91,16 @@ export function RoleTabBar({
   const indicatorX = useRef(new RNAnimated.Value(0)).current;
   const centerScale = useRef(new RNAnimated.Value(1)).current;
   const itemWidth = visibleRoutes.length > 0 && barWidth > 0 ? barWidth / visibleRoutes.length : 0;
-  const indicatorWidth = itemWidth > 0 ? Math.min(Math.max(itemWidth - (Platform.OS === "android" ? 12 : 18), 58), 72) : 0;
-  const indicatorHeight = Platform.OS === "android" ? 36 : 44;
-  const indicatorTop = Platform.OS === "android" ? 8 : 16;
+  const tabRailHeight = Platform.OS === "android" ? 56 : 60;
+  const indicatorHorizontalInset = Platform.OS === "android" ? 14 : 16;
+  const indicatorWidth =
+    itemWidth > 0 ? Math.min(Math.max(itemWidth - indicatorHorizontalInset, 58), 72) : 0;
+  const indicatorHeight = 44;
+  const indicatorTop = Math.max(0, Math.round((tabRailHeight - indicatorHeight) / 2));
   const indicatorBorderColor =
-    mode === "dark" ? "rgba(185,244,85,0.18)" : "rgba(31,62,36,0.10)";
+    mode === "dark" ? "rgba(185,244,85,0.22)" : "rgba(31,62,36,0.12)";
   const indicatorBackgroundColor =
-    mode === "dark" ? "rgba(185,244,85,0.16)" : "rgba(31,62,36,0.10)";
+    mode === "dark" ? "rgba(185,244,85,0.18)" : "rgba(31,62,36,0.12)";
 
   useEffect(() => {
     RNAnimated.parallel([
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: 64,
+    height: Platform.OS === "android" ? 56 : 60,
     zIndex: 3,
   },
   tabItemWrapper: {
