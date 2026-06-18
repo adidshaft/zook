@@ -117,6 +117,8 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   the live screens use newer domain hooks/helpers instead.
 - **6/R38 Internal helper exports** — removed unused bottom-sheet/privileged PIN helper exports,
   made profile-photo types internal, and trimmed no-caller owner/reception helper exports.
+- **6/R39 Profile component default exports** — removed unused default exports from profile
+  components where the mobile app imports the named components directly.
 
 ## 1. Functional / correctness
 

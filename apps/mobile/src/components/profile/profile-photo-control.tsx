@@ -346,8 +346,6 @@ export function ProfilePhotoControl({
   );
 }
 
-export default ProfilePhotoControl;
-
 const styles = StyleSheet.create({
   control: {
     alignItems: "center",
