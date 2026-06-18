@@ -50,7 +50,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { formatAgeLabel, formatInr } from "@/lib/formatting";
+import { formatAgeLabel, formatInr, formatReviewReason } from "@/lib/formatting";
 import {
   useApproveAttendance,
   useManualAttendance,
@@ -72,7 +72,6 @@ import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
-import { deskReasonCopy } from "./helpers";
 import { receptionWorkspaceStyles as styles } from "./styles";
 
 export { receptionWorkspaceStyles } from "./styles";
@@ -282,8 +281,9 @@ function useReceptionWorkspaceState({
           primaryText: attempt.user?.name ?? attempt.user?.email ?? "Member check-in",
           secondaryText: `${attempt.branchName ?? "Main branch"} · ${attempt.plan?.name ?? "Membership"}`,
           metaText: attempt.status.replace(/_/g, " "),
-          reason: deskReasonCopy(
+          reason: formatReviewReason(
             Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+            "Desk approval required.",
           ),
           context: (
             <View style={styles.auditTrail}>
@@ -434,8 +434,9 @@ function useReceptionWorkspaceState({
     setSelectedDecisionAttempt(attempt);
     setDecisionReason(
       attempt.rejectionReason ??
-        deskReasonCopy(
+        formatReviewReason(
           Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+          "Desk approval required.",
         ),
     );
   }

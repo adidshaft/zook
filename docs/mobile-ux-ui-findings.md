@@ -550,3 +550,5 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Duplicate mobile long-date formatters (`R55`) is closed: tracking entries
   and member profile expiry copy now use shared `formatLongDate` while preserving their fallback
   labels.
+- **[code, fixed]** Reception reason wrapper (`R56`) is closed: reception desk context now calls
+  shared `formatReviewReason` directly and the empty feature-local helper module was removed.
