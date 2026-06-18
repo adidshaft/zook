@@ -970,3 +970,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile trainer adherence icon cue (`R200`) is closed:
   the client sessions Adherence row now uses a neutral analytics icon instead of lime,
   keeping progress meaning on the adjacent completion chip and active-plan status.
+- **[ui, fixed]** Overstated mobile reception payment row icons (`R201`) are closed:
+  the payment collection Member and Invoice rows now use neutral leading icons instead of
+  lime/amber, keeping state on the verified/missing pill, membership text, and amount due.

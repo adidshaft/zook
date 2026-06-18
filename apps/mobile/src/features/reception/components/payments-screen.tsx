@@ -168,7 +168,7 @@ export function ReceptionPaymentsScreenBody() {
               <ListRow
                 title="Member"
                 subtitle={member?.name ?? "Select a member"}
-                leading={<IconBubble icon="person-outline" tone="lime" size={38} />}
+                leading={<IconBubble icon="person-outline" tone="neutral" size={38} />}
                 trailing={
                   <Pill tone={member ? "lime" : "amber"}>{member ? "Verified" : "Missing"}</Pill>
                 }
@@ -180,7 +180,7 @@ export function ReceptionPaymentsScreenBody() {
                     ? `${titleCaseFromCode(membership.status)} membership selected`
                     : "No membership selected"
                 }
-                leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
+                leading={<IconBubble icon="document-text-outline" tone="neutral" size={38} />}
                 trailing={
                   <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                     {formatInr(dueAmount)} due
