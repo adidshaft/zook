@@ -23,7 +23,7 @@ import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { PlansSkeleton } from "@/components/skeletons";
 import { DietPanel } from "@/features/member/plan/diet-panel";
-import { useMyPlans, type MyPlanRecord } from "@/lib/domains";
+import { useMyPlans, usePlanExercises, type MyPlanRecord } from "@/lib/domains";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -45,6 +45,9 @@ export default function MemberPlanScreen() {
   const plans = plansQuery.data?.plans ?? [];
   const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
   const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
+  const singleWorkoutPlan = workoutPlans.length === 1 ? workoutPlans[0] : null;
+  const exercisePreviewQuery = usePlanExercises(singleWorkoutPlan?.id);
+  const exercisePreview = exercisePreviewQuery.data?.exercises.slice(0, 3) ?? [];
   // Don't repeat today's plan in the schedule list below.
   const upcomingPlans = workoutPlans.filter((assignment) => assignment.id !== todayPlan?.id);
   const { palette } = useTheme();
@@ -149,6 +152,56 @@ export default function MemberPlanScreen() {
                   </View>
                 </AnimatedAppear>
               ) : null}
+
+              {singleWorkoutPlan ? (
+                <AnimatedAppear delay={80}>
+                  <SectionHeader
+                    title="Inside this plan"
+                    subtitle="A quick look at what your trainer has assigned."
+                  />
+                  <Card variant="compact" contentStyle={styles.previewCard}>
+                    {exercisePreviewQuery.isLoading ? (
+                      <View style={styles.previewLoading}>
+                        <IconBubble icon="barbell-outline" tone="lime" size={42} />
+                        <View style={styles.previewCopy}>
+                          <Text style={[styles.previewTitle, { color: palette.text.primary }]}>
+                            Loading exercises
+                          </Text>
+                          <Text style={[styles.previewMeta, { color: palette.text.secondary }]}>
+                            Checking the latest plan details...
+                          </Text>
+                        </View>
+                      </View>
+                    ) : exercisePreview.length ? (
+                      <>
+                        {exercisePreview.map((exercise, index) => (
+                          <ListRow
+                            key={exercise.id}
+                            title={exercise.name}
+                            subtitle={[exercise.sets, exercise.reps].filter(Boolean).join(" · ") || exercise.day || "Coach guided"}
+                            leading={<IconBubble icon={index === 0 ? "flash-outline" : "barbell-outline"} tone="lime" />}
+                          />
+                        ))}
+                        <ZookButton
+                          testID="plan-preview-open"
+                          onPress={() => openAssignment(singleWorkoutPlan.id)}
+                          icon="list-outline"
+                          variant="secondary"
+                          fullWidth
+                        >
+                          View full exercise list
+                        </ZookButton>
+                      </>
+                    ) : (
+                      <EmptyState
+                        icon="barbell-outline"
+                        title="Exercises coming soon"
+                        body="Your trainer's exercise details will appear here once they publish them."
+                      />
+                    )}
+                  </Card>
+                </AnimatedAppear>
+              ) : null}
             </>
           )}
         </ScrollView>
@@ -167,6 +220,11 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   stack: { gap: spacing.sm },
+  previewCard: { gap: spacing.sm },
+  previewCopy: { flex: 1, gap: 4 },
+  previewLoading: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  previewTitle: typography.cardTitle,
+  previewMeta: typography.small,
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },

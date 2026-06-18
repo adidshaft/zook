@@ -12,8 +12,12 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
   `recordId`, passes it to `ReceptionWorkspace`, and auto-opens the matching decision sheet.
 - **1.2 Billing single-tenant pluralization** — `activeMembersCopy()` now handles
   "1 member currently counts" vs plural counts.
+- **2.1 Profile alias routes are functionally identical** — alias routes now redirect to
+  `/profile` with a focus param, and the profile screen scrolls to the relevant section.
 - **2.2 Owner web-handoff shown twice** — Owner Today no longer shows the broad web control-room
   row; Owner More remains the web handoff hub.
+- **2.3 Plan tab is sparse with a single assignment** — single-workout members now see an inline
+  exercise preview below the primary plan card.
 - **2.4 Pause-membership control could explain itself** — active membership card now explains that
   pausing freezes check-ins until the resume date and carries remaining days over.
 
@@ -33,7 +37,7 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 
 ## 2. UX gaps (flows work, but could be clearer)
 
-### 2.1 Profile alias routes are functionally identical  **[ux]**
+### 2.1 Profile alias routes are functionally identical  **[ux, fixed]**
 - **Fault:** `/profile/edit`, `/profile/photo`, `/profile/extra-fields` all re-export the same `profile-screen.tsx` and render the identical screen (the only old differentiator — the native title — was removed when we fixed the double-header).
 - **Experience:** Tapping "Edit", "Photo", or "Profile details" doesn't take the user to a focused sub-screen as the labels imply; they all land on the full profile.
 - **Fix:** Either (a) make `profile-screen` read the route and scroll-to/expand the relevant section, or (b) collapse these to a single `/profile` and remove the alias links.
@@ -43,7 +47,7 @@ Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than
 - **Experience:** Mild redundancy; the Today card eats prime real estate for a link.
 - **Fix:** Slim the Today card to a one-line row, or drop it (More already covers web).
 
-### 2.3 Plan tab is sparse with a single assignment  **[ux, minor]**
+### 2.3 Plan tab is sparse with a single assignment  **[ux, minor, fixed]**
 - **Fault:** After de-duping (today vs schedule), a member with one plan sees only the "Today's workout" card and a lot of empty space.
 - **Experience:** Looks unfinished for single-plan members.
 - **Fix:** When there's one plan, surface its exercise preview inline (the data the Home card already shows) so the tab feels complete.
