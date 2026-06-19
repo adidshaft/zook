@@ -158,11 +158,26 @@ function ContextPill({ context }: { context: HeaderContext }) {
 export function HeaderMeta({
   icon,
   children,
+  tone = "neutral",
 }: {
   icon?: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
+  tone?: "neutral" | "accent";
 }) {
   const { palette } = useTheme();
+  if (tone === "accent") {
+    return (
+      <View
+        style={[
+          styles.accentMeta,
+          { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.soft },
+        ]}
+      >
+        {icon ? <Ionicons name={icon} size={14} color={palette.accent.base} /> : null}
+        <Text style={[styles.accentMetaText, { color: palette.accent.base }]}>{children}</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.inlineMeta}>
       {icon ? <Ionicons name={icon} size={15} color={palette.text.secondary} /> : null}
@@ -280,6 +295,19 @@ const styles = StyleSheet.create({
   inlineMetaText: {
     ...typography.small,
     fontFamily: "Inter_600SemiBold",
+  },
+  accentMeta: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  accentMetaText: {
+    ...typography.caption,
   },
   compactBar: {
     alignItems: "center",

@@ -207,7 +207,9 @@ export default function HomeScreen() {
             trailing={<ProfileShortcut />}
             meta={
               streakDays > 0 ? (
-                <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>
+                <HeaderMeta icon="flame" tone="accent">
+                  {streakDays}-day streak
+                </HeaderMeta>
               ) : null
             }
             scrollY={scrollY}
