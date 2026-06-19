@@ -360,6 +360,8 @@ fully complete until the human/device/provider gates below have external evidenc
   unsettled badge, Desk note, filters, and order status notes.
 - Dashboard product inventory empty state no longer repeats no-products helper copy below the
   already-clear Inventory is clear title.
+- Dashboard join request queue no longer repeats pre-payment review helper copy above the
+  pending badge, request status pills, and approve/reject actions.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
