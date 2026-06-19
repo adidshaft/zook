@@ -355,6 +355,8 @@ fully complete until the human/device/provider gates below have external evidenc
   direct empty-state wording instead of placeholder-location phrasing.
 - Pricing, global loading, platform shell/loading, coach-client, trial-billing, and referral
   sections no longer show static pills that repeat the page or card heading.
+- Start-gym, member profile, and member-import surfaces no longer show static pills that repeat
+  the hero or form instructions.
 
 ### Product plan Part A and Part B
 

@@ -231,8 +231,7 @@ export function StartGymPanel({
   return (
     <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <GlassCard variant="strong">
-        <Pill>Owner start</Pill>
-        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
+        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
           Start your gym on Zook.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
@@ -241,7 +240,6 @@ export function StartGymPanel({
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Pill>{initialTier} plan selected</Pill>
-          <Pill tone="neutral">Billing opens next</Pill>
         </div>
         <div className="mt-8 grid gap-3">
           {[
