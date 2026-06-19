@@ -91,7 +91,7 @@ export function ReportsPanel({
     { id: "financials" as TabId, label: "Financials", icon: IndianRupee },
     { id: "attendance" as TabId, label: "Attendance", icon: CalendarDays },
     { id: "members" as TabId, label: "Members & Growth", icon: Users },
-    { id: "snapshot" as TabId, label: "Snapshot & Governance", icon: ClipboardList },
+    { id: "snapshot" as TabId, label: "Overview & Records", icon: ClipboardList },
   ];
   const exportReports = [
     { fileName: "members.csv", label: "Members" },
@@ -204,7 +204,7 @@ export function ReportsPanel({
               CSV exports
             </p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Downloads use the selected date range and branch scope.
+              Downloads use the selected date range and selected branch.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

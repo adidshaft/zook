@@ -242,6 +242,8 @@ fully complete until the human/device/provider gates below have external evidenc
   tenant-risk/tenant-impacting/destructive-tenant phrasing.
 - Dashboard payment, attendance, broadcast, member roster, and CSV import counts now use plain
   item-count wording instead of loaded/virtualized implementation cues.
+- Dashboard settings, reports, and classes copy now uses gym/service/selected-branch wording
+  instead of organization/provider/scope/snapshot/operational/setup cues.
 
 ### Product plan Part A and Part B
 

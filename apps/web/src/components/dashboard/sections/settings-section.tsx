@@ -202,7 +202,7 @@ export function SettingsSection({
             </span>
             <div>
               <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-                Organization snapshot
+                Gym overview
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 {organization.name} · {organization.city}
@@ -232,7 +232,7 @@ export function SettingsSection({
         <GlassCard>
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">{copy.integrations}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Provider status is managed centrally; billing and messaging setup links are available
+            Service status is managed centrally; billing and messaging links are available
             above.
           </p>
           <div className="mt-4 grid gap-3">
