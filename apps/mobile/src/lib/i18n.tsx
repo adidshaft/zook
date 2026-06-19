@@ -176,7 +176,6 @@ export type TranslationKey =
   | "shop.back"
   | "shop.creating"
   | "shop.yourCartEmpty"
-  | "shop.cartEmptyBody"
   | "shop.subtotal"
   | "shop.openMiniCart"
   | "shop.openCart"
@@ -190,7 +189,6 @@ export type TranslationKey =
   | "shop.shopCouldNotLoadBody"
   | "shop.tryAgain"
   | "shop.noProductsFound"
-  | "shop.noProductsFoundBody"
   | "findGyms.searchPlaceholder"
   | "findGyms.cityPlaceholder"
   | "findGyms.deviceLocation"
@@ -401,7 +399,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.back": "Back",
     "shop.creating": "Creating...",
     "shop.yourCartEmpty": "Your cart is empty",
-    "shop.cartEmptyBody": "Add desk pickup items from the shop.",
     "shop.subtotal": "Subtotal",
     "shop.openMiniCart": "Open mini cart",
     "shop.openCart": "Open cart",
@@ -416,7 +413,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "We could not refresh stock or prices. Try again before placing an order.",
     "shop.tryAgain": "Try again",
     "shop.noProductsFound": "No products",
-    "shop.noProductsFoundBody": "Try a different item or ask the desk for availability.",
     "findGyms.searchPlaceholder": "Search by gym, area, or pin code",
     "findGyms.cityPlaceholder": "Area, city, or pin code",
     "findGyms.deviceLocation": "Use device location",
@@ -626,7 +622,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.back": "वापस",
     "shop.creating": "बन रहा है...",
     "shop.yourCartEmpty": "आपका कार्ट खाली है",
-    "shop.cartEmptyBody": "शॉप से डेस्क पिकअप आइटम जोड़ें.",
     "shop.subtotal": "सबटोटल",
     "shop.openMiniCart": "मिनी कार्ट खोलें",
     "shop.openCart": "कार्ट खोलें",
@@ -641,7 +636,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "स्टॉक या कीमतें रिफ्रेश नहीं हो पाईं. ऑर्डर से पहले फिर कोशिश करें.",
     "shop.tryAgain": "फिर कोशिश करें",
     "shop.noProductsFound": "कोई प्रोडक्ट नहीं मिला",
-    "shop.noProductsFoundBody": "दूसरा आइटम खोजें या डेस्क से उपलब्धता पूछें.",
     "findGyms.searchPlaceholder": "जिम, क्षेत्र या पिन कोड से खोजें",
     "findGyms.cityPlaceholder": "क्षेत्र, शहर या पिन कोड",
     "findGyms.deviceLocation": "डिवाइस लोकेशन इस्तेमाल करें",

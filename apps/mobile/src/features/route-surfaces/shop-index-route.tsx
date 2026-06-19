@@ -907,7 +907,7 @@ export default function Shop() {
               />
             ))
           ) : (
-            <EmptyState title={t("shop.yourCartEmpty")} body={t("shop.cartEmptyBody")} />
+            <EmptyState title={t("shop.yourCartEmpty")} />
           )}
         </Card>
         <Card variant="compact" contentStyle={styles.totalRow}>
@@ -1133,7 +1133,7 @@ export default function Shop() {
         }
         ListEmptyComponent={
           !productsQuery.isLoading && cartHydrated && !productsQuery.isError && !filteredProducts.length ? (
-            <EmptyState title={t("shop.noProductsFound")} body={t("shop.noProductsFoundBody")} />
+            <EmptyState title={t("shop.noProductsFound")} />
           ) : null
         }
         showsVerticalScrollIndicator={false}

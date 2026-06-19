@@ -298,6 +298,8 @@ fully complete until the human/device/provider gates below have external evidenc
   Member not found title.
 - Member referral card no longer repeats a neutral gift icon beside the already-clear
   Refer a friend title and share action.
+- Shop cart and no-products empty states no longer repeat helper bodies under already-clear
+  titles, and the unused English/Hindi translation keys were removed.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
