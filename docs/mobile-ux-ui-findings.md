@@ -1175,3 +1175,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated owner active-member metric cue (`R268`) is closed:
   the owner mobile dashboard Active members metric now uses informational tone
   instead of success color, keeping strong tones for actual outcomes and attention.
+- **[ui, fixed]** Overstated platform clear-state badges (`R269`) are closed:
+  the web platform health and safety badges now use neutral tone for Healthy and
+  zero-open clear states, while review-needed and open-report states stay warning.

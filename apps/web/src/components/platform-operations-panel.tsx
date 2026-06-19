@@ -738,7 +738,7 @@ export function PlatformOperationsPanel({
           title="Platform health cockpit"
           description="Production-facing signal for provider setup, tenant health, conversion risk, and safety load."
           badge={
-            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "lime"}>
+            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
               {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
             </Pill>
           }
@@ -1953,7 +1953,7 @@ export function PlatformOperationsPanel({
               title="Recent reports"
               description="Recent gym reports, with severity and current status."
               badge={
-                <Pill tone={openFlags.length ? "amber" : "lime"}>{openFlags.length} open</Pill>
+                <Pill tone={openFlags.length ? "amber" : "neutral"}>{openFlags.length} open</Pill>
               }
             />
             <div className="mt-5 grid gap-3">
