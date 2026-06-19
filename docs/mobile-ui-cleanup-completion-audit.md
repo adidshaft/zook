@@ -270,6 +270,8 @@ fully complete until the human/device/provider gates below have external evidenc
   copy that already explains the planning state.
 - Trainer plan rows no longer repeat a reader icon beside client/active-plan text when the action
   button already carries the plan cue.
+- Owner low-stock product rows no longer repeat a cube icon where the section, product name, and
+  stock-count subtitle already identify the row.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

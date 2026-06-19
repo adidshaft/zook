@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
-import { IconBubble, ListRow } from "@/components/primitives";
+import { ListRow } from "@/components/primitives";
 import { typography, useTheme } from "@/lib/theme";
 
 export type LowStockProduct = {
@@ -23,7 +23,6 @@ export function StockRow({
     <ListRow
       title={product.name}
       subtitle={`${product.stock ?? 0} left · threshold ${product.lowStockThreshold ?? 0}`}
-      leading={<IconBubble icon="cube-outline" tone="neutral" />}
       trailing={
         <Pressable
           onPress={onReorder}
