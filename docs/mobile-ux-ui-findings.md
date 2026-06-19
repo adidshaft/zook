@@ -1325,3 +1325,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   selected notification rows, recipient navigation, and selected-recipient remove
   chips now use neutral styling instead of lime success emphasis, while delivery
   status pills keep semantic tone.
+- **[ui, fixed]** Overstated desk and shop handoff cues (`R317`) are closed:
+  desk action toasts, receipt-ready panels, active-check-in context, member
+  avatar fallbacks, and Open in Desk navigation now use informational or neutral
+  styling instead of lime success emphasis.

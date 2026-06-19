@@ -58,7 +58,7 @@ export function DeskWorkspace({
       ) : null}
 
       {state.toast ? (
-        <div className="rounded-2xl border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
+        <div className="rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
           {state.toast}
         </div>
       ) : null}

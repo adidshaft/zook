@@ -52,7 +52,7 @@ export function ShopOrdersSection({
         Ready pickup orders are handed over in Desk after identity verification.
       </ManagedOn>
       {status ? (
-        <p className="mt-3 rounded-2xl border border-lime-300/20 bg-lime-300/8 px-4 py-3 text-sm text-lime-100">
+        <p className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
           {status}
         </p>
       ) : null}
@@ -110,7 +110,7 @@ export function ShopOrdersSection({
                   order.status === "READY_FOR_PICKUP" ? (
                     <Link
                       href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
-                      className="zook-focus rounded-full border border-lime-300/35 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10"
+                      className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
                     >
                       Open in Desk
                     </Link>

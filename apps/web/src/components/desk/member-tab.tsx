@@ -96,7 +96,7 @@ export function MemberTab({
               ) : (
                 <AvatarInitials
                   name={memberLabel(selectedMember)}
-                  className="h-20 w-20 rounded-3xl border-transparent bg-lime-300/15 text-2xl text-lime-100"
+                  className="h-20 w-20 rounded-3xl border-white/10 bg-white/8 text-2xl text-white/70"
                 />
               )}
               <div className="min-w-0">
@@ -140,15 +140,15 @@ export function MemberTab({
                   {copy.recentActivity}
                 </p>
                 {activeCheckIn ? (
-                  <div className="mt-3 rounded-2xl border border-lime-300/25 bg-lime-300/10 p-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-lime-100/70">
+                  <div className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-blue-100/70">
                       {copy.activeCheckIn}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-lime-50">
+                    <p className="mt-1 text-sm font-medium text-blue-50">
                       Since {formatDateTime(activeCheckIn.checkedInAt)}
                     </p>
                     {activeCheckIn.branchName ? (
-                      <p className="mt-1 text-xs text-lime-50/60">{activeCheckIn.branchName}</p>
+                      <p className="mt-1 text-xs text-blue-50/60">{activeCheckIn.branchName}</p>
                     ) : null}
                   </div>
                 ) : null}
