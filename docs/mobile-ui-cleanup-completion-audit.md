@@ -53,6 +53,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `548e93c docs: update mobile cleanup audit for demo fallback`.
 - The mobile settings i18n table no longer carries unused privacy-history "latest export/deletion"
   strings, removing unreachable copy that suggested freshness metadata.
+- Mobile push registration errors use stable unavailable-build wording instead of hinting at future
+  availability when Expo project metadata is absent.
 - Later cue-removal and code-surface cleanup evidence includes:
   `b4914acf` (mobile button glow shadow),
   `d30ab4c3` (mobile screen ambient layers),

@@ -138,7 +138,7 @@ function trimErrorMessage(error: unknown) {
     return "Push alerts need a signed phone build. In-app alerts still work here.";
   }
   if (/project.?id/i.test(message)) {
-    return "Push alerts are not available in this build yet.";
+    return "Push alerts are unavailable in this build.";
   }
   return message;
 }
@@ -366,7 +366,7 @@ function PushNotificationsProviderInner({
       const projectId = getExpoProjectId();
       if (!projectId) {
         setSyncStatus("error");
-        setError("Push alerts are not available in this build yet.");
+        setError("Push alerts are unavailable in this build.");
         return false;
       }
 
