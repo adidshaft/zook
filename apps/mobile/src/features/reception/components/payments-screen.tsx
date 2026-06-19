@@ -46,14 +46,12 @@ export function ReceptionPaymentsScreenBody() {
                 {
                   label: "Amount",
                   value: formatInr(dueAmount),
-                  hint: "Manual entry",
                   tone: "neutral",
                   icon: "receipt-outline",
                 },
                 {
                   label: "Mode",
                   value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
-                  hint: "Offline record",
                   tone: "blue",
                   icon: "reader-outline",
                 },

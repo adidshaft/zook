@@ -81,21 +81,18 @@ export function ReceptionDeskScreenBody() {
                 {
                   label: "Today",
                   value: todayCount,
-                  hint: "Check-ins",
                   tone: "neutral",
                   icon: "qr-code-outline",
                 },
                 {
                   label: "Pending",
                   value: pendingCount,
-                  hint: "Awaiting approval",
                   tone: "amber",
                   icon: "flash-outline",
                 },
                 {
                   label: "Flagged",
                   value: flaggedCount,
-                  hint: "Needs attention",
                   tone: "red",
                   icon: "alert-circle-outline",
                 },

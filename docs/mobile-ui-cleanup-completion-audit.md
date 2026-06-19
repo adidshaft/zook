@@ -289,6 +289,8 @@ fully complete until the human/device/provider gates below have external evidenc
   above segmented controls, fields, and history cards that already define the surface.
 - Member plan preview and meal logging sections no longer repeat helper subtitles above
   exercise rows, preset chips, and form fields that already show the available actions.
+- Reception desk, payment, and order metric cards no longer render second-line category
+  hints under already-clear labels and values.
 
 ### Product plan Part A and Part B
 

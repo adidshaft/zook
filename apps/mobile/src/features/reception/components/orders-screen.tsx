@@ -28,14 +28,12 @@ export function ReceptionOrdersScreenBody() {
                 {
                   label: "Ready",
                   value: readyOrders.length,
-                  hint: "Pickup queue",
                   tone: "blue",
                   icon: "bag-check-outline",
                 },
                 {
                   label: "Done",
                   value: fulfilledCount,
-                  hint: "Fulfilled",
                   tone: "blue",
                   icon: "checkmark-done-outline",
                 },
