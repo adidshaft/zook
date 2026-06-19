@@ -74,7 +74,7 @@ export function RazorpayCheckoutPanel({
         : "Payment submitted. Waiting for confirmation.";
     if (handoffState === "failed")
       return "Razorpay was closed before confirmation. Retry checkout here or return to Zook to start a fresh payment link.";
-    return isRecurring ? "Ready to authorize autopay." : "Ready for secure payment.";
+    return isRecurring ? "Autopay authorization is available." : "Secure checkout is available.";
   }, [amountPaise, handoffState, isRecurring, keyId, providerReference, scriptError, scriptReady]);
 
   useEffect(() => {

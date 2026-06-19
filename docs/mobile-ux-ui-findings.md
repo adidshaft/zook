@@ -1413,3 +1413,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: checkout creation and pre-payment pickup helper copy now use
   created/available-after-payment wording while preserving true pickup-ready
   order states.
+- **[ui, fixed]** Overstated Razorpay checkout readiness copy (`R341`) is
+  closed: the web checkout panel now describes the loaded payment action as
+  available instead of ready, while the button keeps the explicit pay/authorize
+  action.
