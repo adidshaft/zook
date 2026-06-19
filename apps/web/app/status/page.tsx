@@ -184,7 +184,7 @@ export default async function StatusPage({
             <Pill tone={statusTone(publicStatus)}>{formatEnumLabel(publicStatus)}</Pill>
           </div>
           <p className="mt-5 text-sm text-white/50">
-            Incident history will appear here once monitoring is active.
+            No incident history is recorded yet.
           </p>
           <p className="mt-5 text-sm text-white/50">
             Looking for engineering detail?{" "}

@@ -497,7 +497,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 value={form.galleryText}
                 onChange={(value) => update("galleryText", textToList(value).slice(0, 15).join("\n"))}
                 rows={5}
-                placeholder="Uploaded photos appear here. You can also paste one image link per line."
+                placeholder="Paste one image link per line."
               />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {previewGallery.slice(0, 15).map((imageUrl, index) => (

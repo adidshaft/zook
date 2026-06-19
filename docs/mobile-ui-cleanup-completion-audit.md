@@ -357,6 +357,8 @@ fully complete until the human/device/provider gates below have external evidenc
   sections no longer show static pills that repeat the page or card heading.
 - Start-gym, member profile, and member-import surfaces no longer show static pills that repeat
   the hero or form instructions.
+- Gallery photo and public incident-history placeholders now use direct input/empty-state wording
+  instead of placeholder-location phrasing.
 
 ### Product plan Part A and Part B
 
