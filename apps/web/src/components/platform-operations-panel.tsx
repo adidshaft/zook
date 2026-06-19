@@ -1573,7 +1573,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Gym accounts"
               title="Gym accounts"
-              description="Review active gyms and pause accounts when the platform team needs to step in."
               badge={
                 <Pill tone={suspendedOrganizations.length ? "amber" : "neutral"}>
                   {suspendedOrganizations.length} suspended

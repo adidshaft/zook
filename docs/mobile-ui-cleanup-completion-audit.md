@@ -392,6 +392,8 @@ fully complete until the human/device/provider gates below have external evidenc
   alert cards that already label those signals directly.
 - Platform moderation queue no longer repeats flagged-content decision helper copy above the flag
   count, moderation table, and decision control.
+- Platform gym accounts no longer repeats review/pause helper copy above the suspended count,
+  account rows, and pause/archive controls.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
