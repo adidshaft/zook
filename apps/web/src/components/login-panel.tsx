@@ -73,7 +73,7 @@ function loadScript(src: string) {
       script.dataset.loaded = "true";
       resolve();
     };
-    script.onerror = () => reject(new Error("Sign-in provider could not load."));
+    script.onerror = () => reject(new Error("Sign-in service could not load."));
     if (!existing) {
       document.head.appendChild(script);
     }
