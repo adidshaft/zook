@@ -1262,3 +1262,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated public join mode cue (`R297`) is closed:
   the public join checkout mode badge now uses informational tone instead of
   success color, while unavailable join modes keep danger treatment.
+- **[ui, fixed]** Overstated platform support notice cue (`R298`) is closed:
+  support-console action notices now use informational tone by default and render
+  delete failures as danger instead of forcing every notice through success color.

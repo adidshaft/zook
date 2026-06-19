@@ -10,7 +10,7 @@ import {
   toneFromStatus,
 } from "./dashboard-primitives";
 import { ConfirmActionButton } from "./confirm-action-button";
-import { GlassCard, Pill } from "./glass-card";
+import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import {
   formatCompactNumber,
@@ -255,7 +255,10 @@ export function PlatformOperationsPanel({
   const [paymentSearchRows, setPaymentSearchRows] = useState<PlatformPaymentRow[] | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PlatformPaymentDetail | null>(null);
   const [paymentDetailBusyId, setPaymentDetailBusyId] = useState<string | null>(null);
-  const [supportNotice, setSupportNotice] = useState("");
+  const [supportNotice, setSupportNoticeState] = useState<{
+    message: string;
+    tone: PillTone;
+  } | null>(null);
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const activeSection = initialSection;
@@ -274,6 +277,10 @@ export function PlatformOperationsPanel({
   const showSubscriptions = activeSection === "subscriptions";
   const showAssistant = activeSection === "ai-traffic";
   const showSafety = activeSection === "abuse-flags";
+
+  function setSupportNotice(message: string, tone: PillTone = "blue") {
+    setSupportNoticeState({ message, tone });
+  }
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
@@ -707,7 +714,7 @@ export function PlatformOperationsPanel({
       setSupportNotice("Broadcast deleted");
       broadcastsState.reload();
     } catch (cause) {
-      setSupportNotice(cause instanceof Error ? cause.message : "Unable to delete broadcast");
+      setSupportNotice(cause instanceof Error ? cause.message : "Unable to delete broadcast", "red");
     } finally {
       setBroadcastBusyId(null);
     }
@@ -785,7 +792,7 @@ export function PlatformOperationsPanel({
             eyebrow="Support"
             title="Platform support console"
             description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
-            badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill>Live</Pill>}
+            badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : <Pill>Live</Pill>}
           />
           <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
             {showUsers ? (
