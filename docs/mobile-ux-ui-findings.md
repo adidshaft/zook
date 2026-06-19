@@ -1283,3 +1283,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated active check-in cue (`R304`) is closed:
   the member home Active check-in timer icon now uses informational tone instead
   of success color, while approved or completed attendance states keep their cues.
+- **[ui, fixed]** Overstated mobile active-plan cues (`R305`) are closed:
+  trainer session and member diet Active plan chips now use informational tone
+  instead of success color, while No plan states remain neutral.

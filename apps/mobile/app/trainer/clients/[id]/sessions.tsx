@@ -77,7 +77,7 @@ export default function TrainerClientSessionsScreen() {
               trailing={
                 <StatusChip
                   status={hasActivePlans ? "Active" : "No plans"}
-                  tone={hasActivePlans ? "lime" : "neutral"}
+                  tone={hasActivePlans ? "blue" : "neutral"}
                 />
               }
             />

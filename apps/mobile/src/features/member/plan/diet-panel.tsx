@@ -101,7 +101,7 @@ export function DietPanel() {
               {loggedCalories} / {plan?.calorieTarget ?? "-"} kcal
             </Text>
           </View>
-          <StatusChip status={plan ? "Active plan" : "No plan"} tone={plan ? "lime" : "neutral"} />
+          <StatusChip status={plan ? "Active plan" : "No plan"} tone={plan ? "blue" : "neutral"} />
         </View>
         {plan?.meals?.length ? (
           plan.meals.map((meal) => (
