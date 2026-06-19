@@ -1129,3 +1129,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile no-plan card warning cue (`R253`) is closed:
   the active-member No plan assigned card now uses the informational mobile tone
   instead of a warning surface, while pending and expired membership cards stay amber.
+- **[ui, fixed]** Overstated mobile workout-ready card cue (`R254`) is closed:
+  the Today workout card now uses the informational mobile tone instead of success
+  color, keeping lime for active sessions and logged workout outcomes.

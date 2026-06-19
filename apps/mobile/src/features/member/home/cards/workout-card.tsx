@@ -32,7 +32,7 @@ export default function WorkoutCard({
       }
       ctaHref={`/plan/${assignmentId}`}
       ctaLabel="Start workout"
-      tone="lime"
+      tone="blue"
     />
   );
 }
