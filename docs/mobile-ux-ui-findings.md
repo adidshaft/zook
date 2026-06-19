@@ -1244,3 +1244,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated attendance QR readiness cues (`R291`) are closed:
   Check-in ready and Attendance sync: Live indicators now use informational tone
   instead of success color, while QR errors and pending scan review cues remain distinct.
+- **[ui, fixed]** Overstated shop normal-stock cue (`R292`) is closed:
+  mobile shop product cards now use informational tone for normal in-stock counts,
+  while low-stock and out-of-stock states keep warning and danger treatment.

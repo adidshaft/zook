@@ -963,7 +963,7 @@ export default function Shop() {
               name={item.name}
               price={formatInr(item.pricePaise)}
               stock={fulfillmentLabel}
-              tone={item.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
+              tone={item.stock <= 0 ? "red" : lowStock ? "amber" : "blue"}
               imageUrl={productImageUrl}
               quantity={cart[item.id] ?? 0}
               icon={iconForCategory(item.category as Category)}
