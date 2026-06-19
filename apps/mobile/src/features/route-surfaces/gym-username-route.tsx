@@ -425,11 +425,7 @@ export default function GymProfileScreen() {
               </View>
             </Card>
 
-            <SectionHeader
-              eyebrow="Inside"
-              title="Gym profile"
-              subtitle="Facility, trainers, access, and location details."
-            />
+            <SectionHeader eyebrow="Inside" title="Gym profile" />
 
             <Card style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow

@@ -302,6 +302,8 @@ fully complete until the human/device/provider gates below have external evidenc
   titles, and the unused English/Hindi translation keys were removed.
 - Public gym profile fallback header no longer shows future-loading helper copy where the title
   and screen loading/error states already provide context.
+- Public gym profile details no longer repeat the facility/trainer/access/location summary above
+  the details card that already exposes those fields directly.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
