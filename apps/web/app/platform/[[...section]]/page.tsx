@@ -339,7 +339,7 @@ async function PlatformDashboardContent({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+        <Pill tone={data.connected ? "blue" : "amber"}>{runtimeLabel}</Pill>
         {hasAlerts ? (
           <Pill tone="amber">
             <AlertTriangle className="h-3 w-3" aria-hidden="true" />

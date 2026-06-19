@@ -1229,3 +1229,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated referral availability cues (`R286`) are closed:
   referral policy Enabled and active referral-code statuses now use informational
   tone, while paused or inactive referral states remain warning cues.
+- **[ui, fixed]** Overstated platform runtime online cue (`R287`) is closed:
+  the platform shell now uses informational tone for System online connectivity,
+  while demo fallback or unavailable data states remain warning cues.
