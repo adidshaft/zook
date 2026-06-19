@@ -293,6 +293,8 @@ fully complete until the human/device/provider gates below have external evidenc
   hints under already-clear labels and values.
 - Owner approval and revenue summary metric cards no longer render static category hints
   under already-clear labels and amounts.
+- Account settings no longer repeats contact-verification helper copy above labeled
+  email/mobile OTP controls, while preserving per-field current-value and status hints.
 
 ### Product plan Part A and Part B
 

@@ -31,9 +31,6 @@ export default function AccountSettingsScreen() {
           </Card>
           <Card variant="compact" contentStyle={styles.form}>
             <Text style={[styles.title, { color: palette.text.primary }]}>Contact verification</Text>
-            <Text style={[styles.helper, { color: palette.text.secondary }]}>
-              Add or update your email and mobile number with OTP verification.
-            </Text>
             <ContactVerifier
               activeOrgId={activeOrgId}
               currentValue={session?.user.email}
