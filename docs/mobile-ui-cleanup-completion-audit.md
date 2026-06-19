@@ -322,6 +322,8 @@ fully complete until the human/device/provider gates below have external evidenc
   search, profile counts, and the roster table.
 - Dashboard membership catalog and coaching library no longer repeat static plan-catalog
   descriptions where the headings, counts, managed-on note, and tables already provide context.
+- Dashboard settlement queue empty state no longer repeats payment/pickup follow-up copy below
+  the queue title, badge, filters, and Desk handoff note.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

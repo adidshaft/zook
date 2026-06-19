@@ -164,12 +164,7 @@ export function SettlementQueueCard({
               ]}
               rows={filteredShopOrders}
               rowKey={(order) => order.id}
-              empty={
-                <EmptyState
-                  title="No shop orders"
-                  description="Payment and pickup follow-up is clear."
-                />
-              }
+              empty={<EmptyState title="No shop orders" />}
             />
           </>
         )}
