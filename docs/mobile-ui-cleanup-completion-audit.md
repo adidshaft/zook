@@ -406,6 +406,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and Copy membership link actions.
 - Gym profile media tab no longer repeats image-upload guidance above the Logo, Cover photo,
   and Add gallery photo controls.
+- Gym profile public-details tab no longer repeats where-details-render guidance above the
+  public gym fields themselves.
 - Mobile gym discovery header no longer repeats browse/referral guidance above search fields,
   referral state, and available-gym results.
 - Trainer customization revenue toggle no longer repeats the Show revenue snippet label through

@@ -321,7 +321,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Identity"
               title="Public gym details"
-              description="These details render on the public gym page, mobile gym profile, and join flow."
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Gym name" value={form.name} onChange={(value) => update("name", value)} />
