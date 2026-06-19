@@ -60,7 +60,7 @@ export function OffersRouteSection(props: GrowthRouteProps) {
       description={copy.offersDescription}
       badge={
         <Pill tone={activeOfferCount ? "blue" : "amber"}>
-          {activeOfferCount} live
+          {activeOfferCount} active
         </Pill>
       }
     >

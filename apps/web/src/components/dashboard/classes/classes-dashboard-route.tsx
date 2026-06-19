@@ -243,7 +243,7 @@ export function ClassesDashboardRoute({
         <SectionHeader
           eyebrow="Upcoming"
           title="Scheduled classes"
-          description="The list updates for the current branch scope and shows live confirmed capacity."
+          description="The list updates for the current branch scope and shows confirmed capacity."
           badge={
             <Pill>
               <CalendarDays className="h-3.5 w-3.5" />

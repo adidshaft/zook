@@ -145,7 +145,7 @@ export function SettingsSection({
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
               Billing, organization profile, branch setup, team access, attendance, and message
-              controls live here. Use the cards below to jump directly to the workflow you need.
+              controls are here. Use the cards below to jump directly to the workflow you need.
             </p>
           </div>
           {needsBillingSetup ? (

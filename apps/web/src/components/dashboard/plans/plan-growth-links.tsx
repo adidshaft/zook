@@ -32,7 +32,7 @@ export function PlanGrowthLinks({
             label: "Offers",
             href: "/dashboard/plans/offers",
             detail: "Publish plan offers for a date window or campaign.",
-            badge: `${activeOfferCount} live`,
+            badge: `${activeOfferCount} active`,
           },
           {
             label: "Referrals",

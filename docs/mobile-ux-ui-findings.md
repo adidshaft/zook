@@ -1377,3 +1377,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   (`R330`) are closed: dashboard and mobile loading/summary copy now uses
   current/recent/appear wording instead of live/latest phrasing for static
   lists and document panels.
+- **[ui, fixed]** Overstated operational live-language cues (`R331`) are
+  closed: coach, classes, settings, growth, and platform operations copy now
+  uses active/current/production/support wording instead of live labels for
+  static readouts and navigation surfaces.

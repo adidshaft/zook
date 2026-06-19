@@ -976,7 +976,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment ledger"
-                description="Test and live payment records appear here immediately after checkout or desk payment creation."
+                description="Test and production payment records appear here immediately after checkout or desk payment creation."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length
@@ -1547,7 +1547,7 @@ export function PlatformOperationsPanel({
             eyebrow="Incident mode"
             title="Production incident checklist"
             description="A simple first-response lane for provider outages, payment trouble, safety escalations, and tenant-impacting issues."
-            badge={<Pill>Use during live support</Pill>}
+            badge={<Pill>Use during support</Pill>}
           />
           <div className="mt-5 grid gap-3">
             {incidentChecklist.map((item, index) => (
