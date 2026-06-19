@@ -1526,7 +1526,7 @@ export function PlatformOperationsPanel({
               ]}
               rows={providerEntries}
               rowKey={([category]) => category}
-              empty="No service status checks."
+              empty="No checks."
             />
           </div>
         </GlassCard>
