@@ -359,6 +359,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the hero or form instructions.
 - Gallery photo and public incident-history placeholders now use direct input/empty-state wording
   instead of placeholder-location phrasing.
+- Platform service readouts now use active/configured wording instead of generic ready-for-use
+  cues.
 
 ### Product plan Part A and Part B
 

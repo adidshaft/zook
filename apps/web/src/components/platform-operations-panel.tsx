@@ -387,9 +387,9 @@ export function PlatformOperationsPanel({
   );
   const cockpitItems = useMemo(() => [
     {
-      label: "Ready services",
+      label: "Active services",
       value: formatCompactNumber(readyProviders.length),
-      meta: "Ready for live members",
+      meta: "Configured member services",
     },
     {
       label: "Service reviews",
@@ -1459,9 +1459,9 @@ export function PlatformOperationsPanel({
             <ReadoutGrid
               items={[
                 {
-                  label: "Ready",
+                  label: "Active services",
                   value: formatCompactNumber(readyProviders.length),
-                  meta: "Services ready for use",
+                  meta: "Configured for use",
                 },
                 {
                   label: "Standard settings",
