@@ -261,6 +261,8 @@ fully complete until the human/device/provider gates below have external evidenc
   will-appear/available phrasing.
 - Mobile activity, pickup, trainer bio, invite-plan steps, and web admin/referral/branch/billing
   status copy now uses show/ready/attached wording instead of will-show/available/already/appears.
+- Platform service/assistant, trainer nutrition, notification compose/summary, mobile plan/pickup,
+  coach web, and shop status copy now avoids quick-view/private/available/will-helper phrasing.
 
 ### Product plan Part A and Part B
 

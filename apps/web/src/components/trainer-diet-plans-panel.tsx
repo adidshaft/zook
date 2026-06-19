@@ -124,7 +124,7 @@ export function TrainerDietPlansPanel({
       <SectionHeader
         eyebrow="Trainer nutrition"
         title="Client diet plans"
-        description="Create, review, publish, edit, and remove diet plans for this client."
+        description="Create, review, publish, edit, or remove diet plans for this client."
         badge={notice ? <Pill tone="blue">{notice}</Pill> : <Pill>Web dashboard</Pill>}
         action={
           <ZookButton size="sm" onClick={() => void createPlan()}>
@@ -177,7 +177,7 @@ export function TrainerDietPlansPanel({
                     <ConfirmActionButton
                       className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                       title={`Delete ${plan.title}?`}
-                      description="This removes the diet plan from the client record. Published members will no longer see it."
+                      description="This removes the diet plan from the client record and member view."
                       confirmLabel="Delete"
                       confirmTone="danger"
                       onConfirm={() => deletePlan(plan)}
@@ -195,7 +195,7 @@ export function TrainerDietPlansPanel({
         ) : (
           <EmptyState
             title="No diet plans yet"
-            description="Create a plan to make nutrition visible to this client."
+            description="Create a plan to share nutrition with this client."
           />
         )}
       </div>

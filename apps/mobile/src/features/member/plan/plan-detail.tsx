@@ -207,7 +207,7 @@ export default function Plans() {
                 <EmptyState
                   icon="clipboard-outline"
                   title="No plan assigned"
-                  body="Your trainer will create and assign a workout plan for you."
+                  body="Your trainer assigns workout plans here."
                 />
               </Card>
             ) : null}

@@ -114,7 +114,7 @@ export function NotificationsPanel({
           <SectionHeader
             eyebrow="Recent Messages"
             title="Recent notifications"
-            description="A quick read on recent updates sent from this gym."
+            description="Recent updates sent from this gym."
             action={
               <Link
                 href="/dashboard/notifications/history"

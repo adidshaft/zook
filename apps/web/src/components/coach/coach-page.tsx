@@ -48,7 +48,7 @@ export function CoachPage({
       <SectionHero
         eyebrow={`Good day, ${firstName}`}
         title="Trainer command"
-        description="Your assigned clients, week schedule, and progress notes are in the Zook app. The web view gives you a quick read on what's active right now."
+        description="Your assigned clients, week schedule, and progress notes are in the Zook app. This web view highlights active work."
         icon={Dumbbell}
         tone="sky"
         meta={

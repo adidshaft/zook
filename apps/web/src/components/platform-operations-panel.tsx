@@ -1443,7 +1443,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="System checks"
             title="Service status"
-            description="A quick view of the services Zook depends on. Private settings stay hidden."
+            description="Services Zook depends on, with sensitive settings hidden."
             badge={
               <Pill tone={misconfiguredProviders.length ? "red" : "lime"}>
                 {misconfiguredProviders.length} need setup
@@ -1890,7 +1890,7 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Assistant"
               title="Recent assistant activity"
-              description="A quick view of assisted drafts across gyms."
+              description="Assisted drafts across gyms."
               badge={<Pill>{usage.length} events</Pill>}
             />
             <div className="mt-5">
@@ -1942,7 +1942,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={usage}
                   rowKey={(row) => row.id}
-                  empty="No assistant activity available."
+                  empty="No assistant activity yet."
                 />
               )}
             </div>
