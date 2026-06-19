@@ -143,6 +143,8 @@ fully complete until the human/device/provider gates below have external evidenc
   provider diagnostic status handling.
 - Desk and shop pickup surfaces now use pickup-order wording instead of extra ready-order labels
   while leaving the underlying order status model intact.
+- Shop payment notifications now use available/collect wording instead of ready-pickup copy while
+  preserving order activation semantics.
 
 ### Product plan Part A and Part B
 

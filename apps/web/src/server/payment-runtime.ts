@@ -901,7 +901,7 @@ export async function applyPaymentSessionStatus(input: {
             orgId: existingOrder.orgId,
             ...(session.userId ? { createdById: session.userId } : {}),
             type: "TRANSACTIONAL",
-            title: "Order ready for pickup",
+            title: "Order available for pickup",
             body: `Your pickup code is ${readyOrder.pickupCode}. Show it at reception to collect the order.`,
             audience: "selected_member",
             userIds: [existingOrder.userId],
