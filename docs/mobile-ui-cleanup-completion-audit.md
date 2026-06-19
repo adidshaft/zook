@@ -218,6 +218,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Branch commerce controls, payment reconciliation, dashboard branch checklist, attendance
   summary, and reports snapshot now use owner-facing plans/products, receipt, and branch wording instead of
   setup/current/proof/scope wording.
+- Platform support payment and impersonation tables now use payment-record/account/gym wording
+  instead of ledger/target/org-scope wording.
 
 ### Product plan Part A and Part B
 

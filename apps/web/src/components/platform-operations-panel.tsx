@@ -975,7 +975,7 @@ export function PlatformOperationsPanel({
             <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Payments"
-                title="Payment ledger"
+                title="Payment records"
                 description="Test and production payment records appear here immediately after checkout or desk payment creation."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
@@ -1328,11 +1328,11 @@ export function PlatformOperationsPanel({
               columns={[
                 {
                   id: "target",
-                  header: "Target",
+                  header: "Account",
                   render: (session) => (
                     <div>
                       <p className="font-medium text-white">{session.targetUserId}</p>
-                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No org scope"}</p>
+                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No gym selected"}</p>
                     </div>
                   ),
                 },
