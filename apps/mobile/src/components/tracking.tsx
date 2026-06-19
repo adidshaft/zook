@@ -1,7 +1,8 @@
 import type { TrackingSummaryMetric, WorkoutLogEntry } from "@zook/core";
+import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { radii, useTheme } from "@/lib/theme";
+import { gradients, radii, useTheme } from "@/lib/theme";
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
   const { palette } = useTheme();
@@ -15,6 +16,12 @@ export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric 
         },
       ]}
     >
+      <LinearGradient
+        colors={gradients.cardSheen}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
       <Text style={[styles.summaryLabel, { color: palette.text.secondary }]}>
         {metric.label}
       </Text>
@@ -183,7 +190,9 @@ const styles = StyleSheet.create({
   summaryTile: {
     width: "48%",
     borderRadius: 20,
+    borderCurve: "continuous",
     borderWidth: 1,
+    overflow: "hidden",
     padding: 14,
     minHeight: 112,
     gap: 7
