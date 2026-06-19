@@ -1409,3 +1409,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated desk receipt ready label (`R339`) is closed:
   dashboard payment messages and the desk receipt card now describe generated
   receipts as generated instead of ready.
+- **[ui, fixed]** Overstated mobile shop checkout readiness copy (`R340`) is
+  closed: checkout creation and pre-payment pickup helper copy now use
+  created/available-after-payment wording while preserving true pickup-ready
+  order states.
