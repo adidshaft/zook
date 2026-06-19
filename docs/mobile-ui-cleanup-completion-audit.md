@@ -147,6 +147,8 @@ fully complete until the human/device/provider gates below have external evidenc
   preserving order activation semantics.
 - Member import rate-limit and mobile document-generation errors now use wait/unavailable wording
   instead of later/not-ready cues.
+- Delete confirmations now describe subscription, order-history, and assignment constraints
+  directly instead of using generic unused-plan/product wording.
 
 ### Product plan Part A and Part B
 

@@ -187,7 +187,7 @@ function ProductListItem({
         </ZookButton>
         <ConfirmActionButton
           title="Delete product?"
-          description="Only unused products can be deleted. Archive products with order history so reports stay consistent."
+          description="Only products without order history can be deleted. Archive products with orders so reports stay consistent."
           confirmLabel="Delete"
           onConfirm={() => deleteProduct(product.id)}
           disabled={formBusy === `product:${product.id}:delete`}

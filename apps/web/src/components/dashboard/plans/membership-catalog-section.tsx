@@ -145,7 +145,7 @@ export function MembershipCatalogSection({
                     </ZookButton>
                     <ConfirmActionButton
                       title="Delete membership plan?"
-                      description="Only unused plans can be deleted. Plans with subscriptions should be archived so member history stays intact."
+                      description="Only plans without subscriptions can be deleted. Archive plans with subscriptions so member history stays intact."
                       confirmLabel="Delete"
                       onConfirm={() => deleteMembershipPlan(plan.id)}
                       disabled={formBusy === `plan:${plan.id}:delete`}

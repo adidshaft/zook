@@ -417,7 +417,7 @@ export function StaffSection({
                       description={
                         plan.assignmentCount > 0
                           ? "Assigned plans are archived so member history remains intact."
-                          : "This unused plan will be removed from the training library."
+                          : "This plan will be removed from the training library."
                       }
                       confirmLabel={plan.assignmentCount > 0 ? "Archive" : "Delete"}
                       onConfirm={() => deleteCoachPlan(plan)}
