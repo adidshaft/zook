@@ -204,7 +204,7 @@ export default function OwnerMemberDetail() {
 
           {member ? (
             <>
-              <Card variant="success" contentStyle={styles.profileContent}>
+              <Card variant="compact" contentStyle={styles.profileContent}>
                 <View style={[styles.largeAvatar, { backgroundColor: palette.accent.fill }]}>
                   <Text style={[styles.largeAvatarText, { color: palette.text.onAccent }]}>
                     {formatInitials(name, email)}

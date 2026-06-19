@@ -1286,3 +1286,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile active-plan cues (`R305`) are closed:
   trainer session and member diet Active plan chips now use informational tone
   instead of success color, while No plan states remain neutral.
+- **[ui, fixed]** Overstated owner member profile cue (`R306`) is closed:
+  the owner member profile summary now uses neutral compact styling instead of a
+  success surface, while the subscription status pill keeps semantic tone.
