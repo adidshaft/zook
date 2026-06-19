@@ -50,7 +50,7 @@ export function MemberSummary({
           label="Total members"
           value={members.length}
           icon={Users}
-          tone="lime"
+          tone="sky"
           caption="In your roster"
         />
         <KPITile

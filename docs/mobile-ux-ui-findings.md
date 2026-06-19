@@ -1108,3 +1108,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated reception payment amount cue (`R246`) is closed:
   the manual payment Amount metric now uses neutral styling instead of warning color,
   leaving actual validation errors on the amount field itself.
+- **[ui, fixed]** Overstated member total KPI cue (`R247`) is closed:
+  the Total members roster KPI now uses the informational dashboard tone instead of
+  success color, keeping stronger state cues on active, pending, and expiring counts.
