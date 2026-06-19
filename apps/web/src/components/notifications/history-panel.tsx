@@ -181,7 +181,7 @@ export function NotificationHistoryPanel({
                 <h2 className="text-xl font-semibold">Recipients</h2>
                 <p className="mt-2 text-sm text-white/50">{selectedNotification.title}</p>
               </div>
-              <Pill tone={undeliveredCount > 0 ? "amber" : "lime"}>
+              <Pill tone={undeliveredCount > 0 ? "amber" : "neutral"}>
                 {undeliveredCount} undelivered
               </Pill>
             </div>

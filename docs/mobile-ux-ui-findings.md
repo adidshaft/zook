@@ -1187,3 +1187,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web desk pending-clear cues (`R272`) are closed:
   the Desk pending-review KPI and queue badge now avoid success tone when there are
   zero pending records, while pending reviews still use warning tone.
+- **[ui, fixed]** Overstated notification delivery clear cue (`R273`) is closed:
+  the notification recipient panel now uses neutral tone for zero undelivered
+  messages, while undelivered recipients still use warning tone.
