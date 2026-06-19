@@ -201,7 +201,7 @@ export function ReportsPanel({
               CSV exports
             </p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Downloads use the selected date range and selected branch.
+              Downloads follow the date range and branch.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

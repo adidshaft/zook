@@ -58,7 +58,7 @@ export function AttendancePanel({
             <SectionHeader
               eyebrow="Entry & attendance"
               title="QR code and entry codes"
-              description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
+              description="Members scan the gym QR, receive a unique entry code, and present it at the floor or desk."
               badge={<StatusPill value="Member QR" />}
               action={
                 <a
@@ -78,7 +78,7 @@ export function AttendancePanel({
                   label: "Branch",
                   value: selectedBranchName,
                   meta: branchScope.selectedBranch
-                    ? "QR and member attendance use this branch"
+                    ? "Branch for QR and member attendance"
                     : "Set up your branch to start accepting members",
                 },
                 {

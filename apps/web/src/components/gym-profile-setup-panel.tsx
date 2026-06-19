@@ -424,7 +424,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Features"
               title="Aesthetics and amenities"
-              description="These options display on your profile so members know what your gym offers."
+              description="Profile options members use to understand your gym."
             />
             <div className="mt-5 grid gap-4">
               <TextAreaField

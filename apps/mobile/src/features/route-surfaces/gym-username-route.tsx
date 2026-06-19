@@ -836,7 +836,7 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
     },
     {
       title: "Start training",
-      body: "Scan the gym QR, get a unique entry code, and show it at the floor or desk.",
+      body: "Scan the gym QR, get a unique entry code, and present it at the floor or desk.",
     },
   ];
 }

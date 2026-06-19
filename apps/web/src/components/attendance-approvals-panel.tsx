@@ -87,7 +87,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       <div className="mt-5 grid gap-3">
         {!records.length ? (
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm text-[var(--text-tertiary)]">
-            No flagged check-ins right now.
+            No flagged check-ins.
           </div>
         ) : null}
         {records.map((record) => (

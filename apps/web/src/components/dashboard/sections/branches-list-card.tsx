@@ -173,7 +173,7 @@ function BranchSummaryRow({
         {!branch.isDefault ? (
           <ConfirmActionButton
             title="Make this the primary location?"
-            description="New attendance and QR displays use this location. Existing data stays intact."
+            description="New attendance and QR flows move to this location. Existing data stays intact."
             confirmLabel="Make primary"
             onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
             disabled={formBusy === `branch:${branch.id}`}

@@ -167,7 +167,7 @@ export function NotificationHistoryPanel({
           ))}
           {!visibleNotifications.length ? (
             <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-              No messages match this view.
+              No messages match.
             </p>
           ) : null}
         </div>

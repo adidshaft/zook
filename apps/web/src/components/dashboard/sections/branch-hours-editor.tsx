@@ -195,7 +195,7 @@ export function BranchHoursEditor({
       />
       {allClosed ? (
         <p className="mt-3 rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
-          This branch will appear closed on the public page.
+          This branch is closed on the public page.
         </p>
       ) : null}
       <div className="mt-4 grid gap-2">

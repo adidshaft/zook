@@ -56,7 +56,7 @@ export function ReceptionDeskScreenBody() {
               subtitle={
                 pendingCount || flaggedCount
                   ? "Review pending and flagged entry attempts before they age out."
-                  : "No pending or flagged scans need the desk right now."
+                  : "No pending or flagged scans need the desk."
               }
               meta={`${pendingCount} pending · ${flaggedCount} flagged`}
               status={pendingCount || flaggedCount ? "Review required" : "Active"}

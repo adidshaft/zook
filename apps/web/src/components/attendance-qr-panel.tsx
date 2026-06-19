@@ -296,7 +296,7 @@ export function AttendanceQrPanel({
           })}
           {!queueRecords.length ? (
             <p className="rounded-xl border border-dashed border-[var(--border)] px-3 py-4 text-sm text-[var(--text-tertiary)]">
-              No pending or flagged scans right now.
+              No pending or flagged scans.
             </p>
           ) : null}
         </div>

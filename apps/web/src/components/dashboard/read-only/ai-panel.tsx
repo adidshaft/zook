@@ -48,7 +48,7 @@ export function AiPanel({
           description="Review assisted drafts and usage signals for this gym."
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Draft creation is managed from trainer mobile workflows; owner web shows reviewable activity.
+          Draft creation lives in trainer mobile workflows; owner web keeps the activity log.
         </ManagedOn>
         <div className="mt-5">
           {aiUsageState.error ? (
@@ -171,7 +171,7 @@ export function AiPanel({
               value: coachPlans.filter((plan) => plan.aiGenerated).length
                 ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
                 : "No assisted plans",
-              meta: "Reviewable training content created so far",
+              meta: "Training content created",
             },
           ]}
         />

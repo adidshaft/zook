@@ -432,7 +432,7 @@ export function PlatformOperationsPanel({
       owner: "Support",
       signal: suspendedOrganizations.length
         ? `${suspendedOrganizations.length} paused gym${suspendedOrganizations.length === 1 ? "" : "s"}`
-        : "No gym is paused right now",
+        : "No paused gyms",
     },
     {
       step: "Notify trial owners",

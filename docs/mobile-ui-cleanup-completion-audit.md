@@ -412,6 +412,13 @@ fully complete until the human/device/provider gates below have external evidenc
 - Mobile tracking, class, trainer bio, billing mandate, account-link, reception lookup,
   member plan/profile, and web invoice empty copy now remove remaining residual yet/found cues.
 - Member membership and logged-workout fallbacks now use direct empty/scheduled-state wording.
+- Web approval, notification, profile setup, QR scan, platform pause, membership, reports,
+  billing, AI, branch, shop, and plan-catalog copy now removes residual right-now/this-view/
+  show/display helper phrasing while preserving operational meaning.
+- Desk queue, attendance QR, public gym entry, and coaching pinned-client copy now use shorter
+  direct operational instructions without right-now/show/from-the-mobile-app helper phrasing.
+- Primary-branch confirmation copy now states the attendance/QR move directly instead of
+  "use this location" helper phrasing.
 
 ### Product plan Part A and Part B
 

@@ -168,7 +168,7 @@ export async function renderMembershipSurface(
           <GlassCard className="p-6 text-center">
             <h2 className="text-2xl font-semibold text-white">No membership</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
-              Find your gym, choose a plan, and continue with payment to see your membership here.
+              Find your gym, choose a plan, and continue with payment.
             </p>
             <Link
               href={localizedPath("/gyms", locale)}
