@@ -11,6 +11,8 @@ export function CoachingLibrarySection({
   coachPlans,
   coachPlansState,
 }: CoachingLibrarySectionProps) {
+  const pendingReviewCount = coachPlans.filter((plan) => plan.reviewed === false).length;
+
   return (
     <GlassCard>
       <SectionHeader
@@ -18,8 +20,8 @@ export function CoachingLibrarySection({
         title="Workout and advisory plans"
         description="These are the plans trainers are creating and reviewing for members."
         badge={
-          <Pill tone="amber">
-            {coachPlans.filter((plan) => plan.reviewed === false).length} pending review
+          <Pill tone={pendingReviewCount > 0 ? "amber" : "neutral"}>
+            {pendingReviewCount} pending review
           </Pill>
         }
       />

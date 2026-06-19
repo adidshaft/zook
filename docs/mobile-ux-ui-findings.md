@@ -1051,3 +1051,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading dashboard plan-mix empty cue (`R227`) is closed:
   the empty plan-mix donut now renders a zero arc instead of a full lime ring, and the
   empty legend row no longer shows a success-colored swatch for a 0% state.
+- **[ui, fixed]** Overstated coaching pending-review count cue (`R228`) is closed:
+  the coaching library pending-review count now uses amber only when reviews are actually
+  pending, keeping the zero state neutral.
