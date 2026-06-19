@@ -278,6 +278,8 @@ fully complete until the human/device/provider gates below have external evidenc
   beside already-clear titles, body copy, and actions.
 - Trainer client sessions adherence row no longer repeats a neutral analytics icon beside the
   title, explanatory subtitle, and percentage chip.
+- Trainer client plan draft prompt no longer repeats a neutral reader icon beside text that
+  already names the saved draft and review action.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

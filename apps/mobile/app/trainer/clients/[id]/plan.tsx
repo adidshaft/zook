@@ -6,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
   Card,
-  IconBubble,
   AppHeader,
   SecondaryButton,
   SegmentedControl,
@@ -282,10 +281,7 @@ export default function TrainerClientPlanScreen() {
           </Card>
           {savedPlan ? (
             <Card variant="warning" contentStyle={styles.draftPromptContent}>
-              <View style={styles.attentionHeader}>
-                <IconBubble icon="reader-outline" tone="neutral" />
-                <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
-              </View>
+              <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
             </Card>
           ) : null}
           {status ? (
@@ -330,7 +326,6 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: "row", gap: spacing.sm },
   actionHalf: { flex: 1 },
   stack: { gap: spacing.sm },
-  attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   draftPromptContent: { gap: spacing.sm },
   cardBody: { ...typography.body },
   statusContent: { padding: 14 },
