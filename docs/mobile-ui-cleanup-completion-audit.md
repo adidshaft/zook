@@ -328,6 +328,8 @@ fully complete until the human/device/provider gates below have external evidenc
   descriptions where headings, counts, and assignment/plan rows already define the surfaces.
 - Dashboard payment reconciliation no longer repeats a generic review description above readouts
   and checklist cards that already name settled, pending, failed, receipt, cash, and refund work.
+- Dashboard membership plan ladder no longer repeats plan-pricing/visibility/member-count
+  description above a plan-count badge and table columns that already expose those fields.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

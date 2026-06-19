@@ -28,7 +28,6 @@ export function MembershipPlanLadder({
       <SectionHeader
         eyebrow="Membership plans"
         title="Membership plan ladder"
-        description="Review plan pricing, public visibility, and active memberships."
         badge={<Pill>{membershipPlans.length} plans</Pill>}
       />
       <div className="mt-5">
