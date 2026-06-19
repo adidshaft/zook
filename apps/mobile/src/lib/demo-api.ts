@@ -275,6 +275,44 @@ function demoOwnerDashboard() {
   };
 }
 
+function demoTrainerPayouts() {
+  const period = new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  const lines = [
+    {
+      id: "payout-line-pt",
+      kind: "Personal training",
+      description: "PT sessions · 8 completed",
+      amountPaise: 2400000,
+      createdAt: nowIso(),
+    },
+    {
+      id: "payout-line-plans",
+      kind: "Plan assignments",
+      description: "Coached plans · 12 members",
+      amountPaise: 1200000,
+      createdAt: nowIso(),
+    },
+    {
+      id: "payout-line-classes",
+      kind: "Group classes",
+      description: "Class instruction · 6 sessions",
+      amountPaise: 650000,
+      createdAt: nowIso(),
+    },
+  ];
+  return [
+    {
+      id: "payout-current",
+      trainerId: "user-rhea",
+      totalPaise: lines.reduce((total, line) => total + line.amountPaise, 0),
+      status: "ACCRUING",
+      period,
+      paidAt: null,
+      lines,
+    },
+  ];
+}
+
 function demoTrainerClients() {
   return {
     clients: zookDemoFixtures.trainerClientAssignments.map((assignment) => {
@@ -1540,6 +1578,20 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) {
     return { classes: demoClasses() } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/setup-status$/)) {
+    return {
+      hasMembershipPlans: true,
+      hasQrDisplayed: true,
+      staffCount: 4,
+      memberCount: 128,
+      hasShopProducts: true,
+    } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/payouts$/)) {
+    return { payouts: demoTrainerPayouts() } as T;
   }
 
   if (pathname.includes("/trainers/") && pathname.endsWith("/clients")) {
