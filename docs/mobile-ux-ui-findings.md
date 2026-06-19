@@ -1066,3 +1066,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated coach sessions KPI warning cue (`R232`) is closed:
   the coach Sessions this week KPI now uses an informational tone instead of amber,
   keeping warning color for items that actually need attention.
+- **[ui, fixed]** Overstated member roster count cue (`R233`) is closed:
+  the member roster hero count now uses neutral styling without a lime status dot,
+  keeping attention color on pending join requests and active member state.

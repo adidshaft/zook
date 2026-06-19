@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, UserCheck, UserPlus, Users } from "lucide-react";
-import { KPITile, SectionHero, StatusDot } from "../charts";
+import { KPITile, SectionHero } from "../charts";
 import type { JoinRequestRow, MemberRow } from "@/components/dashboard/types";
 
 export function MemberSummary({
@@ -32,8 +32,7 @@ export function MemberSummary({
         tone="lime"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--accent-strong)]">
-              <StatusDot tone="lime" size={6} />
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               {members.length} {members.length === 1 ? "member" : "members"}
             </span>
             {joinRequests.length > 0 ? (
