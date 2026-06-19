@@ -290,6 +290,8 @@ fully complete until the human/device/provider gates below have external evidenc
   No earnings title.
 - Member progress recent-workouts empty state no longer repeats helper copy under the already-clear
   No workouts logged title and top-level Log workout action.
+- Settings support report-problem row no longer repeats helper copy where the row title and
+  expanded feedback form already explain the action.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

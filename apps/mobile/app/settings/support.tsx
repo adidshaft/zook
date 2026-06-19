@@ -91,7 +91,6 @@ export default function SupportSettingsScreen() {
             >
               <ListRow
                 title="Report a problem"
-                subtitle="Send app details to Zook support"
                 icon="bug-outline"
                 style={styles.row}
               />
