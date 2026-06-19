@@ -7,6 +7,7 @@ import {
   EmptyState,
   FormField,
   Card,
+  ProgressBar,
   QueryErrorState,
   SectionHeader,
   StatusChip,
@@ -103,6 +104,13 @@ export function DietPanel() {
           </View>
           <StatusChip status={plan ? "Active plan" : "No plan"} tone={plan ? "blue" : "neutral"} />
         </View>
+        {plan?.calorieTarget ? (
+          <ProgressBar
+            value={loggedCalories / plan.calorieTarget}
+            tone={loggedCalories > plan.calorieTarget ? "amber" : "lime"}
+            label={`${Math.max(0, plan.calorieTarget - loggedCalories)} kcal remaining today`}
+          />
+        ) : null}
         {plan?.meals?.length ? (
           plan.meals.map((meal) => (
             <View key={meal.id} style={[styles.mealRow, { borderTopColor: palette.border.subtle }]}>
