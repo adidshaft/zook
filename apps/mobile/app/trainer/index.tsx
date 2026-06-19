@@ -129,7 +129,6 @@ export default function TrainerHomeScreen() {
             {clientsNeedingPlans ? (
               <OperationalQueueCard
                 title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
-                subtitle="Create the next workout or diet assignment before their next visit."
                 meta="Trainer planning queue"
                 status="Create plan next"
                 tone="amber"
