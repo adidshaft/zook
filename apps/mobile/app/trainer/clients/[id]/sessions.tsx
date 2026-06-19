@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import {
   Card,
-  IconBubble,
   ListRow,
   AppHeader,
   SegmentedControl,
@@ -60,7 +59,6 @@ export default function TrainerClientSessionsScreen() {
             <ListRow
               title="Adherence"
               subtitle={averageCompletion === null ? "Waiting for member feedback and workout logs." : `${averageCompletion}% average completion across recent plan feedback.`}
-              leading={<IconBubble icon="analytics-outline" tone="neutral" />}
               trailing={averageCompletion === null ? undefined : <StatusChip status={`${averageCompletion}%`} tone="blue" />}
             />
             {progressTimeline.length ? (
