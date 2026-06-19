@@ -123,7 +123,6 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SwitchRow
           icon={<IndianRupee size={14} className="text-[var(--feedback-success)]" />}
           label="Show revenue snippet"
-          description="Display your monthly trainer payout at a glance"
           checked={prefs.showRevenueCard}
           onChange={(value) => update("showRevenueCard", value)}
         />
@@ -208,7 +207,7 @@ function SwitchRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
 }) {
@@ -219,7 +218,7 @@ function SwitchRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-[var(--text-primary)]">{label}</span>
-        <span className="block text-xs text-[var(--text-tertiary)]">{description}</span>
+        {description ? <span className="block text-xs text-[var(--text-tertiary)]">{description}</span> : null}
       </span>
       <button
         type="button"

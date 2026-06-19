@@ -408,6 +408,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and Add gallery photo controls.
 - Mobile gym discovery header no longer repeats browse/referral guidance above search fields,
   referral state, and available-gym results.
+- Trainer customization revenue toggle no longer repeats the Show revenue snippet label through
+  a duplicate payout-at-a-glance description.
 - Coach today list no longer repeats the coach-overview action through a duplicate row subtitle.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
