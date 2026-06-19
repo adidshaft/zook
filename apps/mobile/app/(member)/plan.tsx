@@ -111,7 +111,7 @@ export default function MemberPlanScreen() {
                 {todayPlan ? (
                   <Card variant="selected" contentStyle={styles.todayCard}>
                     <View style={styles.todayTop}>
-                      <IconBubble icon="barbell-outline" tone="lime" size={46} />
+                      <IconBubble icon="barbell-outline" tone="blue" size={46} />
                       <View style={styles.todayCopy}>
                         <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
                         <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>

@@ -1265,3 +1265,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform support notice cue (`R298`) is closed:
   support-console action notices now use informational tone by default and render
   delete failures as danger instead of forcing every notice through success color.
+- **[ui, fixed]** Overstated member today-plan cue (`R299`) is closed:
+  the assigned Today workout icon now uses informational tone instead of success
+  color, while completed workout states keep success treatment.
