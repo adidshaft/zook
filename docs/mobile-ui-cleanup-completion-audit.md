@@ -151,6 +151,8 @@ fully complete until the human/device/provider gates below have external evidenc
   directly instead of using generic unused-plan/product wording.
 - Mobile autopay component state now uses enabled naming instead of live-state helper wording while
   preserving accepted autopay statuses and UI output.
+- Dashboard sign-out hydration guard now uses mounted naming instead of ready-state naming while
+  preserving the disabled-until-mounted behavior.
 
 ### Product plan Part A and Part B
 
