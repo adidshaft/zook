@@ -37,7 +37,7 @@ export function MembershipPlanLadder({
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
           <EmptyState
             title="Loading plan ladder"
-            description="Loading current membership plans for this organization."
+            description="Loading current membership plans for this gym."
           />
         ) : (
           <DataTable

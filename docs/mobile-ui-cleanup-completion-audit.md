@@ -191,6 +191,8 @@ fully complete until the human/device/provider gates below have external evidenc
   branch wording.
 - Dashboard member roster and product empty states now use gym wording instead of organization
   wording.
+- Gym profile, membership-plan, and staff loading states now use gym wording instead of
+  organization wording.
 
 ### Product plan Part A and Part B
 

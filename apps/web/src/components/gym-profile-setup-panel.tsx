@@ -224,7 +224,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
       <GlassCard>
         <EmptyState
           title="Loading gym setup"
-          description={status || "Pulling organization profile, public links, and QR setup."}
+          description={status || "Pulling gym profile, public links, and QR setup."}
         />
       </GlassCard>
     );

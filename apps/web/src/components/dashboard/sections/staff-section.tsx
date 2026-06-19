@@ -198,7 +198,7 @@ export function StaffSection({
           ) : staffState.loading && staffAssignments.length === 0 ? (
             <EmptyState
               title="Loading staff"
-              description="Pulling role assignments for this organization."
+              description="Pulling role assignments for this gym."
             />
           ) : (
             <DataTable
