@@ -6,7 +6,7 @@ import { ManagedOn, managedOnLabel } from "./managed-on";
 describe("ManagedOn", () => {
   it("maps surfaces to short labels", () => {
     expect(managedOnLabel("trainer-mobile")).toBe("Trainer app");
-    expect(managedOnLabel("desk")).toBe("Managed at Desk");
+    expect(managedOnLabel("desk")).toBe("Desk");
   });
 
   it("renders short managed-on guidance", () => {

@@ -419,6 +419,8 @@ fully complete until the human/device/provider gates below have external evidenc
   direct operational instructions without right-now/show/from-the-mobile-app helper phrasing.
 - Primary-branch confirmation copy now states the attendance/QR move directly instead of
   "use this location" helper phrasing.
+- Managed-on ownership notes now render as quieter inline notes instead of separate card-like
+  cue panels with icons; desk labeling is shortened from "Managed at Desk" to "Desk".
 
 ### Product plan Part A and Part B
 
