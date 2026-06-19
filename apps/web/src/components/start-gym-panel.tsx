@@ -528,7 +528,7 @@ export function StartGymPanel({
                 </p>
                 <p className="mt-2 text-xs leading-5 text-white/42">
                   Select what members should see on the public gym profile. You can refine this
-                  later from Gym profile.
+                  from Gym profile.
                 </p>
                 <div className="mt-3 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-3">
                   <div className="flex flex-wrap gap-2">

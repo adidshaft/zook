@@ -241,7 +241,7 @@ export function BranchForm({
                 },
                 {
                   value: "CUSTOM",
-                  label: "Set separate pricing later",
+                  label: "Set separate pricing",
                   description: "Branch can use its own pricing and product list before launch.",
                 },
               ]}

@@ -355,7 +355,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.privacyWarning": "These requests are saved and reviewed before anything changes.",
     "settings.export": "Export",
     "settings.delete": "Delete",
-    "settings.exportRequested": "Export requested. You'll receive an email when it's ready.",
+    "settings.exportRequested": "Export requested. You'll receive an email when the file is available.",
     "settings.deletionRequested": "Deletion requested. This is being reviewed before execution.",
     "settings.noExport": "No export request yet",
     "settings.noDeletion": "No deletion request yet",
@@ -578,7 +578,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "इन अनुरोधों को सेव किया जाता है और बदलाव से पहले रिव्यू किया जाता है.",
     "settings.export": "एक्सपोर्ट",
     "settings.delete": "डिलीट",
-    "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. तैयार होने पर आपको ईमेल मिलेगा.",
+    "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. फ़ाइल उपलब्ध होने पर आपको ईमेल मिलेगा.",
     "settings.deletionRequested":
       "डिलीशन अनुरोध भेजा गया. इसे लागू करने से पहले रिव्यू किया जाएगा.",
     "settings.noExport": "अभी कोई एक्सपोर्ट अनुरोध नहीं",

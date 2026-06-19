@@ -376,7 +376,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Location"
               title="Address and main branch"
-              description="The main branch follows this address for MVP setup. Advanced multi-branch editing can live here later."
+              description="The main branch follows this address. Multi-branch editing stays in branch settings."
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field

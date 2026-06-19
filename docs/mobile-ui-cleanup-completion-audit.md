@@ -133,6 +133,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording instead of ready/as-soon-as cues.
 - Attendance QR supporting labels now use direct QR/active wording instead of extra ready/live cues
   while preserving the existing tested page heading.
+- Setup, branch-pricing, privacy export, and event-template copy now avoid MVP/later/latest/ready
+  wording while preserving the same next-step meaning.
 
 ### Product plan Part A and Part B
 

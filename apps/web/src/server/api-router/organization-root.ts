@@ -62,7 +62,7 @@ function starterNotificationTemplates(orgId: string, createdById: string) {
       name: "Event update",
       type: "OPERATIONAL",
       title: "Gym event update",
-      body: "An event update is available for members. Open Zook for the latest details.",
+      body: "An event update is available for members. Open Zook for the details.",
     },
   ];
   return templates.map((template) => ({
