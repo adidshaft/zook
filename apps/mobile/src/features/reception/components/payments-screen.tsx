@@ -47,7 +47,7 @@ export function ReceptionPaymentsScreenBody() {
                   label: "Amount",
                   value: formatInr(dueAmount),
                   hint: "Manual entry",
-                  tone: "amber",
+                  tone: "neutral",
                   icon: "receipt-outline",
                 },
                 {

@@ -1105,3 +1105,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated reception pickup-ready metric cue (`R245`) is closed:
   the Ready pickup queue metric now uses the informational mobile tone instead of
   success color, reserving lime for completed verification and pickup outcomes.
+- **[ui, fixed]** Overstated reception payment amount cue (`R246`) is closed:
+  the manual payment Amount metric now uses neutral styling instead of warning color,
+  leaving actual validation errors on the amount field itself.
