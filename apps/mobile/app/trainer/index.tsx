@@ -121,7 +121,7 @@ export default function TrainerHomeScreen() {
                   />
                 </Pressable>
               ) : (
-                <EmptyState title="No coaching actions today" body="No client sessions or follow-ups today." />
+                <EmptyState title="No coaching actions today" />
               )}
             </Card>
           </AnimatedAppear>
@@ -207,7 +207,7 @@ export default function TrainerHomeScreen() {
                 </Pressable>
               ))
             ) : (
-              <EmptyState title="No recent feedback" body="No client notes or session feedback yet." />
+              <EmptyState title="No recent feedback" />
             )}
             </Card>
           </AnimatedAppear>

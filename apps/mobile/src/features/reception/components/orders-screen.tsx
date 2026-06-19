@@ -139,7 +139,7 @@ export function ReceptionOrdersScreenBody() {
                   </Card>
                 ))
               ) : (
-                <EmptyState title="No pickups waiting" body="No paid pickup orders waiting." />
+                <EmptyState title="No pickups waiting" />
               )}
             </View>
             {paymentStatus ? (

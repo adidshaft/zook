@@ -365,6 +365,8 @@ fully complete until the human/device/provider gates below have external evidenc
   no longer repeat the same loading message in both title and description.
 - Payment, audit, platform activity, staff, inventory, coaching library, and mobile billing
   loading states no longer repeat fetch/pull helper text below already-clear loading titles.
+- Mobile member, trainer, owner, and reception empty states no longer repeat "No ..." helper
+  bodies underneath already-clear empty-state titles.
 
 ### Product plan Part A and Part B
 

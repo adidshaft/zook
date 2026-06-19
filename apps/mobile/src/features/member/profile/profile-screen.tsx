@@ -638,7 +638,6 @@ export default function ProfileScreen() {
                 <EmptyState
                   icon="time-outline"
                   title="No activity yet"
-                  body="No recent check-ins or workouts yet."
                 />
               )}
             </Card>

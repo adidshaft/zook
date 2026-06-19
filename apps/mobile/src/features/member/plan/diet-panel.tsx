@@ -113,7 +113,7 @@ export function DietPanel() {
             </View>
           ))
         ) : (
-          <EmptyState title="No diet plan yet" body="No published meals from your trainer yet." />
+          <EmptyState title="No diet plan yet" />
         )}
       </Card>
 

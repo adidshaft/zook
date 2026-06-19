@@ -102,7 +102,7 @@ export default function TrackingHistoryScreen() {
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
               <Card variant="compact">
-                <EmptyState title="No workouts yet" body="No saved workouts yet." />
+                <EmptyState title="No workouts yet" />
               </Card>
             ) : null}
           </View>

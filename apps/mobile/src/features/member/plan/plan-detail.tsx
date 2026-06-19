@@ -588,7 +588,6 @@ export function PlanDetailScreen() {
                 <Card variant="compact">
                   <EmptyState
                     title="No exercises yet"
-                    body="No assigned exercise details published yet."
                   />
                 </Card>
               ) : null}
