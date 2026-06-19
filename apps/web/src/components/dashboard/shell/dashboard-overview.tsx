@@ -323,7 +323,7 @@ export function DashboardOverview({
           value={revenueRupees}
           format={(v) => formatInrCompact(v * 100)}
           icon={IndianRupee}
-          tone="amber"
+          tone={accent}
           trend={revenueTrend}
           delta={charts.deltas.revenue7d}
           caption="Confirmed payments"

@@ -1045,3 +1045,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated refund availability count cue (`R225`) is closed:
   the refund tracker's available count now uses neutral styling instead of amber, matching
   the tracked count and keeping warning color for actual refund errors or blockers.
+- **[ui, fixed]** Overstated revenue KPI warning cue (`R226`) is closed:
+  the dashboard Revenue today KPI now uses the normal dashboard accent instead of amber,
+  keeping warning color for metrics that actually need attention.
