@@ -172,6 +172,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and provider-test cues.
 - Platform provider diagnostics now use a neutral current-check fallback instead of a just-now
   timestamp cue.
+- Platform incident checklist now uses clear provider-check wording instead of configured/default
+  status labels.
 
 ### Product plan Part A and Part B
 

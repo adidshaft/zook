@@ -425,7 +425,7 @@ export function PlatformOperationsPanel({
       owner: "Ops",
       signal: misconfiguredProviders.length
         ? misconfiguredProviders.map(([category]) => formatEnumLabel(category)).join(", ")
-        : "All configured providers report configured/default",
+        : "All provider checks are clear",
     },
     {
       step: "Freeze risky tenant actions",
