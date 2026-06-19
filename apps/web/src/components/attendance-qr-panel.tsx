@@ -304,7 +304,7 @@ export function AttendanceQrPanel({
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 px-4 py-3 text-xs text-[var(--text-tertiary)]">
         <span className="inline-flex items-center gap-2 text-[var(--accent-strong)]">
-          <StatusDot tone="blue" /> Attendance sync: Active
+          <StatusDot tone="blue" /> Attendance active
         </span>
         <span>Token ID: {qrPayload ? qrPayload.slice(-8) : "--"}</span>
         <span>

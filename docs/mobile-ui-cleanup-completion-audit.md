@@ -163,6 +163,7 @@ fully complete until the human/device/provider gates below have external evidenc
   implementation cues, with matching helper naming.
 - Mobile member plan detail header now keeps the trainer-source label without the extra synced
   cue.
+- Attendance QR footer now uses a direct active-state label instead of an attendance-sync cue.
 
 ### Product plan Part A and Part B
 
