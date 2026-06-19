@@ -119,7 +119,7 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
         typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
       ]
         .filter(Boolean)
-        .join(" · ") || "Membership synced with desk";
+        .join(" · ") || "Membership active";
 
   return (
     <Card

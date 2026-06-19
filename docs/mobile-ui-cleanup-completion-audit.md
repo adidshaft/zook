@@ -373,6 +373,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Attendance QR display no longer shows a static Check-in QR pill beside the QR itself; branch
   and expiry pills remain.
 - Mobile in-progress workout card no longer repeats the already-started state in its helper copy.
+- Member membership, owner stock, and branch checklist copy now use active/paid/added wording
+  instead of synced/ready cues.
 
 ### Product plan Part A and Part B
 

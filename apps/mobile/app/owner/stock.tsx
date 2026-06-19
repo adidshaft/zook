@@ -58,7 +58,7 @@ export default function OwnerStockScreen() {
           />
           <View style={styles.metricGrid}>
             <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
-            <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="blue" style={styles.metricHalf} />
+            <MetricTile label="Pickups" value={String(orders.length)} detail="Paid orders" tone="blue" style={styles.metricHalf} />
           </View>
           <SectionHeader title="Products to reorder" />
           <Card contentStyle={styles.stack}>
@@ -68,7 +68,7 @@ export default function OwnerStockScreen() {
               : null}
             {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" body="No items below threshold." /> : null}
           </Card>
-          <SectionHeader title="Orders ready for pickup" />
+          <SectionHeader title="Pickup orders" />
           <Card contentStyle={styles.stack}>
             {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
             {!ordersQuery.isError && orders.length
