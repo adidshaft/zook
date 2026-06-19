@@ -41,7 +41,7 @@ export function NotificationsPanel({
         initialNotifications={
           initialNotifications.map((notification) => ({
             ...notification,
-            body: notification.body ?? "Message body is syncing. Open history again in a moment.",
+            body: notification.body ?? "Message body unavailable.",
             pushEnabled: Boolean(notification.pushEnabled),
             createdAt:
               typeof notification.createdAt === "string"

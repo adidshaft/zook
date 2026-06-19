@@ -155,6 +155,8 @@ fully complete until the human/device/provider gates below have external evidenc
   preserving the disabled-until-mounted behavior.
 - Mobile profile membership progress fallback now uses unavailable-detail wording instead of a
   syncing-state cue.
+- Dashboard notification history fallback now uses direct unavailable-body wording instead of a
+  syncing-state cue.
 
 ### Product plan Part A and Part B
 
