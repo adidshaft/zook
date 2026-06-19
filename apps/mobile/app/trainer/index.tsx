@@ -104,7 +104,6 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
           <AnimatedAppear delay={0}>
-            <SectionHeader title="Today" />
             <Card variant="compact" contentStyle={styles.stack}>
               {priorityClient ? (
                 <Pressable

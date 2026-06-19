@@ -461,6 +461,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Dashboard coupons section no longer repeats Coupons in both the eyebrow and title.
 - Mobile trainer clients list removes the duplicate Clients section header directly under the
   Clients app header.
+- Mobile trainer home removes the duplicate Today section header directly under the Today
+  screen header.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
