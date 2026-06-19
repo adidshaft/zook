@@ -70,7 +70,7 @@ export function PaymentReconciliationCard({
           },
           {
             title: "Refund watch",
-            copy: "Use the refunds tab for partial or failed-payment correction instead of editing history.",
+            copy: "Use the refunds tab for partial or failed-payment corrections.",
           },
         ].map((item) => (
           <div key={item.title} className="rounded-[22px] border border-white/10 bg-black/20 p-4">

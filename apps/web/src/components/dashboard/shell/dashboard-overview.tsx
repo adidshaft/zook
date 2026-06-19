@@ -143,7 +143,7 @@ export function DashboardOverview({
           {
             icon: AlertTriangle,
             title: "Gym is not active",
-            subtitle: `Current status: ${formatEnumLabel(activeOrg.status)}`,
+            subtitle: `Status: ${formatEnumLabel(activeOrg.status)}`,
             tone: "rose" as const,
             href: "/dashboard/settings",
           },

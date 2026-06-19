@@ -605,7 +605,7 @@ export default function ProfileScreen() {
                 <EmptyState
                   icon="card-outline"
                   title="No active membership"
-                  body="Your current membership will appear here after a gym activates one."
+                  body="Membership details will appear here after a gym activates one."
                   action={
                     <ZookButton href="/gyms" variant="secondary" icon="search-outline" size="sm">
                       Find gyms

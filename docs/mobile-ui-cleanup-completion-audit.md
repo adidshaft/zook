@@ -252,6 +252,8 @@ fully complete until the human/device/provider gates below have external evidenc
   now avoids snapshot/current/setup/scope/provider phrasing in visible and accessibility labels.
 - Coach progress, trainer preferences, notification templates, scan trial action, platform service
   summary, and billing CTA copy now avoid leftover snapshot/current/default/test/setup cues.
+- Mobile membership/payment hints and web status/queue/broadcast/refund helper copy now use shorter
+  member/status/queue/console/correction wording instead of current/available/already/history phrasing.
 
 ### Product plan Part A and Part B
 

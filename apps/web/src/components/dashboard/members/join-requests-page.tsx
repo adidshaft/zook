@@ -95,7 +95,7 @@ export function JoinRequestQueue({
         ) : (
           <EmptyState
             title="Queue is clear"
-            description="Open-join or already-reviewed memberships will not stack up here."
+            description="Open-join and reviewed memberships stay out of this queue."
           />
         )}
       </div>

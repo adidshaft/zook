@@ -1225,7 +1225,7 @@ export function PlatformOperationsPanel({
                           className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={broadcastBusyId === broadcast.id}
                           title="Delete this broadcast?"
-                          description="This removes the platform broadcast from the support console. Published recipients may already have seen it."
+                          description="This removes the broadcast from this console. Published recipients may have seen it."
                           confirmLabel="Delete"
                           confirmTone="danger"
                           onConfirm={() => deleteBroadcast(broadcast.id)}
