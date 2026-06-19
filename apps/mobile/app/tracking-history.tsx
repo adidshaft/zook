@@ -93,7 +93,7 @@ export default function TrackingHistoryScreen() {
                     </View>
                   </>
                 ) : (
-                  <EmptyState title="No body measurements" body="Add a body log to start weight and waist trends." />
+                  <EmptyState title="No body measurements" />
                 )}
               </Card>
             ) : null}

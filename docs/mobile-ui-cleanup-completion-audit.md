@@ -284,6 +284,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already-clear title and helper copy.
 - Trainer client not-found card no longer renders a neutral person icon beside the clear title and
   back-to-clients action.
+- Tracking history body-measurement empty state no longer repeats helper copy under an already
+  clear title inside the Body progress card.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
