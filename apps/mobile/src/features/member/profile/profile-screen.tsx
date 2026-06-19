@@ -535,7 +535,7 @@ export default function ProfileScreen() {
                         disabled={Boolean(roleBusy)}
                         onPress={() => confirmRoleSwitch(role)}
                       >
-                        <Pill tone={role === activeRole ? "lime" : "neutral"}>
+                        <Pill tone={role === activeRole ? "blue" : "neutral"}>
                           {roleBusy === role ? "Switching..." : formatRoleLabel(role)}
                         </Pill>
                       </Pressable>

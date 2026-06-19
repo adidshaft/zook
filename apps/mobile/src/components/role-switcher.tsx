@@ -187,7 +187,7 @@ export function RoleSwitcherChip() {
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
-                        tone={selected ? "lime" : "neutral"}
+                        tone={selected ? "blue" : "neutral"}
                       />
                     }
                     trailing={
@@ -382,7 +382,7 @@ export function RoleSwitcherContextPill() {
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
-                        tone={selected ? "lime" : "neutral"}
+                        tone={selected ? "blue" : "neutral"}
                       />
                     }
                     trailing={

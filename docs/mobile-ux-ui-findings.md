@@ -1247,3 +1247,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated shop normal-stock cue (`R292`) is closed:
   mobile shop product cards now use informational tone for normal in-stock counts,
   while low-stock and out-of-stock states keep warning and danger treatment.
+- **[ui, fixed]** Overstated mobile selected-role cues (`R293`) are closed:
+  selected workspace and active-role chips now use informational tone instead of
+  success color, while the role-switcher availability trigger keeps its affordance.
