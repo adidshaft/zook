@@ -13,7 +13,7 @@ export function PlanRow({ client }: { client: TrainerClientRecord }) {
         title={client.user?.name ?? "Client"}
         subtitle={`${activePlans} active ${activePlans === 1 ? "plan" : "plans"} · ${fitnessGoalFor(client)}`}
         leading={<IconBubble icon="reader-outline" tone="neutral" />}
-        trailing={<StatusChip status="Open" tone="amber" />}
+        trailing={<StatusChip status="Open" tone="neutral" />}
       />
       <ZookButton
         testID={`trainer-client-detail-${client.memberUserId}`}

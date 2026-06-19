@@ -1090,3 +1090,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile owner revenue metric cues (`R240`) are closed:
   the owner revenue summary now treats revenue as informational and manual records
   as neutral totals, keeping success/warning tones for actual outcomes and queues.
+- **[ui, fixed]** Overstated trainer client open-chip cue (`R241`) is closed:
+  trainer client rows now render the static Open affordance as neutral instead of
+  amber, keeping warning color for review or attention states.
