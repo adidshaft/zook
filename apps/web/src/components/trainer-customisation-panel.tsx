@@ -115,7 +115,6 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SwitchRow
           icon={<Bell size={14} className="text-[var(--feedback-warning)]" />}
           label="Auto-notify on plan change"
-          description="Push the client when you update a plan"
           checked={prefs.autoNotifyOnPlanChange}
           onChange={(value) => update("autoNotifyOnPlanChange", value)}
         />

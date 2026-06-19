@@ -414,6 +414,8 @@ fully complete until the human/device/provider gates below have external evidenc
   a duplicate payout-at-a-glance description.
 - Trainer customization landing-tab control no longer repeats where-coaching-opens copy above
   the Today, Clients, and Plans segmented options.
+- Trainer customization auto-notify toggle no longer repeats plan-change notification behavior
+  below the switch label.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
 - Mobile QA shortcuts header no longer repeats launcher guidance above the Public and Roles
