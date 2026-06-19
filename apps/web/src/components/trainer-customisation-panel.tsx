@@ -127,7 +127,6 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SegmentRow
           icon={<Palette size={14} className="text-[var(--accent-strong)]" />}
           label="Accent colour"
-          description="Used across charts and chips"
           value={prefs.preferredAccent}
           onChange={(value) => update("preferredAccent", value)}
           options={[
