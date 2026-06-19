@@ -1057,3 +1057,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member join-request KPI cue (`R229`) is closed:
   the member roster Join requests KPI now uses amber only when requests are pending,
   keeping the Inbox clear state from reading as a warning.
+- **[ui, fixed]** Overstated platform support idle-live cue (`R230`) is closed:
+  the support console's idle Live badge now uses neutral styling instead of blue,
+  keeping stronger tone for actual support action feedback.
