@@ -396,6 +396,8 @@ fully complete until the human/device/provider gates below have external evidenc
   account rows, and pause/archive controls.
 - Dashboard report snapshot no longer repeats metric/governance summaries above readout grids
   that already label membership, floor, revenue, audit, and control signals.
+- Dashboard admin activity no longer repeats audit-summary helper copy above the entries badge,
+  export action, and action/actor/created/details columns.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -57,7 +57,6 @@ export function AuditPanel({
         <SectionHeader
           eyebrow="Activity"
           title="Admin activity"
-          description="Sensitive changes, who made them, and when they happened."
           badge={<Pill>{auditLogs.length || auditLogCount} entries</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
         />
