@@ -114,7 +114,7 @@ export function ClassesDashboardRoute({
         title="Schedule a group class"
         description="Create the next yoga, strength, spin, or PT-led session for the active branch."
         action={
-          <Pill tone={selectedBranchId ? "lime" : "amber"}>
+          <Pill tone={selectedBranchId ? "blue" : "amber"}>
             <MapPin className="h-3.5 w-3.5" />
             {selectedBranchName}
           </Pill>

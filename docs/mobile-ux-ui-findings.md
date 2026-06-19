@@ -1205,3 +1205,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated desk pickup paid badge (`R278`) is closed:
   the Desk pickup payment-method badge now uses neutral tone for Paid orders that
   still need handoff, while pay-at-desk and code-verification states keep their cues.
+- **[ui, fixed]** Overstated class branch selection cue (`R279`) is closed:
+  the class scheduler branch context pill now uses informational tone for a selected
+  branch instead of success color, while missing branch context remains warning.
