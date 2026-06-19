@@ -336,6 +336,8 @@ fully complete until the human/device/provider gates below have external evidenc
   count, product form, and product list.
 - Dashboard plan-growth links no longer repeat a member-acquisition helper sentence above
   discount, offer, and referral cards that already include labels, descriptions, and counts.
+- Dashboard member summary no longer repeats roster-scope helper copy above member counts,
+  pending-request badges, and KPI tiles.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -27,7 +27,6 @@ export function MemberSummary({
       <SectionHero
         eyebrow="Members"
         title="Member roster"
-        description="Manage joins, payments, plans, and personal records - all of one member, in one place."
         icon={Users}
         tone="sky"
         meta={
