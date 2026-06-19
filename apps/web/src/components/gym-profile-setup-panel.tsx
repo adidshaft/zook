@@ -245,7 +245,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           <SectionHeader
             eyebrow="Web profile"
             title="Gym profile and membership links"
-            description="Owners manage the public gym profile here. Members can find the gym, open the profile link, or use the membership link to buy a plan."
             badge={
               <div className="flex flex-wrap gap-2">
                 <Pill tone={form.visibility === "PUBLIC" ? "blue" : "amber"}>
