@@ -1828,7 +1828,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Watchlist"
               title="Safety review"
-              description="A short view of gyms and reports that may need attention."
             />
             <ReadoutGrid
               className="mt-5"
