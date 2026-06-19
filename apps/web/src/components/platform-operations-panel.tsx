@@ -1352,7 +1352,7 @@ export function PlatformOperationsPanel({
               ]}
               rows={impersonations}
               rowKey={(session) => session.id}
-              empty="No support access sessions."
+              empty="No sessions."
             />
           </div>
         </GlassCard>
