@@ -65,7 +65,7 @@ export default function TrainerPayoutsScreen() {
                     <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
                   ))
                 ) : (
-                  <EmptyState title="No earnings yet" body="PT commissions and session fees will appear as soon as owner records activity." />
+                  <EmptyState title="No earnings yet" body="PT commissions and session fees appear after owner activity is recorded." />
                 )}
               </Card>
             </>

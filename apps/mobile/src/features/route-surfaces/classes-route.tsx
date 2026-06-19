@@ -82,7 +82,7 @@ export default function ClassesRoute() {
               </View>
             </View>
             <Text style={[styles.helperBody, { color: palette.text.secondary }]}>
-              Book classes in the active branch. If a session fills up, Zook will add you to the
+              Book classes in the active branch. If a session fills up, Zook adds you to the
               waitlist instead.
             </Text>
           </Card>

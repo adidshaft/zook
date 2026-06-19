@@ -93,7 +93,7 @@ export default function TrackingHistoryScreen() {
                     </View>
                   </>
                 ) : (
-                  <EmptyState title="No body measurements" body="Weight and waist trends will appear after your first body log." />
+                  <EmptyState title="No body measurements" body="Weight and waist trends appear after your first body log." />
                 )}
               </Card>
             ) : null}
@@ -102,7 +102,7 @@ export default function TrackingHistoryScreen() {
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
               <Card variant="compact">
-                <EmptyState title="No workouts yet" body="Saved workouts will show here." />
+                <EmptyState title="No workouts yet" body="Saved workouts show here." />
               </Card>
             ) : null}
           </View>

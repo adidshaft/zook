@@ -266,6 +266,9 @@ fully complete until the human/device/provider gates below have external evidenc
 - Notification send/template, gym-account empty state, settlement, body-progress, profile gallery,
   join-reject, and branch confirmation copy now uses direct present-tense wording instead of
   will/available/visible/private phrasing.
+- Mobile member plan, tracking, shop return, membership checkout, trainer queues, owner
+  empty states, reception pickup, and profile-switch prompts now use direct present-tense copy
+  instead of will-appear/will-refresh/will-be-marked phrasing.
 
 ### Product plan Part A and Part B
 

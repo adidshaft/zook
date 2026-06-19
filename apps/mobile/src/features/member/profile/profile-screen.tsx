@@ -285,7 +285,7 @@ export default function ProfileScreen() {
 
   function confirmRoleSwitch(role: Role) {
     if (role === activeRole) return;
-    Alert.alert(`Switch to ${formatRoleLabel(role)}?`, "Zook will move you to that role's tools.", [
+    Alert.alert(`Switch to ${formatRoleLabel(role)}?`, "Zook opens that role's tools.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",
@@ -353,7 +353,7 @@ export default function ProfileScreen() {
 
   function confirmGymSwitch(orgId: string, orgName: string) {
     if (orgId === activeOrgId) return;
-    Alert.alert(`Switch to ${orgName}?`, "Your profile will refresh for that gym.", [
+    Alert.alert(`Switch to ${orgName}?`, "Your profile refreshes for that gym.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",

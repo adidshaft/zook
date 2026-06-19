@@ -113,7 +113,7 @@ export default function OwnerBillingScreen() {
   }
 
   function confirmCancel() {
-    Alert.alert("Cancel subscription?", "The subscription will be marked to cancel at period end.", [
+    Alert.alert("Cancel subscription?", "The subscription is marked to cancel at period end.", [
       { text: "Keep", style: "cancel" },
       {
         text: "Cancel",
@@ -169,7 +169,7 @@ export default function OwnerBillingScreen() {
           ) : null}
 
           {!billingQuery.isError && !data ? (
-            <EmptyState title="Loading billing" body="Subscription and mandate state will appear here." />
+            <EmptyState title="Loading billing" body="Subscription and mandate state appears here." />
           ) : null}
 
           {data ? (

@@ -125,7 +125,7 @@ export function ReceptionOrdersScreenBody() {
                       onPress={() => {
                         Alert.alert(
                           "Mark order picked up?",
-                          `${order.user?.name ?? "This member"} will be marked as collected for ${formatInr(order.totalPaise)}.`,
+                          `${order.user?.name ?? "This member"} is marked as collected for ${formatInr(order.totalPaise)}.`,
                           [
                             { text: "Cancel", style: "cancel" },
                             {

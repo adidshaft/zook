@@ -387,7 +387,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.confirming": "Confirming...",
     "shop.backToShop": "Back to Shop",
     "shop.payment": "Payment",
-    "shop.paymentSubtitle": "Your item will be available at the desk after payment.",
+    "shop.paymentSubtitle": "Your item is ready at the desk after payment.",
     "shop.paySecurely": "Pay securely",
     "shop.confirmOrder": "Confirm the order",
     "shop.getPickupCode": "Get pickup code",

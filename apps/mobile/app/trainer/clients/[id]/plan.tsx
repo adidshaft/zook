@@ -275,7 +275,7 @@ export default function TrainerClientPlanScreen() {
             </View>
             <SecondaryButton
               testID="trainer-publish-plan-button"
-              onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member will see this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
+              onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member sees this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
               disabled={!canPublishAssignedPlan || savingPlan}
               onLongPress={!canPublishAssignedPlan ? () => showToast({ title: "Owner approval required", tone: "amber" }) : undefined}
             >

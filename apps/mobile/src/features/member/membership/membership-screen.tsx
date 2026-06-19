@@ -697,7 +697,7 @@ export default function MembershipScreen() {
               <View style={styles.browserReturnCopy}>
                 <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-                  Return after checkout. We will refresh your membership when you come back.
+                  Return after checkout. Zook refreshes your membership when you come back.
                 </Text>
               </View>
               <ZookButton
@@ -901,7 +901,7 @@ function RenewalSheet({
             {loadingPlans ? <PlansSkeleton /> : null}
             {!loadingPlans && !plans.length ? (
               <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                No alternate plans are published yet. Same-plan renewal will be requested.
+                No alternate plans are published yet. Same-plan renewal is requested.
               </Text>
             ) : null}
             {plans.map((plan) => {

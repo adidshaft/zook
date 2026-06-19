@@ -1160,7 +1160,7 @@ function BrowserReturnCard({
           Continue in browser
         </Text>
         <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-          Come back after payment. We will refresh your order status automatically.
+          Come back after payment. Zook refreshes your order status automatically.
         </Text>
       </View>
       <ZookButton

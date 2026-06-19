@@ -86,7 +86,7 @@ export default function OwnerStockScreen() {
                   />
                 ))
               : null}
-            {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." /> : null}
+            {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" body="Paid shop orders show here until reception fulfills them." /> : null}
           </Card>
         </KeyboardAwareScreen>
       </ZookScreen>

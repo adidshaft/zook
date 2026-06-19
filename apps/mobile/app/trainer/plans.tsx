@@ -72,7 +72,7 @@ export default function TrainerPlansScreen() {
                 subtitle={
                   plannedClients.length
                     ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
-                    : "New plan work will appear here when clients need assignments."
+                    : "New plan work appears here when clients need assignments."
                 }
               />
             </View>
@@ -86,7 +86,7 @@ export default function TrainerPlansScreen() {
             ) : plannedClients.length ? (
               plannedClients.map((client) => <PlanRow key={client.id ?? client.memberUserId} client={client} />)
             ) : (
-              <EmptyState title="No active plan work" body="Client plans will appear here after you create or assign them." />
+              <EmptyState title="No active plan work" body="Client plans appear here after you create or assign them." />
             )}
           </View>
         </ScrollView>
