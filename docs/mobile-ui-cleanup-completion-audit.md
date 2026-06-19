@@ -182,6 +182,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cues.
 - Platform support console description now states the review workflow directly instead of saying
   records are loaded by default.
+- Platform incident checklist step now uses service-dashboard wording instead of provider-dashboard
+  wording.
 
 ### Product plan Part A and Part B
 

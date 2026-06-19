@@ -421,7 +421,7 @@ export function PlatformOperationsPanel({
       signal: `${misconfiguredProviders.length} service issue${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
     },
     {
-      step: "Check provider dashboards",
+      step: "Check service dashboards",
       owner: "Ops",
       signal: misconfiguredProviders.length
         ? misconfiguredProviders.map(([category]) => formatEnumLabel(category)).join(", ")
