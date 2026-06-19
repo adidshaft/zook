@@ -2264,7 +2264,6 @@ function PlatformSubscriptionsSection() {
               ]}
               rows={rows}
               rowKey={(row) => row.orgId}
-              empty="No gyms"
             />
           ) : (
             <EmptyState title="No subscriptions" />
