@@ -293,11 +293,11 @@ export function BillingSection({
         {
           method: "POST",
           body: {},
-          feedback: { success: "Subscription will cancel at period end." },
+          feedback: { success: "Subscription will cancel after this billing period." },
         },
       );
       setSubscription((current) => (current ? { ...current, ...payload } : payload));
-      setStatus("Subscription will cancel at the end of the current period.");
+      setStatus("Subscription will cancel after this billing period.");
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : "Unable to cancel subscription.");
     } finally {
@@ -554,13 +554,13 @@ export function BillingSection({
                 type="button"
                 disabled={mandateBusy}
                 className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-sunken)] disabled:cursor-wait disabled:opacity-60"
-                title="Cancel subscription at period end?"
-                description="Your gym keeps access until the current paid period ends, then Zook will stop future subscription charges."
-                confirmLabel="Cancel at period end"
+                title="Cancel after this billing period?"
+                description="Your gym keeps access until this paid period ends, then Zook stops future subscription charges."
+                confirmLabel="Cancel after period"
                 confirmTone="danger"
                 onConfirm={() => cancelAtPeriodEnd()}
               >
-                {mandateBusy ? "Cancelling..." : "Cancel at period end"}
+                {mandateBusy ? "Cancelling..." : "Cancel after period"}
               </ConfirmActionButton>
             ) : null}
           </div>

@@ -14,7 +14,7 @@ const copy = {
   refundsEyebrow: "Refunds",
   refundsTitle: "Refund tracker",
   refundsDescription:
-    "Start refunds for recent successful payments and track payments already marked refunded.",
+    "Start refunds for recent successful payments and track refunded payments.",
 };
 
 function refundAmountFor(payment: PaymentRow) {

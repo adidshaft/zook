@@ -236,6 +236,8 @@ fully complete until the human/device/provider gates below have external evidenc
   setup-complete/setup-required wording.
 - Dashboard membership summary now uses explicit expiring-membership wording instead of the
   vague all-current cue.
+- Billing cancellation and refund tracker copy now uses direct billing-period/refunded-payment
+  wording instead of repeated period-end/current/marked-refunded phrasing.
 
 ### Product plan Part A and Part B
 
