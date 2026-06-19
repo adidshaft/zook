@@ -291,6 +291,8 @@ fully complete until the human/device/provider gates below have external evidenc
   exercise rows, preset chips, and form fields that already show the available actions.
 - Reception desk, payment, and order metric cards no longer render second-line category
   hints under already-clear labels and values.
+- Owner approval and revenue summary metric cards no longer render static category hints
+  under already-clear labels and amounts.
 
 ### Product plan Part A and Part B
 

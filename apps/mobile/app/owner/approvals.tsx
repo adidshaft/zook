@@ -151,13 +151,11 @@ export default function OwnerApprovalsScreen() {
               {
                 label: "Join requests",
                 value: joinRequests.length,
-                hint: "Awaiting owner action",
                 tone: "amber",
               },
               {
                 label: "Scan reviews",
                 value: attentionAttempts.length,
-                hint: "Pending or flagged",
                 tone: "red",
               },
             ]}
