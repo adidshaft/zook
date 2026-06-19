@@ -368,6 +368,8 @@ fully complete until the human/device/provider gates below have external evidenc
   below the already-clear No notifications sent title.
 - Platform safety review no longer repeats watchlist helper copy above readouts that already
   label open reviews, paused gyms, and recent assistant activity.
+- Platform gym contact list no longer repeats first-contact helper copy above organization
+  contact rows that already show the contact details.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

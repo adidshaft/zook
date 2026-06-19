@@ -1856,7 +1856,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Contacts"
               title="Gym contact list"
-              description="The first people to contact when a gym needs help or review."
             />
             <div className="mt-5 grid gap-3">
               {organizations.slice(0, 4).map((org) => (
