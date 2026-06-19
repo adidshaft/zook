@@ -373,7 +373,7 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Coach Output"
           title="Plan delivery"
-          description="Trainer-written and assisted plans appear here so owners can review the delivery load."
+          description="Review trainer-written and assisted plan delivery."
           badge={
             <Pill>
               {coachPlans.filter((plan) => plan.aiGenerated).length} assisted

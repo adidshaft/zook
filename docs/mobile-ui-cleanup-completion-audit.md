@@ -351,6 +351,8 @@ fully complete until the human/device/provider gates below have external evidenc
   use direct no-content wording instead of repeated "show/appear here" placeholders.
 - Mobile owner/member/trainer empty states and dashboard payment/join-request descriptions now
   use direct empty/loading/action wording instead of placeholder-location phrasing.
+- Member diet/plan, coach planner, staff plan-delivery, and public trainer bio fallbacks now use
+  direct empty-state wording instead of placeholder-location phrasing.
 
 ### Product plan Part A and Part B
 

@@ -31,14 +31,13 @@ export default async function MemberDietPage({
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <PublicNav locale={locale} />
         <GlassCard variant="strong" className="p-6 md:p-8">
-          <Pill>Diet</Pill>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
             {plan?.title ?? "No active diet plan"}
           </h1>
           <p className="mt-3 text-sm leading-6 text-white/58">
             {plan
               ? `${plan.calorieTarget ?? "-"} kcal target with ${plan.proteinG ?? "-"}g protein.`
-              : "Your trainer's published diet plan will appear here."}
+              : "No published diet plan from your trainer yet."}
           </p>
         </GlassCard>
         {meals.map((meal) => (

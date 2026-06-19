@@ -761,7 +761,7 @@ export default function GymProfileScreen() {
                 <View style={styles.trainerCopy}>
                   <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? "Trainer bio shows here after publishing."}
+                    {selectedTrainer.bio ?? "No trainer bio published yet."}
                   </Text>
                 </View>
               </View>
