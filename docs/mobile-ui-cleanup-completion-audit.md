@@ -308,6 +308,8 @@ fully complete until the human/device/provider gates below have external evidenc
   empty-state title and Find gyms action already define the next step.
 - Public gym profile trainer, join-path, and plan sections no longer repeat helper subtitles or
   not-published empty-state bodies where headings, rows, and timeline steps already provide context.
+- Mobile classes empty state no longer repeats branch-scoped absence copy below the already-clear
+  No classes title and branch-aware header.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
