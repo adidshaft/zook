@@ -1313,3 +1313,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated public plan benefit bullets (`R313`) are closed:
   gym plan highlight rows no longer render warning-colored decorative bullets,
   leaving the benefit copy as neutral supporting text.
+- **[ui, fixed]** Overstated contact and client readiness cues (`R314`) are
+  closed: account contact completion now uses informational tone when both
+  contacts are present, and the trainer client hero no longer shows a redundant
+  accent avatar dot beside the explicit active/paused member label.

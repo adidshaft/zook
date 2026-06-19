@@ -146,7 +146,6 @@ export default function TrainerClientOverviewScreen() {
             <View style={styles.clientHeroTop}>
               <View style={[styles.clientAvatar, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
                 <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{formatInitials(clientName, "ZK")}</Text>
-                <View style={[styles.clientAvatarDot, { backgroundColor: palette.accent.base, borderColor: palette.bg.elevated }]} />
               </View>
               <View style={styles.clientHeroCopy}>
                 <Text numberOfLines={1} style={[styles.clientHeroName, { color: palette.text.primary }]}>{clientName}</Text>
@@ -221,7 +220,6 @@ const styles = StyleSheet.create({
   clientHeroTop: { alignItems: "center", flexDirection: "row", gap: spacing.lg },
   clientAvatar: { alignItems: "center", borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
   clientAvatarText: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
-  clientAvatarDot: { borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
   clientHeroCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   clientHeroName: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },

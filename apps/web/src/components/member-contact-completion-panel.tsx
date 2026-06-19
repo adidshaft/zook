@@ -72,7 +72,7 @@ export function MemberContactCompletionPanel({
   const copy = contactCopy(activeKind);
   const Icon = copy.icon;
   const completedCount = [contacts.email, contacts.phone].filter(Boolean).length;
-  const completionTone = completedCount === 2 ? "lime" : completedCount === 1 ? "amber" : "neutral";
+  const completionTone = completedCount === 2 ? "blue" : completedCount === 1 ? "amber" : "neutral";
   const activeValue = contacts[activeKind];
   const canRequest = Boolean(draft.trim()) && pending !== "request";
   const canVerify = Boolean(challenge && code.trim().length === 6) && pending !== "verify";
@@ -151,7 +151,7 @@ export function MemberContactCompletionPanel({
         <ShieldCheck
           className={
             completedCount === 2
-              ? "text-lime-200"
+              ? "text-[var(--feedback-info)]"
               : completedCount === 1
                 ? "text-amber-200"
                 : "text-white/35"
