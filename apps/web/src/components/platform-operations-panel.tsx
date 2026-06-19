@@ -428,14 +428,14 @@ export function PlatformOperationsPanel({
         : "All service checks are clear",
     },
     {
-      step: "Freeze risky tenant actions",
+      step: "Pause risky gym actions",
       owner: "Support",
       signal: suspendedOrganizations.length
         ? `${suspendedOrganizations.length} paused gym${suspendedOrganizations.length === 1 ? "" : "s"}`
         : "No gym is paused right now",
     },
     {
-      step: "Notify pilot owners",
+      step: "Notify trial owners",
       owner: "Business",
       signal: trialRiskOrganizations.length
         ? `${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} near conversion`
@@ -1461,17 +1461,17 @@ export function PlatformOperationsPanel({
                 {
                   label: "Configured",
                   value: formatCompactNumber(readyProviders.length),
-                  meta: "Services reporting configured",
+                  meta: "Services ready for use",
                 },
                 {
-                  label: "Basic setup",
+                  label: "Standard setup",
                   value: formatCompactNumber(defaultProviders.length),
-                  meta: "Services using the standard setup",
+                  meta: "Services using standard settings",
                 },
                 {
                   label: "Needs attention",
                   value: formatCompactNumber(misconfiguredProviders.length),
-                  meta: "Services that still need setup",
+                  meta: "Services needing review",
                 },
                 {
                   label: "Open safety reviews",

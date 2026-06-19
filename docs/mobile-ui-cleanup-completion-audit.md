@@ -230,6 +230,8 @@ fully complete until the human/device/provider gates below have external evidenc
   production-output wording in visible descriptions.
 - Dashboard join-request queue copy now uses plain approval wording instead of
   approval-required phrasing.
+- Platform checklist and service readouts now use gym/trial/ready-review wording instead of
+  tenant/pilot/configured/setup wording.
 
 ### Product plan Part A and Part B
 
