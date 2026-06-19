@@ -80,7 +80,7 @@ export function CoachPage({
           label="Sessions this week"
           value={stats.sessionsThisWeek}
           icon={Calendar}
-          tone="amber"
+          tone="sky"
           caption="Logged on the app"
         />
         <KPITile

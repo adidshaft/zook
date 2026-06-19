@@ -1063,3 +1063,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated coach page live-signal cue (`R231`) is closed:
   the coach web hero now shows neutral Live view metadata without a lime status dot,
   keeping success indicators for live runtime state rather than static page context.
+- **[ui, fixed]** Overstated coach sessions KPI warning cue (`R232`) is closed:
+  the coach Sessions this week KPI now uses an informational tone instead of amber,
+  keeping warning color for items that actually need attention.
