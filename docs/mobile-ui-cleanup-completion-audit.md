@@ -117,6 +117,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - The public status page pill uses neutral status labeling instead of a live-status cue.
 - Public homepage product copy uses current/app-store wording instead of live-workflow and
   live-store cues.
+- Platform service-status readouts use configured-service wording instead of generic ready-for-use
+  cues.
 
 ### Product plan Part A and Part B
 

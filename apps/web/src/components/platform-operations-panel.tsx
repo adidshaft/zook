@@ -1459,9 +1459,9 @@ export function PlatformOperationsPanel({
             <ReadoutGrid
               items={[
                 {
-                  label: "Ready",
+                  label: "Configured",
                   value: formatCompactNumber(readyProviders.length),
-                  meta: "Services ready for use",
+                  meta: "Services reporting configured",
                 },
                 {
                   label: "Basic setup",
