@@ -7,7 +7,6 @@ import {
   AuditWarning,
   FormField,
   Card,
-  IconBubble,
   ListRow,
   AppHeader,
   SegmentedControl,
@@ -135,7 +134,6 @@ export default function TrainerClientOverviewScreen() {
 
           {!clientsQuery.isLoading && !client ? (
             <Card variant="compact" contentStyle={styles.notFoundContent}>
-              <IconBubble icon="person-outline" tone="neutral" size={42} />
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
               <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
             </Card>

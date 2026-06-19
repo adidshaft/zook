@@ -282,6 +282,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already names the saved draft and review action.
 - Gym discovery referral and no-results cards no longer render neutral gift/search icons beside
   already-clear title and helper copy.
+- Trainer client not-found card no longer renders a neutral person icon beside the clear title and
+  back-to-clients action.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
