@@ -120,7 +120,7 @@ export function BranchesSection({
         <div className="mt-5 grid gap-3">
           {formError ? <ErrorNotice message={formError} /> : null}
           {formStatus ? (
-            <p className="rounded-2xl border border-lime-300/20 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
+            <p className="rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
               {formStatus}
             </p>
           ) : null}

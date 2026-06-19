@@ -1336,3 +1336,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated setup and coach selected cues (`R319`) are closed:
   start-gym step, amenity, and equipment selections plus the coach Overview nav
   active state now use neutral selected styling instead of lime success emphasis.
+- **[ui, fixed]** Overstated dashboard feedback panels (`R320`) are closed:
+  plan and branch status messages now use informational styling, and the shop
+  product edit panel now uses a neutral editing surface instead of lime emphasis.
