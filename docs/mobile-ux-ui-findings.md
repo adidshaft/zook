@@ -1054,3 +1054,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated coaching pending-review count cue (`R228`) is closed:
   the coaching library pending-review count now uses amber only when reviews are actually
   pending, keeping the zero state neutral.
+- **[ui, fixed]** Overstated member join-request KPI cue (`R229`) is closed:
+  the member roster Join requests KPI now uses amber only when requests are pending,
+  keeping the Inbox clear state from reading as a warning.

@@ -67,7 +67,7 @@ export function MemberSummary({
           label="Join requests"
           value={joinRequests.length}
           icon={UserPlus}
-          tone="amber"
+          tone={joinRequests.length > 0 ? "amber" : "lime"}
           caption={joinRequests.length > 0 ? "Needs approval" : "Inbox clear"}
         />
         <KPITile
