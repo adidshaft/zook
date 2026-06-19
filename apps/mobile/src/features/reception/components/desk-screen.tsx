@@ -60,7 +60,7 @@ export function ReceptionDeskScreenBody() {
               }
               meta={`${pendingCount} pending · ${flaggedCount} flagged`}
               status={pendingCount || flaggedCount ? "Review required" : "Active"}
-              tone={flaggedCount ? "red" : pendingCount ? "amber" : "lime"}
+              tone={flaggedCount ? "red" : pendingCount ? "amber" : "neutral"}
               icon={flaggedCount ? "alert-circle-outline" : "shield-checkmark-outline"}
               actionLabel="Open approval queue"
               onPress={

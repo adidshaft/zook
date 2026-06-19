@@ -1154,3 +1154,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative public home role/loop cues (`R261`) are closed:
   static public home role cards and operations-loop cards now use neutral or
   informational styling instead of success/warning tones that implied live state.
+- **[ui, fixed]** Overstated reception queue-clear cue (`R262`) is closed:
+  the desk queue clear card now uses neutral styling instead of success color, while
+  pending and flagged entry queues still use warning and danger tones.
