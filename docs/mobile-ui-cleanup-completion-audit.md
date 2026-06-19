@@ -314,6 +314,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already show branch scope, class count, and per-class capacity.
 - Member plan detail empty state no longer repeats trainer-assignment helper copy below the
   already-clear No plan assigned title.
+- Web shop status card no longer repeats a generic order-movement description above readouts
+  that already label stock branch, payment, pickup, and revenue states.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

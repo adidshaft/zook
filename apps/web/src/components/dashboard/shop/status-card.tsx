@@ -18,11 +18,7 @@ export function ShopStatusCard({
 }) {
   return (
     <GlassCard>
-      <SectionHeader
-        eyebrow="Queue health"
-        title="Shop status"
-        description="Shop order movement."
-      />
+      <SectionHeader eyebrow="Queue health" title="Shop status" />
       <ReadoutGrid
         className="mt-5"
         columns={1}
