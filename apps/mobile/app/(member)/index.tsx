@@ -26,6 +26,7 @@ import {
 } from "@/components/primitives";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
+import { ClassesStrip } from "@/features/member/home/classes-strip";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
@@ -174,7 +175,8 @@ export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const streakDays = home?.streakDays ?? 0;
   const weeklyVisits = countThisWeek(home?.recentAttendance ?? []);
-  const activeMinutes = Math.round((trackingQuery.data?.summary.totalDuration ?? 0) / 60);
+  // summary.totalDuration is already in minutes (backend sums durationMinutes).
+  const activeMinutes = Math.round(trackingQuery.data?.summary.totalDuration ?? 0);
   const workoutsLogged = trackingQuery.data?.summary.weeklyCount ?? 0;
   const habitsDone = trackingQuery.data?.habits.length ?? 0;
 
@@ -230,6 +232,9 @@ export default function HomeScreen() {
               ) : null}
               <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
               <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
+                <ClassesStrip />
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open progress"
@@ -246,7 +251,7 @@ export default function HomeScreen() {
                   />
                 </Pressable>
               </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
+              <AnimatedAppear delay={activeCheckIn ? 200 : 160}>
                 <Banners home={home} />
               </AnimatedAppear>
             </>

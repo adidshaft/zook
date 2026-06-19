@@ -67,6 +67,20 @@ export function PlansSkeleton() {
   );
 }
 
+export function ClassesSkeleton() {
+  return (
+    <View style={styles.stack}>
+      {[0, 1, 2].map((item) => (
+        <Card key={item} variant="compact" contentStyle={styles.planCard}>
+          <RowSkeleton iconSize={46} action="chip" surface={false} />
+          <Skeleton width="84%" height={13} borderRadius={7} />
+          <Skeleton width="100%" height={34} borderRadius={17} />
+        </Card>
+      ))}
+    </View>
+  );
+}
+
 export function ExerciseListSkeleton() {
   return (
     <View style={styles.stack}>

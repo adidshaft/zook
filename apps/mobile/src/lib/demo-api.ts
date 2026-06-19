@@ -356,6 +356,527 @@ function demoMembers() {
   });
 }
 
+// --- Group classes (offline demo) ------------------------------------------
+// Booking state persists for the life of the JS runtime so the booking flow
+// works end to end without a backend: book a class, the list updates, the
+// status sticks across refetches and on the Home strip.
+const demoClassEnrollments = new Map<string, "confirmed" | "waitlisted">();
+
+type DemoClassTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  classType: string;
+  trainerId: string;
+  trainerName: string;
+  dayOffset: number;
+  startHour: number;
+  startMinute: number;
+  durationMin: number;
+  maxCapacity: number;
+  enrolledCount: number;
+  defaultEnrollment?: "confirmed" | "waitlisted";
+};
+
+const DEMO_CLASS_TEMPLATES: DemoClassTemplate[] = [
+  {
+    id: "class-hiit",
+    name: "HIIT Burn",
+    description: "45 minutes of high-intensity intervals to torch calories and build conditioning.",
+    classType: "HIIT",
+    trainerId: "user-rhea",
+    trainerName: "Rohan",
+    dayOffset: 0,
+    startHour: 7,
+    startMinute: 0,
+    durationMin: 45,
+    maxCapacity: 16,
+    enrolledCount: 11,
+  },
+  {
+    id: "class-strength-am",
+    name: "Strength Foundations",
+    description: "Coached barbell basics — squat, hinge and press with form cues for every level.",
+    classType: "Strength",
+    trainerId: "user-kabir",
+    trainerName: "Kavya",
+    dayOffset: 0,
+    startHour: 9,
+    startMinute: 30,
+    durationMin: 60,
+    maxCapacity: 12,
+    enrolledCount: 8,
+  },
+  {
+    id: "class-yoga",
+    name: "Sunset Yoga Flow",
+    description: "A calming vinyasa flow to unwind, improve mobility and breathe better.",
+    classType: "Yoga",
+    trainerId: "user-kabir",
+    trainerName: "Kavya",
+    dayOffset: 0,
+    startHour: 18,
+    startMinute: 30,
+    durationMin: 60,
+    maxCapacity: 20,
+    enrolledCount: 14,
+  },
+  {
+    id: "class-spin",
+    name: "Spin Express",
+    description: "A fast, music-driven indoor cycling session. Clip in and ride.",
+    classType: "Cycling",
+    trainerId: "user-rhea",
+    trainerName: "Rohan",
+    dayOffset: 0,
+    startHour: 20,
+    startMinute: 0,
+    durationMin: 45,
+    maxCapacity: 14,
+    enrolledCount: 14,
+  },
+  {
+    id: "class-push-power",
+    name: "Push Day Power",
+    description: "Chest, shoulders and triceps with progressive overload. Pairs with your plan.",
+    classType: "Strength",
+    trainerId: "user-rhea",
+    trainerName: "Rohan",
+    dayOffset: 1,
+    startHour: 7,
+    startMinute: 0,
+    durationMin: 60,
+    maxCapacity: 12,
+    enrolledCount: 5,
+    defaultEnrollment: "confirmed",
+  },
+  {
+    id: "class-zumba",
+    name: "Zumba Dance Fit",
+    description: "Dance your way fit with high-energy choreography. No experience needed.",
+    classType: "Dance",
+    trainerId: "user-kabir",
+    trainerName: "Kavya",
+    dayOffset: 1,
+    startHour: 18,
+    startMinute: 0,
+    durationMin: 60,
+    maxCapacity: 25,
+    enrolledCount: 18,
+  },
+  {
+    id: "class-mobility",
+    name: "Mobility & Stretch",
+    description: "Release tight hips and shoulders with guided stretching and foam rolling.",
+    classType: "Mobility",
+    trainerId: "user-kabir",
+    trainerName: "Kavya",
+    dayOffset: 2,
+    startHour: 8,
+    startMinute: 0,
+    durationMin: 45,
+    maxCapacity: 16,
+    enrolledCount: 6,
+  },
+  {
+    id: "class-boxing",
+    name: "Boxing Basics",
+    description: "Learn the fundamentals — stance, jab, cross and footwork on the bags.",
+    classType: "Boxing",
+    trainerId: "user-rhea",
+    trainerName: "Rohan",
+    dayOffset: 2,
+    startHour: 19,
+    startMinute: 0,
+    durationMin: 60,
+    maxCapacity: 12,
+    enrolledCount: 9,
+  },
+];
+
+function classStartDate(template: DemoClassTemplate) {
+  const date = new Date();
+  date.setHours(template.startHour, template.startMinute, 0, 0);
+  date.setDate(date.getDate() + template.dayOffset);
+  return date;
+}
+
+function demoClassRecord(template: DemoClassTemplate) {
+  const branch = zookDemoFixtures.branches[0];
+  const start = classStartDate(template);
+  const end = new Date(start.getTime() + template.durationMin * 60 * 1000);
+  const userStatus = demoClassEnrollments.get(template.id) ?? template.defaultEnrollment ?? null;
+  const baseHasSeat = template.defaultEnrollment === "confirmed";
+  const userTakesSeat = userStatus === "confirmed" && !baseHasSeat;
+  const enrollmentCount = template.enrolledCount + (userTakesSeat ? 1 : 0);
+  const remainingCapacity = Math.max(0, template.maxCapacity - enrollmentCount);
+  return {
+    id: template.id,
+    orgId: activeOrg()?.id ?? "org-demo",
+    branchId: branch?.id ?? "branch-default",
+    branchName: branch?.name ?? null,
+    trainerId: template.trainerId,
+    trainerName: template.trainerName,
+    name: template.name,
+    description: template.description,
+    classType: template.classType,
+    maxCapacity: template.maxCapacity,
+    startTime: start.toISOString(),
+    endTime: end.toISOString(),
+    recurrenceRule: null,
+    status: "SCHEDULED",
+    createdAt: nowIso(),
+    enrollmentCount,
+    remainingCapacity,
+    myEnrollmentStatus: userStatus,
+  };
+}
+
+function demoClasses() {
+  return DEMO_CLASS_TEMPLATES.map(demoClassRecord).sort(
+    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+  );
+}
+
+function demoEnrollInClass(classId: string) {
+  const template = DEMO_CLASS_TEMPLATES.find((entry) => entry.id === classId);
+  if (!template) {
+    throw new Error("That class could not be found.");
+  }
+  const existing = demoClassEnrollments.get(classId) ?? template.defaultEnrollment ?? null;
+  if (existing) {
+    const record = demoClassRecord(template);
+    return { enrollment: { id: `enroll-${classId}`, status: existing }, remainingCapacity: record.remainingCapacity };
+  }
+  const isFull = template.maxCapacity - template.enrolledCount <= 0;
+  const status: "confirmed" | "waitlisted" = isFull ? "waitlisted" : "confirmed";
+  demoClassEnrollments.set(classId, status);
+  const record = demoClassRecord(template);
+  return {
+    enrollment: { id: `enroll-${classId}`, status },
+    remainingCapacity: record.remainingCapacity,
+  };
+}
+
+// --- Diet (offline demo) ---------------------------------------------------
+// Logged meals persist for the life of the JS runtime so meal logging works
+// end to end: log a meal and the day's calorie roll-up updates immediately.
+type DemoMealLog = {
+  id: string;
+  mealName: string;
+  loggedAt: string;
+  calories: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatsG: number | null;
+  notes: string | null;
+};
+
+const demoMealLogs: DemoMealLog[] = [
+  {
+    id: "meal-log-seed-breakfast",
+    mealName: "Paneer bhurji + multigrain toast",
+    loggedAt: new Date(new Date().setHours(8, 15, 0, 0)).toISOString(),
+    calories: 420,
+    proteinG: 28,
+    carbsG: 38,
+    fatsG: 16,
+    notes: null,
+  },
+];
+
+function demoDietPlan() {
+  return {
+    id: "diet-plan-aarav",
+    title: "Muscle Gain · Vegetarian",
+    calorieTarget: 2400,
+    proteinG: 150,
+    carbsG: 260,
+    fatsG: 70,
+    status: "ACTIVE",
+    meals: [
+      {
+        id: "diet-meal-breakfast",
+        name: "Breakfast",
+        timeOfDay: "8:00 AM",
+        items: ["Paneer bhurji", "Multigrain toast", "Black coffee"],
+        calories: 420,
+        proteinG: 28,
+        carbsG: 38,
+        fatsG: 16,
+        order: 1,
+      },
+      {
+        id: "diet-meal-midmorning",
+        name: "Mid-morning",
+        timeOfDay: "11:00 AM",
+        items: ["Greek yogurt", "Almonds", "Apple"],
+        calories: 240,
+        proteinG: 18,
+        carbsG: 22,
+        fatsG: 10,
+        order: 2,
+      },
+      {
+        id: "diet-meal-lunch",
+        name: "Lunch",
+        timeOfDay: "1:30 PM",
+        items: ["Rajma", "Brown rice", "Mixed salad", "Curd"],
+        calories: 560,
+        proteinG: 24,
+        carbsG: 82,
+        fatsG: 12,
+        order: 3,
+      },
+      {
+        id: "diet-meal-snack",
+        name: "Pre-workout",
+        timeOfDay: "5:00 PM",
+        items: ["Whey protein shake", "Banana"],
+        calories: 320,
+        proteinG: 30,
+        carbsG: 38,
+        fatsG: 4,
+        order: 4,
+      },
+      {
+        id: "diet-meal-dinner",
+        name: "Dinner",
+        timeOfDay: "8:30 PM",
+        items: ["Tofu stir-fry", "Two rotis", "Sauteed greens"],
+        calories: 480,
+        proteinG: 32,
+        carbsG: 46,
+        fatsG: 16,
+        order: 5,
+      },
+    ],
+  };
+}
+
+function demoLogMeal(body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const log: DemoMealLog = {
+    id: `meal-log-${Date.now()}`,
+    mealName: String(body.mealName ?? "Meal").trim() || "Meal",
+    loggedAt: nowIso(),
+    calories: toNumber(body.calories),
+    proteinG: toNumber(body.proteinG),
+    carbsG: toNumber(body.carbsG),
+    fatsG: toNumber(body.fatsG),
+    notes: body.notes ? String(body.notes) : null,
+  };
+  demoMealLogs.unshift(log);
+  return { log };
+}
+
+// --- Tracking (offline demo) -----------------------------------------------
+// Workout + body-progress logs persist for the life of the JS runtime so the
+// log flows work end to end: log a workout and Progress / history update, with
+// the Home stats roll-up kept consistent with the list.
+function hoursAgoIso(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+type DemoWorkoutLog = {
+  id: string;
+  title: string;
+  workoutType: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationMinutes: number | null;
+  intensity: string | null;
+  notes: string | null;
+  exercises: Array<{
+    id: string;
+    exerciseName: string;
+    setsCompleted?: number | null;
+    reps?: number | null;
+    weightKg?: number | null;
+    completed: boolean;
+  }>;
+};
+
+const demoWorkoutLogs: DemoWorkoutLog[] = [
+  {
+    id: "workout-log-push",
+    title: "Push Day",
+    workoutType: "STRENGTH",
+    startedAt: hoursAgoIso(6),
+    endedAt: hoursAgoIso(5),
+    durationMinutes: 55,
+    intensity: "HARD",
+    notes: "Hit a new top set on bench.",
+    exercises: [
+      { id: "wl-1", exerciseName: "Bench Press", setsCompleted: 4, reps: 8, weightKg: 60, completed: true },
+      { id: "wl-2", exerciseName: "Incline Dumbbell Press", setsCompleted: 3, reps: 10, weightKg: 22, completed: true },
+      { id: "wl-3", exerciseName: "Shoulder Press", setsCompleted: 3, reps: 10, weightKg: 18, completed: true },
+    ],
+  },
+  {
+    id: "workout-log-legs",
+    title: "Leg Day",
+    workoutType: "STRENGTH",
+    startedAt: hoursAgoIso(54),
+    endedAt: hoursAgoIso(53),
+    durationMinutes: 48,
+    intensity: "MODERATE",
+    notes: null,
+    exercises: [
+      { id: "wl-4", exerciseName: "Back Squat", setsCompleted: 4, reps: 6, weightKg: 80, completed: true },
+      { id: "wl-5", exerciseName: "Romanian Deadlift", setsCompleted: 3, reps: 10, weightKg: 60, completed: true },
+    ],
+  },
+  {
+    id: "workout-log-cardio",
+    title: "Zone 2 Cardio",
+    workoutType: "CARDIO",
+    startedAt: hoursAgoIso(78),
+    endedAt: hoursAgoIso(77),
+    durationMinutes: 30,
+    intensity: "EASY",
+    notes: "Treadmill incline walk.",
+    exercises: [],
+  },
+];
+
+type DemoBodyProgress = {
+  id: string;
+  userId: string;
+  measuredAt: string;
+  weightKg: number | null;
+  waistCm: number | null;
+  chestCm: number | null;
+  armCm: number | null;
+  bodyFatPercent: number | null;
+  notes: string | null;
+};
+
+const demoBodyProgress: DemoBodyProgress[] = [
+  {
+    id: "body-progress-1",
+    userId: "user-aarav",
+    measuredAt: hoursAgoIso(6),
+    weightKg: 78,
+    waistCm: 84,
+    chestCm: 102,
+    armCm: 37,
+    bodyFatPercent: 18,
+    notes: null,
+  },
+  {
+    id: "body-progress-2",
+    userId: "user-aarav",
+    measuredAt: hoursAgoIso(24 * 14),
+    weightKg: 79.5,
+    waistCm: 86,
+    chestCm: 101,
+    armCm: 36,
+    bodyFatPercent: 19.5,
+    notes: "Start of the cut.",
+  },
+];
+
+function startOfThisWeek() {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  date.setDate(date.getDate() - diff);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function demoTrackingSummary() {
+  const weekStart = startOfThisWeek();
+  const weeklyCount = demoWorkoutLogs.filter(
+    (workout) => new Date(workout.startedAt).getTime() >= weekStart,
+  ).length;
+  // totalDuration is in minutes (backend sums durationMinutes).
+  const totalDurationMinutes = demoWorkoutLogs.reduce(
+    (total, workout) => total + (workout.durationMinutes ?? 0),
+    0,
+  );
+  return {
+    summary: {
+      weeklyCount,
+      totalDuration: totalDurationMinutes,
+      recentCount: demoWorkoutLogs.length,
+    },
+    recentWorkouts: demoWorkoutLogs.slice(0, 3),
+    latestBodyProgress: demoBodyProgress[0] ?? { weightKg: 78, measuredAt: nowIso() },
+    habits: [],
+  };
+}
+
+function demoCreateWorkout(body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
+  const startedAt = body.startedAt ? String(body.startedAt) : nowIso();
+  const durationMinutes = toNumber(body.durationMinutes);
+  const workout: DemoWorkoutLog = {
+    id: `workout-log-${Date.now()}`,
+    title: String(body.title ?? "Workout").trim() || "Workout",
+    workoutType: String(body.workoutType ?? "STRENGTH"),
+    startedAt,
+    endedAt: body.endedAt ? String(body.endedAt) : nowIso(),
+    durationMinutes,
+    intensity: body.intensity ? String(body.intensity) : null,
+    notes: body.notes ? String(body.notes) : null,
+    exercises: exercisesInput.map((entry, index) => {
+      const item = (entry ?? {}) as Record<string, unknown>;
+      return {
+        id: `wl-new-${Date.now()}-${index}`,
+        exerciseName: String(item.exerciseName ?? item.name ?? "Exercise"),
+        setsCompleted: toNumber(item.setsCompleted ?? item.sets),
+        reps: toNumber(item.reps),
+        weightKg: toNumber(item.weightKg),
+        completed: item.completed !== false,
+      };
+    }),
+  };
+  demoWorkoutLogs.unshift(workout);
+  return { workout };
+}
+
+function demoRecordBodyProgress(body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const entry: DemoBodyProgress = {
+    id: `body-progress-${Date.now()}`,
+    userId: "user-aarav",
+    measuredAt: body.measuredAt ? String(body.measuredAt) : nowIso(),
+    weightKg: toNumber(body.weightKg),
+    waistCm: toNumber(body.waistCm),
+    chestCm: toNumber(body.chestCm),
+    armCm: toNumber(body.armCm),
+    bodyFatPercent: toNumber(body.bodyFatPercent),
+    notes: body.notes ? String(body.notes) : null,
+  };
+  demoBodyProgress.unshift(entry);
+  return { entry: { id: entry.id } };
+}
+
+function demoReferralCodes() {
+  return {
+    referralCodes: zookDemoFixtures.referralCodes,
+    rewards: [],
+    links: {
+      web: "https://zookfit.in/r/ROHAN500",
+      short: "zook.fit/r/ROHAN500",
+      app: "zook://r/ROHAN500",
+    },
+    policy: null,
+  };
+}
+
 function demoShopOrders() {
   return zookDemoFixtures.shopOrders.map((order) => ({
     ...order,
@@ -667,15 +1188,24 @@ export async function demoMobileApiFetch<T>(
   }
   if (pathname === "/me/goals") return { goals: [] } as T;
   if (pathname === "/me/shop-orders") return { orders: demoShopOrders() } as T;
-  if (pathname === "/me/tracking/workouts") return { workouts: [] } as T;
+  if (pathname === "/me/tracking/workouts") {
+    if (method === "POST") {
+      return demoCreateWorkout(demoBody(init)) as T;
+    }
+    return { workouts: demoWorkoutLogs } as T;
+  }
   if (pathname === "/me/tracking/habits") return { habits: [] } as T;
+  if (pathname === "/me/tracking/body-progress") {
+    if (method === "POST") {
+      return demoRecordBodyProgress(demoBody(init)) as T;
+    }
+    return { entries: demoBodyProgress } as T;
+  }
   if (pathname === "/me/tracking/summary") {
-    return {
-      summary: { weeklyCount: 3, totalDuration: 185, recentCount: 4 },
-      recentWorkouts: [],
-      latestBodyProgress: { weightKg: 78, measuredAt: nowIso() },
-      habits: [],
-    } as T;
+    return demoTrackingSummary() as T;
+  }
+  if (pathname === "/me/referral-codes") {
+    return demoReferralCodes() as T;
   }
 
   if (pathname === "/orgs/public/search") {
@@ -959,6 +1489,23 @@ export async function demoMobileApiFetch<T>(
       session: { id: "offline-payment-session", status: "SUCCEEDED" },
       payment: zookDemoFixtures.payments[0],
     } as T;
+  }
+
+  if (pathname === "/me/diet/meal-logs" && method === "POST") {
+    return demoLogMeal(demoBody(init)) as T;
+  }
+
+  if (pathname === "/me/diet") {
+    return { plan: demoDietPlan(), logs: demoMealLogs } as T;
+  }
+
+  const enrollMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/enroll$/);
+  if (enrollMatch && method === "POST") {
+    return demoEnrollInClass(enrollMatch[1]) as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) {
+    return { classes: demoClasses() } as T;
   }
 
   if (pathname.includes("/trainers/") && pathname.endsWith("/clients")) {

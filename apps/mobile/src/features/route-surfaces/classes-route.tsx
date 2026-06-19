@@ -1,26 +1,104 @@
 import { Stack } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AppHeader,
   BranchSelectorChip,
   Card,
   EmptyState,
+  IconBubble,
   Pill,
   QueryErrorState,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { ClassesSkeleton } from "@/components/skeletons";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useEnrollInClass, useMyClasses } from "@/lib/domains";
-import { formatClassSchedule } from "@/lib/formatting";
+import type { MemberClassRecord } from "@/lib/domains/shared/types";
+import { formatTime } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { classDayHeading, classTypeVisual } from "@/features/member/classes/class-display";
 
-function enrollmentLabel(status?: string | null, remainingCapacity?: number) {
-  if (status === "confirmed") return "Booked";
-  if (status === "waitlisted") return "Waitlisted";
-  if ((remainingCapacity ?? 0) <= 0) return "Join waitlist";
+function bookingLabel(entry: MemberClassRecord) {
+  if (entry.myEnrollmentStatus === "confirmed") return "Booked";
+  if (entry.myEnrollmentStatus === "waitlisted") return "On waitlist";
+  if (entry.remainingCapacity <= 0) return "Join waitlist";
   return "Book class";
+}
+
+function statusPill(entry: MemberClassRecord) {
+  if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
+  if (entry.myEnrollmentStatus === "waitlisted")
+    return { label: "Waitlisted", tone: "amber" as const };
+  if (entry.remainingCapacity <= 0) return { label: "Full", tone: "red" as const };
+  if (entry.remainingCapacity <= 3)
+    return { label: `${entry.remainingCapacity} left`, tone: "amber" as const };
+  return { label: `${entry.remainingCapacity} spots`, tone: "neutral" as const };
+}
+
+function groupByDay(classes: MemberClassRecord[]) {
+  const groups: Array<{ heading: string; items: MemberClassRecord[] }> = [];
+  for (const entry of classes) {
+    const heading = classDayHeading(entry.startTime);
+    const last = groups[groups.length - 1];
+    if (last && last.heading === heading) {
+      last.items.push(entry);
+    } else {
+      groups.push({ heading, items: [entry] });
+    }
+  }
+  return groups;
+}
+
+function ClassCard({
+  entry,
+  busy,
+  onBook,
+}: {
+  entry: MemberClassRecord;
+  busy: boolean;
+  onBook: () => void;
+}) {
+  const { palette } = useTheme();
+  const visual = classTypeVisual(entry.classType);
+  const pill = statusPill(entry);
+  const booked = entry.myEnrollmentStatus === "confirmed";
+  const waitlisted = entry.myEnrollmentStatus === "waitlisted";
+  const meta = [entry.classType, entry.trainerName ? `Coach ${entry.trainerName}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Card variant="compact" contentStyle={styles.classCard}>
+      <View style={styles.classHeader}>
+        <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
+        <View style={styles.classTitleBlock}>
+          <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
+          <Text style={[styles.classTime, { color: palette.text.secondary }]}>
+            {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+          </Text>
+        </View>
+        <Pill tone={pill.tone}>{pill.label}</Pill>
+      </View>
+      {meta ? (
+        <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
+      ) : null}
+      {entry.description ? (
+        <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
+          {entry.description}
+        </Text>
+      ) : null}
+      <ZookButton
+        onPress={onBook}
+        disabled={busy || booked || waitlisted}
+        variant={booked || waitlisted ? "secondary" : "primary"}
+        icon={booked ? "checkmark-circle-outline" : undefined}
+      >
+        {busy ? "Saving..." : bookingLabel(entry)}
+      </ZookButton>
+    </Card>
+  );
 }
 
 export default function ClassesRoute() {
@@ -29,6 +107,12 @@ export default function ClassesRoute() {
   const classesQuery = useMyClasses();
   const enrollMutation = useEnrollInClass();
   const [refreshing, setRefreshing] = useState(false);
+
+  const classes = useMemo(
+    () => classesQuery.data?.classes ?? [],
+    [classesQuery.data?.classes],
+  );
+  const groups = useMemo(() => groupByDay(classes), [classes]);
 
   async function refresh() {
     setRefreshing(true);
@@ -58,7 +142,7 @@ export default function ClassesRoute() {
             subtitle={
               selectedBranch
                 ? `${selectedBranch.name} schedule`
-                : "See upcoming sessions and reserve your spot."
+                : "Reserve your spot in upcoming group sessions."
             }
             contextSlot={<BranchSelectorChip />}
             showProfileShortcut={false}
@@ -78,74 +162,39 @@ export default function ClassesRoute() {
             </Card>
           ) : null}
 
-          {!classesQuery.isLoading && !classesQuery.data?.classes.length ? (
+          {classesQuery.isLoading ? <ClassesSkeleton /> : null}
+
+          {!classesQuery.isLoading && !classesQuery.isError && classes.length === 0 ? (
             <Card variant="compact">
               <EmptyState
                 icon="calendar-outline"
-                title="No classes"
+                title="No classes scheduled"
+                body="Check back soon — new group sessions are added every week."
               />
             </Card>
           ) : null}
 
-          <View style={styles.stack}>
-            {(classesQuery.data?.classes ?? []).map((entry, index) => {
-              const busy = enrollMutation.isPending && enrollMutation.variables?.classId === entry.id;
-              const alreadyBooked = entry.myEnrollmentStatus === "confirmed";
-              const alreadyWaitlisted = entry.myEnrollmentStatus === "waitlisted";
-              return (
-                <Card
-                  key={entry.id}
-                  testID={index === 0 ? "class-row-first" : `class-row-${entry.id}`}
-                  variant="compact"
-                  contentStyle={styles.classCard}
-                >
-                  <View style={styles.classHeader}>
-                    <View style={styles.classTitleBlock}>
-                      <Text style={[styles.classTitle, { color: palette.text.primary }]}>
-                        {entry.name}
-                      </Text>
-                      <Text style={[styles.classSchedule, { color: palette.text.secondary }]}>
-                        {formatClassSchedule(entry.startTime, entry.endTime)}
-                      </Text>
-                    </View>
-                    <Pill
-                    >
-                      {entry.myEnrollmentStatus === "confirmed"
-                        ? "Booked"
-                        : entry.remainingCapacity > 0
-                          ? `${entry.remainingCapacity} left`
-                          : "Waitlist"}
-                    </Pill>
-                  </View>
-                  <View style={styles.metaRow}>
-                    <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                      {entry.classType}
-                    </Text>
-                    <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                      {entry.trainerName
-                        ? `Coach ${entry.trainerName}`
-                        : `${entry.enrollmentCount}/${entry.maxCapacity} booked`}
-                    </Text>
-                  </View>
-                  {entry.description ? (
-                    <Text style={[styles.description, { color: palette.text.secondary }]}>
-                      {entry.description}
-                    </Text>
-                  ) : null}
-                  <ZookButton
-                    testID={index === 0 ? "class-book-first" : `class-book-${entry.id}`}
-                    onPress={() => enrollMutation.mutate({ classId: entry.id })}
-                    disabled={busy || alreadyBooked || alreadyWaitlisted}
-                    variant={alreadyBooked || alreadyWaitlisted ? "secondary" : "primary"}
-                  >
-                    {busy
-                      ? "Saving..."
-                      : enrollmentLabel(entry.myEnrollmentStatus, entry.remainingCapacity)}
-                  </ZookButton>
-                </Card>
-              );
-            })}
-          </View>
+          {groups.map((group) => (
+            <View key={group.heading} style={styles.group}>
+              <Text style={[styles.dayHeading, { color: palette.text.tertiary }]}>
+                {group.heading}
+              </Text>
+              <View style={styles.stack}>
+                {group.items.map((entry) => {
+                  const busy =
+                    enrollMutation.isPending && enrollMutation.variables?.classId === entry.id;
+                  return (
+                    <ClassCard
+                      key={entry.id}
+                      entry={entry}
+                      busy={busy}
+                      onBook={() => enrollMutation.mutate({ classId: entry.id })}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          ))}
         </ScrollView>
       </ZookScreen>
     </>
@@ -161,32 +210,34 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
+  group: {
+    gap: spacing.sm,
+  },
+  dayHeading: {
+    ...typography.eyebrow,
+    textTransform: "uppercase",
+  },
   stack: {
     gap: spacing.md,
   },
   classCard: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   classHeader: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
+    gap: spacing.md,
   },
   classTitleBlock: {
     flex: 1,
-    gap: 4,
+    gap: 3,
+    minWidth: 0,
   },
   classTitle: {
     ...typography.cardTitle,
   },
-  classSchedule: {
+  classTime: {
     ...typography.body,
-  },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
   },
   metaText: {
     ...typography.caption,
