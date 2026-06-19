@@ -389,7 +389,7 @@ export function BillingSection({
       <GlassCard className="xl:col-span-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <Pill tone="lime">Free trial</Pill>
+            <Pill>Free trial</Pill>
             <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">{copy.trialBillingTitle}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {copy.trialBillingDescription}

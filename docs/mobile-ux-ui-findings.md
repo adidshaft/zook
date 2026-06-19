@@ -1039,3 +1039,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated body timeline latest-photo cue (`R223`) is closed:
   the Latest label on body progress photos now uses neutral styling instead of lime,
   keeping success color for actual outcomes rather than positional metadata.
+- **[ui, fixed]** Overstated billing free-trial label cue (`R224`) is closed:
+  the Free trial badge now uses neutral styling instead of lime, keeping success color
+  for enabled billing readiness and actual payment outcomes.
