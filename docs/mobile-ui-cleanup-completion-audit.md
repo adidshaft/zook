@@ -137,6 +137,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording while preserving the same next-step meaning.
 - Member pickup banner and reception verification toast now use available/verified wording instead
   of extra ready-state cues.
+- Pricing and platform action labels now use expanded/account wording instead of generic advanced
+  cues.
 
 ### Product plan Part A and Part B
 

@@ -1743,7 +1743,7 @@ export function PlatformOperationsPanel({
                 />
                 <div className="mt-4 rounded-[18px] border border-white/10 bg-black/20 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                    Advanced actions
+                    Account actions
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (

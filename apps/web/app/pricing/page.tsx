@@ -55,7 +55,7 @@ const tierHighlights: Record<SaasTier, string[]> = {
   ],
   GROWTH: [
     "More members, branches, trainers, inventory, and campaign capacity",
-    "Advanced reports, referrals, notifications, and campaign tools",
+    "Expanded reports, referrals, notifications, and campaign tools",
     "Best for teams running daily front-desk and trainer workflows",
   ],
   PRO: [
