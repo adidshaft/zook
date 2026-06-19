@@ -130,7 +130,7 @@ export function CoachPage({
         </GlassCard>
 
         <GlassCard className="p-5">
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">Today's quick actions</h2>
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Today</h2>
           <div className="mt-4 grid gap-2">
             <ActivityRow
               icon={ClipboardList}
@@ -160,7 +160,7 @@ export function CoachPage({
               icon={Smartphone}
               iconTone="violet"
               title="Open coach overview"
-              subtitle="Stay in the web coach surface instead of bouncing to the member portal"
+              subtitle="Review the coach workspace"
               href="/coach"
               index={3}
             />

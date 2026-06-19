@@ -309,6 +309,8 @@ fully complete until the human/device/provider gates below have external evidenc
   action button.
 - Trainer home no longer repeats the Today section label as a row chip, and member plan
   feedback copy now asks for a note without quick-action framing.
+- Trainer home, coach web, desk member selection, and dashboard overview copy no longer
+  repeats quick-action/reference/open-log cues beside already-labeled rows, charts, and links.
 
 ### Product plan Part A and Part B
 

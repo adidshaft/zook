@@ -364,7 +364,6 @@ export function DashboardOverview({
                   </span>
                   <DeltaChip delta={charts.deltas.revenue7d} />
                 </div>
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the reference point</p>
               </div>
               <Link
                 href="/dashboard/reports"
@@ -566,9 +565,7 @@ export function DashboardOverview({
                 <strong className="tabular-nums">{summary.staffCount}</strong> staff roles ·{" "}
                 <strong className="tabular-nums">{auditLogCount}</strong> audit records
               </span>
-              <span className="block text-xs text-[var(--text-tertiary)]">
-                Open audit log for exact actions and timestamps
-              </span>
+              <span className="block text-xs text-[var(--text-tertiary)]">Exact actions and timestamps</span>
             </span>
             <ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />
           </Link>

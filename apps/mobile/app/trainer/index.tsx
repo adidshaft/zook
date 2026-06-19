@@ -105,7 +105,7 @@ export default function TrainerHomeScreen() {
           {clientsQuery.isError ? <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} /> : null}
 
           <AnimatedAppear delay={0}>
-            <SectionHeader title="Today" subtitle="The next coaching actions to clear first." />
+            <SectionHeader title="Today" />
             <Card variant="compact" contentStyle={styles.stack}>
               {priorityClient ? (
                 <Pressable
@@ -127,10 +127,7 @@ export default function TrainerHomeScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={40}>
-            <SectionHeader
-              title="Needs plan"
-              subtitle={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} ready for coaching.`}
-            />
+            <SectionHeader title="Needs plan" />
             {clientsNeedingPlans ? (
               <OperationalQueueCard
                 title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
