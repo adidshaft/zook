@@ -96,7 +96,7 @@ async function renderMembershipSurface(session: AuthSessionSummary, locale: Publ
                         <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
                           {formatEnumLabel(subscription.status)}
                         </Pill>
-                        {autopay ? <Pill tone="lime">Autopay on</Pill> : null}
+                        {autopay ? <Pill tone="blue">Autopay on</Pill> : null}
                       </div>
                       <h2 className="mt-4 text-2xl font-semibold text-white">
                         {organization?.name ?? "Zook gym"}

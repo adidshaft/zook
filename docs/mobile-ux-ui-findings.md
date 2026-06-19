@@ -1238,3 +1238,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated coaching-library reviewed cue (`R289`) is closed:
   reviewed plan rows now use informational tone instead of success color, while
   plans that still need trainer review remain warning cues.
+- **[ui, fixed]** Overstated member autopay setting cues (`R290`) are closed:
+  web membership Autopay on badges now use informational tone instead of success
+  color, while subscription status badges keep their existing semantic treatment.
