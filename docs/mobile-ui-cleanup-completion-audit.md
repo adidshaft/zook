@@ -299,6 +299,8 @@ fully complete until the human/device/provider gates below have external evidenc
   in the surrounding product photos copy.
 - Reception bulk-attendance and payment collection sections no longer repeat action
   subtitles above already-labeled forms and primary actions.
+- Trainer client sessions no longer repeats the empty feedback state with both
+  "No member feedback yet" and a separate Waiting chip.
 
 ### Product plan Part A and Part B
 

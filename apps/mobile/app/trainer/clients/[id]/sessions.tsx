@@ -69,7 +69,7 @@ export default function TrainerClientSessionsScreen() {
                 <ListRow key={entry.id} title={entry.title} subtitle={entry.body || "No details added."} trailing={<StatusChip status={entry.status} tone={entry.tone} />} />
               ))
             ) : (
-              <ListRow title="Plan feedback" subtitle="No member feedback yet." trailing={<StatusChip status="Waiting" tone="neutral" />} />
+              <ListRow title="Plan feedback" subtitle="No member feedback yet." />
             )}
             <ListRow
               title="Plans"
