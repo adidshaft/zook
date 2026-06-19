@@ -84,7 +84,7 @@ export default function ProgressScreen() {
               ))}
               {!workouts.length && !workoutsQuery.isLoading ? (
                 <Card variant="compact">
-                  <EmptyState title="No workouts logged" body="Log your first session after training." />
+                  <EmptyState title="No workouts logged" />
                 </Card>
               ) : null}
             </View>

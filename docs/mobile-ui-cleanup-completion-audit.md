@@ -288,6 +288,8 @@ fully complete until the human/device/provider gates below have external evidenc
   clear title inside the Body progress card.
 - Trainer payouts breakdown empty state no longer repeats helper copy under the already-clear
   No earnings title.
+- Member progress recent-workouts empty state no longer repeats helper copy under the already-clear
+  No workouts logged title and top-level Log workout action.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
