@@ -1072,3 +1072,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated desk branch context cue (`R234`) is closed:
   the desk workspace branch pill now uses neutral styling without a lime status dot,
   keeping live/check-in meaning on the actual desk metrics and actions.
+- **[ui, fixed]** Overstated desk check-in KPI success cue (`R235`) is closed:
+  the desk Today's check-ins KPI now uses the informational tone instead of lime,
+  matching the main dashboard and keeping success color for completed actions.

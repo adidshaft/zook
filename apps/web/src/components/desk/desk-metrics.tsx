@@ -20,7 +20,7 @@ export function DeskMetrics({
         label="Today's check-ins"
         value={todayCount}
         icon={CheckCircle2}
-        tone="lime"
+        tone="sky"
       />
       <KPITile
         label="Pending review"
