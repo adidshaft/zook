@@ -318,6 +318,8 @@ fully complete until the human/device/provider gates below have external evidenc
   that already label stock branch, payment, pickup, and revenue states.
 - Web member diet page no longer repeats no-plan helper copy below the already-clear No active
   diet plan heading.
+- Dashboard member roster no longer repeats a member-directory description above filters,
+  search, profile counts, and the roster table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -138,7 +138,6 @@ export function MemberList({
       <SectionHeader
         eyebrow="Members"
         title="Member roster"
-        description="Profiles come from the member directory."
         badge={
           <Pill>
             {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length} profiles
