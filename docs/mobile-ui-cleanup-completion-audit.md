@@ -436,6 +436,8 @@ fully complete until the human/device/provider gates below have external evidenc
   plan wording from the catalog header.
 - Trainer customization accent control no longer repeats chart/chip usage below the Accent
   colour label and visible colour options.
+- Dashboard AI assistant activity uses a shorter empty state instead of repeating assistant
+  draft wording from the section header and managed-on note.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
