@@ -1277,3 +1277,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile active-membership access cue (`R302`) is
   closed: the member home Access active card now uses task/informational styling
   instead of success treatment, while missing or expired access remains warning.
+- **[ui, fixed]** Overstated mobile gym profile context cues (`R303`) are
+  closed: Referral applied and Current membership rows now use informational tone
+  instead of success color, while approved join requests keep success treatment.

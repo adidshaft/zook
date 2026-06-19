@@ -392,7 +392,7 @@ export default function GymProfileScreen() {
 
               <View style={styles.viewerStateStack}>
                 {effectiveReferral ? (
-                  <InfoRow label="Referral applied" value={effectiveReferral} tone="lime" />
+                  <InfoRow label="Referral applied" value={effectiveReferral} tone="blue" />
                 ) : null}
                 {viewerState?.activeMembership ? (
                   <InfoRow
@@ -402,7 +402,7 @@ export default function GymProfileScreen() {
                         ? `Active until ${formatLongDate(viewerState.activeMembership.endsAt)}`
                         : "Already active"
                     }
-                    tone="lime"
+                    tone="blue"
                   />
                 ) : null}
                 {viewerState?.pendingJoinRequest ? (
