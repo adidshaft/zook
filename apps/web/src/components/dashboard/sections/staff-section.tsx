@@ -384,10 +384,7 @@ export function StaffSection({
           {coachPlansState.error ? (
             <ErrorNotice message={coachPlansState.error} />
           ) : coachPlansState.loading && coachPlans.length === 0 ? (
-            <EmptyState
-              title="Loading coaching plans"
-              description="Loading coaching plans."
-            />
+            <EmptyState title="Loading coaching plans" />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (
               <div key={plan.id} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">

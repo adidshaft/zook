@@ -69,10 +69,7 @@ export function SettlementQueueCard({
         {shopOrdersState.error ? (
           <ErrorNotice message={shopOrdersState.error} />
         ) : shopOrdersState.loading && shopOrders.length === 0 ? (
-          <EmptyState
-            title="Loading settlement queue"
-            description="Loading shop order payments."
-          />
+          <EmptyState title="Loading settlement queue" />
         ) : (
           <>
             <SettlementFilters

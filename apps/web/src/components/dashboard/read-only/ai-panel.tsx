@@ -54,10 +54,7 @@ export function AiPanel({
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState
-              title="Loading drafts"
-              description="Loading assisted drafts."
-            />
+            <EmptyState title="Loading drafts" />
           ) : (
             <DataTable
               columns={[

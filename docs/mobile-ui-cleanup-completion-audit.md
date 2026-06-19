@@ -361,6 +361,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of placeholder-location phrasing.
 - Platform service readouts now use active/configured wording instead of generic ready-for-use
   cues.
+- Dashboard loading empty states for plans, members, attendance, drafts, settlement, and coaching
+  no longer repeat the same loading message in both title and description.
 
 ### Product plan Part A and Part B
 

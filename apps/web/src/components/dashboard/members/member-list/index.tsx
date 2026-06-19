@@ -180,10 +180,7 @@ export function MemberList({
         {membersState.error ? (
           <ErrorNotice message={membersState.error} />
         ) : membersState.loading && members.length === 0 ? (
-          <EmptyState
-            title="Loading member roster"
-            description="Loading members."
-          />
+          <EmptyState title="Loading member roster" />
         ) : (
           <>
             {useVirtualizedRoster ? (

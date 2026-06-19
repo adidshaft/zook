@@ -35,10 +35,7 @@ export function MembershipPlanLadder({
         {membershipPlansState.error ? (
           <ErrorNotice message={membershipPlansState.error} />
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-          <EmptyState
-            title="Loading plan ladder"
-            description="Loading membership plans."
-          />
+          <EmptyState title="Loading plan ladder" />
         ) : (
           <DataTable
             columns={[

@@ -75,7 +75,7 @@ export function MembershipCatalogSection({
         {membershipPlansState.error ? (
           <ErrorNotice message={membershipPlansState.error} />
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-          <EmptyState title="Loading membership offers" description="Loading your plans." />
+          <EmptyState title="Loading membership offers" />
         ) : (
           <DataTable
             columns={[

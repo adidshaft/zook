@@ -114,10 +114,7 @@ export function AttendancePanel({
           {attendanceState.error ? (
             <ErrorNotice message={attendanceState.error} />
           ) : attendanceState.loading && attendanceRecords.length === 0 ? (
-            <EmptyState
-              title="Loading attendance"
-              description="Loading check-ins."
-            />
+            <EmptyState title="Loading attendance" />
           ) : (
             <>
               <DataTable
