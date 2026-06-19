@@ -27,8 +27,8 @@ export default function WorkoutCard({
         estimatedMinutes
           ? `${estimatedMinutes} minutes estimated.${exerciseCopy}`
           : exerciseNames.length
-            ? `Your trainer has ${exerciseNames.join(", ")} ready today.`
-            : "Your trainer has a workout ready for today."
+            ? `Your trainer assigned ${exerciseNames.join(", ")} today.`
+            : "Your trainer assigned a workout for today."
       }
       ctaHref={`/plan/${assignmentId}`}
       ctaLabel="Start workout"

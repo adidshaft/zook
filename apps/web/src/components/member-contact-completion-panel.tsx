@@ -78,8 +78,8 @@ export function MemberContactCompletionPanel({
   const canVerify = Boolean(challenge && code.trim().length === 6) && pending !== "verify";
 
   const statusText = useMemo(() => {
-    if (completedCount === 2) return "Both contact methods are ready.";
-    if (completedCount === 1) return "One contact method is ready.";
+    if (completedCount === 2) return "Both contact methods are confirmed.";
+    if (completedCount === 1) return "One contact method is confirmed.";
     return "Add a contact method to complete sign-in recovery.";
   }, [completedCount]);
 

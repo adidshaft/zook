@@ -1388,3 +1388,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated privileged PIN readiness fallback (`R333`) is
   closed: the mobile privileged-action fallback now describes the PIN prompt as
   still loading instead of presenting the action as not ready.
+- **[ui, fixed]** Overstated contact, membership, referral, and workout ready
+  cues (`R334`) are closed: helper copy now uses confirmed/active/copied/
+  assigned wording instead of ready phrasing for non-operational states.

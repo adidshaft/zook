@@ -428,7 +428,7 @@ export default function ProfileScreen() {
         : toWebUrl(rawLink)
       : referralCode.code;
     await Clipboard.setStringAsync(link);
-    Alert.alert("Referral copied", link === referralCode.code ? "Your referral code is ready to share." : "Your referral link is ready to share.");
+    Alert.alert("Referral copied", link === referralCode.code ? "Your referral code is copied." : "Your referral link is copied.");
   }
 
   return (
