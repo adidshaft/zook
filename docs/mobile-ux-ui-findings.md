@@ -1117,3 +1117,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative coach overview cues (`R249`) are closed:
   the trainer web hero and Assigned clients KPI now use the informational dashboard
   tone instead of success color, keeping lime for actual outcomes and saved actions.
+- **[ui, fixed]** Decorative reports hero cue (`R250`) is closed:
+  the Reports & insights hero now uses the informational dashboard tone instead of
+  success color, keeping outcome tones for actual metrics and generated actions.

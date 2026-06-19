@@ -119,7 +119,7 @@ export function ReportsPanel({
         title="Reports & insights"
         description="Memberships, floor activity, and revenue in one place. Drill into any KPI to see the underlying record."
         icon={BarChart3}
-        tone="lime"
+        tone="sky"
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
