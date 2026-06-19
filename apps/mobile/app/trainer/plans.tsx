@@ -65,7 +65,7 @@ export default function TrainerPlansScreen() {
             subtitle={`${plannedClients.length} ${plannedClients.length === 1 ? "client" : "clients"}`}
           />
           <Card variant="compact" contentStyle={styles.summaryCard}>
-            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "lime"} size={42} />
+            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "neutral"} size={42} />
             <View style={styles.summaryCopy}>
               <SectionHeader
                 title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
@@ -76,7 +76,7 @@ export default function TrainerPlansScreen() {
                 }
               />
             </View>
-            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "lime"} />
+            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "neutral"} />
           </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (

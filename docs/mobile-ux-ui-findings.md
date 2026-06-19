@@ -1181,3 +1181,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform summary clear cues (`R270`) are closed:
   the platform command summary now uses neutral tone for Ready, Clear, and Healthy
   clear states, while provider gaps, safety reviews, and suspended orgs stay warning.
+- **[ui, fixed]** Overstated trainer planning clear cue (`R271`) is closed:
+  the mobile trainer Plan work summary now uses neutral tone for the Clear queue
+  state, while active plan work that needs review remains warning.
