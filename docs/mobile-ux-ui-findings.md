@@ -1361,3 +1361,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: dashboard, reception, coach, report, platform, and tracking surfaces
   now use neutral overview/snapshot/current wording instead of live/latest labels
   where no realtime status is being conveyed.
+- **[code, fixed]** Duplicate web membership surface (`R327`) is closed: the
+  logged-in `/me` route now reuses the shared member membership renderer used by
+  private handle and public slug routes, so membership UI cleanup stays in one
+  component.
