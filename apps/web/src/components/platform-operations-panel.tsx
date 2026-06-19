@@ -1951,7 +1951,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Safety"
               title="Recent reports"
-              description="Recent gym reports with severity and status."
               badge={
                 <Pill tone={openFlags.length ? "amber" : "neutral"}>{openFlags.length} open</Pill>
               }

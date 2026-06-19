@@ -372,6 +372,8 @@ fully complete until the human/device/provider gates below have external evidenc
   contact rows that already show the contact details.
 - Platform assistant activity no longer repeats assisted-draft helper copy above the event badge
   and assistant activity table.
+- Platform recent reports no longer repeats severity/status helper copy above the open count and
+  per-report severity/status pills.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
