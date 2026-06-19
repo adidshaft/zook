@@ -93,7 +93,6 @@ export default function QaLauncherScreen() {
       >
         <AppHeader
           title="QA shortcuts"
-          subtitle="Open seeded roles and key routes without OS deep-link prompts."
           showProfileShortcut={false}
           showBack
         />

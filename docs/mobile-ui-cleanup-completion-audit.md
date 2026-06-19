@@ -412,6 +412,8 @@ fully complete until the human/device/provider gates below have external evidenc
   a duplicate payout-at-a-glance description.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
+- Mobile QA shortcuts header no longer repeats launcher guidance above the Public and Roles
+  shortcut button groups.
 - Coach today list no longer repeats the coach-overview action through a duplicate row subtitle.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
