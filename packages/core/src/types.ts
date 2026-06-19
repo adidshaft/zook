@@ -408,14 +408,12 @@ export interface UserSafetyState {
 }
 
 export type TrackingWindow = "TODAY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-export type TrackingTone = "lime" | "amber" | "blue" | "violet";
 
 export interface TrackingSummaryMetric {
   id: string;
   label: string;
   value: string;
   detail: string;
-  tone: TrackingTone;
 }
 
 export interface WorkoutExercise {

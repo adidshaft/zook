@@ -1157,3 +1157,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated reception queue-clear cue (`R262`) is closed:
   the desk queue clear card now uses neutral styling instead of success color, while
   pending and flagged entry queues still use warning and danger tones.
+- **[code, fixed]** Dead tracking summary tone metadata (`R263`) is closed:
+  the mobile tracking summary metric type and builder no longer carry unused tone
+  values, removing success/info metadata that the summary tiles never rendered.
