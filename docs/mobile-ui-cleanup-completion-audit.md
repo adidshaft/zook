@@ -325,6 +325,8 @@ fully complete until the human/device/provider gates below have external evidenc
   activity, billing, or profile context already shown by their controls and rows.
 - Web member and desk KPI tiles no longer render decorative roster/clear/handoff captions
   where the tile labels and counts already carry the state.
+- Trainer plan work no longer repeats active-plan context through header subtitles and
+  review/clear chips, and owner approvals removes the duplicate pending-decision subtitle.
 
 ### Product plan Part A and Part B
 

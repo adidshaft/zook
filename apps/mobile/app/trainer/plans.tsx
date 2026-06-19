@@ -9,7 +9,6 @@ import {
   IconBubble,
   QueryErrorState,
   SectionHeader,
-  StatusChip,
   ZookScreen,
 } from "@/components/primitives";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
@@ -21,7 +20,7 @@ import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
-  const { activeOrgId, session } = useAuth();
+  const { activeOrgId } = useAuth();
   const { palette } = useTheme();
   const bottomPadding = useBottomScrollPadding();
   const [refreshing, setRefreshing] = useState(false);
@@ -56,14 +55,8 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <AppHeader
-            title="Plan work"
-            subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}
-          />
-          <SectionHeader
-            title="Active plan work"
-            subtitle={`${plannedClients.length} ${plannedClients.length === 1 ? "client" : "clients"}`}
-          />
+          <AppHeader title="Plan work" />
+          <SectionHeader title="Active plan work" />
           <Card variant="compact" contentStyle={styles.summaryCard}>
             <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "neutral"} size={42} />
             <View style={styles.summaryCopy}>
@@ -76,7 +69,6 @@ export default function TrainerPlansScreen() {
                 }
               />
             </View>
-            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "neutral"} />
           </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (

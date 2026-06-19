@@ -173,7 +173,6 @@ export default function OwnerApprovalsScreen() {
             <>
               <SectionHeader
                 title={`Request list (${joinRequests.length})`}
-                subtitle="Pending join decisions"
                 action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton>}
               />
               <ApprovalQueue
