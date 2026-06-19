@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useState, type ReactNode } from "react";
 import {
   Pressable,
@@ -13,13 +14,22 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii, spacing, typography, useTheme } from "@/lib/theme";
+import { gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
 import { pressWithHaptics } from "./buttons";
 import { Card } from "./foundation";
 import { IconBubble } from "./icon-bubble";
 import { useTonePalette, type PillTone } from "./tone-palette";
 
 type IconName = keyof typeof Ionicons.glyphMap;
+
+const PRODUCT_TONE_GRADIENT: Record<PillTone, readonly [string, string]> = {
+  red: gradients.classRed,
+  amber: gradients.classAmber,
+  blue: gradients.classBlue,
+  violet: gradients.classViolet,
+  lime: gradients.heroCardAccent,
+  neutral: gradients.cardSheen,
+};
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
 
@@ -303,7 +313,15 @@ export function ProductCard({
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
         ) : (
-          <Ionicons name={icon} size={38} color={palette.color} />
+          <>
+            <LinearGradient
+              colors={PRODUCT_TONE_GRADIENT[tone]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <Ionicons name={icon} size={40} color={palette.color} />
+          </>
         )}
         {tone === "red" || tone === "amber" ? (
           <View

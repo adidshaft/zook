@@ -36,6 +36,7 @@ import {
   StatusChip,
   ZookButton,
   ZookScreen,
+  type PillTone,
 } from "@/components/primitives";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { formatDateTime, formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
@@ -97,6 +98,15 @@ function iconForCategory(category: Category) {
   if (category === "TOWEL") return "shirt-outline" as const;
   if (category === "SHAKER") return "flask-outline" as const;
   return "nutrition-outline" as const;
+}
+
+function toneForCategory(category: Category): PillTone {
+  if (category === "WATER") return "blue";
+  if (category === "TOWEL") return "amber";
+  if (category === "SHAKER") return "violet";
+  if (category === "PROTEIN_SHAKE") return "lime";
+  if (category === "SUPPLEMENT") return "violet";
+  return "blue";
 }
 
 function checkoutUrl(url: string) {
@@ -963,7 +973,13 @@ export default function Shop() {
               name={item.name}
               price={formatInr(item.pricePaise)}
               stock={fulfillmentLabel}
-              tone={item.stock <= 0 ? "red" : lowStock ? "amber" : "blue"}
+              tone={
+                item.stock <= 0
+                  ? "red"
+                  : lowStock
+                    ? "amber"
+                    : toneForCategory(item.category as Category)
+              }
               imageUrl={productImageUrl}
               quantity={cart[item.id] ?? 0}
               icon={iconForCategory(item.category as Category)}
