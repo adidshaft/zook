@@ -58,7 +58,7 @@ export function MembershipCatalogSection({
               Publishes into join, sales, and approval flows.
             </p>
           </div>
-          <Pill>Live</Pill>
+          <Pill>Catalog</Pill>
         </div>
         <PlanFormFields form={planForm} setForm={setPlanForm} showShapeHint />
         <ZookButton
@@ -163,7 +163,7 @@ export function MembershipCatalogSection({
           />
         )}
         {editingPlanId ? (
-          <div className="mt-4 grid gap-3 rounded-[24px] border border-lime-300/20 bg-lime-300/6 p-4">
+          <div className="mt-4 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-white">Edit membership plan</p>

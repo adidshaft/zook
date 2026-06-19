@@ -1339,3 +1339,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated dashboard feedback panels (`R320`) are closed:
   plan and branch status messages now use informational styling, and the shop
   product edit panel now uses a neutral editing surface instead of lime emphasis.
+- **[ui, fixed]** Overstated catalog/import/hour cues (`R321`) are closed:
+  membership catalog/edit panels, CSV import summaries, loaded-row helper text,
+  and branch Open hour toggles now use neutral or informational styling instead
+  of lime success emphasis.

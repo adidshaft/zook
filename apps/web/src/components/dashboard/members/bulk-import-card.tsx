@@ -94,7 +94,7 @@ export function BulkImportCard({
             />
           </label>
           {csvText ? (
-            <span className="text-xs text-lime-300/80">
+            <span className="text-xs text-white/55">
               {csvText.split(/\r?\n/).filter(Boolean).length - 1} data rows loaded
             </span>
           ) : null}
@@ -178,7 +178,7 @@ export function BulkImportCard({
         </div>
 
         {importResult ? (
-          <div className="rounded-[22px] border border-lime-200/15 bg-lime-200/8 p-4">
+          <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
             <div className="flex flex-wrap gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-white/35">Total</p>
@@ -186,7 +186,7 @@ export function BulkImportCard({
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-white/35">Created</p>
-                <p className="mt-1 text-lg font-bold text-lime-300">
+                <p className="mt-1 text-lg font-bold text-white">
                   {importResult.summary.created}
                 </p>
               </div>

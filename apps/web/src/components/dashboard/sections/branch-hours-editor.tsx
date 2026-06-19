@@ -224,7 +224,7 @@ export function BranchHoursEditor({
                   className={`zook-focus rounded-full border px-3 py-2 text-xs font-medium transition ${
                     isClosed
                       ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
-                      : "border-lime-300/30 bg-lime-300/10 text-lime-100"
+                      : "border-blue-300/25 bg-blue-300/10 text-blue-50"
                   }`}
                 >
                   {isClosed ? "Closed" : "Open"}
