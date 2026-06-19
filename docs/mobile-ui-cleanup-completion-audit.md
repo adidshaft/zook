@@ -452,6 +452,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording from the section title and service/status columns.
 - Platform gym accounts section no longer repeats the same label in the eyebrow, title, and
   empty state.
+- Platform assistant activity table uses a shorter empty state instead of repeating assistant
+  activity wording from the section title and event count badge.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.

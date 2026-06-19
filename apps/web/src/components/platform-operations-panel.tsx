@@ -1927,7 +1927,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={usage}
                   rowKey={(row) => row.id}
-                  empty="No assistant activity."
+                  empty="No activity."
                 />
               )}
             </div>
