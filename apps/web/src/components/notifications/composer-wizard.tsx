@@ -417,7 +417,7 @@ export function NotificationComposerPanel({
           {sendConfirmationOpen ? (
             <ConfirmDialog
               title={`Send to ${preview?.willDeliver ?? 0} members?`}
-              description="Zook will prepare the message and send it through the active message service."
+              description="Zook prepares the message and sends it through the active message service."
               confirmLabel="Send message"
               onCancel={() => setSendConfirmationOpen(false)}
               onConfirm={() => {

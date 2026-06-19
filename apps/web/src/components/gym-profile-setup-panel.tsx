@@ -460,7 +460,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Photos"
               title="Images and gallery"
-              description="Add the logo, cover photo, and gallery images members will see."
+              description="Add the logo, cover photo, and gallery images for members."
             />
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">

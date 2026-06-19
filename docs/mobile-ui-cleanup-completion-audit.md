@@ -263,6 +263,9 @@ fully complete until the human/device/provider gates below have external evidenc
   status copy now uses show/ready/attached wording instead of will-show/available/already/appears.
 - Platform service/assistant, trainer nutrition, notification compose/summary, mobile plan/pickup,
   coach web, and shop status copy now avoids quick-view/private/available/will-helper phrasing.
+- Notification send/template, gym-account empty state, settlement, body-progress, profile gallery,
+  join-reject, and branch confirmation copy now uses direct present-tense wording instead of
+  will/available/visible/private phrasing.
 
 ### Product plan Part A and Part B
 

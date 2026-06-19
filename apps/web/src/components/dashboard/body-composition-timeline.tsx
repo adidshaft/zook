@@ -26,7 +26,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       <SectionHeader
         eyebrow="Body composition"
         title="Photo timeline"
-        description="Trainer-visible body progress entries from member tracking, including private progress photos when the member has attached them."
+        description="Trainer-facing body progress entries from member tracking, including attached progress photos."
         badge={
           <Pill>
             {entriesWithPhotos} photo{entriesWithPhotos === 1 ? "" : "s"}
@@ -98,7 +98,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
         <EmptyState
           className="mt-5"
           title="No body composition entries yet"
-          description="Trainer-visible body progress and progress photos show here."
+          description="Trainer-facing body progress and progress photos show here."
         />
       )}
     </div>

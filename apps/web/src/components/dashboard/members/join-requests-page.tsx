@@ -79,7 +79,7 @@ export function JoinRequestQueue({
                   <ConfirmActionButton
                     className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_38%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                     title="Reject membership request?"
-                    description="Rejecting sends the member back to the request step. They will need to apply again to continue."
+                    description="Rejecting sends the member back to the request step. They need to apply again to continue."
                     confirmLabel="Reject"
                     confirmTone="danger"
                     aria-label="Reject membership request"

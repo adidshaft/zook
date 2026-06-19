@@ -223,7 +223,7 @@ function SettlementFilters({
         title={`Settle ${selectedReadyOrders.length} ${
           selectedReadyOrders.length === 1 ? "order" : "orders"
         }?`}
-        description="Each order will be marked as fulfilled without a pickup code. This action is logged."
+        description="Each order is marked as fulfilled without a pickup code. This action is logged."
         confirmLabel="Settle"
         className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
       >

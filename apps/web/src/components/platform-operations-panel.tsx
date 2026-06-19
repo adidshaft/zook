@@ -1673,7 +1673,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No gym accounts available."
+                empty="No gym accounts yet."
               />
             </div>
             {selectedOrganization ? (

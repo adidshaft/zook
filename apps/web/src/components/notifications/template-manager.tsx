@@ -114,7 +114,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
           <input
             value={form.title}
             onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-            placeholder="Title members will see"
+            placeholder="Member-facing title"
             maxLength={120}
             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
             required

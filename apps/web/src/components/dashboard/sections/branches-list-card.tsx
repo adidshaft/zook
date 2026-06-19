@@ -173,7 +173,7 @@ function BranchSummaryRow({
         {!branch.isDefault ? (
           <ConfirmActionButton
             title="Make this the primary location?"
-            description="New attendance and QR displays will use this location. Existing data stays intact."
+            description="New attendance and QR displays use this location. Existing data stays intact."
             confirmLabel="Make primary"
             onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
             disabled={formBusy === `branch:${branch.id}`}
@@ -185,7 +185,7 @@ function BranchSummaryRow({
         {!branch.isDefault && branch.active ? (
           <ConfirmActionButton
             title="Deactivate branch?"
-            description="Existing attendance, payments, and history stay intact. Members and staff will no longer use this branch."
+            description="Existing attendance, payments, and history stay intact. Members and staff stop using this branch."
             confirmLabel="Deactivate"
             onConfirm={() => onDeactivate(branch)}
             disabled={formBusy === `branch:${branch.id}:delete`}
