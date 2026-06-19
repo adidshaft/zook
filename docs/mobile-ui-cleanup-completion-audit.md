@@ -168,6 +168,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording.
 - Dashboard AI usage readout now uses data current/local wording instead of provider
   connected/test cues.
+- Platform support and payment detail copy now uses system/payment wording instead of seeded-test
+  and provider-test cues.
 
 ### Product plan Part A and Part B
 

@@ -800,7 +800,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
-                description="Find members, staff, owners, and seeded test accounts across the platform."
+                description="Find members, staff, owners, and system accounts across the platform."
                 badge={
                   <Pill tone={usersState.loading ? "amber" : "neutral"}>
                     {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
@@ -1088,7 +1088,7 @@ export function PlatformOperationsPanel({
                       {
                         label: "Events",
                         value: formatCompactNumber(selectedPayment.events.length),
-                        meta: "Provider and test events",
+                        meta: "Payment events",
                       },
                     ]}
                   />
