@@ -334,6 +334,8 @@ fully complete until the human/device/provider gates below have external evidenc
   branch, class type, capacity, time, trainer, notes, and submit controls.
 - Dashboard low-stock watch no longer repeats inventory-sorted helper copy above the low-stock
   count, product form, and product list.
+- Dashboard plan-growth links no longer repeat a member-acquisition helper sentence above
+  discount, offer, and referral cards that already include labels, descriptions, and counts.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

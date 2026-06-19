@@ -18,7 +18,6 @@ export function PlanGrowthLinks({
       <SectionHeader
         eyebrow="Plan growth"
         title="Discounts, offers, and referrals"
-        description="Keep member acquisition tools next to the plans they affect."
       />
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {[
