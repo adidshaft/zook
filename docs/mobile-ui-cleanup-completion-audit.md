@@ -246,6 +246,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of organization/provider/scope/snapshot/operational/setup cues.
 - Mobile offline and saved-check-in copy now uses save/confirm/update wording instead of
   sync/synced labels in visible states.
+- Gym profile, onboarding, membership-plan, and platform service readouts now use
+  profile/details/ready-review wording instead of repeated setup/configured cues.
 
 ### Product plan Part A and Part B
 

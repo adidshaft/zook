@@ -223,8 +223,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
     return (
       <GlassCard>
         <EmptyState
-          title="Loading gym setup"
-          description={status || "Pulling gym profile, public links, and QR setup."}
+          title="Loading gym profile"
+          description={status || "Pulling gym profile, public links, and QR details."}
         />
       </GlassCard>
     );
@@ -243,9 +243,9 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
       <GlassCard variant="strong">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
           <SectionHeader
-            eyebrow="Web-only setup"
+            eyebrow="Web profile"
             title="Gym profile and membership links"
-            description="Owners set up the public gym profile here. Members can find the gym, open the profile link, or use the membership link to buy a plan."
+            description="Owners manage the public gym profile here. Members can find the gym, open the profile link, or use the membership link to buy a plan."
             badge={
               <div className="flex flex-wrap gap-2">
                 <Pill tone={form.visibility === "PUBLIC" ? "blue" : "amber"}>

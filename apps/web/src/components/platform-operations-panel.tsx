@@ -387,14 +387,14 @@ export function PlatformOperationsPanel({
   );
   const cockpitItems = useMemo(() => [
     {
-      label: "Configured services",
+      label: "Ready services",
       value: formatCompactNumber(readyProviders.length),
       meta: "Ready for live members",
     },
     {
-      label: "Service setup gaps",
+      label: "Service reviews",
       value: formatCompactNumber(misconfiguredProviders.length),
-      meta: "Check env + partner dashboards",
+      meta: "Check service dashboards",
     },
     {
       label: "Active gyms",
@@ -756,8 +756,8 @@ export function PlatformOperationsPanel({
             {
               title: "Service alerts",
               body: misconfiguredProviders.length
-                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before launch confidence.`
-                : "Core services are not reporting setup blockers.",
+                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need review before launch.`
+                : "Core services are not reporting issues.",
               tone: misconfiguredProviders.length ? "amber" : "neutral",
             },
             {
@@ -1459,7 +1459,7 @@ export function PlatformOperationsPanel({
             <ReadoutGrid
               items={[
                 {
-                  label: "Configured",
+                  label: "Ready",
                   value: formatCompactNumber(readyProviders.length),
                   meta: "Services ready for use",
                 },

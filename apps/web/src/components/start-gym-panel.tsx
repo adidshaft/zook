@@ -231,7 +231,7 @@ export function StartGymPanel({
   return (
     <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <GlassCard variant="strong">
-        <Pill>Owner setup</Pill>
+        <Pill>Owner start</Pill>
         <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
           Start your gym on Zook.
         </h1>
@@ -241,7 +241,7 @@ export function StartGymPanel({
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Pill>{initialTier} plan selected</Pill>
-          <Pill tone="neutral">Billing setup opens next</Pill>
+          <Pill tone="neutral">Billing opens next</Pill>
         </div>
         <div className="mt-8 grid gap-3">
           {[
@@ -249,7 +249,7 @@ export function StartGymPanel({
             "Assigns you as owner",
             "Starts a two-month free trial before billing begins",
             "Publishes a public username for profile links",
-            "Opens billing setup next so you can add the card for month 3",
+            "Opens billing next so you can add the card for month 3",
           ].map((item, index) => (
             <div
               key={item}

@@ -26,7 +26,7 @@ export function MembershipPlanLadder({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Membership setup"
+        eyebrow="Membership plans"
         title="Membership plan ladder"
         description="Review plan pricing, public visibility, and active memberships."
         badge={<Pill>{membershipPlans.length} plans</Pill>}

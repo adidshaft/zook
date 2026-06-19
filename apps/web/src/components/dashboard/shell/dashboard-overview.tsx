@@ -153,7 +153,7 @@ export function DashboardOverview({
       ? [
           {
             icon: ClipboardList,
-            title: "Finish branch setup",
+            title: "Finish branch details",
             subtitle: "Choose a primary branch for inventory and attendance.",
             tone: "amber" as const,
             href: "/dashboard/branches",
