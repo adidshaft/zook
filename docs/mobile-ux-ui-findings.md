@@ -1036,3 +1036,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated assisted-plan metadata cues (`R222`) are closed:
   assisted coaching plan badges now use neutral styling instead of amber in the
   coaching library and staff plan-production views, keeping warning color for review needs.
+- **[ui, fixed]** Overstated body timeline latest-photo cue (`R223`) is closed:
+  the Latest label on body progress photos now uses neutral styling instead of lime,
+  keeping success color for actual outcomes rather than positional metadata.
