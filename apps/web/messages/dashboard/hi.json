@@ -106,7 +106,7 @@
   },
   "payments": {
     "recordOffline": "ऑफलाइन पेमेंट रिकॉर्ड करें",
-    "receiptReady": "रसीद तैयार है",
+    "receiptReady": "रसीद बन गई है",
     "settlementQueue": "कैशफ्लो वाले ऑर्डर"
   },
   "desk": {

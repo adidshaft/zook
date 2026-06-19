@@ -106,7 +106,7 @@
   },
   "payments": {
     "recordOffline": "Record offline payment",
-    "receiptReady": "Receipt ready",
+    "receiptReady": "Receipt generated",
     "settlementQueue": "Orders affecting cashflow"
   },
   "desk": {

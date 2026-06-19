@@ -1406,3 +1406,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: shared status-pill tone inference no longer treats every label
   containing "ready" as success, leaving readiness color to explicit
   domain-specific call sites.
+- **[ui, fixed]** Overstated desk receipt ready label (`R339`) is closed:
+  dashboard payment messages and the desk receipt card now describe generated
+  receipts as generated instead of ready.
