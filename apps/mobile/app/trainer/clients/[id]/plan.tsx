@@ -30,6 +30,8 @@ import { useTrainerClients } from "@/lib/domains";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
+type InlineNotice = { message: string; tone: "info" | "warning" | "danger" };
+
 function exerciseNameForTemplate(templateId: PlanTemplateId) {
   switch (templateId) {
     case "diet":
@@ -58,7 +60,7 @@ export default function TrainerClientPlanScreen() {
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const fitnessGoal = fitnessGoalFor(client);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<InlineNotice | null>(null);
   const [planTitle, setPlanTitle] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
   const [savingPlan, setSavingPlan] = useState(false);
@@ -66,7 +68,18 @@ export default function TrainerClientPlanScreen() {
   const [dietTitle, setDietTitle] = useState("");
   const [calorieTarget, setCalorieTarget] = useState("2000");
   const [proteinG, setProteinG] = useState("120");
-  const [dietStatus, setDietStatus] = useState("");
+  const [dietStatus, setDietStatus] = useState<InlineNotice | null>(null);
+
+  const noticeTextColor = {
+    info: palette.feedback.info,
+    warning: palette.feedback.warning,
+    danger: palette.feedback.danger,
+  };
+  const noticeCardVariant = {
+    info: "compact",
+    warning: "warning",
+    danger: "danger",
+  } as const;
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
@@ -96,11 +109,11 @@ export default function TrainerClientPlanScreen() {
 
   async function saveDraft() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select a client before saving.");
+      setStatus({ message: "Select a client before saving.", tone: "warning" });
       return null;
     }
     setSavingPlan(true);
-    setStatus("");
+    setStatus(null);
     try {
       const result = await plansApi.create<{ plan: { id: string; title: string } }>({
         token,
@@ -108,12 +121,12 @@ export default function TrainerClientPlanScreen() {
         body: buildPlanPayload(),
       });
       setSavedPlan({ id: result.plan.id, title: result.plan.title });
-      setStatus(`${result.plan.title} saved as a draft.`);
+      setStatus({ message: `${result.plan.title} saved as a draft.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Draft saved." });
       return result.plan;
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setStatus(message);
+      setStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
       return null;
     } finally {
@@ -123,11 +136,11 @@ export default function TrainerClientPlanScreen() {
 
   async function assignPlan() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select a client before assigning.");
+      setStatus({ message: "Select a client before assigning.", tone: "warning" });
       return;
     }
     setSavingPlan(true);
-    setStatus("");
+    setStatus(null);
     try {
       const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
       const existingPlan = savedPlan && savedPlan.title === nextPlanTitle ? savedPlan : null;
@@ -149,11 +162,11 @@ export default function TrainerClientPlanScreen() {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
       setSavedPlan({ id: plan.id, title: plan.title });
-      setStatus(`${plan.title} assigned. ${clientName} can now see it.`);
+      setStatus({ message: `${plan.title} assigned. ${clientName} can now see it.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Plan assigned." });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setStatus(message);
+      setStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setSavingPlan(false);
@@ -162,11 +175,11 @@ export default function TrainerClientPlanScreen() {
 
   async function publishDietPlan() {
     if (!token || !activeOrgId || !client || !client.trainerUserId) {
-      setDietStatus("Select a client before publishing diet.");
+      setDietStatus({ message: "Select a client before publishing diet.", tone: "warning" });
       return;
     }
     setSavingPlan(true);
-    setDietStatus("");
+    setDietStatus(null);
     try {
       const title = dietTitle.trim() || `${clientName} diet plan`;
       const result = await trainerApi.createClientDietPlan<{ plan: { id: string; title: string } }>({
@@ -190,11 +203,11 @@ export default function TrainerClientPlanScreen() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
-      setDietStatus(`${result.plan.title} published. ${clientName} can log meals now.`);
+      setDietStatus({ message: `${result.plan.title} published. ${clientName} can log meals now.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Diet plan published." });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setDietStatus(message);
+      setDietStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setSavingPlan(false);
@@ -277,7 +290,13 @@ export default function TrainerClientPlanScreen() {
               </View>
             </Card>
           ) : null}
-          {status ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></Card> : null}
+          {status ? (
+            <Card variant={noticeCardVariant[status.tone]} contentStyle={styles.statusContent}>
+              <Text style={[styles.statusText, { color: noticeTextColor[status.tone] }]}>
+                {status.message}
+              </Text>
+            </Card>
+          ) : null}
           <Card contentStyle={styles.stack}>
             <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
@@ -289,7 +308,13 @@ export default function TrainerClientPlanScreen() {
               Publish 4-meal diet
             </SecondaryButton>
           </Card>
-          {dietStatus ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></Card> : null}
+          {dietStatus ? (
+            <Card variant={noticeCardVariant[dietStatus.tone]} contentStyle={styles.statusContent}>
+              <Text style={[styles.statusText, { color: noticeTextColor[dietStatus.tone] }]}>
+                {dietStatus.message}
+              </Text>
+            </Card>
+          ) : null}
         </ScrollView>
       </ZookScreen>
     </>

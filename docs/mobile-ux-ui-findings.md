@@ -1299,3 +1299,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web trainer action notices (`R309`) are closed:
   diet-plan and coach-workspace action notices now use informational tone instead
   of success styling, while destructive failures keep their error treatment.
+- **[ui, fixed]** Overstated mobile trainer plan notice cards (`R310`) are
+  closed: trainer plan and diet feedback now uses informational compact cards
+  for successful actions, warning cards for missing-client prompts, and danger
+  cards for API failures instead of forcing every notice through success styling.
