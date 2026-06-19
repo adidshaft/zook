@@ -283,6 +283,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and status chip when the row title already describes the action.
 - Settings, language, and notification settings headers no longer include redundant
   "choose" subtitles when the title and controls already define the screen.
+- Account, privacy, and appearance settings headers no longer repeat category subtitles
+  above controls that already provide the needed context.
 
 ### Product plan Part A and Part B
 

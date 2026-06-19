@@ -27,7 +27,7 @@ export default function AppearanceSettingsScreen() {
     <>
       <ZookScreen testID="settings-appearance-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Appearance" subtitle="Theme and default role" showProfileShortcut={false} showBack />
+          <AppHeader title="Appearance" showProfileShortcut={false} showBack />
           <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Theme</Text>
           <SegmentedControl
             options={themeOptions}
