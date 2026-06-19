@@ -1172,3 +1172,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform cached-state cue (`R267`) is closed:
   the mobile platform SaaS health Cached chip now uses neutral tone instead of
   success color, keeping amber for active refresh state.
+- **[ui, fixed]** Overstated owner active-member metric cue (`R268`) is closed:
+  the owner mobile dashboard Active members metric now uses informational tone
+  instead of success color, keeping strong tones for actual outcomes and attention.

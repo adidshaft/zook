@@ -153,7 +153,7 @@ export default function OwnerCommandScreen() {
       label: "Active members",
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
       hint: branchLabel ?? undefined,
-      tone: "lime",
+      tone: "blue",
       icon: "people-outline",
       onPress: () => router.push("/owner/members"),
     },
