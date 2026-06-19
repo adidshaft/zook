@@ -15,7 +15,7 @@ export default function ReceptionDeskScreen() {
   }, [params.view, router]);
 
   return (
-    <ReceptionWorkspace title="Front desk" subtitle="Reception" testID="reception-home-screen">
+    <ReceptionWorkspace title="Front desk" testID="reception-home-screen">
       <ReceptionDeskScreenBody />
     </ReceptionWorkspace>
   );

@@ -319,6 +319,8 @@ fully complete until the human/device/provider gates below have external evidenc
   overview/source/history subtitles or chips where the route title and rows already provide context.
 - Coach and reports web surfaces no longer render decorative refresh/snapshot cues, and desk
   payment helper copy now states the payment modes directly without "use this" instruction text.
+- Reception workspace subtitles no longer repeat the Reception role on every route, and owner
+  More removes subtitles that duplicate its account/workspace controls.
 
 ### Product plan Part A and Part B
 

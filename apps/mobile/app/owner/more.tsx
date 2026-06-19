@@ -85,14 +85,10 @@ export default function OwnerMoreScreen() {
         >
           <AppHeader
             title="More"
-            subtitle="Owner tools and web dashboard"
             showProfileShortcut={false}
           />
 
-          <SectionHeader
-            title="Account & access"
-            subtitle="Switch workspace or safely sign out from this device."
-          />
+          <SectionHeader title="Account & access" />
           <Card variant="compact" contentStyle={styles.accountCard}>
             <RoleSwitcherChip />
             <BranchSelectorChip />

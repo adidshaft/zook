@@ -845,7 +845,7 @@ export function ReceptionWorkspace({
   initialRecordId?: string | null;
   noScroll?: boolean;
   showMemberContext?: boolean;
-  subtitle: string;
+  subtitle?: string;
   title: string;
   testID?: string;
   /** Pushed detail screens (member/[id], verification) show a back button. */

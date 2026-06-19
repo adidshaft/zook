@@ -11,7 +11,6 @@ export default function ReceptionVerificationScreen() {
     <ReceptionWorkspace
       initialRecordId={recordId}
       title="Verification"
-      subtitle="Reception"
       isDetailView
     >
       <ReceptionDeskScreenBody />

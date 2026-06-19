@@ -3,7 +3,7 @@ import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 
 export default function ReceptionMembersScreen() {
   return (
-    <ReceptionWorkspace title="Members" subtitle="Reception" showMemberContext noScroll>
+    <ReceptionWorkspace title="Members" showMemberContext noScroll>
       <ReceptionMembersScreenBody />
     </ReceptionWorkspace>
   );
