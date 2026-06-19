@@ -306,7 +306,6 @@ export function DashboardOverview({
           tone={accent}
           trend={memberTrend}
           delta={charts.deltas.memberGrowth30d}
-          caption="Server-recorded"
         />
         <KPITile
           label="Today's check-ins"
@@ -315,7 +314,6 @@ export function DashboardOverview({
           tone="sky"
           trend={attendanceTrend}
           delta={charts.deltas.attendance7d}
-          caption="QR entries"
         />
         <KPITile
           label="Revenue today"
@@ -325,14 +323,12 @@ export function DashboardOverview({
           tone={accent}
           trend={revenueTrend}
           delta={charts.deltas.revenue7d}
-          caption="Confirmed payments"
         />
         <KPITile
           label="Join requests"
           value={summary.joinRequests}
           icon={UserPlus}
           tone="rose"
-          caption="Awaiting approval"
           href="/dashboard/members/join-requests"
         />
         <KPITile
@@ -340,7 +336,6 @@ export function DashboardOverview({
           value={summary.lowStockProducts}
           icon={Package}
           tone="violet"
-          caption="Shop alerts"
           href="/dashboard/shop"
         />
       </div>

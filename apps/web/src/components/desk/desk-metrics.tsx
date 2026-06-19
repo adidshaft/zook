@@ -34,7 +34,6 @@ export function DeskMetrics({
         value={memberCount}
         icon={Users}
         tone="sky"
-        caption="Active in this branch"
       />
       <KPITile
         label="Desk handoffs"

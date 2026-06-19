@@ -53,9 +53,6 @@ export function CoachPage({
         tone="sky"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              Snapshot
-            </span>
             <Pill>Trainer</Pill>
           </div>
         }
@@ -67,28 +64,24 @@ export function CoachPage({
           value={stats.assignedClients}
           icon={Users}
           tone="sky"
-          caption="Active on your roster"
         />
         <KPITile
           label="Plans assigned"
           value={stats.plansAssigned}
           icon={ClipboardList}
           tone="sky"
-          caption="Active programs"
         />
         <KPITile
           label="Sessions this week"
           value={stats.sessionsThisWeek}
           icon={Calendar}
           tone="sky"
-          caption="Logged on the app"
         />
         <KPITile
           label="Progress notes"
           value={stats.progressNotes}
           icon={Activity}
           tone="violet"
-          caption="Last 30 days"
         />
       </section>
 
@@ -100,10 +93,6 @@ export function CoachPage({
               Refresh overview {"->"}
             </Link>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Use the Zook mobile app to pin a client here and pull up their plan with one tap from
-            the dashboard.
-          </p>
           <div className="mt-4 grid gap-2">
             {clients.length === 0 ? (
               <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-4 text-sm text-[var(--text-secondary)]">

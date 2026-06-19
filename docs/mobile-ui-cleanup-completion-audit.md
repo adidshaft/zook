@@ -311,6 +311,8 @@ fully complete until the human/device/provider gates below have external evidenc
   feedback copy now asks for a note without quick-action framing.
 - Trainer home, coach web, desk member selection, and dashboard overview copy no longer
   repeats quick-action/reference/open-log cues beside already-labeled rows, charts, and links.
+- Coach and dashboard KPI tiles no longer render decorative caption labels where the
+  metric titles already identify roster, plan, check-in, revenue, approval, and stock counts.
 
 ### Product plan Part A and Part B
 
