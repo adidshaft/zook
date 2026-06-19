@@ -365,7 +365,7 @@ export function DashboardOverview({
                   </span>
                   <DeltaChip delta={charts.deltas.revenue7d} />
                 </div>
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the current mark</p>
+                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the reference point</p>
               </div>
               <Link
                 href="/dashboard/reports"

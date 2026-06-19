@@ -269,7 +269,7 @@ export function BillingSection({
         {
           method: "POST",
           body: { tier: selectedTier, billingCycle },
-          feedback: { success: "Billing setup started." },
+          feedback: { success: "Billing started." },
         },
       );
       if (payload.checkoutUrl) {
@@ -278,7 +278,7 @@ export function BillingSection({
       }
       setStatus(`Billing mandate is ${formatEnumLabel(payload.mandate.status)}.`);
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to start billing setup.");
+      setStatus(cause instanceof Error ? cause.message : "Unable to start billing.");
     } finally {
       setMandateBusy(false);
     }
@@ -545,7 +545,7 @@ export function BillingSection({
                 href={subscription.mandate.checkoutUrl}
                 className="zook-focus rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--bg)]"
               >
-                Complete setup
+                Complete billing
               </a>
             ) : null}
             {subscription.subscription.status === "ACTIVE" &&

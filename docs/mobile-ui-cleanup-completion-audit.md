@@ -250,6 +250,8 @@ fully complete until the human/device/provider gates below have external evidenc
   profile/details/ready-review wording instead of repeated setup/configured cues.
 - Dashboard overview, getting-started, class scheduling, settings, and refund confirmation copy
   now avoids snapshot/current/setup/scope/provider phrasing in visible and accessibility labels.
+- Coach progress, trainer preferences, notification templates, scan trial action, platform service
+  summary, and billing CTA copy now avoid leftover snapshot/current/default/test/setup cues.
 
 ### Product plan Part A and Part B
 

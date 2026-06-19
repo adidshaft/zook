@@ -220,7 +220,7 @@ export function CoachClientWorkspace({
         </div>
       </WorkspaceCard>
 
-      <WorkspaceCard title="Progress snapshot" icon={Ruler}>
+      <WorkspaceCard title="Progress check" icon={Ruler}>
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <p className="text-sm font-semibold text-[var(--text-primary)]">{progressSummary}</p>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">

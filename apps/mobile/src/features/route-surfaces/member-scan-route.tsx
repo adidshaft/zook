@@ -1083,11 +1083,11 @@ export default function Scan() {
               testID="scan-dev-test"
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
-              accessibilityLabel="Use test check-in"
+              accessibilityLabel="Try check-in"
               style={styles.devLink}
             >
               <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>
-                Use test check-in
+                Try check-in
               </Text>
             </Pressable>
           ) : null}

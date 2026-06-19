@@ -93,7 +93,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SegmentRow
           icon={<ClipboardList size={14} className="text-[var(--accent-strong)]" />}
           label="Default landing tab"
-          description="Where coaching opens by default"
+          description="Where coaching opens first"
           value={prefs.defaultLanding}
           onChange={(value) => update("defaultLanding", value)}
           options={[

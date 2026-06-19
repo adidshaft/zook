@@ -1464,7 +1464,7 @@ export function PlatformOperationsPanel({
                   meta: "Services ready for use",
                 },
                 {
-                  label: "Standard setup",
+                  label: "Standard settings",
                   value: formatCompactNumber(defaultProviders.length),
                   meta: "Services using standard settings",
                 },

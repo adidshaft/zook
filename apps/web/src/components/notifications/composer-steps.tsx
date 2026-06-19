@@ -269,7 +269,7 @@ export function MessageDraftStep({
       {pendingTemplate ? (
         <ConfirmDialog
           title="Apply saved template?"
-          description="This replaces the current title and message draft."
+          description="This replaces the title and message draft."
           confirmLabel="Apply template"
           onCancel={() => setPendingTemplate(null)}
           onConfirm={() => {
