@@ -209,7 +209,7 @@ export function DashboardOverview({
           {
             icon: IndianRupee,
             title: "Confirm first payment path",
-            subtitle: "Run a small membership payment before tomorrow's pilot traffic.",
+            subtitle: "Run a small membership payment before inviting members.",
             tone: "sky" as const,
             href: "/dashboard/payments",
           },

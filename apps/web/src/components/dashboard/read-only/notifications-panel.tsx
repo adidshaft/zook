@@ -84,14 +84,14 @@ export function NotificationsPanel({
             className="mt-5"
             items={[
               {
-                label: "Org status",
+                label: "Gym status",
                 value: formatEnumLabel(organization.status),
-                meta: "Broadcasts respect active org availability",
+                meta: "Messages follow gym availability",
               },
               {
                 label: "Recent sends",
                 value: formatCompactNumber(initialNotifications.length),
-                meta: "Current history in this org snapshot",
+                meta: "Recent notification history",
               },
               {
                 label: "Audience",

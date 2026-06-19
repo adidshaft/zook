@@ -185,7 +185,7 @@ function BranchSummaryRow({
         {!branch.isDefault && branch.active ? (
           <ConfirmActionButton
             title="Deactivate branch?"
-            description="Existing attendance, payments, and history stay intact. The branch stops appearing in active operational flows."
+            description="Existing attendance, payments, and history stay intact. Members and staff will no longer use this branch."
             confirmLabel="Deactivate"
             onConfirm={() => onDeactivate(branch)}
             disabled={formBusy === `branch:${branch.id}:delete`}

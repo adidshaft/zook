@@ -204,6 +204,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording in visible labels, prompts, and fallback errors.
 - Mobile account switching, branch primary-location controls, and assisted-draft loading copy now
   avoid organization/default/operational wording in user-visible states.
+- Dashboard member empty states, notification summary, payment checklist, and branch deactivation
+  copy now avoid loaded-roster/org-snapshot/pilot-traffic/operational-flow wording.
 
 ### Product plan Part A and Part B
 

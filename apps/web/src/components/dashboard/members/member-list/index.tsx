@@ -247,10 +247,10 @@ export function MemberList({
 function MemberListEmpty({ filtersActive }: { filtersActive: boolean }) {
   return (
     <EmptyState
-      title={filtersActive ? "No loaded members match" : "No members yet"}
+      title={filtersActive ? "No members match" : "No members yet"}
       description={
         filtersActive
-          ? "Try a different filter or search term. This filters the currently loaded roster."
+          ? "Try a different filter or search term."
           : "Create your first membership plan and share your join link to start accepting members."
       }
       action={filtersActive ? null : <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>}
