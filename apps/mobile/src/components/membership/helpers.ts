@@ -65,7 +65,7 @@ export function membershipStatusGuidance(status?: string | null, daysLeft?: numb
   };
 }
 
-export function isAutopayLive(autopay?: { status?: string | null } | null) {
+export function isAutopayEnabled(autopay?: { status?: string | null } | null) {
   return Boolean(
     autopay &&
       ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(

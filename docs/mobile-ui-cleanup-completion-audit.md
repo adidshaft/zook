@@ -149,6 +149,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of later/not-ready cues.
 - Delete confirmations now describe subscription, order-history, and assignment constraints
   directly instead of using generic unused-plan/product wording.
+- Mobile autopay component state now uses enabled naming instead of live-state helper wording while
+  preserving accepted autopay statuses and UI output.
 
 ### Product plan Part A and Part B
 

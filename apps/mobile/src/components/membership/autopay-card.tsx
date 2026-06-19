@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { isAutopayLive } from "./helpers";
+import { isAutopayEnabled } from "./helpers";
 import type { MembershipRecord } from "./types";
 
 export function AutopayCard({
@@ -19,15 +19,15 @@ export function AutopayCard({
   subscription: MembershipRecord;
 }) {
   const { palette } = useTheme();
-  const live = isAutopayLive(subscription.autopay);
+  const enabled = isAutopayEnabled(subscription.autopay);
   return (
     <Card variant="compact" contentStyle={styles.autopayContent}>
       <View style={styles.autopayHeader}>
-        <IconBubble icon="repeat-outline" tone={live ? "blue" : "neutral"} size={36} />
+        <IconBubble icon="repeat-outline" tone={enabled ? "blue" : "neutral"} size={36} />
         <View style={styles.autopayCopy}>
           <Text style={[styles.autopayTitle, { color: palette.text.primary }]}>Autopay</Text>
           <Text style={[styles.autopayBody, { color: palette.text.secondary }]}>
-            {live
+            {enabled
               ? subscription.autopay?.nextChargeAt
                 ? `Next renewal ${formatLongDate(subscription.autopay.nextChargeAt)}`
                 : "Recurring renewal is enabled."
@@ -39,11 +39,11 @@ export function AutopayCard({
             </Text>
           ) : null}
         </View>
-        <Pill tone={live ? "blue" : "neutral"}>
-          {live ? titleCaseFromCode(subscription.autopay?.status ?? "ACTIVE") : "Off"}
+        <Pill tone={enabled ? "blue" : "neutral"}>
+          {enabled ? titleCaseFromCode(subscription.autopay?.status ?? "ACTIVE") : "Off"}
         </Pill>
       </View>
-      {live ? (
+      {enabled ? (
         <ZookButton
           variant="secondary"
           disabled={autopayBusy}
