@@ -182,7 +182,7 @@ export function MemberList({
         ) : membersState.loading && members.length === 0 ? (
           <EmptyState
             title="Loading member roster"
-            description="Loading current organization member list."
+            description="Loading current gym member list."
           />
         ) : (
           <>

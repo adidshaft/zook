@@ -98,7 +98,7 @@ export function ProductList({
       ) : (
         <EmptyState
           title="Inventory is clear"
-          description="No products have been created for this organization yet."
+          description="No products have been created for this gym yet."
         />
       )}
     </div>

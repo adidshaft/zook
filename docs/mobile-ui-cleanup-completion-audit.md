@@ -189,6 +189,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Web login SSO script failure now reports sign-in service wording instead of provider wording.
 - Start-gym onboarding checklist now uses gym/main-branch wording instead of organization/default
   branch wording.
+- Dashboard member roster and product empty states now use gym wording instead of organization
+  wording.
 
 ### Product plan Part A and Part B
 
