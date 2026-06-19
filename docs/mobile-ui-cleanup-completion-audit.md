@@ -264,6 +264,8 @@ fully complete until the human/device/provider gates below have external evidenc
   where the empty-state titles already name the missing content.
 - Owner command all-clear empty state no longer opts into a decorative checkmark icon where the
   title already carries the state.
+- Platform mobile billing hero no longer renders a decorative shield icon beside a headline that
+  already explains the surface state.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

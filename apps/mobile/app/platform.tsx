@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
-  IconBubble,
   ListRow,
   AppHeader,
   QueryErrorState,
@@ -99,7 +98,6 @@ export default function PlatformMobile() {
           </ZookButton>
 
           <Card contentStyle={styles.heroContent}>
-            <IconBubble icon="shield-checkmark-outline" tone="neutral" size={52} />
             <View style={styles.heroCopy}>
               <Text style={[styles.title, { color: palette.text.primary }]}>SaaS subscriptions are visible on mobile.</Text>
               <Text style={[styles.body, { color: palette.text.secondary }]}>
