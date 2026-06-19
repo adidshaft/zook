@@ -176,6 +176,8 @@ fully complete until the human/device/provider gates below have external evidenc
   status labels.
 - Platform health and incident panel descriptions now use service/support wording instead of
   provider/setup lane phrasing.
+- Platform service diagnostics row copy now uses setup-required/service-active wording instead of
+  needed/running phrasing.
 
 ### Product plan Part A and Part B
 
