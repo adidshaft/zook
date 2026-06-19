@@ -231,7 +231,6 @@ export function ProfileExtraFields() {
 
       <PreferenceToggle
         title="Marketing opt-in"
-        subtitle="Offers and gym updates."
         value={marketingOptIn}
         disabled={savingKey === "marketingOptIn"}
         onValueChange={(value) => {
@@ -339,7 +338,7 @@ function PreferenceToggle({
 }: {
   disabled?: boolean;
   onValueChange: (value: boolean) => void;
-  subtitle: string;
+  subtitle?: string;
   title: string;
   value: boolean;
 }) {
@@ -348,7 +347,7 @@ function PreferenceToggle({
     <View style={styles.preferenceRow}>
       <View style={styles.preferenceCopy}>
         <Text style={[styles.preferenceTitle, { color: palette.text.primary }]}>{title}</Text>
-        <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+        {subtitle ? <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text> : null}
       </View>
       <ThemedSwitch
         value={value}
