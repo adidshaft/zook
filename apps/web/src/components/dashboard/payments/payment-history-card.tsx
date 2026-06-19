@@ -138,7 +138,7 @@ export function PaymentHistoryCard({
               empty={
                 <EmptyState
                   title="No payments yet"
-                  description="Payments appear here when members buy memberships or shop pickups."
+                  description="No membership or shop pickup payments yet."
                 />
               }
             />

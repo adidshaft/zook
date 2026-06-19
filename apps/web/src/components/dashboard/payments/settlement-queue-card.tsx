@@ -54,7 +54,7 @@ export function SettlementQueueCard({
       <SectionHeader
         eyebrow="Settlement Queue"
         title="Orders affecting cashflow"
-        description="Orders waiting for payment or pickup appear here."
+        description="Review orders waiting for payment or pickup."
         badge={
           <Pill tone={queuedOrders.length ? "amber" : "neutral"}>
             {queuedOrders.length} unsettled
@@ -170,7 +170,7 @@ export function SettlementQueueCard({
               empty={
                 <EmptyState
                   title="No shop orders in this view"
-                  description="Orders appear here when payment or pickup needs front-desk follow-up."
+                  description="No payment or pickup follow-up needed."
                 />
               }
             />

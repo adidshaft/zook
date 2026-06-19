@@ -168,7 +168,7 @@ export default function OwnerBillingScreen() {
           ) : null}
 
           {!billingQuery.isError && !data ? (
-            <EmptyState title="Loading billing" body="Subscription and mandate state appears here." />
+            <EmptyState title="Loading billing" body="Fetching subscription and mandate state." />
           ) : null}
 
           {data ? (

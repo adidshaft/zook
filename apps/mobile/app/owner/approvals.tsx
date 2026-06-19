@@ -165,7 +165,7 @@ export default function OwnerApprovalsScreen() {
             <Card variant="compact">
               <EmptyState
                 title="All caught up"
-                body="New join requests and scan reviews appear here"
+                body="No join requests or scan reviews waiting."
               />
             </Card>
           ) : null}

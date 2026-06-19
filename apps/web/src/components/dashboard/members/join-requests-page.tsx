@@ -34,7 +34,7 @@ export function JoinRequestQueue({
       <SectionHeader
         eyebrow="Pipeline"
         title="Join request queue"
-        description="Requests that need approval appear here before members can pay."
+        description="Review member requests before payment."
         badge={<Pill tone={joinRequests.length ? "amber" : "neutral"}>{joinRequests.length} pending</Pill>}
       />
       {queueError ? (

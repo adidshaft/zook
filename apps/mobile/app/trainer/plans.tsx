@@ -65,7 +65,7 @@ export default function TrainerPlansScreen() {
                 subtitle={
                   plannedClients.length
                     ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
-                    : "New plan work appears here when clients need assignments."
+                    : "No client plans need assignment."
                 }
               />
             </View>

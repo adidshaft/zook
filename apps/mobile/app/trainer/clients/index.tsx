@@ -74,7 +74,7 @@ export default function TrainerClientsScreen() {
             onPressMember={(client) => router.push(`/trainer/clients/${client.id}` as never)}
             emptyState={{
               title: clients.length ? "No matching clients" : "No clients yet",
-              subtitle: clients.length ? "Try another search or filter." : "Clients appear here when your gym adds them.",
+              subtitle: clients.length ? "Try another search or filter." : "No clients added by your gym yet.",
             }}
             refreshing={refreshing}
             onRefresh={onRefresh}
