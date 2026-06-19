@@ -252,7 +252,7 @@ export default async function JoinPage({
               copy={t("membershipInProgressCopy")}
               href={membershipPath}
               cta={t("viewMembership")}
-              tone="lime"
+              tone="blue"
             />
           ) : viewerJoinState?.pendingJoinRequest ? (
             <MembershipStateNotice
@@ -455,7 +455,7 @@ export default async function JoinPage({
                           : "/me"
                     }
                     cta={t("viewMembership")}
-                    tone="lime"
+                    tone="blue"
                   />
                 )}
                 {data.connected ? (
@@ -593,11 +593,11 @@ function MembershipStateNotice({
   cta: string;
   href: string;
   title: string;
-  tone: "amber" | "lime";
+  tone: "amber" | "blue";
 }) {
   const toneClass =
-    tone === "lime"
-      ? "border-[var(--border)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)]"
+    tone === "blue"
+      ? "border-[var(--border)] bg-[var(--surface-info-soft)] text-[var(--text-primary)]"
       : "border-[var(--border)] bg-[var(--surface-warning-soft)] text-[var(--text-primary)]";
 
   return (

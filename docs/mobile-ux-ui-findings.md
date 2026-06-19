@@ -1292,3 +1292,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile referral-applied banner cue (`R307`) is
   closed: the find-gyms referral banner now uses neutral compact styling instead
   of a success surface, while the attached referral code stays visible in copy.
+- **[ui, fixed]** Overstated public join active-membership notices (`R308`) are
+  closed: existing-membership notices on the public join flow now use
+  informational tone instead of success styling, while pending approval remains
+  warning.
