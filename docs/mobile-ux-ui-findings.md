@@ -1217,3 +1217,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated billing readiness cues (`R282`) are closed:
   receipts-enabled and invoices-enabled badges now use informational tone for
   configured billing details, while missing receipt or GST details remain warning.
+- **[ui, fixed]** Overstated membership plan active-state cues (`R283`) are
+  closed: dashboard plan catalog and member plan ladder badges now use
+  informational tone for Active availability, while Paused plans remain warning.

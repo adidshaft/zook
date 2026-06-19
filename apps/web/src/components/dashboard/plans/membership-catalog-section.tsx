@@ -106,7 +106,7 @@ export function MembershipCatalogSection({
                     />
                     <StatusPill
                       value={plan.active ? "Active" : "Paused"}
-                      tone={plan.active ? "lime" : "amber"}
+                      tone={plan.active ? "blue" : "amber"}
                     />
                   </div>
                 ),

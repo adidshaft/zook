@@ -72,7 +72,7 @@ export function MembershipPlanLadder({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill
                       value={plan.active ? "Active" : "Paused"}
-                      tone={plan.active ? "lime" : "amber"}
+                      tone={plan.active ? "blue" : "amber"}
                     />
                     <StatusPill
                       value={plan.publicVisible ? "Public" : "Private"}
