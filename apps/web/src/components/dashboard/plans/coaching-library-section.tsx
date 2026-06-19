@@ -56,7 +56,7 @@ export function CoachingLibrarySection({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill
                       value={plan.reviewed ? "Reviewed" : "Needs review"}
-                      tone={plan.reviewed ? "lime" : "amber"}
+                      tone={plan.reviewed ? "blue" : "amber"}
                     />
                     {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
                   </div>

@@ -1235,3 +1235,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member filter selected cue (`R288`) is closed:
   the member roster selected filter pill now uses informational tone instead of
   success color, while an unselected Pending Payment filter remains a warning cue.
+- **[ui, fixed]** Overstated coaching-library reviewed cue (`R289`) is closed:
+  reviewed plan rows now use informational tone instead of success color, while
+  plans that still need trainer review remain warning cues.
