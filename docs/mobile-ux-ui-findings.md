@@ -1250,3 +1250,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile selected-role cues (`R293`) are closed:
   selected workspace and active-role chips now use informational tone instead of
   success color, while the role-switcher availability trigger keeps its affordance.
+- **[ui, fixed]** Overstated membership focus callout cue (`R294`) is closed:
+  buy and checkout focus banners now use informational tone instead of success
+  color, while non-purchase focus banners remain neutral.
