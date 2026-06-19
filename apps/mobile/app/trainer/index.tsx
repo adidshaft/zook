@@ -164,13 +164,13 @@ export default function TrainerHomeScreen() {
                 label: "Active plans",
                 value: plannedClients.length,
                 hint: "With active plans",
-                tone: "amber",
+                tone: "blue",
               },
               {
                 label: "Needs plan",
                 value: clientsNeedingPlans,
                 hint: "Create Plan next",
-                tone: "lime",
+                tone: "amber",
               },
               ]}
             />

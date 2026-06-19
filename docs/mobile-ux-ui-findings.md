@@ -1166,3 +1166,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated owner stock pickup metric cue (`R265`) is closed:
   the Stock screen Pickups metric now uses informational tone instead of success
   color because paid or ready orders are an operational queue, not a completed pickup.
+- **[ui, fixed]** Swapped trainer planning metric cues (`R266`) are closed:
+  the trainer dashboard Active plans metric now uses informational tone, while the
+  Needs plan action-required metric uses warning tone instead of success color.
