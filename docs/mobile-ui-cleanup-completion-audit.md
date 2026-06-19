@@ -139,6 +139,8 @@ fully complete until the human/device/provider gates below have external evidenc
   of extra ready-state cues.
 - Pricing and platform action labels now use expanded/account wording instead of generic advanced
   cues.
+- Platform provider summaries now use configured/active wording in rendered copy while preserving
+  provider diagnostic status handling.
 
 ### Product plan Part A and Part B
 

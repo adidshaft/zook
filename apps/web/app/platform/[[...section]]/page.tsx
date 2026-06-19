@@ -413,7 +413,7 @@ function PlatformStatusFirstFold({
   const rows = [
     {
       label: "Provider setup",
-      value: providerGapCount ? `${providerGapCount} gap${providerGapCount === 1 ? "" : "s"}` : "Ready",
+      value: providerGapCount ? `${providerGapCount} gap${providerGapCount === 1 ? "" : "s"}` : "Configured",
       meta: providerGapCount
         ? "Open Incidents or Webhooks for exact provider checks."
         : `${readyProviderCount} providers are reporting usable defaults.`,

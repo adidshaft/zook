@@ -387,7 +387,7 @@ export function PlatformOperationsPanel({
   );
   const cockpitItems = useMemo(() => [
     {
-      label: "Ready providers",
+      label: "Configured providers",
       value: formatCompactNumber(readyProviders.length),
       meta: "Can serve production traffic",
     },
@@ -425,7 +425,7 @@ export function PlatformOperationsPanel({
       owner: "Ops",
       signal: misconfiguredProviders.length
         ? misconfiguredProviders.map(([category]) => formatEnumLabel(category)).join(", ")
-        : "All configured providers report ready/default",
+        : "All configured providers report configured/default",
     },
     {
       step: "Freeze risky tenant actions",
@@ -1491,7 +1491,7 @@ export function PlatformOperationsPanel({
                       <p className="font-medium text-white">{formatEnumLabel(category)}</p>
                       <p className="mt-1 text-xs text-white/45">
                         Setup {provider.configured ? "complete" : "needed"} · Running{" "}
-                        {provider.activeProvider ? "ready" : "not ready"}
+                        {provider.activeProvider ? "active" : "inactive"}
                       </p>
                     </div>
                   ),
