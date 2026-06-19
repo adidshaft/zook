@@ -1299,7 +1299,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={moderationFlags}
                 rowKey={(flag) => flag.id}
-                empty="No moderation flags."
+                empty="No flags."
               />
             </div>
           </GlassCard>

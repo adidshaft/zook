@@ -444,6 +444,8 @@ fully complete until the human/device/provider gates below have external evidenc
   scan wording from the section context.
 - Platform broadcasts table uses a shorter empty state instead of repeating broadcast wording
   from the section title, count badge, and New broadcast action.
+- Platform moderation table uses a shorter empty state instead of repeating moderation flag
+  wording from the section title and table columns.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
