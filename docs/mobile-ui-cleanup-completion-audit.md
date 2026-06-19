@@ -262,6 +262,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the old ready-state cue.
 - Member progress and plan empty states no longer opt into decorative workout/clipboard icons
   where the empty-state titles already name the missing content.
+- Owner command all-clear empty state no longer opts into a decorative checkmark icon where the
+  title already carries the state.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

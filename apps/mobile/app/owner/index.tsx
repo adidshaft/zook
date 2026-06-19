@@ -263,7 +263,6 @@ export default function OwnerCommandScreen() {
                 ) : (
                   <Card variant="compact">
                     <EmptyState
-                      icon="checkmark-done-outline"
                       title="All clear"
                     />
                   </Card>
