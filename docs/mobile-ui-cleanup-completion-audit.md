@@ -348,6 +348,8 @@ fully complete until the human/device/provider gates below have external evidenc
   above step chips and fields that already name those inputs.
 - Trainer diet plans no longer repeat create/review/edit/remove helper copy above the new-plan
   action and plan table actions.
+- Dashboard recent attendance no longer repeats selected-gym check-in helper copy above the scan
+  count, export action, and attendance table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -106,7 +106,6 @@ export function AttendancePanel({
         <SectionHeader
           eyebrow="Attendance"
           title="Recent attendance scans"
-          description="Recent member check-ins for the selected gym."
           badge={<Pill>{attendanceRecords.length} scan{attendanceRecords.length === 1 ? "" : "s"}</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
         />
