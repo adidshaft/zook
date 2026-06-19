@@ -260,6 +260,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of will-appear/available/use-this/get-set-up phrasing.
 - Member home pickup banner now uses pickup-available wording and local helper naming instead of
   the old ready-state cue.
+- Member progress and plan empty states no longer opt into decorative workout/clipboard icons
+  where the empty-state titles already name the missing content.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

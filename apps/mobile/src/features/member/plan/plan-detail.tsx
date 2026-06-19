@@ -204,7 +204,6 @@ export default function Plans() {
             {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
               <Card variant="compact" style={styles.emptyPlanCard}>
                 <EmptyState
-                  icon="clipboard-outline"
                   title="No plan assigned"
                   body="Your trainer assigns workout plans here."
                 />

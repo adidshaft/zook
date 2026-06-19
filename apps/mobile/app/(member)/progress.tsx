@@ -84,7 +84,7 @@ export default function ProgressScreen() {
               ))}
               {!workouts.length && !workoutsQuery.isLoading ? (
                 <Card variant="compact">
-                  <EmptyState icon="barbell-outline" title="No workouts logged" body="Log your first session after training." />
+                  <EmptyState title="No workouts logged" body="Log your first session after training." />
                 </Card>
               ) : null}
             </View>
