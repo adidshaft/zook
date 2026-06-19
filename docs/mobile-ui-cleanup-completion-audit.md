@@ -398,6 +398,8 @@ fully complete until the human/device/provider gates below have external evidenc
   that already label membership, floor, revenue, audit, and control signals.
 - Dashboard admin activity no longer repeats audit-summary helper copy above the entries badge,
   export action, and action/actor/created/details columns.
+- Web notification composer no longer repeats step-by-step wizard guidance above the visible
+  step counter and dedicated purpose, audience, message, and review panels.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

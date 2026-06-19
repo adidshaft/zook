@@ -331,7 +331,6 @@ export function NotificationComposerPanel({
       <SectionHero
         eyebrow="Notifications"
         title="Send a message"
-        description="Choose the purpose, audience, message, then review delivery before sending."
         icon={Send}
         tone="sky"
         meta={
