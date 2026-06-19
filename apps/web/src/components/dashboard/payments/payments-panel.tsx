@@ -263,8 +263,7 @@ export function PaymentsPanel({
                 {formatInr(remainingRefundAmount(refundDraft.payment))} refundable
               </h3>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Confirming submits an irreversible refund request to the payment provider when a
-                provider reference exists.
+                Confirming sends an irreversible refund request when this payment supports automatic refunds.
               </p>
             </div>
             <button

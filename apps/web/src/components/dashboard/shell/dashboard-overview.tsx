@@ -245,14 +245,14 @@ export function DashboardOverview({
       <SectionHero
         eyebrow="Today's command board"
         title="Run the gym, not the spreadsheet"
-        description={`Current snapshot across ${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"}. ${todayLabel}.`}
+        description={`${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"} today. ${todayLabel}.`}
         icon={TrendingUp}
         tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <StatusDot tone={accent} size={6} />
-              Current
+              Today
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
               {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Current data") : "Local data"}

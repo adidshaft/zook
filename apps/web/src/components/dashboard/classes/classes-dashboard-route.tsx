@@ -124,7 +124,7 @@ export function ClassesDashboardRoute({
           {!selectedBranchId ? (
             <GlassCard variant="warning">
               <p className="text-sm leading-6 text-[var(--text-primary)]">
-                Pick one branch from the header before creating a class. The schedule stays branch-scoped.
+                Pick one branch from the header before creating a class. The schedule stays with that branch.
               </p>
             </GlassCard>
           ) : null}

@@ -248,6 +248,8 @@ fully complete until the human/device/provider gates below have external evidenc
   sync/synced labels in visible states.
 - Gym profile, onboarding, membership-plan, and platform service readouts now use
   profile/details/ready-review wording instead of repeated setup/configured cues.
+- Dashboard overview, getting-started, class scheduling, settings, and refund confirmation copy
+  now avoids snapshot/current/setup/scope/provider phrasing in visible and accessibility labels.
 
 ### Product plan Part A and Part B
 

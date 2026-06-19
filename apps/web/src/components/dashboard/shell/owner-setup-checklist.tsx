@@ -84,7 +84,7 @@ export function OwnerSetupChecklist({
             aria-valuenow={completed}
             aria-valuemin={0}
             aria-valuemax={checklist.length}
-            aria-label="Setup progress"
+            aria-label="Getting started progress"
           >
             <div
               className="h-full rounded-full bg-[var(--accent-fill)] transition-all duration-500"
