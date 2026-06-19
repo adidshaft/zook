@@ -1199,3 +1199,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated payment reconciliation clean cue (`R276`) is closed:
   the payment reconciliation badge now uses neutral tone for the Clean state, while
   failed or pending payment review queues still use warning tone.
+- **[ui, fixed]** Overstated read-only review clear cues (`R277`) are closed:
+  read-only notification and assistant review badges now use neutral tone for
+  zero-count clear states, while nonzero review queues remain warning.

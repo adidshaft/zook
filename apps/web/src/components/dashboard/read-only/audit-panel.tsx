@@ -188,7 +188,7 @@ export function AuditPanel({
               onClick={() => setAiFilter("needs-review")}
               className="zook-focus rounded-full"
             >
-              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
+              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "neutral"}>
                 {misconfiguredAiCount} need review
               </Pill>
             </button>

@@ -74,7 +74,7 @@ export function NotificationsPanel({
                 href="/dashboard/notifications/history?status=attention"
                 className="zook-focus rounded-full"
               >
-                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
+                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "neutral"}>
                   {summary.notificationQueueCount} need attention
                 </Pill>
               </Link>
