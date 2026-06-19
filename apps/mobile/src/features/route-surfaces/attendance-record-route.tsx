@@ -438,9 +438,9 @@ function DetailLine({
   return (
     <ListRow
       title={label}
-      leading={<IconBubble icon={icon} tone={highlight ? "lime" : "neutral"} size={28} />}
+      leading={<IconBubble icon={icon} tone={highlight ? "blue" : "neutral"} size={28} />}
       trailing={
-        <Text style={[styles.detailValue, { color: highlight ? palette.accent.base : palette.text.primary }]}>
+        <Text style={[styles.detailValue, { color: highlight ? palette.feedback.info : palette.text.primary }]}>
           {value}
         </Text>
       }

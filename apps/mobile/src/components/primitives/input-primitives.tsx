@@ -459,7 +459,7 @@ export function ExerciseRow({
       >
         {complete ? <Ionicons name="checkmark" size={15} color={palette.text.onAccent} /> : null}
       </View>
-      <IconBubble icon="barbell-outline" tone={complete ? "lime" : "neutral"} size={38} />
+      <IconBubble icon="barbell-outline" tone="neutral" size={38} />
       <View style={styles.exerciseCopy}>
         <Text style={[styles.exerciseTitle, { color: palette.text.primary }]}>
           {sets ? `${title} · ${sets}` : title}

@@ -1353,3 +1353,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile autopay live cue (`R324`) is closed:
   active mobile autopay icon, status helper text, and badge now use informational
   tone instead of lime success emphasis.
+- **[ui, fixed]** Overstated mobile duplicate completion cues (`R325`) are
+  closed: completed exercise rows no longer add a second lime icon beside the
+  checked control, and attendance status details use informational tone while the
+  explicit Approved chip keeps success treatment.
