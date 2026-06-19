@@ -83,7 +83,7 @@ export function PickupTab({
               key={order.id}
               className={`rounded-[22px] border p-4 ${
                 highlightedOrderId === order.id
-                  ? "border-lime-300/40 bg-lime-300/8"
+                  ? "border-white/20 bg-white/8"
                   : "border-white/10 bg-black/20"
               }`}
             >

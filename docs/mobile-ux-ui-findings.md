@@ -1347,3 +1347,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   the default support-console badge now uses neutral Console copy instead of a
   live-state label, while action notices keep their explicit informational or
   danger tone.
+- **[ui, fixed]** Overstated pickup selected-row cue (`R323`) is closed:
+  highlighted desk pickup rows now use neutral selected styling instead of lime
+  success emphasis, while the Code verified pill keeps success treatment.
