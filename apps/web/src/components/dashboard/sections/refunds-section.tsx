@@ -82,7 +82,7 @@ export function RefundsSection({
     if (!refundDraft?.reason.trim()) return;
     const { payment, reason, amountRupees } = refundDraft;
     if (!payment.orgId) {
-      setError("This payment is missing its organization link.");
+      setError("This payment is missing its gym link.");
       return;
     }
     const amountPaise = Math.round(Number(amountRupees || 0) * 100);

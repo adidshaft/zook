@@ -196,6 +196,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Shop orders empty state now uses gym wording instead of organization wording.
 - Dashboard settings overview now uses gym-profile wording instead of organization-profile
   wording.
+- Dashboard settings navigation and refund error copy now use gym/main-branch wording instead
+  of organization/default-branch wording.
 
 ### Product plan Part A and Part B
 

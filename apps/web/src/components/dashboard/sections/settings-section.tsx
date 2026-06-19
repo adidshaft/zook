@@ -74,7 +74,7 @@ export function SettingsSection({
       urgent: needsBillingSetup,
     },
     {
-      title: "Organization profile",
+      title: "Gym profile",
       description:
         "Edit gym name, public username, contact details, join mode, photos, app links, and QR pages.",
       href: "/dashboard/public-profile",
@@ -85,7 +85,7 @@ export function SettingsSection({
     {
       title: "Branches and locations",
       description:
-        "Add a branch, assign managers, set hours, pause locations, and choose the default branch.",
+        "Add a branch, assign managers, set hours, pause locations, and choose the main branch.",
       href: "/dashboard/branches",
       icon: MapPin,
       permission: "ORG_MANAGE_LOCATION",
