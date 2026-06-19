@@ -26,7 +26,7 @@ export function PaymentReconciliationCard({
         title="Payment reconciliation"
         description="A focused check for what is settled, what still needs proof, and what should be chased before closing the day."
         badge={
-          <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "lime"}>
+          <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "neutral"}>
             {failedPayments.length || pendingPayments.length ? "Review queue" : "Clean"}
           </Pill>
         }

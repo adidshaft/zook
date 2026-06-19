@@ -1196,3 +1196,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform moderation/account clear badges (`R275`) are closed:
   moderation flag and suspended-organization badges now use neutral tone for clear
   or zero-count states, while pending flags and suspended accounts remain warning.
+- **[ui, fixed]** Overstated payment reconciliation clean cue (`R276`) is closed:
+  the payment reconciliation badge now uses neutral tone for the Clean state, while
+  failed or pending payment review queues still use warning tone.
