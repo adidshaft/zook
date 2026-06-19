@@ -305,6 +305,8 @@ fully complete until the human/device/provider gates below have external evidenc
   paragraph when the upload control already shows the count.
 - Platform mobile billing copy no longer leads with instructional quick-check phrasing,
   while preserving the web-console boundary for pricing and policy changes.
+- Trainer plan rows no longer render an extra Open chip next to the dedicated client-detail
+  action button.
 
 ### Product plan Part A and Part B
 
