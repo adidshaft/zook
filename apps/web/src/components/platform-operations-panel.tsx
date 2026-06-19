@@ -2001,10 +2001,7 @@ export function PlatformOperationsPanel({
                   </div>
                 ))
               ) : (
-                <EmptyState
-                  title="No recent reports"
-                  description="Nothing needs platform review right now."
-                />
+                <EmptyState title="No recent reports" />
               )}
             </div>
           </GlassCard>

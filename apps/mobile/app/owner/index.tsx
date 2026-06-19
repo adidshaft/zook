@@ -265,7 +265,6 @@ export default function OwnerCommandScreen() {
                     <EmptyState
                       icon="checkmark-done-outline"
                       title="All clear"
-                      body="Nothing needs your attention right now"
                     />
                   </Card>
                 )}

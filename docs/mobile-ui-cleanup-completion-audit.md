@@ -377,6 +377,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of synced/ready cues.
 - Notification settings and platform account summaries now avoid sync/current/loaded-queue
   implementation phrasing in visible helper copy.
+- Platform report and owner attention empty states no longer repeat "nothing needs" helper text
+  under already-clear titles.
 
 ### Product plan Part A and Part B
 
