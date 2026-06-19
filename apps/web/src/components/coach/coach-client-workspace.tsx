@@ -197,7 +197,7 @@ export function CoachClientWorkspace({
       <WorkspaceCard
         title="Trainer note"
         icon={FileText}
-        action={notice ? <Pill tone="lime">{notice}</Pill> : null}
+        action={notice ? <Pill tone="blue">{notice}</Pill> : null}
       >
         <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
           Private coaching note

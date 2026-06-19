@@ -125,7 +125,7 @@ export function TrainerDietPlansPanel({
         eyebrow="Trainer nutrition"
         title="Client diet plans"
         description="Create, review, publish, edit, and remove diet plans for this client."
-        badge={notice ? <Pill tone="lime">{notice}</Pill> : <Pill>Web dashboard</Pill>}
+        badge={notice ? <Pill tone="blue">{notice}</Pill> : <Pill>Web dashboard</Pill>}
         action={
           <ZookButton size="sm" onClick={() => void createPlan()}>
             New diet plan

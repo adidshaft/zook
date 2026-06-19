@@ -1296,3 +1296,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: existing-membership notices on the public join flow now use
   informational tone instead of success styling, while pending approval remains
   warning.
+- **[ui, fixed]** Overstated web trainer action notices (`R309`) are closed:
+  diet-plan and coach-workspace action notices now use informational tone instead
+  of success styling, while destructive failures keep their error treatment.
