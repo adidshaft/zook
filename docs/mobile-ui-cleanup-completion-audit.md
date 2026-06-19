@@ -378,6 +378,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already label trial, paying, suspended, autopay, and referral states.
 - Platform subscription empty state no longer repeats trial/billing helper copy below the
   already-clear No subscriptions title.
+- Platform user search no longer repeats account-finder helper copy above the visible-count
+  badge, search field, and account rows.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

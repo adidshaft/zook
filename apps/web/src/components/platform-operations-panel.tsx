@@ -800,7 +800,6 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
-                description="Find members, staff, owners, and system accounts across the platform."
                 badge={
                   <Pill tone={usersState.loading ? "amber" : "neutral"}>
                     {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
