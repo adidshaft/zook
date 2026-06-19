@@ -111,11 +111,11 @@ export const publicMessages = {
     socialProof: "Social proof",
     socialTitle: "Built around the roles that keep a gym moving.",
     socialCopy:
-      "The product evidence in this release comes from the live Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
+      "The product evidence in this release comes from the current Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
     proofOwnerWeb:
       "Owner setup stays on web, where plans, payments, staff, and reports are easier to review.",
     proofMemberMobile:
-      "Member workflows stay on mobile, so entry, workout plans, and progress live where members already check in.",
+      "Member workflows stay on mobile, so entry, workout plans, and progress sit where members already check in.",
     proofSharedRecord:
       "Desk and trainer workflows use the same operating record, reducing delays during busy hours.",
     opsLoopLabel: "Operating loop",
@@ -132,7 +132,7 @@ export const publicMessages = {
     loopGrowCopy: "Owners track revenue, stock, staff, billing, and audit activity in one view.",
     memberApps: "Member apps",
     memberAppsCopy:
-      "Mobile distribution badges will link to the live stores when the apps are published.",
+      "Mobile distribution badges will link to the app stores when the apps are published.",
     iosSoon: "iOS store link pending",
     androidSoon: "Android store link pending",
     downloadIos: "Download on iOS",
