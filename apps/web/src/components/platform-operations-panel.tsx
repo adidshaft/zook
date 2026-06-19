@@ -1898,10 +1898,7 @@ export function PlatformOperationsPanel({
                   {usageState.error}
                 </p>
               ) : usageState.loading && usage.length === 0 ? (
-                <EmptyState
-                  title="Loading activity"
-                  description="Getting recent assisted drafts."
-                />
+                <EmptyState title="Loading activity" />
               ) : (
                 <DataTable
                   columns={[

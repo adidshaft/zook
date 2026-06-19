@@ -45,7 +45,7 @@ export function PaymentHistoryCard({
         {paymentsState.error ? (
           <ErrorNotice message={paymentsState.error} />
         ) : paymentsState.loading && payments.length === 0 ? (
-          <EmptyState title="Loading payments" description="Pulling recent payment records." />
+          <EmptyState title="Loading payments" />
         ) : (
           <>
             <DataTable

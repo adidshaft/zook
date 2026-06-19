@@ -63,10 +63,7 @@ export function ProductList({
       {productsState.error ? (
         <ErrorNotice message={productsState.error} />
       ) : productsState.loading && inventory.length === 0 ? (
-        <EmptyState
-          title="Loading inventory"
-          description="Pulling product availability and stock thresholds."
-        />
+        <EmptyState title="Loading inventory" />
       ) : inventory.length ? (
         <>
           {visibleProducts.map((product) => (

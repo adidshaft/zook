@@ -363,6 +363,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cues.
 - Dashboard loading empty states for plans, members, attendance, drafts, settlement, and coaching
   no longer repeat the same loading message in both title and description.
+- Payment, audit, platform activity, staff, inventory, and mobile billing loading states no
+  longer repeat fetch/pull helper text below already-clear loading titles.
 
 ### Product plan Part A and Part B
 

@@ -189,10 +189,7 @@ export function StaffSection({
           {staffState.error ? (
             <ErrorNotice message={staffState.error} />
           ) : staffState.loading && staffAssignments.length === 0 ? (
-            <EmptyState
-              title="Loading staff"
-              description="Pulling role assignments for this gym."
-            />
+            <EmptyState title="Loading staff" />
           ) : (
             <DataTable
               columns={[
