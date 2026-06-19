@@ -141,6 +141,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cues.
 - Platform provider summaries now use configured/active wording in rendered copy while preserving
   provider diagnostic status handling.
+- Desk and shop pickup surfaces now use pickup-order wording instead of extra ready-order labels
+  while leaving the underlying order status model intact.
 
 ### Product plan Part A and Part B
 

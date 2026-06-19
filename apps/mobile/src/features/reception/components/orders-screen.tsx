@@ -66,7 +66,7 @@ export function ReceptionOrdersScreenBody() {
                 {verifyingCode ? "Verifying..." : "Verify Pickup Code"}
               </PrimaryButton>
             </Card>
-            <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
+            <SectionHeader title="Fulfillment Queue" subtitle="Paid pickup orders at the desk." />
             <View style={styles.stack}>
               {readyOrders.length ? (
                 readyOrders.map((order, index) => (

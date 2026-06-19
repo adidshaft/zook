@@ -104,7 +104,7 @@ export function PaymentsPanel({
           }),
         ),
       );
-      setManualPaymentStatus(`${selectedReadyOrders.length} ready orders settled.`);
+      setManualPaymentStatus(`${selectedReadyOrders.length} pickup orders settled.`);
       setSelectedOrderIds([]);
       shopOrdersState.reload?.();
     } catch (cause) {

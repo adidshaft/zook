@@ -45,11 +45,11 @@ export function ShopOrdersSection({
         eyebrow="Orders"
         title={copy.title}
         description={copy.description}
-        badge={<Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} ready</Pill>}
+        badge={<Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} pickup</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
       <ManagedOn surface="desk" className="mt-4">
-        Ready pickup orders are handed over in Desk after identity verification.
+        Pickup orders are handed over in Desk after identity verification.
       </ManagedOn>
       {status ? (
         <p className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
