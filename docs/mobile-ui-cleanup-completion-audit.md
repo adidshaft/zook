@@ -347,6 +347,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the list and loading state already provide the context.
 - Notification template and sent-message empty states now use direct no-content wording instead
   of "show here" placeholders.
+- Reception, trainer, owner chart, body-composition, payment, and subscription empty states now
+  use direct no-content wording instead of repeated "show/appear here" placeholders.
 
 ### Product plan Part A and Part B
 

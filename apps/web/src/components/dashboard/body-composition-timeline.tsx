@@ -98,7 +98,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
         <EmptyState
           className="mt-5"
           title="No body composition entries yet"
-          description="Trainer-facing body progress and progress photos show here."
+          description="Trainer-facing body progress and progress photos are not available yet."
         />
       )}
     </div>

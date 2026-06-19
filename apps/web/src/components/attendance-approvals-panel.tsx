@@ -70,7 +70,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Exception feed</h2>
-          <p className="mt-1 text-sm text-[var(--text-tertiary)]">QR entry is self-approved; unusual scans appear here only when flagged.</p>
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">QR entry is self-approved; unusual scans are flagged for review.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <a

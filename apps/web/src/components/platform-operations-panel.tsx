@@ -976,7 +976,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment records"
-                description="Payment records appear here after checkout or desk payment creation."
+                description="Review checkout and desk payment records."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length
@@ -2288,7 +2288,7 @@ function PlatformSubscriptionsSection() {
           ) : (
             <EmptyState
               title="No subscriptions yet"
-              description="When gyms sign up they'll appear here with trial and billing state."
+              description="Signed-up gyms include trial and billing state."
             />
           )}
         </div>
