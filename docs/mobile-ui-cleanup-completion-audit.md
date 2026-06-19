@@ -121,6 +121,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cues.
 - Checkout recovery and member QR permission copy now use direct next-step wording instead of
   fresh/ready phrasing.
+- Razorpay retry and retired guardian-consent copy now use neutral current/new-flow wording instead
+  of fresh/latest recovery cues.
 
 ### Product plan Part A and Part B
 

@@ -31,7 +31,7 @@ export function GuardianConsentRetiredPage({
             access no longer depend on a separate guardian approval step.
           </p>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-            If a gym team sent you this page recently, ask them to reopen the latest checkout or
+            If a gym team sent you this page recently, ask them to reopen the current checkout or
             sign-in flow from Zook instead of reusing the retired consent link.
           </p>
           {challengeId ? (
