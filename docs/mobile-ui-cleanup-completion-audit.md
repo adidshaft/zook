@@ -166,6 +166,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Attendance QR footer now uses a direct active-state label instead of an attendance-sync cue.
 - Mobile scan and layout comments now use precise sizing language instead of casual magic/just
   wording.
+- Dashboard AI usage readout now uses data current/local wording instead of provider
+  connected/test cues.
 
 ### Product plan Part A and Part B
 

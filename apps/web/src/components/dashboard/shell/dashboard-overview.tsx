@@ -533,7 +533,7 @@ export function DashboardOverview({
                 [
                   ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
                   ["Recent logs", `${aiUsage.length}`],
-                  ["Provider", data.connected ? "Connected" : "Test"],
+                  ["Data", data.connected ? "Current" : "Local"],
                 ] as const
               ).map(([label, value]) => (
                 <div
