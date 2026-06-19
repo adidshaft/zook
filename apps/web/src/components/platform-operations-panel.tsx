@@ -387,12 +387,12 @@ export function PlatformOperationsPanel({
   );
   const cockpitItems = useMemo(() => [
     {
-      label: "Configured providers",
+      label: "Configured services",
       value: formatCompactNumber(readyProviders.length),
       meta: "Can serve production traffic",
     },
     {
-      label: "Provider setup gaps",
+      label: "Service setup gaps",
       value: formatCompactNumber(misconfiguredProviders.length),
       meta: "Check env + partner dashboards",
     },
@@ -461,7 +461,7 @@ export function PlatformOperationsPanel({
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to update organization status.",
+        cause instanceof Error ? cause.message : "Unable to update gym status.",
       );
     } finally {
       setBusyOrgId(null);
@@ -469,7 +469,7 @@ export function PlatformOperationsPanel({
   }
 
   async function softDeleteOrganization(org: PlatformOrganization) {
-    if (!typedConfirmation(`Soft-delete ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
+    if (!typedConfirmation(`Archive ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
       return;
     }
     const reason = window.prompt("Reason")?.trim();
@@ -484,7 +484,7 @@ export function PlatformOperationsPanel({
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to soft-delete organization.",
+        cause instanceof Error ? cause.message : "Unable to archive gym account.",
       );
     } finally {
       setBusyOrgId(null);
@@ -520,7 +520,7 @@ export function PlatformOperationsPanel({
   }
 
   async function renameOrganization(org: PlatformOrganization) {
-    const name = window.prompt("New organization name", org.name)?.trim();
+    const name = window.prompt("New gym name", org.name)?.trim();
     if (!name) return;
     const username = window.prompt("New username", org.username)?.trim();
     if (!username) return;
@@ -562,11 +562,11 @@ export function PlatformOperationsPanel({
       setStatusError("");
       setBusyOrgId(orgId);
       await webApiFetch(path, { method, body });
-      setSupportNotice("Organization updated");
+      setSupportNotice("Gym account updated");
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to update organization.",
+        cause instanceof Error ? cause.message : "Unable to update gym account.",
       );
     } finally {
       setBusyOrgId(null);
@@ -754,10 +754,10 @@ export function PlatformOperationsPanel({
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {[
             {
-              title: "Provider alerts",
+              title: "Service alerts",
               body: misconfiguredProviders.length
                 ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before full production confidence.`
-                : "Core providers are not reporting setup blockers.",
+                : "Core services are not reporting setup blockers.",
               tone: misconfiguredProviders.length ? "amber" : "neutral",
             },
             {
@@ -902,7 +902,7 @@ export function PlatformOperationsPanel({
                     columns={3}
                     items={[
                       {
-                        label: "Organizations",
+                        label: "Gym links",
                         value: formatCompactNumber(selectedUser.organizations.length),
                         meta: "Active and historical links",
                       },
@@ -1579,7 +1579,7 @@ export function PlatformOperationsPanel({
         <div id="organizations" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
-              eyebrow="Organizations"
+              eyebrow="Gym accounts"
               title="Gym accounts"
               description="Review active gyms and pause accounts when the platform team needs to step in."
               badge={
@@ -1607,7 +1607,7 @@ export function PlatformOperationsPanel({
                 columns={[
                   {
                     id: "org",
-                    header: "Organization",
+                    header: "Gym",
                     render: (org) => (
                       <div>
                         <p className="font-medium text-white">{org.name}</p>
@@ -1673,7 +1673,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No organizations are currently available."
+                empty="No gym accounts are currently available."
               />
             </div>
             {selectedOrganization ? (
@@ -1681,7 +1681,7 @@ export function PlatformOperationsPanel({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
-                      Organization details
+                      Gym account details
                     </p>
                     <h3 className="mt-2 text-lg font-semibold text-white">
                       {selectedOrganization.name}
@@ -1815,7 +1815,7 @@ export function PlatformOperationsPanel({
                       onClick={() => void softDeleteOrganization(selectedOrganization)}
                       disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
                     >
-                      Soft delete
+                      Archive
                     </ZookButton>
                   </div>
                 </div>

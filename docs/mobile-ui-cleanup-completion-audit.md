@@ -200,6 +200,8 @@ fully complete until the human/device/provider gates below have external evidenc
   of organization/default-branch wording.
 - Mobile shared request errors and renewal confirmation copy now use gym/payment-service wording
   instead of organization/provider wording.
+- Platform operations service and gym-account controls now avoid provider/organization/soft-delete
+  wording in visible labels, prompts, and fallback errors.
 
 ### Product plan Part A and Part B
 
