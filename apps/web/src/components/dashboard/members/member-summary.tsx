@@ -74,7 +74,7 @@ export function MemberSummary({
           value={expiringCount}
           icon={AlertCircle}
           tone={expiringCount > 0 ? "rose" : "lime"}
-          caption={expiringCount > 0 ? "In next 7 days" : "All current"}
+          caption={expiringCount > 0 ? "In next 7 days" : "None expiring"}
         />
       </div>
     </>

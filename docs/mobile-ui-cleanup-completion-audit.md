@@ -232,6 +232,8 @@ fully complete until the human/device/provider gates below have external evidenc
   approval-required phrasing.
 - Platform checklist and service readouts now use gym/trial/ready-review wording instead of
   tenant/pilot/configured/setup wording.
+- Dashboard membership summary now uses explicit expiring-membership wording instead of the
+  vague all-current cue.
 
 ### Product plan Part A and Part B
 
