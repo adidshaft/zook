@@ -106,7 +106,6 @@ export function ReceptionMembersScreenBody() {
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
                   title={`${selectedMemberIds.size} member${selectedMemberIds.size === 1 ? "" : "s"} selected`}
-                  subtitle="Record attendance for everyone in one tap."
                 />
                 <FormField
                   testID="reception-bulk-attendance-reason"

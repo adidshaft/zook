@@ -297,6 +297,8 @@ fully complete until the human/device/provider gates below have external evidenc
   email/mobile OTP controls, while preserving per-field current-value and status hints.
 - Product photo upload no longer repeats the square/slightly-wide guidance already shown
   in the surrounding product photos copy.
+- Reception bulk-attendance and payment collection sections no longer repeat action
+  subtitles above already-labeled forms and primary actions.
 
 ### Product plan Part A and Part B
 

@@ -159,10 +159,7 @@ export function ReceptionPaymentsScreenBody() {
               </Card>
             ) : null}
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Payment collection"
-                subtitle="Record only money received at the desk."
-              />
+              <SectionHeader title="Payment collection" />
               <ListRow
                 title="Member"
                 subtitle={member?.name ?? "Select a member"}
