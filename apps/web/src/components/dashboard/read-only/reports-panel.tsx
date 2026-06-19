@@ -295,7 +295,7 @@ export function ReportsPanel({
                       total={channelTotal}
                       size={140}
                       thickness={14}
-                      tone="amber"
+                      tone="violet"
                       centerLabel={
                         <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">{cashShare}%</span>
                       }
@@ -303,12 +303,12 @@ export function ReportsPanel({
                     />
                     <div className="grid flex-1 gap-2">
                       <LegendItem
-                        tone="amber"
+                        tone="violet"
                         label="Cash / desk"
                         value={cashRupees > 0 ? formatInrCompact(cashRupees * 100) : "₹0"}
                       />
                       <LegendItem
-                        tone="lime"
+                        tone="sky"
                         label="Online / UPI"
                         value={onlineRupees > 0 ? formatInrCompact(onlineRupees * 100) : "₹0"}
                       />

@@ -1078,3 +1078,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated reports live metadata cue (`R236`) is closed:
   the reports hero now shows neutral Live view metadata without a lime status dot,
   keeping success indicators for runtime state and generated/export feedback.
+- **[ui, fixed]** Overstated payment-channel category color cues (`R237`) are closed:
+  the reports payment-channel chart now uses non-warning/non-success tones for cash
+  and online categories instead of amber and lime.
