@@ -224,13 +224,13 @@ export function useDashboardOperationalResources({
       label: "Display QR entry",
       href: "/dashboard/attendance/approvals",
       detail: `${summary.todayAttendance} scans today`,
-      tone: "lime",
+      tone: "blue",
     },
     {
       label: "Clear join requests",
       href: "/dashboard/members",
       detail: `${summary.joinRequests} memberships waiting`,
-      tone: summary.joinRequests > 0 ? "amber" : "lime",
+      tone: summary.joinRequests > 0 ? "amber" : "neutral",
     },
     {
       label: "Check inventory pressure",

@@ -1147,3 +1147,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member join-request clear KPI cue (`R259`) is closed:
   the member roster Join requests KPI now uses informational tone for Inbox clear
   instead of success color, while pending requests still use warning tone.
+- **[ui, fixed]** Overstated dashboard workflow clear/action cues (`R260`) are closed:
+  the operational Display QR entry workflow now uses informational tone, and join
+  request workflow badges use neutral tone when the queue is clear while preserving
+  warning tone for pending membership approvals.

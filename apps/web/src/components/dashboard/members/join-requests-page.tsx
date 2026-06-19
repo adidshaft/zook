@@ -35,7 +35,7 @@ export function JoinRequestQueue({
         eyebrow="Pipeline"
         title="Join request queue"
         description="Approval-required requests appear here so owners can approve or reject memberships before payment."
-        badge={<Pill tone={joinRequests.length ? "amber" : "lime"}>{joinRequests.length} pending</Pill>}
+        badge={<Pill tone={joinRequests.length ? "amber" : "neutral"}>{joinRequests.length} pending</Pill>}
       />
       {queueError ? (
         <div className="mt-5">
