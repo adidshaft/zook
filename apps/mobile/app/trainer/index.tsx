@@ -209,7 +209,7 @@ export default function TrainerHomeScreen() {
                     title={feedback.clientName}
                     subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
                     leading={<IconBubble icon="chatbubble-ellipses-outline" tone="neutral" />}
-                    trailing={<StatusChip status={`${feedback.completionPct}%`} tone="lime" />}
+                    trailing={<StatusChip status={`${feedback.completionPct}%`} tone="blue" />}
                   />
                 </Pressable>
               ))

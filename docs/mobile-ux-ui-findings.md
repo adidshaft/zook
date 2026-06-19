@@ -1253,3 +1253,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated membership focus callout cue (`R294`) is closed:
   buy and checkout focus banners now use informational tone instead of success
   color, while non-purchase focus banners remain neutral.
+- **[ui, fixed]** Overstated trainer progress percentage cues (`R295`) are
+  closed: recent feedback and adherence percentage chips now use informational
+  tone instead of success color, while waiting states remain neutral.

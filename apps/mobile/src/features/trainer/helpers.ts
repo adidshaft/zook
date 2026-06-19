@@ -94,7 +94,7 @@ export function progressTimelineFor(client?: TrainerClientRecord | null) {
       title: entry.feedback ? "Plan feedback" : "Plan progress",
       body: entry.feedback ?? `${entry.completionPct}% complete`,
       status: `${entry.completionPct}%`,
-      tone: "lime" as const,
+      tone: "blue" as const,
     })),
     ...(client?.summary?.recentWorkouts ?? []).map((workout) => ({
       id: `workout-${workout.id}`,
