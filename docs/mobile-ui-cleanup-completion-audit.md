@@ -352,6 +352,8 @@ fully complete until the human/device/provider gates below have external evidenc
   count, export action, and attendance table.
 - Dashboard body-composition timeline no longer repeats trainer-facing progress/photo helper copy
   above the photo count, timeline cards, and measurement labels.
+- Dashboard AI assistant activity no longer repeats assisted-draft helper copy above the managed-on
+  note and draft activity table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

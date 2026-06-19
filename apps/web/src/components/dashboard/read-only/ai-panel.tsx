@@ -45,7 +45,6 @@ export function AiPanel({
         <SectionHeader
           eyebrow="Assistant"
           title="AI assistant activity"
-          description="Review assisted drafts and usage signals for this gym."
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
           Draft creation lives in trainer mobile workflows; owner web keeps the activity log.
