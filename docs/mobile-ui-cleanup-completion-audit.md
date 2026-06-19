@@ -301,6 +301,8 @@ fully complete until the human/device/provider gates below have external evidenc
   subtitles above already-labeled forms and primary actions.
 - Trainer client sessions no longer repeats the empty feedback state with both
   "No member feedback yet" and a separate Waiting chip.
+- Gym profile gallery no longer repeats the 15-photo upload limit in a separate helper
+  paragraph when the upload control already shows the count.
 
 ### Product plan Part A and Part B
 
