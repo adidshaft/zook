@@ -389,6 +389,8 @@ fully complete until the human/device/provider gates below have external evidenc
   now avoid current/currently/appear helper cues while keeping the same state meaning.
 - Dashboard overview, notification audience, attendance QR, platform service checks, and mobile
   SaaS health labels now avoid current/self-approved/refreshing cue wording in visible helper text.
+- Trainer/owner customization, platform service status, member payment documents, trainer payouts,
+  body history, and profile membership empty states now avoid loaded/ready/appear helper wording.
 
 ### Product plan Part A and Part B
 

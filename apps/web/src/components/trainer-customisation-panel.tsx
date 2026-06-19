@@ -149,7 +149,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           animate={{ opacity: 1, y: 0 }}
           className="mt-4 text-xs text-[var(--accent-strong)]"
         >
-          {saved ? "Saved" : "Loaded preferences"}
+          {saved ? "Saved" : "Preferences"}
         </motion.p>
       ) : null}
     </GlassCard>

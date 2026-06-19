@@ -1490,7 +1490,7 @@ export function PlatformOperationsPanel({
                     <div>
                       <p className="font-medium text-white">{formatEnumLabel(category)}</p>
                       <p className="mt-1 text-xs text-white/45">
-                        {provider.configured ? "Ready" : "Review needed"} · Service{" "}
+                        {provider.configured ? "Configured" : "Review needed"} · Service{" "}
                         {provider.activeProvider ? "active" : "inactive"}
                       </p>
                     </div>

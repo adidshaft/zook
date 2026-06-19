@@ -273,7 +273,7 @@ export function OwnerCustomisationPanel() {
           animate={{ opacity: 1, y: 0 }}
           className="mt-4 text-xs text-[var(--accent-strong)]"
         >
-          {savedAt ? "Saved" : "Loaded preferences"}
+          {savedAt ? "Saved" : "Preferences"}
         </motion.p>
       ) : null}
     </GlassCard>
