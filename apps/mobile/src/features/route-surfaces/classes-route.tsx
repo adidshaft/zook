@@ -83,7 +83,7 @@ export default function ClassesRoute() {
               <EmptyState
                 icon="calendar-outline"
                 title="No classes yet"
-                body="Your gym has not scheduled any upcoming classes for this branch."
+                body="No upcoming classes for this branch."
               />
             </Card>
           ) : null}

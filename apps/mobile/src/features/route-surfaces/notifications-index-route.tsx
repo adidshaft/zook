@@ -440,7 +440,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <EmptyState title="No notifications" body="You're all caught up." />
+                <EmptyState title="No notifications" />
               ) : null}
             </View>
           }

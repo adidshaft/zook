@@ -393,6 +393,8 @@ fully complete until the human/device/provider gates below have external evidenc
   body history, and profile membership empty states now avoid loaded/ready/appear helper wording.
 - Billing document labels, body-composition timeline copy, member-detail loading labels, and
   mobile payment document hints now use direct available/recent/loading wording.
+- Mobile inbox, public gym trainer/plan, and classes empty states now use shorter direct wording
+  instead of all-caught-up or not-published-yet helper copy.
 
 ### Product plan Part A and Part B
 

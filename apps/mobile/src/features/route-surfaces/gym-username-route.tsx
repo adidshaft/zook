@@ -525,7 +525,7 @@ export default function GymProfileScreen() {
               ) : (
                 <EmptyState
                   title="No public trainer profiles"
-                  body="This gym has not published trainer profiles yet."
+                  body="Trainer profiles are not published."
                 />
               )}
             </View>
@@ -632,8 +632,8 @@ export default function GymProfileScreen() {
 
             {!plans.length ? (
               <EmptyState
-                title="No public plans yet"
-                body="This gym is public, but it has not published any plans for mobile sign-up yet."
+                title="No public plans"
+                body="Mobile sign-up plans are not published."
               />
             ) : null}
 
