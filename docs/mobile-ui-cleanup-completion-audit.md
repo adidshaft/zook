@@ -337,6 +337,8 @@ fully complete until the human/device/provider gates below have external evidenc
   line under the already-clear "No payments yet" title.
 - Trainer diet plans no longer repeats the empty diet-plan state with an additional
   create-plan description next to the New diet plan action.
+- Membership catalog creation no longer shows a static Catalog pill beside an already-labeled
+  create form and dynamic offer count.
 
 ### Product plan Part A and Part B
 
