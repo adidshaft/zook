@@ -48,7 +48,7 @@
     "settings": "Settings"
   },
   "dashboard": {
-    "liveWorkspace": "Live workspace",
+    "liveWorkspace": "Current workspace",
     "fallbackWorkspace": "Test workspace",
     "emptyOrganization": "No active gym is available yet.",
     "emptyOrganizationDescription": "Your sign-in is active, but no gym is connected to this account yet. Owners can create a gym profile from setup.",

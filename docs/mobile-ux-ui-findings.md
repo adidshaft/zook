@@ -1399,3 +1399,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   gym-profile, notifications, attendance, no-plan, and public-gym helper copy
   now removes "when ready" phrasing or uses available wording where no live
   readiness state is being conveyed.
+- **[ui, fixed]** Overstated dashboard workspace live label (`R337`) is
+  closed: the dashboard shell now labels connected workspace context as current
+  in English and Hindi instead of live.
