@@ -119,6 +119,8 @@ fully complete until the human/device/provider gates below have external evidenc
   live-store cues.
 - Platform service-status readouts use configured-service wording instead of generic ready-for-use
   cues.
+- Checkout recovery and member QR permission copy now use direct next-step wording instead of
+  fresh/ready phrasing.
 
 ### Product plan Part A and Part B
 

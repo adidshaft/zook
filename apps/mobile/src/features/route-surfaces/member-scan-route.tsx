@@ -829,7 +829,7 @@ export default function Scan() {
                       body={
                         cameraBlocked
                           ? "Open device settings to allow QR scanning."
-                          : "Allow camera access when you are ready to scan the gym QR."
+                          : "Allow camera access to scan the gym QR."
                       }
                     />
                     <ZookButton

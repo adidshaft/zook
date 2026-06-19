@@ -163,13 +163,13 @@ export default async function HostedCheckoutPage({
       sessionStatus === "CANCELLED" ||
       sessionStatus === "EXPIRED");
   const recoveryMessage = isExpired
-    ? "This payment link has expired. Return to Zook and start a fresh checkout before trying again."
+    ? "This payment link has expired. Return to Zook and start a new checkout before trying again."
     : sessionStatus === "FAILED"
-      ? "This payment attempt failed, so the membership was not activated. Start a fresh checkout from Zook to try again."
+      ? "This payment attempt failed, so the membership was not activated. Start a new checkout from Zook to try again."
       : sessionStatus === "CANCELLED"
-        ? "This payment session was cancelled before confirmation. Start a fresh checkout from Zook when you are ready."
+        ? "This payment session was cancelled before confirmation. Start a new checkout from Zook to continue."
         : sessionStatus === "EXPIRED"
-          ? "This payment session expired before confirmation. Start a fresh checkout from Zook to continue."
+          ? "This payment session expired before confirmation. Start a new checkout from Zook to continue."
           : "";
 
   if (!session) {
