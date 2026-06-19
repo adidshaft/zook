@@ -1144,3 +1144,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile cart item-count cue (`R258`) is closed:
   the shop cart header item-count chip now uses neutral styling instead of success
   color, keeping stronger tones for payment and pickup outcomes.
+- **[ui, fixed]** Overstated member join-request clear KPI cue (`R259`) is closed:
+  the member roster Join requests KPI now uses informational tone for Inbox clear
+  instead of success color, while pending requests still use warning tone.
