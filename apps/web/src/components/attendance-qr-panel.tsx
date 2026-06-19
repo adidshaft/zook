@@ -229,7 +229,7 @@ export function AttendanceQrPanel({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="lime">Check-in ready</Pill>
+                <Pill tone="blue">Check-in ready</Pill>
                 {branchName ? <Pill>{branchName}</Pill> : null}
                 {expiresAt ? <Pill>Expires {formatTime(expiresAt)}</Pill> : null}
               </div>
@@ -304,7 +304,7 @@ export function AttendanceQrPanel({
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 px-4 py-3 text-xs text-[var(--text-tertiary)]">
         <span className="inline-flex items-center gap-2 text-[var(--accent-strong)]">
-          <StatusDot tone="lime" /> Attendance sync: Live
+          <StatusDot tone="blue" /> Attendance sync: Live
         </span>
         <span>Token ID: {qrPayload ? qrPayload.slice(-8) : "--"}</span>
         <span>

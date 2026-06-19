@@ -1241,3 +1241,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member autopay setting cues (`R290`) are closed:
   web membership Autopay on badges now use informational tone instead of success
   color, while subscription status badges keep their existing semantic treatment.
+- **[ui, fixed]** Overstated attendance QR readiness cues (`R291`) are closed:
+  Check-in ready and Attendance sync: Live indicators now use informational tone
+  instead of success color, while QR errors and pending scan review cues remain distinct.
