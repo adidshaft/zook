@@ -411,7 +411,6 @@ export function ReportsPanel({
                   <GlassCard className="p-5">
                     <SectionHeader
                       title="By the numbers"
-                      description="Memberships, floor activity, and trial runway."
                     />
                     <ReadoutGrid
                       className="mt-4"
@@ -469,7 +468,6 @@ export function ReportsPanel({
                       <SectionHeader
                         eyebrow="Governance"
                         title="Control status"
-                        description="Admin changes, pending messages, and unresolved checks."
                       />
                       <ReadoutGrid
                         className="mt-4"

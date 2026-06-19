@@ -394,6 +394,8 @@ fully complete until the human/device/provider gates below have external evidenc
   count, moderation table, and decision control.
 - Platform gym accounts no longer repeats review/pause helper copy above the suspended count,
   account rows, and pause/archive controls.
+- Dashboard report snapshot no longer repeats metric/governance summaries above readout grids
+  that already label membership, floor, revenue, audit, and control signals.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
