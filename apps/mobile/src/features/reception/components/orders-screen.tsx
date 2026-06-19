@@ -29,7 +29,7 @@ export function ReceptionOrdersScreenBody() {
                   label: "Ready",
                   value: readyOrders.length,
                   hint: "Pickup queue",
-                  tone: "lime",
+                  tone: "blue",
                   icon: "bag-check-outline",
                 },
                 {

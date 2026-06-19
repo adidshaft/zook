@@ -1102,3 +1102,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated dashboard payment-action cues (`R244`) are closed:
   next-best payment actions now use the informational dashboard tone instead of
   success color, keeping lime for actual success states rather than reconciliation prompts.
+- **[ui, fixed]** Overstated reception pickup-ready metric cue (`R245`) is closed:
+  the Ready pickup queue metric now uses the informational mobile tone instead of
+  success color, reserving lime for completed verification and pickup outcomes.
