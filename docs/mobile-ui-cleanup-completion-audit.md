@@ -193,6 +193,7 @@ fully complete until the human/device/provider gates below have external evidenc
   wording.
 - Gym profile, membership-plan, and staff loading states now use gym wording instead of
   organization wording.
+- Shop orders empty state now uses gym wording instead of organization wording.
 
 ### Product plan Part A and Part B
 

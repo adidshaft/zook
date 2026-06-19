@@ -16,7 +16,7 @@ const copy = {
   description: "Orders needing payment, pickup verification, or review.",
   loadingTitle: "Loading shop orders",
   loadingBody: "Loading current order queue.",
-  empty: "No shop orders are currently recorded for this organization.",
+  empty: "No shop orders are currently recorded for this gym.",
 };
 
 function orderDeskNote(order: ShopOrderRow) {
