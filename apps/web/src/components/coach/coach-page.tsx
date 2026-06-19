@@ -123,7 +123,6 @@ export function CoachPage({
               icon={Bell}
               iconTone="sky"
               title="Notify a member"
-              subtitle="Open the client workspace and leave a trainer note"
               href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
               index={1}
             />
