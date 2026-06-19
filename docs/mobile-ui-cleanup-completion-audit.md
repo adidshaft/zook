@@ -224,6 +224,8 @@ fully complete until the human/device/provider gates below have external evidenc
   empty state.
 - Shop status and order queue copy now uses stock-branch wording and avoids redundant
   current/currently phrasing.
+- Platform health cockpit copy now avoids production-traffic, pilot-traffic, and loaded-queue
+  wording in readiness and safety states.
 
 ### Product plan Part A and Part B
 

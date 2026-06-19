@@ -389,7 +389,7 @@ export function PlatformOperationsPanel({
     {
       label: "Configured services",
       value: formatCompactNumber(readyProviders.length),
-      meta: "Can serve production traffic",
+      meta: "Ready for live members",
     },
     {
       label: "Service setup gaps",
@@ -756,7 +756,7 @@ export function PlatformOperationsPanel({
             {
               title: "Service alerts",
               body: misconfiguredProviders.length
-                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before full production confidence.`
+                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before launch confidence.`
                 : "Core services are not reporting setup blockers.",
               tone: misconfiguredProviders.length ? "amber" : "neutral",
             },
@@ -768,8 +768,8 @@ export function PlatformOperationsPanel({
             {
               title: "Safety queue",
               body: openFlags.length
-                ? "Review open reports before expanding pilot traffic."
-                : "No unresolved safety reports in the loaded queue.",
+                ? "Review open reports before inviting more gyms."
+                : "No unresolved safety reports.",
               tone: openFlags.length ? "amber" : "neutral",
             },
           ].map((item) => (
