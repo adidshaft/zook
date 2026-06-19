@@ -220,6 +220,8 @@ fully complete until the human/device/provider gates below have external evidenc
   setup/current/proof/scope wording.
 - Platform support payment and impersonation tables now use payment-record/account/gym wording
   instead of ledger/target/org-scope wording.
+- Platform support access section now avoids impersonation-history wording in visible title and
+  empty state.
 
 ### Product plan Part A and Part B
 

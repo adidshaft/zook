@@ -1319,7 +1319,7 @@ export function PlatformOperationsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Impersonations"
-            title="Support impersonation history"
+            title="Support access log"
             description="Recent audited sessions started by platform support."
             badge={<Pill>{impersonations.length} sessions</Pill>}
           />
@@ -1359,7 +1359,7 @@ export function PlatformOperationsPanel({
               ]}
               rows={impersonations}
               rowKey={(session) => session.id}
-              empty="No impersonation sessions."
+              empty="No support access sessions."
             />
           </div>
         </GlassCard>
