@@ -358,6 +358,8 @@ fully complete until the human/device/provider gates below have external evidenc
   readouts that already label those signals directly.
 - Dashboard settlement queue no longer repeats payment/pickup review helper copy above the
   unsettled badge, Desk note, filters, and order status notes.
+- Dashboard product inventory empty state no longer repeats no-products helper copy below the
+  already-clear Inventory is clear title.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
