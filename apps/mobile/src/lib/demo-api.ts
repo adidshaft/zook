@@ -24,6 +24,37 @@ function activeOrg() {
   return zookDemoFixtures.organizations[0];
 }
 
+// Attach the resolved plan + organization so cards can show the real plan
+// name ("Hybrid Pro") instead of the generic "Membership" fallback.
+function enrichMembership<
+  T extends { planId?: string | null; orgId?: string | null; daysLeft?: number | null },
+>(membership: T | null) {
+  if (!membership) return membership;
+  const plan = zookDemoFixtures.membershipPlans.find((entry) => entry.id === membership.planId);
+  const org =
+    zookDemoFixtures.organizations.find((entry) => entry.id === membership.orgId) ?? activeOrg();
+  const endsAt =
+    typeof membership.daysLeft === "number"
+      ? new Date(Date.now() + membership.daysLeft * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+  return {
+    ...membership,
+    ...(endsAt ? { endsAt, expiresAt: endsAt } : {}),
+    plan: plan
+      ? {
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          type: plan.type,
+          pricePaise: plan.pricePaise,
+          durationDays: plan.durationDays,
+          visitLimit: plan.visitLimit,
+        }
+      : null,
+    organization: org ? { id: org.id, name: org.name, username: org.username } : null,
+  };
+}
+
 function activeMembership() {
   return (
     zookDemoFixtures.memberships.find(
@@ -1024,7 +1055,8 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
-  if (pathname === "/me/membership/active") return { membership: activeMembership() } as T;
+  if (pathname === "/me/membership/active")
+    return { membership: enrichMembership(activeMembership()) } as T;
   if (pathname.startsWith("/r/")) {
     const referralCode = pathname.split("/").at(-1)?.toUpperCase();
     const referral = zookDemoFixtures.referralCodes.find(
@@ -1037,7 +1069,9 @@ export async function demoMobileApiFetch<T>(
   }
   if (pathname === "/me/memberships") {
     return {
-      subscriptions: zookDemoFixtures.memberships,
+      subscriptions: zookDemoFixtures.memberships.map((membership) =>
+        enrichMembership(membership),
+      ),
       payments: zookDemoFixtures.payments,
     } as T;
   }
