@@ -427,6 +427,7 @@ fully complete until the human/device/provider gates below have external evidenc
 - Mobile profile marketing toggle no longer repeats offer/update copy below the Marketing
   opt-in label.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
+- Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.

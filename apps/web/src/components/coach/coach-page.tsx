@@ -115,7 +115,6 @@ export function CoachPage({
               icon={ClipboardList}
               iconTone="lime"
               title="Assign a new plan"
-              subtitle="Create a trainer draft for an assigned client"
               href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
               index={0}
             />
