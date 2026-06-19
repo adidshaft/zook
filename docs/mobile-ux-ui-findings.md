@@ -1169,3 +1169,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Swapped trainer planning metric cues (`R266`) are closed:
   the trainer dashboard Active plans metric now uses informational tone, while the
   Needs plan action-required metric uses warning tone instead of success color.
+- **[ui, fixed]** Overstated platform cached-state cue (`R267`) is closed:
+  the mobile platform SaaS health Cached chip now uses neutral tone instead of
+  success color, keeping amber for active refresh state.

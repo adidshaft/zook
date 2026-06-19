@@ -116,7 +116,7 @@ export default function PlatformMobile() {
               {subscriptionsQuery.isFetching ? (
                 <StatusChip status="Refreshing" tone="amber" />
               ) : (
-                <StatusChip status="Cached" tone="lime" />
+                <StatusChip status="Cached" tone="neutral" />
               )}
             </View>
             {summary ? (
