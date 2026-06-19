@@ -198,6 +198,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording.
 - Dashboard settings navigation and refund error copy now use gym/main-branch wording instead
   of organization/default-branch wording.
+- Mobile shared request errors and renewal confirmation copy now use gym/payment-service wording
+  instead of organization/provider wording.
 
 ### Product plan Part A and Part B
 

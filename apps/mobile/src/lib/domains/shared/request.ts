@@ -16,7 +16,7 @@ export function getMutationContext(token?: string, orgId?: string) {
     throw new Error("Authentication is required.");
   }
   if (!orgId) {
-    throw new Error("An active organization is required.");
+    throw new Error("An active gym is required.");
   }
   return { token, orgId };
 }

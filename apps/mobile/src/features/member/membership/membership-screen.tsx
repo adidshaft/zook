@@ -972,7 +972,7 @@ function RenewalSheet({
                 value: formatVisitLimit(selectedPlan.visitLimit),
               },
             ]}
-            consequence="The renewed membership activates after payment confirmation from the provider or gym desk."
+            consequence="The renewed membership activates after payment confirmation from the payment service or gym desk."
           />
         ) : null}
 
