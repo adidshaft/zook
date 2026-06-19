@@ -1048,3 +1048,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated revenue KPI warning cue (`R226`) is closed:
   the dashboard Revenue today KPI now uses the normal dashboard accent instead of amber,
   keeping warning color for metrics that actually need attention.
+- **[ui, fixed]** Misleading dashboard plan-mix empty cue (`R227`) is closed:
+  the empty plan-mix donut now renders a zero arc instead of a full lime ring, and the
+  empty legend row no longer shows a success-colored swatch for a 0% state.
