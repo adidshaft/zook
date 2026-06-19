@@ -271,6 +271,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of will-appear/will-refresh/will-be-marked phrasing.
 - The owner dashboard no longer renders the contextual Zook tip card or exposes it as a
   customization widget, leaving the bottom strip focused on AI usage and staff activity.
+- The mobile classes route no longer renders a separate instructional helper card; branch
+  selection now sits in the header while the class list remains the primary surface.
 
 ### Product plan Part A and Part B
 

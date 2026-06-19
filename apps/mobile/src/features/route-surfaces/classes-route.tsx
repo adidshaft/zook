@@ -60,32 +60,10 @@ export default function ClassesRoute() {
                 ? `${selectedBranch.name} schedule`
                 : "See upcoming sessions and reserve your spot."
             }
+            contextSlot={<BranchSelectorChip />}
             showProfileShortcut={false}
             showBack
           />
-
-          <Card variant="compact" contentStyle={styles.helperCard}>
-            <View style={styles.helperHeader}>
-              <View style={styles.helperCopy}>
-                <Text style={[styles.helperTitle, { color: palette.text.primary }]}>
-                  Upcoming group sessions
-                </Text>
-                <Text style={[styles.helperMeta, { color: palette.text.secondary }]}>
-                  {selectedBranch
-                    ? "Bookings and waitlists follow the active branch."
-                    : "Pick a branch to see its upcoming sessions."}
-                </Text>
-              </View>
-              <View style={styles.helperBadge}>
-                <BranchSelectorChip />
-                <Pill>{selectedBranch?.name ?? "All branches"}</Pill>
-              </View>
-            </View>
-            <Text style={[styles.helperBody, { color: palette.text.secondary }]}>
-              Book classes in the active branch. If a session fills up, Zook adds you to the
-              waitlist instead.
-            </Text>
-          </Card>
 
           {classesQuery.isError ? (
             <Card variant="compact">
@@ -183,29 +161,6 @@ const styles = StyleSheet.create({
     paddingBottom: layout.bottomNavContentPadding,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
-  },
-  helperCard: {
-    gap: spacing.sm,
-  },
-  helperHeader: {
-    gap: spacing.sm,
-  },
-  helperCopy: {
-    gap: 4,
-  },
-  helperBadge: {
-    alignItems: "flex-start",
-    gap: spacing.xs,
-  },
-  helperTitle: {
-    ...typography.cardTitle,
-  },
-  helperMeta: {
-    ...typography.caption,
-  },
-  helperBody: {
-    ...typography.body,
-    lineHeight: 20,
   },
   stack: {
     gap: spacing.md,
