@@ -19,7 +19,7 @@ export function CouponsRouteSection(props: GrowthRouteProps) {
 
   return (
     <Section
-      eyebrow="Coupons"
+      eyebrow="Discount codes"
       title="Coupons"
       description={copy.couponsDescription}
       badge={
