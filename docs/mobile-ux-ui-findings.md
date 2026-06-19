@@ -1274,3 +1274,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated web active-membership cues (`R301`) are closed:
   web member subscription Active badges now use informational tone instead of
   success color, while pending and failed membership states keep warning/danger cues.
+- **[ui, fixed]** Overstated mobile active-membership access cue (`R302`) is
+  closed: the member home Access active card now uses task/informational styling
+  instead of success treatment, while missing or expired access remains warning.
