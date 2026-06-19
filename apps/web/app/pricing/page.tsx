@@ -165,7 +165,7 @@ export default async function PricingPage({
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
-                "Owner dashboard and live command board",
+                "Owner dashboard and command board",
                 "Member app workflows and QR check-ins",
                 "Desk payments, approvals, receipts, and invoices",
                 "Trainer plans, shop inventory, campaigns, reports, and audit logs",

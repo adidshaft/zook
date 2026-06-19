@@ -56,7 +56,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 )}
                 {index === 0 ? (
                   <div className="absolute left-3 top-3">
-                    <StatusPill value="Latest" />
+                    <StatusPill value="Current" />
                   </div>
                 ) : null}
               </div>

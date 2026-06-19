@@ -1381,3 +1381,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: coach, classes, settings, growth, and platform operations copy now
   uses active/current/production/support wording instead of live labels for
   static readouts and navigation surfaces.
+- **[ui, fixed]** Overstated current-item freshness cues (`R332`) are closed:
+  pricing, body-composition, attendance, and member-profile copy now uses
+  command/current wording instead of live/latest labels for static helper text
+  and positional badges.

@@ -396,7 +396,7 @@ export default function AttendanceResultScreen() {
                 <View style={styles.nextCopy}>
                   <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
                   <Text style={[styles.nextBody, { color: palette.text.secondary }]}>
-                    Open your latest assigned plan when you are ready.
+                    Open your current assigned plan when you are ready.
                   </Text>
                 </View>
                 <Link href={planTarget} asChild>
