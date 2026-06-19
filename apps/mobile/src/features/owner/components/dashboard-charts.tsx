@@ -149,7 +149,7 @@ export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Live charts</Text>
+        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Trends</Text>
         <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
           Revenue, attendance, and member trends
         </Text>

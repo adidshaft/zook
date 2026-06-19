@@ -85,7 +85,7 @@ export default function PlatformMobile() {
             eyebrow="Platform operator"
             title="Platform billing"
             subtitle={`${session?.user.name ?? "Platform team"} · SaaS health and mandate state`}
-            chip={<StatusChip status="Live overview" tone="neutral" />}
+            chip={<StatusChip status="Overview" tone="neutral" />}
             centered
             showProfileShortcut={false}
           />

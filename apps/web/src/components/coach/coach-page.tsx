@@ -54,7 +54,7 @@ export function CoachPage({
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              Live view
+              Snapshot
             </span>
             <Pill>Trainer</Pill>
           </div>

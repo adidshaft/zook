@@ -1357,3 +1357,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: completed exercise rows no longer add a second lime icon beside the
   checked control, and attendance status details use informational tone while the
   explicit Approved chip keeps success treatment.
+- **[ui, fixed]** Overstated live/latest presentation labels (`R326`) are
+  closed: dashboard, reception, coach, report, platform, and tracking surfaces
+  now use neutral overview/snapshot/current wording instead of live/latest labels
+  where no realtime status is being conveyed.

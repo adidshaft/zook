@@ -129,7 +129,7 @@ export function ReceptionDeskScreenBody() {
             </Card>
 
             <SectionHeader
-              title="Live feed"
+              title="Recent activity"
               subtitle="Recent check-ins for this gym."
               action={<Pill tone="neutral">{todayCount} today</Pill>}
             />

@@ -75,7 +75,7 @@ export function buildTrackingSummaryMetrics(input: {
       id: "weight",
       label: "Weight",
       value: input.latestWeightKg ? `${input.latestWeightKg} kg` : "--",
-      detail: "Latest entry"
+      detail: "Current entry"
     },
     {
       id: "habits",
