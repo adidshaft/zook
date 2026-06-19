@@ -1226,3 +1226,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member marketing preference cues (`R285`) are
   closed: member-list Marketing on/off profile badges now use neutral tone instead
   of framing opt-in as success or opt-out as warning.
+- **[ui, fixed]** Overstated referral availability cues (`R286`) are closed:
+  referral policy Enabled and active referral-code statuses now use informational
+  tone, while paused or inactive referral states remain warning cues.

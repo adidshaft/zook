@@ -76,7 +76,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
         title="Referral codes"
         description={copy.referralsDescription}
         badge={
-          <Pill tone={props.referralPolicy?.enabled === false ? "amber" : "lime"}>
+          <Pill tone={props.referralPolicy?.enabled === false ? "amber" : "blue"}>
             {props.referralPolicy?.enabled === false ? "Paused" : "Enabled"}
           </Pill>
         }
@@ -165,7 +165,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                     </div>
                     <StatusPill
                       value={item.code.status}
-                      tone={item.code.status === "active" ? "lime" : "amber"}
+                      tone={item.code.status === "active" ? "blue" : "amber"}
                     />
                     <div className="flex flex-wrap justify-end gap-2">
                       <ZookButton
