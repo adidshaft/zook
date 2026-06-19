@@ -335,6 +335,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and chip, while preserving the completion percentage chip when feedback exists.
 - Member payments no longer repeats the empty payment state with a second "records show here"
   line under the already-clear "No payments yet" title.
+- Trainer diet plans no longer repeats the empty diet-plan state with an additional
+  create-plan description next to the New diet plan action.
 
 ### Product plan Part A and Part B
 

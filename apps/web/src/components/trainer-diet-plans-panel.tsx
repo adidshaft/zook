@@ -193,10 +193,7 @@ export function TrainerDietPlansPanel({
             empty="No diet plans yet."
           />
         ) : (
-          <EmptyState
-            title="No diet plans yet"
-            description="Create a plan to share nutrition with this client."
-          />
+          <EmptyState title="No diet plans yet" />
         )}
       </div>
     </GlassCard>
