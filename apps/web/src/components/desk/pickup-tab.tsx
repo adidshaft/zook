@@ -110,7 +110,7 @@ export function PickupTab({
                     <Pill tone={toneForPickupOrderStatus(order.status)}>
                       {formatEnumLabel(order.status)}
                     </Pill>
-                    <Pill tone={payAtDesk ? "amber" : "lime"}>
+                    <Pill tone={payAtDesk ? "amber" : "neutral"}>
                       {payAtDesk ? copy.payAtDesk : copy.paid}
                     </Pill>
                     <Pill>{formatInr(order.totalPaise)}</Pill>

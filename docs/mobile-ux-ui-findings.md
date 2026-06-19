@@ -1202,3 +1202,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated read-only review clear cues (`R277`) are closed:
   read-only notification and assistant review badges now use neutral tone for
   zero-count clear states, while nonzero review queues remain warning.
+- **[ui, fixed]** Overstated desk pickup paid badge (`R278`) is closed:
+  the Desk pickup payment-method badge now uses neutral tone for Paid orders that
+  still need handoff, while pay-at-desk and code-verification states keep their cues.
