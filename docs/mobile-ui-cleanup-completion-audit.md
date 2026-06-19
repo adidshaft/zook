@@ -110,6 +110,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `424b2afb` (dashboard disabled-cue copy guard),
   `efbcfedf` (AI launch-gate unavailable-state wording), and
   `1080b2fc` (visual cue regression evidence gate).
+- Platform fallback status copy now describes the demo shell as test-data mode instead of presenting
+  it as unavailable live data.
 
 ### Product plan Part A and Part B
 

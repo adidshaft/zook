@@ -327,7 +327,7 @@ async function PlatformDashboardContent({
   const runtimeLabel = data.connected
     ? "System online"
     : data.fallbackMode === "demo"
-      ? "Test data - live data unavailable"
+      ? "Test data mode"
       : "Data unavailable";
   const suspendedCount = data.orgs.filter((org) => org.status === "SUSPENDED").length;
   const safetyReviewCount = data.platform.abuseFlags.filter(
