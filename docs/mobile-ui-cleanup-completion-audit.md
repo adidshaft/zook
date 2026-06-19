@@ -390,6 +390,8 @@ fully complete until the human/device/provider gates below have external evidenc
   count and support-access table.
 - Platform health cockpit no longer repeats service/risk/workload helper copy above readouts and
   alert cards that already label those signals directly.
+- Platform moderation queue no longer repeats flagged-content decision helper copy above the flag
+  count, moderation table, and decision control.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -1246,7 +1246,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Moderation"
               title="Content moderation queue"
-              description="Review flagged content and record a platform decision."
               badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "neutral"}>{moderationFlags.length} flags</Pill>}
             />
             <div className="mt-5">
