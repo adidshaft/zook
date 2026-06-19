@@ -401,7 +401,7 @@ export function PlatformOperationsPanel({
       value: formatCompactNumber(
         organizations.filter((org) => org.status === "ACTIVE").length,
       ),
-      meta: "Currently allowed to operate",
+      meta: "Allowed to operate",
     },
     {
       label: "Trial risk",
@@ -1842,7 +1842,7 @@ export function PlatformOperationsPanel({
                 {
                   label: "Paused gyms",
                   value: formatCompactNumber(suspendedOrganizations.length),
-                  meta: "Currently paused by the platform team",
+                  meta: "Paused by the platform team",
                 },
                 {
                   label: "Recent assistant activity",

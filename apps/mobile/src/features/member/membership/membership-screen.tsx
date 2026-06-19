@@ -682,7 +682,7 @@ export default function MembershipScreen() {
                     : focusTarget === "history"
                       ? "Jumped to your previous memberships and payment trail."
                       : focusTarget === "payments"
-                        ? "Receipts and invoices appear below."
+                        ? "Receipts and invoices are below."
                         : routeParams.subscriptionId
                           ? "Your subscription has been updated."
                           : "Membership status is below."}

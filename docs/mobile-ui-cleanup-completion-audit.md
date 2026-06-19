@@ -385,6 +385,8 @@ fully complete until the human/device/provider gates below have external evidenc
   fresh/latest/ready/currently cue words where the action or metric already supplies the state.
 - Public profile pending states, member membership callouts, shop inventory scope, and billing
   revenue copy now use direct state wording instead of appear/showing/current cues.
+- Mobile loading/tracking labels, membership document callouts, and platform gym summary cards
+  now avoid current/currently/appear helper cues while keeping the same state meaning.
 
 ### Product plan Part A and Part B
 
