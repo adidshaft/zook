@@ -323,6 +323,8 @@ fully complete until the human/device/provider gates below have external evidenc
   More removes subtitles that duplicate its account/workspace controls.
 - Reception desk/payment sections and owner billing/member headers no longer repeat form,
   activity, billing, or profile context already shown by their controls and rows.
+- Web member and desk KPI tiles no longer render decorative roster/clear/handoff captions
+  where the tile labels and counts already carry the state.
 
 ### Product plan Part A and Part B
 

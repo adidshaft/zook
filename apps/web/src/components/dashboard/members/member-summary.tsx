@@ -51,7 +51,6 @@ export function MemberSummary({
           value={members.length}
           icon={Users}
           tone="sky"
-          caption="In your roster"
         />
         <KPITile
           label="Active"

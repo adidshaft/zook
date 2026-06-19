@@ -27,7 +27,6 @@ export function DeskMetrics({
         value={pendingCount}
         icon={Clock}
         tone={pendingCount > 0 ? "amber" : "sky"}
-        caption={pendingCount > 0 ? "Needs eyes" : "Clear"}
       />
       <KPITile
         label="Member directory"
@@ -40,7 +39,6 @@ export function DeskMetrics({
         value={handoffCount}
         icon={IndianRupee}
         tone="violet"
-        caption={handoffCount > 0 ? "Awaiting pickup" : "All clear"}
       />
     </section>
   );
