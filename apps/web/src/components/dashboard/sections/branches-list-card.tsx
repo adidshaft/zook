@@ -149,7 +149,7 @@ function BranchSummaryRow({
           {steps.map((step) => (
             <span
               key={step.label}
-              className={`rounded-full border px-2 py-1 text-[0.68rem] ${step.done ? "border-lime-300/30 bg-lime-300/10 text-lime-100" : "border-white/10 bg-black/20 text-white/45"}`}
+              className={`rounded-full border px-2 py-1 text-[0.68rem] ${step.done ? "border-blue-300/25 bg-blue-300/10 text-blue-50" : "border-white/10 bg-black/20 text-white/45"}`}
             >
               {step.done ? "Done: " : "Todo: "}
               {step.label}

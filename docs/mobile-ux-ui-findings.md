@@ -1329,3 +1329,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   desk action toasts, receipt-ready panels, active-check-in context, member
   avatar fallbacks, and Open in Desk navigation now use informational or neutral
   styling instead of lime success emphasis.
+- **[ui, fixed]** Overstated dashboard selection cues (`R318`) are closed:
+  shop tabs, settlement status filters, and branch setup Done chips now use
+  neutral or informational selected-state styling instead of lime success
+  emphasis.

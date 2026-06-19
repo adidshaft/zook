@@ -210,7 +210,7 @@ function SettlementFilters({
           onClick={() => setOrderStatusFilter(value)}
           className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
             orderStatusFilter === value
-              ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
+              ? "border-white/20 bg-white/8 text-white"
               : "border-white/10 text-white/55 hover:bg-white/8"
           }`}
         >
