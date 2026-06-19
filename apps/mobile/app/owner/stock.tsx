@@ -60,7 +60,7 @@ export default function OwnerStockScreen() {
             <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
             <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="blue" style={styles.metricHalf} />
           </View>
-          <SectionHeader title="Products to reorder" subtitle="Below threshold" />
+          <SectionHeader title="Products to reorder" />
           <Card contentStyle={styles.stack}>
             {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
             {!dashboardQuery.isError && lowStock.length

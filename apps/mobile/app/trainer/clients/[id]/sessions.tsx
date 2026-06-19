@@ -54,7 +54,6 @@ export default function TrainerClientSessionsScreen() {
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
               </Pressable>
             }
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="sessions" onChange={selectTab} />
           <Card variant="compact" contentStyle={styles.stack}>

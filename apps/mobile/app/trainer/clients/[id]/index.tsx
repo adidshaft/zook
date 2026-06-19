@@ -130,7 +130,6 @@ export default function TrainerClientOverviewScreen() {
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
               </Pressable>
             }
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="overview" onChange={selectTab} />
 

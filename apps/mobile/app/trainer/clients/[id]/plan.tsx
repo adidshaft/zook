@@ -11,7 +11,6 @@ import {
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
-  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -239,11 +238,10 @@ export default function TrainerClientPlanScreen() {
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
               </Pressable>
             }
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
           <Card contentStyle={styles.stack}>
-            <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
+            <SectionHeader title="Plan builder" />
             <FormField testID="trainer-plan-title" label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
             <View style={styles.chipRow}>
               {planTemplates.map((template) => {
@@ -298,7 +296,7 @@ export default function TrainerClientPlanScreen() {
             </Card>
           ) : null}
           <Card contentStyle={styles.stack}>
-            <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
+            <SectionHeader title="Diet plan" />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
             <View style={styles.actionRow}>
               <FormField label="Calories" value={calorieTarget} onChangeText={setCalorieTarget} keyboardType="number-pad" style={styles.actionHalf} />

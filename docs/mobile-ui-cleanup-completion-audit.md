@@ -313,6 +313,8 @@ fully complete until the human/device/provider gates below have external evidenc
   repeats quick-action/reference/open-log cues beside already-labeled rows, charts, and links.
 - Coach and dashboard KPI tiles no longer render decorative caption labels where the
   metric titles already identify roster, plan, check-in, revenue, approval, and stock counts.
+- Trainer detail headers no longer repeat a static Trainer chip, and trainer, reception,
+  and owner section headers no longer carry subtitles that duplicate nearby form/list state.
 
 ### Product plan Part A and Part B
 

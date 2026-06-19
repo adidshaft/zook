@@ -80,7 +80,7 @@ export default function OwnerRevenueScreen() {
           ) : null}
           {!isLoading ? (
             <>
-              <SectionHeader title="Recent transactions" subtitle="Today" />
+              <SectionHeader title="Recent transactions" />
               <Card contentStyle={styles.stack}>
                 {dashboardQuery.isError || paymentsQuery.isError || ordersQuery.isError ? (
                   <QueryErrorState

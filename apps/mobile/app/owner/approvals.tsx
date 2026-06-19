@@ -29,9 +29,8 @@ export default function OwnerApprovalsScreen() {
   const rejectJoinRequestMutation = useRejectJoinRequest();
   const [batchApproving, setBatchApproving] = useState(false);
   const joinRequests = (joinRequestsQuery.data?.joinRequests ?? []).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
-  // Only scans that still need a decision belong in the review queue —
-  // exclude already-approved/resolved records so the count and list match the
-  // "Pending and flagged scans" label.
+  // Only scans that still need a decision belong in the review queue, so the
+  // count and list stay aligned.
   const attentionAttempts = (attentionQuery.data?.records ?? []).filter((record) => {
     const status = String(record.status ?? "").toUpperCase();
     return status === "PENDING_APPROVAL" || status === "FLAGGED";
@@ -187,7 +186,7 @@ export default function OwnerApprovalsScreen() {
           ) : null}
           {attendanceItems.length ? (
             <>
-              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} subtitle="Pending and flagged scans." />
+              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} />
               <ApprovalQueue
                 items={attendanceItems}
                 onApprove={(id) => {
