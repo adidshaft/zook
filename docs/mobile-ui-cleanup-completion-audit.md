@@ -215,6 +215,9 @@ fully complete until the human/device/provider gates below have external evidenc
   avoids current/history phrasing where the surrounding section already provides context.
 - Platform gym-account, assistant-activity, and safety-report states now avoid redundant
   currently/current phrasing.
+- Branch commerce controls, payment reconciliation, dashboard branch checklist, attendance
+  summary, and reports snapshot now use owner-facing plans/products, receipt, and branch wording instead of
+  setup/current/proof/scope wording.
 
 ### Product plan Part A and Part B
 

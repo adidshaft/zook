@@ -75,7 +75,7 @@ export function AttendancePanel({
               className="mt-5"
               items={[
                 {
-                  label: "Branch scope",
+                  label: "Branch",
                   value: selectedBranchName,
                   meta: branchScope.selectedBranch
                     ? "QR and member attendance use this branch"

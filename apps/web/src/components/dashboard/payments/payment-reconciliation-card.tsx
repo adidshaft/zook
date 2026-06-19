@@ -24,7 +24,7 @@ export function PaymentReconciliationCard({
       <SectionHeader
         eyebrow="Reconciliation"
         title="Payment reconciliation"
-        description="A focused check for what is settled, what still needs proof, and what should be chased before closing the day."
+        description="Review settled payments, missing receipts, and follow-ups before closing the day."
         badge={
           <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "neutral"}>
             {failedPayments.length || pendingPayments.length ? "Review queue" : "Clean"}
@@ -44,7 +44,7 @@ export function PaymentReconciliationCard({
           {
             label: "Pending",
             value: formatCompactNumber(pendingPayments.length),
-            meta: "Await confirmation or proof",
+            meta: "Await confirmation or receipt",
           },
           {
             label: "Failed/rejected",
@@ -65,8 +65,8 @@ export function PaymentReconciliationCard({
             copy: `${formatInr(summary.cashCollectedPaise)} desk-collected amount should match cash/UPI/card slips.`,
           },
           {
-            title: "Attach proof",
-            copy: "Offline payments should include a reference or uploaded proof before owner review.",
+            title: "Add receipt details",
+            copy: "Offline payments should include a reference or uploaded receipt before owner review.",
           },
           {
             title: "Refund watch",

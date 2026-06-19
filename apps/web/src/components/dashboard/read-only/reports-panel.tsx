@@ -422,7 +422,7 @@ export function ReportsPanel({
                       columns={2}
                       items={[
                         {
-                          label: "Branch scope",
+                          label: "Branch",
                           value: selectedBranchName,
                           meta: "Filterable by branch",
                         },
