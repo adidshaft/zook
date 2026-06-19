@@ -341,6 +341,12 @@ fully complete until the human/device/provider gates below have external evidenc
   create form and dynamic offer count.
 - Product creation and staff invite forms no longer show static Create/Invite pills beside
   headings that already name the form action.
+- Platform support and incident sections no longer show static Console/Use-during-support
+  pills beside headings that already identify those workflows.
+- Mobile platform SaaS sections no longer show cached/count chips beside section headings when
+  the list and loading state already provide the context.
+- Notification template and sent-message empty states now use direct no-content wording instead
+  of "show here" placeholders.
 
 ### Product plan Part A and Part B
 

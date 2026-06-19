@@ -112,11 +112,7 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>SaaS health</Text>
-              {subscriptionsQuery.isFetching ? (
-                <StatusChip status="Refreshing" tone="amber" />
-              ) : (
-                <StatusChip status="Cached" tone="neutral" />
-              )}
+              {subscriptionsQuery.isFetching ? <StatusChip status="Refreshing" tone="amber" /> : null}
             </View>
             {summary ? (
               <View style={styles.summaryGrid}>
@@ -150,7 +146,6 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
-              <StatusChip status={`${rows.length} shown`} tone="neutral" />
             </View>
             {rows.map((row) => {
               const status = row.subscriptionStatus ?? row.orgStatus;

@@ -792,7 +792,7 @@ export function PlatformOperationsPanel({
             eyebrow="Support"
             title="Platform support console"
             description="Review recent users and payments. Search narrows the list, and Details opens the full account record."
-            badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : <Pill>Console</Pill>}
+            badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : undefined}
           />
           <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
             {showUsers ? (
@@ -1547,7 +1547,6 @@ export function PlatformOperationsPanel({
             eyebrow="Incident mode"
             title="Production incident checklist"
             description="First-response steps for service outages, payment trouble, safety escalations, and gym-impacting issues."
-            badge={<Pill>Use during support</Pill>}
           />
           <div className="mt-5 grid gap-3">
             {incidentChecklist.map((item, index) => (

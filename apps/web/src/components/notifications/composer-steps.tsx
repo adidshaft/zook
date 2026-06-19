@@ -414,7 +414,7 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
         ))
       ) : (
         <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-          Sent messages show here.
+          No sent messages.
         </p>
       )}
     </div>
