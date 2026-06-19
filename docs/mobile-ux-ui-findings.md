@@ -1417,3 +1417,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: the web checkout panel now describes the loaded payment action as
   available instead of ready, while the button keeps the explicit pay/authorize
   action.
+- **[ui, fixed]** Overstated mobile inbox latest metadata (`R342`) is closed:
+  notification inbox header copy now uses recent wording instead of latest for
+  static timestamp metadata.

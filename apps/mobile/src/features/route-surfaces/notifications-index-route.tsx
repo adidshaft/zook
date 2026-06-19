@@ -371,9 +371,9 @@ export default function NotificationsScreen() {
                 title="Inbox"
                 subtitle={
                   unreadCount > 0
-                    ? `${unreadCount} unread${latestLabel ? ` · latest ${latestLabel}` : ""}`
+                    ? `${unreadCount} unread${latestLabel ? ` · recent ${latestLabel}` : ""}`
                     : latestLabel
-                      ? `All caught up · latest ${latestLabel}`
+                      ? `All caught up · recent ${latestLabel}`
                       : "All caught up"
                 }
                 leading={
