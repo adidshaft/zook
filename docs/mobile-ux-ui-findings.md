@@ -1343,3 +1343,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   membership catalog/edit panels, CSV import summaries, loaded-row helper text,
   and branch Open hour toggles now use neutral or informational styling instead
   of lime success emphasis.
+- **[ui, fixed]** Overstated platform support live badge (`R322`) is closed:
+  the default support-console badge now uses neutral Console copy instead of a
+  live-state label, while action notices keep their explicit informational or
+  danger tone.
