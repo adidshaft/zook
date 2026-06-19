@@ -229,7 +229,6 @@ export function AttendanceQrPanel({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="blue">Check-in QR</Pill>
                 {branchName ? <Pill>{branchName}</Pill> : null}
                 {expiresAt ? <Pill>Expires {formatTime(expiresAt)}</Pill> : null}
               </div>

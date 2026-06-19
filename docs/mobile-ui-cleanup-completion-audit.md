@@ -370,6 +370,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Dashboard payment and assistant-draft empty states no longer repeat "No ..." descriptions, and
   coaching-plan empty copy uses gym wording instead of org wording.
 - Public gym/member-app sections no longer show static pills that repeat the adjacent heading.
+- Attendance QR display no longer shows a static Check-in QR pill beside the QR itself; branch
+  and expiry pills remain.
 
 ### Product plan Part A and Part B
 
