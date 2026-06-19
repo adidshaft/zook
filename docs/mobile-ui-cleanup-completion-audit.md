@@ -428,6 +428,8 @@ fully complete until the human/device/provider gates below have external evidenc
   opt-in label.
 - Dashboard staff assignments table uses a direct empty state instead of explaining that no
   staff records exist beyond members.
+- Dashboard coaching library uses a shorter empty state instead of repeating workout/advisory
+  plan categories from the section title.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
