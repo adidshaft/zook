@@ -1223,3 +1223,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated default-branch cues (`R284`) are closed: dashboard
   branch list and gym profile setup badges now use informational tone for
   Default/Main branch routing configuration instead of success color.
+- **[ui, fixed]** Overstated member marketing preference cues (`R285`) are
+  closed: member-list Marketing on/off profile badges now use neutral tone instead
+  of framing opt-in as success or opt-out as warning.

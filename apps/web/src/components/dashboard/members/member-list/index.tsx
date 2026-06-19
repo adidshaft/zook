@@ -103,7 +103,7 @@ export function MemberList({
             />
             <StatusPill
               value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}
-              tone={row.profile.marketingOptIn ? "lime" : "amber"}
+              tone="neutral"
             />
           </div>
         ),
