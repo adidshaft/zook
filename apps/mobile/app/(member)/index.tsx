@@ -71,7 +71,7 @@ function ActiveCheckInCard({
   return (
     <Card contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
-        <IconBubble icon="time-outline" tone="lime" size={42} />
+        <IconBubble icon="time-outline" tone="blue" size={42} />
         <View style={styles.activeSessionCopy}>
           <Text style={[styles.activeSessionLabel, { color: palette.text.secondary }]}>
             Active check-in

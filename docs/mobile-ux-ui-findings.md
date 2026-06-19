@@ -1280,3 +1280,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile gym profile context cues (`R303`) are
   closed: Referral applied and Current membership rows now use informational tone
   instead of success color, while approved join requests keep success treatment.
+- **[ui, fixed]** Overstated active check-in cue (`R304`) is closed:
+  the member home Active check-in timer icon now uses informational tone instead
+  of success color, while approved or completed attendance states keep their cues.
