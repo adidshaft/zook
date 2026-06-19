@@ -184,6 +184,8 @@ fully complete until the human/device/provider gates below have external evidenc
   records are loaded by default.
 - Platform incident checklist step now uses service-dashboard wording instead of provider-dashboard
   wording.
+- Platform incident checklist clear-state now uses service-check wording instead of provider-check
+  wording.
 
 ### Product plan Part A and Part B
 
