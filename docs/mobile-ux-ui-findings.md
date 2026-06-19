@@ -1084,3 +1084,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform readiness clear-state cues (`R238`) are closed:
   provider and safety readiness cards now use neutral styling when no blockers are
   loaded, keeping amber reserved for setup gaps and unresolved reports.
+- **[ui, fixed]** Decorative public hero action-card cues (`R239`) are closed:
+  the Sell memberships and Publish join page cards now use neutral icon and hover
+  styling instead of warning/success colors for static product actions.

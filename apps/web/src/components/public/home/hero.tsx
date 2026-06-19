@@ -76,10 +76,10 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
             </div>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {[{ icon: Store, copy: t("sellMemberships"), tone: "amber" }, { icon: QrCode, copy: t("publishJoin"), tone: "lime" }].map(({ icon: Icon, copy, tone }) => (
-              <MotionSurface key={copy} className={`group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--bg-sunken)] ${tone === "amber" ? "hover:border-[color-mix(in_srgb,var(--feedback-warning)_50%,transparent)]" : "hover:border-[var(--border-focus)]"}`}>
+            {[{ icon: Store, copy: t("sellMemberships") }, { icon: QrCode, copy: t("publishJoin") }].map(({ icon: Icon, copy }) => (
+              <MotionSurface key={copy} className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--border-focus)] hover:bg-[var(--bg-sunken)]">
                 <div className="flex items-center justify-between">
-                  <Icon size={18} className={tone === "amber" ? "text-[var(--feedback-warning)]" : "text-[var(--accent-strong)]"} />
+                  <Icon size={18} className="text-[var(--text-secondary)]" />
                   <ArrowUpRight size={14} className="text-[var(--text-tertiary)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </div>
                 <p className="mt-6 text-[13px] leading-5 text-[var(--text-secondary)]">{copy}</p>
