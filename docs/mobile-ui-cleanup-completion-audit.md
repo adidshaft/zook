@@ -425,6 +425,8 @@ fully complete until the human/device/provider gates below have external evidenc
   rows, cards, and operational dashboards.
 - Mobile shared empty states no longer inject a default information icon; screens keep icons only
   when they pass one intentionally.
+- Mobile money summary cards no longer add a fixed receipt icon; the amount and detail rows carry
+  the payment context without an extra decorative cue.
 
 ### Product plan Part A and Part B
 

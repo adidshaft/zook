@@ -81,7 +81,6 @@ export function MoneySummaryCard({
           <Text style={[styles.moneySummaryTitle, { color: palette.text.secondary }]}>{title}</Text>
           <Text style={[styles.moneySummaryAmount, { color: palette.text.primary }]}>{amount}</Text>
         </View>
-        <IconBubble icon="receipt-outline" tone="neutral" size={44} />
       </View>
       <View style={styles.moneySummaryRows}>
         {rows.map((row) => (
