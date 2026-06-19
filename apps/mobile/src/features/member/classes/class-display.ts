@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 
 import type { PillTone } from "@/components/primitives";
+import { gradients } from "@/lib/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -20,9 +21,23 @@ const CLASS_VISUALS: Record<string, ClassVisual> = {
   pilates: { icon: "body-outline", tone: "amber" },
 };
 
+const TONE_GRADIENT: Record<PillTone, readonly [string, string]> = {
+  red: gradients.classRed,
+  blue: gradients.classBlue,
+  violet: gradients.classViolet,
+  amber: gradients.classAmber,
+  lime: gradients.heroCardAccent,
+  neutral: gradients.cardSheen,
+};
+
 export function classTypeVisual(classType?: string | null): ClassVisual {
   const key = (classType ?? "").trim().toLowerCase();
   return CLASS_VISUALS[key] ?? { icon: "fitness-outline", tone: "blue" };
+}
+
+/** Soft top-tinted gradient matching the class-type accent, for card surfaces. */
+export function classTypeGradient(classType?: string | null): readonly [string, string] {
+  return TONE_GRADIENT[classTypeVisual(classType).tone];
 }
 
 function startOfDay(date: Date) {

@@ -10,11 +10,18 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
   Inter_400Regular,
+  Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
   Inter_800ExtraBold,
   Inter_900Black,
 } from "@expo-google-fonts/inter";
+import {
+  Sora_500Medium,
+  Sora_600SemiBold,
+  Sora_700Bold,
+  Sora_800ExtraBold,
+} from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, isQaResetInFlight, setAuthQueryClient, useAuth } from "@/lib/auth";
@@ -547,10 +554,15 @@ export default function Layout() {
   );
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
+    Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_800ExtraBold,
     Inter_900Black,
+    Sora_500Medium,
+    Sora_600SemiBold,
+    Sora_700Bold,
+    Sora_800ExtraBold,
   });
   const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
   const appShellReady = fontsLoaded || fontLoadTimedOut;

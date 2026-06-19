@@ -124,7 +124,8 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
 
   return (
     <Card
-      semanticSurface={needsAction ? "warningCard" : "taskCard"}
+      semanticSurface={needsAction ? "warningCard" : undefined}
+      variant="compact"
       contentStyle={styles.membershipCard}
       pressable={!needsAction}
       onPress={!needsAction ? () => router.push("/membership" as never) : undefined}
@@ -133,8 +134,8 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
       <View style={styles.membershipTop}>
         <IconBubble
           icon={!hasMembership ? "card-outline" : isExpired ? "warning-outline" : "shield-checkmark-outline"}
-          tone={needsAction ? "amber" : "blue"}
-          size={44}
+          tone={needsAction ? "amber" : "lime"}
+          size={40}
         />
         <View style={styles.membershipCopy}>
           <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>

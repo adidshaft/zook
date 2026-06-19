@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 import {
@@ -17,8 +18,12 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { useEnrollInClass, useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { formatTime } from "@/lib/formatting";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
-import { classDayHeading, classTypeVisual } from "@/features/member/classes/class-display";
+import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import {
+  classDayHeading,
+  classTypeGradient,
+  classTypeVisual,
+} from "@/features/member/classes/class-display";
 
 function bookingLabel(entry: MemberClassRecord) {
   if (entry.myEnrollmentStatus === "confirmed") return "Booked";
@@ -70,34 +75,47 @@ function ClassCard({
     .join(" · ");
 
   return (
-    <Card variant="compact" contentStyle={styles.classCard}>
-      <View style={styles.classHeader}>
-        <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
-        <View style={styles.classTitleBlock}>
-          <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
-          <Text style={[styles.classTime, { color: palette.text.secondary }]}>
-            {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
-          </Text>
+    <View
+      style={[
+        styles.classCard,
+        { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
+      ]}
+    >
+      <LinearGradient
+        colors={classTypeGradient(entry.classType)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View style={styles.classContent}>
+        <View style={styles.classHeader}>
+          <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
+          <View style={styles.classTitleBlock}>
+            <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
+            <Text style={[styles.classTime, { color: palette.text.secondary }]}>
+              {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+            </Text>
+          </View>
+          <Pill tone={pill.tone}>{pill.label}</Pill>
         </View>
-        <Pill tone={pill.tone}>{pill.label}</Pill>
+        {meta ? (
+          <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
+        ) : null}
+        {entry.description ? (
+          <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
+            {entry.description}
+          </Text>
+        ) : null}
+        <ZookButton
+          onPress={onBook}
+          disabled={busy || booked || waitlisted}
+          variant={booked || waitlisted ? "secondary" : "primary"}
+          icon={booked ? "checkmark-circle-outline" : undefined}
+        >
+          {busy ? "Saving..." : bookingLabel(entry)}
+        </ZookButton>
       </View>
-      {meta ? (
-        <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
-      ) : null}
-      {entry.description ? (
-        <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
-          {entry.description}
-        </Text>
-      ) : null}
-      <ZookButton
-        onPress={onBook}
-        disabled={busy || booked || waitlisted}
-        variant={booked || waitlisted ? "secondary" : "primary"}
-        icon={booked ? "checkmark-circle-outline" : undefined}
-      >
-        {busy ? "Saving..." : bookingLabel(entry)}
-      </ZookButton>
-    </Card>
+    </View>
   );
 }
 
@@ -221,7 +239,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   classCard: {
+    borderRadius: radii.card,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  classContent: {
     gap: spacing.sm,
+    padding: spacing.lg,
   },
   classHeader: {
     alignItems: "center",

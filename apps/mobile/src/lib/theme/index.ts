@@ -5,6 +5,8 @@ export { darkPalette } from "./palettes/dark";
 export { lightPalette } from "./palettes/light";
 export {
   elevation,
+  glow,
+  gradients,
   layout,
   materials,
   opacity,

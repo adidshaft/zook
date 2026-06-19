@@ -2,6 +2,7 @@ import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -13,7 +14,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii, typography } from "@/lib/theme";
+import { glow, gradients, radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { Palette } from "@/lib/theme/index";
 
@@ -159,10 +160,16 @@ export function ZookButton({
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
+  const isPrimary = variant === "primary" && !isDisabled;
   const resolvedBgColor = isDisabled ? palette.bg.sunken : buttonPalette.backgroundColor;
-  const resolvedBorderColor = isDisabled ? palette.border.subtle : buttonPalette.borderColor;
+  const resolvedBorderColor = isPrimary
+    ? "transparent"
+    : isDisabled
+      ? palette.border.subtle
+      : buttonPalette.borderColor;
   const resolvedTextColor = isDisabled ? palette.text.secondary : buttonPalette.color;
   const contentLabel = busy && busyLabel ? busyLabel : children;
+  const radius = (buttonSizeStyle.borderRadius as number) ?? radii.button;
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
@@ -170,10 +177,23 @@ export function ZookButton({
       backgroundColor: resolvedBgColor,
       borderColor: resolvedBorderColor,
     },
+    isPrimary ? glow.accent : null,
     fullWidth ? styles.fullWidth : null,
     isDisabled ? styles.disabled : null,
     style,
   ]);
+
+  // Gradient fill for the primary CTA, clipped to the button radius and painted
+  // behind the label so the lime reads as a lit surface rather than a flat block.
+  const gradientLayer = isPrimary ? (
+    <LinearGradient
+      colors={gradients.accentButton}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[StyleSheet.absoluteFillObject, { borderRadius: radius }]}
+      pointerEvents="none"
+    />
+  ) : null;
 
   const label = (
     <Text
@@ -188,6 +208,13 @@ export function ZookButton({
   ) : icon ? (
     <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={resolvedTextColor} />
   ) : null;
+  const inner = (
+    <>
+      {gradientLayer}
+      {leading}
+      {label}
+    </>
+  );
 
   if (href && !isDisabled) {
     return (
@@ -207,8 +234,7 @@ export function ZookButton({
           accessibilityState={{ disabled: isDisabled, busy }}
           style={staticButtonStyle}
         >
-          {leading}
-          {label}
+          {inner}
         </Pressable>
       </Link>
     );
@@ -234,14 +260,14 @@ export function ZookButton({
           backgroundColor: resolvedBgColor,
           borderColor: resolvedBorderColor,
         },
+        isPrimary ? glow.accent : null,
         pressed && !isDisabled ? styles.pressed : null,
         fullWidth ? styles.fullWidth : null,
         isDisabled ? styles.disabled : null,
         style,
       ]}
     >
-      {leading}
-      {label}
+      {inner}
     </Pressable>
   );
 }

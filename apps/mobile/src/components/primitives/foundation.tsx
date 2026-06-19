@@ -1,5 +1,6 @@
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import {
   Platform,
@@ -11,7 +12,7 @@ import {
 } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { elevation, materials, radii, spacing, useTheme } from "@/lib/theme";
+import { elevation, gradients, materials, radii, spacing, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
 import {
   pressWithHaptics,
@@ -143,7 +144,7 @@ export function ZookScreen({
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
-  const { palette } = useTheme();
+  const { mode, palette } = useTheme();
   return (
     <View
       testID={testID}
@@ -157,6 +158,15 @@ export function ZookScreen({
         style,
       ]}
     >
+      {mode === "dark" ? (
+        <LinearGradient
+          colors={gradients.accentGlow}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.ambientGlow}
+          pointerEvents="none"
+        />
+      ) : null}
       {children}
     </View>
   );
@@ -330,6 +340,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: fallbackColors.bg,
+  },
+  ambientGlow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 360,
   },
   brandMark: {
     alignItems: "center",

@@ -1,12 +1,17 @@
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { Card, IconBubble, Pill, SectionHeader } from "@/components/primitives";
+import { IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { Ionicons } from "@expo/vector-icons";
 import { useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
-import { spacing, typography, useTheme } from "@/lib/theme";
-import { classDayTime, classTypeVisual } from "@/features/member/classes/class-display";
+import { radii, spacing, typography, useTheme } from "@/lib/theme";
+import {
+  classDayTime,
+  classTypeGradient,
+  classTypeVisual,
+} from "@/features/member/classes/class-display";
 
 function spotPill(entry: MemberClassRecord) {
   if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
@@ -28,9 +33,19 @@ function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () =
       accessibilityRole="button"
       accessibilityLabel={`${entry.name}, ${classDayTime(entry.startTime)}`}
       onPress={onPress}
-      style={({ pressed }) => [pressed ? styles.cardPressed : null]}
+      style={({ pressed }) => [
+        styles.card,
+        { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
+        pressed ? styles.cardPressed : null,
+      ]}
     >
-      <Card variant="compact" contentStyle={styles.card}>
+      <LinearGradient
+        colors={classTypeGradient(entry.classType)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.7, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <IconBubble icon={visual.icon} tone={visual.tone} size={38} />
           <Pill tone={pill.tone}>{pill.label}</Pill>
@@ -46,7 +61,7 @@ function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () =
             Coach {entry.trainerName}
           </Text>
         ) : null}
-      </Card>
+      </View>
     </Pressable>
   );
 }
@@ -102,11 +117,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   card: {
+    width: 172,
+    borderRadius: radii.smallCard,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  cardContent: {
     gap: 6,
-    width: 168,
+    padding: 14,
   },
   cardPressed: {
-    opacity: 0.88,
+    opacity: 0.9,
     transform: [{ scale: 0.985 }],
   },
   cardTop: {
