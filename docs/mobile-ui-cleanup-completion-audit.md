@@ -382,6 +382,8 @@ fully complete until the human/device/provider gates below have external evidenc
   badge, search field, and account rows.
 - Platform support console no longer repeats user/payment search helper copy above child sections
   that already expose search fields, visible counts, and details actions.
+- Platform payment records no longer repeat checkout/desk review helper copy above the visible
+  count, payment search field, and payment table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

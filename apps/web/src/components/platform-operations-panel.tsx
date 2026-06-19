@@ -974,7 +974,6 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment records"
-                description="Review checkout and desk payment records."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length
