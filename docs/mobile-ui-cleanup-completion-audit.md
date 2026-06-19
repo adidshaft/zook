@@ -161,6 +161,8 @@ fully complete until the human/device/provider gates below have external evidenc
   Google Maps sync/connectivity state.
 - Dashboard overview data badge now uses current/updating wording instead of fast/server-truth
   implementation cues, with matching helper naming.
+- Mobile member plan detail header now keeps the trainer-source label without the extra synced
+  cue.
 
 ### Product plan Part A and Part B
 

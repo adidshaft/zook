@@ -117,7 +117,7 @@ export default function Plans() {
         >
           <AppHeader
             title="Your plan"
-            subtitle="From your trainer · synced"
+            subtitle="From your trainer"
             showProfileShortcut={false}
             leading={
               <Pressable
