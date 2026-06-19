@@ -118,7 +118,7 @@ export function DashboardOverview({
       subtitle: products.length
         ? products.slice(0, 2).map((product) => product.name).join(", ")
         : "Pickup inventory is healthy",
-      tone: "amber",
+      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
       href: "/dashboard/shop",
     },
     {

@@ -1132,3 +1132,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated mobile workout-ready card cue (`R254`) is closed:
   the Today workout card now uses the informational mobile tone instead of success
   color, keeping lime for active sessions and logged workout outcomes.
+- **[ui, fixed]** Misleading dashboard low-stock attention cue (`R255`) is closed:
+  the overview inventory attention row now uses warning tone only when products are
+  actually low, and uses informational tone for the healthy inventory state.
