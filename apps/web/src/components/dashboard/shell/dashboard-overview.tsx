@@ -125,7 +125,7 @@ export function DashboardOverview({
       icon: CalendarClock,
       title: `${summary.expiringMemberships} memberships expiring soon`,
       subtitle: "Renewal window: next 7 days",
-      tone: "lime",
+      tone: summary.expiringMemberships > 0 ? "amber" : "sky",
       href: "/dashboard/members",
     },
     {

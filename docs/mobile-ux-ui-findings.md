@@ -1096,3 +1096,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated reception member selection cues (`R242`) are closed:
   Picked and Selected member-list badges now use neutral styling instead of lime,
   keeping success color for completed verification and pickup outcomes.
+- **[ui, fixed]** Misleading dashboard expiring-members attention cue (`R243`) is closed:
+  the overview attention row no longer shows a success-colored cue for zero expiring
+  memberships, and uses warning tone only when renewals are actually due soon.
