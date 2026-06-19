@@ -93,7 +93,6 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SegmentRow
           icon={<ClipboardList size={14} className="text-[var(--accent-strong)]" />}
           label="Default landing tab"
-          description="Where coaching opens first"
           value={prefs.defaultLanding}
           onChange={(value) => update("defaultLanding", value)}
           options={[
@@ -165,7 +164,7 @@ function SegmentRow<T extends string>({
 }: {
   icon: React.ReactNode;
   label: string;
-  description: string;
+  description?: string;
   value: T;
   options: ReadonlyArray<{ value: T; label: string }>;
   onChange: (next: T) => void;
@@ -176,7 +175,7 @@ function SegmentRow<T extends string>({
         {icon}
         <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
       </div>
-      <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p>
+      {description ? <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p> : null}
       <div className="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] p-1 text-[11px]">
         {options.map((opt) => (
           <button

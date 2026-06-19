@@ -412,6 +412,8 @@ fully complete until the human/device/provider gates below have external evidenc
   referral state, and available-gym results.
 - Trainer customization revenue toggle no longer repeats the Show revenue snippet label through
   a duplicate payout-at-a-glance description.
+- Trainer customization landing-tab control no longer repeats where-coaching-opens copy above
+  the Today, Clients, and Plans segmented options.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
 - Mobile QA shortcuts header no longer repeats launcher guidance above the Public and Roles
