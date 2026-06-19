@@ -1114,3 +1114,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative member roster hero cue (`R248`) is closed:
   the member roster hero now uses the informational dashboard tone instead of
   success color, keeping success/attention emphasis on the actual roster metrics.
+- **[ui, fixed]** Decorative coach overview cues (`R249`) are closed:
+  the trainer web hero and Assigned clients KPI now use the informational dashboard
+  tone instead of success color, keeping lime for actual outcomes and saved actions.

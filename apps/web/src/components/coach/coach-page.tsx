@@ -50,7 +50,7 @@ export function CoachPage({
         title="Trainer command"
         description="Your assigned clients, week schedule, and progress notes live in the Zook app. The web view gives you a quick read on what's active right now."
         icon={Dumbbell}
-        tone="lime"
+        tone="sky"
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
@@ -66,7 +66,7 @@ export function CoachPage({
           label="Assigned clients"
           value={stats.assignedClients}
           icon={Users}
-          tone="lime"
+          tone="sky"
           caption="Active on your roster"
         />
         <KPITile
