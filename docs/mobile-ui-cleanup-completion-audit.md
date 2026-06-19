@@ -339,6 +339,8 @@ fully complete until the human/device/provider gates below have external evidenc
   create-plan description next to the New diet plan action.
 - Membership catalog creation no longer shows a static Catalog pill beside an already-labeled
   create form and dynamic offer count.
+- Product creation and staff invite forms no longer show static Create/Invite pills beside
+  headings that already name the form action.
 
 ### Product plan Part A and Part B
 

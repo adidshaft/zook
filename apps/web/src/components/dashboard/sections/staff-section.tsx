@@ -125,7 +125,6 @@ export function StaffSection({
                 admins and trainers can work across assigned gym areas.
               </p>
             </div>
-            <Pill>Invite</Pill>
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
             <input
