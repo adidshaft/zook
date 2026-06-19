@@ -34,11 +34,11 @@ export default async function MemberDietPage({
           <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
             {plan?.title ?? "No active diet plan"}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-white/58">
-            {plan
-              ? `${plan.calorieTarget ?? "-"} kcal target with ${plan.proteinG ?? "-"}g protein.`
-              : "No published diet plan from your trainer yet."}
-          </p>
+          {plan ? (
+            <p className="mt-3 text-sm leading-6 text-white/58">
+              {plan.calorieTarget ?? "-"} kcal target with {plan.proteinG ?? "-"}g protein.
+            </p>
+          ) : null}
         </GlassCard>
         {meals.map((meal) => (
           <GlassCard key={meal.id} className="p-5">
