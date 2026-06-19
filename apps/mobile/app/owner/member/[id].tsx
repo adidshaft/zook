@@ -162,7 +162,6 @@ export default function OwnerMemberDetail() {
         >
           <AppHeader
             title={name}
-            subtitle="Owner member profile"
             leading={
               <BackButton
                 onPress={() =>

@@ -100,10 +100,7 @@ export function ReceptionDeskScreenBody() {
             />
 
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Verify Entry Code"
-                subtitle="Enter ZK code for attendance or pickup lookup without leaving the desk."
-              />
+              <SectionHeader title="Verify Entry Code" />
               <FormField
                 testID="reception-verify-code"
                 label="Code"
@@ -127,7 +124,6 @@ export function ReceptionDeskScreenBody() {
 
             <SectionHeader
               title="Recent activity"
-              subtitle="Recent check-ins for this gym."
               action={<Pill tone="neutral">{todayCount} today</Pill>}
             />
             <View style={styles.liveFeed}>

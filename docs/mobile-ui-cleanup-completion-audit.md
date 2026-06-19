@@ -321,6 +321,8 @@ fully complete until the human/device/provider gates below have external evidenc
   payment helper copy now states the payment modes directly without "use this" instruction text.
 - Reception workspace subtitles no longer repeat the Reception role on every route, and owner
   More removes subtitles that duplicate its account/workspace controls.
+- Reception desk/payment sections and owner billing/member headers no longer repeat form,
+  activity, billing, or profile context already shown by their controls and rows.
 
 ### Product plan Part A and Part B
 

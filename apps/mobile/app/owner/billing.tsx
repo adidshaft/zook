@@ -155,7 +155,6 @@ export default function OwnerBillingScreen() {
         >
           <ScreenHeader
             title="Billing"
-            subtitle="Trial, subscription, and payment mandate status."
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />

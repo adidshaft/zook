@@ -87,10 +87,7 @@ export function ReceptionPaymentsScreenBody() {
             />
             {!memberRecord ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
-                <SectionHeader
-                  title="Find a member"
-                  subtitle="Search to attach this payment to a member."
-                />
+                <SectionHeader title="Find a member" />
                 <SearchField
                   testID="reception-payment-member-search"
                   value={paymentMemberSearch}
