@@ -1163,3 +1163,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dead mobile plan-mix tone metadata (`R264`) is closed:
   the owner dashboard plan-mix type and demo data no longer carry unused success or
   warning category tones because the mobile chart renders plan bars with one accent.
+- **[ui, fixed]** Overstated owner stock pickup metric cue (`R265`) is closed:
+  the Stock screen Pickups metric now uses informational tone instead of success
+  color because paid or ready orders are an operational queue, not a completed pickup.
