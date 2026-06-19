@@ -387,6 +387,8 @@ fully complete until the human/device/provider gates below have external evidenc
   revenue copy now use direct state wording instead of appear/showing/current cues.
 - Mobile loading/tracking labels, membership document callouts, and platform gym summary cards
   now avoid current/currently/appear helper cues while keeping the same state meaning.
+- Dashboard overview, notification audience, attendance QR, platform service checks, and mobile
+  SaaS health labels now avoid current/self-approved/refreshing cue wording in visible helper text.
 
 ### Product plan Part A and Part B
 

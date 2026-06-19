@@ -254,7 +254,7 @@ export function DashboardOverview({
               Today
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Current data") : "Local data"}
+              {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Server data") : "Local data"}
             </span>
           </div>
         }
@@ -526,7 +526,7 @@ export function DashboardOverview({
                 [
                   ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
                   ["Recent logs", `${aiUsage.length}`],
-                  ["Data", data.connected ? "Current" : "Local"],
+                  ["Data", data.connected ? "Server" : "Local"],
                 ] as const
               ).map(([label, value]) => (
                 <div

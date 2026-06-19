@@ -112,7 +112,7 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>SaaS health</Text>
-              {subscriptionsQuery.isFetching ? <StatusChip status="Refreshing" tone="amber" /> : null}
+              {subscriptionsQuery.isFetching ? <StatusChip status="Updating" tone="amber" /> : null}
             </View>
             {summary ? (
               <View style={styles.summaryGrid}>

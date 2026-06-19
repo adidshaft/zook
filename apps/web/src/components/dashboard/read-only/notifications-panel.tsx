@@ -96,7 +96,7 @@ export function NotificationsPanel({
               {
                 label: "Audience",
                 value: summary.activeMembers > 0 ? "Member targeting" : "No active audience yet",
-                meta: "Current member list",
+                meta: "Member list",
               },
               {
                 label: "Escalation load",
