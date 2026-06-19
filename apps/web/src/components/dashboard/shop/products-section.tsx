@@ -44,7 +44,6 @@ export function ShopProductsSection({
         <SectionHeader
           eyebrow="Inventory"
           title="Low-stock watch"
-          description="Inventory is sorted by stock so the team can spot refill needs."
           badge={
             <Pill tone={summary.lowStockProducts > 0 ? "amber" : "neutral"}>
               {summary.lowStockProducts} low

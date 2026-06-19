@@ -332,6 +332,8 @@ fully complete until the human/device/provider gates below have external evidenc
   description above a plan-count badge and table columns that already expose those fields.
 - Dashboard class scheduling no longer repeats a create-next-class helper sentence above
   branch, class type, capacity, time, trainer, notes, and submit controls.
+- Dashboard low-stock watch no longer repeats inventory-sorted helper copy above the low-stock
+  count, product form, and product list.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
