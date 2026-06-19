@@ -1268,3 +1268,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member today-plan cue (`R299`) is closed:
   the assigned Today workout icon now uses informational tone instead of success
   color, while completed workout states keep success treatment.
+- **[ui, fixed]** Overstated impersonation active-session cue (`R300`) is
+  closed: platform impersonation Active sessions now use informational tone
+  instead of success color, while expired sessions remain warning cues.

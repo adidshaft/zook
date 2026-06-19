@@ -1352,7 +1352,7 @@ export function PlatformOperationsPanel({
                   render: (session) => (
                     <StatusPill
                       value={session.endedAt ? "Ended" : new Date(session.expiresAt).getTime() < Date.now() ? "Expired" : "Active"}
-                      tone={session.endedAt ? "blue" : new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "lime"}
+                      tone={!session.endedAt && new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "blue"}
                     />
                   ),
                 },
