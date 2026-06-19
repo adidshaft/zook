@@ -279,6 +279,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already-visible summary or helper copy.
 - Trainer home metric cards no longer render decorative hint labels under already-clear
   client, active-plan, and needs-plan counts.
+- The trainer Plan builder row no longer repeats manual/template guidance through a subtitle
+  and status chip when the row title already describes the action.
 
 ### Product plan Part A and Part B
 

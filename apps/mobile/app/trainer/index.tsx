@@ -229,9 +229,7 @@ export default function TrainerHomeScreen() {
             >
               <ListRow
                 title="Create plans manually"
-                subtitle="Use saved templates and publish only when the plan is ready."
                 leading={<IconBubble icon="reader-outline" tone="neutral" />}
-                trailing={<StatusChip status="Manual" tone="neutral" />}
               />
             </Card>
           </AnimatedAppear>
