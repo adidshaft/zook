@@ -1208,3 +1208,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated class branch selection cue (`R279`) is closed:
   the class scheduler branch context pill now uses informational tone for a selected
   branch instead of success color, while missing branch context remains warning.
+- **[ui, fixed]** Overstated gym profile visibility cue (`R280`) is closed:
+  the gym profile setup visibility badge now uses informational tone for Public
+  visibility instead of success color, while restricted visibility remains warning.

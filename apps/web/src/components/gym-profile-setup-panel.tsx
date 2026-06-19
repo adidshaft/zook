@@ -248,7 +248,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             description="Owners set up the public gym profile here. Members can find the gym, open the profile link, or use the membership link when they are ready to buy a plan."
             badge={
               <div className="flex flex-wrap gap-2">
-                <Pill tone={form.visibility === "PUBLIC" ? "lime" : "amber"}>
+                <Pill tone={form.visibility === "PUBLIC" ? "blue" : "amber"}>
                   {formatEnumLabel(form.visibility)}
                 </Pill>
                 {hasUnsavedChanges ? <Pill tone="amber">Unsaved changes</Pill> : null}
