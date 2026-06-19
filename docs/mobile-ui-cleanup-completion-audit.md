@@ -362,6 +362,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already-clear Inventory is clear title.
 - Dashboard join request queue no longer repeats pre-payment review helper copy above the
   pending badge, request status pills, and approve/reject actions.
+- Dashboard role-capability guide no longer shows a share hint above role sections that already
+  explain the permissions directly.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
