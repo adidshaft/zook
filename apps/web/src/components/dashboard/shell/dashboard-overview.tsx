@@ -472,7 +472,7 @@ export function DashboardOverview({
               total={planMixTotal}
               size={140}
               thickness={14}
-              tone="lime"
+              tone="sky"
               centerLabel={
                 <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                   {planMixTotal}

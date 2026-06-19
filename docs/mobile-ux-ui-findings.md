@@ -1120,3 +1120,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative reports hero cue (`R250`) is closed:
   the Reports & insights hero now uses the informational dashboard tone instead of
   success color, keeping outcome tones for actual metrics and generated actions.
+- **[ui, fixed]** Decorative dashboard plan-mix ring cue (`R251`) is closed:
+  the plan-mix donut ring now uses the informational dashboard tone instead of
+  success color, while plan-category color remains in the legend rows.
