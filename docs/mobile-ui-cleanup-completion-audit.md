@@ -437,6 +437,8 @@ fully complete until the human/device/provider gates below have external evidenc
   icons for visits, active time, workouts, and habits.
 - Mobile membership guidance keeps the information icon only for warning/error guidance, removing
   the routine icon from active/neutral membership copy.
+- Mobile member payments empty state no longer repeats the no-payment state with a receipt icon
+  or unused empty-state body styling.
 
 ### Product plan Part A and Part B
 

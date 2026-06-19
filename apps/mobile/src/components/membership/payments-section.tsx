@@ -93,10 +93,7 @@ export function PaymentsSection({
         </View>
       ) : (
         <Card variant="compact" contentStyle={styles.emptyPaymentContent}>
-          <IconBubble icon="receipt-outline" tone="neutral" size={36} />
-          <View style={styles.emptyCopy}>
-            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments</Text>
-          </View>
+          <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments</Text>
         </Card>
       )}
       {invoices.length ? (
@@ -210,19 +207,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyPaymentContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  emptyCopy: {
-    flex: 1,
-    gap: 4,
+    alignItems: "flex-start",
   },
   emptyTitle: {
     ...typography.cardTitle,
-  },
-  emptyBody: {
-    ...typography.small,
   },
   paymentContent: {
     flexDirection: "row",
