@@ -340,6 +340,8 @@ fully complete until the human/device/provider gates below have external evidenc
   pending-request badges, and KPI tiles.
 - Dashboard payment history no longer repeats payment-category helper copy above the payment
   count badge, export action, and member/status/mode/amount table.
+- Dashboard revenue opportunities no longer repeats renewal, stock, and notification helper copy
+  above readouts that already label those opportunities directly.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

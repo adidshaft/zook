@@ -15,7 +15,6 @@ export function RevenueOpportunitiesCard({
       <SectionHeader
         eyebrow="Levers"
         title="Revenue opportunities"
-        description="Renewals, low stock, and scheduled messages that may need attention."
       />
       <ReadoutGrid
         className="mt-5"
