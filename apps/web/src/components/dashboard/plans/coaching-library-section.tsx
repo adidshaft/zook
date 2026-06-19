@@ -32,10 +32,7 @@ export function CoachingLibrarySection({
         {coachPlansState.error ? (
           <ErrorNotice message={coachPlansState.error} />
         ) : coachPlansState.loading && coachPlans.length === 0 ? (
-          <EmptyState
-            title="Loading coaching library"
-            description="Pulling draft and published plan content."
-          />
+          <EmptyState title="Loading coaching library" />
         ) : (
           <DataTable
             columns={[
