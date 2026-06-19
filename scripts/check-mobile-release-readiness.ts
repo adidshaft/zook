@@ -39,6 +39,14 @@ function pluginConfig(plugins: ExpoPlugin[] | undefined, pluginName: string) {
   return undefined;
 }
 
+function hostnameForUrl(value: string) {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
 async function checkUrl(label: string, url: string, required = true): Promise<CheckResult> {
   try {
     const response = await fetch(url, { method: "GET", redirect: "follow" });
@@ -162,6 +170,14 @@ async function main() {
     isAbsoluteHttpUrl(mobileApiBaseUrl) && (!isProduction || !isLocalhostUrl(mobileApiBaseUrl))
       ? pass("Mobile API URL", mobileApiBaseUrl)
       : fail("Mobile API URL", "Mobile API URL is missing, local, or invalid."),
+  );
+  results.push(
+    target !== "local" && hostnameForUrl(mobileApiBaseUrl) === "app.zookfit.in"
+      ? fail(
+          "Mobile API host",
+          "Preview and production APKs must use https://zookfit.in/api, not the retired app.zookfit.in API host.",
+        )
+      : pass("Mobile API host", "Mobile API host is valid for the selected release target."),
   );
   results.push(
     isAbsoluteHttpUrl(webUrl) && (!isProduction || !isLocalhostUrl(webUrl))

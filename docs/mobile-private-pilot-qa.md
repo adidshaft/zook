@@ -23,7 +23,7 @@ Last updated: 24 April 2026
   - `cd apps/mobile`
   - `npx eas-cli@latest build --profile preview -p ios`
   - `npx eas-cli@latest build --profile preview -p android`
-  - preview defaults to `https://app.zookfit.in/api`
+  - preview defaults to `https://zookfit.in/api`
   - only override to a staging host after its DNS and `/api/auth/request-otp` path are live
 - Production candidate:
   - `cd apps/mobile`

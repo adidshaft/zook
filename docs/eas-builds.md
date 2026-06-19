@@ -11,7 +11,7 @@ Last updated: 3 May 2026
 - `preview`
   - internal distribution build for staging pilot validation
   - defaults to `EXPO_PUBLIC_ENV_PROFILE=staging`
-  - defaults to the reachable pilot backend at `https://app.zookfit.in/api` and public web at `https://zookfit.in`
+  - defaults to the reachable pilot backend at `https://zookfit.in/api` and public web at `https://zookfit.in`
   - set `MOBILE_API_BASE_URL` and `EXPO_PUBLIC_WEB_URL` explicitly only when a separate staging host is live
 - `production`
   - production candidate build
