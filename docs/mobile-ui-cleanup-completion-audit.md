@@ -170,6 +170,8 @@ fully complete until the human/device/provider gates below have external evidenc
   connected/test cues.
 - Platform support and payment detail copy now uses system/payment wording instead of seeded-test
   and provider-test cues.
+- Platform provider diagnostics now use a neutral current-check fallback instead of a just-now
+  timestamp cue.
 
 ### Product plan Part A and Part B
 

@@ -1528,7 +1528,7 @@ export function PlatformOperationsPanel({
                   id: "last",
                   header: "Checked",
                   render: ([, provider]) =>
-                    provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Just now",
+                    provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Current check",
                 },
               ]}
               rows={providerEntries}
