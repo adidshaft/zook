@@ -295,6 +295,8 @@ fully complete until the human/device/provider gates below have external evidenc
   under already-clear labels and amounts.
 - Account settings no longer repeats contact-verification helper copy above labeled
   email/mobile OTP controls, while preserving per-field current-value and status hints.
+- Product photo upload no longer repeats the square/slightly-wide guidance already shown
+  in the surrounding product photos copy.
 
 ### Product plan Part A and Part B
 

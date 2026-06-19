@@ -68,7 +68,6 @@ export function ProductPhotosField({
           orgId={orgId}
           category="product_image"
           label="Add photo"
-          helper="Square or slightly wide"
           valueUrl={images[0] ?? ""}
           aspectClassName="h-20"
           onUploaded={(asset) =>
