@@ -426,7 +426,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.deviceLocation": "Use device location",
     "findGyms.recentSearches": "Recent searches",
     "empty.loading": "Loading",
-    "empty.loadingBody": "Pulling the latest details from your gym.",
+    "empty.loadingBody": "Loading current details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
     "tracking.bodyTimelineSubtitle": "{{count}} body composition entries",
     "tracking.photoLogged": "Photo logged",

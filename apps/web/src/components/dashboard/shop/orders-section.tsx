@@ -15,7 +15,7 @@ const copy = {
   title: "Pickup and fulfillment queue",
   description: "Orders needing payment, pickup verification, or review.",
   loadingTitle: "Loading shop orders",
-  loadingBody: "Pulling the latest order queue.",
+  loadingBody: "Loading current order queue.",
   empty: "No shop orders are currently recorded for this organization.",
 };
 

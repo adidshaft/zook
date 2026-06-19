@@ -1373,3 +1373,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: dashboard/platform loading shells and the owner overview hero now use
   neutral loading/current/recent wording instead of live/realtime/latest labels
   for static server snapshots.
+- **[ui, fixed]** Overstated roster, plan, order, and audit freshness cues
+  (`R330`) are closed: dashboard and mobile loading/summary copy now uses
+  current/recent/appear wording instead of live/latest phrasing for static
+  lists and document panels.
