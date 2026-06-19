@@ -104,8 +104,8 @@ export default function PlatformMobile() {
             <View style={styles.heroCopy}>
               <Text style={[styles.title, { color: palette.text.primary }]}>SaaS subscriptions are visible on mobile.</Text>
               <Text style={[styles.body, { color: palette.text.secondary }]}>
-                Use this screen for quick billing health checks. Pricing edits, trial extensions,
-                credits, notes, and policy changes still open in the web console for full review.
+                Pricing edits, trial extensions, credits, notes, and policy changes still open in
+                the web console for full review.
               </Text>
             </View>
           </Card>

@@ -303,6 +303,8 @@ fully complete until the human/device/provider gates below have external evidenc
   "No member feedback yet" and a separate Waiting chip.
 - Gym profile gallery no longer repeats the 15-photo upload limit in a separate helper
   paragraph when the upload control already shows the count.
+- Platform mobile billing copy no longer leads with instructional quick-check phrasing,
+  while preserving the web-console boundary for pricing and policy changes.
 
 ### Product plan Part A and Part B
 
