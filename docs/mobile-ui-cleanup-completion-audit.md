@@ -159,6 +159,8 @@ fully complete until the human/device/provider gates below have external evidenc
   syncing-state cue.
 - Gym profile setup gallery guidance now gives the direct upload instruction instead of exposing
   Google Maps sync/connectivity state.
+- Dashboard overview data badge now uses current/updating wording instead of fast/server-truth
+  implementation cues, with matching helper naming.
 
 ### Product plan Part A and Part B
 

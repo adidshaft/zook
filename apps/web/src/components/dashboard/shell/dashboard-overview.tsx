@@ -93,7 +93,7 @@ export function DashboardOverview({
   const products = hydratedData?.products ?? data.products;
   const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
   const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
-  const isHydratingDetails = data.connected && dashboardQuery.isFetching;
+  const isRefreshingDashboard = data.connected && dashboardQuery.isFetching;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
 
@@ -255,7 +255,7 @@ export function DashboardOverview({
               Current
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Local data"}
+              {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Current data") : "Local data"}
             </span>
           </div>
         }
