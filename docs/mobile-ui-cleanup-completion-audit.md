@@ -442,6 +442,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording from the section header.
 - Dashboard attendance records table uses a shorter empty state instead of repeating attendance
   scan wording from the section context.
+- Platform broadcasts table uses a shorter empty state instead of repeating broadcast wording
+  from the section title, count badge, and New broadcast action.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.

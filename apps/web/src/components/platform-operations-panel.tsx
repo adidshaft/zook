@@ -1233,7 +1233,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={broadcasts}
                 rowKey={(broadcast) => broadcast.id}
-                empty="No broadcasts."
+                empty="No entries."
               />
             </div>
           </GlassCard>
