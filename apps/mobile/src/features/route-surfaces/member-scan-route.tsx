@@ -484,7 +484,7 @@ export default function Scan() {
     const message = cameraBlocked
       ? "Camera access blocked. Open device settings to allow QR scanning."
       : hasCamera
-        ? "Camera ready. Point the camera at your gym QR code."
+        ? "Camera available. Point it at your gym QR code."
         : "Camera permission needed before scanning.";
     AccessibilityInfo.announceForAccessibility(message);
   }, [cameraBlocked, hasCamera, scanMode]);
@@ -499,10 +499,10 @@ export default function Scan() {
         label:
           scanMode === "code"
             ? codeReady
-              ? "Code ready"
+              ? "Code entered"
               : "Enter code"
             : hasCamera
-              ? "Camera ready"
+              ? "Camera available"
               : "Camera needed",
         state: captureComplete ? "complete" : "idle",
       },

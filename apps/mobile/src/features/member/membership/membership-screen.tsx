@@ -697,7 +697,7 @@ export default function MembershipScreen() {
               <View style={styles.browserReturnCopy}>
                 <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-                  Return when done. We will refresh your membership as soon as you come back.
+                  Return after checkout. We will refresh your membership when you come back.
                 </Text>
               </View>
               <ZookButton

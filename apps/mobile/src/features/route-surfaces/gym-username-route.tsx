@@ -418,7 +418,7 @@ export default function GymProfileScreen() {
                     value={
                       viewerState.approvedJoinRequest.reviewedAt
                         ? `Approved ${formatLongDate(viewerState.approvedJoinRequest.reviewedAt)}`
-                        : "Approved and ready for payment"
+                        : "Approved for payment"
                     }
                     tone="lime"
                   />

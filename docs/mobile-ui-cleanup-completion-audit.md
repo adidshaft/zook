@@ -129,6 +129,8 @@ fully complete until the human/device/provider gates below have external evidenc
   neutral history icon instead of a pulse cue.
 - Public after-join guidance and mobile trainer demo summaries now describe workflow/training
   context directly instead of using ready-state cues.
+- Mobile scan, join approval, and browser-return copy now use neutral available/entered/approved
+  wording instead of ready/as-soon-as cues.
 
 ### Product plan Part A and Part B
 
