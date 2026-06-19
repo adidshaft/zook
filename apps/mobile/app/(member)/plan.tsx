@@ -158,16 +158,13 @@ export default function MemberPlanScreen() {
                   <SectionHeader title="Inside this plan" />
                   <Card variant="compact" contentStyle={styles.previewCard}>
                     {exercisePreviewQuery.isLoading ? (
-                      <View style={styles.previewLoading}>
-                        <IconBubble icon="barbell-outline" tone="neutral" size={42} />
-                        <View style={styles.previewCopy}>
-                          <Text style={[styles.previewTitle, { color: palette.text.primary }]}>
-                            Loading exercises
-                          </Text>
-                          <Text style={[styles.previewMeta, { color: palette.text.secondary }]}>
-                            Checking plan details...
-                          </Text>
-                        </View>
+                      <View style={styles.previewCopy}>
+                        <Text style={[styles.previewTitle, { color: palette.text.primary }]}>
+                          Loading exercises
+                        </Text>
+                        <Text style={[styles.previewMeta, { color: palette.text.secondary }]}>
+                          Checking plan details...
+                        </Text>
                       </View>
                     ) : exercisePreview.length ? (
                       <>
@@ -217,7 +214,6 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   previewCard: { gap: spacing.sm },
   previewCopy: { flex: 1, gap: 4 },
-  previewLoading: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   previewTitle: typography.cardTitle,
   previewMeta: typography.small,
   todayCard: { gap: spacing.md },

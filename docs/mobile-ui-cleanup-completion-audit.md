@@ -292,6 +292,8 @@ fully complete until the human/device/provider gates below have external evidenc
   No workouts logged title and top-level Log workout action.
 - Settings support report-problem row no longer repeats helper copy where the row title and
   expanded feedback form already explain the action.
+- Member plan exercise-preview loading state no longer repeats a decorative barbell icon beside
+  the already-clear loading title and detail copy.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
