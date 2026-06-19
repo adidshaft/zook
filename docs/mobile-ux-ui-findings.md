@@ -1259,3 +1259,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated workout in-progress cue (`R296`) is closed:
   the member home in-progress workout card now uses informational tone instead of
   success color, while the completed Workout logged card keeps success treatment.
+- **[ui, fixed]** Overstated public join mode cue (`R297`) is closed:
+  the public join checkout mode badge now uses informational tone instead of
+  success color, while unavailable join modes keep danger treatment.

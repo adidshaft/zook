@@ -347,7 +347,7 @@ export default async function JoinPage({
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
-            <Pill tone="lime">{joinModeLabelForLocale(joinMode, locale)}</Pill>
+            <Pill tone="blue">{joinModeLabelForLocale(joinMode, locale)}</Pill>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
               {t("reviewMembership")}
             </h1>
