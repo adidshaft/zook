@@ -1220,3 +1220,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated membership plan active-state cues (`R283`) are
   closed: dashboard plan catalog and member plan ladder badges now use
   informational tone for Active availability, while Paused plans remain warning.
+- **[ui, fixed]** Overstated default-branch cues (`R284`) are closed: dashboard
+  branch list and gym profile setup badges now use informational tone for
+  Default/Main branch routing configuration instead of success color.

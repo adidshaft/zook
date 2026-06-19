@@ -407,7 +407,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                   render: (branch) => (
                     <StatusPill
                       value={branch.isDefault ? "Main branch" : branch.active ? "Active" : "Inactive"}
-                      tone={branch.isDefault ? "lime" : "neutral"}
+                      tone={branch.isDefault ? "blue" : "neutral"}
                     />
                   ),
                 },

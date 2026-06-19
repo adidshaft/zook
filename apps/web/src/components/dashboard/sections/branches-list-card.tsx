@@ -160,7 +160,7 @@ function BranchSummaryRow({
       <div className="flex flex-wrap justify-end gap-2">
         <StatusPill
           value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"}
-          tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"}
+          tone={branch.isDefault || branch.active ? "blue" : "amber"}
         />
         <ZookButton
           type="button"
