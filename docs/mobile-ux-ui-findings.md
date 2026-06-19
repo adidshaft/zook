@@ -1369,3 +1369,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: settlement, notifications, revenue, and attendance panels now use
   current/recent/available wording instead of live/latest labels where no
   realtime stream is being conveyed.
+- **[ui, fixed]** Overstated dashboard loading and snapshot cues (`R329`) are
+  closed: dashboard/platform loading shells and the owner overview hero now use
+  neutral loading/current/recent wording instead of live/realtime/latest labels
+  for static server snapshots.

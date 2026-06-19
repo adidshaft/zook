@@ -90,7 +90,7 @@ export default function PlatformLoading() {
               </div>
               <div className="flex items-center gap-2 rounded-full border border-lime-200/20 bg-lime-200/10 px-3 py-1.5 text-xs font-medium text-lime-100">
                 <RadioTower size={14} />
-                Warming live console
+                Opening console
               </div>
             </div>
           </GlassCard>

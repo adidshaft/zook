@@ -1901,7 +1901,7 @@ export function PlatformOperationsPanel({
               ) : usageState.loading && usage.length === 0 ? (
                 <EmptyState
                   title="Loading activity"
-                  description="Getting the latest assisted drafts."
+                  description="Getting recent assisted drafts."
                 />
               ) : (
                 <DataTable

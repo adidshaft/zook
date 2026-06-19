@@ -245,14 +245,14 @@ export function DashboardOverview({
       <SectionHero
         eyebrow="Today's command board"
         title="Run the gym, not the spreadsheet"
-        description={`Live signal across ${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"}. ${todayLabel}.`}
+        description={`Current snapshot across ${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"}. ${todayLabel}.`}
         icon={TrendingUp}
         tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <StatusDot tone={accent} size={6} />
-              Live
+              Current
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
               {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Local data"}
@@ -365,7 +365,7 @@ export function DashboardOverview({
                   </span>
                   <DeltaChip delta={charts.deltas.revenue7d} />
                 </div>
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the latest mark</p>
+                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the current mark</p>
               </div>
               <Link
                 href="/dashboard/reports"

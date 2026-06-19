@@ -58,7 +58,7 @@ export default function DashboardLoading() {
                   Loading organization
                 </p>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Loading live command board
+                  Loading command board
                 </p>
               </div>
               <div className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-secondary)]">
@@ -72,7 +72,7 @@ export default function DashboardLoading() {
               Today's Command Board
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
-              Preparing real-time gym operations, attendance, revenue, and member signals.
+              Preparing gym operations, attendance, revenue, and member signals.
             </p>
           </div>
 
