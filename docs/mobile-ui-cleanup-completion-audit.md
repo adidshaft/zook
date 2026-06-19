@@ -438,6 +438,8 @@ fully complete until the human/device/provider gates below have external evidenc
   colour label and visible colour options.
 - Dashboard AI assistant activity uses a shorter empty state instead of repeating assistant
   draft wording from the section header and managed-on note.
+- Dashboard admin activity uses a shorter empty state instead of repeating admin-activity
+  wording from the section header.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
