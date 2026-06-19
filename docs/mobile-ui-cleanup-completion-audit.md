@@ -353,6 +353,8 @@ fully complete until the human/device/provider gates below have external evidenc
   use direct empty/loading/action wording instead of placeholder-location phrasing.
 - Member diet/plan, coach planner, staff plan-delivery, and public trainer bio fallbacks now use
   direct empty-state wording instead of placeholder-location phrasing.
+- Pricing, global loading, platform shell/loading, coach-client, trial-billing, and referral
+  sections no longer show static pills that repeat the page or card heading.
 
 ### Product plan Part A and Part B
 

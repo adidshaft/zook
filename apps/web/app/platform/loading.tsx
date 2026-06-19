@@ -1,5 +1,5 @@
 import { AlertTriangle, RadioTower, ShieldCheck } from "lucide-react";
-import { GlassCard, Pill } from "@/components/glass-card";
+import { GlassCard } from "@/components/glass-card";
 import { ZookLogo } from "@/components/zook-logo";
 
 const platformSections = [
@@ -53,10 +53,6 @@ export default function PlatformLoading() {
           <div className="sticky top-4 grid gap-3">
             <GlassCard variant="strong" className="rounded-2xl p-4">
               <ZookLogo />
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill>Production</Pill>
-                <Pill>Platform</Pill>
-              </div>
             </GlassCard>
             <nav className="rounded-2xl border border-white/10 bg-black/58 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
               {platformSections.map((item, index) => (
@@ -77,11 +73,7 @@ export default function PlatformLoading() {
           <GlassCard variant="strong" className="rounded-2xl p-4 md:p-5">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
-                <div className="flex flex-wrap gap-2 lg:hidden">
-                  <Pill>Production</Pill>
-                  <Pill>Loading section</Pill>
-                </div>
-                <h1 className="mt-3 text-xl font-semibold tracking-tight text-white md:text-2xl lg:mt-0">
+                <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
                   Platform operations
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">

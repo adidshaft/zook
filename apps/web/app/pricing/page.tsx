@@ -141,8 +141,7 @@ export default async function PricingPage({
 
         <section className="grid gap-6 pt-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
           <div>
-            <Pill>Pricing</Pill>
-            <h1 className="mt-5 max-w-3xl text-[clamp(2.75rem,6vw,5.8rem)] font-semibold leading-[0.96]">
+            <h1 className="max-w-3xl text-[clamp(2.75rem,6vw,5.8rem)] font-semibold leading-[0.96]">
               Clear plans before you start running the gym on Zook.
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-8 text-[var(--text-secondary)]">

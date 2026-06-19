@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoachClientWorkspace } from "@/components/coach/coach-client-workspace";
-import { GlassCard, Pill } from "@/components/glass-card";
+import { GlassCard } from "@/components/glass-card";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { prisma } from "@zook/db";
 
@@ -105,7 +105,6 @@ export default async function CoachClientPage({
         <Link href="/coach" className="text-sm font-semibold text-[var(--accent)] hover:underline">
           {"<-"} Back to coach
         </Link>
-        <Pill>Assigned client</Pill>
       </div>
 
       <GlassCard className="p-6">

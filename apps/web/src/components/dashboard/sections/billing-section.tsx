@@ -389,8 +389,7 @@ export function BillingSection({
       <GlassCard className="xl:col-span-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <Pill>Free trial</Pill>
-            <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">{copy.trialBillingTitle}</h2>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">{copy.trialBillingTitle}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {copy.trialBillingDescription}
             </p>
@@ -570,8 +569,7 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <Pill>Refer another gym</Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Your platform referral code</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Your platform referral code</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 Share this code with another gym owner. When they sign up using it, both gyms get
                 an extended free trial.
