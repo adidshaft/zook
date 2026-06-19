@@ -364,6 +364,8 @@ fully complete until the human/device/provider gates below have external evidenc
   pending badge, request status pills, and approve/reject actions.
 - Dashboard role-capability guide no longer shows a share hint above role sections that already
   explain the permissions directly.
+- Dashboard notification history empty state no longer repeats compose-first-update helper copy
+  below the already-clear No notifications sent title.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

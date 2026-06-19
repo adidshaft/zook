@@ -151,10 +151,7 @@ export function NotificationsPanel({
                 </Link>
               ))
             ) : (
-              <EmptyState
-                title="No notifications sent"
-                description="Compose the first update to reach members."
-              />
+              <EmptyState title="No notifications sent" />
             )}
           </div>
         </GlassCard>
