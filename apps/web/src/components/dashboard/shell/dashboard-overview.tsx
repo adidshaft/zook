@@ -602,7 +602,7 @@ export function DashboardOverview({
       ) : null}
 
       {showCustomisationPanel ? (
-        <Suspense fallback={<div className="h-20 animate-pulse rounded-[28px] bg-[var(--surface-raised)]" />}>
+        <Suspense fallback={<div className="h-20 rounded-[28px] bg-[var(--surface-raised)]" />}>
           <LazyOwnerCustomisationPanel />
         </Suspense>
       ) : null}

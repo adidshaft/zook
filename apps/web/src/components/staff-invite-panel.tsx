@@ -56,7 +56,7 @@ export function StaffInvitePanel({ token }: { token: string }) {
     try {
       await webApiFetch(`/api/staff-invitations/${token}/accept`, { method: "POST", body: {} });
       setAccepted(true);
-      setMessage("Invite accepted. Your dashboard access is ready.");
+      setMessage("Invite accepted. Sign in to open your dashboard.");
     } catch (error) {
       const text = error instanceof ApiError ? error.message : "Unable to accept invite.";
       setMessage(text);

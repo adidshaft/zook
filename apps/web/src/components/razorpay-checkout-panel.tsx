@@ -134,10 +134,9 @@ export function RazorpayCheckoutPanel({
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Secure checkout</p>
           {!scriptReady && !scriptError ? (
-            <div role="status" aria-label={statusText} className="mt-3 grid gap-2">
-              <div className="h-3 w-60 animate-pulse rounded-full bg-[var(--border-subtle)]" />
-              <div className="h-3 w-40 animate-pulse rounded-full bg-[var(--border-subtle)]/70" />
-            </div>
+            <p role="status" className="mt-2 text-sm text-[var(--text-secondary)]">
+              {statusText}
+            </p>
           ) : (
             <p className="mt-2 text-sm text-[var(--text-secondary)]">{statusText}</p>
           )}

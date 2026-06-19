@@ -123,6 +123,8 @@ fully complete until the human/device/provider gates below have external evidenc
   fresh/ready phrasing.
 - Razorpay retry and retired guardian-consent copy now use neutral current/new-flow wording instead
   of fresh/latest recovery cues.
+- Razorpay and dashboard lazy-load placeholders no longer use pulse animation, and staff invite
+  acceptance copy uses a direct sign-in step instead of a ready-state cue.
 
 ### Product plan Part A and Part B
 
