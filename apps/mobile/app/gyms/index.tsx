@@ -107,7 +107,6 @@ export default function FindGyms() {
           <AppHeader
             eyebrow="Discovery"
             title="Find your gym"
-            subtitle="Browse public gyms and apply referral codes"
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
