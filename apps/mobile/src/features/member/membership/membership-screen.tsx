@@ -693,7 +693,6 @@ export default function MembershipScreen() {
 
           {waitingCheckoutSessionId ? (
             <Card variant="compact" contentStyle={styles.browserReturnContent}>
-              <IconBubble icon="open-outline" tone="neutral" size={36} />
               <View style={styles.browserReturnCopy}>
                 <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
@@ -715,7 +714,6 @@ export default function MembershipScreen() {
 
           {!membershipsQuery.isLoading && !memberships.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
-              <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No memberships</Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>

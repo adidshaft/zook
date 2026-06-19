@@ -274,6 +274,8 @@ fully complete until the human/device/provider gates below have external evidenc
   stock-count subtitle already identify the row.
 - Trainer home client, feedback, and plan-builder rows no longer repeat neutral person/chat/reader
   icons where section headings and row copy already identify the content.
+- Member membership browser-return and no-membership cards no longer render neutral open/card icons
+  beside already-clear titles, body copy, and actions.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
