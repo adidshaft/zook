@@ -1391,3 +1391,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated contact, membership, referral, and workout ready
   cues (`R334`) are closed: helper copy now uses confirmed/active/copied/
   assigned wording instead of ready phrasing for non-operational states.
+- **[ui, fixed]** Overstated dashboard setup and document ready cues (`R335`)
+  are closed: branch setup, reconciliation, billing, settings, and offline
+  receipt copy now uses available/configured/generated wording for static
+  setup and document states.

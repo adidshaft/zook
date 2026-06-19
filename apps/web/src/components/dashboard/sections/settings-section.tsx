@@ -70,7 +70,7 @@ export function SettingsSection({
       href: "/dashboard/billing",
       icon: ReceiptText,
       permission: "ORG_MANAGE_BILLING",
-      badge: needsBillingSetup ? "Action needed" : "Ready",
+      badge: needsBillingSetup ? "Action needed" : "Configured",
       urgent: needsBillingSetup,
     },
     {

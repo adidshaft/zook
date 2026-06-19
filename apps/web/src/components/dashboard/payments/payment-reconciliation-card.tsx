@@ -39,7 +39,7 @@ export function PaymentReconciliationCard({
           {
             label: "Settled payments",
             value: formatCompactNumber(succeededPayments.length),
-            meta: "Ready for day-end totals",
+            meta: "Available for day-end totals",
           },
           {
             label: "Pending",

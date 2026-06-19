@@ -211,7 +211,7 @@ export function OfflinePaymentCard({
       {lastReceipt ? (
         <div className="mt-5 rounded-[22px] border border-[var(--accent-strong)]/20 bg-[var(--surface-accent-soft)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-            Receipt ready
+            Receipt generated
           </p>
           <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{lastReceipt.title}</p>
           <div className="mt-3 grid gap-2 text-sm text-[var(--text-secondary)]">
