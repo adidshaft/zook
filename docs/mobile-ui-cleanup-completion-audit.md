@@ -404,6 +404,8 @@ fully complete until the human/device/provider gates below have external evidenc
   unselected placeholder state.
 - Gym profile setup header no longer repeats public-profile/link guidance above the Public page
   and Copy membership link actions.
+- Gym profile media tab no longer repeats image-upload guidance above the Logo, Cover photo,
+  and Add gallery photo controls.
 - Coach today list no longer repeats the coach-overview action through a duplicate row subtitle.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
