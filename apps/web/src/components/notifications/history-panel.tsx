@@ -244,9 +244,6 @@ export function NotificationHistoryPanel({
         ) : (
           <div className="rounded-[24px] border border-white/10 bg-black/20 p-5">
             <h2 className="text-xl font-semibold">Recipient detail</h2>
-            <p className="mt-2 text-sm text-white/50">
-              Choose a message to see delivery status for each member.
-            </p>
           </div>
         )}
       </GlassCard>
