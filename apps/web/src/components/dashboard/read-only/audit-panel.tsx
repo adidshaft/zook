@@ -254,7 +254,6 @@ export function AuditPanel({
           ) : (
             <EmptyState
               title="No assistant drafts"
-              description="No assisted drafts from the planner yet."
             />
           )}
         </div>

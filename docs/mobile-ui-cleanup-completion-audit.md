@@ -367,6 +367,8 @@ fully complete until the human/device/provider gates below have external evidenc
   loading states no longer repeat fetch/pull helper text below already-clear loading titles.
 - Mobile member, trainer, owner, and reception empty states no longer repeat "No ..." helper
   bodies underneath already-clear empty-state titles.
+- Dashboard payment and assistant-draft empty states no longer repeat "No ..." descriptions, and
+  coaching-plan empty copy uses gym wording instead of org wording.
 
 ### Product plan Part A and Part B
 
