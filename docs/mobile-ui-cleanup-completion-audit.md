@@ -326,6 +326,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the queue title, badge, filters, and Desk handoff note.
 - Dashboard staff operational roles and plan delivery sections no longer repeat static
   descriptions where headings, counts, and assignment/plan rows already define the surfaces.
+- Dashboard payment reconciliation no longer repeats a generic review description above readouts
+  and checklist cards that already name settled, pending, failed, receipt, cash, and refund work.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

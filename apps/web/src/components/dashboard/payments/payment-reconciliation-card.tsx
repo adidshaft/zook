@@ -24,7 +24,6 @@ export function PaymentReconciliationCard({
       <SectionHeader
         eyebrow="Reconciliation"
         title="Payment reconciliation"
-        description="Review settled payments, missing receipts, and follow-ups before closing the day."
         badge={
           <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "neutral"}>
             {failedPayments.length || pendingPayments.length ? "Review queue" : "Clean"}
