@@ -174,6 +174,8 @@ fully complete until the human/device/provider gates below have external evidenc
   timestamp cue.
 - Platform incident checklist now uses clear provider-check wording instead of configured/default
   status labels.
+- Platform health and incident panel descriptions now use service/support wording instead of
+  provider/setup lane phrasing.
 
 ### Product plan Part A and Part B
 

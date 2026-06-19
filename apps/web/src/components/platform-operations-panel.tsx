@@ -743,7 +743,7 @@ export function PlatformOperationsPanel({
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
-          description="Production-facing signal for provider setup, tenant health, conversion risk, and safety load."
+          description="Service health, tenant risk, conversion risk, and safety workload in one view."
           badge={
             <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
               {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
@@ -1546,7 +1546,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Incident mode"
             title="Production incident checklist"
-            description="A simple first-response lane for provider outages, payment trouble, safety escalations, and tenant-impacting issues."
+            description="First-response steps for service outages, payment trouble, safety escalations, and tenant-impacting issues."
             badge={<Pill>Use during support</Pill>}
           />
           <div className="mt-5 grid gap-3">
