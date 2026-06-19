@@ -9,7 +9,7 @@ export default function InProgressCard({ assignmentId }: { assignmentId: string 
       body="Resume the session you already started and finish logging your work."
       ctaHref={`/plan/${assignmentId}`}
       ctaLabel="Resume"
-      tone="lime"
+      tone="blue"
     />
   );
 }

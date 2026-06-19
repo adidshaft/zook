@@ -1256,3 +1256,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated trainer progress percentage cues (`R295`) are
   closed: recent feedback and adherence percentage chips now use informational
   tone instead of success color, while waiting states remain neutral.
+- **[ui, fixed]** Overstated workout in-progress cue (`R296`) is closed:
+  the member home in-progress workout card now uses informational tone instead of
+  success color, while the completed Workout logged card keeps success treatment.
