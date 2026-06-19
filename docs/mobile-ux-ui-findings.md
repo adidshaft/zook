@@ -1060,3 +1060,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform support idle-live cue (`R230`) is closed:
   the support console's idle Live badge now uses neutral styling instead of blue,
   keeping stronger tone for actual support action feedback.
+- **[ui, fixed]** Overstated coach page live-signal cue (`R231`) is closed:
+  the coach web hero now shows neutral Live view metadata without a lime status dot,
+  keeping success indicators for live runtime state rather than static page context.
