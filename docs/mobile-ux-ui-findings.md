@@ -1321,3 +1321,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   member contact helper text and membership summary metrics now use neutral text
   treatment instead of lime emphasis, while explicit status pills keep their
   semantic tone.
+- **[ui, fixed]** Overstated notification selection cues (`R316`) are closed:
+  selected notification rows, recipient navigation, and selected-recipient remove
+  chips now use neutral styling instead of lime success emphasis, while delivery
+  status pills keep semantic tone.

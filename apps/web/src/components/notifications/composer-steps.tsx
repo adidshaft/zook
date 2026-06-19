@@ -169,7 +169,7 @@ export function AudienceStep({
                       selectedUserIds.filter((id) => id !== memberUserId(member)),
                     )
                   }
-                  className="zook-focus rounded-full border border-lime-300/25 bg-lime-300/8 px-3 py-2 text-xs text-lime-100"
+                  className="zook-focus rounded-full border border-white/12 bg-white/6 px-3 py-2 text-xs text-white/65"
                 >
                   {memberLabel(member)} · Remove
                 </button>

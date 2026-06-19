@@ -129,7 +129,7 @@ export function NotificationHistoryPanel({
               onClick={() => void openRecipients(notification)}
               className={`zook-focus rounded-[22px] border p-4 text-left transition ${
                 selectedNotification?.id === notification.id
-                  ? "border-lime-300/45 bg-lime-300/8"
+                  ? "border-white/20 bg-white/8"
                   : "border-white/10 bg-black/20 hover:bg-white/6"
               }`}
             >
@@ -156,7 +156,7 @@ export function NotificationHistoryPanel({
                   <Pill tone={toneForNotificationStatus(notification.status)}>
                     {formatEnumLabel(notification.status)}
                   </Pill>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-lime-100">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-white/65">
                     View recipients
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className="sr-only">Open recipients</span>
