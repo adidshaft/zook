@@ -112,6 +112,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `1080b2fc` (visual cue regression evidence gate).
 - Platform fallback status copy now describes the demo shell as test-data mode instead of presenting
   it as unavailable live data.
+- Public status translations no longer carry unused "live status" explanatory copy that is not
+  rendered by the status page.
 
 ### Product plan Part A and Part B
 
