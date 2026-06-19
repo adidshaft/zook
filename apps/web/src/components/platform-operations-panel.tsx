@@ -1316,7 +1316,6 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Impersonations"
             title="Support access log"
-            description="Recent audited sessions started by platform support."
             badge={<Pill>{impersonations.length} sessions</Pill>}
           />
           <div className="mt-5">
