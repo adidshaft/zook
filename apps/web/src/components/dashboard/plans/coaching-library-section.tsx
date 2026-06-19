@@ -18,7 +18,6 @@ export function CoachingLibrarySection({
       <SectionHeader
         eyebrow="Coaching Library"
         title="Workout and advisory plans"
-        description="These are the plans trainers are creating and reviewing for members."
         badge={
           <Pill tone={pendingReviewCount > 0 ? "amber" : "neutral"}>
             {pendingReviewCount} pending review
