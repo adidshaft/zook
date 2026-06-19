@@ -418,7 +418,7 @@ export function PlatformOperationsPanel({
     {
       step: "Confirm blast radius",
       owner: "Platform",
-      signal: `${misconfiguredProviders.length} provider gap${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
+      signal: `${misconfiguredProviders.length} service issue${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
     },
     {
       step: "Check provider dashboards",
@@ -1567,7 +1567,7 @@ export function PlatformOperationsPanel({
             ))}
           </div>
           <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
-            In production, keep destructive tenant actions paused until provider status, audit
+            In production, keep destructive tenant actions paused until service status, audit
             trail, customer impact, and rollback owner are all known.
           </div>
         </GlassCard>

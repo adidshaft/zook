@@ -178,6 +178,8 @@ fully complete until the human/device/provider gates below have external evidenc
   provider/setup lane phrasing.
 - Platform service diagnostics row copy now uses setup-required/service-active wording instead of
   needed/running phrasing.
+- Platform incident checklist now uses service issue/status wording instead of provider-gap/status
+  cues.
 
 ### Product plan Part A and Part B
 
