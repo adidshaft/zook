@@ -324,6 +324,8 @@ fully complete until the human/device/provider gates below have external evidenc
   descriptions where the headings, counts, managed-on note, and tables already provide context.
 - Dashboard settlement queue empty state no longer repeats payment/pickup follow-up copy below
   the queue title, badge, filters, and Desk handoff note.
+- Dashboard staff operational roles and plan delivery sections no longer repeat static
+  descriptions where headings, counts, and assignment/plan rows already define the surfaces.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

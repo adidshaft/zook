@@ -179,7 +179,6 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Team"
           title="Operational roles"
-          description="Your team and their roles."
           badge={<Pill>{staffAssignments.length} assignments</Pill>}
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
@@ -370,7 +369,6 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Coach Output"
           title="Plan delivery"
-          description="Review trainer-written and assisted plan delivery."
           badge={
             <Pill>
               {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
