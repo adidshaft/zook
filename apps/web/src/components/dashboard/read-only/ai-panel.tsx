@@ -56,7 +56,7 @@ export function AiPanel({
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
             <EmptyState
               title="Loading drafts"
-              description="Checking whether this gym already has assisted draft history."
+              description="Checking saved assisted draft history."
             />
           ) : (
             <DataTable

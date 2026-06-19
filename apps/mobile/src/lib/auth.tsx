@@ -645,7 +645,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!targetOrg) {
-        throw new Error("Organization not available for this account");
+        throw new Error("Gym not available for this account");
       }
       const correctedRole = defaultRoleForOrg(targetOrg.roles);
       await Promise.all([

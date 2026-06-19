@@ -202,6 +202,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of organization/provider wording.
 - Platform operations service and gym-account controls now avoid provider/organization/soft-delete
   wording in visible labels, prompts, and fallback errors.
+- Mobile account switching, branch primary-location controls, and assisted-draft loading copy now
+  avoid organization/default/operational wording in user-visible states.
 
 ### Product plan Part A and Part B
 
