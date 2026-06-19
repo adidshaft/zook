@@ -213,6 +213,8 @@ fully complete until the human/device/provider gates below have external evidenc
   operational-notice wording.
 - Member roster, membership-plan, coaching-plan, and assistant-draft loading/empty copy now
   avoids current/history phrasing where the surrounding section already provides context.
+- Platform gym-account, assistant-activity, and safety-report states now avoid redundant
+  currently/current phrasing.
 
 ### Product plan Part A and Part B
 

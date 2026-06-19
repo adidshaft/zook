@@ -1673,7 +1673,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No gym accounts are currently available."
+                empty="No gym accounts available."
               />
             </div>
             {selectedOrganization ? (
@@ -1942,7 +1942,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={usage}
                   rowKey={(row) => row.id}
-                  empty="No assistant activity is currently available."
+                  empty="No assistant activity available."
                 />
               )}
             </div>
@@ -1958,7 +1958,7 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Safety"
               title="Recent reports"
-              description="Recent gym reports, with severity and current status."
+              description="Recent gym reports with severity and status."
               badge={
                 <Pill tone={openFlags.length ? "amber" : "neutral"}>{openFlags.length} open</Pill>
               }
