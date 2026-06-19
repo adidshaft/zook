@@ -47,7 +47,7 @@ export const deskTranslations = {
     messageSent: "Message sent.",
     unableMessage: "Unable to send message.",
     recordPayment: "Record payment",
-    paymentDescription: "Use this for cash, UPI, card, or bank transfer collected at the desk.",
+    paymentDescription: "Cash, UPI, card, or bank transfer collected at the desk.",
     paymentPurpose: "What is this for?",
     membershipPayment: "Membership",
     shopOrderPayment: "Shop order",

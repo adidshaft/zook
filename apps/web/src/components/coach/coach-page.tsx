@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Activity,
   BarChart3,
@@ -89,9 +88,6 @@ export function CoachPage({
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">Pinned for today</h2>
-            <Link href="/coach" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              Refresh overview {"->"}
-            </Link>
           </div>
           <div className="mt-4 grid gap-2">
             {clients.length === 0 ? (

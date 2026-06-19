@@ -317,6 +317,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and owner section headers no longer carry subtitles that duplicate nearby form/list state.
 - Platform, trainer payouts, member plan, and shop history headers no longer include static
   overview/source/history subtitles or chips where the route title and rows already provide context.
+- Coach and reports web surfaces no longer render decorative refresh/snapshot cues, and desk
+  payment helper copy now states the payment modes directly without "use this" instruction text.
 
 ### Product plan Part A and Part B
 

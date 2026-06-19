@@ -47,7 +47,7 @@ export function OfflinePaymentCard({
         title="Collected at the desk"
         description={
           <span className="inline-flex items-center gap-2">
-            Use this for cash, UPI, card, or bank transfer membership payments.
+            Cash, UPI, card, or bank transfer membership payments.
             <HelpHint label="Payment mode" title="Payment mode">
               UPI is a direct bank transfer via PhonePe or GPay. Cash and Card are recorded for
               reconciliation. Bank Transfer may settle in one to two days.
