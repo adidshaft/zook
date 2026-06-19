@@ -374,6 +374,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and assistant activity table.
 - Platform recent reports no longer repeats severity/status helper copy above the open count and
   per-report severity/status pills.
+- Platform gym subscriptions no longer repeats billing/referral helper copy above readouts that
+  already label trial, paying, suspended, autopay, and referral states.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

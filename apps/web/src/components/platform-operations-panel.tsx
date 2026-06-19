@@ -2106,7 +2106,6 @@ function PlatformSubscriptionsSection() {
         <SectionHeader
           eyebrow="Subscriptions"
           title="Gym subscriptions"
-          description="SaaS billing status, autopay mandates, and platform referrals across every gym."
         />
         {summary ? (
           <ReadoutGrid
