@@ -95,9 +95,8 @@ export function NotificationsPanel({
               },
               {
                 label: "Audience",
-                value:
-                  summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
-                meta: "Live member list",
+                value: summary.activeMembers > 0 ? "Member targeting" : "No active audience yet",
+                meta: "Current member list",
               },
               {
                 label: "Escalation load",
@@ -115,7 +114,7 @@ export function NotificationsPanel({
           <SectionHeader
             eyebrow="Recent Messages"
             title="Recent notifications"
-            description="A quick read on the latest updates sent from this gym."
+            description="A quick read on recent updates sent from this gym."
             action={
               <Link
                 href="/dashboard/notifications/history"

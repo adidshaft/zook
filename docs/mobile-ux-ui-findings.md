@@ -1365,3 +1365,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   logged-in `/me` route now reuses the shared member membership renderer used by
   private handle and public slug routes, so membership UI cleanup stays in one
   component.
+- **[ui, fixed]** Overstated dashboard readout freshness cues (`R328`) are
+  closed: settlement, notifications, revenue, and attendance panels now use
+  current/recent/available wording instead of live/latest labels where no
+  realtime stream is being conveyed.

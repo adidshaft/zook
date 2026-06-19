@@ -38,7 +38,9 @@ export function RevenueOpportunitiesCard({
           },
           {
             label: "Plan ladder",
-            value: membershipPlans.length ? `${membershipPlans.length} live plans` : "Load plans",
+            value: membershipPlans.length
+              ? `${membershipPlans.length} available plans`
+              : "Load plans",
             meta: "Useful while talking renewals at the desk",
           },
         ]}

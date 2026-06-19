@@ -71,7 +71,7 @@ export function SettlementQueueCard({
         ) : shopOrdersState.loading && shopOrders.length === 0 ? (
           <EmptyState
             title="Loading settlement queue"
-            description="Pulling live shop order payment states."
+            description="Loading current shop order payment states."
           />
         ) : (
           <>
