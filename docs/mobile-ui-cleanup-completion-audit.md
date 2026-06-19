@@ -238,6 +238,8 @@ fully complete until the human/device/provider gates below have external evidenc
   vague all-current cue.
 - Billing cancellation and refund tracker copy now uses direct billing-period/refunded-payment
   wording instead of repeated period-end/current/marked-refunded phrasing.
+- Platform incident and health cockpit copy now uses gym-account/gym-impact wording instead of
+  tenant-risk/tenant-impacting/destructive-tenant phrasing.
 
 ### Product plan Part A and Part B
 

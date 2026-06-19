@@ -743,7 +743,7 @@ export function PlatformOperationsPanel({
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
-          description="Service health, tenant risk, conversion risk, and safety workload in one view."
+          description="Service health, gym-account risk, conversion risk, and safety workload in one view."
           badge={
             <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
               {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
@@ -1546,7 +1546,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Incident mode"
             title="Production incident checklist"
-            description="First-response steps for service outages, payment trouble, safety escalations, and tenant-impacting issues."
+            description="First-response steps for service outages, payment trouble, safety escalations, and gym-impacting issues."
             badge={<Pill>Use during support</Pill>}
           />
           <div className="mt-5 grid gap-3">
@@ -1567,7 +1567,7 @@ export function PlatformOperationsPanel({
             ))}
           </div>
           <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
-            In production, keep destructive tenant actions paused until service status, audit
+            In production, keep destructive gym actions paused until service status, audit
             trail, customer impact, and rollback owner are all known.
           </div>
         </GlassCard>
