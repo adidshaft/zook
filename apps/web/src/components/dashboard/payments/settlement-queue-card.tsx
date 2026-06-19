@@ -54,7 +54,6 @@ export function SettlementQueueCard({
       <SectionHeader
         eyebrow="Settlement Queue"
         title="Orders affecting cashflow"
-        description="Review orders waiting for payment or pickup."
         badge={
           <Pill tone={queuedOrders.length ? "amber" : "neutral"}>
             {queuedOrders.length} unsettled
