@@ -307,6 +307,8 @@ fully complete until the human/device/provider gates below have external evidenc
   while preserving the web-console boundary for pricing and policy changes.
 - Trainer plan rows no longer render an extra Open chip next to the dedicated client-detail
   action button.
+- Trainer home no longer repeats the Today section label as a row chip, and member plan
+  feedback copy now asks for a note without quick-action framing.
 
 ### Product plan Part A and Part B
 

@@ -646,7 +646,7 @@ export function PlanDetailScreen() {
               <View style={styles.sheetTitleCopy}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Tell coach</Text>
                 <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                  Send a quick note about this assignment.
+                  Send a note about this assignment.
                 </Text>
               </View>
               <Pressable
