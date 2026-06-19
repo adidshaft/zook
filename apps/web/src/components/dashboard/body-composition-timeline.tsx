@@ -56,7 +56,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 )}
                 {index === 0 ? (
                   <div className="absolute left-3 top-3">
-                    <StatusPill value="Current" />
+                    <StatusPill value="Recent" />
                   </div>
                 ) : null}
               </div>
@@ -98,7 +98,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
         <EmptyState
           className="mt-5"
           title="No body composition entries yet"
-          description="Trainer-facing body progress and progress photos are not available yet."
+          description="Add body progress and progress photos from the member app."
         />
       )}
     </div>

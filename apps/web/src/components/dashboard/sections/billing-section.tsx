@@ -24,7 +24,7 @@ const copy = {
   trialEnds: "Trial ends",
   documentReadiness: "Document readiness",
   invoicesTitle: "Invoices",
-  invoicesDescription: "Invoices appear after the first paid billing cycle.",
+  invoicesDescription: "Invoices start after the first paid billing cycle.",
 };
 
 type BillingProfile = {
@@ -332,9 +332,9 @@ export function BillingSection({
             </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {profile?.invoiceReady
-                ? "Invoices ready"
+                ? "Invoices available"
                 : profile?.receiptReady
-                  ? "Receipts ready"
+                  ? "Receipts available"
                   : "Add details"}
             </p>
           </div>

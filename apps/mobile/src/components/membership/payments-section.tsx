@@ -40,8 +40,8 @@ export function PaymentsSection({
             const documentHint = canGenerate
               ? payment.receiptNumber
                 ? `Receipt ${payment.receiptNumber}`
-                : "Receipt and invoice need a confirmed payment."
-              : `Documents unlock after payment succeeds. Status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
+                : "Generate a receipt or invoice."
+              : `Documents are available after payment succeeds. Status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
             return (
               <Card key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>

@@ -391,6 +391,8 @@ fully complete until the human/device/provider gates below have external evidenc
   SaaS health labels now avoid current/self-approved/refreshing cue wording in visible helper text.
 - Trainer/owner customization, platform service status, member payment documents, trainer payouts,
   body history, and profile membership empty states now avoid loaded/ready/appear helper wording.
+- Billing document labels, body-composition timeline copy, member-detail loading labels, and
+  mobile payment document hints now use direct available/recent/loading wording.
 
 ### Product plan Part A and Part B
 

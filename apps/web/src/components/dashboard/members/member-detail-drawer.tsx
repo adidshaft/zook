@@ -63,7 +63,7 @@ export function MemberDetailDrawer({
       {memberDetailState.error ? (
         <ErrorNotice message={memberDetailState.error} />
       ) : memberDetailState.loading || !memberDetailState.data ? (
-        <div className="grid gap-3 lg:grid-cols-4" aria-label="Member detail is refreshing">
+        <div className="grid gap-3 lg:grid-cols-4" aria-label="Member detail is loading">
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
