@@ -1075,3 +1075,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated desk check-in KPI success cue (`R235`) is closed:
   the desk Today's check-ins KPI now uses the informational tone instead of lime,
   matching the main dashboard and keeping success color for completed actions.
+- **[ui, fixed]** Overstated reports live metadata cue (`R236`) is closed:
+  the reports hero now shows neutral Live view metadata without a lime status dot,
+  keeping success indicators for runtime state and generated/export feedback.
