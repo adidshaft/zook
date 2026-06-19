@@ -280,6 +280,8 @@ fully complete until the human/device/provider gates below have external evidenc
   title, explanatory subtitle, and percentage chip.
 - Trainer client plan draft prompt no longer repeats a neutral reader icon beside text that
   already names the saved draft and review action.
+- Gym discovery referral and no-results cards no longer render neutral gift/search icons beside
+  already-clear title and helper copy.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

@@ -149,16 +149,13 @@ export default function FindGyms() {
           />
 
           {referralCode ? (
-            <Card variant="compact" contentStyle={styles.referralContent}>
-              <IconBubble icon="gift-outline" tone="neutral" size={36} />
-              <View style={styles.referralCopy}>
-                <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
-                  Referral code applied
-                </Text>
-                <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
-                  Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
-                </Text>
-              </View>
+            <Card variant="compact" contentStyle={styles.referralCopy}>
+              <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
+                Referral code applied
+              </Text>
+              <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
+                Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
+              </Text>
             </Card>
           ) : null}
 
@@ -198,7 +195,6 @@ export default function FindGyms() {
 
           {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
-              <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
                   No gyms
@@ -316,13 +312,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  referralContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
   referralCopy: {
-    flex: 1,
     gap: 4,
   },
   referralTitle: {
