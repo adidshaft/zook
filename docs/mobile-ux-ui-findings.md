@@ -1123,3 +1123,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative dashboard plan-mix ring cue (`R251`) is closed:
   the plan-mix donut ring now uses the informational dashboard tone instead of
   success color, while plan-category color remains in the legend rows.
+- **[ui, fixed]** Decorative reports revenue-line cue (`R252`) is closed:
+  the reports revenue trend line now uses the informational dashboard tone instead
+  of success color, leaving movement semantics to the adjacent delta chip.

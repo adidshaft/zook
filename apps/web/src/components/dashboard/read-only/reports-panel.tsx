@@ -273,7 +273,7 @@ export function ReportsPanel({
                     <LineChart
                       series={revenueSeries}
                       labels={revenueLabels}
-                      tone="lime"
+                      tone="sky"
                       formatY={(v) => formatInrCompact(v * 100)}
                       formatTooltip={(v, label) => (label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100))}
                       ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
