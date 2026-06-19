@@ -45,7 +45,7 @@ export function ShopOrdersSection({
         eyebrow="Orders"
         title={copy.title}
         description={copy.description}
-        badge={<Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>}
+        badge={<Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} ready</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
       <ManagedOn surface="desk" className="mt-4">

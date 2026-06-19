@@ -56,7 +56,7 @@ export function SettlementQueueCard({
         title="Orders affecting cashflow"
         description="Orders waiting for payment or pickup appear here."
         badge={
-          <Pill tone={queuedOrders.length ? "amber" : "lime"}>
+          <Pill tone={queuedOrders.length ? "amber" : "neutral"}>
             {queuedOrders.length} unsettled
           </Pill>
         }

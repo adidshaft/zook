@@ -1190,3 +1190,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated notification delivery clear cue (`R273`) is closed:
   the notification recipient panel now uses neutral tone for zero undelivered
   messages, while undelivered recipients still use warning tone.
+- **[ui, fixed]** Overstated shop clear-queue badges (`R274`) are closed:
+  shop low-stock, ready-order, and settlement queue badges now use neutral tone for
+  zero-count clear states, while nonzero operational queues still use warning tone.

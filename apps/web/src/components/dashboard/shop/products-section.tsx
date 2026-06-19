@@ -46,7 +46,7 @@ export function ShopProductsSection({
           title="Low-stock watch"
           description="Inventory is sorted by stock so the team can spot refill needs."
           badge={
-            <Pill tone={summary.lowStockProducts > 0 ? "amber" : "lime"}>
+            <Pill tone={summary.lowStockProducts > 0 ? "amber" : "neutral"}>
               {summary.lowStockProducts} low
             </Pill>
           }
