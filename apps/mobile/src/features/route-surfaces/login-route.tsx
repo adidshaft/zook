@@ -275,10 +275,17 @@ export default function Login() {
         }}
       >
         <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.heroSection}>
-          <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>{t("auth.heroEyebrow")}</Text>
-          <View style={styles.logoRow}>
-            <BrandMark size="lg" />
-            <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
+          <BrandMark size="lg" style={styles.heroMark} />
+          <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
+          <View
+            style={[
+              styles.heroEyebrowPill,
+              { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.soft },
+            ]}
+          >
+            <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>
+              {t("auth.heroEyebrow")}
+            </Text>
           </View>
           <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{t("auth.heroBody")}</Text>
         </Animated.View>
@@ -499,25 +506,35 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   heroSection: {
-    gap: 8,
+    alignItems: "center",
+    gap: spacing.sm,
     position: "relative",
-    paddingVertical: 12,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  heroMark: {
+    width: 72,
+    height: 72,
+    marginBottom: spacing.xs,
+  },
+  heroEyebrowPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   heroEyebrow: {
     ...typography.eyebrow,
-  },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginTop: -4,
+    letterSpacing: 1,
   },
   heroTitle: {
-    ...typography.screenTitle,
+    ...typography.display,
   },
   heroBody: {
     ...typography.body,
-    marginTop: 8,
+    textAlign: "center",
+    maxWidth: 300,
+    marginTop: 2,
   },
   formCard: {
     borderRadius: 24,
