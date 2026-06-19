@@ -32,6 +32,7 @@ export function ActiveMembershipCard({
   const { palette } = useTheme();
   const guidance = membershipStatusGuidance(subscription.status, daysLeft);
   const guidanceTone = toneForStatus(subscription.status);
+  const guidanceShowsIcon = guidanceTone === "amber" || guidanceTone === "red";
   const isWarning = daysLeft !== null && daysLeft <= 7;
   const durationDays = subscription.plan?.durationDays ?? subscription.plan?.validityDays ?? null;
   const daysProgress =
@@ -130,7 +131,9 @@ export function ActiveMembershipCard({
           },
         ]}
       >
-        <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+        {guidanceShowsIcon ? (
+          <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+        ) : null}
         <View style={styles.guidanceCopy}>
           <Text style={[styles.guidanceTitle, { color: palette.text.primary }]}>
             {guidance.title}

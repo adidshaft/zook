@@ -435,6 +435,8 @@ fully complete until the human/device/provider gates below have external evidenc
   chevron, or status content.
 - Member home stat strip now relies on metric labels and values without repeated decorative
   icons for visits, active time, workouts, and habits.
+- Mobile membership guidance keeps the information icon only for warning/error guidance, removing
+  the routine icon from active/neutral membership copy.
 
 ### Product plan Part A and Part B
 
