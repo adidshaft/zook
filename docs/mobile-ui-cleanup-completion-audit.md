@@ -354,6 +354,8 @@ fully complete until the human/device/provider gates below have external evidenc
   above the photo count, timeline cards, and measurement labels.
 - Dashboard AI assistant activity no longer repeats assisted-draft helper copy above the managed-on
   note and draft activity table.
+- Dashboard AI launch readiness no longer repeats usage/review/assisted-plan helper copy above
+  readouts that already label those signals directly.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
