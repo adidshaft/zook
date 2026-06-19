@@ -226,6 +226,8 @@ fully complete until the human/device/provider gates below have external evidenc
   current/currently phrasing.
 - Platform health cockpit copy now avoids production-traffic, pilot-traffic, and loaded-queue
   wording in readiness and safety states.
+- Platform payment records and staff coaching review copy now avoid test/production and
+  production-output wording in visible descriptions.
 
 ### Product plan Part A and Part B
 

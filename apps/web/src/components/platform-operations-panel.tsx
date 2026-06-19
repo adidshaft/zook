@@ -976,7 +976,7 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Payments"
                 title="Payment records"
-                description="Test and production payment records appear here immediately after checkout or desk payment creation."
+                description="Payment records appear here after checkout or desk payment creation."
                 badge={
                   <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length

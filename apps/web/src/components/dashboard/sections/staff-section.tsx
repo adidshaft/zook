@@ -379,7 +379,7 @@ export function StaffSection({
       <GlassCard>
         <SectionHeader
           eyebrow="Coach Output"
-          title="Plan production"
+          title="Plan delivery"
           description="Trainer-written and assisted plans appear here so owners can review the delivery load."
           badge={
             <Pill>
