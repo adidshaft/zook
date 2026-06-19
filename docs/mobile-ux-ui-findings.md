@@ -1135,3 +1135,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading dashboard low-stock attention cue (`R255`) is closed:
   the overview inventory attention row now uses warning tone only when products are
   actually low, and uses informational tone for the healthy inventory state.
+- **[ui, fixed]** Misleading dashboard join-request attention cue (`R256`) is closed:
+  the overview join-request attention row now uses danger tone only when requests are
+  actually pending, and uses informational tone for the clear inbox state.

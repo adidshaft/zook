@@ -109,7 +109,7 @@ export function DashboardOverview({
       icon: ClipboardList,
       title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
       subtitle: "Approve to start onboarding",
-      tone: "rose",
+      tone: summary.joinRequests > 0 ? "rose" : "sky",
       href: "/dashboard/members/join-requests",
     },
     {
