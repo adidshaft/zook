@@ -1307,3 +1307,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   profile field saves now use informational tone and no longer show a decorative
   completion dot, while the shop pickup-code card uses neutral compact styling
   and keeps the order status chip as the semantic cue.
+- **[ui, fixed]** Overstated attendance next-step CTA cue (`R312`) is closed:
+  the post-approval Open Plan chip now uses informational tone instead of success
+  color, while the actual Approved entry-code chip keeps success treatment.

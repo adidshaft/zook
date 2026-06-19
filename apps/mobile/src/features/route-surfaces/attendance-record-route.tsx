@@ -406,7 +406,7 @@ export default function AttendanceResultScreen() {
                     style={({ pressed }) => (pressed ? styles.controlPressed : null)}
                     hitSlop={6}
                   >
-                    <ZookChip tone="lime" icon="chevron-forward">
+                    <ZookChip tone="blue" icon="chevron-forward">
                       Open Plan
                     </ZookChip>
                   </Pressable>
