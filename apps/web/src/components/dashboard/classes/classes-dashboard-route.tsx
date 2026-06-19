@@ -243,7 +243,6 @@ export function ClassesDashboardRoute({
         <SectionHeader
           eyebrow="Upcoming"
           title="Scheduled classes"
-          description="Selected branch with confirmed capacity."
           badge={
             <Pill>
               <CalendarDays className="h-3.5 w-3.5" />
@@ -267,7 +266,7 @@ export function ClassesDashboardRoute({
           {!classesQuery.isLoading && !classes.length ? (
             <GlassCard variant="muted">
               <p className="text-sm text-[var(--text-secondary)]">
-                No upcoming classes for this branch.
+                No classes scheduled.
               </p>
             </GlassCard>
           ) : null}

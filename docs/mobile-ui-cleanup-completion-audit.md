@@ -310,6 +310,8 @@ fully complete until the human/device/provider gates below have external evidenc
   not-published empty-state bodies where headings, rows, and timeline steps already provide context.
 - Mobile classes empty state no longer repeats branch-scoped absence copy below the already-clear
   No classes title and branch-aware header.
+- Web classes schedule no longer repeats selected-branch/capacity helper copy above rows that
+  already show branch scope, class count, and per-class capacity.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
