@@ -145,6 +145,8 @@ fully complete until the human/device/provider gates below have external evidenc
   while leaving the underlying order status model intact.
 - Shop payment notifications now use available/collect wording instead of ready-pickup copy while
   preserving order activation semantics.
+- Member import rate-limit and mobile document-generation errors now use wait/unavailable wording
+  instead of later/not-ready cues.
 
 ### Product plan Part A and Part B
 

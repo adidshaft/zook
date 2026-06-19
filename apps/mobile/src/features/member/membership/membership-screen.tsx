@@ -569,7 +569,7 @@ export default function MembershipScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       showToast({
-        title: kind === "receipt" ? "Receipt not ready" : "Invoice not ready",
+        title: kind === "receipt" ? "Receipt unavailable" : "Invoice unavailable",
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",

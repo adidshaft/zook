@@ -297,7 +297,7 @@ export async function handleOrganizationMembers(request: NextRequest, path: stri
     await assertRateLimit(
       "fileUploadByActor",
       `member-import:${orgId}:${userId}`,
-      "Too many import attempts. Try again later.",
+      "Too many import attempts. Try again after a short wait.",
     );
     const body = z
       .object({
