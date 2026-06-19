@@ -51,6 +51,8 @@ fully complete until the human/device/provider gates below have external evidenc
   `de2c5e2 docs: remove stale mobile ai draft audit note`,
   `ab36047 fix: neutralize offline demo fallback copy`, and
   `548e93c docs: update mobile cleanup audit for demo fallback`.
+- The mobile settings i18n table no longer carries unused privacy-history "latest export/deletion"
+  strings, removing unreachable copy that suggested freshness metadata.
 - Later cue-removal and code-surface cleanup evidence includes:
   `b4914acf` (mobile button glow shadow),
   `d30ab4c3` (mobile screen ambient layers),

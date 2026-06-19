@@ -132,8 +132,6 @@ export type TranslationKey =
   | "settings.delete"
   | "settings.exportRequested"
   | "settings.deletionRequested"
-  | "settings.latestExport"
-  | "settings.latestDeletion"
   | "settings.noExport"
   | "settings.noDeletion"
   | "settings.system"
@@ -359,8 +357,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.delete": "Delete",
     "settings.exportRequested": "Export requested. You'll receive an email when it's ready.",
     "settings.deletionRequested": "Deletion requested. This is being reviewed before execution.",
-    "settings.latestExport": "Latest export",
-    "settings.latestDeletion": "Latest deletion",
     "settings.noExport": "No export request yet",
     "settings.noDeletion": "No deletion request yet",
     "settings.system": "System",
@@ -585,8 +581,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. तैयार होने पर आपको ईमेल मिलेगा.",
     "settings.deletionRequested":
       "डिलीशन अनुरोध भेजा गया. इसे लागू करने से पहले रिव्यू किया जाएगा.",
-    "settings.latestExport": "नया एक्सपोर्ट",
-    "settings.latestDeletion": "नया डिलीशन",
     "settings.noExport": "अभी कोई एक्सपोर्ट अनुरोध नहीं",
     "settings.noDeletion": "अभी कोई डिलीशन अनुरोध नहीं",
     "settings.system": "सिस्टम",
