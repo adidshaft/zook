@@ -1069,3 +1069,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member roster count cue (`R233`) is closed:
   the member roster hero count now uses neutral styling without a lime status dot,
   keeping attention color on pending join requests and active member state.
+- **[ui, fixed]** Overstated desk branch context cue (`R234`) is closed:
+  the desk workspace branch pill now uses neutral styling without a lime status dot,
+  keeping live/check-in meaning on the actual desk metrics and actions.

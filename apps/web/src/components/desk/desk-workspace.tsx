@@ -1,7 +1,6 @@
 "use client";
 
 import { Pill } from "@/components/glass-card";
-import { StatusDot } from "@/components/dashboard/charts";
 import { useDeskWorkspace } from "@/lib/use-desk-workspace";
 import { DeskMetrics } from "./desk-metrics";
 import { DeskMessageDraftForm, DeskPickupDraftForm } from "./desk-status-forms";
@@ -39,10 +38,7 @@ export function DeskWorkspace({
   return (
     <div className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone="lime">
-          <StatusDot tone="lime" size={6} />
-          <span className="ml-1.5">{branch?.name ?? copy.mainBranch}</span>
-        </Pill>
+        <Pill>{branch?.name ?? copy.mainBranch}</Pill>
         <Pill>
           {state.todayRecords.length} {copy.checkInsToday}
         </Pill>
