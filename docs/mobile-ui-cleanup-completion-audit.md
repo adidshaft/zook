@@ -376,6 +376,8 @@ fully complete until the human/device/provider gates below have external evidenc
   per-report severity/status pills.
 - Platform gym subscriptions no longer repeats billing/referral helper copy above readouts that
   already label trial, paying, suspended, autopay, and referral states.
+- Platform subscription empty state no longer repeats trial/billing helper copy below the
+  already-clear No subscriptions title.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

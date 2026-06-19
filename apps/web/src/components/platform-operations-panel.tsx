@@ -2275,10 +2275,7 @@ function PlatformSubscriptionsSection() {
               empty="No gyms"
             />
           ) : (
-            <EmptyState
-              title="No subscriptions"
-              description="Signed-up gyms include trial and billing state."
-            />
+            <EmptyState title="No subscriptions" />
           )}
         </div>
       </GlassCard>
