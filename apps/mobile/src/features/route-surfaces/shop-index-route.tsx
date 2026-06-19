@@ -684,7 +684,7 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <Card variant="success" contentStyle={styles.pickupContent}>
+        <Card variant="compact" contentStyle={styles.pickupContent}>
           <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
           <Pressable
             onPress={async () => {

@@ -1303,3 +1303,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: trainer plan and diet feedback now uses informational compact cards
   for successful actions, warning cards for missing-client prompts, and danger
   cards for API failures instead of forcing every notice through success styling.
+- **[ui, fixed]** Overstated mobile profile and pickup cues (`R311`) are closed:
+  profile field saves now use informational tone and no longer show a decorative
+  completion dot, while the shop pickup-code card uses neutral compact styling
+  and keeps the order status chip as the semantic cue.

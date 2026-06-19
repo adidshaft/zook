@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   DatePickerField,
   Card,
@@ -14,7 +14,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
 import { useI18n } from "@/lib/i18n";
 import { useMyProfile } from "@/lib/domains";
-import { elevation, spacing, typography, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
 type GenderValue = "male" | "female" | "non_binary" | "prefer_not_to_say";
 type LocaleValue = "en" | "hi";
@@ -172,31 +172,12 @@ export function ProfileExtraFields() {
     <Card contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
-            <View
-              style={[
-                styles.completionDot,
-                { backgroundColor: palette.accent.base },
-                Platform.OS === "android"
-                  ? elevation(2, palette.accent.base, {
-                      elevation: 2,
-                      shadowOpacity: 0.18,
-                      shadowRadius: 8,
-                    })
-                  : {
-                      shadowColor: palette.accent.base,
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                    },
-              ]}
-            />
-          </View>
+          <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
           <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
             {completedCount}/5 safety and KYC fields complete.
           </Text>
         </View>
-        {savedKey ? <Pill tone="lime">Saved</Pill> : null}
+        {savedKey ? <Pill tone="blue">Saved</Pill> : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -387,16 +368,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-  },
-  titleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  completionDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
   },
   title: {
     ...typography.sectionTitle,
