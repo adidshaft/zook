@@ -131,6 +131,8 @@ fully complete until the human/device/provider gates below have external evidenc
   context directly instead of using ready-state cues.
 - Mobile scan, join approval, and browser-return copy now use neutral available/entered/approved
   wording instead of ready/as-soon-as cues.
+- Attendance QR supporting labels now use direct QR/active wording instead of extra ready/live cues
+  while preserving the existing tested page heading.
 
 ### Product plan Part A and Part B
 
