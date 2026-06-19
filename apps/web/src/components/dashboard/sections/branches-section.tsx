@@ -114,7 +114,6 @@ export function BranchesSection({
         <SectionHeader
           eyebrow="Branches"
           title="Add a branch"
-          description="Set the location, contact number, manager, and working hours members should see."
           badge={<Pill>{branches.length || 1} locations</Pill>}
         />
         <div className="mt-5 grid gap-3">

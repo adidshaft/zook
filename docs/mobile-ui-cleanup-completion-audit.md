@@ -344,6 +344,8 @@ fully complete until the human/device/provider gates below have external evidenc
   above readouts that already label those opportunities directly.
 - Dashboard branch list no longer repeats address, manager, and active-branch helper copy above
   the active count, branch rows, setup chips, and branch actions.
+- Dashboard add-branch form no longer repeats location, contact, manager, and hours helper copy
+  above step chips and fields that already name those inputs.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
