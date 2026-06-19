@@ -95,7 +95,7 @@ export function PaymentsSection({
         <Card variant="compact" contentStyle={styles.emptyPaymentContent}>
           <IconBubble icon="receipt-outline" tone="neutral" size={36} />
           <View style={styles.emptyCopy}>
-            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments yet</Text>
+            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments</Text>
           </View>
         </Card>
       )}

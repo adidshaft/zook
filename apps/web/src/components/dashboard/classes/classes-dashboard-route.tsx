@@ -267,7 +267,7 @@ export function ClassesDashboardRoute({
           {!classesQuery.isLoading && !classes.length ? (
             <GlassCard variant="muted">
               <p className="text-sm text-[var(--text-secondary)]">
-                No upcoming classes yet for this branch.
+                No upcoming classes for this branch.
               </p>
             </GlassCard>
           ) : null}

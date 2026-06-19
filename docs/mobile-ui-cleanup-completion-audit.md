@@ -405,6 +405,13 @@ fully complete until the human/device/provider gates below have external evidenc
   now remove remaining "yet" filler from no-content labels.
 - Platform service/subscription/report/activity, assistant draft, settlement queue, and class
   schedule copy now avoids to-show/found/yet/list-updates helper phrasing.
+- Mobile settings/shop and web notification, payment, product-photo, coaching, body-history,
+  and plan-mix empty labels now remove remaining found/yet/in-this-view filler.
+- Mobile gym/client/member/payment lists and web chart/class/member/payment empty labels now
+  use direct no-content wording without residual found/yet phrasing.
+- Mobile tracking, class, trainer bio, billing mandate, account-link, reception lookup,
+  member plan/profile, and web invoice empty copy now remove remaining residual yet/found cues.
+- Member membership and logged-workout fallbacks now use direct empty/scheduled-state wording.
 
 ### Product plan Part A and Part B
 

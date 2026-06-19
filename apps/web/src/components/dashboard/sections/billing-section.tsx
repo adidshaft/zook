@@ -637,7 +637,7 @@ export function BillingSection({
             ))
           ) : (
             <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
-              No invoices generated yet. Use Generate invoice from the Payments page after billing
+              No invoices generated. Use Generate invoice from the Payments page after billing
               details are complete.
             </p>
           )}

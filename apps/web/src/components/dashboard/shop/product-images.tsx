@@ -124,7 +124,7 @@ export function ProductPhotosField({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/12 bg-black/20 px-4 py-5 text-center text-sm text-white/42">
-          No product photos attached yet.
+          No product photos attached.
         </div>
       )}
     </div>

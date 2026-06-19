@@ -12,7 +12,7 @@ export default function LoggedCard({
       testID="home-state-logged"
       icon="checkmark-done-outline"
       title="Workout logged"
-      body={nextPlanName ? `Tomorrow: ${nextPlanName}.` : "Nice work. No next workout scheduled yet."}
+      body={nextPlanName ? `Tomorrow: ${nextPlanName}.` : "Nice work. No next workout scheduled."}
       ctaHref="/plan"
       ctaLabel="View plan"
       tone="lime"

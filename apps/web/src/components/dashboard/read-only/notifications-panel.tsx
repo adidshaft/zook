@@ -95,7 +95,7 @@ export function NotificationsPanel({
               },
               {
                 label: "Audience",
-                value: summary.activeMembers > 0 ? "Member targeting" : "No active audience yet",
+                value: summary.activeMembers > 0 ? "Member targeting" : "No active audience",
                 meta: "Member list",
               },
               {
@@ -152,7 +152,7 @@ export function NotificationsPanel({
               ))
             ) : (
               <EmptyState
-                title="No notifications sent yet"
+                title="No notifications sent"
                 description="Compose the first update to reach members."
               />
             )}

@@ -483,7 +483,7 @@ export function DashboardOverview({
                 />
               )) : (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
-                  <span className="truncate text-xs text-[var(--text-secondary)]">No active plan mix yet</span>
+                  <span className="truncate text-xs text-[var(--text-secondary)]">No active plan mix</span>
                   <span className="text-xs font-semibold tabular-nums text-[var(--text-primary)]">0%</span>
                 </div>
               )}

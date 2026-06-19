@@ -242,7 +242,7 @@ export function MemberList({
 function MemberListEmpty({ filtersActive }: { filtersActive: boolean }) {
   return (
     <EmptyState
-      title={filtersActive ? "No members match" : "No members yet"}
+      title={filtersActive ? "No members match" : "No members"}
       description={
         filtersActive
           ? "Try a different filter or search term."

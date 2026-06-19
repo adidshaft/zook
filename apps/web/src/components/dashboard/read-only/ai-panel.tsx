@@ -54,7 +54,7 @@ export function AiPanel({
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState title="Loading drafts" />
+            <EmptyState title="Loading assistant drafts" />
           ) : (
             <DataTable
               columns={[
@@ -170,7 +170,7 @@ export function AiPanel({
               label: "Assisted plans",
               value: coachPlans.filter((plan) => plan.aiGenerated).length
                 ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
-                : "No assisted plans yet",
+                : "No assisted plans",
               meta: "Reviewable training content created so far",
             },
           ]}

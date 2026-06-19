@@ -331,7 +331,7 @@ export default function ProfileScreen() {
 
   function showRoleSwitcher() {
     if (!roles.length && !rolesInOtherGyms.length) {
-      Alert.alert("No roles yet", "This account does not have another role in the active gym.");
+      Alert.alert("No roles", "This account does not have another role in the active gym.");
       return;
     }
     Alert.alert(
@@ -367,7 +367,7 @@ export default function ProfileScreen() {
   function showGymSwitcher() {
     const gyms = session?.organizations ?? [];
     if (!gyms.length) {
-      Alert.alert("No gyms yet", "Join or request access to a gym first.");
+      Alert.alert("No gyms", "Join or request access to a gym first.");
       return;
     }
     Alert.alert(
@@ -637,7 +637,7 @@ export default function ProfileScreen() {
               ) : (
                 <EmptyState
                   icon="time-outline"
-                  title="No activity yet"
+                  title="No activity"
                 />
               )}
             </Card>

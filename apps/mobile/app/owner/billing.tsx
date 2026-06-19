@@ -212,7 +212,7 @@ export default function OwnerBillingScreen() {
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
                       {mandate
                         ? `${titleCaseFromCode(mandate.status)} · ${formatInr(mandate.amountPaise)}`
-                        : "No payment mandate is set up yet."}
+                        : "No payment mandate is set up."}
                     </Text>
                   </View>
                   <StatusChip

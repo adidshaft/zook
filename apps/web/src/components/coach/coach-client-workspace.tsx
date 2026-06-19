@@ -111,7 +111,7 @@ export function CoachClientWorkspace({
   const trainerPath = `/api/orgs/${orgId}/trainers/${trainerId}/clients/${clientId}`;
   const latestProgress = bodyProgress[0];
   const progressSummary = useMemo(() => {
-    if (!latestProgress) return "No measurements yet";
+    if (!latestProgress) return "No measurements";
     return [
       latestProgress.weightKg ? `${latestProgress.weightKg} kg` : null,
       latestProgress.waistCm ? `${latestProgress.waistCm} cm waist` : null,
@@ -339,7 +339,7 @@ export function CoachClientWorkspace({
                   ))}
                 </>
               ) : (
-                <p className="text-sm text-[var(--text-secondary)]">No trainer-visible feedback yet.</p>
+                <p className="text-sm text-[var(--text-secondary)]">No trainer-visible feedback.</p>
               )}
             </div>
           </section>

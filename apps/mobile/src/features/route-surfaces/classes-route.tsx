@@ -82,7 +82,7 @@ export default function ClassesRoute() {
             <Card variant="compact">
               <EmptyState
                 icon="calendar-outline"
-                title="No classes yet"
+                title="No classes"
                 body="No upcoming classes for this branch."
               />
             </Card>

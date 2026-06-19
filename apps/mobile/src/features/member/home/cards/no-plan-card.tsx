@@ -9,7 +9,7 @@ export default function NoPlanCard({ daysLeft, gymName }: { daysLeft: number; gy
     <HomeCardShell
       testID="home-state-no-plan"
       icon="chatbubble-ellipses-outline"
-      title="No plan assigned yet"
+      title="No plan assigned"
       body={`You are active at ${gymName}. Ask your trainer for a workout plan.`}
       ctaHref="/plan"
       ctaLabel="Open Plan"

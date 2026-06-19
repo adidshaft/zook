@@ -12,7 +12,7 @@ export type { MemberListFilter, MemberListProps, MemberRowItem } from "./types";
 
 export function MemberList({
   availableFilters,
-  emptyState = { title: "No members found", subtitle: "Try a different search or filter." },
+  emptyState = { title: "No members", subtitle: "Try a different search or filter." },
   filter,
   isError,
   isLoading,

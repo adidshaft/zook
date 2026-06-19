@@ -504,7 +504,7 @@ export default function GymProfileScreen() {
                         <View style={styles.trainerCopy}>
                           <Text style={[styles.trainerName, { color: palette.text.primary }]}>{trainer.name}</Text>
                           <Text style={[styles.sectionBody, { color: palette.text.secondary }]} numberOfLines={2}>
-                            {trainer.bio ?? "No bio added yet."}
+                            {trainer.bio ?? "No bio added."}
                           </Text>
                           <View style={styles.trainerSpecialties}>
                             {normalizeSpecialties(trainer.specialties)
@@ -761,7 +761,7 @@ export default function GymProfileScreen() {
                 <View style={styles.trainerCopy}>
                   <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? "No trainer bio published yet."}
+                    {selectedTrainer.bio ?? "No trainer bio published."}
                   </Text>
                 </View>
               </View>

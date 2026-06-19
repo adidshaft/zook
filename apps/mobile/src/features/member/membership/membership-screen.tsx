@@ -901,7 +901,7 @@ function RenewalSheet({
             {loadingPlans ? <PlansSkeleton /> : null}
             {!loadingPlans && !plans.length ? (
               <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                No alternate plans are published yet. Same-plan renewal is requested.
+                No alternate plans are published. Same-plan renewal is requested.
               </Text>
             ) : null}
             {plans.map((plan) => {

@@ -137,7 +137,7 @@ export function PaymentHistoryCard({
               rowKey={(payment) => payment.id}
               empty={
                 <EmptyState
-                  title="No payments yet"
+                  title="No payments"
                 />
               }
             />

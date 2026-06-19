@@ -86,7 +86,7 @@ function ContactVerifier({
   const inputMode = kind === "email" ? "email" : "tel";
   const helper = useMemo(() => {
     if (!currentValue) {
-      return `No ${kind === "email" ? "email" : "mobile number"} linked yet.`;
+      return `No ${kind === "email" ? "email" : "mobile number"} linked.`;
     }
     return `Current: ${currentValue}`;
   }, [currentValue, kind]);

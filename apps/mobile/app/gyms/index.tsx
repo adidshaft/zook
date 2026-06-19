@@ -201,7 +201,7 @@ export default function FindGyms() {
               <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
-                  No gyms found
+                  No gyms
                 </Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                   Try widening the city or clearing the search.

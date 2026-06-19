@@ -35,7 +35,7 @@ export function workoutToEntry(workout: {
     }),
     focusLabel: workout.workoutType,
     effortLabel: workout.intensity ?? "Logged",
-    notes: workout.notes ?? "No notes yet.",
+    notes: workout.notes ?? "No notes.",
     exercises:
       workout.exercises?.map((exercise) => ({
         id: exercise.id,
@@ -63,7 +63,7 @@ export function buildTrackingSummaryMetrics(input: {
         includeZeroMinutes: true,
         separator: " ",
       }),
-      detail: input.totalDuration > 0 ? "This week" : "No sessions yet"
+      detail: input.totalDuration > 0 ? "This week" : "No sessions"
     },
     {
       id: "recent",

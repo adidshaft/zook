@@ -97,7 +97,7 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       ) : (
         <EmptyState
           className="mt-5"
-          title="No body composition entries yet"
+          title="No body composition entries"
           description="Add body progress and progress photos from the member app."
         />
       )}

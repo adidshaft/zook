@@ -270,7 +270,7 @@ export function KPITile({
         {trend && trend.length > 1 ? (
           <Sparkline values={trend} tone={tone} width={80} height={24} className="shrink-0" />
         ) : (
-          <span className="text-[11px] text-[var(--text-tertiary)] shrink-0">No trend yet</span>
+          <span className="text-[11px] text-[var(--text-tertiary)] shrink-0">No trend</span>
         )}
         {delta != null ? (
           <div className="shrink-0">

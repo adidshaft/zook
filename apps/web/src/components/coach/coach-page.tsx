@@ -89,7 +89,7 @@ export function CoachPage({
               <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-4 text-sm text-[var(--text-secondary)]">
                 <PinIcon size={16} className="mt-0.5 shrink-0 text-[var(--text-tertiary)]" />
                 <span>
-                  No clients pinned yet. Pin clients from the mobile app.
+                  No pinned clients. Pin clients from the mobile app.
                 </span>
               </div>
             ) : (

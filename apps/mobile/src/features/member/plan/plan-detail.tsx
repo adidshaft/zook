@@ -587,7 +587,7 @@ export function PlanDetailScreen() {
               {!exercisesQuery.isLoading && !exercisesQuery.isError && !exercises.length ? (
                 <Card variant="compact">
                   <EmptyState
-                    title="No exercises yet"
+                    title="No exercises"
                   />
                 </Card>
               ) : null}

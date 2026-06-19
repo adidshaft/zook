@@ -199,7 +199,7 @@ export function ReceptionMembersScreenBody() {
                 onRetry={() => void membersQuery.refetch()}
                 searchValue={memberSearch}
                 onSearchChange={setMemberSearch}
-                emptyState={{ title: "No members found", subtitle: "Try a different name or email." }}
+                emptyState={{ title: "No members", subtitle: "Try a different name or email." }}
                 onPressMember={(user) => {
                   if (multiSelectMode) {
                     toggleMemberSelection(user.id);

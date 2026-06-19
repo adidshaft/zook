@@ -591,7 +591,7 @@ function useReceptionWorkspaceState({
         return;
       }
       if (!result.match) {
-        const message = "No active entry or pickup code found.";
+        const message = "No active entry or pickup code.";
         presentVerificationResult({ tone: "danger", message });
         showToast({ tone: "amber", haptic: "warning", message });
         return;

@@ -937,7 +937,7 @@ export function PlatformOperationsPanel({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No gym access found.</p>
+                          <p className="text-sm text-white/45">No gym access.</p>
                         )}
                       </div>
                     </div>
@@ -961,7 +961,7 @@ export function PlatformOperationsPanel({
                             </button>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No payments found for this user.</p>
+                          <p className="text-sm text-white/45">No payments for this user.</p>
                         )}
                       </div>
                     </div>
@@ -1141,7 +1141,7 @@ export function PlatformOperationsPanel({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No payment events recorded yet.</p>
+                          <p className="text-sm text-white/45">No payment events recorded.</p>
                         )}
                       </div>
                     </div>

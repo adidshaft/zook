@@ -166,7 +166,7 @@ export function SettlementQueueCard({
               rowKey={(order) => order.id}
               empty={
                 <EmptyState
-                  title="No shop orders in this view"
+                  title="No shop orders"
                   description="Payment and pickup follow-up is clear."
                 />
               }
