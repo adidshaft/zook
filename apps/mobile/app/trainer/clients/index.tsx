@@ -5,7 +5,6 @@ import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import {
   AppHeader,
-  SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
@@ -84,7 +83,6 @@ export default function TrainerClientsScreen() {
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
                 />
-                <SectionHeader title="Clients" />
               </>
             }
           />
