@@ -420,6 +420,7 @@ fully complete until the human/device/provider gates below have external evidenc
   next status and Open clients action.
 - Dashboard reports hero no longer repeats membership/activity/revenue guidance above branch
   meta, date filters, tabs, and KPI/report surfaces.
+- Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
 - Mobile QA shortcuts header no longer repeats launcher guidance above the Public and Roles
