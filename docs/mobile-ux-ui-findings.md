@@ -1151,3 +1151,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   the operational Display QR entry workflow now uses informational tone, and join
   request workflow badges use neutral tone when the queue is clear while preserving
   warning tone for pending membership approvals.
+- **[ui, fixed]** Decorative public home role/loop cues (`R261`) are closed:
+  static public home role cards and operations-loop cards now use neutral or
+  informational styling instead of success/warning tones that implied live state.

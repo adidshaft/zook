@@ -12,6 +12,10 @@ import { ZookButtonLink } from "@/components/zook-button";
 import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 import { homeData } from "./home-data";
 
+function pillarIconClass(tone: "neutral" | "info") {
+  return tone === "info" ? "text-[var(--feedback-info)]" : "text-[var(--text-secondary)]";
+}
+
 export function HomeHero({ locale }: { locale: PublicLocale }) {
   const { t, pillars, statStrip } = homeData(locale);
   return (
@@ -101,7 +105,7 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
             <StaggerItem key={label}>
               <MotionSurface>
                 <GlassCard className="p-4 text-[var(--text-primary)]">
-                  <Icon size={18} className={tone === "lime" ? "text-[var(--accent-strong)]" : tone === "amber" ? "text-[var(--feedback-warning)]" : "text-[var(--feedback-info)]"} />
+                  <Icon size={18} className={pillarIconClass(tone)} />
                   <p className="mt-4 text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{label}</p>
                   <p className="mt-1 text-[13px] font-medium leading-5 text-[var(--text-secondary)]">{value}</p>
                 </GlassCard>
