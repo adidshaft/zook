@@ -180,6 +180,8 @@ fully complete until the human/device/provider gates below have external evidenc
   needed/running phrasing.
 - Platform incident checklist now uses service issue/status wording instead of provider-gap/status
   cues.
+- Platform support console description now states the review workflow directly instead of saying
+  records are loaded by default.
 
 ### Product plan Part A and Part B
 

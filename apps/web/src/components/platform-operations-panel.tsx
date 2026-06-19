@@ -791,7 +791,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Support"
             title="Platform support console"
-            description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
+            description="Review recent users and payments. Search narrows the list, and Details opens the full operational record."
             badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : <Pill>Console</Pill>}
           />
           <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
