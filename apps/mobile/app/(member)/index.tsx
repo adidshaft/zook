@@ -238,10 +238,10 @@ export default function HomeScreen() {
                 >
                   <StatStrip
                     items={[
-                      { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
-                      { label: "Active", value: formatCompactMinutes(activeMinutes), icon: "time-outline" },
-                      { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
-                      { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
+                      { label: "Visits", value: String(weeklyVisits) },
+                      { label: "Active", value: formatCompactMinutes(activeMinutes) },
+                      { label: "Workouts", value: String(workoutsLogged) },
+                      { label: "Habits", value: String(habitsDone) },
                     ]}
                   />
                 </Pressable>

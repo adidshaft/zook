@@ -433,6 +433,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cues from static account, detail, payment, and summary rows.
 - Static mobile list rows no longer reserve an empty trailing slot when they have no action,
   chevron, or status content.
+- Member home stat strip now relies on metric labels and values without repeated decorative
+  icons for visits, active time, workouts, and habits.
 
 ### Product plan Part A and Part B
 
