@@ -153,6 +153,8 @@ fully complete until the human/device/provider gates below have external evidenc
   preserving accepted autopay statuses and UI output.
 - Dashboard sign-out hydration guard now uses mounted naming instead of ready-state naming while
   preserving the disabled-until-mounted behavior.
+- Mobile profile membership progress fallback now uses unavailable-detail wording instead of a
+  syncing-state cue.
 
 ### Product plan Part A and Part B
 

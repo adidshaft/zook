@@ -100,7 +100,7 @@ function membershipProgressLabel(input: {
   if (typeof input.daysLeft === "number") {
     return `${input.daysLeft} days remaining`;
   }
-  return "Membership syncing";
+  return "Membership details unavailable";
 }
 
 export default function ProfileScreen() {
