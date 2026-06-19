@@ -141,7 +141,7 @@ export default function TrainerHomeScreen() {
               />
             ) : (
               <Card variant="compact" contentStyle={styles.stack}>
-                <EmptyState title="Plan queue clear" body="Every assigned client has active plan work." />
+                <EmptyState title="Plan queue clear" />
               </Card>
             )}
           </AnimatedAppear>

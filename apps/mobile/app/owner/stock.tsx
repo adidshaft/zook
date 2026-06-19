@@ -66,7 +66,7 @@ export default function OwnerStockScreen() {
             {!dashboardQuery.isError && lowStock.length
               ? lowStock.map((product) => <StockRow key={product.id} product={product} onReorder={() => void reorderProduct(product)} />)
               : null}
-            {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" body="No items below threshold." /> : null}
+            {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" /> : null}
           </Card>
           <SectionHeader title="Pickup orders" />
           <Card contentStyle={styles.stack}>

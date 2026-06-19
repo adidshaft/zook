@@ -422,8 +422,8 @@ export function StaffSection({
             ))
           ) : (
             <EmptyState
-              title="No coaching plans yet"
-              description="Trainers have not published any plans for this gym."
+              title="No coaching plans"
+              description="Trainer plans are not published."
             />
           )}
           {coachPlans.length > 6 ? (

@@ -397,6 +397,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of all-caught-up or not-published-yet helper copy.
 - Public gym plan/facility/trainer fallbacks, checkout unavailable errors, and mobile refresh
   states now use direct not-published/unavailable/updating wording.
+- Shared mobile member-list empty states, trainer plan queue, owner stock, dashboard payment
+  history, shop inventory, and coaching-plan empty copy now avoid forced or repeated helper text.
 
 ### Product plan Part A and Part B
 
