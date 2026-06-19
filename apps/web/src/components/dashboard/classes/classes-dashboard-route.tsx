@@ -112,7 +112,6 @@ export function ClassesDashboardRoute({
       <DashboardPageShell
         eyebrow="Classes"
         title="Schedule a group class"
-        description="Create the next yoga, strength, spin, or PT-led session for the active branch."
         action={
           <Pill tone={selectedBranchId ? "blue" : "amber"}>
             <MapPin className="h-3.5 w-3.5" />
