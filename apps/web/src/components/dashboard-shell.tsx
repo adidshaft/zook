@@ -31,7 +31,7 @@ const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
     "plans/referrals": "Create referral codes and tune rewards for members, trainers, and staff.",
     staff: "Invite Admin, Reception, and Trainer users with the right gym access.",
     notifications: "Send member updates and choose the exact audience before sending.",
-    "notifications/templates": "Keep reusable message drafts ready for common gym updates.",
+    "notifications/templates": "Keep reusable message drafts available for common gym updates.",
     "notifications/history": "Review delivery status and follow up on messages that need attention.",
     branches: "Manage locations, branch details, and the branch used for daily operations.",
     "public-profile": "Polish the gym page, photos, links, timings, and entry QR presentation.",

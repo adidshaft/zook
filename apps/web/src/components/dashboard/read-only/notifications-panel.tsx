@@ -154,7 +154,7 @@ export function NotificationsPanel({
             ) : (
               <EmptyState
                 title="No notifications sent yet"
-                description="Compose the first update when you are ready to reach members."
+                description="Compose the first update to reach members."
               />
             )}
           </div>

@@ -557,7 +557,7 @@ export default function GymProfileScreen() {
                   {viewerState?.activeMembership?.remainingVisits !== null &&
                   viewerState?.activeMembership?.remainingVisits !== undefined
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
-                    : "Choose a plan when you’re ready."}
+                    : "Choose a plan to continue."}
                 </Text>
               </Card>
             </View>
@@ -812,7 +812,7 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
       },
       {
         title: "Review plans",
-        body: "Once the code is accepted, plans are ready to join.",
+        body: "Once the code is accepted, plans are available to join.",
       },
       {
         title: "Pay securely",
