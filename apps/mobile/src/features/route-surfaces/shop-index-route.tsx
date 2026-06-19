@@ -845,7 +845,7 @@ export default function Shop() {
               <BranchSelectorChip />
               <StatusChip
                 status={`${itemCount} ${t(itemCount === 1 ? "shop.item" : "shop.items")}`}
-                tone="lime"
+                tone="neutral"
               />
             </View>
           }

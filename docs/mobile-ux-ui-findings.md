@@ -1141,3 +1141,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Stale dashboard attention success tone allowance (`R257`) is closed:
   the overview attention-row type no longer allows lime now that attention rows use
   only informational, warning, or danger tones.
+- **[ui, fixed]** Overstated mobile cart item-count cue (`R258`) is closed:
+  the shop cart header item-count chip now uses neutral styling instead of success
+  color, keeping stronger tones for payment and pickup outcomes.
