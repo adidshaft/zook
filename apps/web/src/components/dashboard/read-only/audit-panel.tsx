@@ -65,7 +65,7 @@ export function AuditPanel({
           {auditLogsState.error ? (
             <ErrorNotice message={auditLogsState.error} />
           ) : auditLogsState.loading && auditLogs.length === 0 ? (
-            <EmptyState title="Loading activity" />
+            <EmptyState title="Loading admin activity" />
           ) : (
             <>
               <DataTable
@@ -225,7 +225,7 @@ export function AuditPanel({
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState title="Loading drafts" />
+            <EmptyState title="Loading assistant drafts" />
           ) : visibleAiUsage.length ? (
             visibleAiUsage.slice(0, 8).map((usage) => (
               <button

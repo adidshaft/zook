@@ -403,6 +403,8 @@ fully complete until the human/device/provider gates below have external evidenc
   direct titles without extra "yet" or unlock/not-published helper wording.
 - Web profile, platform, membership, attendance, audit, coaching, and mobile payout empty states
   now remove remaining "yet" filler from no-content labels.
+- Platform service/subscription/report/activity, assistant draft, settlement queue, and class
+  schedule copy now avoids to-show/found/yet/list-updates helper phrasing.
 
 ### Product plan Part A and Part B
 

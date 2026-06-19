@@ -167,7 +167,7 @@ export function SettlementQueueCard({
               empty={
                 <EmptyState
                   title="No shop orders in this view"
-                  description="No payment or pickup follow-up needed."
+                  description="Payment and pickup follow-up is clear."
                 />
               }
             />

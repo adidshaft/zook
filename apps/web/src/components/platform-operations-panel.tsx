@@ -1533,7 +1533,7 @@ export function PlatformOperationsPanel({
               ]}
               rows={providerEntries}
               rowKey={([category]) => category}
-              empty="No service status checks to show."
+              empty="No service status checks."
             />
           </div>
         </GlassCard>
@@ -1898,7 +1898,7 @@ export function PlatformOperationsPanel({
                   {usageState.error}
                 </p>
               ) : usageState.loading && usage.length === 0 ? (
-                <EmptyState title="Loading activity" />
+                <EmptyState title="Loading assistant activity" />
               ) : (
                 <DataTable
                   columns={[
@@ -2001,7 +2001,7 @@ export function PlatformOperationsPanel({
                   </div>
                 ))
               ) : (
-                <EmptyState title="No recent reports" />
+                <EmptyState title="No reports" />
               )}
             </div>
           </GlassCard>
@@ -2277,11 +2277,11 @@ function PlatformSubscriptionsSection() {
               ]}
               rows={rows}
               rowKey={(row) => row.orgId}
-              empty="No gyms found."
+              empty="No gyms"
             />
           ) : (
             <EmptyState
-              title="No subscriptions yet"
+              title="No subscriptions"
               description="Signed-up gyms include trial and billing state."
             />
           )}

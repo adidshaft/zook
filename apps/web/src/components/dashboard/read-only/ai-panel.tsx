@@ -109,7 +109,7 @@ export function AiPanel({
               ]}
               rows={aiUsage}
               rowKey={(usage) => usage.id}
-              empty="No assistant drafts to show."
+              empty="No assistant drafts."
             />
           )}
         </div>
