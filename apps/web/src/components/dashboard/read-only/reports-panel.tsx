@@ -117,7 +117,6 @@ export function ReportsPanel({
       <SectionHero
         eyebrow="Operational report pack"
         title="Reports & insights"
-        description="Memberships, floor activity, and revenue in one place. Drill into any KPI to see the underlying record."
         icon={BarChart3}
         tone="sky"
         meta={

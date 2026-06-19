@@ -418,6 +418,8 @@ fully complete until the human/device/provider gates below have external evidenc
   below the switch label.
 - Mobile trainer plan queue no longer repeats create-next-plan guidance above the Create plan
   next status and Open clients action.
+- Dashboard reports hero no longer repeats membership/activity/revenue guidance above branch
+  meta, date filters, tabs, and KPI/report surfaces.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
 - Mobile QA shortcuts header no longer repeats launcher guidance above the Public and Roles
