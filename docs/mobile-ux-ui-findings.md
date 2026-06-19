@@ -1099,3 +1099,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading dashboard expiring-members attention cue (`R243`) is closed:
   the overview attention row no longer shows a success-colored cue for zero expiring
   memberships, and uses warning tone only when renewals are actually due soon.
+- **[ui, fixed]** Overstated dashboard payment-action cues (`R244`) are closed:
+  next-best payment actions now use the informational dashboard tone instead of
+  success color, keeping lime for actual success states rather than reconciliation prompts.
