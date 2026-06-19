@@ -1245,7 +1245,7 @@ export function PlatformOperationsPanel({
               eyebrow="Moderation"
               title="Content moderation queue"
               description="Review flagged content and record a platform decision."
-              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "lime"}>{moderationFlags.length} flags</Pill>}
+              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "neutral"}>{moderationFlags.length} flags</Pill>}
             />
             <div className="mt-5">
               <DataTable
@@ -1576,7 +1576,7 @@ export function PlatformOperationsPanel({
               title="Gym accounts"
               description="Review active gyms and pause accounts when the platform team needs to step in."
               badge={
-                <Pill tone={suspendedOrganizations.length ? "amber" : "lime"}>
+                <Pill tone={suspendedOrganizations.length ? "amber" : "neutral"}>
                   {suspendedOrganizations.length} suspended
                 </Pill>
               }

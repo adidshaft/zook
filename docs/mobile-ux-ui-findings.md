@@ -1193,3 +1193,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated shop clear-queue badges (`R274`) are closed:
   shop low-stock, ready-order, and settlement queue badges now use neutral tone for
   zero-count clear states, while nonzero operational queues still use warning tone.
+- **[ui, fixed]** Overstated platform moderation/account clear badges (`R275`) are closed:
+  moderation flag and suspended-organization badges now use neutral tone for clear
+  or zero-count states, while pending flags and suspended accounts remain warning.
