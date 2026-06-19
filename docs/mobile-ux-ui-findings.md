@@ -1385,3 +1385,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   pricing, body-composition, attendance, and member-profile copy now uses
   command/current wording instead of live/latest labels for static helper text
   and positional badges.
+- **[ui, fixed]** Overstated privileged PIN readiness fallback (`R333`) is
+  closed: the mobile privileged-action fallback now describes the PIN prompt as
+  still loading instead of presenting the action as not ready.
