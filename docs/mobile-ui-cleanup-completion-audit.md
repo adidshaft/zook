@@ -254,6 +254,11 @@ fully complete until the human/device/provider gates below have external evidenc
   summary, and billing CTA copy now avoid leftover snapshot/current/default/test/setup cues.
 - Mobile membership/payment hints and web status/queue/broadcast/refund helper copy now use shorter
   member/status/queue/console/correction wording instead of current/available/already/history phrasing.
+- Mobile plan empty states and web plan/staff/profile helpers now use direct show/share wording
+  instead of will-appear/available/use-this/get-set-up phrasing.
+- Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
+  messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
+  will-appear/available phrasing.
 
 ### Product plan Part A and Part B
 

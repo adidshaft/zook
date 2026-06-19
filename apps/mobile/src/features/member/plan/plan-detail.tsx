@@ -589,7 +589,7 @@ export function PlanDetailScreen() {
                 <Card variant="compact">
                   <EmptyState
                     title="No exercises yet"
-                    body="Assigned exercise details will appear here once your coach publishes them."
+                    body="Assigned exercise details show here after your coach publishes them."
                   />
                 </Card>
               ) : null}

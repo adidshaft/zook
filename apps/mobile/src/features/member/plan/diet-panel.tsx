@@ -113,12 +113,12 @@ export function DietPanel() {
             </View>
           ))
         ) : (
-          <EmptyState title="No diet plan yet" body="Your trainer's published meals will appear here." />
+          <EmptyState title="No diet plan yet" body="Published meals from your trainer show here." />
         )}
       </Card>
 
       <Card contentStyle={styles.stack}>
-        <SectionHeader title="Log meal" subtitle="Use a preset or type a quick deviation." />
+        <SectionHeader title="Log meal" subtitle="Choose a preset or type a quick change." />
         <View style={styles.presetRow}>
           {indianMealPresets.slice(0, 5).map((preset) => (
             <Pressable

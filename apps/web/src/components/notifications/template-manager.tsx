@@ -200,7 +200,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
           ))}
           {!templates.length ? (
             <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-              Saved templates will appear here.
+              Saved templates show here.
             </p>
           ) : null}
           {templateToDelete ? (

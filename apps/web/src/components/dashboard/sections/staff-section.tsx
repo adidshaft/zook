@@ -347,7 +347,7 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Access"
           title="What each role can do"
-          description="Use this when explaining access to a new team member."
+          description="Share this with new team members."
         />
         <div className="mt-5 grid gap-3">
           {roleCapabilitySections.map((section) => (

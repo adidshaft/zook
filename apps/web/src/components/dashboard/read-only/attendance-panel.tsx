@@ -159,7 +159,7 @@ export function AttendancePanel({
                 ]}
                 rows={attendanceRecords}
                 rowKey={(record) => record.id}
-                empty="No attendance scans are available yet."
+                empty="No attendance scans yet."
               />
               <LoadMoreButton
                 count={attendanceRecords.length}

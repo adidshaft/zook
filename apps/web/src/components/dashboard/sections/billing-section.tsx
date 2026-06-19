@@ -24,7 +24,7 @@ const copy = {
   trialEnds: "Trial ends",
   documentReadiness: "Document readiness",
   invoicesTitle: "Invoices",
-  invoicesDescription: "Invoices will appear here after the first paid billing cycle.",
+  invoicesDescription: "Invoices appear after the first paid billing cycle.",
 };
 
 type BillingProfile = {

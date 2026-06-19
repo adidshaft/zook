@@ -97,7 +97,7 @@ export function PaymentsSection({
           <View style={styles.emptyCopy}>
             <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments yet</Text>
             <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-              Transaction history will appear here.
+              Transaction records show here.
             </Text>
           </View>
         </Card>

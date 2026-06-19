@@ -135,7 +135,7 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
           })
         ) : (
           <Text style={[styles.empty, { color: palette.text.secondary }]}>
-            Active member plans will appear here.
+            Active member plans show here.
           </Text>
         )}
       </View>

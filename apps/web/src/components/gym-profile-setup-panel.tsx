@@ -544,7 +544,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                     {
                       label: "Membership link",
                       value: joinUrl,
-                      meta: "Use this only when people should choose a plan",
+                      meta: "Share when people should choose a plan",
                     },
                   ]}
                 />
