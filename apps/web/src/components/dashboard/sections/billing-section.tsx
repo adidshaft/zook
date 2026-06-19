@@ -332,9 +332,9 @@ export function BillingSection({
             </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {profile?.invoiceReady
-                ? "Invoices available"
+                ? "Invoices ready"
                 : profile?.receiptReady
-                  ? "Receipts available"
+                  ? "Receipts ready"
                   : "Add details"}
             </p>
           </div>

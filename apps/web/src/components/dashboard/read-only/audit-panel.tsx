@@ -117,7 +117,7 @@ export function AuditPanel({
                 ]}
                 rows={auditLogs}
                 rowKey={(log) => log.id}
-                empty="No admin activity is available yet."
+                empty="No admin activity yet."
               />
               <LoadMoreButton
                 count={auditLogs.length}

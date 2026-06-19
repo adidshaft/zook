@@ -21,7 +21,7 @@ function branchSetupSteps(branch: BranchRow, hasReceptionist: boolean, hasBranch
     { label: "Manager assigned", done: Boolean(branch.managerId) },
     { label: "Working hours set", done: Boolean(branch.operatingHours) },
     { label: "Reception assigned", done: hasReceptionist },
-    { label: "Plans available", done: hasBranchPlan },
+    { label: "Plans ready", done: hasBranchPlan },
   ];
 }
 

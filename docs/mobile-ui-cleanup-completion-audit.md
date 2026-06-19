@@ -259,6 +259,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
+- Mobile activity, pickup, trainer bio, invite-plan steps, and web admin/referral/branch/billing
+  status copy now uses show/ready/attached wording instead of will-show/available/already/appears.
 
 ### Product plan Part A and Part B
 

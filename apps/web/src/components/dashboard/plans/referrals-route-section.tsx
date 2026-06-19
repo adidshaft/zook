@@ -14,7 +14,7 @@ import { webApiFetch } from "@/lib/api-client";
 const copy = {
   referralsDescription:
     "Create member, staff, and trainer referral codes with clear monthly limits.",
-  referralEmpty: "Referral performance appears after the first share.",
+  referralEmpty: "Referral performance starts after the first share.",
   policyDescription: "Set the reward, friend discount, and monthly cap.",
   maxDiscount: "Maximum discount (%)",
 };

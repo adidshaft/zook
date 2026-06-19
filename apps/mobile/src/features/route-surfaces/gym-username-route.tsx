@@ -761,7 +761,7 @@ export default function GymProfileScreen() {
                 <View style={styles.trainerCopy}>
                   <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? "Bio will appear once this trainer publishes it."}
+                    {selectedTrainer.bio ?? "Trainer bio shows here after publishing."}
                   </Text>
                 </View>
               </View>
@@ -807,12 +807,12 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
       {
         title: "Secure a referral",
         body: referralCode
-          ? `Referral ${referralCode} is already attached.`
+          ? `Referral ${referralCode} is attached.`
           : "A referral or invite is required before you can continue.",
       },
       {
         title: "Review plans",
-        body: "Once the code is accepted, plans are available to join.",
+        body: "Once the code is accepted, plans are ready to join.",
       },
       {
         title: "Pay securely",
