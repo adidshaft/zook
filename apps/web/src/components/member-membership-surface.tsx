@@ -112,7 +112,7 @@ export async function renderMembershipSurface(
                     </div>
                     <div className="text-left md:text-right">
                       <p className="text-sm text-white/45">Plan value</p>
-                      <p className="mt-1 text-2xl font-semibold text-lime-200">
+                      <p className="mt-1 text-2xl font-semibold text-white">
                         {formatInr(plan?.pricePaise ?? payment?.amountPaise ?? 0)}
                       </p>
                     </div>
@@ -120,7 +120,7 @@ export async function renderMembershipSurface(
 
                   <div className="mt-5 grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <CalendarDays className="text-lime-200" size={18} />
+                      <CalendarDays className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Valid until
                       </p>
@@ -129,7 +129,7 @@ export async function renderMembershipSurface(
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <Dumbbell className="text-lime-200" size={18} />
+                      <Dumbbell className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Visits
                       </p>
@@ -140,7 +140,7 @@ export async function renderMembershipSurface(
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <CreditCard className="text-lime-200" size={18} />
+                      <CreditCard className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Last payment
                       </p>

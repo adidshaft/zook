@@ -248,7 +248,7 @@ export function MemberContactCompletionPanel({
           </div>
         ) : null}
 
-        {message ? <p className="mt-3 text-sm text-lime-100/80">{message}</p> : null}
+        {message ? <p className="mt-3 text-sm text-white/55">{message}</p> : null}
       </div>
     </GlassCard>
   );

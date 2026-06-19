@@ -1317,3 +1317,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   closed: account contact completion now uses informational tone when both
   contacts are present, and the trainer client hero no longer shows a redundant
   accent avatar dot beside the explicit active/paused member label.
+- **[ui, fixed]** Overstated member account metric cues (`R315`) are closed:
+  member contact helper text and membership summary metrics now use neutral text
+  treatment instead of lime emphasis, while explicit status pills keep their
+  semantic tone.
