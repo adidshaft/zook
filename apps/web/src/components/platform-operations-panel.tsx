@@ -1571,7 +1571,7 @@ export function PlatformOperationsPanel({
         <div id="organizations" className="scroll-mt-5">
           <GlassCard>
             <SectionHeader
-              eyebrow="Gym accounts"
+              eyebrow="Organizations"
               title="Gym accounts"
               badge={
                 <Pill tone={suspendedOrganizations.length ? "amber" : "neutral"}>
@@ -1664,7 +1664,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No gym accounts."
+                empty="No accounts."
               />
             </div>
             {selectedOrganization ? (
