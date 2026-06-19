@@ -1490,7 +1490,7 @@ export function PlatformOperationsPanel({
                     <div>
                       <p className="font-medium text-white">{formatEnumLabel(category)}</p>
                       <p className="mt-1 text-xs text-white/45">
-                        Setup {provider.configured ? "complete" : "required"} · Service{" "}
+                        {provider.configured ? "Ready" : "Review needed"} · Service{" "}
                         {provider.activeProvider ? "active" : "inactive"}
                       </p>
                     </div>
@@ -1522,7 +1522,7 @@ export function PlatformOperationsPanel({
                   id: "env",
                   header: "Needs",
                   render: ([, provider]) =>
-                    (provider.missingEnv?.length ?? 0) ? "Setup required" : "Nothing",
+                    (provider.missingEnv?.length ?? 0) ? "Review needed" : "Nothing",
                 },
                 {
                   id: "last",
