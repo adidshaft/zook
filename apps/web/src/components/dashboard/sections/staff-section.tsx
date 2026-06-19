@@ -326,7 +326,7 @@ export function StaffSection({
               ]}
               rows={staffAssignments}
               rowKey={(assignment) => assignment.id}
-              empty="No staff assignments are recorded beyond members."
+              empty="No staff assignments."
             />
           )}
         </div>
