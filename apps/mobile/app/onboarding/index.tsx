@@ -97,7 +97,6 @@ export default function OnboardingSplash() {
             ]}
           >
             <Text style={[styles.scanLabel, { color: palette.text.primary }]}>Gym ops, without the clutter.</Text>
-            <Text style={[styles.scanText, { color: palette.text.secondary }]}>Tap anywhere to continue</Text>
           </View>
         </Reanimated.View>
       </View>
@@ -156,11 +155,6 @@ const styles = StyleSheet.create({
   scanLabel: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
-    letterSpacing: 0,
-  },
-  scanText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
     letterSpacing: 0,
   },
 });
