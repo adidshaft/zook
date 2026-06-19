@@ -329,6 +329,8 @@ fully complete until the human/device/provider gates below have external evidenc
   review/clear chips, and owner approvals removes the duplicate pending-decision subtitle.
 - Coach, trainer diet, and notification web panels no longer show static surface labels or
   repeated recent-update descriptions when dynamic notices, titles, and actions carry context.
+- Owner More no longer repeats the web dashboard capability list above the dedicated web
+  handoff row.
 
 ### Product plan Part A and Part B
 

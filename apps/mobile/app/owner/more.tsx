@@ -117,10 +117,7 @@ export default function OwnerMoreScreen() {
             ))}
           </Card>
 
-          <SectionHeader
-            title="Web control room"
-            subtitle="Best for configuration, reporting, staff, QR console, audits, and provider diagnostics."
-          />
+          <SectionHeader title="Web control room" />
           <Card variant="compact" contentStyle={styles.list}>
             {webRows.map((row) => (
               <WebHandoffRow key={row.title} title={row.title} path={row.webPath ?? "/dashboard"} />
