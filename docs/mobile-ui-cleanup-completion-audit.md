@@ -281,6 +281,8 @@ fully complete until the human/device/provider gates below have external evidenc
   client, active-plan, and needs-plan counts.
 - The trainer Plan builder row no longer repeats manual/template guidance through a subtitle
   and status chip when the row title already describes the action.
+- Settings, language, and notification settings headers no longer include redundant
+  "choose" subtitles when the title and controls already define the screen.
 
 ### Product plan Part A and Part B
 

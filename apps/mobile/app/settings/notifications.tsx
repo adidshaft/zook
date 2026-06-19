@@ -46,7 +46,7 @@ export default function NotificationSettingsScreen() {
     <>
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Notifications" subtitle="Choose what Zook can send" showProfileShortcut={false} showBack />
+          <AppHeader title="Notifications" showProfileShortcut={false} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
             <PreferenceRow title="Push notifications" value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
             {rows.map((row) => (
