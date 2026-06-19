@@ -1093,3 +1093,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated trainer client open-chip cue (`R241`) is closed:
   trainer client rows now render the static Open affordance as neutral instead of
   amber, keeping warning color for review or attention states.
+- **[ui, fixed]** Overstated reception member selection cues (`R242`) are closed:
+  Picked and Selected member-list badges now use neutral styling instead of lime,
+  keeping success color for completed verification and pickup outcomes.

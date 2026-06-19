@@ -255,9 +255,9 @@ function useReceptionWorkspaceState({
           phoneRevealed: revealedPhones.has(record.profile.userId),
           badges:
             multiSelectMode && isMultiChecked
-              ? [{ label: "Picked", tone: "lime" }]
+              ? [{ label: "Picked", tone: "neutral" }]
               : !multiSelectMode && isSelectedSingle
-                ? [{ label: "Selected", tone: "lime" }]
+                ? [{ label: "Selected", tone: "neutral" }]
                 : undefined,
         };
       }),
