@@ -1087,3 +1087,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative public hero action-card cues (`R239`) are closed:
   the Sell memberships and Publish join page cards now use neutral icon and hover
   styling instead of warning/success colors for static product actions.
+- **[ui, fixed]** Overstated mobile owner revenue metric cues (`R240`) are closed:
+  the owner revenue summary now treats revenue as informational and manual records
+  as neutral totals, keeping success/warning tones for actual outcomes and queues.

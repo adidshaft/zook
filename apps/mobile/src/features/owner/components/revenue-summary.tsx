@@ -16,13 +16,13 @@ export function RevenueSummary({
           label: "Revenue today",
           value: formatInr(revenuePaise),
           hint: "Membership + shop",
-          tone: "lime",
+          tone: "blue",
         },
         {
           label: "Manual records",
           value: formatInr(payments.reduce((sum, payment) => sum + payment.amountPaise, 0)),
           hint: "Cash and direct UPI",
-          tone: "amber",
+          tone: "neutral",
         },
       ]}
     />
