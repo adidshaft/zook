@@ -228,6 +228,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording in readiness and safety states.
 - Platform payment records and staff coaching review copy now avoid test/production and
   production-output wording in visible descriptions.
+- Dashboard join-request queue copy now uses plain approval wording instead of
+  approval-required phrasing.
 
 ### Product plan Part A and Part B
 
