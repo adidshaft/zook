@@ -427,6 +427,8 @@ fully complete until the human/device/provider gates below have external evidenc
   when they pass one intentionally.
 - Mobile money summary cards no longer add a fixed receipt icon; the amount and detail rows carry
   the payment context without an extra decorative cue.
+- Mobile money summary cards now use the neutral card surface instead of inheriting warning
+  styling for ordinary totals.
 
 ### Product plan Part A and Part B
 

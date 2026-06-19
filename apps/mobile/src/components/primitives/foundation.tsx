@@ -123,7 +123,7 @@ function glassSurfaceColors(
 
 function variantForSemanticSurface(surface?: SemanticSurface): CardVariant | undefined {
   if (surface === "successCard") return "success";
-  if (surface === "warningCard" || surface === "moneyFlowCard" || surface === "handoffCard") {
+  if (surface === "warningCard" || surface === "handoffCard") {
     return "warning";
   }
   if (surface === "dangerCard") return "danger";
