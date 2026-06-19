@@ -564,7 +564,7 @@ export default function ProfileScreen() {
                         {planName}
                       </Text>
                       <Text style={[styles.cardSubtitle, { color: palette.text.secondary }]}>
-                        Expires {formatLongDate(membership.endsAt, "Syncing")}
+                        Expires {formatLongDate(membership.endsAt, "Updating")}
                       </Text>
                     </View>
                     <Pill

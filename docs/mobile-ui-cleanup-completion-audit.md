@@ -244,6 +244,8 @@ fully complete until the human/device/provider gates below have external evidenc
   item-count wording instead of loaded/virtualized implementation cues.
 - Dashboard settings, reports, and classes copy now uses gym/service/selected-branch wording
   instead of organization/provider/scope/snapshot/operational/setup cues.
+- Mobile offline and saved-check-in copy now uses save/confirm/update wording instead of
+  sync/synced labels in visible states.
 
 ### Product plan Part A and Part B
 

@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function OfflineBanner({
-  children = "Offline. Changes will sync when connection returns.",
+  children = "Offline. Changes will save when connection returns.",
 }: {
   children?: ReactNode;
 }) {

@@ -461,7 +461,7 @@ export default function Scan() {
         showToast({
           tone: "success",
           haptic: "success",
-          message: synced === 1 ? "Saved check-in synced." : `${synced} saved check-ins synced.`,
+          message: synced === 1 ? "Saved check-in confirmed." : `${synced} saved check-ins confirmed.`,
         });
       }
     } finally {
@@ -1070,7 +1070,7 @@ export default function Scan() {
                 variant="secondary"
                 icon="refresh-outline"
                 busy={replayingQueue}
-                busyLabel="Syncing"
+                busyLabel="Saving"
                 style={styles.retryButton}
               >
                 Retry now
