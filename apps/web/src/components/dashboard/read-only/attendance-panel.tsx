@@ -116,7 +116,7 @@ export function AttendancePanel({
           ) : attendanceState.loading && attendanceRecords.length === 0 ? (
             <EmptyState
               title="Loading attendance"
-              description="Loading the current check-in ledger."
+              description="Loading check-ins."
             />
           ) : (
             <>

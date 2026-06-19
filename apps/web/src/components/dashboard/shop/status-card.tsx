@@ -21,7 +21,7 @@ export function ShopStatusCard({
       <SectionHeader
         eyebrow="Queue health"
         title="Shop status"
-        description="A quick operational read on how shop traffic is moving right now."
+        description="A quick read on how shop orders are moving right now."
       />
       <ReadoutGrid
         className="mt-5"

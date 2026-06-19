@@ -104,7 +104,7 @@ export function NotificationsPanel({
                   summary.pendingAttendanceApprovals > 0
                     ? `${summary.pendingAttendanceApprovals} pending`
                     : "Clear",
-                meta: "Useful for operational notices",
+                meta: "Useful for member messages",
               },
             ]}
             columns={2}

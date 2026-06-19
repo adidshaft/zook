@@ -206,6 +206,11 @@ fully complete until the human/device/provider gates below have external evidenc
   avoid organization/default/operational wording in user-visible states.
 - Dashboard member empty states, notification summary, payment checklist, and branch deactivation
   copy now avoid loaded-roster/org-snapshot/pilot-traffic/operational-flow wording.
+- Platform support/broadcast, shop status, class schedule, settlement loading, and attendance
+  loading copy now avoid operational-record/notice, shop-traffic, branch-scope, payment-state,
+  and ledger wording.
+- Notification overview escalation metadata now uses member-message wording instead of
+  operational-notice wording.
 
 ### Product plan Part A and Part B
 
