@@ -12,7 +12,6 @@ export function toneFromStatus(value: string | null | undefined): PillTone {
     normalized.includes("approved") ||
     normalized.includes("succeeded") ||
     normalized.includes("published") ||
-    normalized.includes("ready") ||
     normalized.includes("sent") ||
     normalized.includes("fulfilled")
   ) {

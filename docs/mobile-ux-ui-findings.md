@@ -1402,3 +1402,7 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated dashboard workspace live label (`R337`) is
   closed: the dashboard shell now labels connected workspace context as current
   in English and Hindi instead of live.
+- **[code, fixed]** Generic dashboard ready-success tone mapping (`R338`) is
+  closed: shared status-pill tone inference no longer treats every label
+  containing "ready" as success, leaving readiness color to explicit
+  domain-specific call sites.
