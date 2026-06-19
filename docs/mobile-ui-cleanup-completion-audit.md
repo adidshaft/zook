@@ -384,6 +384,8 @@ fully complete until the human/device/provider gates below have external evidenc
   that already expose search fields, visible counts, and details actions.
 - Platform payment records no longer repeat checkout/desk review helper copy above the visible
   count, payment search field, and payment table.
+- Platform broadcasts no longer repeat create/publish helper copy above the broadcast count,
+  New broadcast action, and broadcast table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
