@@ -1887,7 +1887,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Assistant"
               title="Recent assistant activity"
-              description="Assisted drafts across gyms."
               badge={<Pill>{usage.length} events</Pill>}
             />
             <div className="mt-5">
