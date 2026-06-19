@@ -1214,3 +1214,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated coupons/offers active-count cues (`R281`) are
   closed: dashboard promotion count badges now use informational tone when coupons
   or offers are active, while zero-active states remain warning cues.
+- **[ui, fixed]** Overstated billing readiness cues (`R282`) are closed:
+  receipts-enabled and invoices-enabled badges now use informational tone for
+  configured billing details, while missing receipt or GST details remain warning.

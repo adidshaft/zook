@@ -373,10 +373,10 @@ export function BillingSection({
               {busy ? "Saving..." : "Save billing details"}
             </ZookButton>
             <div className="grid gap-2">
-              <Pill tone={profile.receiptReady ? "lime" : "amber"}>
+              <Pill tone={profile.receiptReady ? "blue" : "amber"}>
                 {profile.receiptReady ? "Receipts enabled" : "Receipts need details"}
               </Pill>
-              <Pill tone={profile.invoiceReady ? "lime" : "amber"}>
+              <Pill tone={profile.invoiceReady ? "blue" : "amber"}>
                 {profile.invoiceReady ? "Invoices enabled" : "Invoices need GST details"}
               </Pill>
             </div>
