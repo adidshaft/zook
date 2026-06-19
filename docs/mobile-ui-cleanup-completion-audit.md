@@ -273,6 +273,8 @@ fully complete until the human/device/provider gates below have external evidenc
   customization widget, leaving the bottom strip focused on AI usage and staff activity.
 - The mobile classes route no longer renders a separate instructional helper card; branch
   selection now sits in the header while the class list remains the primary surface.
+- Coupon, offer, and plan-shape forms no longer render redundant HelpHint popovers where
+  labels, placeholders, and option descriptions already explain the control.
 
 ### Product plan Part A and Part B
 

@@ -1,7 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, CouponRow } from "@/components/dashboard/types";
-import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
 import type { CouponFormState } from "./types";
@@ -37,12 +36,7 @@ export function CouponControls({
 }: CouponControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="inline-flex items-center gap-2 font-medium text-white">
-        Coupons
-        <HelpHint label="Discount value" title="Discount value">
-          For percentages, enter the percent members should see. For fixed amount, enter rupees.
-        </HelpHint>
-      </p>
+      <p className="font-medium text-white">Coupons</p>
       <div className="mt-3 grid gap-3">
         <div className="grid gap-3 md:grid-cols-[1fr_150px]">
           <TextInput

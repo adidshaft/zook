@@ -1,7 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, MembershipPlanRow, OfferRow } from "@/components/dashboard/types";
-import { HelpHint } from "../../../ui";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
 import type { OfferFormState } from "./types";
@@ -39,12 +38,7 @@ export function OfferControls({
 }: OfferControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="inline-flex items-center gap-2 font-medium text-white">
-        Public offers
-        <HelpHint label="Discount value" title="Discount value">
-          For percentages, enter the percent members should see. For fixed amount, enter rupees.
-        </HelpHint>
-      </p>
+      <p className="font-medium text-white">Public offers</p>
       <div className="mt-3 grid gap-3">
         <TextInput
           label="Offer name"

@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { HelpHint, SearchableSelect } from "../../ui";
+import { SearchableSelect } from "../../ui";
 import type { MembershipPlanType } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
 import type { PlanFormState } from "./types";
@@ -73,12 +73,8 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
           }))}
         />
         {showShapeHint ? (
-          <p className="md:col-span-2 inline-flex items-center gap-2 text-xs text-white/45">
+          <p className="md:col-span-2 text-xs text-white/45">
             Plan shape controls expiry, visits, and public join copy.
-            <HelpHint label="Plan shape" title="Plan shape">
-              Hybrid uses days or visits, whichever comes first. Duration is days only. Visit pack
-              is visits only. Date range is a fixed window. Trial is a free intro period.
-            </HelpHint>
           </p>
         ) : null}
         <label className="grid gap-2 text-sm text-white/55">
