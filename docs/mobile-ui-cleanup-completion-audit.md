@@ -315,6 +315,8 @@ fully complete until the human/device/provider gates below have external evidenc
   metric titles already identify roster, plan, check-in, revenue, approval, and stock counts.
 - Trainer detail headers no longer repeat a static Trainer chip, and trainer, reception,
   and owner section headers no longer carry subtitles that duplicate nearby form/list state.
+- Platform, trainer payouts, member plan, and shop history headers no longer include static
+  overview/source/history subtitles or chips where the route title and rows already provide context.
 
 ### Product plan Part A and Part B
 

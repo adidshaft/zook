@@ -42,7 +42,7 @@ export default function TrainerPayoutsScreen() {
             />
           }
         >
-          <AppHeader title="Payouts" subtitle="Live PT earnings and paid history" />
+          <AppHeader title="Payouts" />
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>

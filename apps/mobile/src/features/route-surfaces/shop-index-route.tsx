@@ -1018,7 +1018,7 @@ export default function Shop() {
 
             {recentOrders.length ? (
               <Card variant="compact" contentStyle={styles.orderHistoryContent}>
-                <SectionHeader title="Order history" subtitle="Recent desk pickups and payments" />
+                <SectionHeader title="Order history" />
                 {recentOrders.map((historyOrder) => (
                   <ListRow
                     key={historyOrder.id}

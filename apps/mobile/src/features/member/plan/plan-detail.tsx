@@ -117,7 +117,6 @@ export default function Plans() {
         >
           <AppHeader
             title="Your plan"
-            subtitle="From your trainer"
             showProfileShortcut={false}
             leading={
               <Pressable
@@ -572,7 +571,7 @@ export function PlanDetailScreen() {
               <ProgressBar value={progress} label="Today" />
             </Card>
 
-            <SectionHeader title="Exercises" subtitle="Assigned by your coach" />
+            <SectionHeader title="Exercises" />
             <View style={styles.stack}>
               {exercisesQuery.isLoading ? (
                 <ExerciseListSkeleton />
