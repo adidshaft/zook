@@ -209,9 +209,7 @@ export function MemberList({
             {filteredMembers.length ? (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
                 <p className="text-sm text-[var(--text-tertiary)]">
-                  {useVirtualizedRoster
-                    ? `Virtualized roster active for ${filteredMembers.length} loaded matches.`
-                    : `Showing ${filteredMembers.length} loaded match${filteredMembers.length === 1 ? "" : "es"}.`}{" "}
+                  Showing {filteredMembers.length} match{filteredMembers.length === 1 ? "" : "es"}.{" "}
                   Refine search for faster action at large scale.
                 </p>
               </div>

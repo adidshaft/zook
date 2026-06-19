@@ -1164,7 +1164,7 @@ export function PlatformOperationsPanel({
               eyebrow="Broadcasts"
               title="Platform broadcasts"
               description="Create notices and publish them to active gyms."
-              badge={<Pill>{broadcasts.length} loaded</Pill>}
+              badge={<Pill>{broadcasts.length} broadcast{broadcasts.length === 1 ? "" : "s"}</Pill>}
               action={
                 <ZookButton size="sm" onClick={() => void createBroadcast()}>
                   New broadcast

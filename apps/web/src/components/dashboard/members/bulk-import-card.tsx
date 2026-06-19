@@ -95,7 +95,7 @@ export function BulkImportCard({
           </label>
           {csvText ? (
             <span className="text-xs text-white/55">
-              {csvText.split(/\r?\n/).filter(Boolean).length - 1} data rows loaded
+              {csvText.split(/\r?\n/).filter(Boolean).length - 1} data rows
             </span>
           ) : null}
         </div>

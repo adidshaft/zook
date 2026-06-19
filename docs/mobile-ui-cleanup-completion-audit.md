@@ -240,6 +240,8 @@ fully complete until the human/device/provider gates below have external evidenc
   wording instead of repeated period-end/current/marked-refunded phrasing.
 - Platform incident and health cockpit copy now uses gym-account/gym-impact wording instead of
   tenant-risk/tenant-impacting/destructive-tenant phrasing.
+- Dashboard payment, attendance, broadcast, member roster, and CSV import counts now use plain
+  item-count wording instead of loaded/virtualized implementation cues.
 
 ### Product plan Part A and Part B
 
