@@ -59,7 +59,7 @@ const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   provider: "demo",
   requestType: usage.requestType,
   promptSummary: usage.promptSummary,
-  responseSummary: "Draft ready for trainer review",
+  responseSummary: "Draft prepared for trainer review",
   tokenEstimate: 420,
   costEstimatePaise: 0,
   quotaConsumed: usage.quotaConsumed,

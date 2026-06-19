@@ -125,6 +125,8 @@ fully complete until the human/device/provider gates below have external evidenc
   of fresh/latest recovery cues.
 - Razorpay and dashboard lazy-load placeholders no longer use pulse animation, and staff invite
   acceptance copy uses a direct sign-in step instead of a ready-state cue.
+- Demo AI usage copy now uses prepared-review wording, and the mobile empty activity state uses a
+  neutral history icon instead of a pulse cue.
 
 ### Product plan Part A and Part B
 
