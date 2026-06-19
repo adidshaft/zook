@@ -245,7 +245,7 @@ export function StartGymPanel({
         </div>
         <div className="mt-8 grid gap-3">
           {[
-            "Creates the organization and default branch",
+            "Creates the gym and main branch",
             "Assigns you as owner",
             "Starts a two-month free trial before billing begins",
             "Publishes a public username for profile links",

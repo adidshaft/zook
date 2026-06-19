@@ -187,6 +187,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Platform incident checklist clear-state now uses service-check wording instead of provider-check
   wording.
 - Web login SSO script failure now reports sign-in service wording instead of provider wording.
+- Start-gym onboarding checklist now uses gym/main-branch wording instead of organization/default
+  branch wording.
 
 ### Product plan Part A and Part B
 
