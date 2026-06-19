@@ -155,10 +155,7 @@ export default function MemberPlanScreen() {
 
               {singleWorkoutPlan ? (
                 <AnimatedAppear delay={80}>
-                  <SectionHeader
-                    title="Inside this plan"
-                    subtitle="A quick look at what your trainer has assigned."
-                  />
+                  <SectionHeader title="Inside this plan" />
                   <Card variant="compact" contentStyle={styles.previewCard}>
                     {exercisePreviewQuery.isLoading ? (
                       <View style={styles.previewLoading}>

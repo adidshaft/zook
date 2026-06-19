@@ -118,7 +118,7 @@ export function DietPanel() {
       </Card>
 
       <Card contentStyle={styles.stack}>
-        <SectionHeader title="Log meal" subtitle="Choose a preset or type a quick change." />
+        <SectionHeader title="Log meal" />
         <View style={styles.presetRow}>
           {indianMealPresets.slice(0, 5).map((preset) => (
             <Pressable
