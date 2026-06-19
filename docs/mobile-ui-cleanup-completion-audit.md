@@ -423,6 +423,8 @@ fully complete until the human/device/provider gates below have external evidenc
   cue panels with icons; desk labeling is shortened from "Managed at Desk" to "Desk".
 - Web status pills now rely on text and tone only, removing repeated status icons from table
   rows, cards, and operational dashboards.
+- Mobile shared empty states no longer inject a default information icon; screens keep icons only
+  when they pass one intentionally.
 
 ### Product plan Part A and Part B
 

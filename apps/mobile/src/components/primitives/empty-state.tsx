@@ -16,7 +16,7 @@ type EmptyStateCta = {
 };
 
 export function EmptyState({
-  icon = "information-circle-outline",
+  icon,
   title,
   body,
   cta,
@@ -34,7 +34,7 @@ export function EmptyState({
 
   return (
     <View testID={testID} style={styles.container}>
-      <IconBubble icon={icon} size={48} tone="neutral" />
+      {icon ? <IconBubble icon={icon} size={48} tone="neutral" /> : null}
       <View style={styles.copy}>
         <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
         {body ? <Text style={[styles.body, { color: palette.text.secondary }]}>{body}</Text> : null}
