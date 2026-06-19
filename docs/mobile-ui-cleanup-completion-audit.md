@@ -333,6 +333,8 @@ fully complete until the human/device/provider gates below have external evidenc
   handoff row.
 - Trainer client sessions no longer repeats the waiting adherence state in both subtitle
   and chip, while preserving the completion percentage chip when feedback exists.
+- Member payments no longer repeats the empty payment state with a second "records show here"
+  line under the already-clear "No payments yet" title.
 
 ### Product plan Part A and Part B
 
