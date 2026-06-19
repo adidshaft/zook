@@ -294,7 +294,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.testCode": "TEST CODE",
     "auth.enterIdentifier": "Enter your email or mobile number.",
     "auth.codeSent": "Code sent to {{identifier}}.",
-    "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
+    "auth.freshCodeSent": "New code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
     "auth.invalidEmail": "Enter a valid email or mobile number.",
     "auth.invalidEmailOnly": "Enter a valid email address.",

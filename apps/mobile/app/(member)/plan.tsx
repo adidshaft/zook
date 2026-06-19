@@ -165,7 +165,7 @@ export default function MemberPlanScreen() {
                             Loading exercises
                           </Text>
                           <Text style={[styles.previewMeta, { color: palette.text.secondary }]}>
-                            Checking the latest plan details...
+                            Checking plan details...
                           </Text>
                         </View>
                       </View>

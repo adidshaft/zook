@@ -812,7 +812,7 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
       },
       {
         title: "Review plans",
-        body: "Once the code is accepted, plans are ready to join.",
+        body: "Once the code is accepted, plans can be joined.",
       },
       {
         title: "Pay securely",

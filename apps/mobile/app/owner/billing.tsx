@@ -38,7 +38,7 @@ function usageLine(used?: number, limit?: number | null) {
 function activeMembersCopy(count: number) {
   const noun = count === 1 ? "member" : "members";
   const verb = count === 1 ? "counts" : "count";
-  return `${count} ${noun} currently ${verb} toward your plan limits`;
+  return `${count} ${noun} ${verb} toward your plan limits`;
 }
 
 function toneForMandateStatus(status?: string | null) {

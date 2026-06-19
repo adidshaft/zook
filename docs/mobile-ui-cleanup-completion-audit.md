@@ -381,6 +381,8 @@ fully complete until the human/device/provider gates below have external evidenc
   under already-clear titles.
 - Mobile attention and approval queue defaults no longer add redundant all-caught-up helper copy
   under already-clear empty-state titles.
+- Mobile/web OTP resend, plan loading, invite plan guidance, and billing usage copy now avoid
+  fresh/latest/ready/currently cue words where the action or metric already supplies the state.
 
 ### Product plan Part A and Part B
 

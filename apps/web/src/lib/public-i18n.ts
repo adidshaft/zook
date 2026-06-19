@@ -308,7 +308,7 @@ export const publicMessages = {
     unableVerifyOtp: "Unable to verify code.",
     otpHint: "Enter the 6-digit code sent to {identifier}.",
     otpSent: "Code sent to {identifier}.",
-    freshOtpSent: "Fresh code sent to {identifier}.",
+    freshOtpSent: "New code sent to {identifier}.",
     testCode: "Test code: {code}.",
     resendAvailable: "Resend code available in {seconds}s",
   },
