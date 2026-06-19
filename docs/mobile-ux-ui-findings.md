@@ -1211,3 +1211,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated gym profile visibility cue (`R280`) is closed:
   the gym profile setup visibility badge now uses informational tone for Public
   visibility instead of success color, while restricted visibility remains warning.
+- **[ui, fixed]** Overstated coupons/offers active-count cues (`R281`) are
+  closed: dashboard promotion count badges now use informational tone when coupons
+  or offers are active, while zero-active states remain warning cues.
