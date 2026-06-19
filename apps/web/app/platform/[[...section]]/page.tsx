@@ -417,7 +417,7 @@ function PlatformStatusFirstFold({
       meta: providerGapCount
         ? "Open Incidents or Webhooks for exact provider checks."
         : `${readyProviderCount} providers are reporting usable defaults.`,
-      tone: providerGapCount ? "amber" : "lime",
+      tone: providerGapCount ? "amber" : "neutral",
     },
     {
       label: "Gym accounts",
@@ -431,7 +431,7 @@ function PlatformStatusFirstFold({
       meta: safetyReviewCount
         ? "Review unresolved safety reports before expanding traffic."
         : "No unresolved safety reports in the loaded queue.",
-      tone: safetyReviewCount ? "amber" : "lime",
+      tone: safetyReviewCount ? "amber" : "neutral",
     },
   ] as const;
 
@@ -452,7 +452,7 @@ function PlatformStatusFirstFold({
                 from the left nav for deeper actions.
               </p>
             </div>
-            <Pill tone={providerGapCount || safetyReviewCount || suspendedCount ? "amber" : "lime"}>
+            <Pill tone={providerGapCount || safetyReviewCount || suspendedCount ? "amber" : "neutral"}>
               {providerGapCount || safetyReviewCount || suspendedCount ? "Review needed" : "Healthy"}
             </Pill>
           </div>

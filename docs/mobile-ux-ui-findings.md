@@ -1178,3 +1178,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform clear-state badges (`R269`) are closed:
   the web platform health and safety badges now use neutral tone for Healthy and
   zero-open clear states, while review-needed and open-report states stay warning.
+- **[ui, fixed]** Overstated platform summary clear cues (`R270`) are closed:
+  the platform command summary now uses neutral tone for Ready, Clear, and Healthy
+  clear states, while provider gaps, safety reviews, and suspended orgs stay warning.
