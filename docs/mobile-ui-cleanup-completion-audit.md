@@ -277,6 +277,8 @@ fully complete until the human/device/provider gates below have external evidenc
   labels, placeholders, and option descriptions already explain the control.
 - Staff invite and branch-hours forms no longer render duplicate HelpHint popovers around
   already-visible summary or helper copy.
+- Trainer home metric cards no longer render decorative hint labels under already-clear
+  client, active-plan, and needs-plan counts.
 
 ### Product plan Part A and Part B
 
