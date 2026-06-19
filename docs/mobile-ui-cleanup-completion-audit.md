@@ -429,6 +429,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the payment context without an extra decorative cue.
 - Mobile money summary cards now use the neutral card surface instead of inheriting warning
   styling for ordinary totals.
+- Mobile list rows now show the chevron only for pressable rows, removing misleading navigation
+  cues from static account, detail, payment, and summary rows.
 
 ### Product plan Part A and Part B
 

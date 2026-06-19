@@ -68,7 +68,7 @@ export function ListRow({
         ) : null}
       </View>
       <View style={styles.listRowTrailing}>
-        {trailing ?? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />}
+        {trailing ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} /> : null)}
       </View>
     </View>
   );
