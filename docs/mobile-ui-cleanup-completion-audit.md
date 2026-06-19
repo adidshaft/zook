@@ -421,6 +421,8 @@ fully complete until the human/device/provider gates below have external evidenc
   "use this location" helper phrasing.
 - Managed-on ownership notes now render as quieter inline notes instead of separate card-like
   cue panels with icons; desk labeling is shortened from "Managed at Desk" to "Desk".
+- Web status pills now rely on text and tone only, removing repeated status icons from table
+  rows, cards, and operational dashboards.
 
 ### Product plan Part A and Part B
 

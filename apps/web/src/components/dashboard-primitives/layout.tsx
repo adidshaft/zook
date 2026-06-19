@@ -2,7 +2,6 @@
 
 import clsx from "clsx";
 import { motion, type Variants } from "framer-motion";
-import { Check, AlertTriangle, X, Circle } from "lucide-react";
 import { Pill, ProductPanel, type PillTone } from "../glass-card";
 import { toneFromStatus } from "./stats";
 
@@ -160,21 +159,12 @@ export function StatusPill({
   className?: string | undefined;
 }) {
   const resolvedTone = tone ?? toneFromStatus(value);
-  const Icon =
-    resolvedTone === "lime"
-      ? Check
-      : resolvedTone === "amber"
-        ? AlertTriangle
-        : resolvedTone === "red"
-          ? X
-          : Circle;
   return (
     <Pill
       tone={resolvedTone}
       aria-label={`Status: ${value}`}
       {...(className ? { className } : {})}
     >
-      <Icon className="h-3 w-3" aria-hidden="true" />
       {value}
     </Pill>
   );
