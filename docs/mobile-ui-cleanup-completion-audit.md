@@ -268,6 +268,8 @@ fully complete until the human/device/provider gates below have external evidenc
   already explains the surface state.
 - Trainer plan-work summary no longer renders a decorative clipboard icon beside title/subtitle
   copy that already explains the planning state.
+- Trainer plan rows no longer repeat a reader icon beside client/active-plan text when the action
+  button already carries the plan cue.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
