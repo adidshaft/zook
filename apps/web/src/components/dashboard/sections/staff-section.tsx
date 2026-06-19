@@ -421,10 +421,7 @@ export function StaffSection({
               </div>
             ))
           ) : (
-            <EmptyState
-              title="No coaching plans"
-              description="Trainer plans are not published."
-            />
+            <EmptyState title="No coaching plans" />
           )}
           {coachPlans.length > 6 ? (
             <Link

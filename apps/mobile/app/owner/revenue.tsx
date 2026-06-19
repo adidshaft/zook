@@ -123,7 +123,7 @@ export default function OwnerRevenueScreen() {
                     ))
                   : null}
                 {!dashboardQuery.isError && !paymentsQuery.isError && !ordersQuery.isError && !payments.length && !orders.length ? (
-                  <EmptyState title="No payments yet" />
+                  <EmptyState title="No payments" />
                 ) : null}
               </Card>
             </>

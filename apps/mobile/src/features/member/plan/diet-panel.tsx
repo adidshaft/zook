@@ -113,7 +113,7 @@ export function DietPanel() {
             </View>
           ))
         ) : (
-          <EmptyState title="No diet plan yet" />
+          <EmptyState title="No diet plan" />
         )}
       </Card>
 

@@ -101,8 +101,8 @@ export function BranchesListCard({
         ))}
         {!branches.length && !branchesState.loading ? (
           <EmptyState
-            title="No branches yet"
-            description="Add the first location to unlock branch-level attendance and stock controls."
+            title="No branches"
+            description="Add the first location for branch-level attendance and stock controls."
           />
         ) : null}
       </div>

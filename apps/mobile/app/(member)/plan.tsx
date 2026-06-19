@@ -192,7 +192,7 @@ export default function MemberPlanScreen() {
                     ) : (
                       <EmptyState
                         icon="barbell-outline"
-                        title="No exercises yet"
+                        title="No exercises"
                       />
                     )}
                   </Card>

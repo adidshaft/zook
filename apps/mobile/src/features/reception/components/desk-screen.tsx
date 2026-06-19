@@ -129,7 +129,7 @@ export function ReceptionDeskScreenBody() {
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <EmptyState title="No scans yet" />
+                <EmptyState title="No scans" />
               ) : null}
               {recentScans.map((scan) => {
                 const statusTone = toneForAttendanceStatus(scan.status);

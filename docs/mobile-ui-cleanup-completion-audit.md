@@ -399,6 +399,8 @@ fully complete until the human/device/provider gates below have external evidenc
   states now use direct not-published/unavailable/updating wording.
 - Shared mobile member-list empty states, trainer plan queue, owner stock, dashboard payment
   history, shop inventory, and coaching-plan empty copy now avoid forced or repeated helper text.
+- Diet-plan, exercise, scan, workout, payment, branch, and coaching-plan empty states now use
+  direct titles without extra "yet" or unlock/not-published helper wording.
 
 ### Product plan Part A and Part B
 
