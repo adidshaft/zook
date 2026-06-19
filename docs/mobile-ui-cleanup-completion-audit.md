@@ -157,6 +157,8 @@ fully complete until the human/device/provider gates below have external evidenc
   syncing-state cue.
 - Dashboard notification history fallback now uses direct unavailable-body wording instead of a
   syncing-state cue.
+- Gym profile setup gallery guidance now gives the direct upload instruction instead of exposing
+  Google Maps sync/connectivity state.
 
 ### Product plan Part A and Part B
 

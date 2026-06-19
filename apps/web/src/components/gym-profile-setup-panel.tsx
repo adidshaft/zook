@@ -500,7 +500,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 placeholder="Uploaded photos appear here. You can also paste one image link per line."
               />
               <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-                Google Maps photo sync is not connected yet. Upload the best 15 photos here for now.
+                Upload up to 15 gallery photos that best represent this gym.
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {previewGallery.slice(0, 15).map((imageUrl, index) => (
