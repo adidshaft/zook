@@ -312,6 +312,8 @@ fully complete until the human/device/provider gates below have external evidenc
   No classes title and branch-aware header.
 - Web classes schedule no longer repeats selected-branch/capacity helper copy above rows that
   already show branch scope, class count, and per-class capacity.
+- Member plan detail empty state no longer repeats trainer-assignment helper copy below the
+  already-clear No plan assigned title.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

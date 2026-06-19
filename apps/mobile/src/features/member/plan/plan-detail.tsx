@@ -203,10 +203,7 @@ export default function Plans() {
             ) : null}
             {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
               <Card variant="compact" style={styles.emptyPlanCard}>
-                <EmptyState
-                  title="No plan assigned"
-                  body="Your trainer assigns workout plans here."
-                />
+                <EmptyState title="No plan assigned" />
               </Card>
             ) : null}
             {filteredPlans.map((assignment, index) => (
