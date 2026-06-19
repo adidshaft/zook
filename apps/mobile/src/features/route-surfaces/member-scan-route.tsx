@@ -103,8 +103,8 @@ function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
   const progress = useRef(new RNAnimated.Value(0)).current;
   // Sweep edge-to-edge within the frame with a small inset so the line never
-  // clips the corner brackets. Derived from the real frame size instead of a
-  // magic constant so it always spans the full scan window.
+  // clips the corner brackets. Derived from the frame size so it spans the
+  // full scan window.
   const travel = Math.max(40, frameSize / 2 - 20);
 
   useEffect(() => {
