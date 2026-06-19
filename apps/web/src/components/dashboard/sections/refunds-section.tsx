@@ -125,7 +125,7 @@ export function RefundsSection({
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{copy.refundsDescription}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Pill tone="amber">{refundable.length} available</Pill>
+          <Pill>{refundable.length} available</Pill>
           <Pill>{trackedRefunds.length} tracked</Pill>
         </div>
       </div>

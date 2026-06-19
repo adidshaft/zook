@@ -1042,3 +1042,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated billing free-trial label cue (`R224`) is closed:
   the Free trial badge now uses neutral styling instead of lime, keeping success color
   for enabled billing readiness and actual payment outcomes.
+- **[ui, fixed]** Overstated refund availability count cue (`R225`) is closed:
+  the refund tracker's available count now uses neutral styling instead of amber, matching
+  the tracked count and keeping warning color for actual refund errors or blockers.
