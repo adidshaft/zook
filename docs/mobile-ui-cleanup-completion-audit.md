@@ -300,6 +300,8 @@ fully complete until the human/device/provider gates below have external evidenc
   Refer a friend title and share action.
 - Shop cart and no-products empty states no longer repeat helper bodies under already-clear
   titles, and the unused English/Hindi translation keys were removed.
+- Public gym profile fallback header no longer shows future-loading helper copy where the title
+  and screen loading/error states already provide context.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

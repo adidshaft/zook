@@ -308,7 +308,6 @@ export default function GymProfileScreen() {
           <AppHeader
             eyebrow="Gym profile"
             title="Membership profile"
-            subtitle="We’ll load plan details, join rules, and referral support for this gym."
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
