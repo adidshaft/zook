@@ -431,6 +431,8 @@ fully complete until the human/device/provider gates below have external evidenc
   styling for ordinary totals.
 - Mobile list rows now show the chevron only for pressable rows, removing misleading navigation
   cues from static account, detail, payment, and summary rows.
+- Static mobile list rows no longer reserve an empty trailing slot when they have no action,
+  chevron, or status content.
 
 ### Product plan Part A and Part B
 

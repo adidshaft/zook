@@ -45,6 +45,8 @@ export function ListRow({
   style?: StyleProp<ViewStyle>;
 }) {
   const { palette, mode } = useTheme();
+  const trailingContent =
+    trailing ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} /> : null);
   const row = (
     <View
       style={[
@@ -67,9 +69,7 @@ export function ListRow({
           </Text>
         ) : null}
       </View>
-      <View style={styles.listRowTrailing}>
-        {trailing ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} /> : null)}
-      </View>
+      {trailingContent ? <View style={styles.listRowTrailing}>{trailingContent}</View> : null}
     </View>
   );
 
