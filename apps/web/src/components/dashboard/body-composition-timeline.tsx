@@ -26,7 +26,6 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       <SectionHeader
         eyebrow="Body composition"
         title="Photo timeline"
-        description="Trainer-facing body progress entries from member tracking, including attached progress photos."
         badge={
           <Pill>
             {entriesWithPhotos} photo{entriesWithPhotos === 1 ? "" : "s"}

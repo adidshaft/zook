@@ -350,6 +350,8 @@ fully complete until the human/device/provider gates below have external evidenc
   action and plan table actions.
 - Dashboard recent attendance no longer repeats selected-gym check-in helper copy above the scan
   count, export action, and attendance table.
+- Dashboard body-composition timeline no longer repeats trainer-facing progress/photo helper copy
+  above the photo count, timeline cards, and measurement labels.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
