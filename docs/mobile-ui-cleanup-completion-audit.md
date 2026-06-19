@@ -369,6 +369,7 @@ fully complete until the human/device/provider gates below have external evidenc
   bodies underneath already-clear empty-state titles.
 - Dashboard payment and assistant-draft empty states no longer repeat "No ..." descriptions, and
   coaching-plan empty copy uses gym wording instead of org wording.
+- Public gym/member-app sections no longer show static pills that repeat the adjacent heading.
 
 ### Product plan Part A and Part B
 

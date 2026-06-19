@@ -28,8 +28,7 @@ export function GymPlansGrid({
     return (
       <section id="plans" className="scroll-mt-5">
         <GlassCard>
-          <Pill>{t("plansComingSoon")}</Pill>
-          <h2 className="mt-4 text-2xl font-semibold text-[var(--text-primary)]">{priceSummary([], locale)}</h2>
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{priceSummary([], locale)}</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("noPublicPlanCopy")}</p>
         </GlassCard>
       </section>
