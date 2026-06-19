@@ -395,6 +395,8 @@ fully complete until the human/device/provider gates below have external evidenc
   mobile payment document hints now use direct available/recent/loading wording.
 - Mobile inbox, public gym trainer/plan, and classes empty states now use shorter direct wording
   instead of all-caught-up or not-published-yet helper copy.
+- Public gym plan/facility/trainer fallbacks, checkout unavailable errors, and mobile refresh
+  states now use direct not-published/unavailable/updating wording.
 
 ### Product plan Part A and Part B
 

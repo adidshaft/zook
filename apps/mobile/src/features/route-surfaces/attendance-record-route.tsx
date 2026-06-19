@@ -323,7 +323,7 @@ export default function AttendanceResultScreen() {
                 disabled={attendanceQuery.isFetching}
                 icon="refresh-outline"
               >
-                {attendanceQuery.isFetching ? "Refreshing..." : "Refresh status"}
+                {attendanceQuery.isFetching ? "Updating..." : "Refresh status"}
               </ZookButton>
               <ZookButton href="/" variant="secondary" icon="home-outline">
                 Back to Home

@@ -154,7 +154,7 @@ export default function GymProfileScreen() {
         return;
       }
       refreshAfterCheckoutRef.current = false;
-      setStatusMessage("Refreshing membership status...");
+      setStatusMessage("Updating membership status...");
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),

@@ -3,7 +3,7 @@ import { publicAbsoluteUrl } from "./public-metadata";
 
 export function priceSummary(plans: Array<{ pricePaise: number }>, locale: "en" | "hi" = "en") {
   if (!plans.length) {
-    return locale === "hi" ? "सदस्यताएं अभी प्रकाशित नहीं" : "Memberships not published yet";
+    return locale === "hi" ? "सदस्यताएं प्रकाशित नहीं" : "Memberships not published";
   }
   const paidPlans = plans.filter((plan) => plan.pricePaise > 0);
   if (!paidPlans.length) {
