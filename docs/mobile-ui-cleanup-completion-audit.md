@@ -269,6 +269,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Mobile member plan, tracking, shop return, membership checkout, trainer queues, owner
   empty states, reception pickup, and profile-switch prompts now use direct present-tense copy
   instead of will-appear/will-refresh/will-be-marked phrasing.
+- The owner dashboard no longer renders the contextual Zook tip card or exposes it as a
+  customization widget, leaving the bottom strip focused on AI usage and staff activity.
 
 ### Product plan Part A and Part B
 

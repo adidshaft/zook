@@ -4,7 +4,6 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  Bot,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
@@ -501,11 +500,11 @@ export function DashboardOverview({
       </div>
       ) : null}
 
-      {/* AI + Staff + Tip — bottom strip */}
-      {prefs.widgets.aiUsage || prefs.widgets.staffActivity || prefs.widgets.tip ? (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      {/* AI + Staff — bottom strip */}
+      {prefs.widgets.aiUsage || prefs.widgets.staffActivity ? (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {prefs.widgets.aiUsage ? (
-        <GlassCard className="p-5 lg:col-span-4">
+        <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">AI usage</h2>
             <Link href="/dashboard/ai" className="text-xs font-medium text-[var(--accent)] hover:underline">
@@ -550,7 +549,7 @@ export function DashboardOverview({
         ) : null}
 
         {prefs.widgets.staffActivity ? (
-        <GlassCard className="p-5 lg:col-span-5">
+        <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent staff activity</h2>
             <Link href="/dashboard/audit" className="text-xs font-medium text-[var(--accent)] hover:underline">
@@ -572,29 +571,6 @@ export function DashboardOverview({
               </span>
             </span>
             <ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />
-          </Link>
-        </GlassCard>
-        ) : null}
-
-        {prefs.widgets.tip ? (
-        <GlassCard className="p-5 lg:col-span-3">
-          <div className="flex items-center gap-2">
-            <Bot size={16} className="text-[var(--accent)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-              Zook tip
-            </span>
-          </div>
-          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-            {summary.todayAttendance === 0
-              ? "No check-ins recorded today yet. Try a reminder campaign when the gym confirms it."
-              : `${summary.todayAttendance} members checked in today. Keep the desk queue clear before peak hours.`}
-          </p>
-          <Link
-            href="/dashboard/members"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
-          >
-            <Users size={12} />
-            View members
           </Link>
         </GlassCard>
         ) : null}

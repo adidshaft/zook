@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import {
   BarChart3,
-  Bell,
   Bot,
   Eye,
   EyeOff,
@@ -20,8 +19,7 @@ export type OwnerWidgetKey =
   | "attendanceBars"
   | "planMix"
   | "aiUsage"
-  | "staffActivity"
-  | "tip";
+  | "staffActivity";
 
 type OwnerPrefs = {
   widgets: Record<OwnerWidgetKey, boolean>;
@@ -37,7 +35,6 @@ const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
     planMix: true,
     aiUsage: true,
     staffActivity: true,
-    tip: true,
   },
   accent: "lime",
   density: "comfortable",
@@ -110,12 +107,6 @@ const WIDGET_META: ReadonlyArray<WidgetMeta> = [
     label: "Staff activity",
     description: "Recent audit-log summary",
     icon: LayoutDashboard,
-  },
-  {
-    key: "tip",
-    label: "Zook tip",
-    description: "Contextual operator nudge",
-    icon: Bell,
   },
 ];
 
