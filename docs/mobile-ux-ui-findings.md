@@ -1232,3 +1232,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated platform runtime online cue (`R287`) is closed:
   the platform shell now uses informational tone for System online connectivity,
   while demo fallback or unavailable data states remain warning cues.
+- **[ui, fixed]** Overstated member filter selected cue (`R288`) is closed:
+  the member roster selected filter pill now uses informational tone instead of
+  success color, while an unselected Pending Payment filter remains a warning cue.

@@ -159,7 +159,7 @@ export function MemberList({
                 aria-pressed={active}
               >
                 <Pill
-                  tone={active ? "lime" : filter === "Pending Payment" ? "amber" : "neutral"}
+                  tone={active ? "blue" : filter === "Pending Payment" ? "amber" : "neutral"}
                   className={active ? "border-[var(--border-focus)]" : "hover:bg-[var(--surface)]"}
                 >
                   {filter}
