@@ -111,7 +111,7 @@ export const publicMessages = {
     socialProof: "Social proof",
     socialTitle: "Built around the roles that keep a gym moving.",
     socialCopy:
-      "The product evidence in this release comes from the current Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
+      "The product evidence in this release comes from Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
     proofOwnerWeb:
       "Owner setup stays on web, where plans, payments, staff, and reports are easier to review.",
     proofMemberMobile:
@@ -208,18 +208,18 @@ export const publicMessages = {
     transparentPricingCopy:
       "You see duration, visits, discounts, and final amount before moving into payment.",
     facilities: "Photos & Facilities",
-    facilitiesPending: "Facilities will appear once the gym publishes them.",
+    facilitiesPending: "Facilities not published yet.",
     galleryTitle: "Photos & Gallery",
     galleryCopy: "Explore the gym's published facility, workout-floor, and training-space photos.",
     equipment: "Equipment",
-    equipmentPending: "Equipment will appear once the gym publishes the list.",
+    equipmentPending: "Equipment not published yet.",
     shareOrInstall: "Share or install",
     shareInstallCopyPrefix: "Scan the QR, open this gym in Zook, or install the app and search for",
     appStore: "App Store",
     playStore: "Play Store",
     downloadQr: "Download QR",
     visibleTrainers: "Visible trainers",
-    trainersPending: "Trainer profiles will appear after the gym publishes them.",
+    trainersPending: "Trainer profiles not published yet.",
     bioComingSoon: "Bio not published.",
     referral: "Referral",
     referralCopy:

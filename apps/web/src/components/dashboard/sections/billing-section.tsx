@@ -340,7 +340,7 @@ export function BillingSection({
           </div>
         </div>
         <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-          Recorded revenue in the current view: {formatInr(summary.revenuePaise)}.
+          Recorded revenue in this view: {formatInr(summary.revenuePaise)}.
         </p>
       </GlassCard>
       <GlassCard>

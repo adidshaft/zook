@@ -677,7 +677,7 @@ export default function MembershipScreen() {
                 <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
                   {focusTarget === "buy" || focusTarget === "checkout"
                     ? latestSubscription
-                      ? "We opened the renewal flow for your current membership."
+                      ? "We opened the renewal flow for this membership."
                       : "Browse gyms and purchase a membership to get started."
                     : focusTarget === "history"
                       ? "Jumped to your previous memberships and payment trail."
@@ -685,7 +685,7 @@ export default function MembershipScreen() {
                         ? "Receipts and invoices appear below."
                         : routeParams.subscriptionId
                           ? "Your subscription has been updated."
-                          : "Showing your current status."}
+                          : "Membership status is below."}
                 </Text>
               </View>
             </Card>

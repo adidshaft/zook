@@ -383,6 +383,8 @@ fully complete until the human/device/provider gates below have external evidenc
   under already-clear empty-state titles.
 - Mobile/web OTP resend, plan loading, invite plan guidance, and billing usage copy now avoid
   fresh/latest/ready/currently cue words where the action or metric already supplies the state.
+- Public profile pending states, member membership callouts, shop inventory scope, and billing
+  revenue copy now use direct state wording instead of appear/showing/current cues.
 
 ### Product plan Part A and Part B
 

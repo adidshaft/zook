@@ -36,7 +36,7 @@ export function ShopProductsSection({
 }: ShopProductsSectionProps) {
   const scopeLabel = branchScope.selectedBranch
     ? `${selectedBranchName} has its own stock`
-    : "Showing all products. Choose a branch to update branch stock.";
+    : "All products are listed. Choose a branch to update branch stock.";
 
   return (
     <div className="grid gap-4">
