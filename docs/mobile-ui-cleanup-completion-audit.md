@@ -127,6 +127,8 @@ fully complete until the human/device/provider gates below have external evidenc
   acceptance copy uses a direct sign-in step instead of a ready-state cue.
 - Demo AI usage copy now uses prepared-review wording, and the mobile empty activity state uses a
   neutral history icon instead of a pulse cue.
+- Public after-join guidance and mobile trainer demo summaries now describe workflow/training
+  context directly instead of using ready-state cues.
 
 ### Product plan Part A and Part B
 

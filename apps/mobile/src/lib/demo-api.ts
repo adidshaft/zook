@@ -273,7 +273,7 @@ function demoTrainerClients() {
           weightKg: 78,
           dietPreference: profile?.dietPreference,
           allergies: profile?.allergyNote,
-          summaryNote: "Consistent attendance and ready for progressive overload.",
+          summaryNote: "Consistent attendance with progressive training load.",
           activePlans: zookDemoFixtures.trainingPlans.filter(
             (plan) => plan.memberUserId === assignment.memberUserId,
           ).length,
