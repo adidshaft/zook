@@ -700,7 +700,6 @@ export default function GymProfileScreen() {
                   <View style={styles.planBenefits}>
                     {buildPlanHighlights(plan).map((item) => (
                       <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
-                        <View style={[styles.planBenefitDot, { backgroundColor: palette.feedback.warning }]} />
                         <Text style={[styles.planBenefitText, { color: palette.text.secondary }]}>{item}</Text>
                       </View>
                     ))}
@@ -1171,12 +1170,6 @@ const styles = StyleSheet.create({
   planBenefitRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  planBenefitDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   planBenefitText: {
     ...typography.body,

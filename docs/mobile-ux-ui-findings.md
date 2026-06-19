@@ -1310,3 +1310,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated attendance next-step CTA cue (`R312`) is closed:
   the post-approval Open Plan chip now uses informational tone instead of success
   color, while the actual Approved entry-code chip keeps success treatment.
+- **[ui, fixed]** Overstated public plan benefit bullets (`R313`) are closed:
+  gym plan highlight rows no longer render warning-colored decorative bullets,
+  leaving the benefit copy as neutral supporting text.
