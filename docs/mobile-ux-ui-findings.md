@@ -1184,3 +1184,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated trainer planning clear cue (`R271`) is closed:
   the mobile trainer Plan work summary now uses neutral tone for the Clear queue
   state, while active plan work that needs review remains warning.
+- **[ui, fixed]** Overstated web desk pending-clear cues (`R272`) are closed:
+  the Desk pending-review KPI and queue badge now avoid success tone when there are
+  zero pending records, while pending reviews still use warning tone.

@@ -34,7 +34,7 @@ export function QueueTab({
             <h1 className="text-2xl font-semibold text-white">{copy.todayQueue}</h1>
             <p className="mt-1 text-sm text-white/48">{copy.queueDescription}</p>
           </div>
-          <Pill tone={pendingRecords.length ? "amber" : "lime"}>
+          <Pill tone={pendingRecords.length ? "amber" : "neutral"}>
             {pendingRecords.length} {copy.pending}
           </Pill>
         </div>

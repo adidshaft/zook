@@ -26,7 +26,7 @@ export function DeskMetrics({
         label="Pending review"
         value={pendingCount}
         icon={Clock}
-        tone={pendingCount > 0 ? "amber" : "lime"}
+        tone={pendingCount > 0 ? "amber" : "sky"}
         caption={pendingCount > 0 ? "Needs eyes" : "Clear"}
       />
       <KPITile
