@@ -139,7 +139,6 @@ export function CoachPage({
               icon={Smartphone}
               iconTone="violet"
               title="Open coach overview"
-              subtitle="Review the coach workspace"
               href="/coach"
               index={3}
             />
