@@ -388,6 +388,8 @@ fully complete until the human/device/provider gates below have external evidenc
   New broadcast action, and broadcast table.
 - Platform support access log no longer repeats audited-session helper copy above the session
   count and support-access table.
+- Platform health cockpit no longer repeats service/risk/workload helper copy above readouts and
+  alert cards that already label those signals directly.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

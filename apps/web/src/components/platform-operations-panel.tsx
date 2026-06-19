@@ -743,7 +743,6 @@ export function PlatformOperationsPanel({
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
-          description="Service health, gym-account risk, conversion risk, and safety workload in one view."
           badge={
             <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
               {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
