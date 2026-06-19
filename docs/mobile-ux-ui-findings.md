@@ -1350,3 +1350,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated pickup selected-row cue (`R323`) is closed:
   highlighted desk pickup rows now use neutral selected styling instead of lime
   success emphasis, while the Code verified pill keeps success treatment.
+- **[ui, fixed]** Overstated mobile autopay live cue (`R324`) is closed:
+  active mobile autopay icon, status helper text, and badge now use informational
+  tone instead of lime success emphasis.

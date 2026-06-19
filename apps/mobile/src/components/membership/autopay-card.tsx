@@ -23,7 +23,7 @@ export function AutopayCard({
   return (
     <Card variant="compact" contentStyle={styles.autopayContent}>
       <View style={styles.autopayHeader}>
-        <IconBubble icon="repeat-outline" tone={live ? "lime" : "neutral"} size={36} />
+        <IconBubble icon="repeat-outline" tone={live ? "blue" : "neutral"} size={36} />
         <View style={styles.autopayCopy}>
           <Text style={[styles.autopayTitle, { color: palette.text.primary }]}>Autopay</Text>
           <Text style={[styles.autopayBody, { color: palette.text.secondary }]}>
@@ -34,12 +34,12 @@ export function AutopayCard({
               : "Authorize automatic renewal to renew this plan automatically."}
           </Text>
           {autopayStatus ? (
-            <Text style={[styles.autopayStatus, { color: palette.accent.base }]}>
+            <Text style={[styles.autopayStatus, { color: palette.feedback.info }]}>
               {autopayStatus}
             </Text>
           ) : null}
         </View>
-        <Pill tone={live ? "lime" : "neutral"}>
+        <Pill tone={live ? "blue" : "neutral"}>
           {live ? titleCaseFromCode(subscription.autopay?.status ?? "ACTIVE") : "Off"}
         </Pill>
       </View>
