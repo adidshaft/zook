@@ -464,11 +464,7 @@ export default function GymProfileScreen() {
               </ScrollView>
             ) : null}
 
-            <SectionHeader
-              eyebrow="Coaches"
-              title="Trainer team"
-              subtitle="Visible trainer profiles for this gym."
-            />
+            <SectionHeader eyebrow="Coaches" title="Trainer team" />
 
             <View style={styles.trainerStack}>
               {trainers.length ? (
@@ -518,10 +514,7 @@ export default function GymProfileScreen() {
                     </Pressable>
                   ))
               ) : (
-                <EmptyState
-                  title="No public trainer profiles"
-                  body="Trainer profiles are not published."
-                />
+                <EmptyState title="No public trainer profiles" />
               )}
             </View>
 
@@ -557,11 +550,7 @@ export default function GymProfileScreen() {
               </Card>
             </View>
 
-            <SectionHeader
-              eyebrow="Join path"
-              title="How to join"
-              subtitle="Follow these steps to start your membership."
-            />
+            <SectionHeader eyebrow="Join path" title="How to join" />
 
             <Card contentStyle={styles.timelineCard}>
               {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
@@ -626,10 +615,7 @@ export default function GymProfileScreen() {
             <SectionHeader eyebrow="Plans" title="Membership options" />
 
             {!plans.length ? (
-              <EmptyState
-                title="No public plans"
-                body="Mobile sign-up plans are not published."
-              />
+              <EmptyState title="No public plans" />
             ) : null}
 
             <View style={styles.planStack}>
