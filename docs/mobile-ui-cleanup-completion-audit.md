@@ -275,6 +275,8 @@ fully complete until the human/device/provider gates below have external evidenc
   selection now sits in the header while the class list remains the primary surface.
 - Coupon, offer, and plan-shape forms no longer render redundant HelpHint popovers where
   labels, placeholders, and option descriptions already explain the control.
+- Staff invite and branch-hours forms no longer render duplicate HelpHint popovers around
+  already-visible summary or helper copy.
 
 ### Product plan Part A and Part B
 

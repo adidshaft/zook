@@ -1,6 +1,6 @@
 "use client";
 
-import { HelpHint, RadioCardGroup } from "../../ui";
+import { RadioCardGroup } from "../../ui";
 import { ZookButton } from "../../zook-button";
 
 type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
@@ -169,12 +169,7 @@ export function BranchHoursEditor({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-white">Working hours</p>
-          <p className="mt-1 inline-flex items-center gap-2 text-xs text-white/45">
-            {formatBranchHoursSummary(hours)}
-            <HelpHint label="Working hours" title="Working hours" size="xs">
-              Changes save with the parent Branch form. Click Save branch to persist.
-            </HelpHint>
-          </p>
+          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours)}</p>
         </div>
         <ZookButton
           type="button"

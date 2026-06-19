@@ -6,7 +6,7 @@ import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
-import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
+import { ManagedOn, SearchableSelect } from "../../ui";
 import { ZookButton } from "../../zook-button";
 import type {
   BranchRow,
@@ -119,13 +119,7 @@ export function StaffSection({
         <div className="mb-5 grid gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="inline-flex items-center gap-2 font-medium text-[var(--text-primary)]">
-                Invite staff
-                <HelpHint label="Invite email" title="Invite email">
-                  We email a sign-in link. The recipient confirms with a one-time code and joins
-                  this gym with the role you pick.
-                </HelpHint>
-              </p>
+              <p className="font-medium text-[var(--text-primary)]">Invite staff</p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 Invite email sends a sign-in link. Reception users should be tied to one branch;
                 admins and trainers can work across assigned gym areas.
