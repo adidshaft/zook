@@ -10,7 +10,7 @@ export type { ApprovalItem } from "./types";
 
 export function ApprovalQueue({
   approvingId,
-  emptyState = { title: "All caught up", subtitle: "No pending approvals." },
+  emptyState = { title: "All caught up" },
   isError,
   isLoading,
   items,
@@ -26,7 +26,7 @@ export function ApprovalQueue({
       {isError ? <QueryErrorState error={new Error("Approvals could not load.")} onRetry={onRetry} /> : null}
       {!isLoading && !isError && !items.length ? (
         <Card variant="compact">
-          <EmptyState title={emptyState.title} body={emptyState.subtitle ?? ""} />
+          <EmptyState title={emptyState.title} body={emptyState.subtitle} />
         </Card>
       ) : null}
       {!isLoading && !isError

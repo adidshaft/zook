@@ -163,10 +163,7 @@ export default function OwnerApprovalsScreen() {
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
             <Card variant="compact">
-              <EmptyState
-                title="All caught up"
-                body="No join requests or scan reviews waiting."
-              />
+              <EmptyState title="All caught up" />
             </Card>
           ) : null}
           {joinRequests.length ? (

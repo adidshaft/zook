@@ -379,6 +379,8 @@ fully complete until the human/device/provider gates below have external evidenc
   implementation phrasing in visible helper copy.
 - Platform report and owner attention empty states no longer repeat "nothing needs" helper text
   under already-clear titles.
+- Mobile attention and approval queue defaults no longer add redundant all-caught-up helper copy
+  under already-clear empty-state titles.
 
 ### Product plan Part A and Part B
 
