@@ -422,6 +422,8 @@ fully complete until the human/device/provider gates below have external evidenc
   meta, date filters, tabs, and KPI/report surfaces.
 - Gym profile features tab no longer repeats member-facing profile-options guidance above
   tagline, facilities, amenities, and equipment fields.
+- Trainer diet plan table no longer carries an unreachable empty label when the surrounding
+  branch already renders the No diet plans empty state.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
   filter chips, managed-on note, and draft-detail action.
