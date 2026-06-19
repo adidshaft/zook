@@ -45,7 +45,7 @@ export function AiPanel({
         <SectionHeader
           eyebrow="Assistant"
           title="AI assistant activity"
-          description="Review assisted draft history and usage signals for this gym."
+          description="Review assisted drafts and usage signals for this gym."
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
           Draft creation is managed from trainer mobile workflows; owner web shows reviewable activity.
@@ -56,7 +56,7 @@ export function AiPanel({
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
             <EmptyState
               title="Loading drafts"
-              description="Checking saved assisted draft history."
+              description="Loading assisted drafts."
             />
           ) : (
             <DataTable
@@ -112,7 +112,7 @@ export function AiPanel({
               ]}
               rows={aiUsage}
               rowKey={(usage) => usage.id}
-              empty="No assistant draft history to show."
+              empty="No assistant drafts to show."
             />
           )}
         </div>

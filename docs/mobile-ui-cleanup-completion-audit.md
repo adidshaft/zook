@@ -211,6 +211,8 @@ fully complete until the human/device/provider gates below have external evidenc
   and ledger wording.
 - Notification overview escalation metadata now uses member-message wording instead of
   operational-notice wording.
+- Member roster, membership-plan, coaching-plan, and assistant-draft loading/empty copy now
+  avoids current/history phrasing where the surrounding section already provides context.
 
 ### Product plan Part A and Part B
 

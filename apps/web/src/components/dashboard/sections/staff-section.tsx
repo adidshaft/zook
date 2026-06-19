@@ -393,7 +393,7 @@ export function StaffSection({
           ) : coachPlansState.loading && coachPlans.length === 0 ? (
             <EmptyState
               title="Loading coaching plans"
-              description="Pulling the current training library."
+              description="Loading coaching plans."
             />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (

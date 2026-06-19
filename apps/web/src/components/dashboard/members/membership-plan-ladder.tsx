@@ -28,7 +28,7 @@ export function MembershipPlanLadder({
       <SectionHeader
         eyebrow="Membership setup"
         title="Membership plan ladder"
-        description="Use the pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
+        description="Review plan pricing, public visibility, and active memberships."
         badge={<Pill>{membershipPlans.length} plans</Pill>}
       />
       <div className="mt-5">
@@ -37,7 +37,7 @@ export function MembershipPlanLadder({
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
           <EmptyState
             title="Loading plan ladder"
-            description="Loading current membership plans for this gym."
+            description="Loading membership plans."
           />
         ) : (
           <DataTable

@@ -256,7 +256,7 @@ export function AuditPanel({
             ))
           ) : (
             <EmptyState
-              title="No assistant drafts yet"
+              title="No assistant drafts"
               description="Assisted drafts will appear here after the team starts using the planner."
             />
           )}
