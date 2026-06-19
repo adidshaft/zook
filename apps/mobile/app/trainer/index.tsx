@@ -9,7 +9,6 @@ import {
   EmptyState,
   Card,
   HeaderMeta,
-  IconBubble,
   ListRow,
   OperationalQueueCard,
   ProfileShortcut,
@@ -117,7 +116,6 @@ export default function TrainerHomeScreen() {
                   <ListRow
                     title={priorityClient.user?.name ?? "Client"}
                     subtitle={`${priorityClient.summary?.activePlans ?? 0} active ${(priorityClient.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${fitnessGoalFor(priorityClient)}`}
-                    leading={<IconBubble icon="person-outline" tone="neutral" />}
                   />
                 </Pressable>
               ) : (
@@ -201,7 +199,6 @@ export default function TrainerHomeScreen() {
                   <ListRow
                     title={feedback.clientName}
                     subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
-                    leading={<IconBubble icon="chatbubble-ellipses-outline" tone="neutral" />}
                     trailing={<StatusChip status={`${feedback.completionPct}%`} tone="blue" />}
                   />
                 </Pressable>
@@ -223,10 +220,7 @@ export default function TrainerHomeScreen() {
                   : router.push("/trainer/clients" as never)
               }
             >
-              <ListRow
-                title="Create plans manually"
-                leading={<IconBubble icon="reader-outline" tone="neutral" />}
-              />
+              <ListRow title="Create plans manually" />
             </Card>
           </AnimatedAppear>
         </ScrollView>
