@@ -1126,3 +1126,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Decorative reports revenue-line cue (`R252`) is closed:
   the reports revenue trend line now uses the informational dashboard tone instead
   of success color, leaving movement semantics to the adjacent delta chip.
+- **[ui, fixed]** Overstated mobile no-plan card warning cue (`R253`) is closed:
+  the active-member No plan assigned card now uses the informational mobile tone
+  instead of a warning surface, while pending and expired membership cards stay amber.
