@@ -327,6 +327,8 @@ fully complete until the human/device/provider gates below have external evidenc
   where the tile labels and counts already carry the state.
 - Trainer plan work no longer repeats active-plan context through header subtitles and
   review/clear chips, and owner approvals removes the duplicate pending-decision subtitle.
+- Coach, trainer diet, and notification web panels no longer show static surface labels or
+  repeated recent-update descriptions when dynamic notices, titles, and actions carry context.
 
 ### Product plan Part A and Part B
 

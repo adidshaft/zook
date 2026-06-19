@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { ActivityRow, KPITile, SectionHero } from "@/components/dashboard/charts";
-import { GlassCard, Pill } from "@/components/glass-card";
+import { GlassCard } from "@/components/glass-card";
 import { TrainerCustomisationPanel } from "@/components/trainer-customisation-panel";
 
 type CoachStats = {
@@ -50,11 +50,6 @@ export function CoachPage({
         description="Your assigned clients, week schedule, and progress notes are in the Zook app. This web view highlights active work."
         icon={Dumbbell}
         tone="sky"
-        meta={
-          <div className="flex flex-wrap items-center gap-2">
-            <Pill>Trainer</Pill>
-          </div>
-        }
       />
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
