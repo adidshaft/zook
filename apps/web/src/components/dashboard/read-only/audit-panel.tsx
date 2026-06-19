@@ -180,7 +180,6 @@ export function AuditPanel({
         <SectionHeader
           eyebrow="Assistant"
           title="Recent assistant drafts"
-          description="Review assisted drafts before anything member-facing is published."
           badge={
             <button
               type="button"

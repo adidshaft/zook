@@ -410,6 +410,8 @@ fully complete until the human/device/provider gates below have external evidenc
   referral state, and available-gym results.
 - Trainer customization revenue toggle no longer repeats the Show revenue snippet label through
   a duplicate payout-at-a-glance description.
+- Dashboard assistant draft card no longer repeats review guidance above the need-review badge,
+  filter chips, managed-on note, and draft-detail action.
 - Coach today list no longer repeats the coach-overview action through a duplicate row subtitle.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
