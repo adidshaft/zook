@@ -296,6 +296,8 @@ fully complete until the human/device/provider gates below have external evidenc
   the already-clear loading title and detail copy.
 - Owner member detail not-found state no longer repeats a neutral people icon beside the clear
   Member not found title.
+- Member referral card no longer repeats a neutral gift icon beside the already-clear
+  Refer a friend title and share action.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
