@@ -218,9 +218,9 @@ function demoOwnerDashboard() {
         value: 104 + index,
       })),
       planMix: [
-        { label: "Monthly", value: 72, tone: "lime" },
-        { label: "Quarterly", value: 38, tone: "sky" },
-        { label: "Annual", value: 18, tone: "amber" },
+        { label: "Monthly", value: 72 },
+        { label: "Quarterly", value: 38 },
+        { label: "Annual", value: 18 },
       ],
       deltas: {
         revenue7d: 18.2,

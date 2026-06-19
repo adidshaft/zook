@@ -489,7 +489,6 @@ export interface OwnerDashboardChartPoint {
 export interface OwnerDashboardPlanMixPoint {
   label: string;
   value: number;
-  tone?: "lime" | "sky" | "amber" | "violet" | string;
 }
 
 export interface OwnerDashboardCharts {

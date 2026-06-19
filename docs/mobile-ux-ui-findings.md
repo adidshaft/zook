@@ -1160,3 +1160,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[code, fixed]** Dead tracking summary tone metadata (`R263`) is closed:
   the mobile tracking summary metric type and builder no longer carry unused tone
   values, removing success/info metadata that the summary tiles never rendered.
+- **[code, fixed]** Dead mobile plan-mix tone metadata (`R264`) is closed:
+  the owner dashboard plan-mix type and demo data no longer carry unused success or
+  warning category tones because the mobile chart renders plan bars with one accent.
