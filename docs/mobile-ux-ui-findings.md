@@ -1289,3 +1289,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated owner member profile cue (`R306`) is closed:
   the owner member profile summary now uses neutral compact styling instead of a
   success surface, while the subscription status pill keeps semantic tone.
+- **[ui, fixed]** Overstated mobile referral-applied banner cue (`R307`) is
+  closed: the find-gyms referral banner now uses neutral compact styling instead
+  of a success surface, while the attached referral code stays visible in copy.

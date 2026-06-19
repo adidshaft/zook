@@ -149,7 +149,7 @@ export default function FindGyms() {
           />
 
           {referralCode ? (
-            <Card variant="success" contentStyle={styles.referralContent}>
+            <Card variant="compact" contentStyle={styles.referralContent}>
               <IconBubble icon="gift-outline" tone="neutral" size={36} />
               <View style={styles.referralCopy}>
                 <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
