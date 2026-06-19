@@ -12,7 +12,7 @@ import { getOrigins } from "@/lib/origins";
 import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 
 function toneForMemberSubscriptionStatus(status: string | null | undefined) {
-  if (status === "ACTIVE") return "lime";
+  if (status === "ACTIVE") return "blue";
   if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") {
     return "amber";
   }

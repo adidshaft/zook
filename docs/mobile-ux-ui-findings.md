@@ -1271,3 +1271,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated impersonation active-session cue (`R300`) is
   closed: platform impersonation Active sessions now use informational tone
   instead of success color, while expired sessions remain warning cues.
+- **[ui, fixed]** Overstated web active-membership cues (`R301`) are closed:
+  web member subscription Active badges now use informational tone instead of
+  success color, while pending and failed membership states keep warning/danger cues.

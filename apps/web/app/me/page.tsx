@@ -93,7 +93,7 @@ async function renderMembershipSurface(session: AuthSessionSummary, locale: Publ
                   <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
+                        <Pill tone={subscription.status === "ACTIVE" ? "blue" : "amber"}>
                           {formatEnumLabel(subscription.status)}
                         </Pill>
                         {autopay ? <Pill tone="blue">Autopay on</Pill> : null}
