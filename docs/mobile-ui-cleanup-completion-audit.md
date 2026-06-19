@@ -432,6 +432,8 @@ fully complete until the human/device/provider gates below have external evidenc
   plan categories from the section title.
 - Dashboard membership plan ladder uses a shorter empty state instead of repeating membership
   plan wording from the section header.
+- Dashboard membership catalog uses a shorter empty state instead of repeating membership
+  plan wording from the catalog header.
 - Mobile trainer sessions no longer repeat the empty feedback state inside the Plan feedback row.
 - Coach today list no longer repeats trainer-draft guidance under Assign a new plan.
 - Coach today list no longer repeats client-workspace navigation guidance under Notify a member.
