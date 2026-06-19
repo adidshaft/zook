@@ -218,6 +218,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Branch commerce controls, payment reconciliation, dashboard branch checklist, attendance
   summary, and reports snapshot now use owner-facing plans/products, receipt, and branch wording instead of
   setup/current/proof/scope wording.
+- Mobile stat strip primitive no longer carries an unused per-metric icon path after member home
+  moved to label/value-only metrics.
 - Platform support payment and impersonation tables now use payment-record/account/gym wording
   instead of ledger/target/org-scope wording.
 - Platform support access section now avoids impersonation-history wording in visible title and
