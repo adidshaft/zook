@@ -751,7 +751,7 @@ export function PlatformOperationsPanel({
               body: misconfiguredProviders.length
                 ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before full production confidence.`
                 : "Core providers are not reporting setup blockers.",
-              tone: misconfiguredProviders.length ? "amber" : "lime",
+              tone: misconfiguredProviders.length ? "amber" : "neutral",
             },
             {
               title: "Gym activation",
@@ -763,14 +763,14 @@ export function PlatformOperationsPanel({
               body: openFlags.length
                 ? "Review open reports before expanding pilot traffic."
                 : "No unresolved safety reports in the loaded queue.",
-              tone: openFlags.length ? "amber" : "lime",
+              tone: openFlags.length ? "amber" : "neutral",
             },
           ].map((item) => (
             <div
               key={item.title}
               className="rounded-[22px] border border-white/10 bg-black/20 p-4"
             >
-              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "lime"} />
+              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "neutral"} />
               <p className="mt-3 text-sm leading-6 text-white/58">{item.body}</p>
             </div>
           ))}

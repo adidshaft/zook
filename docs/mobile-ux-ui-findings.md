@@ -1081,3 +1081,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated payment-channel category color cues (`R237`) are closed:
   the reports payment-channel chart now uses non-warning/non-success tones for cash
   and online categories instead of amber and lime.
+- **[ui, fixed]** Overstated platform readiness clear-state cues (`R238`) are closed:
+  provider and safety readiness cards now use neutral styling when no blockers are
+  loaded, keeping amber reserved for setup gaps and unresolved reports.
