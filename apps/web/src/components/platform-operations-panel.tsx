@@ -1702,7 +1702,7 @@ export function PlatformOperationsPanel({
                     {
                       label: "Status",
                       value: formatEnumLabel(selectedOrganization.status),
-                      meta: "Current platform state",
+                      meta: "Platform account status",
                     },
                     {
                       label: "Join mode",

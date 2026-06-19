@@ -375,6 +375,8 @@ fully complete until the human/device/provider gates below have external evidenc
 - Mobile in-progress workout card no longer repeats the already-started state in its helper copy.
 - Member membership, owner stock, and branch checklist copy now use active/paid/added wording
   instead of synced/ready cues.
+- Notification settings and platform account summaries now avoid sync/current/loaded-queue
+  implementation phrasing in visible helper copy.
 
 ### Product plan Part A and Part B
 

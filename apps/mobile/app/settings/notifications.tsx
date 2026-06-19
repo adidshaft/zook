@@ -53,7 +53,7 @@ export default function NotificationSettingsScreen() {
               <PreferenceRow key={row.key} title={row.title} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
             ))}
           </Card>
-          <Text style={[styles.note, { color: palette.text.secondary }]}>Changes sync to your active gym when available.</Text>
+          <Text style={[styles.note, { color: palette.text.secondary }]}>Changes apply to your active gym when available.</Text>
         </ScrollView>
       </ZookScreen>
     </>

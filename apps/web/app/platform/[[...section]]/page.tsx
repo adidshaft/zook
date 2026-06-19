@@ -419,7 +419,7 @@ function PlatformStatusFirstFold({
     {
       label: "Gym accounts",
       value: `${activeGyms} active`,
-      meta: `${data.orgs.length} recently loaded accounts in the platform queue.`,
+      meta: `${data.orgs.length} recent accounts in the platform queue.`,
       tone: suspendedCount ? "amber" : "blue",
     },
     {
@@ -427,7 +427,7 @@ function PlatformStatusFirstFold({
       value: safetyReviewCount ? `${safetyReviewCount} open` : "Clear",
       meta: safetyReviewCount
         ? "Review unresolved safety reports before expanding traffic."
-        : "No unresolved safety reports in the loaded queue.",
+        : "No unresolved safety reports.",
       tone: safetyReviewCount ? "amber" : "neutral",
     },
   ] as const;
