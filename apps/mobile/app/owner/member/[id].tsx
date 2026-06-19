@@ -194,7 +194,6 @@ export default function OwnerMemberDetail() {
 
           {!memberQuery.isLoading && !memberQuery.isError && !member ? (
             <Card variant="compact" contentStyle={styles.stateContent}>
-              <IconBubble icon="people-outline" tone="neutral" size={44} />
               <Text style={[styles.stateText, { color: palette.text.primary }]}>
                 Member not found
               </Text>

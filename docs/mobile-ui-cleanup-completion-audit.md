@@ -294,6 +294,8 @@ fully complete until the human/device/provider gates below have external evidenc
   expanded feedback form already explain the action.
 - Member plan exercise-preview loading state no longer repeats a decorative barbell icon beside
   the already-clear loading title and detail copy.
+- Owner member detail not-found state no longer repeats a neutral people icon beside the clear
+  Member not found title.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
