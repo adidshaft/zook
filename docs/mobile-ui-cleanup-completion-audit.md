@@ -342,6 +342,8 @@ fully complete until the human/device/provider gates below have external evidenc
   count badge, export action, and member/status/mode/amount table.
 - Dashboard revenue opportunities no longer repeats renewal, stock, and notification helper copy
   above readouts that already label those opportunities directly.
+- Dashboard branch list no longer repeats address, manager, and active-branch helper copy above
+  the active count, branch rows, setup chips, and branch actions.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

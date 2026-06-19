@@ -67,7 +67,6 @@ export function BranchesListCard({
       <SectionHeader
         eyebrow="Locations"
         title="Branch list"
-        description="Keep addresses, managers, and active branches prepared for member check-ins and staff work."
         badge={<Pill>{branches.filter((branch) => branch.active).length} active</Pill>}
       />
       <div className="mt-5 grid gap-3">
