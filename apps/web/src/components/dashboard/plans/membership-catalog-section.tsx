@@ -158,7 +158,7 @@ export function MembershipCatalogSection({
             ]}
             rows={membershipPlans}
             rowKey={(plan) => plan.id}
-            empty="No membership plans yet."
+            empty="No membership plans."
           />
         )}
         {editingPlanId ? (

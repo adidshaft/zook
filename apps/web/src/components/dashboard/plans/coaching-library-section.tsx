@@ -73,7 +73,7 @@ export function CoachingLibrarySection({
             ]}
             rows={coachPlans}
             rowKey={(plan) => plan.id}
-            empty="No workout or advisory plans yet."
+            empty="No workout or advisory plans."
           />
         )}
       </div>

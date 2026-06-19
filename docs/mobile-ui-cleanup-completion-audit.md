@@ -401,6 +401,8 @@ fully complete until the human/device/provider gates below have external evidenc
   history, shop inventory, and coaching-plan empty copy now avoid forced or repeated helper text.
 - Diet-plan, exercise, scan, workout, payment, branch, and coaching-plan empty states now use
   direct titles without extra "yet" or unlock/not-published helper wording.
+- Web profile, platform, membership, attendance, audit, coaching, and mobile payout empty states
+  now remove remaining "yet" filler from no-content labels.
 
 ### Product plan Part A and Part B
 

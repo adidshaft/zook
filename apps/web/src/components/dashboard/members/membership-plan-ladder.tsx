@@ -81,7 +81,7 @@ export function MembershipPlanLadder({
             ]}
             rows={membershipPlans}
             rowKey={(plan) => plan.id}
-            empty="No membership plans yet."
+            empty="No membership plans."
           />
         )}
       </div>

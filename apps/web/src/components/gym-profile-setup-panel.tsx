@@ -414,7 +414,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               ]}
               rows={payload.branches}
               rowKey={(branch) => branch.id}
-              empty="No branches yet."
+              empty="No branches."
             />
           </GlassCard>
         )}

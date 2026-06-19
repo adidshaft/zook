@@ -1238,7 +1238,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={broadcasts}
                 rowKey={(broadcast) => broadcast.id}
-                empty="No broadcasts yet."
+                empty="No broadcasts."
               />
             </div>
           </GlassCard>
@@ -1672,7 +1672,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No gym accounts yet."
+                empty="No gym accounts."
               />
             </div>
             {selectedOrganization ? (
@@ -1938,7 +1938,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={usage}
                   rowKey={(row) => row.id}
-                  empty="No assistant activity yet."
+                  empty="No assistant activity."
                 />
               )}
             </div>
