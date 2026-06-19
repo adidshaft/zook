@@ -32,7 +32,6 @@ export function PaymentHistoryCard({
       <SectionHeader
         eyebrow="Payments"
         title="Payment history"
-        description="Membership, shop, online, and desk payments."
         badge={<Pill>{payments.length} payment{payments.length === 1 ? "" : "s"}</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
       />

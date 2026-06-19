@@ -338,6 +338,8 @@ fully complete until the human/device/provider gates below have external evidenc
   discount, offer, and referral cards that already include labels, descriptions, and counts.
 - Dashboard member summary no longer repeats roster-scope helper copy above member counts,
   pending-request badges, and KPI tiles.
+- Dashboard payment history no longer repeats payment-category helper copy above the payment
+  count badge, export action, and member/status/mode/amount table.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.
