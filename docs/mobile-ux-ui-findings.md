@@ -1111,3 +1111,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Overstated member total KPI cue (`R247`) is closed:
   the Total members roster KPI now uses the informational dashboard tone instead of
   success color, keeping stronger state cues on active, pending, and expiring counts.
+- **[ui, fixed]** Decorative member roster hero cue (`R248`) is closed:
+  the member roster hero now uses the informational dashboard tone instead of
+  success color, keeping success/attention emphasis on the actual roster metrics.
