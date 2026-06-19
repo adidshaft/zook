@@ -54,7 +54,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
       <Banner
         key="pickup"
         icon="bag-check-outline"
-        title="Pickup ready"
+        title="Pickup available"
         body={`Show pickup code ${readyOrder.pickupCode} at the desk.`}
         actionHref={`/shop/pickup/${readyOrder.id}`}
         actionLabel="Open"

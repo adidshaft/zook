@@ -632,7 +632,7 @@ function useReceptionWorkspaceState({
           message: "Pickup verified",
           detail: `Order total: ${formatInr(result.match.order?.totalPaise ?? 0)}`,
         });
-        showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
+        showToast({ tone: "success", haptic: "success", message: `Pickup verified for ${name}` });
       } else {
         const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
         const message = `Pickup code found for ${name}, but status is ${status}.`;

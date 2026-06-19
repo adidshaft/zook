@@ -135,6 +135,8 @@ fully complete until the human/device/provider gates below have external evidenc
   while preserving the existing tested page heading.
 - Setup, branch-pricing, privacy export, and event-template copy now avoid MVP/later/latest/ready
   wording while preserving the same next-step meaning.
+- Member pickup banner and reception verification toast now use available/verified wording instead
+  of extra ready-state cues.
 
 ### Product plan Part A and Part B
 
