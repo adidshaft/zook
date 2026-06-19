@@ -47,7 +47,7 @@ type AttentionRow = {
   icon: typeof ClipboardList;
   title: string;
   subtitle: string;
-  tone: "lime" | "amber" | "sky" | "rose";
+  tone: "amber" | "sky" | "rose";
   href: string;
 };
 

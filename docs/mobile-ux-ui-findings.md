@@ -1138,3 +1138,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
 - **[ui, fixed]** Misleading dashboard join-request attention cue (`R256`) is closed:
   the overview join-request attention row now uses danger tone only when requests are
   actually pending, and uses informational tone for the clear inbox state.
+- **[code, fixed]** Stale dashboard attention success tone allowance (`R257`) is closed:
+  the overview attention-row type no longer allows lime now that attention rows use
+  only informational, warning, or danger tones.
