@@ -258,6 +258,8 @@ fully complete until the human/device/provider gates below have external evidenc
   member/status/queue/console/correction wording instead of current/available/already/history phrasing.
 - Mobile plan empty states and web plan/staff/profile helpers now use direct show/share wording
   instead of will-appear/available/use-this/get-set-up phrasing.
+- Member home pickup banner now uses pickup-available wording and local helper naming instead of
+  the old ready-state cue.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

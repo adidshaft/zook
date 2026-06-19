@@ -39,7 +39,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
 
   const showProfile = Boolean(home?.activeMembership && !home.assignedTrainer);
   const showReferral = Boolean(home?.activeOrganization && !recent(dismissed.referral, 7 * DAY_MS));
-  const readyOrder = shopOrdersQuery.data?.orders.find(
+  const pickupOrder = shopOrdersQuery.data?.orders.find(
     (order) => order.pickupCode && !order.fulfilledAt && !/CANCEL|FULFILLED/i.test(order.status),
   );
   const daysLeft = home?.activeMembership?.daysLeft;
@@ -50,13 +50,13 @@ export function Banners({ home }: { home?: MemberHomeData }) {
   // banners are intentionally gone. Cap the stack so Home never turns into a
   // wall of banners.
   const banners = [
-    readyOrder ? (
+    pickupOrder ? (
       <Banner
         key="pickup"
         icon="bag-check-outline"
-        title="Pickup ready"
-        body={`Show pickup code ${readyOrder.pickupCode} at the desk.`}
-        actionHref={`/shop/pickup/${readyOrder.id}`}
+        title="Pickup available"
+        body={`Show pickup code ${pickupOrder.pickupCode} at the desk.`}
+        actionHref={`/shop/pickup/${pickupOrder.id}`}
         actionLabel="Open"
       />
     ) : null,
