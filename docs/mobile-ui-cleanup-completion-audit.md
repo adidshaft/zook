@@ -222,6 +222,8 @@ fully complete until the human/device/provider gates below have external evidenc
   instead of ledger/target/org-scope wording.
 - Platform support access section now avoids impersonation-history wording in visible title and
   empty state.
+- Shop status and order queue copy now uses stock-branch wording and avoids redundant
+  current/currently phrasing.
 
 ### Product plan Part A and Part B
 

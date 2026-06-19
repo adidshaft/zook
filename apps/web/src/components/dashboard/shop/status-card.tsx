@@ -28,7 +28,7 @@ export function ShopStatusCard({
         columns={1}
         items={[
           {
-            label: "Stock scope",
+            label: "Stock branch",
             value: branchScope.selectedBranch ? selectedBranchName : "All branches",
             meta: branchScope.selectedBranch
               ? "Products and stock changes apply to this branch"
