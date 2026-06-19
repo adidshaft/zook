@@ -285,6 +285,8 @@ fully complete until the human/device/provider gates below have external evidenc
   "choose" subtitles when the title and controls already define the screen.
 - Account, privacy, and appearance settings headers no longer repeat category subtitles
   above controls that already provide the needed context.
+- Tracking entry and workout history headers no longer repeat action/category subtitles
+  above segmented controls, fields, and history cards that already define the surface.
 
 ### Product plan Part A and Part B
 
