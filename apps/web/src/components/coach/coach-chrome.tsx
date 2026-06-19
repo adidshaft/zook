@@ -25,7 +25,7 @@ export function CoachChrome({ children }: { children: ReactNode }) {
                 className={[
                   "inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition",
                   onCoachHome
-                    ? "border-lime-300/40 bg-lime-300/15 text-lime-100"
+                    ? "border-white/20 bg-white/8 text-white"
                     : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white",
                 ].join(" ")}
               >

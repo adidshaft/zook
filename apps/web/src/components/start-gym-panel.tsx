@@ -283,7 +283,7 @@ export function StartGymPanel({
                 onClick={() => setStep(item.id)}
                 className={`rounded-full border px-3 py-2 text-xs font-semibold ${
                   step === item.id
-                    ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                    ? "border-white/20 bg-white/8 text-white"
                     : item.id < step
                       ? "border-white/15 bg-white/8 text-white/70"
                       : "border-white/10 bg-black/20 text-white/35"
@@ -513,7 +513,7 @@ export function StartGymPanel({
                       onClick={() => toggleAmenity(option)}
                       className={`rounded-full border px-3 py-2 text-xs font-medium ${
                         amenities.includes(option)
-                          ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                          ? "border-white/20 bg-white/8 text-white"
                           : "border-white/10 bg-white/5 text-white/50"
                       }`}
                     >
@@ -539,7 +539,7 @@ export function StartGymPanel({
                         onClick={() => toggleEquipment(option)}
                         className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
                           equipment.includes(option)
-                            ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                            ? "border-white/20 bg-white/8 text-white"
                             : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
                         }`}
                       >

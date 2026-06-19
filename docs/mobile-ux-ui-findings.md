@@ -1333,3 +1333,6 @@ These look wrong in the offline-demo build but are probably mocked data. **Verif
   shop tabs, settlement status filters, and branch setup Done chips now use
   neutral or informational selected-state styling instead of lime success
   emphasis.
+- **[ui, fixed]** Overstated setup and coach selected cues (`R319`) are closed:
+  start-gym step, amenity, and equipment selections plus the coach Overview nav
+  active state now use neutral selected styling instead of lime success emphasis.
