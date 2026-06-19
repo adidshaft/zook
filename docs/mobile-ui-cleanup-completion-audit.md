@@ -266,6 +266,8 @@ fully complete until the human/device/provider gates below have external evidenc
   title already carries the state.
 - Platform mobile billing hero no longer renders a decorative shield icon beside a headline that
   already explains the surface state.
+- Trainer plan-work summary no longer renders a decorative clipboard icon beside title/subtitle
+  copy that already explains the planning state.
 - Mobile payment, attendance, profile, owner chart, and workout empty states plus web templates,
   messages, body-progress, billing, attendance, and assistant-draft empty states now avoid
   will-appear/available phrasing.

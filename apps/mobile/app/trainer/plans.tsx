@@ -6,7 +6,6 @@ import {
   EmptyState,
   AppHeader,
   Card,
-  IconBubble,
   QueryErrorState,
   SectionHeader,
   ZookScreen,
@@ -57,18 +56,15 @@ export default function TrainerPlansScreen() {
         >
           <AppHeader title="Plan work" />
           <SectionHeader title="Active plan work" />
-          <Card variant="compact" contentStyle={styles.summaryCard}>
-            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "neutral"} size={42} />
-            <View style={styles.summaryCopy}>
-              <SectionHeader
-                title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
-                subtitle={
-                  plannedClients.length
-                    ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
-                    : "No client plans need assignment."
-                }
-              />
-            </View>
+          <Card variant="compact">
+            <SectionHeader
+              title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
+              subtitle={
+                plannedClients.length
+                  ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
+                  : "No client plans need assignment."
+              }
+            />
           </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
@@ -95,7 +91,5 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  summaryCard: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  summaryCopy: { flex: 1, minWidth: 0 },
   stack: { gap: spacing.sm },
 });
