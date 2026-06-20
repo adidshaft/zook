@@ -6,6 +6,7 @@ import {
   AppHeader,
   Card,
   EmptyState,
+  FormField,
   IconBubble,
   ListRow,
   Pill,
@@ -13,11 +14,60 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { useOrgPayouts } from "@/lib/domains/owner/queries";
-import { useMarkPayoutPaid } from "@/lib/domains/owner/mutations";
+import { useOrgPayouts, useTrainerPayoutConfig } from "@/lib/domains/owner/queries";
+import { useMarkPayoutPaid, useUpdatePayoutConfig } from "@/lib/domains/owner/mutations";
 import type { TrainerPayoutRecord } from "@/lib/domains/shared/types";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
+
+function PayoutConfigForm({ trainerId }: { trainerId: string }) {
+  const { palette } = useTheme();
+  const configQuery = useTrainerPayoutConfig(trainerId);
+  const updateConfig = useUpdatePayoutConfig();
+  const config = configQuery.data?.config;
+  const [base, setBase] = useState("");
+  const [commission, setCommission] = useState("");
+  const [perSession, setPerSession] = useState("");
+  const [payDay, setPayDay] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  if (config && !loaded) {
+    setBase(String(Math.round(config.baseMonthlyPaise / 100)));
+    setCommission(String(config.ptCommissionPercent));
+    setPerSession(String(Math.round(config.perSessionFeePaise / 100)));
+    setPayDay(String(config.payDay));
+    setLoaded(true);
+  }
+
+  function save() {
+    updateConfig.mutate({
+      trainerUserId: trainerId,
+      config: {
+        baseMonthlyPaise: (Number.parseInt(base, 10) || 0) * 100,
+        ptCommissionPercent: Math.min(100, Math.max(0, Number.parseInt(commission, 10) || 0)),
+        perSessionFeePaise: (Number.parseInt(perSession, 10) || 0) * 100,
+        payDay: Math.min(28, Math.max(1, Number.parseInt(payDay, 10) || 5)),
+      },
+    });
+  }
+
+  return (
+    <View style={[styles.configBox, { borderTopColor: palette.border.subtle }]}>
+      <Text style={[styles.configTitle, { color: palette.text.secondary }]}>Payout settings</Text>
+      <View style={styles.configRow}>
+        <FormField label="Base / month (₹)" value={base} onChangeText={setBase} keyboardType="number-pad" placeholder="15000" style={styles.configField} />
+        <FormField label="PT commission (%)" value={commission} onChangeText={setCommission} keyboardType="number-pad" placeholder="40" style={styles.configField} />
+      </View>
+      <View style={styles.configRow}>
+        <FormField label="Per session (₹)" value={perSession} onChangeText={setPerSession} keyboardType="number-pad" placeholder="300" style={styles.configField} />
+        <FormField label="Pay day (1-28)" value={payDay} onChangeText={setPayDay} keyboardType="number-pad" placeholder="5" style={styles.configField} />
+      </View>
+      <ZookButton size="sm" onPress={save} busy={updateConfig.isPending} busyLabel="Saving..." icon="save-outline">
+        Save settings
+      </ZookButton>
+    </View>
+  );
+}
 
 function payoutTone(status: string) {
   const normalized = status.toUpperCase();
@@ -38,6 +88,7 @@ function PayoutCard({
 }) {
   const { palette } = useTheme();
   const isPaid = payout.status.toUpperCase() === "PAID";
+  const [showConfig, setShowConfig] = useState(false);
   return (
     <Card variant="compact" contentStyle={styles.payoutCard}>
       <View style={styles.payoutHeader}>
@@ -78,6 +129,15 @@ function PayoutCard({
           Mark paid
         </ZookButton>
       )}
+      <ZookButton
+        size="sm"
+        variant="ghost"
+        icon={showConfig ? "chevron-up" : "options-outline"}
+        onPress={() => setShowConfig((current) => !current)}
+      >
+        {showConfig ? "Hide payout settings" : "Payout settings"}
+      </ZookButton>
+      {showConfig ? <PayoutConfigForm trainerId={payout.trainerId} /> : null}
     </Card>
   );
 }
@@ -193,4 +253,8 @@ const styles = StyleSheet.create({
   lineAmount: { ...typography.bodyStrong },
   paidRow: { alignItems: "center", flexDirection: "row", gap: 6 },
   paidText: { ...typography.caption },
+  configBox: { borderTopWidth: StyleSheet.hairlineWidth, gap: spacing.sm, paddingTop: spacing.md },
+  configTitle: { ...typography.caption, textTransform: "uppercase" },
+  configRow: { flexDirection: "row", gap: spacing.sm },
+  configField: { flex: 1 },
 });

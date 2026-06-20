@@ -183,3 +183,36 @@ export function useMarkPayoutPaid(orgId?: string) {
     },
   });
 }
+
+export function useUpdatePayoutConfig(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({
+      trainerUserId,
+      config,
+    }: {
+      trainerUserId: string;
+      config: {
+        baseMonthlyPaise: number;
+        ptCommissionPercent: number;
+        perSessionFeePaise: number;
+        payDay: number;
+      };
+    }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ config: unknown }>(
+        `/orgs/${ctx.orgId}/trainers/${trainerUserId}/payout-config`,
+        { method: "PUT", token: ctx.token, orgId: ctx.orgId, body: config },
+      );
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["org", resolvedOrgId, "trainer", variables.trainerUserId, "payout-config"],
+      });
+      notifyMutationSuccess("Payout settings saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save payout settings."),
+  });
+}

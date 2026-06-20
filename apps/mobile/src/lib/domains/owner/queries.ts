@@ -220,3 +220,24 @@ export function useOrgPayouts(month?: string) {
     staleTime: 60_000,
   });
 }
+
+export type PayoutConfig = {
+  baseMonthlyPaise: number;
+  ptCommissionPercent: number;
+  perSessionFeePaise: number;
+  payDay: number;
+};
+
+export function useTrainerPayoutConfig(trainerUserId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "trainer", trainerUserId, "payout-config"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ config: PayoutConfig | null }>(
+        `/orgs/${activeOrgId}/trainers/${trainerUserId}/payout-config`,
+        { token, orgId: activeOrgId ?? undefined },
+      ),
+    enabled:
+      status === "authenticated" && Boolean(token) && Boolean(activeOrgId) && Boolean(trainerUserId),
+  });
+}
