@@ -1728,6 +1728,86 @@ function demoDeleteMembershipPlan(planId: string) {
   return { ok: true };
 }
 
+// --- Staff management (owner, offline demo, stateful) ----------------------
+type DemoStaffRow = {
+  id: string;
+  userId: string;
+  role: string;
+  branchId: string | null;
+  pending: boolean;
+  user: { id: string; name: string | null; email: string };
+};
+
+const demoStaff: DemoStaffRow[] = [
+  {
+    id: "role-owner-owner",
+    userId: "user-owner",
+    role: "OWNER",
+    branchId: null,
+    pending: false,
+    user: { id: "user-owner", name: "Aditya Rao", email: "owner@zook.local" },
+  },
+  {
+    id: "role-rohan-trainer",
+    userId: "user-rhea",
+    role: "TRAINER",
+    branchId: null,
+    pending: false,
+    user: { id: "user-rhea", name: "Coach Rohan", email: "trainer@zook.local" },
+  },
+  {
+    id: "role-priya-reception",
+    userId: "user-priya",
+    role: "RECEPTIONIST",
+    branchId: null,
+    pending: false,
+    user: { id: "user-priya", name: "Farah Khan", email: "reception@zook.local" },
+  },
+];
+
+function demoStaffPayload() {
+  return {
+    staff: demoStaff.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      role: row.role,
+      branchId: row.branchId,
+      pending: row.pending,
+    })),
+    users: demoStaff.map((row) => row.user),
+  };
+}
+
+function demoInviteStaff(body: Record<string, unknown>) {
+  const email = String(body.email ?? "").trim().toLowerCase();
+  const role = String(body.role ?? "TRAINER");
+  const id = `invite-${Date.now()}`;
+  const userId = `pending-${Date.now()}`;
+  demoStaff.push({
+    id,
+    userId,
+    role,
+    branchId: body.branchId ? String(body.branchId) : null,
+    pending: true,
+    user: { id: userId, name: email.split("@")[0] ?? email, email },
+  });
+  return { invite: { id, email, role } };
+}
+
+function demoUpdateStaffRole(assignmentId: string, body: Record<string, unknown>) {
+  const row = demoStaff.find((entry) => entry.id === assignmentId);
+  if (!row) throw new Error("Staff member not found.");
+  row.role = String(body.role ?? row.role);
+  row.branchId = body.branchId ? String(body.branchId) : null;
+  return { assignment: { id: row.id, userId: row.userId, role: row.role, branchId: row.branchId } };
+}
+
+function demoRemoveStaff(assignmentId: string) {
+  const index = demoStaff.findIndex((entry) => entry.id === assignmentId);
+  if (index >= 0) demoStaff.splice(index, 1);
+  return { ok: true };
+}
+
 // --- Coupons & offers (owner, offline demo, stateful) ----------------------
 type DemoCoupon = {
   id: string;
@@ -2555,6 +2635,22 @@ export async function demoMobileApiFetch<T>(
       return demoCreateMembershipPlan(demoBody(init)) as T;
     }
     return { plans: demoMembershipPlans } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/staff\/invite$/) && method === "POST") {
+    return demoInviteStaff(demoBody(init)) as T;
+  }
+  const staffEditMatch = pathname.match(/^\/orgs\/[^/]+\/staff\/([^/]+)$/);
+  if (staffEditMatch && staffEditMatch[1] !== "invite") {
+    if (method === "DELETE") {
+      return demoRemoveStaff(staffEditMatch[1]) as T;
+    }
+    if (method === "PATCH" || method === "PUT") {
+      return demoUpdateStaffRole(staffEditMatch[1], demoBody(init)) as T;
+    }
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/staff$/)) {
+    return demoStaffPayload() as T;
   }
 
   const couponEditMatch = pathname.match(/^\/orgs\/[^/]+\/coupons\/([^/]+)$/);

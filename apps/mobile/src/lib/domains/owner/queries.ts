@@ -321,3 +321,26 @@ export function useOrgCoupons() {
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
+
+export type StaffAssignment = {
+  id: string;
+  userId: string;
+  role: string;
+  branchId?: string | null;
+  pending?: boolean;
+};
+
+export type StaffUser = { id: string; name: string | null; email: string };
+
+export function useOrgStaff() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "staff"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ staff: StaffAssignment[]; users: StaffUser[] }>(`/orgs/${activeOrgId}/staff`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}

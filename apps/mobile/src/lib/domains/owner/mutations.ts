@@ -350,3 +350,70 @@ export function useDeleteCoupon(orgId?: string) {
     onError: (error) => notifyMutationError(error, "Could not remove coupon."),
   });
 }
+
+export type StaffRole = "ADMIN" | "RECEPTIONIST" | "TRAINER";
+
+export function useInviteStaff(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (body: { email: string; role: StaffRole; branchId?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ invite: { id: string } }>(`/orgs/${ctx.orgId}/staff/invite`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationSuccess("Invite sent.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not send invite."),
+  });
+}
+
+export function useUpdateStaffRole(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ assignmentId, role, branchId }: { assignmentId: string; role: StaffRole; branchId?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ assignment: { id: string } }>(`/orgs/${ctx.orgId}/staff/${assignmentId}`, {
+        method: "PATCH",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: { role, ...(branchId ? { branchId } : {}) },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationSuccess("Role updated.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not update role."),
+  });
+}
+
+export function useRemoveStaff(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (assignmentId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/staff/${assignmentId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationWarning("Staff member removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove staff member."),
+  });
+}

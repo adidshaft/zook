@@ -141,6 +141,10 @@ export default function OwnerLayout() {
         name="coupons"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
+      <Tabs.Screen
+        name="staff"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }
