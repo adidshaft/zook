@@ -1246,6 +1246,59 @@ function demoCreateShopOrder(body: Record<string, unknown>) {
   return enrichOrder(order);
 }
 
+// --- Invoicing (offline demo) ----------------------------------------------
+function demoSucceededPayment() {
+  return {
+    id: "payment-hybrid-success",
+    orgId: activeOrg()?.id ?? "org-demo",
+    purpose: "MEMBERSHIP",
+    amountPaise: 249900,
+    status: "SUCCEEDED",
+    mode: "DIRECT_UPI",
+    paymentMode: "DIRECT_UPI",
+    receiptNumber: "RC-2026-0042",
+    recordedAt: hoursAgoIso(24 * 5),
+    createdAt: hoursAgoIso(24 * 5),
+  };
+}
+
+function demoInvoices() {
+  return [
+    {
+      id: "invoice-hybrid",
+      orgId: activeOrg()?.id ?? "org-demo",
+      paymentId: "payment-hybrid-success",
+      invoiceNumber: "INV-2026-0042",
+      invoiceNo: "INV-2026-0042",
+      invoiceUrl: "/api/me/invoices/invoice-hybrid/pdf",
+      issueDate: hoursAgoIso(24 * 5),
+      issuedAt: hoursAgoIso(24 * 5),
+      subtotalPaise: 211780,
+      gstPaise: 38120,
+      totalPaise: 249900,
+      amountPaise: 249900,
+      status: "ISSUED",
+      invoiceStatus: "ISSUED",
+    },
+  ];
+}
+
+function demoPaymentDocument(paymentId: string, kind: "receipt" | "invoice") {
+  if (kind === "receipt") {
+    return {
+      receiptNumber: "RC-2026-0042",
+      receiptUrl: `/api/me/payments/${paymentId}/receipt/pdf`,
+      payment: demoSucceededPayment(),
+    };
+  }
+  const invoice = demoInvoices()[0];
+  return {
+    invoice,
+    invoiceUrl: invoice.invoiceUrl,
+    payment: demoSucceededPayment(),
+  };
+}
+
 function demoShopOrders() {
   return [...demoCreatedOrders, ...zookDemoFixtures.shopOrders].map((order) => enrichOrder(order));
 }
@@ -1401,8 +1454,17 @@ export async function demoMobileApiFetch<T>(
       subscriptions: zookDemoFixtures.memberships.map((membership) =>
         enrichMembership(membership),
       ),
-      payments: zookDemoFixtures.payments,
+      payments: [demoSucceededPayment(), ...zookDemoFixtures.payments],
     } as T;
+  }
+  if (pathname === "/me/invoices") {
+    return { invoices: demoInvoices() } as T;
+  }
+  {
+    const docMatch = pathname.match(/^\/me\/payments\/([^/]+)\/(receipt|invoice)$/);
+    if (docMatch && method === "POST") {
+      return demoPaymentDocument(docMatch[1], docMatch[2] as "receipt" | "invoice") as T;
+    }
   }
   if (pathname.match(/^\/me\/memberships\/[^/]+\/renew$/)) {
     return {
