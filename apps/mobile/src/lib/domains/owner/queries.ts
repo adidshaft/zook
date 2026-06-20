@@ -270,3 +270,28 @@ export function useOrgReferralPolicy() {
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
+
+export type MembershipPlanRecord = {
+  id: string;
+  name: string;
+  description?: string | null;
+  type: string;
+  pricePaise: number;
+  durationDays?: number | null;
+  visitLimit?: number | null;
+  validityDays?: number | null;
+  publicVisible: boolean;
+};
+
+export function useOrgMembershipPlans() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "membership-plans"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ plans: MembershipPlanRecord[] }>(`/orgs/${activeOrgId}/membership-plans`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}

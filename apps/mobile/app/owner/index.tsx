@@ -55,7 +55,7 @@ export default function OwnerCommandScreen() {
           id: "plans",
           label: "Create membership plans",
           done: setupStatus.hasMembershipPlans,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/membership-plans"),
+          onPress: () => router.push("/owner/plans"),
         },
         {
           id: "qr",

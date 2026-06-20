@@ -1613,6 +1613,75 @@ function demoPaymentDocument(paymentId: string, kind: "receipt" | "invoice") {
   };
 }
 
+// --- Membership plans management (owner, offline demo, stateful) -----------
+type DemoMembershipPlan = {
+  id: string;
+  orgId: string;
+  name: string;
+  description: string | null;
+  type: string;
+  pricePaise: number;
+  durationDays: number | null;
+  visitLimit: number | null;
+  validityDays: number | null;
+  publicVisible: boolean;
+  active: boolean;
+};
+
+const demoMembershipPlans: DemoMembershipPlan[] = zookDemoFixtures.membershipPlans.map((plan) => ({
+  id: plan.id,
+  orgId: plan.orgId,
+  name: plan.name,
+  description: plan.description ?? null,
+  type: plan.type,
+  pricePaise: plan.pricePaise,
+  durationDays: plan.durationDays ?? null,
+  visitLimit: plan.visitLimit ?? null,
+  validityDays: null,
+  publicVisible: plan.publicVisible ?? true,
+  active: true,
+}));
+
+function demoPlanFromBody(body: Record<string, unknown>, base?: DemoMembershipPlan): DemoMembershipPlan {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  return {
+    id: base?.id ?? `plan-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    name: body.name !== undefined ? String(body.name) : (base?.name ?? "Plan"),
+    description: body.description !== undefined ? String(body.description) || null : (base?.description ?? null),
+    type: body.type !== undefined ? String(body.type) : (base?.type ?? "DURATION"),
+    pricePaise: body.pricePaise !== undefined ? (toNumber(body.pricePaise) ?? 0) : (base?.pricePaise ?? 0),
+    durationDays: body.durationDays !== undefined ? toNumber(body.durationDays) : (base?.durationDays ?? null),
+    visitLimit: body.visitLimit !== undefined ? toNumber(body.visitLimit) : (base?.visitLimit ?? null),
+    validityDays: body.validityDays !== undefined ? toNumber(body.validityDays) : (base?.validityDays ?? null),
+    publicVisible: body.publicVisible !== undefined ? Boolean(body.publicVisible) : (base?.publicVisible ?? true),
+    active: true,
+  };
+}
+
+function demoCreateMembershipPlan(body: Record<string, unknown>) {
+  const plan = demoPlanFromBody(body);
+  demoMembershipPlans.unshift(plan);
+  return { plan };
+}
+
+function demoUpdateMembershipPlan(planId: string, body: Record<string, unknown>) {
+  const index = demoMembershipPlans.findIndex((plan) => plan.id === planId);
+  if (index < 0) throw new Error("Plan not found.");
+  const updated = demoPlanFromBody(body, demoMembershipPlans[index]);
+  demoMembershipPlans[index] = updated;
+  return { plan: updated };
+}
+
+function demoDeleteMembershipPlan(planId: string) {
+  const index = demoMembershipPlans.findIndex((plan) => plan.id === planId);
+  if (index >= 0) demoMembershipPlans.splice(index, 1);
+  return { ok: true };
+}
+
 function demoShopOrders() {
   return [...demoCreatedOrders, ...zookDemoFixtures.shopOrders].map((order) => enrichOrder(order));
 }
@@ -2331,6 +2400,22 @@ export async function demoMobileApiFetch<T>(
       return demoUpdateReferralPolicy(demoBody(init)) as T;
     }
     return { policy: demoReferralPolicy } as T;
+  }
+
+  const planEditMatch = pathname.match(/^\/orgs\/[^/]+\/membership-plans\/([^/]+)$/);
+  if (planEditMatch) {
+    if (method === "DELETE") {
+      return demoDeleteMembershipPlan(planEditMatch[1]) as T;
+    }
+    if (method === "PATCH" || method === "PUT") {
+      return demoUpdateMembershipPlan(planEditMatch[1], demoBody(init)) as T;
+    }
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/membership-plans$/)) {
+    if (method === "POST") {
+      return demoCreateMembershipPlan(demoBody(init)) as T;
+    }
+    return { plans: demoMembershipPlans } as T;
   }
 
   const payoutConfigMatch = pathname.match(

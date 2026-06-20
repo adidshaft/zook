@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans";
   webPath?: string;
   visible?: boolean;
 };
@@ -43,8 +43,17 @@ export default function OwnerMoreScreen() {
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const canManagePayouts = useHasPermission("TRAINERS_MANAGE");
   const canManageReferrals = useHasPermission("REFERRALS_MANAGE");
+  const canManagePlans = useHasPermission("MEMBERSHIP_PLAN_MANAGE");
   const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
+    {
+      title: "Membership plans",
+      subtitle: "Create and price the plans members buy",
+      icon: "pricetags-outline",
+      testID: "owner-more-plans",
+      href: "/owner/plans",
+      visible: canManagePlans,
+    },
     {
       title: "Referral program",
       subtitle: "Set rewards for members, trainers & gym referrals",

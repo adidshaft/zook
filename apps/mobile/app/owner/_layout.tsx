@@ -133,6 +133,10 @@ export default function OwnerLayout() {
         name="referrals"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
+      <Tabs.Screen
+        name="plans"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

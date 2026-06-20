@@ -238,3 +238,59 @@ export function useUpdateReferralPolicy(orgId?: string) {
     onError: (error) => notifyMutationError(error, "Could not save referral settings."),
   });
 }
+
+export type MembershipPlanInput = {
+  name: string;
+  description?: string;
+  type: "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
+  pricePaise: number;
+  durationDays?: number;
+  visitLimit?: number;
+  publicVisible?: boolean;
+};
+
+export function useSaveMembershipPlan(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ planId, body }: { planId?: string; body: MembershipPlanInput }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      const path = planId
+        ? `/orgs/${ctx.orgId}/membership-plans/${planId}`
+        : `/orgs/${ctx.orgId}/membership-plans`;
+      return mobileApiFetch<{ plan: { id: string } }>(path, {
+        method: planId ? "PATCH" : "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
+      notifyMutationSuccess("Plan saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save plan."),
+  });
+}
+
+export function useDeleteMembershipPlan(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (planId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/membership-plans/${planId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
+      notifyMutationWarning("Plan removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove plan."),
+  });
+}
