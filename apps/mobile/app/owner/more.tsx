@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts";
   webPath?: string;
   visible?: boolean;
 };
@@ -41,8 +41,17 @@ export default function OwnerMoreScreen() {
   const bottomPadding = useBottomScrollPadding();
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
+  const canManagePayouts = useHasPermission("TRAINERS_MANAGE");
   const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
+    {
+      title: "Trainer payouts",
+      subtitle: "Review and pay your coaches",
+      icon: "cash-outline",
+      testID: "owner-more-payouts",
+      href: "/owner/payouts",
+      visible: canManagePayouts,
+    },
     {
       title: "Stock",
       subtitle: "Products and pickups",

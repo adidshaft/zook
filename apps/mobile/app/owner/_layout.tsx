@@ -125,6 +125,10 @@ export default function OwnerLayout() {
         name="member/[id]"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
+      <Tabs.Screen
+        name="payouts"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }

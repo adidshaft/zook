@@ -33,6 +33,8 @@ export const queryKeys = {
       ["org", orgId, "join-requests", branchId] as const,
     setupStatus: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "setup-status", branchId] as const,
+    payouts: (orgId?: string | null, month?: string | null) =>
+      ["org", orgId, "payouts", month] as const,
     billing: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "billing", "subscription", branchId] as const,
   },

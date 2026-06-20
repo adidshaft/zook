@@ -807,6 +807,7 @@ export interface TrainerPayoutLineRecord {
 export interface TrainerPayoutRecord {
   id: string;
   trainerId: string;
+  trainerName?: string | null;
   totalPaise: number;
   status: string;
   period?: string | null;

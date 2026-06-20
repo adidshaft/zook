@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { invalidations } from "@/lib/domains/shared/invalidate";
+import { queryKeys } from "@/lib/domains/shared/keys";
 import {
   getMutationContext,
   notifyMutationError,
@@ -152,6 +153,33 @@ export function useCancelSaasSubscription(orgId?: string) {
     },
     onError: (error) => {
       notifyMutationError(error, "Subscription could not be cancelled.");
+    },
+  });
+}
+
+export function useMarkPayoutPaid(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ payoutId, method, note }: { payoutId: string; method: string; note?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ payout: { id: string; status: string } }>(
+        `/orgs/${ctx.orgId}/payouts/${payoutId}/mark-paid`,
+        {
+          method: "POST",
+          token: ctx.token,
+          orgId: ctx.orgId,
+          body: { method, ...(note ? { note } : {}) },
+        },
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.owner.payouts(resolvedOrgId) });
+      notifyMutationSuccess("Payout marked paid.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Could not mark payout paid.");
     },
   });
 }

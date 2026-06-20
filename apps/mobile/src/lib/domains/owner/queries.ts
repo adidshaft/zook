@@ -9,6 +9,7 @@ import type {
   OrgMemberRecord,
   OwnerBillingSubscriptionData,
   OwnerDashboardData,
+  TrainerPayoutRecord,
 } from "@/lib/domains/shared/types";
 
 type OwnerSetupStatusData = {
@@ -204,4 +205,18 @@ export function usePrefetchOwnerWorkspace(orgId?: string) {
       staleTime: 60_000,
     });
   };
+}
+
+export function useOrgPayouts(month?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.owner.payouts(activeOrgId, month),
+    queryFn: () =>
+      mobileApiFetch<{ payouts: TrainerPayoutRecord[] }>(
+        `/orgs/${activeOrgId}/payouts${queryString({ month: month ?? undefined })}`,
+        { token, orgId: activeOrgId ?? undefined },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    staleTime: 60_000,
+  });
 }

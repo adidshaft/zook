@@ -378,42 +378,67 @@ function demoCreatePtPlan(trainerUserId: string, body: Record<string, unknown>) 
   return { plan };
 }
 
-function demoTrainerPayouts() {
-  const period = new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-  const lines = [
-    {
-      id: "payout-line-pt",
-      kind: "Personal training",
-      description: "PT sessions · 8 completed",
-      amountPaise: 2400000,
-      createdAt: nowIso(),
-    },
-    {
-      id: "payout-line-plans",
-      kind: "Plan assignments",
-      description: "Coached plans · 12 members",
-      amountPaise: 1200000,
-      createdAt: nowIso(),
-    },
-    {
-      id: "payout-line-classes",
-      kind: "Group classes",
-      description: "Class instruction · 6 sessions",
-      amountPaise: 650000,
-      createdAt: nowIso(),
-    },
-  ];
-  return [
-    {
-      id: "payout-current",
-      trainerId: "user-rhea",
-      totalPaise: lines.reduce((total, line) => total + line.amountPaise, 0),
-      status: "ACCRUING",
-      period,
-      paidAt: null,
-      lines,
-    },
-  ];
+type DemoPayout = {
+  id: string;
+  trainerId: string;
+  trainerName: string;
+  totalPaise: number;
+  status: string;
+  period: string;
+  paidAt: string | null;
+  lines: Array<{
+    id: string;
+    kind: string;
+    description: string;
+    amountPaise: number;
+    createdAt: string;
+  }>;
+};
+
+const demoOrgPayouts: DemoPayout[] = [
+  {
+    id: "payout-rohan",
+    trainerId: "user-rhea",
+    trainerName: "Coach Rohan",
+    totalPaise: 4250000,
+    status: "ACCRUING",
+    period: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+    paidAt: null,
+    lines: [
+      { id: "payout-line-pt", kind: "Personal training", description: "PT sessions · 8 completed", amountPaise: 2400000, createdAt: nowIso() },
+      { id: "payout-line-plans", kind: "Plan assignments", description: "Coached plans · 12 members", amountPaise: 1200000, createdAt: nowIso() },
+      { id: "payout-line-classes", kind: "Group classes", description: "Class instruction · 6 sessions", amountPaise: 650000, createdAt: nowIso() },
+    ],
+  },
+  {
+    id: "payout-kavya",
+    trainerId: "user-kabir",
+    trainerName: "Coach Kavya",
+    totalPaise: 2850000,
+    status: "ACCRUING",
+    period: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+    paidAt: null,
+    lines: [
+      { id: "payout-line-kavya-pt", kind: "Personal training", description: "PT sessions · 5 completed", amountPaise: 1500000, createdAt: nowIso() },
+      { id: "payout-line-kavya-classes", kind: "Group classes", description: "Class instruction · 9 sessions", amountPaise: 1350000, createdAt: nowIso() },
+    ],
+  },
+];
+
+function demoTrainerPayouts(trainerId?: string) {
+  return trainerId
+    ? demoOrgPayouts.filter((payout) => payout.trainerId === trainerId)
+    : demoOrgPayouts;
+}
+
+function demoMarkPayoutPaid(payoutId: string, body: Record<string, unknown>) {
+  const payout = demoOrgPayouts.find((entry) => entry.id === payoutId);
+  if (!payout) {
+    throw new Error("Payout not found.");
+  }
+  payout.status = "PAID";
+  payout.paidAt = nowIso();
+  return { payout: { id: payout.id, status: payout.status, method: String(body.method ?? "") } };
 }
 
 function demoTrainerClients() {
@@ -1973,8 +1998,18 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
-  if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/payouts$/)) {
-    return { payouts: demoTrainerPayouts() } as T;
+  const trainerPayoutMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/payouts$/);
+  if (trainerPayoutMatch) {
+    return { payouts: demoTrainerPayouts(trainerPayoutMatch[1]) } as T;
+  }
+
+  const markPaidMatch = pathname.match(/^\/orgs\/[^/]+\/payouts\/([^/]+)\/mark-paid$/);
+  if (markPaidMatch && method === "POST") {
+    return demoMarkPayoutPaid(markPaidMatch[1], demoBody(init)) as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/payouts$/)) {
+    return { payouts: demoOrgPayouts } as T;
   }
 
   const ptPlanMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/pt-plans$/);
