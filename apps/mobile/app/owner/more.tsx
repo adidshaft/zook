@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals";
   webPath?: string;
   visible?: boolean;
 };
@@ -42,8 +42,17 @@ export default function OwnerMoreScreen() {
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const canManagePayouts = useHasPermission("TRAINERS_MANAGE");
+  const canManageReferrals = useHasPermission("REFERRALS_MANAGE");
   const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
+    {
+      title: "Referral program",
+      subtitle: "Set rewards for members, trainers & gym referrals",
+      icon: "gift-outline",
+      testID: "owner-more-referrals",
+      href: "/owner/referrals",
+      visible: canManageReferrals,
+    },
     {
       title: "Trainer payouts",
       subtitle: "Review and pay your coaches",

@@ -216,3 +216,25 @@ export function useUpdatePayoutConfig(orgId?: string) {
     onError: (error) => notifyMutationError(error, "Could not save payout settings."),
   });
 }
+
+export function useUpdateReferralPolicy(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (patch: Record<string, unknown>) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ policy: unknown }>(`/orgs/${ctx.orgId}/referral-policy`, {
+        method: "PATCH",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: patch,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "referral-policy"] });
+      notifyMutationSuccess("Referral settings saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save referral settings."),
+  });
+}

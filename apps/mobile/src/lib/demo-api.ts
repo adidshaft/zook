@@ -1398,6 +1398,32 @@ function demoRecordBodyProgress(body: Record<string, unknown>) {
   return { entry: { id: entry.id } };
 }
 
+// Gym referral program customisations (offline demo, stateful).
+const demoReferralPolicy: Record<string, unknown> = {
+  id: "referral-policy-demo",
+  orgId: "org-aarogya-strength",
+  enabled: true,
+  referrerRewardType: "DAYS",
+  referrerRewardValue: 7,
+  referredDiscountType: "PERCENTAGE",
+  referredDiscountValue: 1000,
+  maxDiscountCapBps: 3000,
+  maxReferralsPerMonth: 10,
+  referralCodeExpiryDays: 90,
+  trainerReferralEnabled: true,
+  staffReferralEnabled: false,
+  trainerRewardType: "DAYS",
+  trainerRewardValue: 14,
+  memberGymReferralRewardPaise: 250000,
+};
+
+function demoUpdateReferralPolicy(body: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(body)) {
+    if (value !== undefined) demoReferralPolicy[key] = value;
+  }
+  return { policy: demoReferralPolicy };
+}
+
 function demoReferralCodes() {
   // Seed real referral activity so the referrer side shows friends joined +
   // credits earned instead of an empty, dead-feeling card.
@@ -2298,6 +2324,13 @@ export async function demoMobileApiFetch<T>(
   }
   if (pathname.match(/^\/orgs\/[^/]+\/pt-sessions$/) && method === "POST") {
     return demoLogPtSession(demoBody(init)) as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/referral-policy$/)) {
+    if (method === "PATCH" || method === "POST" || method === "PUT") {
+      return demoUpdateReferralPolicy(demoBody(init)) as T;
+    }
+    return { policy: demoReferralPolicy } as T;
   }
 
   const payoutConfigMatch = pathname.match(

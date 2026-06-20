@@ -241,3 +241,32 @@ export function useTrainerPayoutConfig(trainerUserId?: string | null) {
       status === "authenticated" && Boolean(token) && Boolean(activeOrgId) && Boolean(trainerUserId),
   });
 }
+
+export type ReferralPolicy = {
+  enabled: boolean;
+  referrerRewardType: "DAYS" | "VISITS" | "NONE";
+  referrerRewardValue: number;
+  referredDiscountType: "PERCENTAGE" | "FIXED" | "NONE";
+  referredDiscountValue: number;
+  maxDiscountCapBps: number;
+  maxReferralsPerMonth: number;
+  referralCodeExpiryDays: number;
+  trainerReferralEnabled: boolean;
+  staffReferralEnabled: boolean;
+  trainerRewardType: "DAYS" | "VISITS" | "NONE";
+  trainerRewardValue: number;
+  memberGymReferralRewardPaise: number;
+};
+
+export function useOrgReferralPolicy() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "referral-policy"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ policy: ReferralPolicy }>(`/orgs/${activeOrgId}/referral-policy`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}

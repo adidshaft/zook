@@ -179,6 +179,13 @@ export const referralPolicySchema = z.object({
   referralCodeExpiryDays: z.number().int().min(0).max(365).default(90),
   trainerReferralEnabled: z.boolean().default(true),
   staffReferralEnabled: z.boolean().default(false),
+  // How much a trainer earns when a member they refer joins (separate from the
+  // member-to-member referrer reward above).
+  trainerRewardType: z.enum(["DAYS", "VISITS", "NONE"]).default("DAYS"),
+  trainerRewardValue: z.number().int().min(0).max(30).default(7),
+  // What a member earns (account credit, ₹) for referring a brand-new gym to
+  // the platform.
+  memberGymReferralRewardPaise: z.number().int().min(0).max(10_000_000).default(0),
 });
 
 export const referralCodeManageSchema = z.object({

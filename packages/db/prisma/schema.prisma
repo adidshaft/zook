@@ -1648,6 +1648,9 @@ model ReferralPolicy {
   referralCodeExpiryDays Int      @default(90)
   trainerReferralEnabled Boolean  @default(true)
   staffReferralEnabled   Boolean  @default(false)
+  trainerRewardType      String   @default("DAYS")
+  trainerRewardValue     Int      @default(7)
+  memberGymReferralRewardPaise Int @default(0)
   updatedById            String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

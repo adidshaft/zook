@@ -188,6 +188,9 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
       referralCodeExpiryDays: 90,
       trainerReferralEnabled: true,
       staffReferralEnabled: false,
+      trainerRewardType: "DAYS" as const,
+      trainerRewardValue: 7,
+      memberGymReferralRewardPaise: 0,
     };
     const policy = await prisma.referralPolicy.upsert({
       where: { orgId },
@@ -206,6 +209,10 @@ export async function handleCouponsReferrals(request: NextRequest, path: string[
         trainerReferralEnabled:
           body.trainerReferralEnabled ?? policyDefaults.trainerReferralEnabled,
         staffReferralEnabled: body.staffReferralEnabled ?? policyDefaults.staffReferralEnabled,
+        trainerRewardType: body.trainerRewardType ?? policyDefaults.trainerRewardType,
+        trainerRewardValue: body.trainerRewardValue ?? policyDefaults.trainerRewardValue,
+        memberGymReferralRewardPaise:
+          body.memberGymReferralRewardPaise ?? policyDefaults.memberGymReferralRewardPaise,
         updatedById: userId,
       },
     });
