@@ -7,6 +7,7 @@ import { AnimatedAppear, EmptyState, Card, QueryErrorState, ScreenHeader, Sectio
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
+import { HabitsPanel } from "@/features/member/progress/habits-panel";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
@@ -75,6 +76,9 @@ export default function ProgressScreen() {
                 <TrackingSummaryTile key={metric.id} metric={metric} />
               ))}
             </View>
+          </AnimatedAppear>
+          <AnimatedAppear delay={70}>
+            <HabitsPanel />
           </AnimatedAppear>
           <AnimatedAppear delay={80}>
             <SectionHeader title="Recent workouts" />

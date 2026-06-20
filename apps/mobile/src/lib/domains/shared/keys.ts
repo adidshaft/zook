@@ -71,6 +71,7 @@ export const queryKeys = {
     summary: () => ["me", "tracking", "summary"] as const,
     bodyProgress: () => ["me", "tracking", "body-progress"] as const,
     workouts: () => ["me", "tracking", "workouts"] as const,
+    habits: () => ["me", "tracking", "habits"] as const,
   },
   gym: {
     search: (query?: string | null, city?: string | null) =>

@@ -1,5 +1,10 @@
 import { zookDemoFixtures } from "@zook/core/demo-fixtures";
-import { demoMemberHomePayload } from "./demo-member-home";
+import {
+  clearDemoCheckIn,
+  demoMemberHomePayload,
+  getDemoActiveCheckIn,
+  startDemoCheckIn,
+} from "./demo-member-home";
 import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
 
 const DEMO_SEEDED_IDENTIFIERS = new Set([
@@ -849,6 +854,125 @@ const demoBodyProgress: DemoBodyProgress[] = [
   },
 ];
 
+type DemoHabitLog = {
+  id: string;
+  habitId: string;
+  loggedAt: string;
+  value: number | null;
+  notes: string | null;
+  completed: boolean;
+};
+
+type DemoHabit = {
+  id: string;
+  title: string;
+  category: string;
+  targetValue: number | null;
+  unit: string | null;
+  frequency: string;
+  visibility: string;
+  active: boolean;
+  createdAt: string;
+  logs: DemoHabitLog[];
+};
+
+const demoHabits: DemoHabit[] = [
+  {
+    id: "habit-water",
+    title: "Drink 3L water",
+    category: "HYDRATION",
+    targetValue: 3,
+    unit: "L",
+    frequency: "DAILY",
+    visibility: "PRIVATE",
+    active: true,
+    createdAt: hoursAgoIso(24 * 9),
+    logs: [
+      {
+        id: "habit-water-log-1",
+        habitId: "habit-water",
+        loggedAt: hoursAgoIso(3),
+        value: null,
+        notes: null,
+        completed: true,
+      },
+      {
+        id: "habit-water-log-2",
+        habitId: "habit-water",
+        loggedAt: hoursAgoIso(27),
+        value: null,
+        notes: null,
+        completed: true,
+      },
+    ],
+  },
+  {
+    id: "habit-steps",
+    title: "10,000 steps",
+    category: "STEPS",
+    targetValue: 10000,
+    unit: "steps",
+    frequency: "DAILY",
+    visibility: "PRIVATE",
+    active: true,
+    createdAt: hoursAgoIso(24 * 5),
+    logs: [],
+  },
+];
+
+function isToday(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  return date.toDateString() === now.toDateString();
+}
+
+function demoCreateHabit(body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const habit: DemoHabit = {
+    id: `habit-${Date.now()}`,
+    title: String(body.title ?? "Habit").trim() || "Habit",
+    category: String(body.category ?? "CUSTOM"),
+    targetValue: toNumber(body.targetValue),
+    unit: body.unit ? String(body.unit) : null,
+    frequency: String(body.frequency ?? "DAILY"),
+    visibility: String(body.visibility ?? "PRIVATE"),
+    active: true,
+    createdAt: nowIso(),
+    logs: [],
+  };
+  demoHabits.unshift(habit);
+  return { habit };
+}
+
+function demoLogHabit(habitId: string, body: Record<string, unknown>) {
+  const habit = demoHabits.find((entry) => entry.id === habitId);
+  if (!habit) {
+    throw new Error("Habit not found.");
+  }
+  const completed = body.completed !== false;
+  // Toggle today's log so tapping a completed habit clears it.
+  const existingTodayIndex = habit.logs.findIndex((log) => isToday(log.loggedAt));
+  if (existingTodayIndex >= 0 && !completed) {
+    habit.logs.splice(existingTodayIndex, 1);
+    return { log: { id: `habit-log-${Date.now()}` } };
+  }
+  const log: DemoHabitLog = {
+    id: `habit-log-${Date.now()}`,
+    habitId: habit.id,
+    loggedAt: nowIso(),
+    value: null,
+    notes: null,
+    completed: true,
+  };
+  if (existingTodayIndex < 0) {
+    habit.logs.unshift(log);
+  }
+  return { log };
+}
+
 function startOfThisWeek() {
   const date = new Date();
   const day = date.getDay();
@@ -876,7 +1000,7 @@ function demoTrackingSummary() {
     },
     recentWorkouts: demoWorkoutLogs.slice(0, 3),
     latestBodyProgress: demoBodyProgress[0] ?? { weightKg: 78, measuredAt: nowIso() },
-    habits: [],
+    habits: demoHabits,
   };
 }
 
@@ -1146,6 +1270,20 @@ export async function demoMobileApiFetch<T>(
       },
     } as T;
   }
+  const checkoutMatch = pathname.match(/^\/me\/attendance\/([^/]+)\/checkout$/);
+  if (checkoutMatch && method === "POST") {
+    const active = getDemoActiveCheckIn();
+    clearDemoCheckIn();
+    return {
+      attendance: {
+        ...(active ?? {}),
+        id: checkoutMatch[1],
+        checkedOutAt: nowIso(),
+        checkoutReason: (init.body as { reason?: string } | undefined)?.reason ?? "manual",
+        status: "APPROVED",
+      },
+    } as T;
+  }
   if (pathname === "/me/attendance")
     return { attendance: zookDemoFixtures.attendanceAttempts } as T;
   if (pathname.match(/^\/me\/attendance\/[^/]+$/)) {
@@ -1168,12 +1306,19 @@ export async function demoMobileApiFetch<T>(
     return { attendance } as T;
   }
   if (pathname === "/attendance/scan" || pathname === "/attendance/dev-scan") {
-    const attempt =
-      zookDemoFixtures.attendanceAttempts.find((record) => record.status === "APPROVED") ??
-      zookDemoFixtures.attendanceAttempts[0];
+    const existing = getDemoActiveCheckIn();
+    if (existing) {
+      return {
+        attendance: existing,
+        status: existing.status,
+        duplicate: true,
+        suspiciousFlags: [],
+      } as T;
+    }
+    const checkIn = startDemoCheckIn(activeOrg()?.name ?? null);
     return {
-      attendance: attempt,
-      status: attempt?.status ?? "APPROVED",
+      attendance: checkIn,
+      status: checkIn.status,
       duplicate: false,
       suspiciousFlags: [],
     } as T;
@@ -1266,7 +1411,16 @@ export async function demoMobileApiFetch<T>(
     }
     return { workouts: demoWorkoutLogs } as T;
   }
-  if (pathname === "/me/tracking/habits") return { habits: [] } as T;
+  const habitLogMatch = pathname.match(/^\/me\/tracking\/habits\/([^/]+)\/log$/);
+  if (habitLogMatch && method === "POST") {
+    return demoLogHabit(habitLogMatch[1], demoBody(init)) as T;
+  }
+  if (pathname === "/me/tracking/habits") {
+    if (method === "POST") {
+      return demoCreateHabit(demoBody(init)) as T;
+    }
+    return { habits: demoHabits } as T;
+  }
   if (pathname === "/me/tracking/body-progress") {
     if (method === "POST") {
       return demoRecordBodyProgress(demoBody(init)) as T;

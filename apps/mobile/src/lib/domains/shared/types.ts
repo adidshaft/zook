@@ -737,6 +737,36 @@ export interface MealLogRecord {
   notes?: string | null;
 }
 
+export type HabitCategory =
+  | "HYDRATION"
+  | "SLEEP"
+  | "STEPS"
+  | "PROTEIN"
+  | "STRETCHING"
+  | "CUSTOM";
+
+export interface HabitLogRecord {
+  id: string;
+  habitId: string;
+  loggedAt?: string | null;
+  value?: number | null;
+  notes?: string | null;
+  completed: boolean;
+}
+
+export interface HabitRecord {
+  id: string;
+  title: string;
+  category: HabitCategory | string;
+  targetValue?: number | null;
+  unit?: string | null;
+  frequency: "DAILY" | "WEEKLY" | string;
+  visibility?: string | null;
+  active?: boolean;
+  createdAt?: string | null;
+  logs?: HabitLogRecord[];
+}
+
 export interface TrainerPayoutLineRecord {
   id: string;
   kind: string;
