@@ -828,16 +828,92 @@ function demoClassRecord(template: DemoClassTemplate) {
   };
 }
 
+// Classes scheduled in-app (by a trainer/owner) appear in the member class list
+// — closing the loop: schedule a class, members can book it.
+type DemoScheduledClass = {
+  id: string;
+  orgId: string;
+  branchId: string;
+  branchName: string | null;
+  trainerId: string;
+  trainerName: string;
+  name: string;
+  description: string | null;
+  classType: string;
+  maxCapacity: number;
+  startTime: string;
+  endTime: string;
+  recurrenceRule: string | null;
+  status: string;
+  createdAt: string;
+  enrollmentCount: number;
+  remainingCapacity: number;
+  myEnrollmentStatus: string | null;
+};
+
+const demoScheduledClasses: DemoScheduledClass[] = [];
+
 function demoClasses() {
-  return DEMO_CLASS_TEMPLATES.map(demoClassRecord).sort(
+  return [...DEMO_CLASS_TEMPLATES.map(demoClassRecord), ...demoScheduledClasses].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
   );
+}
+
+function demoCreateClass(body: Record<string, unknown>) {
+  const toNumber = (value: unknown, fallback: number) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const branch = zookDemoFixtures.branches[0];
+  const trainerId = String(body.trainerId ?? "user-rhea");
+  const trainerUser = zookDemoFixtures.users.find((user) => user.id === trainerId);
+  const start = body.startTime ? new Date(String(body.startTime)) : new Date(Date.now() + 86_400_000);
+  const durationMin = toNumber(body.durationMin, 60);
+  const end = new Date(start.getTime() + durationMin * 60 * 1000);
+  const maxCapacity = toNumber(body.maxCapacity, 16);
+  const cls: DemoScheduledClass = {
+    id: `class-custom-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    branchId: branch?.id ?? "branch-default",
+    branchName: branch?.name ?? null,
+    trainerId,
+    trainerName: (trainerUser?.name ?? "Coach").replace(/^Coach\s+/i, ""),
+    name: String(body.name ?? "New class").trim() || "New class",
+    description: body.description ? String(body.description) : null,
+    classType: String(body.classType ?? "Strength"),
+    maxCapacity,
+    startTime: start.toISOString(),
+    endTime: end.toISOString(),
+    recurrenceRule: null,
+    status: "SCHEDULED",
+    createdAt: nowIso(),
+    enrollmentCount: 0,
+    remainingCapacity: maxCapacity,
+    myEnrollmentStatus: null as string | null,
+  };
+  demoScheduledClasses.unshift(cls);
+  return { class: cls };
 }
 
 function demoEnrollInClass(classId: string) {
   const template = DEMO_CLASS_TEMPLATES.find((entry) => entry.id === classId);
   if (!template) {
-    throw new Error("That class could not be found.");
+    const scheduled = demoScheduledClasses.find((entry) => entry.id === classId);
+    if (!scheduled) {
+      throw new Error("That class could not be found.");
+    }
+    if (!scheduled.myEnrollmentStatus) {
+      const full = scheduled.remainingCapacity <= 0;
+      scheduled.myEnrollmentStatus = full ? "waitlisted" : "confirmed";
+      if (!full) {
+        scheduled.enrollmentCount += 1;
+        scheduled.remainingCapacity = Math.max(0, scheduled.remainingCapacity - 1);
+      }
+    }
+    return {
+      enrollment: { id: `enroll-${classId}`, status: scheduled.myEnrollmentStatus },
+      remainingCapacity: scheduled.remainingCapacity,
+    };
   }
   const existing = demoClassEnrollments.get(classId) ?? template.defaultEnrollment ?? null;
   if (existing) {
@@ -2187,6 +2263,9 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) {
+    if (method === "POST") {
+      return demoCreateClass(demoBody(init)) as T;
+    }
     return { classes: demoClasses() } as T;
   }
 

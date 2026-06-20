@@ -144,6 +144,26 @@ export default function TrainerHomeScreen() {
             </Pressable>
           </AnimatedAppear>
 
+          <AnimatedAppear delay={35}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open classes"
+              onPress={() => router.push("/trainer/classes" as never)}
+              style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+            >
+              <Card variant="compact" contentStyle={styles.stack}>
+                <ListRow
+                  title="Classes"
+                  subtitle="Schedule group sessions members can book"
+                  icon="calendar-outline"
+                  trailing={
+                    <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
+                  }
+                />
+              </Card>
+            </Pressable>
+          </AnimatedAppear>
+
           <AnimatedAppear delay={40}>
             <SectionHeader title="Needs plan" />
             {clientsNeedingPlans ? (

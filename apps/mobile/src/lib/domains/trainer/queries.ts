@@ -205,3 +205,33 @@ export function useCreateClientDietPlan(clientId: string) {
     onError: (error) => notifyMutationError(error, "Could not publish diet plan."),
   });
 }
+
+export type CreateClassInput = {
+  name: string;
+  classType: string;
+  maxCapacity: number;
+  startTime: string;
+  durationMin?: number;
+  description?: string;
+};
+
+export function useCreateClass() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, session, token } = useAuth();
+  const trainerUserId = session?.user.id;
+  return useMutation({
+    mutationFn: (input: CreateClassInput) =>
+      mobileApiFetch<{ class: { id: string } }>(`/orgs/${activeOrgId}/classes`, {
+        method: "POST",
+        token,
+        orgId: activeOrgId ?? undefined,
+        body: { ...input, trainerId: trainerUserId },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "classes"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.member.classes(activeOrgId, null) });
+      notifyMutationSuccess("Class scheduled.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not schedule class."),
+  });
+}
