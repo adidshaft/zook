@@ -163,3 +163,45 @@ export function useLogPtSession() {
     onError: (error) => notifyMutationError(error, "Could not log session."),
   });
 }
+
+export type DietPlanMealInput = {
+  name: string;
+  timeOfDay?: string;
+  items?: string[];
+  calories?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatsG?: number;
+};
+
+export function useCreateClientDietPlan(clientId: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, session, token } = useAuth();
+  const trainerUserId = session?.user.id;
+  return useMutation({
+    mutationFn: (input: {
+      title: string;
+      calorieTarget?: number;
+      proteinG?: number;
+      carbsG?: number;
+      fatsG?: number;
+      meals: DietPlanMealInput[];
+    }) =>
+      mobileApiFetch<{ plan: { id: string; title: string } }>(
+        `/orgs/${activeOrgId}/trainers/${trainerUserId}/clients/${clientId}/diet-plans`,
+        {
+          method: "POST",
+          token,
+          orgId: activeOrgId ?? undefined,
+          body: { ...input, status: "PUBLISHED" },
+        },
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trainer.clients(activeOrgId, trainerUserId),
+      });
+      notifyMutationSuccess("Diet plan published.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not publish diet plan."),
+  });
+}

@@ -164,9 +164,14 @@ export default function TrainerClientOverviewScreen() {
                 <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active ${activePlans === 1 ? "plan" : "plans"}` : "Create first plan"}</Text>
               </View>
             </View>
-            <ZookButton testID="trainer-create-plan-button" href={`/trainer/clients/${id}/plan` as never} icon="reader-outline" disabled={!client}>
-              Create plan
-            </ZookButton>
+            <View style={styles.heroActions}>
+              <ZookButton testID="trainer-create-plan-button" href={`/trainer/clients/${id}/plan` as never} icon="reader-outline" disabled={!client} style={styles.heroAction}>
+                Workout plan
+              </ZookButton>
+              <ZookButton testID="trainer-create-diet-button" href={`/trainer/clients/${id}/diet` as never} variant="secondary" icon="restaurant-outline" disabled={!client} style={styles.heroAction}>
+                Diet plan
+              </ZookButton>
+            </View>
           </Card>
 
           <Card variant="compact" contentStyle={styles.stack}>
@@ -223,6 +228,8 @@ const styles = StyleSheet.create({
   clientStatusText: { fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
   clientHeroMetrics: { flexDirection: "row", gap: spacing.lg },
   clientHeroMetric: { flex: 1, gap: 6 },
+  heroActions: { flexDirection: "row", gap: 8 },
+  heroAction: { flex: 1 },
   metricLabel: { fontSize: 15, lineHeight: 20 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
   cardTitle: { ...typography.cardTitle },

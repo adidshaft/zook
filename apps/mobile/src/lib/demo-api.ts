@@ -950,6 +950,49 @@ function demoDietPlan() {
   };
 }
 
+// When a trainer publishes a diet plan for a client it replaces the member's
+// active plan, so the member's Diet tab shows it — closing the trainer→member
+// diet loop.
+let demoOverrideDietPlan: ReturnType<typeof demoDietPlan> | null = null;
+
+function demoCurrentDietPlan() {
+  return demoOverrideDietPlan ?? demoDietPlan();
+}
+
+function demoCreateClientDietPlan(body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const rawMeals = Array.isArray(body.meals) ? body.meals : [];
+  const meals = rawMeals.map((entry, index) => {
+    const meal = (entry ?? {}) as Record<string, unknown>;
+    return {
+      id: `diet-meal-${Date.now()}-${index}`,
+      name: String(meal.name ?? `Meal ${index + 1}`),
+      timeOfDay: meal.timeOfDay ? String(meal.timeOfDay) : null,
+      items: Array.isArray(meal.items) ? (meal.items as string[]) : [],
+      calories: toNumber(meal.calories),
+      proteinG: toNumber(meal.proteinG),
+      carbsG: toNumber(meal.carbsG),
+      fatsG: toNumber(meal.fatsG),
+      order: index + 1,
+    };
+  });
+  const plan = {
+    id: `diet-plan-${Date.now()}`,
+    title: String(body.title ?? "Coached diet plan").trim() || "Coached diet plan",
+    calorieTarget: toNumber(body.calorieTarget) ?? 2000,
+    proteinG: toNumber(body.proteinG) ?? 0,
+    carbsG: toNumber(body.carbsG) ?? 0,
+    fatsG: toNumber(body.fatsG) ?? 0,
+    status: "ACTIVE",
+    meals,
+  };
+  demoOverrideDietPlan = plan as ReturnType<typeof demoDietPlan>;
+  return { plan };
+}
+
 function demoLogMeal(body: Record<string, unknown>) {
   const toNumber = (value: unknown) => {
     const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
@@ -2125,7 +2168,17 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname === "/me/diet") {
-    return { plan: demoDietPlan(), logs: demoMealLogs } as T;
+    return { plan: demoCurrentDietPlan(), logs: demoMealLogs } as T;
+  }
+
+  const clientDietPlanMatch = pathname.match(
+    /^\/orgs\/[^/]+\/trainers\/[^/]+\/clients\/([^/]+)\/diet-plans$/,
+  );
+  if (clientDietPlanMatch) {
+    if (method === "POST") {
+      return demoCreateClientDietPlan(demoBody(init)) as T;
+    }
+    return { plans: [demoCurrentDietPlan()] } as T;
   }
 
   const enrollMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/enroll$/);

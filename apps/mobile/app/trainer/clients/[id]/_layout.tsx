@@ -16,6 +16,7 @@ export default function ClientDetailLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="plan" />
+      <Stack.Screen name="diet" />
       <Stack.Screen name="sessions" />
     </Stack>
   );
