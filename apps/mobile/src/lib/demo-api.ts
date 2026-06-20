@@ -1058,15 +1058,27 @@ function demoRecordBodyProgress(body: Record<string, unknown>) {
 }
 
 function demoReferralCodes() {
+  // Seed real referral activity so the referrer side shows friends joined +
+  // credits earned instead of an empty, dead-feeling card.
+  const referralCodes = zookDemoFixtures.referralCodes.map((code) => ({
+    ...code,
+    redemptionCount: 3,
+    maxUses: 10,
+  }));
+  const rewards = [
+    { id: "reward-1", status: "applied", rewardType: "CREDIT", rewardValue: 25000, createdAt: hoursAgoIso(24 * 12) },
+    { id: "reward-2", status: "applied", rewardType: "CREDIT", rewardValue: 25000, createdAt: hoursAgoIso(24 * 6) },
+    { id: "reward-3", status: "pending", rewardType: "CREDIT", rewardValue: 25000, createdAt: hoursAgoIso(24 * 2) },
+  ];
   return {
-    referralCodes: zookDemoFixtures.referralCodes,
-    rewards: [],
+    referralCodes,
+    rewards,
     links: {
       web: "https://zookfit.in/r/ROHAN500",
       short: "zook.fit/r/ROHAN500",
       app: "zook://r/ROHAN500",
     },
-    policy: null,
+    policy: { rewardValuePaise: 25000, rewardType: "CREDIT" },
   };
 }
 

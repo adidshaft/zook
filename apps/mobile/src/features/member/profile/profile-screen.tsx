@@ -35,6 +35,7 @@ import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
   formatActivityDate,
+  formatInr,
   formatLongDate,
   formatOrgLocationLine,
   formatRoleLabel,
@@ -198,6 +199,13 @@ export default function ProfileScreen() {
     referralCode?.maxUses != null
       ? Math.max(0, referralCode.maxUses - (referralCode.redemptionCount ?? 0))
       : 0;
+  const referralRewards = referralQuery.data?.rewards ?? [];
+  const earnedCreditPaise = referralRewards
+    .filter((reward) => reward.status === "applied")
+    .reduce((total, reward) => total + (reward.rewardValue ?? 0), 0);
+  const pendingCreditPaise = referralRewards
+    .filter((reward) => reward.status === "pending")
+    .reduce((total, reward) => total + (reward.rewardValue ?? 0), 0);
   const referralBenefit =
     activeRole === "TRAINER"
       ? "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link."
@@ -490,6 +498,12 @@ export default function ProfileScreen() {
               <Text style={[styles.referralStat, { color: palette.text.primary }]}>
                 Your friends: {referralCode.redemptionCount ?? 0} joined, {pendingFriends} pending
               </Text>
+              {earnedCreditPaise > 0 || pendingCreditPaise > 0 ? (
+                <Text style={[styles.referralStat, { color: palette.accent.base }]}>
+                  {formatInr(earnedCreditPaise)} earned
+                  {pendingCreditPaise > 0 ? ` · ${formatInr(pendingCreditPaise)} pending` : ""}
+                </Text>
+              ) : null}
               <Text style={[styles.referralBenefit, { color: palette.text.secondary }]}>{referralBenefit}</Text>
             </View>
           ) : null}
