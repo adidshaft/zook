@@ -1070,8 +1070,28 @@ function demoReferralCodes() {
   };
 }
 
-function demoShopOrders() {
-  return zookDemoFixtures.shopOrders.map((order) => ({
+// Orders placed during the session persist so checkout → pickup → history
+// works end to end (newest first, ahead of the seeded fixture order).
+type DemoCreatedOrder = {
+  id: string;
+  orgId: string;
+  memberUserId: string;
+  status: string;
+  totalPaise: number;
+  pickupCode: string;
+  createdAt: string;
+  items: Array<{ productId: string; quantity: number; unitPaise: number }>;
+};
+
+const demoCreatedOrders: DemoCreatedOrder[] = [];
+
+function enrichOrder<
+  T extends {
+    memberUserId: string;
+    items: Array<{ productId: string; quantity: number; unitPaise: number }>;
+  },
+>(order: T) {
+  return {
     ...order,
     user: zookDemoFixtures.users.find((user) => user.id === order.memberUserId) ?? null,
     userId: order.memberUserId,
@@ -1080,7 +1100,44 @@ function demoShopOrders() {
       product:
         zookDemoFixtures.shopProducts.find((product) => product.id === item.productId) ?? null,
     })),
-  }));
+  };
+}
+
+function demoCreateShopOrder(body: Record<string, unknown>) {
+  const session = getOfflineDemoSession();
+  const rawItems = Array.isArray(body.items) ? body.items : [];
+  const items = rawItems
+    .map((entry) => {
+      const item = (entry ?? {}) as Record<string, unknown>;
+      const productId = String(item.productId ?? "");
+      const product = zookDemoFixtures.shopProducts.find((candidate) => candidate.id === productId);
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      return product
+        ? { productId, quantity, unitPaise: product.pricePaise }
+        : null;
+    })
+    .filter((item): item is { productId: string; quantity: number; unitPaise: number } =>
+      Boolean(item),
+    );
+  const totalPaise = items.reduce((total, item) => total + item.unitPaise * item.quantity, 0);
+  const order: DemoCreatedOrder = {
+    id: `order-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    memberUserId: session.user.id,
+    status: "READY_FOR_PICKUP",
+    totalPaise,
+    pickupCode: `PU-${String(1000 + Math.floor(Math.random() * 9000))}`,
+    createdAt: nowIso(),
+    items: items.length
+      ? items
+      : [{ productId: zookDemoFixtures.shopProducts[0]?.id ?? "product", quantity: 1, unitPaise: 14900 }],
+  };
+  demoCreatedOrders.unshift(order);
+  return enrichOrder(order);
+}
+
+function demoShopOrders() {
+  return [...demoCreatedOrders, ...zookDemoFixtures.shopOrders].map((order) => enrichOrder(order));
 }
 
 type DemoTransport = {
@@ -1701,12 +1758,12 @@ export async function demoMobileApiFetch<T>(
   }
 
   if (pathname === "/shop/orders") {
-    const order = demoShopOrders()[0];
+    const order = demoCreateShopOrder(demoBody(init));
     return {
       order,
       checkoutUrl: "",
       checkoutData: null,
-      session: { id: "offline-payment-session", status: "CREATED", provider: "mock" },
+      session: { id: `offline-payment-${order.id}`, status: "SUCCEEDED", provider: "mock" },
     } as T;
   }
 
