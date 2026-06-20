@@ -1308,6 +1308,51 @@ function demoInvoices() {
   ];
 }
 
+// Recent org payments (stateful) so refunds work end to end: refund flips the
+// payment status to REFUNDED and it shows as refunded in the revenue list.
+const demoRecentPayments: Array<Record<string, unknown>> = [
+  {
+    id: "payment-hybrid-success",
+    orgId: "org-aarogya-strength",
+    memberUserId: "user-aarav",
+    user: { id: "user-aarav", name: "Nisha Menon" },
+    purpose: "MEMBERSHIP",
+    amountPaise: 249900,
+    status: "SUCCEEDED",
+    mode: "DIRECT_UPI",
+    receiptNumber: "RC-2026-0042",
+    createdAt: hoursAgoIso(24 * 5),
+    recordedAt: hoursAgoIso(24 * 5),
+  },
+  {
+    id: "payment-trial-success",
+    orgId: "org-aarogya-strength",
+    memberUserId: "user-riya",
+    user: { id: "user-riya", name: "Ira Shah" },
+    purpose: "MEMBERSHIP",
+    amountPaise: 19900,
+    status: "SUCCEEDED",
+    mode: "CASH",
+    receiptNumber: "RC-2026-0043",
+    createdAt: hoursAgoIso(24 * 2),
+    recordedAt: hoursAgoIso(24 * 2),
+  },
+  ...(zookDemoFixtures.payments.map((payment) => ({ ...payment })) as unknown as Array<
+    Record<string, unknown>
+  >),
+];
+
+function demoRefundPayment(paymentId: string, body: Record<string, unknown>) {
+  const payment = demoRecentPayments.find((entry) => entry.id === paymentId);
+  if (!payment) {
+    throw new Error("Payment not found.");
+  }
+  payment.status = "REFUNDED";
+  payment.refundedAt = nowIso();
+  payment.refundReason = body.reason ? String(body.reason) : null;
+  return { payment, refund: { id: `refund-${Date.now()}`, status: "REFUNDED" } };
+}
+
 function demoPaymentDocument(paymentId: string, kind: "receipt" | "invoice") {
   if (kind === "receipt") {
     return {
@@ -1942,8 +1987,13 @@ export async function demoMobileApiFetch<T>(
     return { match: null } as T;
   }
 
+  const refundMatch = pathname.match(/^\/orgs\/[^/]+\/payments\/([^/]+)\/refund$/);
+  if (refundMatch && method === "POST") {
+    return demoRefundPayment(refundMatch[1], demoBody(init)) as T;
+  }
+
   if (pathname.endsWith("/payments/recent")) {
-    return { payments: zookDemoFixtures.payments } as T;
+    return { payments: demoRecentPayments } as T;
   }
 
   if (pathname.endsWith("/shop/orders/active")) {

@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   EmptyState,
@@ -18,7 +18,7 @@ import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 import { RevenueSummary } from "@/features/owner/components/revenue-summary";
 import { useOwnerDashboard } from "@/lib/domains/owner";
-import { useOrgRecentPayments } from "@/lib/domains/payments";
+import { useOrgRecentPayments, useRefundPayment } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr, titleCaseFromCode, toneForPaymentStatus, toneForShopOrderStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -28,6 +28,23 @@ export default function OwnerRevenueScreen() {
   const dashboardQuery = useOwnerDashboard();
   const paymentsQuery = useOrgRecentPayments();
   const ordersQuery = useOrgActiveShopOrders();
+  const refundPayment = useRefundPayment();
+
+  function confirmRefund(payment: { id: string; amountPaise?: number; user?: { name?: string | null } | null }) {
+    Alert.alert(
+      "Refund payment?",
+      `Refund ${formatInr(payment.amountPaise ?? 0)} to ${payment.user?.name ?? "this member"}. This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Refund",
+          style: "destructive",
+          onPress: () =>
+            refundPayment.mutate({ paymentId: payment.id, reason: "Refunded by gym" }),
+        },
+      ],
+    );
+  }
   const isLoading = dashboardQuery.isLoading || paymentsQuery.isLoading || ordersQuery.isLoading;
   const hasDashboardData = !isLoading && !dashboardQuery.isError;
   const payments = paymentsQuery.data?.payments ?? [];
@@ -93,19 +110,35 @@ export default function OwnerRevenueScreen() {
                   />
                 ) : null}
                 {!dashboardQuery.isError && !paymentsQuery.isError && payments.length
-                  ? payments.map((payment) => (
-                      <ListRow
-                        key={payment.id}
-                        title={payment.user?.name ?? titleCaseFromCode(payment.purpose)}
-                        subtitle={`${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}`}
-                        leading={<IconBubble icon="card-outline" tone={toneForPaymentStatus(payment.status)} />}
-                        trailing={
-                          <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
-                            {formatInr(payment.amountPaise)}
-                          </Text>
-                        }
-                      />
-                    ))
+                  ? payments.map((payment) => {
+                      const refundable = (payment.status ?? "").toUpperCase() === "SUCCEEDED";
+                      const subtitle = `${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}${refundable ? " · Tap to refund" : ""}`;
+                      const row = (
+                        <ListRow
+                          title={payment.user?.name ?? titleCaseFromCode(payment.purpose)}
+                          subtitle={subtitle}
+                          leading={<IconBubble icon="card-outline" tone={toneForPaymentStatus(payment.status)} />}
+                          trailing={
+                            <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
+                              {formatInr(payment.amountPaise)}
+                            </Text>
+                          }
+                        />
+                      );
+                      return refundable ? (
+                        <Pressable
+                          key={payment.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Refund ${payment.user?.name ?? "payment"}`}
+                          onPress={() => confirmRefund(payment)}
+                          style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+                        >
+                          {row}
+                        </Pressable>
+                      ) : (
+                        <View key={payment.id}>{row}</View>
+                      );
+                    })
                   : null}
                 {!dashboardQuery.isError && !ordersQuery.isError
                   ? orders.map((order) => (
@@ -147,4 +180,5 @@ const styles = StyleSheet.create({
   loadingCard: { gap: spacing.md },
   stack: { gap: spacing.md },
   rowAmount: typography.bodyStrong,
+  rowPressed: { opacity: 0.7 },
 });
