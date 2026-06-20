@@ -99,6 +99,55 @@ export async function handleMeData(request: NextRequest, path: string[]) {
     const userId = requireAuth(ctx);
     return ok(await getMemberHomeData(userId, ctx.orgId));
   }
+  if (request.method === "GET" && pathMatches(path, ["me", "coaching"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    const subscription = await prisma.personalTrainingSubscription.findFirst({
+      where: {
+        memberUserId: userId,
+        ...(orgId ? { orgId } : {}),
+        status: { in: ["ACTIVE", "PENDING_PAYMENT"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!subscription) {
+      return ok({ subscription: null, trainer: null, plan: null, sessions: [] });
+    }
+    const [trainer, plan, sessions] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: subscription.trainerUserId },
+        select: { id: true, name: true },
+      }),
+      subscription.ptPlanId
+        ? prisma.personalTrainingPlan.findUnique({ where: { id: subscription.ptPlanId } })
+        : Promise.resolve(null),
+      prisma.personalTrainingSessionLog.findMany({
+        where: { subscriptionId: subscription.id },
+        orderBy: { sessionAt: "desc" },
+        take: 20,
+        select: { id: true, sessionAt: true, notes: true },
+      }),
+    ]);
+    return ok({
+      subscription: {
+        id: subscription.id,
+        status: subscription.status,
+        planName: plan?.name ?? null,
+        totalSessions: subscription.totalSessions,
+        remainingSessions: subscription.remainingSessions,
+        amountPaise: subscription.amountPaise,
+        startsAt: subscription.startsAt,
+        endsAt: subscription.endsAt,
+      },
+      trainer: trainer ? { id: trainer.id, name: trainer.name } : null,
+      plan: plan
+        ? { id: plan.id, name: plan.name, description: plan.description, sessionCount: plan.sessionCount }
+        : null,
+      sessions,
+    });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "engagement"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
     const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});

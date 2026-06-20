@@ -185,6 +185,36 @@ export function useMyReferralCodes() {
   });
 }
 
+export type MemberCoachingData = {
+  subscription: {
+    id: string;
+    status: string;
+    planName: string | null;
+    totalSessions: number | null;
+    remainingSessions: number | null;
+    amountPaise: number;
+    startsAt: string | null;
+    endsAt: string | null;
+  } | null;
+  trainer: { id: string; name: string } | null;
+  plan: { id: string; name: string; description: string | null; sessionCount: number | null } | null;
+  sessions: Array<{ id: string; sessionAt: string; notes: string | null }>;
+};
+
+export function useMyCoaching() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["me", "coaching", activeOrgId] as const,
+    queryFn: () =>
+      mobileApiFetch<MemberCoachingData>(
+        `/me/coaching${queryString({ orgId: activeOrgId ?? undefined })}`,
+        { token, ...(activeOrgId ? { orgId: activeOrgId } : {}) },
+      ),
+    enabled: status === "authenticated" && Boolean(token),
+    staleTime: 30_000,
+  });
+}
+
 export function useMyClasses() {
   const { activeOrgId, status, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();

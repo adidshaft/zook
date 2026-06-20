@@ -472,6 +472,16 @@ function demoRecordPtSubscription(body: Record<string, unknown>) {
   return { subscription };
 }
 
+type DemoPtSessionLog = { id: string; subscriptionId: string; sessionAt: string; notes: string | null };
+
+const demoPtSessionLogs: DemoPtSessionLog[] = [
+  { id: "pt-log-seed-1", subscriptionId: "pt-sub-1", sessionAt: hoursAgoIso(24 * 12), notes: "Lower body · squat form" },
+  { id: "pt-log-seed-2", subscriptionId: "pt-sub-1", sessionAt: hoursAgoIso(24 * 9), notes: "Upper body push" },
+  { id: "pt-log-seed-3", subscriptionId: "pt-sub-1", sessionAt: hoursAgoIso(24 * 6), notes: "Deadlift progression" },
+  { id: "pt-log-seed-4", subscriptionId: "pt-sub-1", sessionAt: hoursAgoIso(24 * 3), notes: "Conditioning + core" },
+  { id: "pt-log-seed-5", subscriptionId: "pt-sub-1", sessionAt: hoursAgoIso(24 * 1), notes: "Full body · check-in" },
+];
+
 function demoLogPtSession(body: Record<string, unknown>) {
   const subscription = demoPtSubscriptions.find(
     (entry) => entry.id === String(body.subscriptionId ?? ""),
@@ -482,9 +492,45 @@ function demoLogPtSession(body: Record<string, unknown>) {
   if (typeof subscription.remainingSessions === "number" && subscription.remainingSessions > 0) {
     subscription.remainingSessions -= 1;
   }
+  const session: DemoPtSessionLog = {
+    id: `pt-session-${Date.now()}`,
+    subscriptionId: subscription.id,
+    sessionAt: nowIso(),
+    notes: body.notes ? String(body.notes) : null,
+  };
+  demoPtSessionLogs.unshift(session);
+  return { subscription, session: { ...session, loggedAt: session.sessionAt } };
+}
+
+function demoMemberCoaching() {
+  const memberUserId = "user-aarav";
+  const subscription = demoPtSubscriptions.find(
+    (entry) => entry.memberUserId === memberUserId && entry.status === "ACTIVE",
+  );
+  if (!subscription) {
+    return { subscription: null, trainer: null, plan: null, sessions: [] };
+  }
+  const trainer = zookDemoFixtures.users.find((user) => user.id === subscription.trainerUserId);
+  const plan = demoPtPlans.find((entry) => entry.id === subscription.ptPlanId);
+  const sessions = demoPtSessionLogs
+    .filter((log) => log.subscriptionId === subscription.id)
+    .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
   return {
-    subscription,
-    session: { id: `pt-session-${Date.now()}`, subscriptionId: subscription.id, loggedAt: nowIso() },
+    subscription: {
+      id: subscription.id,
+      status: subscription.status,
+      planName: subscription.planName,
+      totalSessions: subscription.totalSessions,
+      remainingSessions: subscription.remainingSessions,
+      amountPaise: subscription.amountPaise,
+      startsAt: subscription.startsAt,
+      endsAt: subscription.endsAt,
+    },
+    trainer: trainer ? { id: trainer.id, name: trainer.name } : null,
+    plan: plan
+      ? { id: plan.id, name: plan.name, description: plan.description, sessionCount: plan.sessionCount }
+      : null,
+    sessions,
   };
 }
 
@@ -1770,6 +1816,10 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/me/home") {
     return demoMemberHomePayload() as T;
+  }
+
+  if (pathname === "/me/coaching") {
+    return demoMemberCoaching() as T;
   }
 
   if (pathname === "/me/badges") {

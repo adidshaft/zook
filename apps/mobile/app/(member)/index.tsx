@@ -27,6 +27,7 @@ import {
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
 import { ClassesStrip } from "@/features/member/home/classes-strip";
+import { CoachingStrip } from "@/features/member/home/coaching-strip";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
@@ -236,6 +237,9 @@ export default function HomeScreen() {
               <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
               <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
                 <ClassesStrip />
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 140 : 100}>
+                <CoachingStrip />
               </AnimatedAppear>
               <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
                 <Pressable

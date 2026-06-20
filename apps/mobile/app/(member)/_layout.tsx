@@ -86,6 +86,10 @@ export default function MemberLayout() {
           name="diet"
           options={{ title: "Diet", href: null, tabBarItemStyle: { display: "none" } }}
         />
+        <Tabs.Screen
+          name="coaching"
+          options={{ title: "Coaching", href: null, tabBarItemStyle: { display: "none" } }}
+        />
       </Tabs>
       {geofenceCheckout.permissionSheet}
     </>
