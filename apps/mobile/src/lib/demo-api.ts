@@ -322,7 +322,24 @@ const demoPtPlans: DemoPtPlan[] = [
   },
 ];
 
-const demoPtSubscriptions = [
+type DemoPtSubscription = {
+  id: string;
+  orgId: string;
+  memberUserId: string;
+  memberName: string;
+  trainerUserId: string;
+  ptPlanId: string | null;
+  planName: string | null;
+  status: string;
+  totalSessions: number | null;
+  remainingSessions: number | null;
+  amountPaise: number;
+  startsAt: string;
+  endsAt: string;
+  createdAt: string;
+};
+
+const demoPtSubscriptions: DemoPtSubscription[] = [
   {
     id: "pt-sub-1",
     orgId: "org-aarogya-strength",
@@ -425,6 +442,78 @@ const demoOrgPayouts: DemoPayout[] = [
   },
 ];
 
+function demoRecordPtSubscription(body: Record<string, unknown>) {
+  const memberUserId = String(body.memberUserId ?? "");
+  const member = zookDemoFixtures.users.find((user) => user.id === memberUserId);
+  const planId = body.ptPlanId ? String(body.ptPlanId) : null;
+  const plan = demoPtPlans.find((entry) => entry.id === planId);
+  const totalSessions =
+    typeof body.totalSessions === "number"
+      ? body.totalSessions
+      : (plan?.sessionCount ?? null);
+  const subscription = {
+    id: `pt-sub-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    memberUserId,
+    memberName: member?.name ?? "New client",
+    trainerUserId: String(body.trainerUserId ?? "user-rhea"),
+    ptPlanId: planId,
+    planName: plan?.name ?? null,
+    status: "ACTIVE",
+    totalSessions,
+    remainingSessions: totalSessions,
+    amountPaise:
+      typeof body.amountPaise === "number" ? body.amountPaise : (plan?.pricePaise ?? 0),
+    startsAt: nowIso(),
+    endsAt: hoursAgoIso(-24 * (plan?.durationDays ?? 30)),
+    createdAt: nowIso(),
+  };
+  demoPtSubscriptions.unshift(subscription);
+  return { subscription };
+}
+
+function demoLogPtSession(body: Record<string, unknown>) {
+  const subscription = demoPtSubscriptions.find(
+    (entry) => entry.id === String(body.subscriptionId ?? ""),
+  );
+  if (!subscription) {
+    throw new Error("PT subscription not found.");
+  }
+  if (typeof subscription.remainingSessions === "number" && subscription.remainingSessions > 0) {
+    subscription.remainingSessions -= 1;
+  }
+  return {
+    subscription,
+    session: { id: `pt-session-${Date.now()}`, subscriptionId: subscription.id, loggedAt: nowIso() },
+  };
+}
+
+const demoPayoutConfigs: Record<
+  string,
+  { baseMonthlyPaise: number; ptCommissionPercent: number; perSessionFeePaise: number; payDay: number }
+> = {
+  "user-rhea": { baseMonthlyPaise: 1500000, ptCommissionPercent: 40, perSessionFeePaise: 30000, payDay: 5 },
+};
+
+function demoGetPayoutConfig(trainerId: string) {
+  return { config: demoPayoutConfigs[trainerId] ?? null };
+}
+
+function demoSetPayoutConfig(trainerId: string, body: Record<string, unknown>) {
+  const toNumber = (value: unknown, fallback: number) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const config = {
+    baseMonthlyPaise: toNumber(body.baseMonthlyPaise, 0),
+    ptCommissionPercent: toNumber(body.ptCommissionPercent, 0),
+    perSessionFeePaise: toNumber(body.perSessionFeePaise, 0),
+    payDay: toNumber(body.payDay, 5),
+  };
+  demoPayoutConfigs[trainerId] = config;
+  return { config };
+}
+
 function demoTrainerPayouts(trainerId?: string) {
   return trainerId
     ? demoOrgPayouts.filter((payout) => payout.trainerId === trainerId)
@@ -441,9 +530,19 @@ function demoMarkPayoutPaid(payoutId: string, body: Record<string, unknown>) {
   return { payout: { id: payout.id, status: payout.status, method: String(body.method ?? "") } };
 }
 
+const demoExtraTrainerClients = [
+  {
+    id: "assign-rohan-ira",
+    orgId: "org-aarogya-strength",
+    trainerUserId: "user-rhea",
+    memberUserId: "user-riya",
+    active: true,
+  },
+];
+
 function demoTrainerClients() {
   return {
-    clients: zookDemoFixtures.trainerClientAssignments.map((assignment) => {
+    clients: [...zookDemoFixtures.trainerClientAssignments, ...demoExtraTrainerClients].map((assignment) => {
       const user = zookDemoFixtures.users.find(
         (candidate) => candidate.id === assignment.memberUserId,
       );
@@ -2060,6 +2159,23 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.match(/^\/orgs\/[^/]+\/payouts$/)) {
     return { payouts: demoOrgPayouts } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/pt-subscriptions$/) && method === "POST") {
+    return demoRecordPtSubscription(demoBody(init)) as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/pt-sessions$/) && method === "POST") {
+    return demoLogPtSession(demoBody(init)) as T;
+  }
+
+  const payoutConfigMatch = pathname.match(
+    /^\/orgs\/[^/]+\/trainers\/([^/]+)\/payout-config$/,
+  );
+  if (payoutConfigMatch) {
+    if (method === "PUT" || method === "POST") {
+      return demoSetPayoutConfig(payoutConfigMatch[1], demoBody(init)) as T;
+    }
+    return demoGetPayoutConfig(payoutConfigMatch[1]) as T;
   }
 
   const ptPlanMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/pt-plans$/);

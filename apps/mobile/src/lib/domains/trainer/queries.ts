@@ -108,3 +108,58 @@ export function useTrainerPayouts(month?: string) {
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId) && Boolean(trainerUserId),
   });
 }
+
+export type RecordPtSubscriptionInput = {
+  memberUserId: string;
+  ptPlanId?: string;
+  amountPaise: number;
+  paymentMode: "CASH" | "DIRECT_UPI" | "OTHER";
+  totalSessions?: number;
+};
+
+export function useRecordPtSubscription() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, session, token } = useAuth();
+  const trainerUserId = session?.user.id;
+  return useMutation({
+    mutationFn: (input: RecordPtSubscriptionInput) =>
+      mobileApiFetch<{ subscription: PtSubscriptionRecord }>(
+        `/orgs/${activeOrgId}/pt-subscriptions`,
+        {
+          method: "POST",
+          token,
+          orgId: activeOrgId ?? undefined,
+          body: { ...input, trainerUserId },
+        },
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trainer.ptSubscriptions(activeOrgId, trainerUserId),
+      });
+      notifyMutationSuccess("PT client added.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not add client."),
+  });
+}
+
+export function useLogPtSession() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, session, token } = useAuth();
+  const trainerUserId = session?.user.id;
+  return useMutation({
+    mutationFn: ({ subscriptionId, notes }: { subscriptionId: string; notes?: string }) =>
+      mobileApiFetch<{ subscription: PtSubscriptionRecord }>(`/orgs/${activeOrgId}/pt-sessions`, {
+        method: "POST",
+        token,
+        orgId: activeOrgId ?? undefined,
+        body: { subscriptionId, ...(notes ? { notes } : {}) },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trainer.ptSubscriptions(activeOrgId, trainerUserId),
+      });
+      notifyMutationSuccess("Session logged.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not log session."),
+  });
+}
