@@ -295,3 +295,29 @@ export function useOrgMembershipPlans() {
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
+
+export type CouponRecord = {
+  id: string;
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise?: number | null;
+  valuePercentBps?: number | null;
+  active: boolean;
+  maxRedemptions?: number | null;
+  redemptionCount: number;
+  perUserLimit?: number | null;
+  applicablePlanId?: string | null;
+};
+
+export function useOrgCoupons() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "coupons"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ coupons: CouponRecord[] }>(`/orgs/${activeOrgId}/coupons`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}

@@ -22,14 +22,13 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons";
   webPath?: string;
   visible?: boolean;
 };
 
 const webRows: MoreRow[] = [
   { title: "Branches", subtitle: "Locations and operating details", icon: "git-branch-outline", webPath: "/dashboard/branches" },
-  { title: "Coupons & offers", subtitle: "Discounts and public plan campaigns", icon: "pricetag-outline", webPath: "/dashboard/plans/coupons" },
   { title: "Reports", subtitle: "Revenue, attendance, and member movement", icon: "document-text-outline", webPath: "/dashboard/reports" },
   { title: "Staff", subtitle: "Invite admins, reception, and trainers", icon: "people-circle-outline", webPath: "/dashboard/staff" },
   { title: "Attendance QR Console", subtitle: "Display and rotate entry QR codes", icon: "qr-code-outline", webPath: "/dashboard/attendance/qr-display" },
@@ -44,6 +43,7 @@ export default function OwnerMoreScreen() {
   const canManagePayouts = useHasPermission("TRAINERS_MANAGE");
   const canManageReferrals = useHasPermission("REFERRALS_MANAGE");
   const canManagePlans = useHasPermission("MEMBERSHIP_PLAN_MANAGE");
+  const canManageCoupons = useHasPermission("COUPONS_MANAGE");
   const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
     {
@@ -53,6 +53,14 @@ export default function OwnerMoreScreen() {
       testID: "owner-more-plans",
       href: "/owner/plans",
       visible: canManagePlans,
+    },
+    {
+      title: "Coupons & offers",
+      subtitle: "Discount codes for checkout campaigns",
+      icon: "pricetag-outline",
+      testID: "owner-more-coupons",
+      href: "/owner/coupons",
+      visible: canManageCoupons,
     },
     {
       title: "Referral program",

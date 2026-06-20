@@ -1728,6 +1728,95 @@ function demoDeleteMembershipPlan(planId: string) {
   return { ok: true };
 }
 
+// --- Coupons & offers (owner, offline demo, stateful) ----------------------
+type DemoCoupon = {
+  id: string;
+  orgId: string;
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise: number | null;
+  valuePercentBps: number | null;
+  active: boolean;
+  maxRedemptions: number | null;
+  redemptionCount: number;
+  perUserLimit: number | null;
+  applicablePlanId: string | null;
+  createdAt: string;
+};
+
+const demoCoupons: DemoCoupon[] = [
+  {
+    id: "coupon-welcome",
+    orgId: "org-aarogya-strength",
+    code: "WELCOME15",
+    type: "PERCENTAGE",
+    valuePaise: null,
+    valuePercentBps: 1500,
+    active: true,
+    maxRedemptions: 100,
+    redemptionCount: 23,
+    perUserLimit: 1,
+    applicablePlanId: null,
+    createdAt: hoursAgoIso(24 * 30),
+  },
+  {
+    id: "coupon-festive",
+    orgId: "org-aarogya-strength",
+    code: "FESTIVE500",
+    type: "FIXED_AMOUNT",
+    valuePaise: 50000,
+    valuePercentBps: null,
+    active: true,
+    maxRedemptions: null,
+    redemptionCount: 8,
+    perUserLimit: 1,
+    applicablePlanId: null,
+    createdAt: hoursAgoIso(24 * 6),
+  },
+];
+
+function demoCouponFromBody(body: Record<string, unknown>, base?: DemoCoupon): DemoCoupon {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const type = (body.type !== undefined ? String(body.type) : base?.type ?? "PERCENTAGE") as DemoCoupon["type"];
+  return {
+    id: base?.id ?? `coupon-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    code: body.code !== undefined ? String(body.code).toUpperCase() : base?.code ?? "CODE",
+    type,
+    valuePaise: type === "FIXED_AMOUNT" ? (body.valuePaise !== undefined ? toNumber(body.valuePaise) : base?.valuePaise ?? null) : null,
+    valuePercentBps: type === "PERCENTAGE" ? (body.valuePercentBps !== undefined ? toNumber(body.valuePercentBps) : base?.valuePercentBps ?? null) : null,
+    active: body.active !== undefined ? Boolean(body.active) : base?.active ?? true,
+    maxRedemptions: body.maxRedemptions !== undefined ? toNumber(body.maxRedemptions) : base?.maxRedemptions ?? null,
+    redemptionCount: base?.redemptionCount ?? 0,
+    perUserLimit: body.perUserLimit !== undefined ? toNumber(body.perUserLimit) : base?.perUserLimit ?? null,
+    applicablePlanId: body.applicablePlanId !== undefined ? (String(body.applicablePlanId) || null) : base?.applicablePlanId ?? null,
+    createdAt: base?.createdAt ?? nowIso(),
+  };
+}
+
+function demoCreateCoupon(body: Record<string, unknown>) {
+  const coupon = demoCouponFromBody(body);
+  demoCoupons.unshift(coupon);
+  return { coupon };
+}
+
+function demoUpdateCoupon(couponId: string, body: Record<string, unknown>) {
+  const index = demoCoupons.findIndex((coupon) => coupon.id === couponId);
+  if (index < 0) throw new Error("Coupon not found.");
+  const updated = demoCouponFromBody(body, demoCoupons[index]);
+  demoCoupons[index] = updated;
+  return { coupon: updated };
+}
+
+function demoDeleteCoupon(couponId: string) {
+  const index = demoCoupons.findIndex((coupon) => coupon.id === couponId);
+  if (index >= 0) demoCoupons.splice(index, 1);
+  return { ok: true };
+}
+
 function demoShopOrders() {
   return [...demoCreatedOrders, ...zookDemoFixtures.shopOrders].map((order) => enrichOrder(order));
 }
@@ -2466,6 +2555,22 @@ export async function demoMobileApiFetch<T>(
       return demoCreateMembershipPlan(demoBody(init)) as T;
     }
     return { plans: demoMembershipPlans } as T;
+  }
+
+  const couponEditMatch = pathname.match(/^\/orgs\/[^/]+\/coupons\/([^/]+)$/);
+  if (couponEditMatch && couponEditMatch[1] !== "validate") {
+    if (method === "DELETE") {
+      return demoDeleteCoupon(couponEditMatch[1]) as T;
+    }
+    if (method === "PATCH" || method === "PUT") {
+      return demoUpdateCoupon(couponEditMatch[1], demoBody(init)) as T;
+    }
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/coupons$/)) {
+    if (method === "POST") {
+      return demoCreateCoupon(demoBody(init)) as T;
+    }
+    return { coupons: demoCoupons } as T;
   }
 
   const payoutConfigMatch = pathname.match(

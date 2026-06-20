@@ -294,3 +294,59 @@ export function useDeleteMembershipPlan(orgId?: string) {
     onError: (error) => notifyMutationError(error, "Could not remove plan."),
   });
 }
+
+export type CouponInput = {
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise?: number;
+  valuePercentBps?: number;
+  maxRedemptions?: number;
+  perUserLimit?: number;
+  active?: boolean;
+};
+
+export function useSaveCoupon(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ couponId, body }: { couponId?: string; body: CouponInput }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      const path = couponId
+        ? `/orgs/${ctx.orgId}/coupons/${couponId}`
+        : `/orgs/${ctx.orgId}/coupons`;
+      return mobileApiFetch<{ coupon: { id: string } }>(path, {
+        method: couponId ? "PATCH" : "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
+      notifyMutationSuccess("Coupon saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save coupon."),
+  });
+}
+
+export function useDeleteCoupon(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (couponId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/coupons/${couponId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
+      notifyMutationWarning("Coupon removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove coupon."),
+  });
+}
