@@ -38,6 +38,52 @@ const ptSessionLogSchema = z.object({
 
 export async function handlePersonalTraining(request: NextRequest, path: string[]) {
   if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])
+  ) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const trainerUserId = path[3]!;
+    const plans = await prisma.personalTrainingPlan.findMany({
+      where: { orgId, trainerUserId, active: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return ok({ plans });
+  }
+
+  if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-subscriptions"])
+  ) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const trainerUserId = path[3]!;
+    const subscriptions = await prisma.personalTrainingSubscription.findMany({
+      where: { orgId, trainerUserId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const [members, plans] = await Promise.all([
+      subscriptions.length
+        ? prisma.user.findMany({
+            where: { id: { in: Array.from(new Set(subscriptions.map((s) => s.memberUserId))) } },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve([]),
+      prisma.personalTrainingPlan.findMany({ where: { orgId, trainerUserId } }),
+    ]);
+    return ok({
+      subscriptions: subscriptions.map((sub) => ({
+        ...sub,
+        memberName: members.find((member) => member.id === sub.memberUserId)?.name ?? null,
+        planName: plans.find((plan) => plan.id === sub.ptPlanId)?.name ?? null,
+      })),
+    });
+  }
+
+  if (
     request.method === "POST" &&
     pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])
   ) {

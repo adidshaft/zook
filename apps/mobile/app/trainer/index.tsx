@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -121,6 +122,26 @@ export default function TrainerHomeScreen() {
                 <EmptyState title="No coaching actions today" />
               )}
             </Card>
+          </AnimatedAppear>
+
+          <AnimatedAppear delay={30}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open personal training"
+              onPress={() => router.push("/trainer/pt" as never)}
+              style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+            >
+              <Card variant="compact" contentStyle={styles.stack}>
+                <ListRow
+                  title="Personal Training"
+                  subtitle="Your own packages and PT clients"
+                  icon="barbell-outline"
+                  trailing={
+                    <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
+                  }
+                />
+              </Card>
+            </Pressable>
           </AnimatedAppear>
 
           <AnimatedAppear delay={40}>

@@ -280,6 +280,104 @@ function demoOwnerDashboard() {
   };
 }
 
+// Personal Training (offline demo): a trainer's own packages + PT clients.
+// Lets a trainer take clients independently — create packages persists.
+type DemoPtPlan = {
+  id: string;
+  orgId: string;
+  trainerUserId: string;
+  name: string;
+  description: string | null;
+  durationDays: number | null;
+  sessionCount: number | null;
+  pricePaise: number;
+  active: boolean;
+  createdAt: string;
+};
+
+const demoPtPlans: DemoPtPlan[] = [
+  {
+    id: "pt-plan-strength-12",
+    orgId: "org-aarogya-strength",
+    trainerUserId: "user-rhea",
+    name: "1-on-1 Strength · 12 sessions",
+    description: "Personalised strength coaching with form checks and progressive overload.",
+    durationDays: 45,
+    sessionCount: 12,
+    pricePaise: 1200000,
+    active: true,
+    createdAt: hoursAgoIso(24 * 20),
+  },
+  {
+    id: "pt-plan-transform-8",
+    orgId: "org-aarogya-strength",
+    trainerUserId: "user-rhea",
+    name: "Transformation · 8 sessions",
+    description: "Fat-loss focused coaching with weekly check-ins and a nutrition plan.",
+    durationDays: 30,
+    sessionCount: 8,
+    pricePaise: 800000,
+    active: true,
+    createdAt: hoursAgoIso(24 * 8),
+  },
+];
+
+const demoPtSubscriptions = [
+  {
+    id: "pt-sub-1",
+    orgId: "org-aarogya-strength",
+    memberUserId: "user-aarav",
+    memberName: "Nisha Menon",
+    trainerUserId: "user-rhea",
+    ptPlanId: "pt-plan-strength-12",
+    planName: "1-on-1 Strength · 12 sessions",
+    status: "ACTIVE",
+    totalSessions: 12,
+    remainingSessions: 7,
+    amountPaise: 1200000,
+    startsAt: hoursAgoIso(24 * 15),
+    endsAt: hoursAgoIso(-24 * 30),
+    createdAt: hoursAgoIso(24 * 15),
+  },
+  {
+    id: "pt-sub-2",
+    orgId: "org-aarogya-strength",
+    memberUserId: "user-riya",
+    memberName: "Ira Shah",
+    trainerUserId: "user-rhea",
+    ptPlanId: "pt-plan-transform-8",
+    planName: "Transformation · 8 sessions",
+    status: "ACTIVE",
+    totalSessions: 8,
+    remainingSessions: 8,
+    amountPaise: 800000,
+    startsAt: hoursAgoIso(24 * 3),
+    endsAt: hoursAgoIso(-24 * 27),
+    createdAt: hoursAgoIso(24 * 3),
+  },
+];
+
+function demoCreatePtPlan(trainerUserId: string, body: Record<string, unknown>) {
+  const toNumber = (value: unknown) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const plan: DemoPtPlan = {
+    id: `pt-plan-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    trainerUserId,
+    name: String(body.name ?? "PT package").trim() || "PT package",
+    description: body.description ? String(body.description) : null,
+    durationDays: toNumber(body.durationDays),
+    sessionCount: toNumber(body.sessionCount),
+    pricePaise: toNumber(body.pricePaise) ?? 0,
+    active: true,
+    createdAt: nowIso(),
+  };
+  demoPtPlans.unshift(plan);
+  return { plan };
+}
+
 function demoTrainerPayouts() {
   const period = new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" });
   const lines = [
@@ -1815,6 +1913,18 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/payouts$/)) {
     return { payouts: demoTrainerPayouts() } as T;
+  }
+
+  const ptPlanMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/pt-plans$/);
+  if (ptPlanMatch) {
+    if (method === "POST") {
+      return demoCreatePtPlan(ptPlanMatch[1], demoBody(init)) as T;
+    }
+    return { plans: demoPtPlans } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/pt-subscriptions$/)) {
+    return { subscriptions: demoPtSubscriptions } as T;
   }
 
   if (pathname.includes("/trainers/") && pathname.endsWith("/clients")) {

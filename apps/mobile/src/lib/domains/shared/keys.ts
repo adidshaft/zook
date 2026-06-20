@@ -16,6 +16,10 @@ export const queryKeys = {
       ["org", orgId, "trainer", trainerUserId, "clients"] as const,
     payouts: (orgId?: string | null, trainerUserId?: string | null, month?: string | null) =>
       ["org", orgId, "trainer", trainerUserId, "payouts", month] as const,
+    ptPlans: (orgId?: string | null, trainerUserId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "pt-plans"] as const,
+    ptSubscriptions: (orgId?: string | null, trainerUserId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "pt-subscriptions"] as const,
   },
   owner: {
     all: () => ["org"] as const,

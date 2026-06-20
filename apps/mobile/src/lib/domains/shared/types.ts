@@ -754,6 +754,35 @@ export interface HabitLogRecord {
   completed: boolean;
 }
 
+export interface PtPlanRecord {
+  id: string;
+  orgId?: string;
+  trainerUserId?: string;
+  name: string;
+  description?: string | null;
+  durationDays?: number | null;
+  sessionCount?: number | null;
+  pricePaise: number;
+  active?: boolean;
+  createdAt?: string | null;
+}
+
+export interface PtSubscriptionRecord {
+  id: string;
+  memberUserId: string;
+  memberName?: string | null;
+  trainerUserId?: string;
+  ptPlanId?: string | null;
+  planName?: string | null;
+  status: string;
+  totalSessions?: number | null;
+  remainingSessions?: number | null;
+  amountPaise: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt?: string | null;
+}
+
 export interface HabitRecord {
   id: string;
   title: string;
