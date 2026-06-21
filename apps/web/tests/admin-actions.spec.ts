@@ -110,7 +110,9 @@ test.describe("branches, staff, settings, and billing actions", () => {
     await page.getByRole("option", { name: "Admin" }).click();
     await page.getByRole("button", { name: "Invite staff" }).click();
 
-    await expect(page.getByText("Invite email sent. The sign-in link expires in 7 days.")).toBeVisible({
+    await expect(
+      page.getByText("Invite email sent. The sign-in link expires in 7 days."),
+    ).toBeVisible({
       timeout: 15_000,
     });
     await expect(
@@ -209,16 +211,39 @@ test.describe("branches, staff, settings, and billing actions", () => {
     await expect(page.getByText("Action-tested training floor")).toBeVisible();
   });
 
-  test("invoice PDF download and mock payment-provider connect toggle are visible product gaps", async ({
+  test("owner can connect the mock billing provider and download invoice PDFs from billing", async ({
     page,
   }) => {
-    test.fail(
-      true,
-      "Billing currently exposes profile/subscription state and HTML receipts; PDF invoice download and provider connect toggles need product UI.",
-    );
     await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const invoiceNumber = `PW-BILL-${Date.now()}`;
+    await prisma.invoice.create({
+      data: {
+        orgId: org.id,
+        userId: owner.id,
+        kind: "SAAS",
+        invoiceNumber,
+        buyerName: org.name,
+        lineItems: [{ description: "Starter subscription", quantity: 1, amountPaise: 149900 }],
+        subtotalPaise: 149900,
+        gstPaise: 26982,
+        totalPaise: 176882,
+        amountPaise: 176882,
+        taxPaise: 26982,
+      },
+    });
+
     await page.goto("/dashboard/billing");
-    expect(await page.getByRole("button", { name: /connect mock provider/i }).count()).toBe(1);
-    expect(await page.getByRole("button", { name: /download invoice pdf/i }).count()).toBe(1);
+    await expect(page.getByRole("button", { name: /connect mock provider/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(invoiceNumber)).toBeVisible({ timeout: 15_000 });
+    const pdfLink = page.getByRole("link", { name: /download invoice pdf/i }).first();
+    await expect(pdfLink).toBeVisible();
+    await expect(pdfLink).toHaveAttribute(
+      "href",
+      new RegExp(`/api/orgs/${org.id}/invoices/.+/pdf`),
+    );
   });
 });

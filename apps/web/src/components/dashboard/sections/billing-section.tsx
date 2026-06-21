@@ -8,10 +8,7 @@ import { webApiFetch } from "@/lib/api-client";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import type {
-  OrganizationSnapshot,
-  OrganizationSummary,
-} from "@/components/dashboard/types";
+import type { OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 
 const copy = {
   billingEyebrow: "Billing",
@@ -150,10 +147,22 @@ type SubscriptionDetail = {
   };
 };
 
-const billingProfileFields: Array<[string, keyof Pick<
-  BillingProfile,
-  "legalName" | "gstNumber" | "billingEmail" | "contactPhone" | "address" | "city" | "state" | "pincode"
->]> = [
+const billingProfileFields: Array<
+  [
+    string,
+    keyof Pick<
+      BillingProfile,
+      | "legalName"
+      | "gstNumber"
+      | "billingEmail"
+      | "contactPhone"
+      | "address"
+      | "city"
+      | "state"
+      | "pincode"
+    >,
+  ]
+> = [
   ["Legal business name", "legalName"],
   ["GST number", "gstNumber"],
   ["Billing email", "billingEmail"],
@@ -311,17 +320,25 @@ export function BillingSection({
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
           {copy.billingEyebrow}
         </p>
-        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">{copy.billingTitle}</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{copy.billingDescription}</p>
+        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+          {copy.billingTitle}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          {copy.billingDescription}
+        </p>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{copy.gymStatus}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              {copy.gymStatus}
+            </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {formatEnumLabel(organization.status)}
             </p>
           </div>
           <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{copy.trialEnds}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              {copy.trialEnds}
+            </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {organization.trialEndAt ? formatDate(organization.trialEndAt) : "Active"}
             </p>
@@ -351,7 +368,10 @@ export function BillingSection({
         {profile ? (
           <div className="mt-5 grid gap-3">
             {billingProfileFields.map(([label, key]) => (
-              <label key={key} className="grid gap-1 text-xs font-medium text-[var(--text-secondary)]">
+              <label
+                key={key}
+                className="grid gap-1 text-xs font-medium text-[var(--text-secondary)]"
+              >
                 {label}
                 <input
                   value={String(profile[key as keyof BillingProfile] ?? "")}
@@ -389,7 +409,9 @@ export function BillingSection({
       <GlassCard className="xl:col-span-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">{copy.trialBillingTitle}</h2>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              {copy.trialBillingTitle}
+            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {copy.trialBillingDescription}
             </p>
@@ -443,6 +465,7 @@ export function BillingSection({
             </p>
             <button
               type="button"
+              aria-label="Connect mock provider"
               disabled={mandateBusy}
               onClick={() => void setupBillingMandate()}
               className="zook-focus rounded-full bg-[var(--text-primary)] px-5 py-3 text-sm font-semibold text-[var(--bg)] disabled:cursor-wait disabled:opacity-60"
@@ -457,7 +480,9 @@ export function BillingSection({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <Pill>{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Plan packaging</h2>
+              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
+                Plan packaging
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 Zook plans are enforced by gym size, team size, branches, inventory, messaging, and
                 AI quotas. Core operations stay available once billing is set up.
@@ -465,11 +490,35 @@ export function BillingSection({
             </div>
             <div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2 lg:min-w-[560px]">
               {[
-                ["Members", usageLine(subscription.usage.activeMemberCount, subscription.entitlements.memberLimit)],
-                ["Branches", usageLine(subscription.usage.branchCount, subscription.entitlements.branchLimit)],
-                ["Staff", usageLine(subscription.usage.staffCount, subscription.entitlements.staffLimit)],
-                ["Trainers", usageLine(subscription.usage.trainerCount, subscription.entitlements.trainerLimit)],
-                ["Products", usageLine(subscription.usage.productCount, subscription.entitlements.productLimit)],
+                [
+                  "Members",
+                  usageLine(
+                    subscription.usage.activeMemberCount,
+                    subscription.entitlements.memberLimit,
+                  ),
+                ],
+                [
+                  "Branches",
+                  usageLine(subscription.usage.branchCount, subscription.entitlements.branchLimit),
+                ],
+                [
+                  "Staff",
+                  usageLine(subscription.usage.staffCount, subscription.entitlements.staffLimit),
+                ],
+                [
+                  "Trainers",
+                  usageLine(
+                    subscription.usage.trainerCount,
+                    subscription.entitlements.trainerLimit,
+                  ),
+                ],
+                [
+                  "Products",
+                  usageLine(
+                    subscription.usage.productCount,
+                    subscription.entitlements.productLimit,
+                  ),
+                ],
                 [
                   "Notifications/month",
                   usageLine(
@@ -479,19 +528,30 @@ export function BillingSection({
                 ],
                 [
                   "AI text/month",
-                  usageLine(subscription.usage.aiTextMonthlyCount, subscription.entitlements.aiTextMonthlyLimit),
+                  usageLine(
+                    subscription.usage.aiTextMonthlyCount,
+                    subscription.entitlements.aiTextMonthlyLimit,
+                  ),
                 ],
                 [
                   "AI images/month",
-                  usageLine(subscription.usage.aiImageMonthlyCount, subscription.entitlements.aiImageMonthlyLimit),
+                  usageLine(
+                    subscription.usage.aiImageMonthlyCount,
+                    subscription.entitlements.aiImageMonthlyLimit,
+                  ),
                 ],
                 ["Reports", formatEnumLabel(subscription.entitlements.reports)],
                 ["Support", formatEnumLabel(subscription.entitlements.support)],
                 ["Referrals", formatEnumLabel(subscription.entitlements.referrals)],
                 ["Onboarding", formatEnumLabel(subscription.entitlements.onboarding)],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{label}</p>
+                <div
+                  key={label}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3"
+                >
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                    {label}
+                  </p>
                   <p className="mt-1 font-semibold text-[var(--text-primary)]">{value}</p>
                 </div>
               ))}
@@ -514,15 +574,20 @@ export function BillingSection({
               >
                 Autopay {formatEnumLabel(subscription.mandate.status || "")}
               </Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Active subscription</h2>
+              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
+                Active subscription
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 {formatEnumLabel(subscription.subscription.tier)} plan ·{" "}
-                {formatInr(subscription.mandate.amountPaise)} per {subscription.mandate.billingPeriod}
-                {" "}via {formatEnumLabel(subscription.mandate.provider || "")} mandate.
+                {formatInr(subscription.mandate.amountPaise)} per{" "}
+                {subscription.mandate.billingPeriod} via{" "}
+                {formatEnumLabel(subscription.mandate.provider || "")} mandate.
               </p>
               <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Next charge</dt>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    Next charge
+                  </dt>
                   <dd className="font-medium text-[var(--text-primary)]">
                     {subscription.mandate.nextChargeAt
                       ? formatDate(subscription.mandate.nextChargeAt)
@@ -530,7 +595,9 @@ export function BillingSection({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Cycles paid</dt>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    Cycles paid
+                  </dt>
                   <dd className="font-medium text-[var(--text-primary)]">
                     {subscription.mandate.paidCount} of {subscription.mandate.totalCount}
                   </dd>
@@ -569,10 +636,12 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Your platform referral code</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                Your platform referral code
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-                Share this code with another gym owner. When they sign up using it, both gyms get
-                an extended free trial.
+                Share this code with another gym owner. When they sign up using it, both gyms get an
+                extended free trial.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <code className="rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-2 font-mono text-base text-[var(--accent-strong)]">
@@ -587,10 +656,14 @@ export function BillingSection({
                   Copy code
                 </ZookButton>
               </div>
-              {copyStatus ? <p className="mt-3 text-xs text-[var(--text-secondary)]">{copyStatus}</p> : null}
+              {copyStatus ? (
+                <p className="mt-3 text-xs text-[var(--text-secondary)]">{copyStatus}</p>
+              ) : null}
             </div>
             <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm md:min-w-[180px]">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Gyms referred</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                Gyms referred
+              </p>
               <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
                 {subscription.platformReferral.referredCount}
               </p>
@@ -629,7 +702,7 @@ export function BillingSection({
                       target="_blank"
                       className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]/80"
                     >
-                      Open
+                      Download invoice PDF
                     </a>
                   ) : null}
                 </div>
