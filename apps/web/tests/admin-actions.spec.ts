@@ -98,6 +98,51 @@ test.describe("branches, staff, settings, and billing actions", () => {
     ).resolves.toBeNull();
   });
 
+  test("owner changes staff role from the dashboard table", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const staffUser = await prisma.user.create({
+      data: {
+        email: `staff-ui-role-${Date.now()}@zook.local`,
+        name: "UI Role Staff",
+      },
+    });
+    await prisma.organizationUser.create({
+      data: { orgId: org.id, userId: staffUser.id, status: "active" },
+    });
+    const assignment = await prisma.organizationRoleAssignment.create({
+      data: {
+        orgId: org.id,
+        userId: staffUser.id,
+        role: "TRAINER",
+        assignedById: owner.id,
+      },
+    });
+
+    await page.goto("/dashboard/staff");
+    await expect(page.getByRole("heading", { name: "Operational roles" })).toBeVisible({
+      timeout: 30_000,
+    });
+    const row = page.getByRole("row", { name: new RegExp(staffUser.email!, "i") });
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await row.getByRole("button", { name: "Role" }).click();
+    await row.locator("select").first().selectOption("RECEPTIONIST");
+    await row.locator("select").nth(1).selectOption(branch.id);
+    await row.getByRole("button", { name: "Save" }).click();
+
+    await expect
+      .poll(() => prisma.organizationRoleAssignment.findUnique({ where: { id: assignment.id } }), {
+        timeout: 15_000,
+      })
+      .toMatchObject({ role: "RECEPTIONIST", branchId: branch.id });
+    await expect(row.getByText(/Receptionist/i)).toBeVisible({ timeout: 15_000 });
+    await expect(row.getByText(branch.name)).toBeVisible();
+  });
+
   test("settings profile and join mode changes appear on the public profile", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
