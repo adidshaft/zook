@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { EmptyState } from "@/components/dashboard-primitives";
 import { GlassCard } from "@/components/glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import { formatInr } from "@/lib/format";
@@ -32,6 +33,7 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
   const [baseMonthly, setBaseMonthly] = useState("0");
   const [perSession, setPerSession] = useState("");
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
   const [configBusy, setConfigBusy] = useState(false);
   const [busyPayoutId, setBusyPayoutId] = useState<string | null>(null);
   const trainers = useMemo(
@@ -45,6 +47,7 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
 
   const load = useCallback(async () => {
     try {
+      setLoading(true);
       const [staffJson, payoutsJson] = await Promise.all([
         webApiFetch<StaffState>(`/api/orgs/${orgId}/staff`),
         webApiFetch<{ payouts: Payout[] }>(`/api/orgs/${orgId}/payouts?month=${encodeURIComponent(month)}`),
@@ -53,6 +56,8 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
       setPayouts(payoutsJson.payouts ?? []);
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : "Unable to load payouts.");
+    } finally {
+      setLoading(false);
     }
   }, [month, orgId]);
 
@@ -139,6 +144,19 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
         {status ? <p className="mt-3 text-sm text-[var(--text-secondary)]">{status}</p> : null}
       </GlassCard>
       <div className="grid gap-3 md:grid-cols-2">
+        {loading && payouts.length === 0 ? (
+          <GlassCard className="p-5">
+            <EmptyState title="Loading payouts" />
+          </GlassCard>
+        ) : null}
+        {!loading && payouts.length === 0 ? (
+          <GlassCard className="p-5">
+            <EmptyState
+              title="No payouts"
+              description="Save a trainer payout config or record PT activity to generate monthly payouts."
+            />
+          </GlassCard>
+        ) : null}
         {payouts.map((payout) => (
           <GlassCard key={payout.id} className="p-5">
             <div className="flex items-start justify-between gap-3">
