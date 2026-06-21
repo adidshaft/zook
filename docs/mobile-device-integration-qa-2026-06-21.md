@@ -104,6 +104,15 @@ Production image serving check:
   - production still serves `assetlinks.json` with `CODEX_FILL_SHA256_FROM_EAS`
 - Added `infra/aws/repair-association-files.sh` as the non-interactive live-host repair path once SSH to the correct Caddy host is available. It backs up `/opt/zook/Caddyfile`, installs the known-good association handlers, reloads Caddy through Docker Compose, and verifies `https://zookfit.in/.well-known/*`.
 - Validated the repair script with `bash -n`, `--help`, and a Caddyfile fixture patch test that confirms both handlers are inserted before `reverse_proxy web:3000`.
+- Follow-up live repair attempt on 2026-06-22:
+  - AWS profiles present locally: `default`, `zook-chrome`, and `kyokasuigetsullp`
+  - `default` is account `477817968459`, which still does not own `13.204.196.160`
+  - `zook-chrome` credentials are invalid
+  - `kyokasuigetsullp` targets account `173237057070`, but its session is expired
+  - attempted `AWS_PROFILE=kyokasuigetsullp aws login` and explicitly opened the generated URL in Chrome; AWS showed an IAM sign-in form requiring account ID, IAM username, and password, so the attempt stopped without entering credentials or using a password manager
+  - `infra/aws/repair-association-files.sh ec2-user@13.204.196.160` failed because SSH port 22 timed out
+  - GitHub CLI is authenticated and the repo has workflow access, but `.github/workflows` only contains CI and Dependabot; there is no deploy/restart workflow to run
+  - `zookfit.in` and `app.zookfit.in` still resolve to `13.204.196.160`, and both domains still serve the stale AASA and assetlinks files through Caddy
 
 ## Device Availability Checks
 
@@ -182,4 +191,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated and is not visible through the configured AWS account's EC2/EIP/SSM/CloudFormation/ECS/Lightsail/App Runner/ELB/CloudFront surfaces. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
+Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated and is not reachable with the currently usable non-interactive credentials. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, no Android device was attached, and the AWS profile that may own the host requires an interactive IAM sign-in.
