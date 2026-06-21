@@ -95,6 +95,33 @@ test.describe("misc dashboard actions", () => {
     await expect(page.getByText(tagline)).toBeVisible({ timeout: 15_000 });
   });
 
+  test("owner edits the public profile from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const tagline = `Dashboard profile edit ${Date.now()}`;
+    const hours = "Mon-Sat, 6 AM - 10 PM";
+
+    await page.goto("/dashboard/public-profile");
+    await expect(page.getByRole("heading", { name: "Gym profile and membership links" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByLabel("Public tagline").fill(tagline);
+    await page.getByRole("button", { name: "Basic Details" }).click();
+    await page.getByLabel("Opening hours").fill(hours);
+    await page.getByRole("button", { name: "Save profile" }).click();
+
+    await expect(
+      page.getByText("Gym profile saved. Public pages and join QR now use these details."),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(prisma.organization.findUnique({ where: { id: org.id } })).resolves.toMatchObject({
+      tagline,
+      openingHoursSummary: hours,
+    });
+
+    await page.goto(`/g/${org.username}`);
+    await expect(page.getByText(tagline)).toBeVisible({ timeout: 15_000 });
+  });
+
   test("reports, audit export, and audit detail drawer produce stateful output", async ({
     page,
   }) => {
