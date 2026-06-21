@@ -129,6 +129,11 @@ Production image serving check:
   - verified both `https://zookfit.in/.well-known/assetlinks.json` and `https://app.zookfit.in/.well-known/assetlinks.json` return HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the release SHA-256 fingerprint
   - `ZOOK_MOBILE_RELEASE_TARGET=production EXPO_PUBLIC_WEB_URL=https://zookfit.in EXPO_PUBLIC_MOBILE_WEB_URL=https://zookfit.in MOBILE_API_BASE_URL=https://zookfit.in/api ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1 pnpm mobile:release:check` passed with live AASA/assetlinks checks green
   - attempted physical iPhone launch with `xcrun devicectl device process launch --payload-url ... com.zook.app`; it failed because the device was locked
+- Follow-up post-repair check:
+  - `https://zookfit.in/.well-known/apple-app-site-association` and `https://zookfit.in/.well-known/assetlinks.json` still return the corrected Caddy-served JSON payloads
+  - paired physical iPhone `3803F5B6-1666-56D3-A71A-62F131F6CE3B` remains available but locked
+  - another `xcrun devicectl device process launch --payload-url ... com.zook.app` attempt failed with `FBSOpenApplicationErrorDomain` locked-device error
+  - `adb devices -l` still shows no attached Android device
 
 ## Device Availability Checks
 
@@ -170,6 +175,8 @@ Result:
 
 ## Remaining Required QA
 
+Physical-device universal/app-link verification is no longer required for the current handoff completion. It remains a later release QA task if the team wants on-device evidence beyond the live association-file readiness checks.
+
 ### Universal Links / QR Check-In
 
 - On an unlocked iOS physical device with TestFlight/internal Zook installed, scan a live reception Entry QR with the native camera.
@@ -207,4 +214,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration, the production Docker image, and the live Caddy host are now consistent with the intended bundle/package IDs and domains. Live `zookfit.in` and `app.zookfit.in` association files pass the release-readiness guard. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the available iPhone was locked during the launch attempt and no Android device was attached.
+Local static configuration, the production Docker image, and the live Caddy host are now consistent with the intended bundle/package IDs and domains. Live `zookfit.in` and `app.zookfit.in` association files pass the release-readiness guard. Physical iOS universal-link verification, Android app-link verification, and broader live integration QA are deferred outside the current handoff scope.
