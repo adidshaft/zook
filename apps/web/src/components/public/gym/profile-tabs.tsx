@@ -10,8 +10,9 @@ import { MemberJourney } from "./member-journey";
 import { GymFacilities } from "./facilities";
 import { ShareInstall } from "./share-install";
 import { GymTrainers } from "./trainers";
+import { ReviewsSection } from "./reviews-section";
 
-type TabId = "plans" | "trainers" | "facilities" | "app";
+type TabId = "plans" | "trainers" | "facilities" | "reviews" | "app";
 
 export function GymProfileTabs({
   org,
@@ -50,6 +51,12 @@ export function GymProfileTabs({
       label: t("facilities"),
       icon: Building2,
       content: <GymFacilities org={org} locale={locale} />,
+    },
+    {
+      id: "reviews" as TabId,
+      label: "Reviews",
+      icon: Users,
+      content: <ReviewsSection org={org} />,
     },
     {
       id: "app" as TabId,

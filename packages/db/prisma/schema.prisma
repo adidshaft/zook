@@ -1777,6 +1777,21 @@ model RewardWithdrawal {
   @@index([status, requestedAt])
 }
 
+model GymReview {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  rating    Int
+  body      String?
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([orgId, status, createdAt])
+  @@index([userId])
+}
+
 model OrgReferralPartnership {
   id                     String   @id @default(cuid())
   sourceOrgId            String

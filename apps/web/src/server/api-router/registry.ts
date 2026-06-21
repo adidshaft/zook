@@ -48,6 +48,7 @@ import { handlePublicOrganizations } from "./public-organizations";
 import { handlePushDevices } from "./push-devices";
 import { handleReports } from "./reports";
 import { handleRewards } from "./rewards";
+import { handleReviews } from "./reviews";
 import { handleStaff } from "./staff";
 import { handleProducts } from "./products";
 import { handleShopOrders } from "./shop-orders";
@@ -96,6 +97,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleMembershipSubscriptionActions, firstSegments: ["me", "orgs"] },
   { handler: handleMembershipPayments, firstSegments: ["me", "orgs"] },
   { handler: handleCouponsReferrals, firstSegments: ["orgs", "r", "referrals"] },
+  { handler: handleReviews, firstSegments: ["orgs"] },
   { handler: handleAttendance, firstSegments: ["attendance", "orgs"] },
   { handler: handleStaff, firstSegments: ["orgs", "staff-invitations"] },
   { handler: handleManualPayments, firstSegments: ["orgs"] },

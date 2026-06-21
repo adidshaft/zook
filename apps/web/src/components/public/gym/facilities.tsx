@@ -2,6 +2,8 @@ import Image from "next/image";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
+import { AmenityGrid } from "./amenity-grid";
+import { LocationCard } from "./location-card";
 
 export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
@@ -14,6 +16,8 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
       : `${org.name} gallery photo ${index + 1}`;
   return (
     <div className="space-y-6">
+      <AmenityGrid org={org} />
+      <LocationCard org={org} />
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} />
         <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} />
