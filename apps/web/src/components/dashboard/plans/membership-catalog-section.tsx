@@ -1,9 +1,10 @@
 import { ErrorNotice } from "../operational-shared";
+import { useMemo, useState } from "react";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import { formatPlanShape } from "@/components/dashboard/types";
+import { formatPlanShape, type MembershipPlanType } from "@/components/dashboard/types";
 import { formatEnumLabel, formatInr } from "@/lib/format";
 import { PlanFormFields } from "./plan-form-fields";
 import type { PlansSectionProps } from "./types";
@@ -42,12 +43,43 @@ export function MembershipCatalogSection({
   updateMembershipPlan,
   deleteMembershipPlan,
 }: MembershipCatalogSectionProps) {
+  const [showArchived, setShowArchived] = useState(true);
+  const visiblePlans = useMemo(
+    () => (showArchived ? membershipPlans : membershipPlans.filter((plan) => plan.active)),
+    [membershipPlans, showArchived],
+  );
+  const archivedCount = membershipPlans.filter((plan) => !plan.active).length;
+
+  function duplicatePlan(plan: (typeof membershipPlans)[number]) {
+    setPlanForm({
+      name: `${plan.name} copy`.slice(0, 60),
+      type: plan.type as MembershipPlanType,
+      priceRupees: (plan.pricePaise / 100).toString(),
+      durationDays: plan.durationDays?.toString() ?? "",
+      visitLimit: plan.visitLimit?.toString() ?? "",
+      description: plan.description ?? "",
+      publicVisible: plan.publicVisible,
+      active: true,
+    });
+    setEditingPlanId(null);
+  }
+
   return (
     <GlassCard>
       <SectionHeader
         eyebrow="Membership plans"
         title="Membership catalog"
-        badge={<Pill>{membershipPlans.length} offers</Pill>}
+        badge={<Pill>{visiblePlans.length} offers</Pill>}
+        action={
+          <ZookButton
+            type="button"
+            tone="ghost"
+            size="sm"
+            onClick={() => setShowArchived((current) => !current)}
+          >
+            {showArchived ? "Hide archived" : `Show archived${archivedCount ? ` (${archivedCount})` : ""}`}
+          </ZookButton>
+        }
       />
       <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
         <div className="flex items-center justify-between gap-3">
@@ -135,6 +167,14 @@ export function MembershipCatalogSection({
                       type="button"
                       tone="ghost"
                       size="sm"
+                      onClick={() => duplicatePlan(plan)}
+                    >
+                      Duplicate plan
+                    </ZookButton>
+                    <ZookButton
+                      type="button"
+                      tone="ghost"
+                      size="sm"
                       onClick={() => void updateMembershipPlan(plan.id, { active: !plan.active })}
                       disabled={formBusy === `plan:${plan.id}`}
                       state={formBusy === `plan:${plan.id}` ? "loading" : "idle"}
@@ -155,7 +195,7 @@ export function MembershipCatalogSection({
                 ),
               },
             ]}
-            rows={membershipPlans}
+            rows={visiblePlans}
             rowKey={(plan) => plan.id}
             empty="No plans."
           />

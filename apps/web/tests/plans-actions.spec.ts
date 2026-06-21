@@ -225,17 +225,44 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     });
   });
 
-  test("plan duplicate and archived-filter UI controls are visible product gaps", async ({
-    page,
-  }) => {
-    test.fail(
-      true,
-      "The membership plan screen currently edits/restores rows but does not ship separate duplicate or archived-filter controls.",
-    );
+  test("owner duplicates a plan draft and filters archived plans", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
-    await page.goto("/dashboard/membership-plans");
-    expect(await page.getByRole("button", { name: /duplicate plan/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /archived/i }).count()).toBeGreaterThan(0);
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const sourcePlan = await createMembershipPlan(page, org.id, {
+      name: `Duplicate Source ${Date.now().toString().slice(-6)}`,
+      pricePaise: 123400,
+      durationDays: 45,
+      branchId: branch.id,
+    });
+    const archivedPlan = await createMembershipPlan(page, org.id, {
+      name: `Archived Filter ${Date.now().toString().slice(-6)}`,
+      pricePaise: 98700,
+      branchId: branch.id,
+    });
+    await prisma.membershipPlan.update({
+      where: { id: archivedPlan.id },
+      data: { active: false },
+    });
+
+    await page.goto(`/dashboard/membership-plans?branchId=${branch.id}`);
+    await expect(page.getByRole("row", { name: new RegExp(sourcePlan.name) })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page
+      .getByRole("row", { name: new RegExp(sourcePlan.name) })
+      .getByRole("button", { name: "Duplicate plan" })
+      .click();
+    await expect(page.getByLabel("Plan name").first()).toHaveValue(`${sourcePlan.name} copy`);
+    await expect(page.getByLabel("Price").first()).toHaveValue("1234");
+
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toBeVisible();
+    await page.getByRole("button", { name: /hide archived/i }).click();
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toHaveCount(0);
+    await page.getByRole("button", { name: /show archived/i }).click();
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toBeVisible();
   });
 
   test("selected branch membership plans exclude legacy shared plans", async ({ page }) => {
