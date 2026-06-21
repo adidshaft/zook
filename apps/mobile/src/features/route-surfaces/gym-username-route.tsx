@@ -24,6 +24,7 @@ import { Image } from "expo-image";
 import {
   EmptyState,
   Card,
+  IconBubble,
   InfoRow,
   AppHeader,
   Pill,
@@ -31,11 +32,13 @@ import {
   QueryErrorState,
   SectionHeader,
   useRequestPermissionWithRationale,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
 import { AmenityGrid } from "@/components/domain/amenity-grid";
 import { GymReviews } from "@/features/member/gym/gym-reviews";
+import { formatDistanceKm, useGymDistanceKm } from "@/lib/use-gym-distance";
 import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
@@ -99,7 +102,18 @@ export default function GymProfileScreen() {
   const coverImageUrl = normalizeWebUrl(gym?.coverImageUrl);
   const logoUrl = normalizeWebUrl(gym?.logoUrl);
   const viewerState = gymQuery.data?.viewerState;
+  const distanceKm = useGymDistanceKm(gym?.latitude, gym?.longitude);
+  const distanceLabel = formatDistanceKm(distanceKm);
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
+
+  function openDirections() {
+    if (!gym) return;
+    const query =
+      gym.latitude != null && gym.longitude != null
+        ? `${gym.latitude},${gym.longitude}`
+        : encodeURIComponent(gym.address ?? `${gym.name}, ${gym.city}, ${gym.state}`);
+    void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+  }
   const profileBranches = gymQuery.data?.branches ?? [];
   const selectedGymBranchId =
     profileBranches.find((branch) => branch.id === selectedBranchId)?.id ??
@@ -447,6 +461,25 @@ export default function GymProfileScreen() {
                   </View>
                 </View>
               ) : null}
+            </Card>
+
+            <SectionHeader eyebrow="Getting there" title="Location" />
+            <Card contentStyle={styles.locationCard}>
+              <View style={styles.locationRow}>
+                <IconBubble icon="location-outline" tone="lime" size={42} />
+                <View style={styles.locationCopy}>
+                  <Text style={[styles.locationAddress, { color: palette.text.primary }]}>
+                    {gym.address ?? `${gym.city}, ${gym.state}`}
+                  </Text>
+                  <Text style={[styles.locationCity, { color: palette.text.secondary }]}>
+                    {distanceLabel ?? `${gym.city}, ${gym.state}`}
+                  </Text>
+                </View>
+                {distanceLabel ? <Pill tone="lime">{distanceLabel}</Pill> : null}
+              </View>
+              <ZookButton variant="secondary" icon="navigate-outline" onPress={openDirections}>
+                Get directions
+              </ZookButton>
             </Card>
 
             <SectionHeader eyebrow="At a glance" title="What's inside" />
@@ -961,6 +994,25 @@ const styles = StyleSheet.create({
   },
   amenityCard: {
     gap: 10,
+  },
+  locationCard: {
+    gap: spacing.md,
+  },
+  locationRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  locationAddress: {
+    ...typography.cardTitle,
+  },
+  locationCity: {
+    ...typography.small,
   },
   inlineChipBlock: {
     gap: 8,
