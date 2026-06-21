@@ -38,6 +38,7 @@ import {
 import { GymDetailSkeleton } from "@/components/skeletons";
 import { AmenityGrid } from "@/components/domain/amenity-grid";
 import { GymReviews } from "@/features/member/gym/gym-reviews";
+import { GalleryViewer } from "@/features/member/gym/gallery-viewer";
 import { formatDistanceKm, useGymDistanceKm } from "@/lib/use-gym-distance";
 import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -83,6 +84,7 @@ export default function GymProfileScreen() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<PublicTrainer | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const [inviteCode, setInviteCode] = useState(referralCode ?? "");
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -494,12 +496,19 @@ export default function GymProfileScreen() {
                 contentContainerStyle={styles.galleryRow}
               >
                 {gallery.map((imageUrl, index) => (
-                  <Image
+                  <Pressable
                     key={`${imageUrl}-${index}`}
-                    source={{ uri: normalizeWebUrl(imageUrl) }}
-                    style={styles.galleryImage}
-                    contentFit="cover"
-                  />
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel={`Photo ${index + 1} of ${gallery.length}`}
+                    onPress={() => setGalleryIndex(index)}
+                    style={({ pressed }) => (pressed ? { opacity: 0.88 } : null)}
+                  >
+                    <Image
+                      source={{ uri: normalizeWebUrl(imageUrl) }}
+                      style={styles.galleryImage}
+                      contentFit="cover"
+                    />
+                  </Pressable>
                 ))}
               </ScrollView>
             ) : null}
@@ -802,6 +811,7 @@ export default function GymProfileScreen() {
           ) : null}
         </BottomSheetView>
       </BottomSheetModal>
+      <GalleryViewer images={gallery} initialIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
       {notificationPermission.permissionSheet}
     </ZookScreen>
   );
