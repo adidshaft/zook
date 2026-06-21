@@ -101,9 +101,25 @@ export function AttendanceQrPanel({
       return;
     }
 
+    // Encode the QR as a universal link on our own associated domain rather
+    // than the raw signed blob. A member's native camera can then open the
+    // link, which iOS/Android hand straight to the app (-> /checkin -> auto
+    // check-in). The in-app scanner also understands this URL form, and users
+    // without the app land on the /checkin web fallback. Param names are the
+    // ones both the deep-link route and the in-app scanner parse.
+    const origin =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "https://zookfit.in";
+    const linkParams = new URLSearchParams({ qrPayload });
+    if (checkInCode) {
+      linkParams.set("checkInCode", checkInCode);
+    }
+    const qrContent = `${origin}/checkin?${linkParams.toString()}`;
+
     let active = true;
     setQrRenderError("");
-    void QRCode.toDataURL(qrPayload, {
+    void QRCode.toDataURL(qrContent, {
       errorCorrectionLevel: "M",
       margin: 2,
       width: 600,
@@ -126,7 +142,7 @@ export function AttendanceQrPanel({
     return () => {
       active = false;
     };
-  }, [qrPayload]);
+  }, [qrPayload, checkInCode]);
 
   return (
     <GlassCard variant="strong" className="rounded-[24px] border-[var(--border)] bg-[var(--bg-sunken)] shadow-none">

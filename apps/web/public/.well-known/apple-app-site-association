@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "com.zook.app",
-        "paths": ["/join/*", "/plans/*", "/shop/*", "/dashboard"]
+        "paths": ["/checkin", "/checkin/*", "/join/*", "/plans/*", "/shop/*", "/dashboard"]
       }
     ]
   }

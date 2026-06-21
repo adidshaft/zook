@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { CameraView, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -252,6 +252,7 @@ export default function Scan() {
     };
   };
   const router = useRouter();
+  const autoScanParams = useLocalSearchParams<{ autoQrPayload?: string; autoCheckInCode?: string }>();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const memberHomeQuery = useMemberHome();
@@ -272,6 +273,7 @@ export default function Scan() {
   const [replayingQueue, setReplayingQueue] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const completedRef = useRef(false);
+  const autoSubmittedRef = useRef(false);
   const codePrefixRef = useRef<TextInput>(null);
   const codeDigitsRef = useRef<TextInput>(null);
 
@@ -543,6 +545,26 @@ export default function Scan() {
       resetScan();
     }, []),
   );
+
+  // Auto-submit when the screen is reached from a check-in deep link (native
+  // camera scans the gym QR -> universal link -> /checkin -> here). Runs once.
+  useEffect(() => {
+    if (autoSubmittedRef.current || !token) {
+      return;
+    }
+    const qrPayload = autoScanParams.autoQrPayload;
+    const checkInCode = autoScanParams.autoCheckInCode;
+    if (qrPayload) {
+      autoSubmittedRef.current = true;
+      void completeScan(String(qrPayload), "qr");
+    } else if (checkInCode) {
+      const normalized = normalizeCheckInCode(String(checkInCode)) || String(checkInCode);
+      autoSubmittedRef.current = true;
+      void completeScan(normalized, "code");
+    }
+    // completeScan is a stable closure for this purpose; the ref guard prevents re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoScanParams.autoQrPayload, autoScanParams.autoCheckInCode, token]);
 
   async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
