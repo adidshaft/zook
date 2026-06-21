@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AppHandoffCard } from "@/components/app-handoff-card";
 import { CoachClientWorkspace } from "@/components/coach/coach-client-workspace";
 import { GlassCard } from "@/components/glass-card";
 import { requireDashboardSession } from "@/lib/server-auth";
@@ -121,20 +122,17 @@ export default async function CoachClientPage({
               {client.fitnessGoal ?? "Goal capture pending"}
             </p>
           </div>
-          <Link
-            href={`/dashboard/trainers/${session.user.id}/clients/${client.id}/diet`}
-            className="zook-focus inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
-          >
-            Open diet plans
-          </Link>
         </div>
       </GlassCard>
 
+      <AppHandoffCard
+        title="Coach this client in the Zook app"
+        description="Editing diet plans, logging sessions, and assigning workouts are mobile-first trainer flows."
+        deepLink={`zook://trainer/clients/${client.id}`}
+      />
+
       <CoachClientWorkspace
-        orgId={orgId}
-        trainerId={session.user.id}
         clientId={client.id}
-        clientName={displayName}
         initialNote={parseTrainerNote(profile?.notes)}
         bodyProgress={bodyEntries.map((entry) => ({
           id: entry.id,

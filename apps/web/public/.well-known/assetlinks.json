@@ -4,7 +4,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.zook.app",
-      "sha256_cert_fingerprints": ["CODEX_FILL_SHA256_FROM_EAS"]
+      "sha256_cert_fingerprints": [
+        "AF:CE:B5:DF:52:85:0C:5A:A5:70:30:CF:EF:53:57:F5:C8:39:AD:ED:16:ED:70:D1:FF:FB:BE:2C:E4:23:45:5F"
+      ]
     }
   }
 ]

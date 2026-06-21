@@ -189,6 +189,7 @@ export function TrainerDietPlansPanel({
             ]}
             rows={plans}
             rowKey={(plan) => plan.id}
+            empty={<EmptyState title="No diet plans" />}
           />
         ) : (
           <EmptyState title="No diet plans" />

@@ -2,15 +2,13 @@
 
 import {
   Activity,
-  BarChart3,
-  Bell,
   Calendar,
   ClipboardList,
   Dumbbell,
   PinIcon,
-  Smartphone,
   Users,
 } from "lucide-react";
+import { AppHandoffCard } from "@/components/app-handoff-card";
 import { ActivityRow, KPITile, SectionHero } from "@/components/dashboard/charts";
 import { GlassCard } from "@/components/glass-card";
 import { TrainerCustomisationPanel } from "@/components/trainer-customisation-panel";
@@ -110,35 +108,18 @@ export function CoachPage({
 
         <GlassCard className="p-5">
           <h2 className="text-base font-semibold text-[var(--text-primary)]">Today</h2>
-          <div className="mt-4 grid gap-2">
-            <ActivityRow
-              icon={ClipboardList}
-              iconTone="lime"
-              title="Assign a new plan"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
-              index={0}
+          <div className="mt-4 grid gap-3">
+            <AppHandoffCard
+              compact
+              title="Assign plans in the app"
+              description="Create, edit, and assign workout plans from the trainer mobile workspace."
+              deepLink={clients[0] ? `zook://trainer/clients/${clients[0].id}/plan` : "zook://trainer/plans"}
             />
-            <ActivityRow
-              icon={Bell}
-              iconTone="sky"
-              title="Notify a member"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
-              index={1}
-            />
-            <ActivityRow
-              icon={BarChart3}
-              iconTone="amber"
-              title="Log this week's progress"
-              subtitle="Capture weights, reps, body comp"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/coach"}
-              index={2}
-            />
-            <ActivityRow
-              icon={Smartphone}
-              iconTone="violet"
-              title="Open coach overview"
-              href="/coach"
-              index={3}
+            <AppHandoffCard
+              compact
+              title="Log progress in the app"
+              description="Capture weekly progress, PT notes, body comp, and reps in Zook mobile."
+              deepLink={clients[0] ? `zook://trainer/clients/${clients[0].id}/sessions` : "zook://trainer/pt"}
             />
           </div>
         </GlassCard>

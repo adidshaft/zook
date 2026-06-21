@@ -2096,6 +2096,11 @@ function rewardToStored(type: string, value: number) {
   if (type === "DISCOUNT_PERCENT_BPS") return value * 100;
   return value;
 }
+function defaultRewardValueForType(type: string) {
+  if (type === "CREDIT_PAISE" || type === "NONE") return 0;
+  if (type === "DISCOUNT_PERCENT_BPS") return 1_000;
+  return 30;
+}
 
 const platformInputClass =
   "min-h-10 w-full rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-white/25";
@@ -2194,9 +2199,13 @@ function PlatformReferralPolicyCard() {
               <select
                 className={`${platformInputClass} mt-1`}
                 value={policy.referrerRewardType}
-                onChange={(event) =>
-                  patch({ referrerRewardType: event.target.value as PlatformReferralPolicy["referrerRewardType"] })
-                }
+                onChange={(event) => {
+                  const referrerRewardType = event.target.value as PlatformReferralPolicy["referrerRewardType"];
+                  patch({
+                    referrerRewardType,
+                    referrerRewardValue: defaultRewardValueForType(referrerRewardType),
+                  });
+                }}
               >
                 {REFERRER_REWARD_TYPES.map((option) => (
                   <option key={option.value} value={option.value} className="bg-black">
@@ -2227,9 +2236,13 @@ function PlatformReferralPolicyCard() {
               <select
                 className={`${platformInputClass} mt-1`}
                 value={policy.referredRewardType}
-                onChange={(event) =>
-                  patch({ referredRewardType: event.target.value as PlatformReferralPolicy["referredRewardType"] })
-                }
+                onChange={(event) => {
+                  const referredRewardType = event.target.value as PlatformReferralPolicy["referredRewardType"];
+                  patch({
+                    referredRewardType,
+                    referredRewardValue: defaultRewardValueForType(referredRewardType),
+                  });
+                }}
               >
                 {REFERRED_REWARD_TYPES.map((option) => (
                   <option key={option.value} value={option.value} className="bg-black">
@@ -2500,6 +2513,7 @@ function PlatformSubscriptionsSection() {
               ]}
               rows={rows}
               rowKey={(row) => row.orgId}
+              empty={<EmptyState title="No subscriptions" />}
             />
           ) : (
             <EmptyState title="No subscriptions" />
