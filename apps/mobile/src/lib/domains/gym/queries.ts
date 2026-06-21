@@ -23,3 +23,30 @@ export function useGymProfile(username: string) {
     enabled: Boolean(username),
   });
 }
+
+export type GymReview = {
+  id: string;
+  userId: string;
+  name: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+};
+
+export type GymReviewsData = {
+  summary: { average: number; count: number; breakdown: Record<string, number> };
+  reviews: GymReview[];
+  canReview: boolean;
+  myReview: GymReview | null;
+};
+
+export function useGymReviews(orgId?: string | null) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["org", orgId, "reviews"] as const,
+    queryFn: () =>
+      mobileApiFetch<GymReviewsData>(`/orgs/${orgId}/reviews`, { token, orgId: orgId ?? undefined }),
+    enabled: Boolean(orgId),
+    staleTime: 30_000,
+  });
+}
