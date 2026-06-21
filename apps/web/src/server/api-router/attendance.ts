@@ -278,6 +278,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       scanUser,
       subscription,
       expiredSubscription,
+      pausedSubscription,
       openCheckIn,
       todayCheckIn,
       branch,
@@ -293,6 +294,10 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       }),
       prisma.memberSubscription.findFirst({
         where: { orgId: decoded.orgId, memberUserId: userId, status: "EXPIRED" },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.memberSubscription.findFirst({
+        where: { orgId: decoded.orgId, memberUserId: userId, status: "PAUSED" },
         orderBy: { createdAt: "desc" },
       }),
       prisma.attendanceRecord.findFirst({
@@ -373,10 +378,21 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       });
     }
     if (!subscription) {
+      if (pausedSubscription) {
+        return fail(
+          "MEMBERSHIP_PAUSED",
+          "Your membership is paused. Resume it before checking in.",
+          400,
+        );
+      }
       if (expiredSubscription) {
         return fail("MEMBERSHIP_EXPIRED", "Membership expired. Renew before checking in.", 400);
       }
-      return fail("NO_ACTIVE_MEMBERSHIP", "No active membership", 400);
+      return fail(
+        "NO_ACTIVE_MEMBERSHIP",
+        `You don't have an active membership at ${org.name}. Join this gym to check in.`,
+        400,
+      );
     }
     const branchHours = evaluateOperatingHours({ operatingHours: branch.operatingHours, now });
     if (!branchHours.open) {

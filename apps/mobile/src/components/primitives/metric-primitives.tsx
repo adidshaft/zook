@@ -95,6 +95,10 @@ export function StatusRing({
 }) {
   const { palette: themePalette, mode } = useTheme();
   const tonePalette = getTonePalette(tone, mode, themePalette);
+  // The arc fakes a progress ring with two coloured borders (max ~50%). When
+  // progress is complete we colour all four borders so it reads as a finished
+  // full circle (e.g. a confirmed check-in) rather than a half ring.
+  const isComplete = progress >= 1;
   const activeRotation = progress >= 0.7 ? "34deg" : progress >= 0.45 ? "-24deg" : "-72deg";
   const ringShadow =
     tone !== "neutral"
@@ -127,9 +131,9 @@ export function StatusRing({
             borderRadius: size / 2,
             borderTopColor: tonePalette.color,
             borderRightColor: tonePalette.color,
-            borderBottomColor: "transparent",
-            borderLeftColor: "transparent",
-            transform: [{ rotate: activeRotation }],
+            borderBottomColor: isComplete ? tonePalette.color : "transparent",
+            borderLeftColor: isComplete ? tonePalette.color : "transparent",
+            transform: [{ rotate: isComplete ? "0deg" : activeRotation }],
           },
         ]}
       />

@@ -240,7 +240,7 @@ export default function AttendanceResultScreen() {
               tone={tone}
               icon={pending ? "time-outline" : blocked ? "alert-circle-outline" : "checkmark"}
               size={pending ? 88 : 92}
-              progress={pending ? 0.52 : 0.86}
+              progress={pending ? 0.52 : blocked ? 0.66 : 1}
             />
             <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
               {pending

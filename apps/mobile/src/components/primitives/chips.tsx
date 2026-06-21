@@ -230,9 +230,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   branchSelectorText: {
-    maxWidth: 112,
     ...typography.caption,
     flexShrink: 1,
+    minWidth: 0,
   },
   branchSelectorCount: {
     minWidth: 30,

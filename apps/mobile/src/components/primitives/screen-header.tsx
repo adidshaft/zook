@@ -7,6 +7,7 @@ import type { SharedValue } from "react-native-reanimated";
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
 import { materials, spacing, typography, useTheme } from "@/lib/theme";
+import { gymBrandColor } from "@/lib/gym-brand";
 
 type HeaderContext = {
   orgName: string;
@@ -122,7 +123,7 @@ export function ScreenHeader({
 
 function ContextPill({ context }: { context: HeaderContext }) {
   const { palette } = useTheme();
-  const initial = context.orgName.trim().charAt(0).toUpperCase() || "Z";
+  const brand = gymBrandColor(context.orgName);
   return (
     <Pressable
       accessibilityRole="button"
@@ -139,8 +140,8 @@ function ContextPill({ context }: { context: HeaderContext }) {
         },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: palette.surface.accentSoft }]}>
-        <Text style={[styles.avatarText, { color: palette.accent.base }]}>{initial}</Text>
+      <View style={[styles.avatar, { backgroundColor: brand.soft }]}>
+        <Text style={[styles.avatarText, { color: brand.solid }]}>{brand.initial}</Text>
       </View>
       <Text numberOfLines={1} style={[styles.contextText, { color: palette.text.primary }]}>
         {context.orgName}

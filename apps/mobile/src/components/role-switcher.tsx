@@ -14,6 +14,7 @@ import {
 import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
+import { gymBrandColor } from "@/lib/gym-brand";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -239,7 +240,7 @@ export function RoleSwitcherContextPill() {
     session?.organizations.find((organization) => organization.orgId === currentOrgId)?.roles ?? [];
   const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseFromCode(ctx.role) : null;
   const canSwitch = combos.length > 1;
-  const initial = currentOrgName.trim().charAt(0).toUpperCase() || "Z";
+  const brand = gymBrandColor(currentOrgName);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -295,8 +296,8 @@ export function RoleSwitcherContextPill() {
         },
       ]}
     >
-      <View style={[styles.contextAvatar, { backgroundColor: palette.surface.accentSoft }]}>
-        <Text style={[styles.contextAvatarText, { color: palette.accent.base }]}>{initial}</Text>
+      <View style={[styles.contextAvatar, { backgroundColor: brand.soft }]}>
+        <Text style={[styles.contextAvatarText, { color: brand.solid }]}>{brand.initial}</Text>
       </View>
       <Text numberOfLines={1} style={[styles.contextName, { color: palette.text.primary }]}>
         {currentOrgName}

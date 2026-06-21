@@ -505,7 +505,10 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
       pointerEvents="box-none"
       style={[
         styles.runtimeBannerHost,
-        { top: Math.max(spacing.xs, Math.max(insets.top, spacing.xs) - 76) },
+        // Sit just below the safe-area top (below the notch / dynamic island)
+        // so transient banners like the demo "Test data" badge aren't hidden
+        // behind the island. The previous -76 offset pulled them up into it.
+        { top: Math.max(insets.top, spacing.xs) + spacing.xs },
       ]}
     >
       {children}
