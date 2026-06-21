@@ -2061,6 +2061,241 @@ type PlatformPlanCatalog = Record<
   }
 >;
 
+type PlatformReferralPolicy = {
+  enabled: boolean;
+  referrerRewardType: "TRIAL_DAYS" | "CREDIT_PAISE" | "NONE";
+  referrerRewardValue: number;
+  referredRewardType: "TRIAL_DAYS" | "DISCOUNT_PERCENT_BPS" | "CREDIT_PAISE" | "NONE";
+  referredRewardValue: number;
+  maxRedemptionsPerOrg: number;
+  expiresInDays: number;
+};
+
+const REFERRER_REWARD_TYPES = [
+  { value: "TRIAL_DAYS", label: "Free trial days" },
+  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
+  { value: "NONE", label: "No reward" },
+] as const;
+
+const REFERRED_REWARD_TYPES = [
+  { value: "TRIAL_DAYS", label: "Free trial days" },
+  { value: "DISCOUNT_PERCENT_BPS", label: "Discount (%)" },
+  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
+  { value: "NONE", label: "No reward" },
+] as const;
+
+/** Converts a stored reward value to the unit shown in the input. */
+function rewardToDisplay(type: string, value: number) {
+  if (type === "CREDIT_PAISE") return Math.round(value / 100);
+  if (type === "DISCOUNT_PERCENT_BPS") return Math.round(value / 100);
+  return value;
+}
+/** Converts an edited input value back to the stored unit. */
+function rewardToStored(type: string, value: number) {
+  if (type === "CREDIT_PAISE") return value * 100;
+  if (type === "DISCOUNT_PERCENT_BPS") return value * 100;
+  return value;
+}
+
+const platformInputClass =
+  "min-h-10 w-full rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-white/25";
+
+/**
+ * Platform-owner control for how gyms referring *other gyms* to Zook are
+ * rewarded. Backend: GET/PATCH /api/platform/referral-policy. Self-contained
+ * (loads + saves its own data) so it can drop into the Subscriptions section.
+ */
+function PlatformReferralPolicyCard() {
+  const [policy, setPolicy] = useState<PlatformReferralPolicy | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    webApiFetch<{ policy: PlatformReferralPolicy }>("/api/platform/referral-policy")
+      .then((payload) => {
+        if (mounted) setPolicy(payload.policy);
+      })
+      .catch((cause) => {
+        if (mounted)
+          setNotice({
+            message: cause instanceof Error ? cause.message : "Unable to load referral policy.",
+            tone: "red",
+          });
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  function patch(next: Partial<PlatformReferralPolicy>) {
+    setPolicy((current) => (current ? { ...current, ...next } : current));
+  }
+  function num(value: string) {
+    return Number.parseInt(value, 10) || 0;
+  }
+
+  async function save() {
+    if (!policy) return;
+    setSaving(true);
+    setNotice(null);
+    try {
+      await webApiFetch("/api/platform/referral-policy", { method: "PATCH", body: policy });
+      setNotice({ message: "Referral policy saved.", tone: "lime" });
+    } catch (cause) {
+      setNotice({
+        message: cause instanceof Error ? cause.message : "Unable to save referral policy.",
+        tone: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+            Gym-to-gym referrals
+          </p>
+          <p className="mt-1 text-sm font-semibold text-white">When a gym refers a new gym to Zook</p>
+          <p className="mt-1 max-w-xl text-xs leading-5 text-white/45">
+            Platform default that applies across all gyms. Sets what the referring gym earns and what
+            the new gym gets when they join.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => patch({ enabled: !policy?.enabled })}
+          disabled={!policy}
+          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+            policy?.enabled
+              ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
+              : "border-white/10 bg-white/5 text-white/55"
+          }`}
+        >
+          {policy?.enabled ? "Enabled" : "Disabled"}
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="mt-4 text-sm text-white/45">Loading referral policy...</p>
+      ) : policy ? (
+        <div className="mt-4 grid gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Referring gym earns</p>
+              <label className="mt-3 block text-xs text-white/55">Reward type</label>
+              <select
+                className={`${platformInputClass} mt-1`}
+                value={policy.referrerRewardType}
+                onChange={(event) =>
+                  patch({ referrerRewardType: event.target.value as PlatformReferralPolicy["referrerRewardType"] })
+                }
+              >
+                {REFERRER_REWARD_TYPES.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-black">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {policy.referrerRewardType !== "NONE" ? (
+                <>
+                  <label className="mt-3 block text-xs text-white/55">
+                    {policy.referrerRewardType === "CREDIT_PAISE" ? "Credit (₹)" : "Days"}
+                  </label>
+                  <input
+                    className={`${platformInputClass} mt-1`}
+                    inputMode="numeric"
+                    value={String(rewardToDisplay(policy.referrerRewardType, policy.referrerRewardValue))}
+                    onChange={(event) =>
+                      patch({ referrerRewardValue: rewardToStored(policy.referrerRewardType, num(event.target.value)) })
+                    }
+                  />
+                </>
+              ) : null}
+            </div>
+
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">New gym gets</p>
+              <label className="mt-3 block text-xs text-white/55">Reward type</label>
+              <select
+                className={`${platformInputClass} mt-1`}
+                value={policy.referredRewardType}
+                onChange={(event) =>
+                  patch({ referredRewardType: event.target.value as PlatformReferralPolicy["referredRewardType"] })
+                }
+              >
+                {REFERRED_REWARD_TYPES.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-black">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {policy.referredRewardType !== "NONE" ? (
+                <>
+                  <label className="mt-3 block text-xs text-white/55">
+                    {policy.referredRewardType === "CREDIT_PAISE"
+                      ? "Credit (₹)"
+                      : policy.referredRewardType === "DISCOUNT_PERCENT_BPS"
+                        ? "Discount (%)"
+                        : "Days"}
+                  </label>
+                  <input
+                    className={`${platformInputClass} mt-1`}
+                    inputMode="numeric"
+                    value={String(rewardToDisplay(policy.referredRewardType, policy.referredRewardValue))}
+                    onChange={(event) =>
+                      patch({ referredRewardValue: rewardToStored(policy.referredRewardType, num(event.target.value)) })
+                    }
+                  />
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs text-white/55">Max referrals per gym</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.maxRedemptionsPerOrg)}
+                onChange={(event) => patch({ maxRedemptionsPerOrg: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Reward expires in (days)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.expiresInDays)}
+                onChange={(event) => patch({ expiresInDays: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ZookButton size="sm" onClick={() => void save()} disabled={saving}>
+              {saving ? "Saving..." : "Save referral policy"}
+            </ZookButton>
+            {notice ? <Pill tone={notice.tone}>{notice.message}</Pill> : null}
+          </div>
+        </div>
+      ) : notice ? (
+        <p className="mt-4 rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+          {notice.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function PlatformSubscriptionsSection() {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
@@ -2137,6 +2372,7 @@ function PlatformSubscriptionsSection() {
             columns={3}
           />
         ) : null}
+        <PlatformReferralPolicyCard />
         <div className="mt-5">
           {planCatalog ? (
             <div className="mb-5 grid gap-3 lg:grid-cols-3">
