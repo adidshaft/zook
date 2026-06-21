@@ -13,6 +13,39 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     requireDb();
   });
 
+  test("owner creates a membership plan from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const planName = `UI Created Plan ${Date.now().toString().slice(-6)}`;
+
+    await page.goto(`/dashboard/membership-plans?branchId=${branch.id}`);
+    await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByLabel("Plan name").fill(planName);
+    await page.getByLabel("Price").fill("2599");
+    await page.getByLabel("Duration days").fill("60");
+    await page.getByLabel("Visit limit").fill("20");
+    await page.getByRole("button", { name: "Create plan" }).click();
+
+    const planRow = page.getByRole("row", { name: new RegExp(planName) });
+    await expect(planRow).toBeVisible({ timeout: 15_000 });
+    await expect(planRow.getByText("₹2,599")).toBeVisible();
+    await expect(
+      prisma.membershipPlan.findFirst({
+        where: { orgId: org.id, branchId: branch.id, name: planName },
+      }),
+    ).resolves.toMatchObject({
+      pricePaise: 259900,
+      durationDays: 60,
+      visitLimit: 20,
+      publicVisible: true,
+    });
+  });
+
   test("owner edits, archives, and restores a membership plan", async ({ page }) => {
     test.setTimeout(150_000);
     await loginWithSessionCookie(page, "owner@zook.local");
@@ -162,6 +195,34 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     await expect(
       prisma.referralCode.findUnique({ where: { id: referral.data.referral.id } }),
     ).resolves.toMatchObject({ status: "paused" });
+  });
+
+  test("owner creates a coupon from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const code = `UI${Date.now().toString().slice(-6)}`;
+
+    await page.goto("/dashboard/plans/coupons");
+    await expect(page.getByRole("heading", { name: "Coupons" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByLabel("Coupon code").fill(code);
+    await page.getByLabel("Discount value").fill("12");
+    await page.getByLabel("Max uses").fill("9");
+    await page.getByRole("button", { name: "Create coupon" }).click();
+
+    await expect(page.getByText("Coupon created.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(code).first()).toBeVisible();
+    await expect(
+      prisma.coupon.findFirst({
+        where: { orgId: org.id, code },
+      }),
+    ).resolves.toMatchObject({
+      type: "PERCENTAGE",
+      valuePercentBps: 1200,
+      maxRedemptions: 9,
+      active: true,
+    });
   });
 
   test("plan duplicate and archived-filter UI controls are visible product gaps", async ({
