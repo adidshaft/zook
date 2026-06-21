@@ -127,15 +127,18 @@ export function StaffSection({
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-            <input
-              value={staffInvite.email}
-              onChange={(event) =>
-                setStaffInvite((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder="staff@example.com"
-              type="email"
-              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
-            />
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Staff email
+              <input
+                value={staffInvite.email}
+                onChange={(event) =>
+                  setStaffInvite((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder="staff@example.com"
+                type="email"
+                className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
+              />
+            </label>
             <SearchableSelect
               label="Role"
               value={staffInvite.role}

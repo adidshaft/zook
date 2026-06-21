@@ -98,6 +98,30 @@ test.describe("branches, staff, settings, and billing actions", () => {
     ).resolves.toBeNull();
   });
 
+  test("owner invites staff from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const inviteEmail = `staff-ui-invite-${Date.now()}@zook.local`;
+
+    await page.goto("/dashboard/staff");
+    await expect(page.getByText("Invite staff")).toBeVisible({ timeout: 30_000 });
+    await page.getByLabel("Staff email").fill(inviteEmail);
+    await page.getByLabel("Role").click();
+    await page.getByRole("option", { name: "Admin" }).click();
+    await page.getByRole("button", { name: "Invite staff" }).click();
+
+    await expect(page.getByText("Invite email sent. The sign-in link expires in 7 days.")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      prisma.staffInvitation.findFirst({
+        where: { orgId: org.id, email: inviteEmail, role: "ADMIN" },
+      }),
+    ).resolves.toMatchObject({
+      acceptedAt: null,
+    });
+  });
+
   test("owner changes staff role from the dashboard table", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
