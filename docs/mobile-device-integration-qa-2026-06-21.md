@@ -70,6 +70,13 @@ Follow-up guard added:
 - Production release checks can set `ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1` to fail if either live domain serves redirected, stale, incorrectly typed, or placeholder association files.
 - `docs/deployment.md` records this production release command.
 
+Local serving check:
+
+- Ran `pnpm --filter @zook/web dev` and curled both local paths from `http://localhost:3000`.
+- `/.well-known/apple-app-site-association` returned HTTP 200, no redirect, `Content-Type: application/json`, `appID: JP4HU7X6G7.com.zook.app`, and the expected `/checkin` paths.
+- `/.well-known/assetlinks.json` returned HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the real release SHA-256 fingerprint.
+- This confirms the current app code serves the association files correctly; the remaining mismatch is production deployment/static freshness.
+
 ## Device Availability Checks
 
 ### iOS
