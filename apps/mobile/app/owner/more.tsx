@@ -30,7 +30,6 @@ type MoreRow = {
 const webRows: MoreRow[] = [
   { title: "Branches", subtitle: "Locations and operating details", icon: "git-branch-outline", webPath: "/dashboard/branches" },
   { title: "Reports", subtitle: "Revenue, attendance, and member movement", icon: "document-text-outline", webPath: "/dashboard/reports" },
-  { title: "Attendance QR Console", subtitle: "Display and rotate entry QR codes", icon: "qr-code-outline", webPath: "/dashboard/attendance/qr-display" },
   { title: "Notification templates", subtitle: "Reusable message drafts", icon: "mail-outline", webPath: "/dashboard/notifications/templates" },
 ];
 
