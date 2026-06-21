@@ -34,6 +34,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
+import { AmenityGrid } from "@/components/domain/amenity-grid";
 import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
@@ -445,6 +446,11 @@ export default function GymProfileScreen() {
                   </View>
                 </View>
               ) : null}
+            </Card>
+
+            <SectionHeader eyebrow="At a glance" title="What's inside" />
+            <Card contentStyle={styles.amenityCard}>
+              <AmenityGrid sources={[...(gym.amenities ?? []), ...(gym.equipment ?? []), gym.gymType]} />
             </Card>
 
             {gallery.length ? (
@@ -948,6 +954,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   profileDetailsCard: {
+    gap: 10,
+  },
+  amenityCard: {
     gap: 10,
   },
   inlineChipBlock: {

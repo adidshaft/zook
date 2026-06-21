@@ -83,6 +83,36 @@ test.describe("platform admin actions", () => {
     ).toBe(403);
   });
 
+  test("platform referral policy persists in base units", async ({ page }) => {
+    await loginWithSessionCookie(page, "platform@zook.local");
+    await prisma.platformSetting.deleteMany({ where: { key: "platform.referralPolicy" } });
+
+    const policy = {
+      enabled: true,
+      referrerRewardType: "CREDIT_AMOUNT",
+      referrerRewardValue: 25000,
+      referredRewardType: "DISCOUNT_PERCENT",
+      referredRewardValue: 1500,
+      maxRedemptionsPerOrg: 12,
+      expiresInDays: 90,
+    };
+
+    const patched = await expectApiOk<{ policy: typeof policy; setting: { key: string } }>(
+      await page.request.patch("/api/platform/referral-policy", { data: policy }),
+    );
+    expect(patched.data.policy).toEqual(policy);
+    expect(patched.data.setting.key).toBe("platform.referralPolicy");
+
+    await expect(
+      prisma.platformSetting.findUnique({ where: { key: "platform.referralPolicy" } }),
+    ).resolves.toMatchObject({ value: policy });
+
+    const fetched = await expectApiOk<{ policy: typeof policy }>(
+      await page.request.get("/api/platform/referral-policy"),
+    );
+    expect(fetched.data.policy).toEqual(policy);
+  });
+
   test("platform operations exposes support, payments, broadcasts, moderation, and impersonations", async ({
     page,
   }) => {
