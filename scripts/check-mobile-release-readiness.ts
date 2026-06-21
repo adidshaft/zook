@@ -47,6 +47,186 @@ function hostnameForUrl(value: string) {
   }
 }
 
+function loadJsonFile<T>(path: string): T | undefined {
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+function validateAppleAppSiteAssociation(
+  payload: unknown,
+  label: string,
+  contentType?: string | null,
+): CheckResult {
+  const details =
+    typeof payload === "object" &&
+    payload !== null &&
+    "applinks" in payload &&
+    typeof payload.applinks === "object" &&
+    payload.applinks !== null &&
+    "details" in payload.applinks &&
+    Array.isArray(payload.applinks.details)
+      ? payload.applinks.details
+      : [];
+  const app = details.find(
+    (entry) =>
+      typeof entry === "object" &&
+      entry !== null &&
+      "appID" in entry &&
+      entry.appID === "JP4HU7X6G7.com.zook.app",
+  ) as { paths?: unknown } | undefined;
+  const paths = Array.isArray(app?.paths) ? app.paths : [];
+  const expectedPaths = ["/checkin", "/checkin/*", "/join/*", "/plans/*", "/shop/*", "/dashboard"];
+  const missingPaths = expectedPaths.filter((path) => !paths.includes(path));
+  const contentTypeOk = !contentType || contentType.toLowerCase().includes("application/json");
+  if (app && missingPaths.length === 0 && contentTypeOk) {
+    return pass(
+      label,
+      "AASA has the production Team ID, bundle ID, check-in paths, and JSON content type.",
+    );
+  }
+  return fail(
+    label,
+    [
+      app ? null : "missing appID JP4HU7X6G7.com.zook.app",
+      missingPaths.length ? `missing paths: ${missingPaths.join(", ")}` : null,
+      contentTypeOk ? null : `content-type is ${contentType}`,
+    ]
+      .filter(Boolean)
+      .join("; "),
+  );
+}
+
+function validateAssetLinks(
+  payload: unknown,
+  label: string,
+  contentType?: string | null,
+): CheckResult {
+  const entries = Array.isArray(payload) ? payload : [];
+  const target = entries.find(
+    (entry) =>
+      typeof entry === "object" &&
+      entry !== null &&
+      "target" in entry &&
+      typeof entry.target === "object" &&
+      entry.target !== null &&
+      "package_name" in entry.target &&
+      entry.target.package_name === "com.zook.app",
+  ) as { target?: { sha256_cert_fingerprints?: unknown } } | undefined;
+  const fingerprints = Array.isArray(target?.target?.sha256_cert_fingerprints)
+    ? target.target.sha256_cert_fingerprints
+    : [];
+  const validFingerprint = fingerprints.some(
+    (fingerprint) =>
+      typeof fingerprint === "string" &&
+      /^[0-9A-F]{2}(?::[0-9A-F]{2}){31}$/.test(fingerprint) &&
+      fingerprint !== "CODEX_FILL_SHA256_FROM_EAS",
+  );
+  const contentTypeOk = !contentType || contentType.toLowerCase().includes("application/json");
+  if (target && validFingerprint && contentTypeOk) {
+    return pass(label, "assetlinks.json has com.zook.app and a release SHA-256 fingerprint.");
+  }
+  return fail(
+    label,
+    [
+      target ? null : "missing com.zook.app target",
+      validFingerprint
+        ? null
+        : "missing real uppercase colon-separated release SHA-256 fingerprint",
+      contentTypeOk ? null : `content-type is ${contentType}`,
+    ]
+      .filter(Boolean)
+      .join("; "),
+  );
+}
+
+function checkLocalAssociationFiles(): CheckResult[] {
+  const aasa = loadJsonFile<unknown>(
+    resolve(rootDir, "apps/web/public/.well-known/apple-app-site-association"),
+  );
+  const assetLinks = loadJsonFile<unknown>(
+    resolve(rootDir, "apps/web/public/.well-known/assetlinks.json"),
+  );
+  return [
+    aasa
+      ? validateAppleAppSiteAssociation(aasa, "Local AASA")
+      : fail(
+          "Local AASA",
+          "apps/web/public/.well-known/apple-app-site-association is missing or invalid JSON.",
+        ),
+    assetLinks
+      ? validateAssetLinks(assetLinks, "Local assetlinks")
+      : fail(
+          "Local assetlinks",
+          "apps/web/public/.well-known/assetlinks.json is missing or invalid JSON.",
+        ),
+  ];
+}
+
+async function checkLiveAssociationFiles(webUrl: string): Promise<CheckResult[]> {
+  const results: CheckResult[] = [];
+  const hosts = Array.from(new Set([webUrl, "https://app.zookfit.in"]));
+  for (const host of hosts) {
+    const baseUrl = host.replace(/\/$/, "");
+    try {
+      const response = await fetch(`${baseUrl}/.well-known/apple-app-site-association`, {
+        method: "GET",
+        redirect: "manual",
+      });
+      if (response.status >= 300 && response.status < 400) {
+        results.push(fail(`Live AASA ${baseUrl}`, `redirected with ${response.status}.`));
+      } else if (!response.ok) {
+        results.push(fail(`Live AASA ${baseUrl}`, `returned ${response.status}.`));
+      } else {
+        results.push(
+          validateAppleAppSiteAssociation(
+            await response.json(),
+            `Live AASA ${baseUrl}`,
+            response.headers.get("content-type"),
+          ),
+        );
+      }
+    } catch (error) {
+      results.push(
+        fail(
+          `Live AASA ${baseUrl}`,
+          `could not be checked: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/.well-known/assetlinks.json`, {
+        method: "GET",
+        redirect: "manual",
+      });
+      if (response.status >= 300 && response.status < 400) {
+        results.push(fail(`Live assetlinks ${baseUrl}`, `redirected with ${response.status}.`));
+      } else if (!response.ok) {
+        results.push(fail(`Live assetlinks ${baseUrl}`, `returned ${response.status}.`));
+      } else {
+        results.push(
+          validateAssetLinks(
+            await response.json(),
+            `Live assetlinks ${baseUrl}`,
+            response.headers.get("content-type"),
+          ),
+        );
+      }
+    } catch (error) {
+      results.push(
+        fail(
+          `Live assetlinks ${baseUrl}`,
+          `could not be checked: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+    }
+  }
+  return results;
+}
+
 async function checkUrl(label: string, url: string, required = true): Promise<CheckResult> {
   try {
     const response = await fetch(url, { method: "GET", redirect: "follow" });
@@ -118,7 +298,10 @@ async function checkLiveReadiness(baseUrl: string): Promise<CheckResult[]> {
       results.push(
         provider?.status === "disabled"
           ? warn(`Live ${name}`, `${name} is intentionally disabled for this release.`)
-          : pass(`Live ${name}`, `${provider?.mode ?? "provider"} mode is ${provider?.status ?? "unknown"}.`),
+          : pass(
+              `Live ${name}`,
+              `${provider?.mode ?? "provider"} mode is ${provider?.status ?? "unknown"}.`,
+            ),
       );
     }
   } catch (error) {
@@ -135,7 +318,8 @@ async function checkLiveReadiness(baseUrl: string): Promise<CheckResult[]> {
 async function main() {
   loadOptionalEnvFile();
 
-  const target = env("ZOOK_MOBILE_RELEASE_TARGET") ?? env("ENV_PROFILE") ?? env("APP_ENV") ?? "production";
+  const target =
+    env("ZOOK_MOBILE_RELEASE_TARGET") ?? env("ENV_PROFILE") ?? env("APP_ENV") ?? "production";
   process.env.EXPO_PUBLIC_ENV_PROFILE ??= target;
   process.env.EAS_BUILD_PROFILE ??= target;
   process.env.EXPO_PUBLIC_API_MODE ??= "backend";
@@ -203,7 +387,10 @@ async function main() {
     process.env.EAS_BUILD_PLATFORM = previousBuildPlatform;
   }
   results.push(
-    pluginConfig(androidTargetConfig.plugins as ExpoPlugin[] | undefined, "expo-apple-authentication")
+    pluginConfig(
+      androidTargetConfig.plugins as ExpoPlugin[] | undefined,
+      "expo-apple-authentication",
+    )
       ? fail("Android Apple Sign In", "Android-targeted config must not include Apple Sign In.")
       : pass("Android Apple Sign In", "Android-targeted config excludes Apple Sign In."),
   );
@@ -219,8 +406,10 @@ async function main() {
       ? pass("Android app links", "Android intent filters are configured.")
       : fail("Android app links", "Android app links are missing."),
   );
+  results.push(...checkLocalAssociationFiles());
   results.push(
-    extra.pushEnvironment === (isProduction ? "production" : target === "staging" ? "preview" : "development")
+    extra.pushEnvironment ===
+      (isProduction ? "production" : target === "staging" ? "preview" : "development")
       ? pass("Push environment", `Push environment resolves to ${extra.pushEnvironment}.`)
       : fail("Push environment", "Push environment does not match release target."),
   );
@@ -313,10 +502,15 @@ async function main() {
     );
   }
 
-  const externalEvidenceChecklistPath = resolve(rootDir, "docs/mobile-ui-cleanup-external-evidence-checklist.md");
+  const externalEvidenceChecklistPath = resolve(
+    rootDir,
+    "docs/mobile-ui-cleanup-external-evidence-checklist.md",
+  );
   if (existsSync(externalEvidenceChecklistPath)) {
     const externalEvidenceChecklist = readFileSync(externalEvidenceChecklistPath, "utf8");
-    results.push(pass("External evidence checklist", "Mobile cleanup external evidence checklist exists."));
+    results.push(
+      pass("External evidence checklist", "Mobile cleanup external evidence checklist exists."),
+    );
     for (const phrase of [
       "Live Razorpay Membership Checkout",
       "Live Razorpay Shop Order",
@@ -329,7 +523,10 @@ async function main() {
       results.push(
         externalEvidenceChecklist.includes(phrase)
           ? pass("External evidence checklist", `${phrase} is tracked.`)
-          : fail("External evidence checklist", `${phrase} is missing from the external evidence checklist.`),
+          : fail(
+              "External evidence checklist",
+              `${phrase} is missing from the external evidence checklist.`,
+            ),
       );
     }
   } else {
@@ -341,7 +538,10 @@ async function main() {
     );
   }
 
-  const certification = readFileSync(resolve(rootDir, "docs/production-provider-certification.md"), "utf8");
+  const certification = readFileSync(
+    resolve(rootDir, "docs/production-provider-certification.md"),
+    "utf8",
+  );
   for (const phrase of [
     "iOS physical device receives foreground notification",
     "Android physical device receives foreground notification",
@@ -364,6 +564,9 @@ async function main() {
 
   if (isProduction && isAbsoluteHttpUrl(webUrl)) {
     results.push(...(await checkLiveReadiness(webUrl)));
+  }
+  if (env("ZOOK_CHECK_LIVE_ASSOCIATION_FILES") === "1" && isAbsoluteHttpUrl(webUrl)) {
+    results.push(...(await checkLiveAssociationFiles(webUrl)));
   }
 
   if (!env("ZOOK_REAL_DEVICE_PUSH_EVIDENCE")) {

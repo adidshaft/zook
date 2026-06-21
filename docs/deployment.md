@@ -129,6 +129,14 @@ set -a; source .env; set +a; pnpm --filter @zook/db exec prisma validate --schem
 10. Build and install the mobile preview/production candidate only after release preflight and Expo public config checks pass.
 11. Record the exact build, commit, env, provider modes, and failed/skipped checks in `docs/PRODUCTION_READINESS_HANDOFF.md`.
 
+For production mobile releases, run the mobile release check with live association-file validation enabled after the web deploy is live:
+
+```bash
+ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1 pnpm mobile:release:check
+```
+
+This fails if `/.well-known/apple-app-site-association` or `/.well-known/assetlinks.json` is redirected, stale, missing the Zook signing identity, missing `/checkin` paths, or served with the wrong JSON content type.
+
 Do not mark a provider production-certified unless its staging/device evidence is attached to the release notes or QA log.
 
 ## Environment Matrix

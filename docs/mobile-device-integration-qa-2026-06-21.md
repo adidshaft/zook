@@ -64,6 +64,12 @@ Local repo state is corrected, but the live domains are not serving the correcte
 
 `apps/web/next.config.ts` defines JSON headers for both `.well-known` files, and `apps/web/middleware.ts` does not redirect these paths. The live `application/octet-stream` AASA response appears to come from the currently deployed/static-served artifact rather than the current local Next config.
 
+Follow-up guard added:
+
+- `scripts/check-mobile-release-readiness.ts` now validates local AASA/assetlinks content on every mobile release check.
+- Production release checks can set `ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1` to fail if either live domain serves redirected, stale, incorrectly typed, or placeholder association files.
+- `docs/deployment.md` records this production release command.
+
 ## Device Availability Checks
 
 ### iOS
