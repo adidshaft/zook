@@ -27,6 +27,10 @@ function orderDeskNote(order: ShopOrderRow) {
   return "Review order";
 }
 
+function canRefundOrder(order: ShopOrderRow) {
+  return Boolean(order.paymentId && ["READY_FOR_PICKUP", "FULFILLED"].includes(order.status));
+}
+
 export function ShopOrdersSection({
   orgId,
   shopOrders,
@@ -45,7 +49,9 @@ export function ShopOrdersSection({
         eyebrow="Orders"
         title={copy.title}
         description={copy.description}
-        badge={<Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} pickup</Pill>}
+        badge={
+          <Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} pickup</Pill>
+        }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
       <ManagedOn surface="desk" className="mt-4">
@@ -108,12 +114,15 @@ export function ShopOrdersSection({
                 align: "right",
                 render: (order) =>
                   order.status === "READY_FOR_PICKUP" ? (
-                    <Link
-                      href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
-                      className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
-                    >
-                      Open in Desk
-                    </Link>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Link
+                        href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
+                        className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
+                      >
+                        Open in Desk
+                      </Link>
+                      {canRefundOrder(order) ? <RefundOrderLink order={order} /> : null}
+                    </div>
                   ) : order.status === "PENDING_PAYMENT" && !order.paymentId ? (
                     <ShopOrderPaymentControl
                       orgId={orgId}
@@ -125,7 +134,10 @@ export function ShopOrdersSection({
                       }}
                     />
                   ) : order.status === "FULFILLED" ? (
-                    <span className="text-xs text-white/35">Already fulfilled</span>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <span className="text-xs text-white/35">Already fulfilled</span>
+                      {canRefundOrder(order) ? <RefundOrderLink order={order} /> : null}
+                    </div>
                   ) : order.status === "CANCELLED" ? (
                     <span className="text-xs text-white/35">Cancelled</span>
                   ) : (
@@ -140,5 +152,17 @@ export function ShopOrdersSection({
         )}
       </div>
     </GlassCard>
+  );
+}
+
+function RefundOrderLink({ order }: { order: ShopOrderRow }) {
+  if (!order.paymentId) return null;
+  return (
+    <Link
+      href={`/dashboard/payments?search=${encodeURIComponent(order.paymentId)}`}
+      className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
+    >
+      Refund order
+    </Link>
   );
 }
