@@ -38,7 +38,7 @@ const REGISTRY: Record<
   (props: DashboardOperationalPanelProps, controller: any) => React.ReactNode
 > = {
   "public-profile": (props) => <GymProfileSetupPanel orgId={props.orgId} />,
-  "attendance": (props, c) => (
+  attendance: (props, c) => (
     <AttendancePanel
       orgId={props.orgId}
       organization={props.organization}
@@ -49,7 +49,7 @@ const REGISTRY: Record<
       attendanceState={c.attendanceState}
     />
   ),
-  "notifications": (props) => (
+  notifications: (props) => (
     <NotificationsPanel
       orgId={props.orgId}
       organization={props.organization}
@@ -79,7 +79,7 @@ const REGISTRY: Record<
       view="history"
     />
   ),
-  "members": (props, c) => (
+  members: (props, c) => (
     <MembersPage
       view="members"
       orgId={props.orgId}
@@ -119,7 +119,7 @@ const REGISTRY: Record<
       planNamesById={c.planNamesById}
     />
   ),
-  "shop": (props, c) => (
+  shop: (props, c) => (
     <ShopSection
       view={props.shopView ?? "products"}
       orgId={props.orgId}
@@ -150,7 +150,7 @@ const REGISTRY: Record<
       deleteProduct={c.deleteProduct}
     />
   ),
-  "staff": (props, c) => (
+  staff: (props, c) => (
     <StaffSection
       organization={props.organization}
       staffInvite={c.staffInvite}
@@ -179,7 +179,7 @@ const REGISTRY: Record<
   "plan-coupons": (props, c) => <CouponsRouteSection {...c} />,
   "plan-offers": (props, c) => <OffersRouteSection {...c} />,
   "plan-referrals": (props, c) => <ReferralsRouteSection {...c} />,
-  "plans": (props, c) => (
+  plans: (props, c) => (
     <PlansSection
       membershipPlans={c.membershipPlans}
       membershipPlansState={c.membershipPlansState}
@@ -203,7 +203,7 @@ const REGISTRY: Record<
       deleteMembershipPlan={c.deleteMembershipPlan}
     />
   ),
-  "branches": (props, c) => (
+  branches: (props, c) => (
     <BranchesSection
       branches={c.branches}
       branchesState={c.branchesState}
@@ -226,7 +226,7 @@ const REGISTRY: Record<
       deactivateBranch={c.deactivateBranch}
     />
   ),
-  "payments": (props, c) => (
+  payments: (props, c) => (
     <PaymentsPanel
       orgId={props.orgId}
       summary={props.summary}
@@ -243,10 +243,10 @@ const REGISTRY: Record<
   "payment-refunds": (props, c) => (
     <RefundsSection payments={c.payments} onRefundSubmitted={c.paymentsState.reload} />
   ),
-  "billing": (props) => (
+  billing: (props) => (
     <BillingSection orgId={props.orgId} organization={props.organization} summary={props.summary} />
   ),
-  "settings": (props) => (
+  settings: (props) => (
     <SettingsSection
       orgId={props.orgId}
       organization={props.organization}
@@ -255,7 +255,7 @@ const REGISTRY: Record<
       permissions={props.permissions ?? []}
     />
   ),
-  "reports": (props, c) => (
+  reports: (props, c) => (
     <ReportsPanel
       organization={props.organization}
       summary={props.summary}
@@ -265,7 +265,7 @@ const REGISTRY: Record<
       auditLogCount={props.auditLogCount}
     />
   ),
-  "audit": (props, c) => (
+  audit: (props, c) => (
     <AuditPanel
       orgId={props.orgId}
       auditLogs={c.auditLogs}
@@ -276,8 +276,9 @@ const REGISTRY: Record<
       misconfiguredAiCount={c.misconfiguredAiCount}
     />
   ),
-  "ai": (props, c) => (
+  ai: (props, c) => (
     <AiPanel
+      orgId={props.orgId}
       summary={props.summary}
       aiUsage={c.aiUsage}
       aiUsageState={c.aiUsageState}
@@ -387,11 +388,7 @@ export function PlansDashboardRoute(props: DashboardRoutePanelBaseProps) {
 
 export function BillingDashboardRoute(props: DashboardRoutePanelBaseProps) {
   return (
-    <BillingSection
-      orgId={props.orgId}
-      organization={props.organization}
-      summary={props.summary}
-    />
+    <BillingSection orgId={props.orgId} organization={props.organization} summary={props.summary} />
   );
 }
 

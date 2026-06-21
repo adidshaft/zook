@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@zook/db";
-import { completeMockCheckout, expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
+import {
+  completeMockCheckout,
+  expectApiOk,
+  loginWithSessionCookie,
+  seedAndGetOrg,
+} from "./helpers";
 import { requireDb } from "./helpers/db";
 
 test.describe("misc dashboard actions", () => {
@@ -102,7 +107,9 @@ test.describe("misc dashboard actions", () => {
     const hours = "Mon-Sat, 6 AM - 10 PM";
 
     await page.goto("/dashboard/public-profile");
-    await expect(page.getByRole("heading", { name: "Gym profile and membership links" })).toBeVisible({
+    await expect(
+      page.getByRole("heading", { name: "Gym profile and membership links" }),
+    ).toBeVisible({
       timeout: 30_000,
     });
     await page.getByLabel("Public tagline").fill(tagline);
@@ -310,7 +317,9 @@ test.describe("misc dashboard actions", () => {
     });
 
     await completeMockCheckout(page, upgrade.data.session.id);
-    await expect(prisma.saaSSubscription.findUnique({ where: { orgId: org.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.saaSSubscription.findUnique({ where: { orgId: org.id } }),
+    ).resolves.toMatchObject({
       status: "ACTIVE",
       tier: "STARTER",
       billingCycle: "MONTHLY",
@@ -333,16 +342,28 @@ test.describe("misc dashboard actions", () => {
     expect(cancellation.data.subscription.cancelledAt).toBeTruthy();
   });
 
-  test("owner-facing AI prompt box and save-draft action are visible product gaps", async ({
-    page,
-  }) => {
-    test.fail(
-      true,
-      "The dashboard currently renders AI as read-only preview; keep this visible until prompt/save-draft ships.",
-    );
+  test("owner saves an assistant draft from the dashboard AI prompt", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    await prisma.featureFlag.upsert({
+      where: { key: "ai.assistant" },
+      create: { key: "ai.assistant", enabled: true, rolloutPercent: 100 },
+      update: { enabled: true, rolloutPercent: 100 },
+    });
+    const promptMarker = `PW-AI-DRAFT-${Date.now()}`;
+    const prompt = `${promptMarker} Save an owner dashboard retention follow-up for member renewals.`;
+
     await page.goto("/dashboard/ai");
-    expect(await page.getByRole("textbox", { name: /prompt|message/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /save draft/i }).count()).toBeGreaterThan(0);
+    await page.getByRole("textbox", { name: /assistant prompt/i }).fill(prompt);
+    await page.getByRole("button", { name: /save draft/i }).click();
+    await expect(page.getByText("Assistant draft saved.")).toBeVisible({ timeout: 20_000 });
+    await expect(
+      prisma.aIUsageLog.findFirst({
+        where: { orgId: org.id, promptSummary: { startsWith: prompt.slice(0, 80) } },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(page.getByRole("row", { name: new RegExp(promptMarker) })).toBeVisible({
+      timeout: 20_000,
+    });
   });
 });
