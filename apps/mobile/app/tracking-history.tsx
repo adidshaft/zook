@@ -93,7 +93,7 @@ export default function TrackingHistoryScreen() {
                     </View>
                   </>
                 ) : (
-                  <EmptyState title="No body measurements" />
+                  <EmptyState icon="body-outline" title="No body measurements" body="Log your measurements to see your trends over time." />
                 )}
               </Card>
             ) : null}
@@ -102,7 +102,7 @@ export default function TrackingHistoryScreen() {
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
               <Card variant="compact">
-                <EmptyState title="No workouts" />
+                <EmptyState icon="barbell-outline" title="No workouts yet" body="Your logged workouts will show up here." />
               </Card>
             ) : null}
           </View>

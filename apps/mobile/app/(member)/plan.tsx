@@ -124,7 +124,7 @@ export default function MemberPlanScreen() {
                   </Card>
                 ) : !plansQuery.isLoading ? (
                   <Card variant="compact">
-                    <EmptyState title="No plan assigned" />
+                    <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign a workout plan here." />
                   </Card>
                 ) : null}
               </AnimatedAppear>

@@ -66,7 +66,7 @@ export default function OwnerStockScreen() {
             {!dashboardQuery.isError && lowStock.length
               ? lowStock.map((product) => <StockRow key={product.id} product={product} onReorder={() => void reorderProduct(product)} />)
               : null}
-            {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" /> : null}
+            {!dashboardQuery.isError && !lowStock.length ? <EmptyState icon="cube-outline" title="All products in stock" body="Items running low on inventory will appear here." /> : null}
           </Card>
           <SectionHeader title="Pickup orders" />
           <Card contentStyle={styles.stack}>
@@ -86,7 +86,7 @@ export default function OwnerStockScreen() {
                   />
                 ))
               : null}
-            {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" /> : null}
+            {!ordersQuery.isError && !orders.length ? <EmptyState icon="bag-handle-outline" title="No pickups waiting" body="Paid shop orders awaiting collection will appear here." /> : null}
           </Card>
         </KeyboardAwareScreen>
       </ZookScreen>

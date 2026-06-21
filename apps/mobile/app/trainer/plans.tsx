@@ -74,7 +74,7 @@ export default function TrainerPlansScreen() {
             ) : plannedClients.length ? (
               plannedClients.map((client) => <PlanRow key={client.id ?? client.memberUserId} client={client} />)
             ) : (
-              <EmptyState title="No active plan work" />
+              <EmptyState icon="clipboard-outline" title="No active plan work" body="Clients who need a plan or an update will appear here." />
             )}
           </View>
         </ScrollView>

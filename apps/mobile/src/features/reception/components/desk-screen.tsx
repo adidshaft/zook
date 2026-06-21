@@ -146,7 +146,7 @@ export function ReceptionDeskScreenBody() {
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <EmptyState title="No scans" />
+                <EmptyState icon="scan-outline" title="No check-ins yet" body="Member check-ins for today will appear here." />
               ) : null}
               {recentScans.map((scan) => {
                 const statusTone = toneForAttendanceStatus(scan.status);

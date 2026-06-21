@@ -440,7 +440,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <EmptyState title="No notifications" />
+                <EmptyState icon="notifications-outline" title="You're all caught up" body="New alerts about your membership, classes and coaching land here." />
               ) : null}
             </View>
           }

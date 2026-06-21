@@ -119,7 +119,7 @@ export default function TrainerHomeScreen() {
                   />
                 </Pressable>
               ) : (
-                <EmptyState title="No coaching actions today" />
+                <EmptyState icon="checkmark-done-outline" title="No coaching actions today" body="You're on top of your clients. New tasks will show up here." />
               )}
             </Card>
           </AnimatedAppear>
@@ -178,7 +178,7 @@ export default function TrainerHomeScreen() {
               />
             ) : (
               <Card variant="compact" contentStyle={styles.stack}>
-                <EmptyState title="Plan queue clear" />
+                <EmptyState icon="clipboard-outline" title="Plan queue clear" body="Every client has an active plan. Nice work." />
               </Card>
             )}
           </AnimatedAppear>
@@ -243,7 +243,7 @@ export default function TrainerHomeScreen() {
                 </Pressable>
               ))
             ) : (
-              <EmptyState title="No recent feedback" />
+              <EmptyState icon="chatbubble-ellipses-outline" title="No recent feedback" body="Client workout feedback will appear here." />
             )}
             </Card>
           </AnimatedAppear>

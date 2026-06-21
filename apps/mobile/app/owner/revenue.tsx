@@ -156,7 +156,7 @@ export default function OwnerRevenueScreen() {
                     ))
                   : null}
                 {!dashboardQuery.isError && !paymentsQuery.isError && !ordersQuery.isError && !payments.length && !orders.length ? (
-                  <EmptyState title="No payments" />
+                  <EmptyState icon="receipt-outline" title="No payments yet" body="Payments and shop pickups will appear here as they come in." />
                 ) : null}
               </Card>
             </>

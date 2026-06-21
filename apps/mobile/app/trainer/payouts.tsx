@@ -65,7 +65,7 @@ export default function TrainerPayoutsScreen() {
                     <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
                   ))
                 ) : (
-                  <EmptyState title="No earnings" />
+                  <EmptyState icon="cash-outline" title="No earnings yet" body="Your PT commissions and class payouts will show up here." />
                 )}
               </Card>
             </>
