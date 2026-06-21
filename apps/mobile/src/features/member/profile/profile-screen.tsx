@@ -508,6 +508,24 @@ export default function ProfileScreen() {
             </View>
           ) : null}
 
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Refer a gym to Zook and earn"
+            onPress={() => router.push("/rewards" as never)}
+            style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}
+          >
+            <Card variant="compact" contentStyle={styles.referGymRow}>
+              <IconBubble icon="gift" tone="lime" size={42} />
+              <View style={styles.referGymCopy}>
+                <Text style={[styles.referGymTitle, { color: palette.text.primary }]}>Refer a gym & earn cash</Text>
+                <Text style={[styles.referGymBody, { color: palette.text.secondary }]} numberOfLines={2}>
+                  Earn when a gym you refer subscribes to Zook on a 6-month or yearly plan.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />
+            </Card>
+          </Pressable>
+
           <View onLayout={(event) => rememberSection("identity", event)}>
             <Card contentStyle={styles.identityCard}>
               <ProfilePhotoControl
@@ -791,6 +809,22 @@ const styles = StyleSheet.create({
   },
   referralBenefit: {
     ...typography.body,
+  },
+  referGymRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  referGymCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  referGymTitle: {
+    ...typography.cardTitle,
+  },
+  referGymBody: {
+    ...typography.small,
   },
   membershipCard: {
     gap: spacing.md,

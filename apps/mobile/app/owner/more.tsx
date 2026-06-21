@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr" | "/rewards";
   webPath?: string;
   visible?: boolean;
 };
@@ -79,9 +79,16 @@ export default function OwnerMoreScreen() {
       visible: canManageCoupons,
     },
     {
+      title: "Refer a gym & earn",
+      subtitle: "Get free Zook days when a gym you refer subscribes",
+      icon: "gift-outline",
+      testID: "owner-more-rewards",
+      href: "/rewards",
+    },
+    {
       title: "Referral program",
       subtitle: "Set rewards for members, trainers & gym referrals",
-      icon: "gift-outline",
+      icon: "ribbon-outline",
       testID: "owner-more-referrals",
       href: "/owner/referrals",
       visible: canManageReferrals,

@@ -492,6 +492,7 @@ function LayoutContent() {
           options={{ presentation: "modal", animation: "slide_from_bottom", title: "Attendance" }}
         />
         <Stack.Screen name="checkin" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="rewards" options={{ animation: "slide_from_right", headerShown: false }} />
       </Stack>
       <ToastHost />
     </>

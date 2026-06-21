@@ -5,7 +5,7 @@ import {
   getDemoActiveCheckIn,
   startDemoCheckIn,
 } from "./demo-member-home";
-import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoSession } from "./demo-mode";
+import { DEMO_MEMBER_EMAIL, DEMO_MEMBER_PHONE, getOfflineDemoRoleOverride, getOfflineDemoSession } from "./demo-mode";
 
 const DEMO_SEEDED_IDENTIFIERS = new Set([
   DEMO_MEMBER_EMAIL,
@@ -1968,6 +1968,60 @@ export function createDemoTransport(): DemoTransport {
   };
 }
 
+// --- Referral rewards wallet (offline demo, stateful) ----------------------
+let demoWithdrawalRequestedPaise = 0;
+
+function demoIsOwnerRole(role?: string | null) {
+  const resolved = (role ?? getOfflineDemoRoleOverride()).toUpperCase();
+  return resolved === "OWNER" || resolved === "ADMIN";
+}
+
+function demoRewardsWallet(role?: string | null) {
+  // Gym owners earn Zook subscription days (not cash), so their cash wallet is empty.
+  if (demoIsOwnerRole(role)) {
+    return { balancePaise: 0, pendingPaise: 0, payablePaise: 0, lifetimePaise: 0, currency: "INR", entries: [] };
+  }
+  const basePayable = 250000;
+  const payablePaise = Math.max(0, basePayable - demoWithdrawalRequestedPaise);
+  const entries: Array<Record<string, unknown>> = [
+    { id: "rw-1", kind: "GYM_TO_ZOOK_CASH", label: "Referred FitZone Andheri", amountPaise: 250000, status: "PAYABLE", createdAt: hoursAgoIso(24 * 20), referredName: "FitZone Andheri" },
+    { id: "rw-2", kind: "GYM_TO_ZOOK_CASH", label: "Referred Pulse Gym", amountPaise: 150000, status: "QUALIFIED", createdAt: hoursAgoIso(24 * 8), referredName: "Pulse Gym" },
+    { id: "rw-3", kind: "MEMBER_TO_GYM_CASH", label: "Referred Aarav (new member)", amountPaise: 50000, status: "PAID", createdAt: hoursAgoIso(24 * 40), referredName: "Aarav S" },
+    { id: "rw-4", kind: "GYM_TO_ZOOK_CASH", label: "Iron House (refunded)", amountPaise: 200000, status: "REVERSED", createdAt: hoursAgoIso(24 * 55), referredName: "Iron House" },
+  ];
+  if (demoWithdrawalRequestedPaise > 0) {
+    entries.unshift({ id: "rw-wd", kind: "WITHDRAWAL", label: "Withdrawal requested", amountPaise: -demoWithdrawalRequestedPaise, status: "REQUESTED", createdAt: nowIso() });
+  }
+  return {
+    balancePaise: payablePaise,
+    pendingPaise: 150000,
+    payablePaise,
+    lifetimePaise: 650000,
+    currency: "INR",
+    entries,
+  };
+}
+
+function demoGymReferral(role?: string | null) {
+  const isOwner = demoIsOwnerRole(role);
+  const code = isOwner ? "AAROGYA-GYM" : "NISHA-ZK";
+  return {
+    code,
+    shareUrl: `https://zookfit.in/r/${code}`,
+    qualifyingCycles: ["6-month", "Yearly"],
+    ...(isOwner ? { rewardDays: 30 } : { rewardPaise: 250000 }),
+    terms: isOwner
+      ? "Earn 30 free days of Zook when a gym you refer subscribes to a 6-month or yearly plan."
+      : "Earn ₹2,500 when a gym you refer subscribes to a 6-month or yearly plan. Paid out after a short review window.",
+  };
+}
+
+function demoRequestWithdrawal(body: Record<string, unknown>) {
+  const amount = Number(body.amountPaise) || 0;
+  demoWithdrawalRequestedPaise += amount;
+  return { withdrawal: { id: `wd-${Date.now()}`, amountPaise: amount, status: "REQUESTED", createdAt: nowIso() } };
+}
+
 let demoFreshGym = false;
 export function setDemoFreshGym(on: boolean) {
   demoFreshGym = on;
@@ -2082,6 +2136,16 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/me/coaching") {
     return demoMemberCoaching() as T;
+  }
+
+  if (pathname === "/me/rewards/wallet") {
+    return demoRewardsWallet(parsed.searchParams.get("role")) as T;
+  }
+  if (pathname === "/me/rewards/gym-referral") {
+    return demoGymReferral(parsed.searchParams.get("role")) as T;
+  }
+  if (pathname === "/me/rewards/withdrawals" && method === "POST") {
+    return demoRequestWithdrawal(demoBody(init)) as T;
   }
 
   if (pathname === "/me/badges") {
