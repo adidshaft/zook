@@ -17,6 +17,19 @@ type TrainerOption = {
   name: string;
 };
 
+type ClassRosterRow = {
+  memberId: string;
+  name: string;
+  status: string;
+  enrolledAt: string;
+};
+
+type ClassRosterState = {
+  loading: boolean;
+  error: string;
+  roster: ClassRosterRow[];
+};
+
 type ClassesDashboardRouteProps = {
   orgId: string;
   branchScope: BranchScopeSnapshot;
@@ -70,6 +83,8 @@ export function ClassesDashboardRoute({
   const defaultTrainerId =
     (canManageAllTrainers ? trainerOptions[0]?.id : currentUserId) ?? trainerOptions[0]?.id ?? "";
   const [form, setForm] = useState(() => defaultClassForm(defaultTrainerId));
+  const [openRosterId, setOpenRosterId] = useState<string | null>(null);
+  const [rosters, setRosters] = useState<Record<string, ClassRosterState>>({});
   const classesQuery = useClasses(orgId, selectedBranchId);
   const classes = classesQuery.data?.classes ?? [];
   const createClassMutation = useMutation({
@@ -106,6 +121,35 @@ export function ClassesDashboardRoute({
         : trainerOptions.filter((trainer) => trainer.id === currentUserId),
     [canManageAllTrainers, currentUserId, trainerOptions],
   );
+  const loadRoster = async (classId: string) => {
+    setOpenRosterId((current) => (current === classId ? null : classId));
+    if (rosters[classId]?.roster.length || rosters[classId]?.loading) {
+      return;
+    }
+
+    setRosters((current) => ({
+      ...current,
+      [classId]: { loading: true, error: "", roster: current[classId]?.roster ?? [] },
+    }));
+    try {
+      const payload = await webApiFetch<{ roster: ClassRosterRow[] }>(
+        `/api/orgs/${orgId}/classes/${classId}/roster`,
+      );
+      setRosters((current) => ({
+        ...current,
+        [classId]: { loading: false, error: "", roster: payload.roster },
+      }));
+    } catch (error) {
+      setRosters((current) => ({
+        ...current,
+        [classId]: {
+          loading: false,
+          error: error instanceof Error ? error.message : "Roster could not load.",
+          roster: current[classId]?.roster ?? [],
+        },
+      }));
+    }
+  };
 
   return (
     <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
@@ -270,55 +314,122 @@ export function ClassesDashboardRoute({
             </GlassCard>
           ) : null}
           {classes.map((entry) => (
-            <div
+            <ClassScheduleCard
               key={entry.id}
-              className="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface)] p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                      {entry.name}
-                    </h3>
-                    <Pill tone="neutral">{formatEnumLabel(entry.classType)}</Pill>
-                    <StatusPill value={entry.status} tone={classStatusTone(entry.status)} />
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                    {formatDateTime(entry.startTime)} to {formatDateTime(entry.endTime)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                  <Pill>
-                    <Users className="h-3.5 w-3.5" />
-                    {entry.enrollmentCount}/{entry.maxCapacity}
-                  </Pill>
-                  <Pill tone="neutral">
-                    <UserRound className="h-3.5 w-3.5" />
-                    {entry.trainerName ?? "Trainer pending"}
-                  </Pill>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)] md:grid-cols-2">
-                <p>
-                  Branch:{" "}
-                  <span className="text-[var(--text-primary)]">
-                    {entry.branchName ?? selectedBranchName}
-                  </span>
-                </p>
-                <p>
-                  Remaining spots:{" "}
-                  <span className="text-[var(--text-primary)]">{entry.remainingCapacity}</span>
-                </p>
-              </div>
-              {entry.description ? (
-                <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
-                  {entry.description}
-                </p>
-              ) : null}
-            </div>
+              entry={entry}
+              selectedBranchName={selectedBranchName}
+              rosterState={rosters[entry.id]}
+              rosterOpen={openRosterId === entry.id}
+              onToggleRoster={() => void loadRoster(entry.id)}
+            />
           ))}
         </div>
       </GlassCard>
+    </div>
+  );
+}
+
+function ClassScheduleCard({
+  entry,
+  selectedBranchName,
+  rosterState,
+  rosterOpen,
+  onToggleRoster,
+}: {
+  entry: ClassRow;
+  selectedBranchName: string;
+  rosterState?: ClassRosterState | undefined;
+  rosterOpen: boolean;
+  onToggleRoster: () => void;
+}) {
+  return (
+    <div className="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              {entry.name}
+            </h3>
+            <Pill tone="neutral">{formatEnumLabel(entry.classType)}</Pill>
+            <StatusPill value={entry.status} tone={classStatusTone(entry.status)} />
+          </div>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            {formatDateTime(entry.startTime)} to {formatDateTime(entry.endTime)}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <Pill>
+            <Users className="h-3.5 w-3.5" />
+            {entry.enrollmentCount}/{entry.maxCapacity}
+          </Pill>
+          <Pill tone="neutral">
+            <UserRound className="h-3.5 w-3.5" />
+            {entry.trainerName ?? "Trainer pending"}
+          </Pill>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)] md:grid-cols-2">
+        <p>
+          Branch:{" "}
+          <span className="text-[var(--text-primary)]">
+            {entry.branchName ?? selectedBranchName}
+          </span>
+        </p>
+        <p>
+          Remaining spots:{" "}
+          <span className="text-[var(--text-primary)]">{entry.remainingCapacity}</span>
+        </p>
+      </div>
+      {entry.description ? (
+        <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
+          {entry.description}
+        </p>
+      ) : null}
+      <div className="mt-4 flex justify-end">
+        <ZookButton type="button" size="sm" tone="ghost" onClick={onToggleRoster}>
+          {rosterOpen ? "Hide roster" : "View roster"}
+        </ZookButton>
+      </div>
+      {rosterOpen ? (
+        <div className="mt-4 rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Class roster</p>
+            <Pill tone="neutral">{rosterState?.roster.length ?? 0} members</Pill>
+          </div>
+          {rosterState?.loading ? (
+            <div className="mt-4 grid gap-2" aria-label="Loading class roster">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="h-10 animate-pulse rounded-2xl bg-[var(--surface)]" />
+              ))}
+            </div>
+          ) : null}
+          {rosterState?.error ? (
+            <p className="mt-4 rounded-2xl border border-[color-mix(in_srgb,var(--feedback-danger)_34%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]">
+              {rosterState.error}
+            </p>
+          ) : null}
+          {!rosterState?.loading && !rosterState?.error && !rosterState?.roster.length ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-[var(--border)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+              No members enrolled yet.
+            </p>
+          ) : null}
+          {rosterState?.roster.length ? (
+            <div className="mt-4 divide-y divide-[var(--border-subtle)]">
+              {rosterState.roster.map((member) => (
+                <div key={member.memberId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{member.name}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                      Enrolled {formatDateTime(member.enrolledAt)}
+                    </p>
+                  </div>
+                  <StatusPill value={member.status} />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

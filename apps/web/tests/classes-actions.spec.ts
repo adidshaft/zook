@@ -183,5 +183,13 @@ test.describe("classes actions", () => {
         expect.objectContaining({ memberId: member.id, name: member.name, status: "confirmed" }),
       ]),
     );
+
+    await page.goto(`/dashboard/classes?branchId=${branch.id}`);
+    const classCard = page.locator("div", { hasText: `Roster Test ${suffix}` }).first();
+    await expect(classCard).toBeVisible({ timeout: 30_000 });
+    await classCard.getByRole("button", { name: /view roster/i }).click();
+    await expect(classCard.getByText("Class roster")).toBeVisible();
+    await expect(classCard.getByText(member.name ?? member.email!)).toBeVisible();
+    await expect(classCard.getByText(/confirmed/i)).toBeVisible();
   });
 });

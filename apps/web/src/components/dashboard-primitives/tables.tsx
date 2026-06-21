@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { EmptyState } from "./feedback";
 import { fadeUpVariants } from "./layout";
 
 type DataTableColumn<Row> = {
@@ -18,6 +19,8 @@ export function DataTable<Row>({
   rows,
   rowKey,
   empty,
+  loading = false,
+  loadingLabel = "Loading rows",
   caption,
   className,
 }: {
@@ -25,9 +28,13 @@ export function DataTable<Row>({
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  loading?: boolean | undefined;
+  loadingLabel?: string | undefined;
   caption?: string | undefined;
   className?: string | undefined;
 }) {
+  const emptyState = normalizeTableEmptyState(empty);
+
   return (
     <motion.div
       variants={fadeUpVariants}
@@ -60,7 +67,9 @@ export function DataTable<Row>({
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)]">
-          {rows.length ? (
+          {loading && !rows.length ? (
+            <TableLoadingRows columns={columns.length} label={loadingLabel} />
+          ) : rows.length ? (
             rows.map((row) => (
               <tr key={rowKey(row)} className="align-top transition-colors duration-200 hover:bg-[var(--bg-sunken)]">
                 {columns.map((column) => (
@@ -84,7 +93,7 @@ export function DataTable<Row>({
           ) : (
             <tr>
               <td className="px-4 py-5 text-[var(--text-tertiary)]" colSpan={columns.length}>
-                {empty}
+                {emptyState}
               </td>
             </tr>
           )}
@@ -99,6 +108,8 @@ export function VirtualizedDataTable<Row>({
   rows,
   rowKey,
   empty,
+  loading = false,
+  loadingLabel = "Loading rows",
   caption,
   className,
   rowHeight = 88,
@@ -111,6 +122,8 @@ export function VirtualizedDataTable<Row>({
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  loading?: boolean | undefined;
+  loadingLabel?: string | undefined;
   caption?: string | undefined;
   className?: string | undefined;
   rowHeight?: number | undefined;
@@ -136,6 +149,7 @@ export function VirtualizedDataTable<Row>({
     };
   }, [overscan, rowHeight, rows.length, viewport.height, viewport.top]);
   const visibleRows = rows.slice(visibleRange.start, visibleRange.end);
+  const emptyState = normalizeTableEmptyState(empty);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -208,7 +222,26 @@ export function VirtualizedDataTable<Row>({
           </div>
         </div>
 
-        {rows.length ? (
+        {loading && !rows.length ? (
+          <div role="rowgroup">
+            <div role="row">
+              <div
+                role="cell"
+                className="px-4 py-5 text-sm text-[var(--text-tertiary)]"
+                aria-colspan={columns.length}
+              >
+                <div className="space-y-3" aria-label={loadingLabel}>
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-10 animate-pulse rounded-2xl bg-[var(--surface-raised)]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : rows.length ? (
           <div
             ref={scrollRef}
             className="relative overflow-y-auto"
@@ -259,12 +292,32 @@ export function VirtualizedDataTable<Row>({
                 className="px-4 py-5 text-sm text-[var(--text-tertiary)]"
                 aria-colspan={columns.length}
               >
-                {empty}
+                {emptyState}
               </div>
             </div>
           </div>
         )}
       </div>
     </motion.div>
+  );
+}
+
+function normalizeTableEmptyState(empty: React.ReactNode) {
+  return typeof empty === "string" ? <EmptyState title={empty} className="border-0 bg-transparent p-1" /> : empty;
+}
+
+function TableLoadingRows({ columns, label }: { columns: number; label: string }) {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, rowIndex) => (
+        <tr key={rowIndex} aria-label={rowIndex === 0 ? label : undefined}>
+          {Array.from({ length: columns }).map((__, columnIndex) => (
+            <td key={columnIndex} className="px-4 py-3">
+              <div className="h-4 animate-pulse rounded-full bg-[var(--surface-raised)]" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
   );
 }
