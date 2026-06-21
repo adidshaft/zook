@@ -9,6 +9,7 @@ import {
   Card,
   ListRow,
   AppHeader,
+  QueryErrorState,
   SegmentedControl,
   StatusChip,
   ZookButton,
@@ -132,7 +133,13 @@ export default function TrainerClientOverviewScreen() {
           />
           <SegmentedControl options={clientDetailTabs} value="overview" onChange={selectTab} />
 
-          {!clientsQuery.isLoading && !client ? (
+          {clientsQuery.isError ? (
+            <Card variant="compact">
+              <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} />
+            </Card>
+          ) : null}
+
+          {!clientsQuery.isLoading && !clientsQuery.isError && !client ? (
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
               <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
