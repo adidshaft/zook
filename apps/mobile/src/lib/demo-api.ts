@@ -1968,6 +1968,35 @@ export function createDemoTransport(): DemoTransport {
   };
 }
 
+let demoFreshGym = false;
+export function setDemoFreshGym(on: boolean) {
+  demoFreshGym = on;
+}
+export function isDemoFreshGym() {
+  return demoFreshGym;
+}
+
+/**
+ * Empty payloads for the read endpoints that drive list/empty states, so the
+ * "fresh gym, no data yet" experience can be exercised. Returns undefined to
+ * fall through to normal demo data for anything not listed here (dashboards,
+ * profile, catalog, etc. keep working with sensible zeros).
+ */
+function freshGymEmptyResponse(pathname: string): unknown {
+  if (pathname.match(/^\/orgs\/[^/]+\/members$/)) return { members: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/membership-plans$/)) return { plans: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) return { classes: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/coupons$/)) return { coupons: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/join-requests$/)) return { joinRequests: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/payouts$/)) return { payouts: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/products$/)) return { products: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/shop\/orders\/active$/)) return { orders: [] };
+  if (pathname.match(/^\/orgs\/[^/]+\/payments\/recent/)) return { payments: [] };
+  if (pathname === "/me/notifications") return { notifications: [], unreadCount: 0 };
+  if (pathname === "/me/coaching") return { subscription: null, trainer: null, plan: null, sessions: [] };
+  return undefined;
+}
+
 export async function demoMobileApiFetch<T>(
   path: string,
   init: { body?: unknown; method?: string } & Record<string, unknown> = {},
@@ -1977,6 +2006,16 @@ export async function demoMobileApiFetch<T>(
   const method = (init.method ?? "GET").toUpperCase();
   const session = getOfflineDemoSession();
   const membership = activeMembership();
+
+  // Fresh-gym demo mode: a brand-new gym with no members/plans/activity yet,
+  // so the empty states across the app can be seen (and demoed). Only affects
+  // read lists; writes still work so you can populate from zero.
+  if (isDemoFreshGym() && method === "GET") {
+    const fresh = freshGymEmptyResponse(pathname);
+    if (fresh !== undefined) {
+      return fresh as T;
+    }
+  }
 
   if (pathname === "/auth/request-otp") {
     return {
