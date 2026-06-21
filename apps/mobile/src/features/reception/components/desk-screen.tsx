@@ -1,8 +1,9 @@
 import { View, Text } from "react-native";
+import { useRouter } from "expo-router";
 
 import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader, ZookButton } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { formatDateTime, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
@@ -25,6 +26,7 @@ function iconForAttendanceStatus(status?: string | null) {
 
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
+  const router = useRouter();
   const {
     approvalItems,
     approvalQueue,
@@ -120,6 +122,14 @@ export function ReceptionDeskScreenBody() {
               >
                 {verifyingCode ? "Verifying..." : "Verify Code"}
               </PrimaryButton>
+              <ZookButton
+                testID="reception-entry-qr-button"
+                variant="secondary"
+                icon="qr-code-outline"
+                onPress={() => router.push("/reception/entry-qr")}
+              >
+                Display entry QR
+              </ZookButton>
             </Card>
 
             <SectionHeader

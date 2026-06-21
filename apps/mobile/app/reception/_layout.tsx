@@ -96,6 +96,10 @@ export default function ReceptionLayout() {
         name="verification/[recordId]"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
+      <Tabs.Screen
+        name="entry-qr"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
     </Tabs>
   );
 }
