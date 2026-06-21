@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons" | "/owner/staff";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr";
   webPath?: string;
   visible?: boolean;
 };
@@ -44,8 +44,17 @@ export default function OwnerMoreScreen() {
   const canManagePlans = useHasPermission("MEMBERSHIP_PLAN_MANAGE");
   const canManageCoupons = useHasPermission("COUPONS_MANAGE");
   const canManageStaff = useHasPermission("ORG_MANAGE_STAFF");
+  const canDisplayQr = useHasPermission("ATTENDANCE_QR_DISPLAY");
   const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
+    {
+      title: "Entry QR",
+      subtitle: "Display the rolling check-in QR at your door",
+      icon: "qr-code-outline",
+      testID: "owner-more-entry-qr",
+      href: "/owner/entry-qr",
+      visible: canDisplayQr,
+    },
     {
       title: "Staff",
       subtitle: "Invite and manage admins and trainers",

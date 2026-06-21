@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
+import { normalizeWebUrl } from "@/lib/api";
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
 import { materials, spacing, typography, useTheme } from "@/lib/theme";
@@ -11,6 +14,7 @@ import { gymBrandColor } from "@/lib/gym-brand";
 
 type HeaderContext = {
   orgName: string;
+  logoUrl?: string | null;
   onPress: () => void;
   roleTag?: string;
 };
@@ -123,7 +127,6 @@ export function ScreenHeader({
 
 function ContextPill({ context }: { context: HeaderContext }) {
   const { palette } = useTheme();
-  const brand = gymBrandColor(context.orgName);
   return (
     <Pressable
       accessibilityRole="button"
@@ -140,9 +143,7 @@ function ContextPill({ context }: { context: HeaderContext }) {
         },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: brand.soft }]}>
-        <Text style={[styles.avatarText, { color: brand.solid }]}>{brand.initial}</Text>
-      </View>
+      <GymLogoAvatar orgName={context.orgName} logoUrl={context.logoUrl} />
       <Text numberOfLines={1} style={[styles.contextText, { color: palette.text.primary }]}>
         {context.orgName}
       </Text>
@@ -153,6 +154,34 @@ function ContextPill({ context }: { context: HeaderContext }) {
       ) : null}
       <Ionicons name="chevron-down" size={14} color={palette.text.tertiary} />
     </Pressable>
+  );
+}
+
+function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
+  const [didFail, setDidFail] = useState(false);
+  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
+  const brand = gymBrandColor(orgName);
+
+  useEffect(() => {
+    setDidFail(false);
+  }, [normalizedLogoUrl]);
+
+  if (normalizedLogoUrl && !didFail) {
+    return (
+      <Image
+        source={{ uri: normalizedLogoUrl }}
+        style={styles.avatarImage}
+        contentFit="cover"
+        transition={120}
+        onError={() => setDidFail(true)}
+      />
+    );
+  }
+
+  return (
+    <View style={[styles.avatar, { backgroundColor: brand.soft }]}>
+      <Text style={[styles.avatarText, { color: brand.solid }]}>{brand.initial}</Text>
+    </View>
   );
 }
 
@@ -233,6 +262,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 20,
     justifyContent: "center",
+    width: 20,
+  },
+  avatarImage: {
+    borderRadius: 999,
+    height: 20,
     width: 20,
   },
   avatarText: {

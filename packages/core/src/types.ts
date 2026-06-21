@@ -230,6 +230,7 @@ export interface AuthOrganizationSummary {
   orgId: string;
   name: string;
   username: string;
+  logoUrl?: string | null;
   status: OrganizationStatus;
   city: string;
   state: string;

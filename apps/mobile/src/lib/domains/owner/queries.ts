@@ -344,3 +344,27 @@ export function useOrgStaff() {
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
+
+export type AttendanceQrToken = {
+  qrPayload: string;
+  checkInCode?: string | null;
+  expiresAt: string;
+};
+
+export function useAttendanceQrToken(branchId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "attendance-qr-token", branchId ?? null] as const,
+    queryFn: () =>
+      mobileApiFetch<AttendanceQrToken>(
+        `/orgs/${activeOrgId}/attendance/qr-token${branchId ? `?branchId=${encodeURIComponent(branchId)}` : ""}`,
+        { method: "POST", token, orgId: activeOrgId ?? undefined, body: {} },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    // Rolling signed token: refresh every 30s like the web console.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}

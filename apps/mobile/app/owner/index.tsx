@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Linking, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, Share, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
@@ -61,13 +61,13 @@ export default function OwnerCommandScreen() {
           id: "qr",
           label: "Display your check-in QR",
           done: setupStatus.hasQrDisplayed,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/attendance/qr-display"),
+          onPress: () => router.push("/owner/entry-qr"),
         },
         {
           id: "staff",
           label: "Invite staff",
           done: setupStatus.staffCount > 1,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/staff"),
+          onPress: () => router.push("/owner/staff"),
         },
         {
           id: "join",

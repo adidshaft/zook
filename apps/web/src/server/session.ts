@@ -144,17 +144,19 @@ export async function resolveSessionSummaryFromToken(
           })),
       );
 
-      return {
+      const summary: AuthOrganizationSummary = {
         orgId: organization.id,
         name: organization.name,
         username: organization.username,
+        logoUrl: organization.logoUrl,
         status: organization.status,
         city: organization.city,
         state: organization.state,
         roles,
         permissions,
         joinedAt: membership.joinedAt,
-      } satisfies AuthOrganizationSummary;
+      };
+      return summary;
     })
     .filter((item): item is AuthOrganizationSummary => Boolean(item));
 

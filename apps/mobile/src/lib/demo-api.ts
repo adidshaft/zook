@@ -2136,6 +2136,16 @@ export async function demoMobileApiFetch<T>(
       zookDemoFixtures.attendanceAttempts[0];
     return { attendance } as T;
   }
+  if (pathname.match(/^\/orgs\/[^/]+\/attendance\/qr-token$/)) {
+    const nonce = Math.random().toString(36).slice(2, 14);
+    const letters = String.fromCharCode(65 + Math.floor(Math.random() * 26), 65 + Math.floor(Math.random() * 26));
+    const digits = String(Math.floor(1000 + Math.random() * 9000));
+    return {
+      qrPayload: `demo.${activeOrg()?.id ?? "org-demo"}.${nonce}`,
+      checkInCode: `${letters}-${digits}`,
+      expiresAt: new Date(Date.now() + 180000).toISOString(),
+    } as T;
+  }
   if (pathname === "/attendance/scan" || pathname === "/attendance/dev-scan") {
     const existing = getDemoActiveCheckIn();
     if (existing) {
