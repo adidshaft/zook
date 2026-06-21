@@ -276,7 +276,7 @@ export function PaymentsPanel({
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-[0.6fr_1fr_auto]">
             <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
-              Amount
+              Refund amount
               <input
                 value={refundDraft.amountRupees}
                 inputMode="decimal"
@@ -289,7 +289,7 @@ export function PaymentsPanel({
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
-              Reason
+              Refund reason
               <input
                 value={refundDraft.reason}
                 onChange={(event) =>

@@ -133,23 +133,13 @@ test.describe("payments actions", () => {
     ).resolves.toBeTruthy();
 
     await page.goto("/dashboard/payments");
-    let dialogCount = 0;
-    page.on("dialog", async (dialog) => {
-      dialogCount += 1;
-      if (dialogCount === 1) {
-        expect(dialog.message()).toContain("Refund amount");
-        await dialog.accept("500");
-        return;
-      }
-      expect(dialog.message()).toContain("Reason");
-      await dialog.accept("Duplicate cash payment");
-    });
-    await page
-      .locator("tr")
-      .filter({ hasText: "₹3,333" })
-      .getByRole("button", { name: "Refund" })
-      .first()
-      .click();
+    const paymentRow = page.locator("tr").filter({ hasText: "₹3,333" }).first();
+    await paymentRow.getByRole("button", { name: "Refund" }).click();
+    await expect(page.getByText("Refund draft")).toBeVisible();
+    await page.getByLabel("Refund amount").fill("500");
+    await page.getByLabel("Refund reason").fill("Duplicate cash payment");
+    await page.getByRole("button", { name: "Submit refund" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Submit refund" }).click();
     await expect(page.locator("p", { hasText: "Refund submitted from payment history." }).first()).toBeVisible({
       timeout: 15_000,
     });
