@@ -18,10 +18,11 @@ import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
 import { joinModeLabel, joinModeTone, titleCaseFromCode } from "@/lib/formatting";
+import { resolveAmenities } from "@/lib/amenity-catalog";
 import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/domains";
 import { useAuth } from "@/lib/auth";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 function normalizeMediaUrl(value?: string | null) {
   if (!value) {
@@ -261,15 +262,30 @@ export default function FindGyms() {
                       </Pill>
                     </View>
 
-                    {(gym.amenities ?? []).length > 0 ? (
-                      <View style={styles.tags}>
-                        {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                          <Text key={amenity} style={[styles.tagText, { color: palette.text.secondary }]}>
-                            {amenity}
-                          </Text>
-                        ))}
-                      </View>
-                    ) : null}
+                    {(() => {
+                      const available = resolveAmenities(gym.amenities ?? []).available;
+                      if (!available.length) return null;
+                      return (
+                        <View style={styles.amenityIcons}>
+                          {available.slice(0, 5).map((item) => (
+                            <View
+                              key={item.key}
+                              style={[styles.amenityChip, { backgroundColor: palette.surface.accentSoft }]}
+                            >
+                              <Ionicons name={item.icon} size={13} color={palette.accent.base} />
+                              <Text style={[styles.amenityChipText, { color: palette.text.secondary }]} numberOfLines={1}>
+                                {item.label}
+                              </Text>
+                            </View>
+                          ))}
+                          {available.length > 5 ? (
+                            <Text style={[styles.amenityMore, { color: palette.text.tertiary }]}>
+                              +{available.length - 5}
+                            </Text>
+                          ) : null}
+                        </View>
+                      );
+                    })()}
 
                     <View style={styles.gymFooter}>
                       <View style={styles.gymFooterLeft}>
@@ -394,6 +410,27 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tagText: {
+    ...typography.small,
+  },
+  amenityIcons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+  },
+  amenityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: radii.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    maxWidth: 150,
+  },
+  amenityChipText: {
+    ...typography.small,
+  },
+  amenityMore: {
     ...typography.small,
   },
   gymFooter: {
