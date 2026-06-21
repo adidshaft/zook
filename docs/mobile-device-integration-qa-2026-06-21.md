@@ -29,6 +29,41 @@ Verified mobile app config references:
 - Android package: `com.zook.app`
 - Android intent filters include `https://zookfit.in` and `https://app.zookfit.in`
 
+### Live Association File Serving
+
+Checked live production association files on 2026-06-21:
+
+```text
+curl -sS -D /tmp/zook-aasa.headers -o /tmp/zook-aasa.body https://zookfit.in/.well-known/apple-app-site-association
+curl -sS -D /tmp/zook-assetlinks.headers -o /tmp/zook-assetlinks.body https://zookfit.in/.well-known/assetlinks.json
+curl -sS -D /tmp/zook-app-aasa.headers -o /tmp/zook-app-aasa.body https://app.zookfit.in/.well-known/apple-app-site-association
+curl -sS -D /tmp/zook-app-assetlinks.headers -o /tmp/zook-app-assetlinks.body https://app.zookfit.in/.well-known/assetlinks.json
+```
+
+Results:
+
+- `https://zookfit.in/.well-known/apple-app-site-association`
+  - HTTP 200, no redirect
+  - **Content-Type is `application/octet-stream`, not `application/json`**
+  - **body is stale**: `appID` is `com.zook.app`, missing `JP4HU7X6G7.`
+  - **body is missing check-in paths**: no `/checkin` or `/checkin/*`
+- `https://app.zookfit.in/.well-known/apple-app-site-association`
+  - HTTP 200, no redirect
+  - **Content-Type is `application/octet-stream`, not `application/json`**
+  - **body is stale** in the same way as `zookfit.in`
+- `https://zookfit.in/.well-known/assetlinks.json`
+  - HTTP 200, no redirect
+  - Content-Type is `application/json; charset=UTF-8`
+  - **body is stale**: `sha256_cert_fingerprints` is still `["CODEX_FILL_SHA256_FROM_EAS"]`
+- `https://app.zookfit.in/.well-known/assetlinks.json`
+  - HTTP 200, no redirect
+  - Content-Type is `application/json; charset=UTF-8`
+  - **body is stale** in the same way as `zookfit.in`
+
+Local repo state is corrected, but the live domains are not serving the corrected files yet. A new web deployment or static-server/Caddy asset update is required before iOS universal links or Android app links can verify on production domains.
+
+`apps/web/next.config.ts` defines JSON headers for both `.well-known` files, and `apps/web/middleware.ts` does not redirect these paths. The live `application/octet-stream` AASA response appears to come from the currently deployed/static-served artifact rather than the current local Next config.
+
 ## Device Availability Checks
 
 ### iOS
@@ -106,5 +141,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Static configuration is consistent with the intended bundle/package IDs and domains. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the available iPhone was locked during the openURL attempt and no Android device was attached.
-
+Local static configuration is consistent with the intended bundle/package IDs and domains, but live `zookfit.in` and `app.zookfit.in` are still serving stale association files. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
