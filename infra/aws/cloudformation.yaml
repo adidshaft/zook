@@ -217,6 +217,33 @@ Resources:
 
           cat >/opt/zook/Caddyfile <<'CADDY'
           ${DomainNames} {
+            header /.well-known/apple-app-site-association Content-Type application/json
+            respond /.well-known/apple-app-site-association `{
+              "applinks": {
+                "apps": [],
+                "details": [
+                  {
+                    "appID": "JP4HU7X6G7.com.zook.app",
+                    "paths": ["/checkin", "/checkin/*", "/join/*", "/plans/*", "/shop/*", "/dashboard"]
+                  }
+                ]
+              }
+            }` 200
+
+            header /.well-known/assetlinks.json Content-Type application/json
+            respond /.well-known/assetlinks.json `[
+              {
+                "relation": ["delegate_permission/common.handle_all_urls"],
+                "target": {
+                  "namespace": "android_app",
+                  "package_name": "com.zook.app",
+                  "sha256_cert_fingerprints": [
+                    "AF:CE:B5:DF:52:85:0C:5A:A5:70:30:CF:EF:53:57:F5:C8:39:AD:ED:16:ED:70:D1:FF:FB:BE:2C:E4:23:45:5F"
+                  ]
+                }
+              }
+            ]` 200
+
             reverse_proxy web:3000
           }
           CADDY

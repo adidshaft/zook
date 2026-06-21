@@ -77,6 +77,12 @@ Local serving check:
 - `/.well-known/assetlinks.json` returned HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the real release SHA-256 fingerprint.
 - This confirms the current app code serves the association files correctly; the remaining mismatch is production deployment/static freshness.
 
+Deployment-template fix added:
+
+- `infra/aws/cloudformation.yaml` now writes explicit Caddy `respond` handlers for both association files before `reverse_proxy web:3000`.
+- `infra/aws/README.md` documents how to apply the same Caddy block to an already-running `/opt/zook/Caddyfile` and reload Caddy.
+- The live host is not visible in the AWS account configured on this workstation, SSH to `13.204.196.160:22` timed out, and no Route 53 zone for `zookfit.in` is visible here. The live host still needs an operator with the correct AWS/SSH access to apply the Caddyfile update or deploy the current web container.
+
 ## Device Availability Checks
 
 ### iOS
