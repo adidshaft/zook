@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { normalizeUsernameInput } from "@zook/core/services";
+import { normalizeUsernameInput } from "@zook/core/services/organization-service";
 import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Tags, Image } from "lucide-react";
 import {
   DataTable,

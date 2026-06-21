@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { normalizeUsernameInput } from "@zook/core/services";
+import { normalizeUsernameInput } from "@zook/core/services/organization-service";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";

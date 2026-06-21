@@ -83,6 +83,15 @@ Deployment-template fix added:
 - `infra/aws/README.md` documents how to apply the same Caddy block to an already-running `/opt/zook/Caddyfile` and reload Caddy.
 - The live host is not visible in the AWS account configured on this workstation, SSH to `13.204.196.160:22` timed out, and no Route 53 zone for `zookfit.in` is visible here. The live host still needs an operator with the correct AWS/SSH access to apply the Caddyfile update or deploy the current web container.
 
+Production image serving check:
+
+- Started Docker Desktop locally and built the web production image with `docker build -t zook-web:association-check .`.
+- Fixed a production build blocker where client components imported `@zook/core/services`, which pulled `node:crypto` into the browser bundle. The client imports now use `@zook/core/services/organization-service` through a package subpath export.
+- Ran the built image on `localhost:3002` and curled both association files from the standalone Next server.
+- `/.well-known/apple-app-site-association` returned HTTP 200, no redirect, `Content-Type: application/json`, `appID: JP4HU7X6G7.com.zook.app`, and the expected `/checkin` paths.
+- `/.well-known/assetlinks.json` returned HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the real release SHA-256 fingerprint.
+- The image architecture is `arm64`, matching the AWS deploy script target.
+
 ## Device Availability Checks
 
 ### iOS
@@ -160,4 +169,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration is consistent with the intended bundle/package IDs and domains, but live `zookfit.in` and `app.zookfit.in` are still serving stale association files. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
+Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, but live `zookfit.in` and `app.zookfit.in` are still serving stale association files. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
