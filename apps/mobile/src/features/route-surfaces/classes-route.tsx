@@ -15,7 +15,7 @@ import {
 } from "@/components/primitives";
 import { ClassesSkeleton } from "@/components/skeletons";
 import { useBranchSelection } from "@/lib/branch-selection";
-import { useEnrollInClass, useMyClasses } from "@/lib/domains";
+import { useCancelEnrollment, useEnrollInClass, useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { formatTime } from "@/lib/formatting";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
@@ -59,11 +59,15 @@ function groupByDay(classes: MemberClassRecord[]) {
 function ClassCard({
   entry,
   busy,
+  cancelling,
   onBook,
+  onCancel,
 }: {
   entry: MemberClassRecord;
   busy: boolean;
+  cancelling: boolean;
   onBook: () => void;
+  onCancel: () => void;
 }) {
   const { palette } = useTheme();
   const visual = classTypeVisual(entry.classType);
@@ -106,14 +110,28 @@ function ClassCard({
             {entry.description}
           </Text>
         ) : null}
-        <ZookButton
-          onPress={onBook}
-          disabled={busy || booked || waitlisted}
-          variant={booked || waitlisted ? "secondary" : "primary"}
-          icon={booked ? "checkmark-circle-outline" : undefined}
-        >
-          {busy ? "Saving..." : bookingLabel(entry)}
-        </ZookButton>
+        {booked || waitlisted ? (
+          <View style={styles.actionRow}>
+            <View style={styles.bookedBadge}>
+              <Pill tone={waitlisted ? "amber" : "lime"}>
+                {waitlisted ? "On waitlist" : "Booked"}
+              </Pill>
+            </View>
+            <ZookButton
+              onPress={onCancel}
+              disabled={cancelling}
+              variant="secondary"
+              icon="close-circle-outline"
+              style={styles.cancelButton}
+            >
+              {cancelling ? "Cancelling..." : "Cancel"}
+            </ZookButton>
+          </View>
+        ) : (
+          <ZookButton onPress={onBook} disabled={busy} variant="primary">
+            {busy ? "Saving..." : bookingLabel(entry)}
+          </ZookButton>
+        )}
       </View>
     </View>
   );
@@ -124,6 +142,7 @@ export default function ClassesRoute() {
   const { selectedBranch } = useBranchSelection();
   const classesQuery = useMyClasses();
   const enrollMutation = useEnrollInClass();
+  const cancelMutation = useCancelEnrollment();
   const [refreshing, setRefreshing] = useState(false);
 
   const classes = useMemo(
@@ -201,12 +220,16 @@ export default function ClassesRoute() {
                 {group.items.map((entry) => {
                   const busy =
                     enrollMutation.isPending && enrollMutation.variables?.classId === entry.id;
+                  const cancelling =
+                    cancelMutation.isPending && cancelMutation.variables?.classId === entry.id;
                   return (
                     <ClassCard
                       key={entry.id}
                       entry={entry}
                       busy={busy}
+                      cancelling={cancelling}
                       onBook={() => enrollMutation.mutate({ classId: entry.id })}
+                      onCancel={() => cancelMutation.mutate({ classId: entry.id })}
                     />
                   );
                 })}
@@ -269,5 +292,16 @@ const styles = StyleSheet.create({
   },
   description: {
     ...typography.body,
+  },
+  actionRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  bookedBadge: {
+    flex: 1,
+  },
+  cancelButton: {
+    minWidth: 120,
   },
 });

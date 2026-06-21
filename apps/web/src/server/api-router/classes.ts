@@ -172,5 +172,81 @@ export async function handleClasses(request: NextRequest, path: string[]) {
     });
     return ok({ enrollment, remainingCapacity: decision.remainingCapacity });
   }
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"])) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, orgId);
+    const enrollment = await prisma.classEnrollment.findUnique({
+      where: { classId_memberId: { classId, memberId: userId } },
+    });
+    if (!enrollment || enrollment.status === "cancelled") {
+      throw notFoundError("You are not enrolled in this class.");
+    }
+    const wasConfirmed = enrollment.status === "confirmed";
+    await prisma.classEnrollment.update({
+      where: { classId_memberId: { classId, memberId: userId } },
+      data: { status: "cancelled", cancelledAt: new Date() },
+    });
+    // Free seat -> promote the earliest waitlisted member to confirmed.
+    if (wasConfirmed) {
+      const nextWaitlisted = await prisma.classEnrollment.findFirst({
+        where: { classId, status: "waitlisted" },
+        orderBy: { enrolledAt: "asc" },
+      });
+      if (nextWaitlisted) {
+        await prisma.classEnrollment.update({
+          where: { id: nextWaitlisted.id },
+          data: { status: "confirmed" },
+        });
+      }
+    }
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "class.enrollment_cancelled",
+      entityType: "class_enrollment",
+      entityId: enrollment.id,
+      metadata: { classId },
+    });
+    return ok({ ok: true });
+  }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "classes", /.+/, "roster"])) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireOrgAnyPermission(ctx, orgId, ["TRAINERS_MANAGE", "ATTENDANCE_APPROVE", "MEMBERS_VIEW"]);
+    const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    const enrollments = await prisma.classEnrollment.findMany({
+      where: { classId, status: { in: ["confirmed", "waitlisted"] } },
+      orderBy: { enrolledAt: "asc" },
+    });
+    const members = enrollments.length
+      ? await prisma.user.findMany({
+          where: { id: { in: enrollments.map((entry) => entry.memberId) } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const memberNames = new Map(members.map((member) => [member.id, member.name]));
+    return ok({
+      class: {
+        id: classRecord.id,
+        name: classRecord.name,
+        startTime: classRecord.startTime,
+        maxCapacity: classRecord.maxCapacity,
+      },
+      roster: enrollments.map((entry) => ({
+        memberId: entry.memberId,
+        name: memberNames.get(entry.memberId) ?? null,
+        status: entry.status,
+        enrolledAt: entry.enrolledAt,
+      })),
+    });
+  }
   return undefined;
 }

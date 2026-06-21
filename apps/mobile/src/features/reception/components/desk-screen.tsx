@@ -1,11 +1,12 @@
-import { View, Text } from "react-native";
+import { Pressable, View, Text } from "react-native";
 import { useRouter } from "expo-router";
 
 import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader, ZookButton } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
-import { formatDateTime, titleCaseFromCode } from "@/lib/formatting";
+import { useMyClasses } from "@/lib/domains";
+import { formatDateTime, formatTime, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 import type { PillTone } from "@/components/primitives";
@@ -27,6 +28,12 @@ function iconForAttendanceStatus(status?: string | null) {
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
   const router = useRouter();
+  const classesQuery = useMyClasses();
+  const todayClasses = (classesQuery.data?.classes ?? []).filter((entry) => {
+    const start = new Date(entry.startTime);
+    const now = new Date();
+    return start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth() && start.getDate() === now.getDate();
+  });
   const {
     approvalItems,
     approvalQueue,
@@ -205,6 +212,44 @@ export function ReceptionDeskScreenBody() {
                 openDecisionSheet(attempt);
               }}
             />
+
+            {todayClasses.length ? (
+              <>
+                <SectionHeader
+                  title="Today's classes"
+                  action={<Pill tone="neutral">{todayClasses.length}</Pill>}
+                />
+                <View style={styles.liveFeed}>
+                  {todayClasses.map((entry) => (
+                    <Pressable
+                      key={entry.id}
+                      testID={`reception-class-${entry.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View roster for ${entry.name}`}
+                      onPress={() =>
+                        router.push(`/reception/class-roster?classId=${entry.id}&name=${encodeURIComponent(entry.name)}` as never)
+                      }
+                      style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
+                    >
+                      <Card variant="compact" padding={12} contentStyle={styles.liveFeedItem}>
+                        <IconBubble icon="calendar-outline" tone="blue" size={34} />
+                        <View style={styles.liveFeedCopy}>
+                          <Text style={[styles.queueTitle, { color: palette.text.primary }]} numberOfLines={1}>
+                            {entry.name}
+                          </Text>
+                          <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                            {formatTime(entry.startTime)} · {entry.trainerName ? `Coach ${entry.trainerName}` : entry.classType}
+                          </Text>
+                        </View>
+                        <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
+                          {entry.enrollmentCount}/{entry.maxCapacity}
+                        </Pill>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
     </>
   );
 }

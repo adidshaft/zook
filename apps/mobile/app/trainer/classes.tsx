@@ -1,5 +1,6 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -39,6 +40,7 @@ function tomorrow() {
 
 export default function TrainerClasses() {
   const { palette } = useTheme();
+  const router = useRouter();
   const classesQuery = useMyClasses();
   const createClass = useCreateClass();
   const [refreshing, setRefreshing] = useState(false);
@@ -155,18 +157,29 @@ export default function TrainerClasses() {
             {classes.map((entry) => {
               const visual = classTypeVisual(entry.classType);
               return (
-                <Card key={entry.id} variant="compact" contentStyle={styles.classCard}>
-                  <IconBubble icon={visual.icon} tone={visual.tone} size={42} />
-                  <View style={styles.classCopy}>
-                    <Text style={[styles.className, { color: palette.text.primary }]} numberOfLines={1}>{entry.name}</Text>
-                    <Text style={[styles.classMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-                      {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType}
-                    </Text>
-                  </View>
-                  <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
-                    {entry.enrollmentCount}/{entry.maxCapacity}
-                  </Pill>
-                </Card>
+                <Pressable
+                  key={entry.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View roster for ${entry.name}`}
+                  onPress={() =>
+                    router.push(`/trainer/class-roster?classId=${entry.id}&name=${encodeURIComponent(entry.name)}` as never)
+                  }
+                  style={({ pressed }) => (pressed ? styles.cardPressed : null)}
+                >
+                  <Card variant="compact" contentStyle={styles.classCard}>
+                    <IconBubble icon={visual.icon} tone={visual.tone} size={42} />
+                    <View style={styles.classCopy}>
+                      <Text style={[styles.className, { color: palette.text.primary }]} numberOfLines={1}>{entry.name}</Text>
+                      <Text style={[styles.classMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType}
+                      </Text>
+                    </View>
+                    <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
+                      {entry.enrollmentCount}/{entry.maxCapacity}
+                    </Pill>
+                    <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />
+                  </Card>
+                </Pressable>
               );
             })}
           </View>
@@ -193,6 +206,7 @@ const styles = StyleSheet.create({
   chip: { borderRadius: radii.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9 },
   chipText: { ...typography.caption },
   stack: { gap: spacing.sm },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   classCard: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   classCopy: { flex: 1, gap: 2, minWidth: 0 },
   className: { ...typography.cardTitle },

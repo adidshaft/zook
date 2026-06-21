@@ -235,3 +235,29 @@ export function useCreateClass() {
     onError: (error) => notifyMutationError(error, "Could not schedule class."),
   });
 }
+
+export type ClassRosterEntry = {
+  memberId: string;
+  name: string | null;
+  status: string;
+  enrolledAt: string;
+};
+
+export type ClassRosterData = {
+  class: { id: string; name: string; startTime: string; maxCapacity: number };
+  roster: ClassRosterEntry[];
+};
+
+export function useClassRoster(classId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "class-roster", classId ?? null] as const,
+    queryFn: () =>
+      mobileApiFetch<ClassRosterData>(`/orgs/${activeOrgId}/classes/${classId}/roster`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId) && Boolean(classId),
+    staleTime: 15_000,
+  });
+}

@@ -702,7 +702,7 @@ function demoMembers() {
 // Booking state persists for the life of the JS runtime so the booking flow
 // works end to end without a backend: book a class, the list updates, the
 // status sticks across refetches and on the Home strip.
-const demoClassEnrollments = new Map<string, "confirmed" | "waitlisted">();
+const demoClassEnrollments = new Map<string, "confirmed" | "waitlisted" | "cancelled">();
 
 type DemoClassTemplate = {
   id: string;
@@ -850,7 +850,10 @@ function demoClassRecord(template: DemoClassTemplate) {
   const userStatus = demoClassEnrollments.get(template.id) ?? template.defaultEnrollment ?? null;
   const baseHasSeat = template.defaultEnrollment === "confirmed";
   const userTakesSeat = userStatus === "confirmed" && !baseHasSeat;
-  const enrollmentCount = template.enrolledCount + (userTakesSeat ? 1 : 0);
+  // A member who cancelled a pre-booked (default-confirmed) class frees that seat.
+  const cancelledDefaultSeat = userStatus === "cancelled" && baseHasSeat;
+  const enrollmentCount =
+    template.enrolledCount + (userTakesSeat ? 1 : 0) - (cancelledDefaultSeat ? 1 : 0);
   const remainingCapacity = Math.max(0, template.maxCapacity - enrollmentCount);
   return {
     id: template.id,
@@ -870,7 +873,7 @@ function demoClassRecord(template: DemoClassTemplate) {
     createdAt: nowIso(),
     enrollmentCount,
     remainingCapacity,
-    myEnrollmentStatus: userStatus,
+    myEnrollmentStatus: userStatus === "cancelled" ? null : userStatus,
   };
 }
 
@@ -962,7 +965,7 @@ function demoEnrollInClass(classId: string) {
     };
   }
   const existing = demoClassEnrollments.get(classId) ?? template.defaultEnrollment ?? null;
-  if (existing) {
+  if (existing && existing !== "cancelled") {
     const record = demoClassRecord(template);
     return { enrollment: { id: `enroll-${classId}`, status: existing }, remainingCapacity: record.remainingCapacity };
   }
@@ -973,6 +976,57 @@ function demoEnrollInClass(classId: string) {
   return {
     enrollment: { id: `enroll-${classId}`, status },
     remainingCapacity: record.remainingCapacity,
+  };
+}
+
+function demoCancelEnrollment(classId: string) {
+  const scheduled = demoScheduledClasses.find((entry) => entry.id === classId);
+  if (scheduled) {
+    if (scheduled.myEnrollmentStatus === "confirmed") {
+      scheduled.enrollmentCount = Math.max(0, scheduled.enrollmentCount - 1);
+      scheduled.remainingCapacity = Math.min(scheduled.maxCapacity, scheduled.remainingCapacity + 1);
+    }
+    scheduled.myEnrollmentStatus = null;
+    return { ok: true };
+  }
+  // Sentinel so demoClassRecord shows the member as not-enrolled even for
+  // templates that were pre-booked (defaultEnrollment === "confirmed").
+  demoClassEnrollments.set(classId, "cancelled");
+  return { ok: true };
+}
+
+const DEMO_ROSTER_NAMES = [
+  "Ira Shah", "Rohan Mehta", "Priya Nair", "Arjun Das", "Sara Khan", "Vikram Rao",
+  "Neha Joshi", "Karan Singh", "Anjali Verma", "Dev Patel", "Meera Iyer", "Sahil Gupta",
+  "Tara Bose", "Yash Shah", "Zoya Ali", "Kabir Roy", "Diya Sen", "Aman Kohli",
+];
+
+function demoClassRoster(classId: string) {
+  const cls = demoClasses().find((entry) => entry.id === classId);
+  if (!cls) {
+    throw new Error("That class could not be found.");
+  }
+  const roster: Array<{ memberId: string; name: string; status: string; enrolledAt: string }> = [];
+  const userConfirmed = cls.myEnrollmentStatus === "confirmed";
+  const userWaitlisted = cls.myEnrollmentStatus === "waitlisted";
+  if (userConfirmed) {
+    roster.push({ memberId: "user-aarav", name: "Nisha Menon", status: "confirmed", enrolledAt: hoursAgoIso(3) });
+  }
+  const confirmedOthers = Math.max(0, cls.enrollmentCount - (userConfirmed ? 1 : 0));
+  for (let index = 0; index < confirmedOthers; index += 1) {
+    roster.push({
+      memberId: `demo-${classId}-${index}`,
+      name: DEMO_ROSTER_NAMES[index % DEMO_ROSTER_NAMES.length] ?? "Member",
+      status: "confirmed",
+      enrolledAt: hoursAgoIso(8 + index),
+    });
+  }
+  if (userWaitlisted) {
+    roster.push({ memberId: "user-aarav", name: "Nisha Menon", status: "waitlisted", enrolledAt: hoursAgoIso(1) });
+  }
+  return {
+    class: { id: cls.id, name: cls.name, startTime: cls.startTime, maxCapacity: cls.maxCapacity },
+    roster,
   };
 }
 
@@ -2584,6 +2638,13 @@ export async function demoMobileApiFetch<T>(
   const enrollMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/enroll$/);
   if (enrollMatch && method === "POST") {
     return demoEnrollInClass(enrollMatch[1]) as T;
+  }
+  if (enrollMatch && method === "DELETE") {
+    return demoCancelEnrollment(enrollMatch[1]) as T;
+  }
+  const rosterMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/roster$/);
+  if (rosterMatch) {
+    return demoClassRoster(rosterMatch[1]) as T;
   }
 
   if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) {
