@@ -1,0 +1,65 @@
+name: Repair Association Files
+
+on:
+  workflow_dispatch:
+    inputs:
+      ssh_host:
+        description: Production host or IP that serves zookfit.in.
+        required: true
+        default: 13.204.196.160
+      ssh_user:
+        description: SSH user for the production host.
+        required: true
+        default: ec2-user
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      ZOOK_PRODUCTION_SSH_KEY: ${{ secrets.ZOOK_PRODUCTION_SSH_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ inputs.ssh_host }}
+        run: |
+          if [ -z "${ZOOK_PRODUCTION_SSH_KEY}" ]; then
+            echo "Missing required repository secret ZOOK_PRODUCTION_SSH_KEY." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${ZOOK_PRODUCTION_SSH_KEY}" > ~/.ssh/zook_production
+          chmod 600 ~/.ssh/zook_production
+          ssh-keyscan -H "${SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Repair live association files
+        env:
+          SSH_HOST: ${{ inputs.ssh_host }}
+          SSH_USER: ${{ inputs.ssh_user }}
+        run: |
+          SSH_TARGET="${SSH_USER}@${SSH_HOST}"
+          SSH_OPTS="-i ${HOME}/.ssh/zook_production -o BatchMode=yes -o ConnectTimeout=10"
+          ssh ${SSH_OPTS} "${SSH_TARGET}" 'true'
+          export ZOOK_REPAIR_SSH_OPTS="${SSH_OPTS}"
+          SSH_AUTH_SOCK= infra/aws/repair-association-files.sh "${SSH_TARGET}"
+
+      - name: Verify live association files
+        env:
+          ZOOK_MOBILE_RELEASE_TARGET: production
+          ZOOK_CHECK_LIVE_ASSOCIATION_FILES: "1"
+          EXPO_PUBLIC_WEB_URL: https://zookfit.in
+          EXPO_PUBLIC_MOBILE_WEB_URL: https://zookfit.in
+          MOBILE_API_BASE_URL: https://zookfit.in/api
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm mobile:release:check

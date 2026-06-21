@@ -12,6 +12,9 @@ Example:
 The target host must have /opt/zook/Caddyfile and /opt/zook/docker-compose.yml.
 The script backs up the Caddyfile, installs the Zook universal/app-link handlers,
 reloads Caddy, and verifies the public zookfit.in association files.
+
+Optional:
+  ZOOK_REPAIR_SSH_OPTS='-i ~/.ssh/zook_production -o BatchMode=yes'
 USAGE
 }
 
@@ -26,8 +29,9 @@ if [[ $# -ne 1 ]]; then
 fi
 
 TARGET="$1"
+read -r -a SSH_OPTS <<<"${ZOOK_REPAIR_SSH_OPTS:-}"
 
-ssh -o BatchMode=yes -o ConnectTimeout=10 "${TARGET}" 'sudo bash -s' <<'REMOTE'
+ssh "${SSH_OPTS[@]}" -o BatchMode=yes -o ConnectTimeout=10 "${TARGET}" 'sudo bash -s' <<'REMOTE'
 set -euo pipefail
 
 CADDYFILE=/opt/zook/Caddyfile

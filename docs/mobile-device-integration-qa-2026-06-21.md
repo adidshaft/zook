@@ -113,6 +113,22 @@ Production image serving check:
   - `infra/aws/repair-association-files.sh ec2-user@13.204.196.160` failed because SSH port 22 timed out
   - GitHub CLI is authenticated and the repo has workflow access, but `.github/workflows` only contains CI and Dependabot; there is no deploy/restart workflow to run
   - `zookfit.in` and `app.zookfit.in` still resolve to `13.204.196.160`, and both domains still serve the stale AASA and assetlinks files through Caddy
+- Added `.github/workflows/repair-association-files.yml` as a manual GitHub Actions repair path for environments where GitHub has production SSH access even when this workstation does not.
+  - requires repository secret `ZOOK_PRODUCTION_SSH_KEY`
+  - accepts `ssh_host` and `ssh_user` workflow inputs
+  - runs `infra/aws/repair-association-files.sh` with the injected SSH key
+  - runs `pnpm mobile:release:check` with `ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1`
+  - validated locally with workflow YAML parsing and `bash -n infra/aws/repair-association-files.sh`; `actionlint` is not installed on this workstation
+- Production repair completed on 2026-06-22:
+  - refreshed `kyokasuigetsullp` through the already-authenticated Chrome AWS session
+  - confirmed account `173237057070` owns Elastic IP `13.204.196.160`, EC2 instance `i-0fe539e91f54c59cc`, and CloudFormation stack `zook-production`
+  - confirmed SSM was online for `i-0fe539e91f54c59cc`
+  - inspected the live Caddyfile before repair; it only had `reverse_proxy web:3000`
+  - patched `/opt/zook/Caddyfile` through SSM Run Command and reloaded Caddy with `/usr/local/bin/docker-compose`
+  - verified both `https://zookfit.in/.well-known/apple-app-site-association` and `https://app.zookfit.in/.well-known/apple-app-site-association` return HTTP 200, no redirect, `Content-Type: application/json`, `JP4HU7X6G7.com.zook.app`, and `/checkin` paths
+  - verified both `https://zookfit.in/.well-known/assetlinks.json` and `https://app.zookfit.in/.well-known/assetlinks.json` return HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the release SHA-256 fingerprint
+  - `ZOOK_MOBILE_RELEASE_TARGET=production EXPO_PUBLIC_WEB_URL=https://zookfit.in EXPO_PUBLIC_MOBILE_WEB_URL=https://zookfit.in MOBILE_API_BASE_URL=https://zookfit.in/api ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1 pnpm mobile:release:check` passed with live AASA/assetlinks checks green
+  - attempted physical iPhone launch with `xcrun devicectl device process launch --payload-url ... com.zook.app`; it failed because the device was locked
 
 ## Device Availability Checks
 
@@ -191,4 +207,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated and is not reachable with the currently usable non-interactive credentials. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, no Android device was attached, and the AWS profile that may own the host requires an interactive IAM sign-in.
+Local static configuration, the production Docker image, and the live Caddy host are now consistent with the intended bundle/package IDs and domains. Live `zookfit.in` and `app.zookfit.in` association files pass the release-readiness guard. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the available iPhone was locked during the launch attempt and no Android device was attached.

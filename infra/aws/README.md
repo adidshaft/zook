@@ -72,6 +72,14 @@ infra/aws/repair-association-files.sh ec2-user@13.204.196.160
 
 The script requires `/opt/zook/Caddyfile` and `/opt/zook/docker-compose.yml` on the target host. It backs up the Caddyfile, installs the known-good Zook universal/app-link handlers before `reverse_proxy web:3000`, reloads Caddy through Docker Compose, and verifies `https://zookfit.in/.well-known/*`.
 
+If local SSH is not available but GitHub Actions has production SSH access, run the manual `Repair Association Files` workflow with:
+
+- `ssh_host`: `13.204.196.160`
+- `ssh_user`: the production host user, usually `ec2-user`
+- repository secret `ZOOK_PRODUCTION_SSH_KEY`: private SSH key with sudo access on the host
+
+The workflow uses `infra/aws/repair-association-files.sh`, then runs `pnpm mobile:release:check` with live association-file validation enabled.
+
 Manual equivalent:
 
 ```bash
