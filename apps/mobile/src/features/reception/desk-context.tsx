@@ -52,7 +52,6 @@ import {
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import {
   formatAgeLabel,
-  formatBranchName,
   formatInr,
   formatReviewReason,
   titleCaseFromCode,
@@ -865,12 +864,6 @@ export function ReceptionWorkspace({
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
-  const branchLabel = formatBranchName(
-    state.activeOrganizationName,
-    state.selectedBranchName ?? state.gymSelectorLabel,
-  );
-  const homeSubtitle =
-    branchLabel ?? state.activeOrganizationName;
   const deskLabel =
     state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk";
 
@@ -900,13 +893,11 @@ export function ReceptionWorkspace({
           <View style={noScroll ? styles.contentNoScroll : undefined}>
             <ScreenHeader
               title={isHomeScreen ? "Today" : title}
-              subtitle={isHomeScreen ? homeSubtitle : subtitle}
+              subtitle={isHomeScreen ? undefined : subtitle}
               meta={
                 isHomeScreen ? (
                   <View style={styles.headerMetaRow}>
-                    {branchLabel && branchLabel !== state.activeOrganizationName ? (
-                      <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
-                    ) : null}
+                    <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
                     <HeaderMeta icon="scan-outline">{deskLabel}</HeaderMeta>
                   </View>
                 ) : undefined
