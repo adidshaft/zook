@@ -91,6 +91,12 @@ Production image serving check:
 - `/.well-known/apple-app-site-association` returned HTTP 200, no redirect, `Content-Type: application/json`, `appID: JP4HU7X6G7.com.zook.app`, and the expected `/checkin` paths.
 - `/.well-known/assetlinks.json` returned HTTP 200, no redirect, `Content-Type: application/json`, package `com.zook.app`, and the real release SHA-256 fingerprint.
 - The image architecture is `arm64`, matching the AWS deploy script target.
+- Pushed the committed production image to ECR in the configured AWS account:
+  - repository: `477817968459.dkr.ecr.ap-south-1.amazonaws.com/zook-web`
+  - tags: `7518e705`, `latest`
+  - digest: `sha256:446751f69a12cfd810d5e4d4de209865f256e62641b57b0782191598ea2d5a03`
+- Rechecked `https://zookfit.in/.well-known/*` after the ECR push; production still served the stale June 12 association files, so the live host did not auto-pull/restart from ECR.
+- No SSM managed instances, CloudFormation stacks, or ECS clusters are visible in `ap-south-1` for the configured AWS account, so this workstation still has no control-plane path to update the running `13.204.196.160` Caddy host.
 
 ## Device Availability Checks
 
@@ -169,4 +175,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, but live `zookfit.in` and `app.zookfit.in` are still serving stale association files. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
+Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
