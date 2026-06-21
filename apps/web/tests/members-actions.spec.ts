@@ -93,20 +93,72 @@ test.describe("members actions", () => {
     ).toBe(403);
   });
 
-  test("owner edit/deactivate/reactivate/re-invite and bulk member controls are visible product gaps", async ({
+  test("owner deactivates, reactivates, and bulk archives members from the roster", async ({
     page,
   }) => {
-    test.fail(
-      true,
-      "The current member dashboard supports import/search/view; the requested per-member edit/deactivate/re-invite and bulk action controls are not shipped yet.",
-    );
+    test.setTimeout(150_000);
     await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const plan = await createMembershipPlan(page, org.id, {
+      name: `Member Access Plan ${Date.now()}`,
+      pricePaise: 99900,
+      durationDays: 30,
+    });
+    const suffix = Date.now();
+    const firstEmail = `member-access-${suffix}@zook.local`;
+    const secondEmail = `member-bulk-${suffix}@zook.local`;
+
+    const importResponse = await page.request.post(`/api/orgs/${org.id}/members/import`, {
+      data: {
+        csv: `name,email,phone\nAccess Member,${firstEmail},+91 90000 ${String(suffix).slice(-5)}\nBulk Member,${secondEmail},+91 91111 ${String(suffix).slice(-5)}`,
+        planId: plan.id,
+        activateSubscription: true,
+        sendWelcomeNotification: false,
+      },
+    });
+    await expectApiOk(importResponse);
+
     await page.goto("/dashboard/members");
-    expect(await page.getByRole("button", { name: /edit member/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /deactivate member/i }).count()).toBeGreaterThan(
-      0,
-    );
-    expect(await page.getByRole("button", { name: /resend invite/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /bulk archive/i }).count()).toBeGreaterThan(0);
+    await page.getByPlaceholder(/search name/i).fill(firstEmail);
+    await expect(page.getByText(firstEmail)).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Deactivate member" }).first().click();
+
+    const firstUser = await prisma.user.findUniqueOrThrow({ where: { email: firstEmail } });
+    await expect
+      .poll(async () => {
+        const membership = await prisma.organizationUser.findUnique({
+          where: { orgId_userId: { orgId: org.id, userId: firstUser.id } },
+        });
+        return membership?.status;
+      })
+      .toBe("inactive");
+    await expect(page.getByRole("button", { name: "Reactivate member" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "Reactivate member" }).first().click();
+    await expect
+      .poll(async () => {
+        const membership = await prisma.organizationUser.findUnique({
+          where: { orgId_userId: { orgId: org.id, userId: firstUser.id } },
+        });
+        return membership?.status;
+      })
+      .toBe("active");
+
+    await page.getByPlaceholder(/search name/i).fill(secondEmail);
+    await expect(page.getByText(secondEmail)).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("checkbox", { name: "Select Bulk Member" }).check();
+    await page.getByRole("button", { name: "Bulk archive" }).click();
+
+    const secondUser = await prisma.user.findUniqueOrThrow({ where: { email: secondEmail } });
+    await expect
+      .poll(async () => {
+        const membership = await prisma.organizationUser.findUnique({
+          where: { orgId_userId: { orgId: org.id, userId: secondUser.id } },
+        });
+        return membership?.status;
+      })
+      .toBe("inactive");
+    await expect(page.getByText("1 member archived.")).toBeVisible({ timeout: 15_000 });
   });
 });

@@ -31,8 +31,13 @@ export function MemberList({
   selectedBulkMemberIds,
   toggleBulkMember,
   exportSelectedMembers,
+  bulkArchiveMembers,
   clearSelection,
   setSelectedMemberId,
+  memberAccessBusyId,
+  memberAccessStatus,
+  memberAccessStatusTone,
+  updateMemberAccess,
 }: {
   orgId: string;
   organization: OrganizationSnapshot;
@@ -47,8 +52,13 @@ export function MemberList({
   selectedBulkMemberIds: string[];
   toggleBulkMember: (userId: string | undefined) => void;
   exportSelectedMembers: () => void;
+  bulkArchiveMembers: () => void;
   clearSelection: () => void;
   setSelectedMemberId: (memberId: string | null) => void;
+  memberAccessBusyId: string | null;
+  memberAccessStatus: string;
+  memberAccessStatusTone: "neutral" | "lime" | "red";
+  updateMemberAccess: (memberUserId: string, status: "active" | "inactive") => void;
 }) {
   const useVirtualizedRoster = filteredMembers.length >= memberVirtualizationThreshold;
   const memberRosterColumns = useMemo(
@@ -98,6 +108,10 @@ export function MemberList({
         render: (row: MemberRow) => (
           <div className="flex flex-wrap gap-2">
             <StatusPill
+              value={row.membership?.status === "inactive" ? "Inactive" : "Active"}
+              tone={row.membership?.status === "inactive" ? "red" : "lime"}
+            />
+            <StatusPill
               value={row.profile.publicVisibility ? "Visible" : "Private"}
               tone="neutral"
             />
@@ -115,22 +129,50 @@ export function MemberList({
       },
       {
         id: "detail",
-        header: "Detail",
+        header: "Actions",
         align: "right" as const,
         render: (row: MemberRow) => (
-          <ZookButton
-            type="button"
-            tone="ghost"
-            size="sm"
-            onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
-            disabled={!row.user?.id}
-          >
-            View
-          </ZookButton>
+          <div className="flex flex-wrap justify-end gap-2">
+            <ZookButton
+              type="button"
+              tone="ghost"
+              size="sm"
+              onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
+              disabled={!row.user?.id}
+            >
+              View
+            </ZookButton>
+            <ZookButton
+              type="button"
+              tone={row.membership?.status === "inactive" ? "lime" : "ghost"}
+              size="sm"
+              onClick={() =>
+                row.user?.id &&
+                updateMemberAccess(
+                  row.user.id,
+                  row.membership?.status === "inactive" ? "active" : "inactive",
+                )
+              }
+              disabled={
+                !row.user?.id ||
+                memberAccessBusyId === row.user?.id ||
+                memberAccessBusyId === "bulk"
+              }
+            >
+              {row.membership?.status === "inactive" ? "Reactivate member" : "Deactivate member"}
+            </ZookButton>
+          </div>
         ),
       },
     ],
-    [organization.contactPhone, selectedBulkMemberIds, setSelectedMemberId, toggleBulkMember],
+    [
+      memberAccessBusyId,
+      organization.contactPhone,
+      selectedBulkMemberIds,
+      setSelectedMemberId,
+      toggleBulkMember,
+      updateMemberAccess,
+    ],
   );
 
   return (
@@ -140,7 +182,8 @@ export function MemberList({
         title="Member roster"
         badge={
           <Pill>
-            {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length} profiles
+            {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length}{" "}
+            profiles
           </Pill>
         }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/members.csv`} />}
@@ -219,10 +262,24 @@ export function MemberList({
                   <ZookButton type="button" size="sm" onClick={exportSelectedMembers}>
                     Export selected
                   </ZookButton>
+                  <ZookButton
+                    type="button"
+                    tone="ghost"
+                    size="sm"
+                    onClick={bulkArchiveMembers}
+                    disabled={memberAccessBusyId === "bulk"}
+                  >
+                    Bulk archive
+                  </ZookButton>
                   <ZookButton type="button" tone="ghost" size="sm" onClick={clearSelection}>
                     Clear
                   </ZookButton>
                 </div>
+              </div>
+            ) : null}
+            {memberAccessStatus ? (
+              <div className="mt-3">
+                <StatusPill value={memberAccessStatus} tone={memberAccessStatusTone} />
               </div>
             ) : null}
             <LoadMoreButton
@@ -247,7 +304,11 @@ function MemberListEmpty({ filtersActive }: { filtersActive: boolean }) {
           ? "Try a different filter or search term."
           : "Create your first membership plan and share your join link to start accepting members."
       }
-      action={filtersActive ? null : <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>}
+      action={
+        filtersActive ? null : (
+          <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>
+        )
+      }
     />
   );
 }

@@ -29,6 +29,10 @@ const orgMemberDetailParamsSchema = z.object({
   memberUserId: z.string().trim().min(1),
 });
 
+const orgMemberStatusBodySchema = z.object({
+  status: z.enum(["active", "inactive"]),
+});
+
 function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const existing = map.get(key);
   if (existing) {
@@ -93,113 +97,120 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
   });
   const page = pageResult(profiles, limit);
   const memberUserIds = page.items.map((profile) => profile.userId);
-  const [users, subscriptions, recentAttendance, activeAttendance, payments] = await Promise.all([
-    memberUserIds.length
-      ? prisma.user.findMany({
-          where: { id: { in: memberUserIds } },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            slug: true,
-            dateOfBirth: true,
-            emergencyContact: true,
-            profilePhotoUrl: true,
-            fitnessGoal: true,
-            marketingOptIn: true,
-            createdAt: true,
-          },
-        })
-      : Promise.resolve([]),
-    prisma.memberSubscription.findMany({
-      where: { orgId, memberUserId: { in: memberUserIds } },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        orgId: true,
-        branchId: true,
-        memberUserId: true,
-        planId: true,
-        status: true,
-        startsAt: true,
-        endsAt: true,
-        remainingVisits: true,
-        paymentId: true,
-        pausedAt: true,
-        resumesAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-    prisma.attendanceRecord.findMany({
-      where: { orgId, userId: { in: memberUserIds } },
-      orderBy: { checkedInAt: "desc" },
-      select: {
-        id: true,
-        orgId: true,
-        branchId: true,
-        userId: true,
-        subscriptionId: true,
-        status: true,
-        source: true,
-        dateKey: true,
-        checkedInAt: true,
-        checkedOutAt: true,
-        checkoutReason: true,
-        durationSeconds: true,
-        suspiciousFlags: true,
-        createdAt: true,
-      },
-      take: Math.max(memberUserIds.length * 3, 20),
-    }),
-    prisma.attendanceRecord.findMany({
-      where: {
-        orgId,
-        userId: { in: memberUserIds },
-        checkedOutAt: null,
-        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
-      },
-      orderBy: { checkedInAt: "desc" },
-      select: {
-        id: true,
-        orgId: true,
-        branchId: true,
-        userId: true,
-        subscriptionId: true,
-        status: true,
-        source: true,
-        dateKey: true,
-        checkedInAt: true,
-        checkedOutAt: true,
-        checkoutReason: true,
-        durationSeconds: true,
-        suspiciousFlags: true,
-        createdAt: true,
-      },
-    }),
-    prisma.payment.findMany({
-      where: { orgId, userId: { in: memberUserIds } },
-      orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
-      select: {
-        id: true,
-        orgId: true,
-        branchId: true,
-        userId: true,
-        purpose: true,
-        amountPaise: true,
-        currency: true,
-        status: true,
-        mode: true,
-        provider: true,
-        providerRef: true,
-        receiptNumber: true,
-        recordedAt: true,
-        createdAt: true,
-      },
-      take: Math.max(memberUserIds.length * 3, 20),
-    }),
-  ]);
+  const [users, memberships, subscriptions, recentAttendance, activeAttendance, payments] =
+    await Promise.all([
+      memberUserIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: memberUserIds } },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              slug: true,
+              dateOfBirth: true,
+              emergencyContact: true,
+              profilePhotoUrl: true,
+              fitnessGoal: true,
+              marketingOptIn: true,
+              createdAt: true,
+            },
+          })
+        : Promise.resolve([]),
+      memberUserIds.length
+        ? prisma.organizationUser.findMany({
+            where: { orgId, userId: { in: memberUserIds } },
+            select: { userId: true, status: true, joinedAt: true, leftAt: true },
+          })
+        : Promise.resolve([]),
+      prisma.memberSubscription.findMany({
+        where: { orgId, memberUserId: { in: memberUserIds } },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          orgId: true,
+          branchId: true,
+          memberUserId: true,
+          planId: true,
+          status: true,
+          startsAt: true,
+          endsAt: true,
+          remainingVisits: true,
+          paymentId: true,
+          pausedAt: true,
+          resumesAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.attendanceRecord.findMany({
+        where: { orgId, userId: { in: memberUserIds } },
+        orderBy: { checkedInAt: "desc" },
+        select: {
+          id: true,
+          orgId: true,
+          branchId: true,
+          userId: true,
+          subscriptionId: true,
+          status: true,
+          source: true,
+          dateKey: true,
+          checkedInAt: true,
+          checkedOutAt: true,
+          checkoutReason: true,
+          durationSeconds: true,
+          suspiciousFlags: true,
+          createdAt: true,
+        },
+        take: Math.max(memberUserIds.length * 3, 20),
+      }),
+      prisma.attendanceRecord.findMany({
+        where: {
+          orgId,
+          userId: { in: memberUserIds },
+          checkedOutAt: null,
+          status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+        },
+        orderBy: { checkedInAt: "desc" },
+        select: {
+          id: true,
+          orgId: true,
+          branchId: true,
+          userId: true,
+          subscriptionId: true,
+          status: true,
+          source: true,
+          dateKey: true,
+          checkedInAt: true,
+          checkedOutAt: true,
+          checkoutReason: true,
+          durationSeconds: true,
+          suspiciousFlags: true,
+          createdAt: true,
+        },
+      }),
+      prisma.payment.findMany({
+        where: { orgId, userId: { in: memberUserIds } },
+        orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          orgId: true,
+          branchId: true,
+          userId: true,
+          purpose: true,
+          amountPaise: true,
+          currency: true,
+          status: true,
+          mode: true,
+          provider: true,
+          providerRef: true,
+          receiptNumber: true,
+          recordedAt: true,
+          createdAt: true,
+        },
+        take: Math.max(memberUserIds.length * 3, 20),
+      }),
+    ]);
   const attendanceById = new Map(
     [...activeAttendance, ...recentAttendance].map((record) => [record.id, record]),
   );
@@ -207,6 +218,9 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
     (left, right) => right.checkedInAt.getTime() - left.checkedInAt.getTime(),
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
+  const membershipsByUserId = new Map(
+    memberships.map((membership) => [membership.userId, membership]),
+  );
   const branchIds = Array.from(new Set(attendance.map((record) => record.branchId)));
   const branches = branchIds.length
     ? await prisma.branch.findMany({
@@ -249,6 +263,7 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
         null;
       return {
         profile,
+        membership: membershipsByUserId.get(profile.userId) ?? null,
         user: user ? serializeUserForClient(user) : null,
         activeCheckIn:
           userAttendance
@@ -264,12 +279,10 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
               branchName: branchNamesById.get(record.branchId) ?? null,
             }))[0] ?? null,
         lastCheckIn:
-          userAttendance
-            .map(attendanceWithEntryCode)
-            .map((record) => ({
-              ...record,
-              branchName: branchNamesById.get(record.branchId) ?? null,
-            }))[0] ?? null,
+          userAttendance.map(attendanceWithEntryCode).map((record) => ({
+            ...record,
+            branchName: branchNamesById.get(record.branchId) ?? null,
+          }))[0] ?? null,
         recentCheckIns: userAttendance
           .slice(0, 3)
           .map(attendanceWithEntryCode)
@@ -506,6 +519,44 @@ export async function handleOrganizationMembers(request: NextRequest, path: stri
       limit: page.limit,
     });
   }
+
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "members", /.+/, "status"])) {
+    const { orgId, memberUserId } = orgMemberDetailParamsSchema.parse({
+      orgId: path[1],
+      memberUserId: path[3],
+    });
+    const body = orgMemberStatusBodySchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, { orgId });
+    const actorUserId = requireOrgPermission(ctx, orgId, "MEMBERS_MANAGE");
+    const existing = await prisma.organizationUser.findUnique({
+      where: { orgId_userId: { orgId, userId: memberUserId } },
+    });
+    if (!existing) {
+      throw notFoundError("Member not found");
+    }
+
+    const membership = await prisma.organizationUser.update({
+      where: { orgId_userId: { orgId, userId: memberUserId } },
+      data:
+        body.status === "active"
+          ? { status: "active", leftAt: null }
+          : { status: "inactive", leftAt: new Date() },
+      select: { userId: true, status: true, joinedAt: true, leftAt: true },
+    });
+
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: body.status === "active" ? "member.reactivated" : "member.deactivated",
+      entityType: "organization_user",
+      entityId: memberUserId,
+      metadata: { previousStatus: existing.status, nextStatus: body.status },
+    });
+
+    return ok({ membership });
+  }
+
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "members", /.+/])) {
     const { orgId, memberUserId } = orgMemberDetailParamsSchema.parse({
       orgId: path[1],

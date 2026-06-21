@@ -95,6 +95,11 @@ export type MemberRow = {
     profilePhotoUrl?: string | null;
     notes?: string | null;
   };
+  membership?: {
+    status: string;
+    joinedAt?: string | Date | null;
+    leftAt?: string | Date | null;
+  } | null;
   user: {
     id: string;
     name: string;
