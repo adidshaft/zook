@@ -13,6 +13,51 @@ test.describe("payments actions", () => {
     requireDb();
   });
 
+  test("owner records an offline payment from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const plan = await createMembershipPlan(page, org.id, {
+      name: `UI Payment Plan ${Date.now()}`,
+      pricePaise: 210000,
+    });
+    const receiptNumber = `UI-RCPT-${Date.now()}`;
+
+    await page.goto("/dashboard/payments");
+    await expect(page.getByRole("heading", { name: "Collected at the desk" })).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await page.getByLabel("Choose member").click();
+    await page.getByPlaceholder("Search members").fill(member.email!);
+    await page.getByRole("option", { name: new RegExp(member.email!, "i") }).click();
+
+    await page.getByLabel("Choose plan").click();
+    await page.getByPlaceholder("Search plans").fill(plan.name);
+    await page.getByRole("option", { name: new RegExp(plan.name, "i") }).click();
+
+    await page.getByPlaceholder("Reference number").fill(receiptNumber);
+    await page.getByPlaceholder("Notes").fill("Dashboard UI offline payment");
+    await page.getByRole("button", { name: "Record payment" }).click();
+
+    await expect(page.getByText("Payment recorded for ₹2,100.")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("Receipt generated")).toBeVisible();
+    await expect(
+      prisma.payment.findFirst({
+        where: {
+          orgId: org.id,
+          userId: member.id,
+          amountPaise: 210000,
+          receiptNumber,
+          mode: "CASH",
+          status: "SUCCEEDED",
+        },
+      }),
+    ).resolves.toBeTruthy();
+  });
+
   test("owner records an offline payment, generates documents, and sees DB persistence", async ({
     page,
   }) => {
