@@ -102,6 +102,8 @@ Production image serving check:
   - Lightsail, App Runner, ELBv2, and CloudFront checks found no visible deployment serving `zookfit.in`
   - production still serves the stale AASA body with `appID: com.zook.app`, no `/checkin` paths, and `Content-Type: application/octet-stream`
   - production still serves `assetlinks.json` with `CODEX_FILL_SHA256_FROM_EAS`
+- Added `infra/aws/repair-association-files.sh` as the non-interactive live-host repair path once SSH to the correct Caddy host is available. It backs up `/opt/zook/Caddyfile`, installs the known-good association handlers, reloads Caddy through Docker Compose, and verifies `https://zookfit.in/.well-known/*`.
+- Validated the repair script with `bash -n`, `--help`, and a Caddyfile fixture patch test that confirms both handlers are inserted before `reverse_proxy web:3000`.
 
 ## Device Availability Checks
 

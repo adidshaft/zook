@@ -64,7 +64,15 @@ The CloudFormation Caddyfile serves these directly at the proxy before `reverse_
 
 This keeps iOS universal links and Android app links working even if a stale web container is accidentally left running.
 
-For an already-running instance, a CloudFormation `UserData` edit alone will not rewrite `/opt/zook/Caddyfile`. Apply the same handlers to the live host, then reload Caddy:
+For an already-running instance, a CloudFormation `UserData` edit alone will not rewrite `/opt/zook/Caddyfile`. If SSH to the live host is available, apply the same handlers, reload Caddy, and verify the public files with:
+
+```bash
+infra/aws/repair-association-files.sh ec2-user@13.204.196.160
+```
+
+The script requires `/opt/zook/Caddyfile` and `/opt/zook/docker-compose.yml` on the target host. It backs up the Caddyfile, installs the known-good Zook universal/app-link handlers before `reverse_proxy web:3000`, reloads Caddy through Docker Compose, and verifies `https://zookfit.in/.well-known/*`.
+
+Manual equivalent:
 
 ```bash
 sudo cp /opt/zook/Caddyfile /opt/zook/Caddyfile.bak.$(date +%Y%m%d%H%M%S)
