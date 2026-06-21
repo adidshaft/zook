@@ -143,18 +143,29 @@ export async function handleOrganizationRoot(request: NextRequest, path: string[
       if (body.platformReferralCode) {
         const normalizedReferral = body.platformReferralCode.toLowerCase();
         if (normalizedReferral !== username) {
-          const sourceOrg = await tx.organization.findUnique({
+          const [sourceOrg, referralCode] = await Promise.all([
+            tx.organization.findUnique({
             where: { username: normalizedReferral },
             select: { id: true },
-          });
-          if (sourceOrg) {
+            }),
+            tx.referralCode.findUnique({
+              where: { code: body.platformReferralCode.toUpperCase() },
+              select: { orgId: true, referrerUserId: true, createdByRole: true, code: true },
+            }),
+          ]);
+          const sourceOrgId = referralCode?.orgId ?? sourceOrg?.id;
+          if (sourceOrgId && referralCode?.referrerUserId !== userId) {
             await tx.orgReferralPartnership.upsert({
               where: {
-                sourceOrgId_targetOrgId: { sourceOrgId: sourceOrg.id, targetOrgId: created.id },
+                sourceOrgId_targetOrgId: { sourceOrgId, targetOrgId: created.id },
               },
               create: {
-                sourceOrgId: sourceOrg.id,
+                sourceOrgId,
                 targetOrgId: created.id,
+                referrerUserId: referralCode?.referrerUserId ?? null,
+                referrerRole: referralCode?.createdByRole ?? null,
+                referrerOrgId: referralCode?.orgId ?? null,
+                code: referralCode?.code ?? body.platformReferralCode,
                 referralPolicySnapshot: {
                   code: body.platformReferralCode,
                   redeemedAt: new Date().toISOString(),

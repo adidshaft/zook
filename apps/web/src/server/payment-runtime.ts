@@ -9,6 +9,7 @@ import {
   transitionPaymentSession,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
+import { qualifyPlatformGymReferral } from "./domains/rewards/ledger";
 import { ensurePaymentInvoiceDocument, ensureSaasInvoiceDocument } from "./invoices/generate";
 import { assertMinorConsentGranted } from "./minor-gates";
 
@@ -51,7 +52,7 @@ function toMembershipPlanInput(plan: {
 type PaymentSessionMetadata = {
   orgId?: string;
   tier?: "STARTER" | "GROWTH" | "PRO";
-  billingCycle?: "MONTHLY" | "YEARLY";
+  billingCycle?: "MONTHLY" | "SEMIANNUAL" | "YEARLY";
   priceLockedPaise?: number;
   subscriptionId?: string;
   renewalOfSubscriptionId?: string;
@@ -88,7 +89,13 @@ type MembershipEnsureInput = {
 
 type MembershipOpsClient = Pick<
   typeof prisma,
-  "memberSubscription" | "referralReward" | "referralCode" | "referralPolicy"
+  | "memberSubscription"
+  | "referralReward"
+  | "referralCode"
+  | "referralPolicy"
+  | "referralRedemption"
+  | "rewardLedgerEntry"
+  | "userRewardWallet"
 >;
 
 type ReferralRewardClient = Pick<
@@ -98,7 +105,13 @@ type ReferralRewardClient = Pick<
 
 type ReferralFulfillmentClient = Pick<
   MembershipOpsClient,
-  "memberSubscription" | "referralReward" | "referralCode" | "referralPolicy"
+  | "memberSubscription"
+  | "referralReward"
+  | "referralCode"
+  | "referralPolicy"
+  | "referralRedemption"
+  | "rewardLedgerEntry"
+  | "userRewardWallet"
 >;
 
 async function applyReferralRewardToSubscription(input: {
@@ -254,6 +267,63 @@ async function fulfillReferralReward(input: {
     return {
       reward: existingReward,
       notification: null as DeferredNotificationInput | null,
+    };
+  }
+
+  if (policy.memberGymReferralRewardPaise > 0) {
+    const redemption = await input.client.referralRedemption.findUnique({
+      where: { id: input.redemptionId },
+    });
+    if (!redemption) {
+      return { reward: null, notification: null as DeferredNotificationInput | null };
+    }
+    const existingLedger = await input.client.rewardLedgerEntry.findUnique({
+      where: {
+        userId_kind_referredUserId: {
+          userId: referralCode.referrerUserId,
+          kind: "MEMBER_TO_GYM_CASH",
+          referredUserId: redemption.referredUserId,
+        },
+      },
+    });
+    if (existingLedger) {
+      return { reward: null, notification: null as DeferredNotificationInput | null };
+    }
+    const now = new Date();
+    const entry = await input.client.rewardLedgerEntry.create({
+      data: {
+        userId: referralCode.referrerUserId,
+        kind: "MEMBER_TO_GYM_CASH",
+        source: "ORG",
+        fundingOrgId: input.orgId,
+        referredUserId: redemption.referredUserId,
+        amountPaise: policy.memberGymReferralRewardPaise,
+        status: "QUALIFIED",
+        qualifiedAt: now,
+        payableAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+        metadata: {
+          referralCodeId: input.referralCodeId,
+          redemptionId: input.redemptionId,
+        } as Prisma.InputJsonValue,
+      },
+    });
+    await input.client.userRewardWallet.upsert({
+      where: { userId: referralCode.referrerUserId },
+      create: { userId: referralCode.referrerUserId },
+      update: {},
+    });
+    return {
+      reward: null,
+      notification: {
+        orgId: input.orgId,
+        type: "ENGAGEMENT",
+        title: "Referral reward qualified",
+        body: `You earned ₹${Math.round(entry.amountPaise / 100)} from a member referral.`,
+        audience: "selected_member",
+        userIds: [referralCode.referrerUserId],
+        pushEnabled: true,
+        metadata: { rewardLedgerEntryId: entry.id, referralCodeId: input.referralCodeId },
+      } satisfies DeferredNotificationInput,
     };
   }
 
@@ -920,6 +990,8 @@ export async function applyPaymentSessionStatus(input: {
       const nextRenewalAt = new Date();
       if (billingCycle === "YEARLY") {
         nextRenewalAt.setFullYear(nextRenewalAt.getFullYear() + 1);
+      } else if (billingCycle === "SEMIANNUAL") {
+        nextRenewalAt.setMonth(nextRenewalAt.getMonth() + 6);
       } else {
         nextRenewalAt.setMonth(nextRenewalAt.getMonth() + 1);
       }
@@ -960,6 +1032,11 @@ export async function applyPaymentSessionStatus(input: {
         amountPaise: session.amountPaise,
         ...(metadata.tier ? { tier: metadata.tier } : {}),
         billingCycle,
+      });
+      await qualifyPlatformGymReferral({
+        referredOrgId: session.orgId,
+        billingCycle,
+        paymentId: payment.id,
       });
     } else if (payment.orgId) {
       const [org, user] = await Promise.all([

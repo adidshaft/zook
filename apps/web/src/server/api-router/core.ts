@@ -223,6 +223,7 @@ const saasEntitlementsSchema = z.object({
 
 const platformSaasPlanPatchSchema = z.object({
   monthlyPaise: z.number().int().positive().max(100_000_000),
+  semiannualPaise: z.number().int().positive().max(600_000_000).optional(),
   yearlyPaise: z.number().int().positive().max(1_000_000_000),
   entitlements: saasEntitlementsSchema.optional(),
 });
@@ -243,6 +244,13 @@ export const platformReferralPolicySchema = z.object({
   referrerRewardValue: z.number().int().min(0).max(10_000_000).default(30),
   referredRewardType: z.enum(["TRIAL_DAYS", "DISCOUNT_PERCENT_BPS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
   referredRewardValue: z.number().int().min(0).max(10_000_000).default(30),
+  nonOwnerSemiannualRewardPaise: z.number().int().min(0).max(10_000_000).default(250_000),
+  nonOwnerYearlyRewardPaise: z.number().int().min(0).max(10_000_000).default(500_000),
+  ownerRewardDays: z.number().int().min(0).max(365).default(30),
+  qualifyingCycles: z.array(z.enum(["SEMIANNUAL", "YEARLY"])).default(["SEMIANNUAL", "YEARLY"]),
+  clawbackWindowDays: z.number().int().min(0).max(90).default(14),
+  minWithdrawalPaise: z.number().int().min(0).max(10_000_000).default(100_000),
+  maxRewardsPerUserPerMonth: z.number().int().min(1).max(100).default(10),
   maxRedemptionsPerOrg: z.number().int().min(1).max(1000).default(25),
   expiresInDays: z.number().int().min(1).max(730).default(180),
 });
@@ -504,7 +512,7 @@ export const saasBillingMandateSchema = z.object({
 
 export const saasUpgradeSchema = z.object({
   tier: z.enum(["STARTER", "GROWTH", "PRO"]),
-  billingCycle: z.enum(["MONTHLY", "YEARLY"]).default("MONTHLY"),
+  billingCycle: z.enum(["MONTHLY", "SEMIANNUAL", "YEARLY"]).default("MONTHLY"),
 });
 
 export const planProgressInputSchema = z.object({
@@ -1162,13 +1170,17 @@ export function priceForSaasPlan(
   tier: PaidSaasTier,
   billingCycle: SaasBillingCycle,
 ) {
-  return billingCycle === "YEARLY" ? pricing[tier].yearly : pricing[tier].monthly;
+  if (billingCycle === "YEARLY") return pricing[tier].yearly;
+  if (billingCycle === "SEMIANNUAL") return pricing[tier].semiannual;
+  return pricing[tier].monthly;
 }
 
 export function renewalAfter(start: Date, billingCycle: SaasBillingCycle) {
   const next = new Date(start);
   if (billingCycle === "YEARLY") {
     next.setFullYear(next.getFullYear() + 1);
+  } else if (billingCycle === "SEMIANNUAL") {
+    next.setMonth(next.getMonth() + 6);
   } else {
     next.setMonth(next.getMonth() + 1);
   }
@@ -3498,7 +3510,9 @@ async function applySaasBillingProviderEvent(input: {
       ? (metadata.tier as PaidSaasTier)
       : undefined;
   const metadataBillingCycle =
-    metadata.billingCycle === "YEARLY" || metadata.billingCycle === "MONTHLY"
+    metadata.billingCycle === "YEARLY" ||
+    metadata.billingCycle === "SEMIANNUAL" ||
+    metadata.billingCycle === "MONTHLY"
       ? (metadata.billingCycle as SaasBillingCycle)
       : undefined;
   const metadataPriceLockedPaise =

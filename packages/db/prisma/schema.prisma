@@ -448,7 +448,35 @@ enum SaaSTier {
 
 enum SaaSBillingCycle {
   MONTHLY
+  SEMIANNUAL
   YEARLY
+}
+
+enum RewardLedgerKind {
+  GYM_TO_ZOOK_CASH
+  MEMBER_TO_GYM_CASH
+  GYM_TO_ZOOK_DAYS
+  MEMBER_TO_GYM_DAYS
+}
+
+enum RewardLedgerSource {
+  PLATFORM
+  ORG
+}
+
+enum RewardLedgerStatus {
+  PENDING
+  QUALIFIED
+  PAYABLE
+  PAID
+  REVERSED
+}
+
+enum RewardWithdrawalStatus {
+  REQUESTED
+  PAID
+  REJECTED
+  CANCELLED
 }
 
 enum ContentModerationKind {
@@ -1690,17 +1718,83 @@ model ReferralReward {
   @@index([referralCodeId])
 }
 
+model UserRewardWallet {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  balancePaise Int      @default(0)
+  currency     String   @default("INR")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model RewardLedgerEntry {
+  id             String             @id @default(cuid())
+  userId         String
+  kind           RewardLedgerKind
+  source         RewardLedgerSource
+  fundingOrgId   String?
+  referredOrgId  String?
+  referredUserId String?
+  amountPaise    Int
+  status         RewardLedgerStatus @default(PENDING)
+  qualifiedAt    DateTime?
+  payableAt      DateTime?
+  paidAt         DateTime?
+  reversedAt     DateTime?
+  payoutId       String?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, kind, referredOrgId])
+  @@unique([userId, kind, referredUserId])
+  @@index([userId, status])
+  @@index([source, fundingOrgId, status])
+  @@index([referredOrgId])
+  @@index([referredUserId])
+  @@index([payoutId])
+}
+
+model RewardWithdrawal {
+  id             String                 @id @default(cuid())
+  userId         String
+  amountPaise    Int
+  currency       String                 @default("INR")
+  status         RewardWithdrawalStatus @default(REQUESTED)
+  requestedAt    DateTime               @default(now())
+  reviewedById   String?
+  reviewedAt     DateTime?
+  paidAt         DateTime?
+  paidMethod     String?
+  paidNote       String?
+  proofFileAssetId String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
+}
+
 model OrgReferralPartnership {
   id                     String   @id @default(cuid())
   sourceOrgId            String
   targetOrgId            String
+  referrerUserId         String?
+  referrerRole           Role?
+  referrerOrgId          String?
+  code                   String?
   referralPolicySnapshot Json
   status                 String   @default("active")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   @@unique([sourceOrgId, targetOrgId])
+  @@unique([referrerUserId, targetOrgId])
   @@index([targetOrgId, status])
+  @@index([referrerUserId])
+  @@index([code])
 }
 
 model Offer {

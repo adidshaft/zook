@@ -218,6 +218,10 @@ export async function handleOrganizationBilling(request: NextRequest, path: stri
     const startsAt =
       org.trialEndAt && org.trialEndAt.getTime() > now.getTime() ? org.trialEndAt : now;
     const nextRenewalAt = renewalAfter(startsAt, billingCycle);
+    const mandateBillingPeriod = billingCycle === "YEARLY" ? "yearly" : "monthly";
+    const mandateBillingInterval = billingCycle === "SEMIANNUAL" ? 6 : 1;
+    const mandateTotalCount =
+      billingCycle === "YEARLY" ? 10 : billingCycle === "SEMIANNUAL" ? 20 : 120;
     const session = await prisma.paymentSession.create({
       data: {
         orgId,
@@ -248,9 +252,9 @@ export async function handleOrganizationBilling(request: NextRequest, path: stri
           status: "CREATED",
           amountPaise,
           currency: "INR",
-          billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
-          billingInterval: 1,
-          totalCount: billingCycle === "YEARLY" ? 10 : 120,
+          billingPeriod: mandateBillingPeriod,
+          billingInterval: mandateBillingInterval,
+          totalCount: mandateTotalCount,
           nextChargeAt: startsAt,
           paymentSessionId: session.id,
           metadata: { orgId, paymentSessionId: session.id, tier, billingCycle } as Prisma.InputJsonValue,
@@ -264,9 +268,9 @@ export async function handleOrganizationBilling(request: NextRequest, path: stri
       referenceId: session.id,
       planName: `Zook ${tier.toLowerCase()} ${billingCycle.toLowerCase()}`,
       description: `Zook ${tier} plan billed ${billingCycle.toLowerCase()}`,
-      billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
-      billingInterval: 1,
-      totalCount: billingCycle === "YEARLY" ? 10 : 120,
+      billingPeriod: mandateBillingPeriod,
+      billingInterval: mandateBillingInterval,
+      totalCount: mandateTotalCount,
       startAt: startsAt,
       returnUrl: `/dashboard/billing`,
       customer: clean({
@@ -297,8 +301,9 @@ export async function handleOrganizationBilling(request: NextRequest, path: stri
           providerPlanId: createdMandate.providerPlanId,
           checkoutUrl,
           amountPaise,
-          billingPeriod: billingCycle === "YEARLY" ? "yearly" : "monthly",
-          totalCount: billingCycle === "YEARLY" ? 10 : 120,
+          billingPeriod: mandateBillingPeriod,
+          billingInterval: mandateBillingInterval,
+          totalCount: mandateTotalCount,
           nextChargeAt: createdMandate.nextChargeAt ?? startsAt,
           currentStartAt: createdMandate.currentStartAt,
           currentEndAt: createdMandate.currentEndAt,
