@@ -97,6 +97,11 @@ Production image serving check:
   - digest: `sha256:446751f69a12cfd810d5e4d4de209865f256e62641b57b0782191598ea2d5a03`
 - Rechecked `https://zookfit.in/.well-known/*` after the ECR push; production still served the stale June 12 association files, so the live host did not auto-pull/restart from ECR.
 - No SSM managed instances, CloudFormation stacks, or ECS clusters are visible in `ap-south-1` for the configured AWS account, so this workstation still has no control-plane path to update the running `13.204.196.160` Caddy host.
+- Follow-up infrastructure audit on 2026-06-22:
+  - all-region EC2 instance and Elastic IP lookup found no resource for `13.204.196.160` in the configured AWS account
+  - Lightsail, App Runner, ELBv2, and CloudFront checks found no visible deployment serving `zookfit.in`
+  - production still serves the stale AASA body with `appID: com.zook.app`, no `/checkin` paths, and `Content-Type: application/octet-stream`
+  - production still serves `assetlinks.json` with `CODEX_FILL_SHA256_FROM_EAS`
 
 ## Device Availability Checks
 
@@ -175,4 +180,4 @@ Still requires physical-device/staging validation:
 
 ## Current Status
 
-Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
+Local static configuration and the production Docker image are consistent with the intended bundle/package IDs and domains, and the fixed image has been pushed to ECR. Live `zookfit.in` and `app.zookfit.in` are still serving stale association files because the running Caddy host has not been updated and is not visible through the configured AWS account's EC2/EIP/SSM/CloudFormation/ECS/Lightsail/App Runner/ELB/CloudFront surfaces. Real iOS universal-link verification, Android app-link verification, and live integration QA remain open because the live association files must be redeployed/fixed first, the available iPhone was locked during the openURL attempt, and no Android device was attached.
