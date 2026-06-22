@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DataTable,
   EmptyState,
@@ -2067,6 +2067,13 @@ type PlatformReferralPolicy = {
   referrerRewardValue: number;
   referredRewardType: "TRIAL_DAYS" | "DISCOUNT_PERCENT_BPS" | "CREDIT_PAISE" | "NONE";
   referredRewardValue: number;
+  nonOwnerSemiannualRewardPaise: number;
+  nonOwnerYearlyRewardPaise: number;
+  ownerRewardDays: number;
+  qualifyingCycles: Array<"SEMIANNUAL" | "YEARLY">;
+  clawbackWindowDays: number;
+  minWithdrawalPaise: number;
+  maxRewardsPerUserPerMonth: number;
   maxRedemptionsPerOrg: number;
   expiresInDays: number;
 };
@@ -2272,7 +2279,98 @@ function PlatformReferralPolicyCard() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Member / trainer refers a gym</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Cash a non-owner earns when a gym they refer subscribes (paid out after the clawback
+                window).
+              </p>
+              <label className="mt-3 block text-xs text-white/55">6-month sub → cash (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.nonOwnerSemiannualRewardPaise / 100))}
+                onChange={(event) => patch({ nonOwnerSemiannualRewardPaise: num(event.target.value) * 100 })}
+              />
+              <label className="mt-3 block text-xs text-white/55">Yearly sub → cash (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.nonOwnerYearlyRewardPaise / 100))}
+                onChange={(event) => patch({ nonOwnerYearlyRewardPaise: num(event.target.value) * 100 })}
+              />
+            </div>
+
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Gym owner refers a gym</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Free Zook subscription days the owner earns (no cash).
+              </p>
+              <label className="mt-3 block text-xs text-white/55">Free Zook days</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.ownerRewardDays)}
+                onChange={(event) => patch({ ownerRewardDays: num(event.target.value) })}
+              />
+              <label className="mt-3 block text-xs text-white/55">Qualifying commitments</label>
+              <div className="mt-1 flex gap-2">
+                {(["SEMIANNUAL", "YEARLY"] as const).map((cycle) => {
+                  const active = policy.qualifyingCycles.includes(cycle);
+                  return (
+                    <button
+                      key={cycle}
+                      type="button"
+                      onClick={() =>
+                        patch({
+                          qualifyingCycles: active
+                            ? policy.qualifyingCycles.filter((value) => value !== cycle)
+                            : [...policy.qualifyingCycles, cycle],
+                        })
+                      }
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        active
+                          ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
+                          : "border-white/10 bg-white/5 text-white/55"
+                      }`}
+                    >
+                      {cycle === "SEMIANNUAL" ? "6-month" : "Yearly"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-xs text-white/55">Clawback window (days)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.clawbackWindowDays)}
+                onChange={(event) => patch({ clawbackWindowDays: num(event.target.value) })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Min withdrawal (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.minWithdrawalPaise / 100))}
+                onChange={(event) => patch({ minWithdrawalPaise: num(event.target.value) * 100 })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Max rewards / user / month</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.maxRewardsPerUserPerMonth)}
+                onChange={(event) => patch({ maxRewardsPerUserPerMonth: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
             <div>
               <label className="block text-xs text-white/55">Max referrals per gym</label>
               <input
@@ -2305,6 +2403,99 @@ function PlatformReferralPolicyCard() {
           {notice.message}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+type RewardWithdrawalRow = {
+  id: string;
+  userId: string;
+  amountPaise: number;
+  status: string;
+  requestedAt: string;
+  paidAt?: string | null;
+  paidMethod?: string | null;
+  user: { id: string; name: string | null; email: string } | null;
+};
+
+/**
+ * Platform-owner review + payout of member/trainer reward-cash withdrawals
+ * (the manual-payout step of "accrue + manual"). Backend:
+ * GET /api/platform/rewards/withdrawals, POST .../:id/mark-paid.
+ */
+function PlatformWithdrawalsCard() {
+  const [rows, setRows] = useState<RewardWithdrawalRow[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
+
+  const load = useCallback(() => {
+    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
+      .then((payload) => setRows(payload.withdrawals))
+      .catch((cause) =>
+        setNotice({ message: cause instanceof Error ? cause.message : "Unable to load withdrawals.", tone: "red" }),
+      );
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function markPaid(id: string) {
+    setBusyId(id);
+    setNotice(null);
+    try {
+      await webApiFetch(`/api/platform/rewards/withdrawals/${id}/mark-paid`, {
+        method: "POST",
+        body: { method: "Manual payout" },
+      });
+      setNotice({ message: "Marked paid.", tone: "lime" });
+      load();
+    } catch (cause) {
+      setNotice({ message: cause instanceof Error ? cause.message : "Unable to mark paid.", tone: "red" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const pending = (rows ?? []).filter((row) => row.status === "REQUESTED");
+
+  return (
+    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Reward payouts</p>
+          <p className="mt-1 text-sm font-semibold text-white">Member / trainer withdrawal requests</p>
+        </div>
+        {pending.length ? <Pill tone="amber">{pending.length} to pay</Pill> : <Pill tone="neutral">Clear</Pill>}
+      </div>
+      {rows === null ? (
+        <p className="mt-4 text-sm text-white/45">Loading withdrawals…</p>
+      ) : rows.length === 0 ? (
+        <p className="mt-4 text-sm text-white/45">No withdrawal requests yet.</p>
+      ) : (
+        <div className="mt-4 grid gap-2">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-black/25 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{row.user?.name ?? row.user?.email ?? "Member"}</p>
+                <p className="truncate text-xs text-white/45">{formatDateTime(row.requestedAt)}</p>
+              </div>
+              <p className="text-sm font-semibold text-white">{formatInr(row.amountPaise)}</p>
+              {row.status === "REQUESTED" ? (
+                <ZookButton size="sm" onClick={() => void markPaid(row.id)} disabled={busyId === row.id}>
+                  {busyId === row.id ? "…" : "Mark paid"}
+                </ZookButton>
+              ) : (
+                <StatusPill value={row.status} tone={row.status === "PAID" ? "lime" : "neutral"} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {notice ? <div className="mt-3"><Pill tone={notice.tone}>{notice.message}</Pill></div> : null}
     </div>
   );
 }
@@ -2386,6 +2577,7 @@ function PlatformSubscriptionsSection() {
           />
         ) : null}
         <PlatformReferralPolicyCard />
+        <PlatformWithdrawalsCard />
         <div className="mt-5">
           {planCatalog ? (
             <div className="mb-5 grid gap-3 lg:grid-cols-3">
