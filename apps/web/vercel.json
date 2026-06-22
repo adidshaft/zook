@@ -9,6 +9,18 @@
     {
       "path": "/api/cron/account-deletion-purge",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/refund-reconcile",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/trainer-payouts-draft",
+      "schedule": "1 0 1 * *"
+    },
+    {
+      "path": "/api/cron/rewards-settle",
+      "schedule": "0 * * * *"
     }
   ]
 }

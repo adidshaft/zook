@@ -302,6 +302,7 @@ Resources:
           0 3 * * * root /opt/zook/run-cron.sh account-deletion-purge
           */10 * * * * root /opt/zook/run-cron.sh refund-reconcile
           1 0 1 * * root /opt/zook/run-cron.sh trainer-payouts-draft
+          0 * * * * root /opt/zook/run-cron.sh rewards-settle
           CRON
 
   WebElasticIp:
