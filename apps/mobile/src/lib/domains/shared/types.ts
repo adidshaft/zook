@@ -551,6 +551,7 @@ export interface OwnerBillingSubscriptionData {
     string,
     {
       monthly: number;
+      semiannual?: number;
       yearly: number;
       memberLimit?: number | null;
       entitlements?: OwnerBillingSubscriptionData["entitlements"];

@@ -98,7 +98,7 @@ export function useUpgradeSaasSubscription(orgId?: string) {
   return useMutation({
     mutationFn: (input: {
       tier: "STARTER" | "GROWTH" | "PRO";
-      billingCycle: "MONTHLY" | "YEARLY";
+      billingCycle: "MONTHLY" | "SEMIANNUAL" | "YEARLY";
     }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
       return mobileApiFetch<{

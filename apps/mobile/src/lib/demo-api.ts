@@ -2625,9 +2625,9 @@ export async function demoMobileApiFetch<T>(
         aiImageMonthlyCount: 0,
       },
       pricing: {
-        STARTER: { monthly: 149900, yearly: 1499000, memberLimit: 100 },
-        GROWTH: { monthly: 399900, yearly: 3999000, memberLimit: 500 },
-        PRO: { monthly: 799900, yearly: 7999000, memberLimit: null },
+        STARTER: { monthly: 149900, semiannual: 809000, yearly: 1499000, memberLimit: 100 },
+        GROWTH: { monthly: 399900, semiannual: 2159000, yearly: 3999000, memberLimit: 500 },
+        PRO: { monthly: 799900, semiannual: 4319000, yearly: 7999000, memberLimit: null },
       },
       mandate: {
         id: "offline-saas-mandate",

@@ -27,7 +27,24 @@ import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type Tier = "STARTER" | "GROWTH" | "PRO";
-type BillingCycle = "MONTHLY" | "YEARLY";
+type BillingCycle = "MONTHLY" | "SEMIANNUAL" | "YEARLY";
+
+const CYCLE_OPTIONS: BillingCycle[] = ["MONTHLY", "SEMIANNUAL", "YEARLY"];
+const CYCLE_LABEL: Record<BillingCycle, string> = {
+  MONTHLY: "Monthly",
+  SEMIANNUAL: "6 months",
+  YEARLY: "Yearly",
+};
+const CYCLE_PERIOD: Record<BillingCycle, string> = {
+  MONTHLY: "month",
+  SEMIANNUAL: "6 months",
+  YEARLY: "year",
+};
+const CYCLE_PRICE_KEY: Record<BillingCycle, "monthly" | "semiannual" | "yearly"> = {
+  MONTHLY: "monthly",
+  SEMIANNUAL: "semiannual",
+  YEARLY: "yearly",
+};
 
 const tiers: Tier[] = ["STARTER", "GROWTH", "PRO"];
 
@@ -247,19 +264,19 @@ export default function OwnerBillingScreen() {
                   </View>
                 </View>
                 <View style={styles.cycleRow}>
-                  {(["MONTHLY", "YEARLY"] as BillingCycle[]).map((item) => (
+                  {CYCLE_OPTIONS.map((item) => (
                     <ZookButton
                       key={item}
                       size="sm"
                       variant={cycle === item ? "primary" : "secondary"}
                       onPress={() => setCycle(item)}
                     >
-                      {titleCaseFromCode(item)}
+                      {CYCLE_LABEL[item]}
                     </ZookButton>
                   ))}
                 </View>
                 {tiers.map((tier) => {
-                  const price = data.pricing[tier]?.[cycle === "YEARLY" ? "yearly" : "monthly"] ?? 0;
+                  const price = data.pricing[tier]?.[CYCLE_PRICE_KEY[cycle]] ?? 0;
                   return (
                     <View key={tier} style={styles.planRow}>
                       <View style={styles.rowCopy}>
@@ -267,7 +284,7 @@ export default function OwnerBillingScreen() {
                           {titleCaseFromCode(tier)}
                         </Text>
                         <Text style={[styles.body, { color: palette.text.secondary }]}>
-                          {formatInr(price)} / {cycle === "YEARLY" ? "year" : "month"}
+                          {formatInr(price)} / {CYCLE_PERIOD[cycle]}
                         </Text>
                       </View>
                       <ZookButton
