@@ -138,6 +138,10 @@ export default function OwnerLayout() {
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
+        name="exercise-library"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
         name="coupons"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />

@@ -17,7 +17,7 @@ import { ClassesSkeleton } from "@/components/skeletons";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useCancelEnrollment, useEnrollInClass, useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
-import { formatTime } from "@/lib/formatting";
+import { formatInr, formatTime } from "@/lib/formatting";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 import {
   classDayHeading,
@@ -27,13 +27,16 @@ import {
 
 function bookingLabel(entry: MemberClassRecord) {
   if (entry.myEnrollmentStatus === "confirmed") return "Booked";
+  if (entry.myEnrollmentStatus === "pending_payment") return "Continue payment";
   if (entry.myEnrollmentStatus === "waitlisted") return "On waitlist";
   if (entry.remainingCapacity <= 0) return "Join waitlist";
-  return "Book class";
+  return entry.pricePaise && entry.pricePaise > 0 ? `Book · ${formatInr(entry.pricePaise)}` : "Book class";
 }
 
 function statusPill(entry: MemberClassRecord) {
   if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
+  if (entry.myEnrollmentStatus === "pending_payment")
+    return { label: "Payment due", tone: "amber" as const };
   if (entry.myEnrollmentStatus === "waitlisted")
     return { label: "Waitlisted", tone: "amber" as const };
   if (entry.remainingCapacity <= 0) return { label: "Full", tone: "red" as const };
@@ -73,8 +76,13 @@ function ClassCard({
   const visual = classTypeVisual(entry.classType);
   const pill = statusPill(entry);
   const booked = entry.myEnrollmentStatus === "confirmed";
+  const pendingPayment = entry.myEnrollmentStatus === "pending_payment";
   const waitlisted = entry.myEnrollmentStatus === "waitlisted";
-  const meta = [entry.classType, entry.trainerName ? `Coach ${entry.trainerName}` : null]
+  const meta = [
+    entry.classType,
+    entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : "Free",
+    entry.trainerName ? `Coach ${entry.trainerName}` : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -127,6 +135,10 @@ function ClassCard({
               {cancelling ? "Cancelling..." : "Cancel"}
             </ZookButton>
           </View>
+        ) : pendingPayment ? (
+          <ZookButton onPress={onBook} disabled={busy} variant="primary">
+            {busy ? "Opening..." : bookingLabel(entry)}
+          </ZookButton>
         ) : (
           <ZookButton onPress={onBook} disabled={busy} variant="primary">
             {busy ? "Saving..." : bookingLabel(entry)}

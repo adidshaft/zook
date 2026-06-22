@@ -63,6 +63,7 @@ function serializePlatformAbuseFlag(flag: {
 }
 
 const platformSectionAnchors: Record<string, string> = {
+  overview: "business-overview",
   status: "readiness",
   users: "users",
   payments: "payments",
@@ -74,45 +75,54 @@ const platformSectionAnchors: Record<string, string> = {
   impersonations: "impersonations",
   gyms: "organizations",
   subscriptions: "subscriptions",
+  referrals: "referrals",
   assistant: "ai-traffic",
   safety: "abuse-flags",
   incidents: "incident-checklist",
 };
 
 const platformNavItems: Array<[string, string, string]> = [
-  ["Status", "/platform/status", "status"],
-  ["Users", "/platform/users", "users"],
-  ["Payments", "/platform/payments", "payments"],
-  ["Broadcasts", "/platform/broadcasts", "broadcasts"],
-  ["Moderation", "/platform/moderation", "moderation"],
-  ["Impersonations", "/platform/impersonations", "impersonations"],
-  ["Webhooks", "/platform/webhooks", "webhooks"],
-  ["Audit", "/platform/audit", "audit"],
-  ["Flags", "/platform/flags", "flags"],
-  ["Gyms", "/platform/gyms", "gyms"],
+  ["Overview", "/platform", "overview"],
   ["Subscriptions", "/platform/subscriptions", "subscriptions"],
-  ["Assistant", "/platform/assistant", "assistant"],
+  ["Payments", "/platform/payments", "payments"],
+  ["Referrals & payouts", "/platform/referrals", "referrals"],
+  ["Gyms", "/platform/gyms", "gyms"],
+  ["Users", "/platform/users", "users"],
+  ["Impersonations", "/platform/impersonations", "impersonations"],
+  ["Moderation", "/platform/moderation", "moderation"],
   ["Safety", "/platform/safety", "safety"],
+  ["Audit", "/platform/audit", "audit"],
+  ["Status", "/platform/status", "status"],
   ["Incidents", "/platform/incidents", "incidents"],
+  ["Webhooks", "/platform/webhooks", "webhooks"],
+  ["Flags", "/platform/flags", "flags"],
+  ["Broadcasts", "/platform/broadcasts", "broadcasts"],
+  ["Assistant", "/platform/assistant", "assistant"],
 ];
 
 const platformNavGroups = [
   {
-    label: "Health",
+    label: "Business",
     items: platformNavItems.filter(([, , key]) =>
-      ["status", "incidents", "webhooks", "audit"].includes(key),
+      ["overview", "subscriptions", "payments", "referrals"].includes(key),
     ),
   },
   {
-    label: "Support",
+    label: "Gyms & users",
     items: platformNavItems.filter(([, , key]) =>
-      ["users", "payments", "gyms", "subscriptions"].includes(key),
+      ["gyms", "users", "impersonations"].includes(key),
     ),
   },
   {
-    label: "Controls",
+    label: "Trust & safety",
     items: platformNavItems.filter(([, , key]) =>
-      ["broadcasts", "moderation", "impersonations", "flags", "assistant", "safety"].includes(key),
+      ["moderation", "safety", "audit"].includes(key),
+    ),
+  },
+  {
+    label: "System",
+    items: platformNavItems.filter(([, , key]) =>
+      ["status", "incidents", "webhooks", "flags", "broadcasts", "assistant"].includes(key),
     ),
   },
 ];
@@ -169,10 +179,10 @@ export default async function PlatformPage({
 }) {
   await requirePlatformSession();
   const { section } = await params;
-  const sectionKey = section?.[0] ?? "status";
-  const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
+  const sectionKey = section?.[0] ?? "overview";
+  const activeAnchor = platformSectionAnchors[sectionKey] ?? "business-overview";
   const activeNavLabel =
-    platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Status";
+    platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Overview";
 
   return (
     <main className="min-h-screen px-3 py-3 md:px-5">
@@ -201,10 +211,10 @@ export default async function PlatformPage({
                 </div>
                 <div className="mt-3 min-w-0 lg:mt-0">
                   <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-                    Platform operations
+                    Business command center
                   </h1>
                   <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
-                    Production health, support lookup, gym accounts, billing, and risk queues.
+                    Revenue, gym growth, referral economics, and the queues that need the Zook owner.
                   </p>
                 </div>
               </div>

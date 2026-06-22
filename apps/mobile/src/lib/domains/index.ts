@@ -10,3 +10,4 @@ export * from "./payments";
 export * from "./notifications";
 export * from "./tracking";
 export * from "./gym";
+export * from "./exercise-templates";

@@ -43,7 +43,7 @@ test.describe("platform admin actions", () => {
     );
     expect(restored.data.org).toMatchObject({ id: org.id, status: "ACTIVE" });
 
-    await page.goto("/platform?section=organizations");
+    await page.goto("/platform/gyms");
     await expect(page.getByRole("heading", { name: /Gym accounts/i })).toBeVisible({
       timeout: 15_000,
     });
@@ -89,10 +89,17 @@ test.describe("platform admin actions", () => {
 
     const policy = {
       enabled: true,
-      referrerRewardType: "CREDIT_AMOUNT",
+      referrerRewardType: "CREDIT_PAISE",
       referrerRewardValue: 25000,
-      referredRewardType: "DISCOUNT_PERCENT",
+      referredRewardType: "DISCOUNT_PERCENT_BPS",
       referredRewardValue: 1500,
+      nonOwnerSemiannualRewardPaise: 100_000,
+      nonOwnerYearlyRewardPaise: 200_000,
+      ownerRewardDays: 30,
+      qualifyingCycles: ["SEMIANNUAL", "YEARLY"],
+      clawbackWindowDays: 30,
+      minWithdrawalPaise: 50_000,
+      maxRewardsPerUserPerMonth: 4,
       maxRedemptionsPerOrg: 12,
       expiresInDays: 90,
     };
@@ -113,6 +120,55 @@ test.describe("platform admin actions", () => {
     expect(fetched.data.policy).toEqual(policy);
   });
 
+  test("platform business overview surfaces referral economics and payout actions", async ({
+    page,
+  }) => {
+    await loginWithSessionCookie(page, "platform@zook.local");
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const uniqueOrgId = `platform-referral-test-${Date.now()}`;
+    await prisma.rewardLedgerEntry.create({
+      data: {
+        userId: user.id,
+        kind: "MEMBER_TO_GYM_CASH",
+        source: "PLATFORM",
+        referredOrgId: uniqueOrgId,
+        amountPaise: 125_000,
+        status: "PAYABLE",
+        qualifiedAt: new Date(),
+        payableAt: new Date(),
+      },
+    });
+    const withdrawal = await prisma.rewardWithdrawal.create({
+      data: {
+        userId: user.id,
+        amountPaise: 125_000,
+        status: "REQUESTED",
+      },
+    });
+
+    await page.goto("/platform");
+    await expect(page.getByRole("heading", { name: /command overview/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/MRR estimate/i)).toBeVisible();
+    await expect(page.getByRole("link", { name: /reward payouts to release/i })).toBeVisible();
+
+    await page.goto("/platform/referrals");
+    await expect(page.getByRole("heading", { name: /rewards, payouts, and policy/i })).toBeVisible();
+    await expect(page.getByText(/cost \/ gym referral/i)).toBeVisible();
+    await expect(page.getByText(/monthly payout exposure/i)).toBeVisible();
+    await page
+      .getByRole("button", { name: /mark paid/i })
+      .first()
+      .click();
+    await expect
+      .poll(async () => {
+        const updated = await prisma.rewardWithdrawal.findUnique({ where: { id: withdrawal.id } });
+        return updated?.status;
+      })
+      .toBe("PAID");
+  });
+
   test("platform operations exposes support, payments, broadcasts, moderation, and impersonations", async ({
     page,
   }) => {
@@ -120,15 +176,14 @@ test.describe("platform admin actions", () => {
     await page.goto("/platform/users");
     await expect(page.getByRole("heading", { name: /platform support console/i })).toBeVisible();
     await page.goto("/platform/payments");
-    await expect(page.getByRole("heading", { name: /payment ledger/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /payment records/i })).toBeVisible();
     await page.goto("/platform/broadcasts");
     await expect(page.getByRole("heading", { name: /platform broadcasts/i })).toBeVisible();
     await page.goto("/platform/moderation");
     await expect(page.getByRole("heading", { name: /content moderation queue/i })).toBeVisible();
     await page.goto("/platform/impersonations");
-    await expect(page.getByRole("heading", { name: /support impersonation history/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /support access log/i })).toBeVisible();
     await page.goto("/platform/gyms");
-    await expect(page.getByRole("button", { name: /extend trial/i }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /transfer owner/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /activate/i }).first()).toBeVisible();
   });
 });

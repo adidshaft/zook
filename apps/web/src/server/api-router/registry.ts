@@ -10,6 +10,7 @@ import { handleAuth } from "./auth";
 import { handleClasses } from "./classes";
 import { handleCouponsReferrals } from "./coupons-referrals";
 import { handleCronJobs } from "./cron";
+import { handleExerciseTemplates } from "./exercise-templates";
 import { handleFiles } from "./files";
 import { handleHealthReadiness } from "./health-readiness";
 import { handleManualPayments } from "./manual-payments";
@@ -103,6 +104,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleManualPayments, firstSegments: ["orgs"] },
   { handler: handlePersonalTraining, firstSegments: ["orgs"] },
   { handler: handlePlansChallenges, firstSegments: ["orgs"] },
+  { handler: handleExerciseTemplates, firstSegments: ["orgs"] },
   { handler: handleTrainerClientWellness, firstSegments: ["orgs"] },
   { handler: handleTrainerOperations, firstSegments: ["orgs"] },
   { handler: handleClasses, firstSegments: ["orgs"] },

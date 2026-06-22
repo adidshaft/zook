@@ -205,6 +205,8 @@ export type ClassRow = {
   description?: string | null;
   classType: string;
   maxCapacity: number;
+  pricePaise?: number | null;
+  trainerCommissionBps?: number | null;
   startTime: string | Date;
   endTime: string | Date;
   recurrenceRule?: string | null;

@@ -141,9 +141,15 @@ enum PaymentPurpose {
   SAAS_BILLING
   MEMBERSHIP
   SHOP_ORDER
+  CLASS_BOOKING
   PERSONAL_TRAINING
   OTHER
   MANUAL_ADJUSTMENT
+}
+
+enum ExerciseTemplateScope {
+  ORG
+  TRAINER
 }
 
 enum PaymentEventStatus {
@@ -2066,6 +2072,8 @@ model Class {
   description    String?
   classType      String
   maxCapacity    Int
+  pricePaise     Int      @default(0)
+  trainerCommissionBps Int?
   startTime      DateTime
   endTime        DateTime
   recurrenceRule String?
@@ -2082,11 +2090,41 @@ model ClassEnrollment {
   classId     String
   memberId    String
   status      String    @default("confirmed")
+  paymentId   String?
+  paymentSessionId String?
+  paidAt      DateTime?
+  refundPaymentId String?
+  refundedAt  DateTime?
   enrolledAt  DateTime  @default(now())
   cancelledAt DateTime?
 
   @@unique([classId, memberId])
   @@index([memberId, status])
+  @@index([paymentSessionId])
+  @@index([paymentId])
+}
+
+model ExerciseTemplate {
+  id                 String                @id @default(cuid())
+  orgId              String
+  scope              ExerciseTemplateScope
+  createdByUserId    String?
+  name               String
+  muscleGroup        String?
+  equipment          String?
+  defaultSets        Int?
+  defaultReps        Int?
+  defaultRestSeconds Int?
+  tempo              String?
+  notes              String?
+  featured           Boolean               @default(false)
+  active             Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([orgId, scope, createdByUserId, name])
+  @@index([orgId, scope])
+  @@index([orgId, active, featured])
 }
 
 model PlanContent {

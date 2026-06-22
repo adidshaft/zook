@@ -220,7 +220,7 @@ export const offerSchema = z.object({
 export const checkoutSchema = z.object({
   orgId: z.string().optional(),
   userId: z.string().optional(),
-  purpose: z.enum(["SAAS_BILLING", "MEMBERSHIP", "SHOP_ORDER", "PERSONAL_TRAINING"]),
+  purpose: z.enum(["SAAS_BILLING", "MEMBERSHIP", "SHOP_ORDER", "CLASS_BOOKING", "PERSONAL_TRAINING"]),
   amountPaise: z.number().int().min(0),
   currency: z.literal("INR").default("INR"),
   metadata: z.record(z.unknown()).optional(),

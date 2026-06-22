@@ -22,7 +22,7 @@ type MoreRow = {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr" | "/rewards";
+  href?: "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/exercise-library" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr" | "/rewards";
   webPath?: string;
   visible?: boolean;
 };
@@ -68,6 +68,14 @@ export default function OwnerMoreScreen() {
       icon: "pricetags-outline",
       testID: "owner-more-plans",
       href: "/owner/plans",
+      visible: canManagePlans,
+    },
+    {
+      title: "Exercise library",
+      subtitle: "Shared workout templates for trainers",
+      icon: "barbell-outline",
+      testID: "owner-more-exercise-library",
+      href: "/owner/exercise-library",
       visible: canManagePlans,
     },
     {

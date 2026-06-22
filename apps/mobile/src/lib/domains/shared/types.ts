@@ -144,6 +144,8 @@ export interface MemberClassRecord {
   description?: string | null;
   classType: string;
   maxCapacity: number;
+  pricePaise?: number | null;
+  trainerCommissionBps?: number | null;
   startTime: string;
   endTime: string;
   recurrenceRule?: string | null;

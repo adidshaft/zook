@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { prisma } from "@zook/db";
-import { expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
+import { completeMockCheckout, expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 import { requireDb } from "./helpers/db";
 
 async function createClassMember(orgId: string, email: string) {
@@ -35,12 +35,13 @@ test.describe("classes actions", () => {
       where: { orgId: org.id, role: "TRAINER" },
     });
 
+    const className = `Sunrise Flow ${Date.now()}`;
     const created = await expectApiOk<{ class: { id: string } }>(
       await page.request.post(`/api/orgs/${org.id}/classes`, {
         data: {
           branchId: branch.id,
           trainerId: trainerAssignment.userId,
-          name: `Sunrise Flow ${Date.now()}`,
+          name: className,
           classType: "YOGA",
           maxCapacity: 8,
           startTime: new Date(Date.now() + 2 * 60 * 60_000).toISOString(),
@@ -51,7 +52,7 @@ test.describe("classes actions", () => {
 
     await page.goto(`/dashboard/classes?branchId=${branch.id}`);
     await expect(page.getByRole("heading", { name: "Schedule a group class" })).toBeVisible();
-    await expect(page.getByText("Sunrise Flow", { exact: false })).toBeVisible();
+    await expect(page.getByRole("heading", { name: className })).toBeVisible();
 
     await loginWithSessionCookie(page, "member@zook.local");
     const beforeBooking = await expectApiOk<{
@@ -74,6 +75,156 @@ test.describe("classes actions", () => {
     const bookedClass = afterBooking.data.classes.find((entry) => entry.id === created.data.class.id);
     expect(bookedClass?.myEnrollmentStatus).toBe("confirmed");
     expect(bookedClass?.remainingCapacity).toBe(7);
+  });
+
+  test("paid class booking creates checkout, settles to confirmed, and cancels with refund before cutoff", async ({
+    page,
+  }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: { settings: { allowClassDropIn: true, classRefundCutoffHours: 6 } },
+    });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const trainerAssignment = await prisma.organizationRoleAssignment.findFirstOrThrow({
+      where: { orgId: org.id, role: "TRAINER" },
+    });
+
+    const created = await expectApiOk<{ class: { id: string; pricePaise: number } }>(
+      await page.request.post(`/api/orgs/${org.id}/classes`, {
+        data: {
+          branchId: branch.id,
+          trainerId: trainerAssignment.userId,
+          name: `Paid Strength ${Date.now()}`,
+          classType: "STRENGTH",
+          maxCapacity: 6,
+          pricePaise: 49900,
+          trainerCommissionBps: 2000,
+          startTime: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+          endTime: new Date(Date.now() + 25 * 60 * 60_000).toISOString(),
+        },
+      }),
+    );
+    expect(created.data.class.pricePaise).toBe(49900);
+
+    await loginWithSessionCookie(page, "member@zook.local");
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const checkout = await expectApiOk<{
+      enrollment: { id: string; status: string; paymentSessionId?: string | null };
+      paymentRequired: boolean;
+      checkoutUrl: string;
+      session: { id: string };
+    }>(await page.request.post(`/api/orgs/${org.id}/classes/${created.data.class.id}/enroll`));
+    expect(checkout.data.paymentRequired).toBe(true);
+    expect(checkout.data.enrollment.status).toBe("pending_payment");
+    expect(checkout.data.checkoutUrl).toContain(`/checkout/mock/${checkout.data.session.id}`);
+
+    await completeMockCheckout(page, checkout.data.session.id);
+    await expect(
+      prisma.classEnrollment.findUnique({
+        where: { classId_memberId: { classId: created.data.class.id, memberId: member.id } },
+      }),
+    ).resolves.toMatchObject({
+      status: "confirmed",
+      paidAt: expect.any(Date),
+      paymentSessionId: checkout.data.session.id,
+    });
+    await expect(
+      prisma.trainerPayoutLine.findFirst({
+        where: { orgId: org.id, trainerId: trainerAssignment.userId, kind: "CLASS_COMMISSION" },
+      }),
+    ).resolves.toMatchObject({ amountPaise: 9980, sourceType: "class_booking" });
+
+    const cancelled = await expectApiOk<{ ok: boolean; refundAllowed: boolean }>(
+      await page.request.delete(`/api/orgs/${org.id}/classes/${created.data.class.id}/enroll`),
+    );
+    expect(cancelled.data.refundAllowed).toBe(true);
+    await expect(
+      prisma.paymentRefund.findFirst({
+        where: { orgId: org.id, amountPaise: 49900, reason: "Class booking cancelled before cutoff" },
+      }),
+    ).resolves.toMatchObject({ status: "REFUNDED" });
+  });
+
+  test("paid class capacity sends overflow to waitlist without charging", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: { settings: { allowClassDropIn: true } },
+    });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const trainerAssignment = await prisma.organizationRoleAssignment.findFirstOrThrow({
+      where: { orgId: org.id, role: "TRAINER" },
+    });
+    const overflowMember = await createClassMember(org.id, `paid-waitlist-${Date.now()}@zook.local`);
+    const created = await expectApiOk<{ class: { id: string } }>(
+      await page.request.post(`/api/orgs/${org.id}/classes`, {
+        data: {
+          branchId: branch.id,
+          trainerId: trainerAssignment.userId,
+          name: `Paid Capacity ${Date.now()}`,
+          classType: "HIIT",
+          maxCapacity: 1,
+          pricePaise: 29900,
+          startTime: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
+          endTime: new Date(Date.now() + 13 * 60 * 60_000).toISOString(),
+        },
+      }),
+    );
+
+    await loginWithSessionCookie(page, "member@zook.local");
+    const sessionsBeforeOverflow = await prisma.paymentSession.count({ where: { orgId: org.id } });
+    const first = await expectApiOk<{ enrollment: { status: string }; session: { id: string } }>(
+      await page.request.post(`/api/orgs/${org.id}/classes/${created.data.class.id}/enroll`),
+    );
+    expect(first.data.enrollment.status).toBe("pending_payment");
+    expect(await prisma.paymentSession.count({ where: { orgId: org.id } })).toBe(sessionsBeforeOverflow + 1);
+
+    await loginWithSessionCookie(page, overflowMember.email!);
+    const waitlisted = await expectApiOk<{
+      enrollment: { status: string; paymentSessionId?: string | null };
+      paymentRequired?: boolean;
+    }>(await page.request.post(`/api/orgs/${org.id}/classes/${created.data.class.id}/enroll`));
+    expect(waitlisted.data.enrollment.status).toBe("waitlisted");
+    expect(waitlisted.data.paymentRequired).toBe(false);
+    expect(await prisma.paymentSession.count({ where: { orgId: org.id } })).toBe(sessionsBeforeOverflow + 1);
+  });
+
+  test("exercise templates include starters and support org CRUD", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const initial = await expectApiOk<{ templates: Array<{ id: string; scope: string; name: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/exercise-templates`),
+    );
+    expect(initial.data.templates.some((template) => template.scope === "STARTER" && template.name === "Bench Press")).toBe(true);
+
+    const created = await expectApiOk<{ template: { id: string; scope: string; featured: boolean } }>(
+      await page.request.post(`/api/orgs/${org.id}/exercise-templates`, {
+        data: {
+          scope: "ORG",
+          starterId: "starter-bench-press",
+          name: `House Bench ${Date.now()}`,
+          featured: true,
+        },
+      }),
+    );
+    expect(created.data.template).toMatchObject({ scope: "ORG", featured: true });
+
+    const updated = await expectApiOk<{ template: { id: string; defaultReps: number } }>(
+      await page.request.patch(`/api/orgs/${org.id}/exercise-templates/${created.data.template.id}`, {
+        data: { defaultReps: 12 },
+      }),
+    );
+    expect(updated.data.template.defaultReps).toBe(12);
+
+    await expectApiOk(await page.request.delete(`/api/orgs/${org.id}/exercise-templates/${created.data.template.id}`));
+    await expect(prisma.exerciseTemplate.findUnique({ where: { id: created.data.template.id } })).resolves.toMatchObject({ active: false });
   });
 
   test("canceling a confirmed class enrollment promotes the earliest waitlisted member and allows re-enroll", async ({
@@ -185,7 +336,9 @@ test.describe("classes actions", () => {
     );
 
     await page.goto(`/dashboard/classes?branchId=${branch.id}`);
-    const classCard = page.locator("div", { hasText: `Roster Test ${suffix}` }).first();
+    const classCard = page
+      .getByRole("heading", { name: `Roster Test ${suffix}` })
+      .locator("xpath=ancestor::div[contains(@class,'rounded-')][1]");
     await expect(classCard).toBeVisible({ timeout: 30_000 });
     await classCard.getByRole("button", { name: /view roster/i }).click();
     await expect(classCard.getByText("Class roster")).toBeVisible();

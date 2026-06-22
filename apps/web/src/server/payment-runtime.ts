@@ -9,6 +9,7 @@ import {
   transitionPaymentSession,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
+import { accrueClassBookingCommission } from "./domains/payouts";
 import { getPlatformReferralPolicy, qualifyPlatformGymReferral } from "./domains/rewards/ledger";
 import { ensurePaymentInvoiceDocument, ensureSaasInvoiceDocument } from "./invoices/generate";
 import { assertMinorConsentGranted } from "./minor-gates";
@@ -58,6 +59,8 @@ type PaymentSessionMetadata = {
   renewalOfSubscriptionId?: string;
   autopayMandateId?: string;
   shopOrderId?: string;
+  classId?: string;
+  classEnrollmentId?: string;
   offerId?: string;
   offerDiscountPaise?: number;
   couponId?: string;
@@ -990,6 +993,81 @@ export async function applyPaymentSessionStatus(input: {
       }
     }
 
+    const classEnrollmentId = metadata.classEnrollmentId;
+    const classId = metadata.classId;
+    if (classEnrollmentId && classId && session.orgId && session.userId && payment) {
+      const settledPayment = payment;
+      const settled = await prisma.$transaction(async (tx) => {
+        const classRecord = await tx.class.findFirst({
+          where: { id: classId, orgId: session.orgId! },
+        });
+        if (!classRecord || classRecord.pricePaise !== session.amountPaise) {
+          return null;
+        }
+        const enrollment = await tx.classEnrollment.findFirst({
+          where: {
+            id: classEnrollmentId,
+            classId: classRecord.id,
+            memberId: session.userId!,
+          },
+        });
+        if (!enrollment || enrollment.status === "cancelled") {
+          return null;
+        }
+        if (enrollment.status !== "confirmed") {
+          const reservedCount = await tx.classEnrollment.count({
+            where: {
+              classId: classRecord.id,
+              status: { in: ["confirmed", "pending_payment"] },
+              id: { not: enrollment.id },
+            },
+          });
+          if (reservedCount >= classRecord.maxCapacity) {
+            return null;
+          }
+        }
+        const updatedEnrollment = await tx.classEnrollment.update({
+          where: { id: enrollment.id },
+          data: {
+            status: "confirmed",
+            paymentId: settledPayment.id,
+            paymentSessionId: session.id,
+            paidAt: enrollment.paidAt ?? new Date(),
+            cancelledAt: null,
+          },
+        });
+        return { classRecord, enrollment: updatedEnrollment };
+      });
+
+      if (settled) {
+        await accrueClassBookingCommission({
+          orgId: settled.classRecord.orgId,
+          trainerId: settled.classRecord.trainerId,
+          classId: settled.classRecord.id,
+          paymentId: settledPayment.id,
+          amountPaise: settledPayment.amountPaise,
+          commissionBps: settled.classRecord.trainerCommissionBps,
+          className: settled.classRecord.name,
+          createdById: session.userId,
+        });
+        await input.createNotification({
+          orgId: settled.classRecord.orgId,
+          createdById: session.userId,
+          type: "TRANSACTIONAL",
+          title: "Class booking confirmed",
+          body: `You're booked for ${settled.classRecord.name}.`,
+          audience: "selected_member",
+          userIds: [session.userId],
+          pushEnabled: true,
+          metadata: {
+            classId: settled.classRecord.id,
+            enrollmentId: settled.enrollment.id,
+            paymentId: settledPayment.id,
+          } as Prisma.InputJsonValue,
+        });
+      }
+    }
+
     if (session.purpose === "SAAS_BILLING" && session.orgId) {
       const billingCycle = metadata.billingCycle ?? "MONTHLY";
       const nextRenewalAt = new Date();
@@ -1043,7 +1121,7 @@ export async function applyPaymentSessionStatus(input: {
         billingCycle,
         paymentId: payment.id,
       });
-    } else if (payment.orgId) {
+    } else if (payment.orgId && session.purpose !== "CLASS_BOOKING") {
       const [org, user] = await Promise.all([
         prisma.organization.findUnique({ where: { id: payment.orgId } }),
         payment.userId ? prisma.user.findUnique({ where: { id: payment.userId } }) : null,

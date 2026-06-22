@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, MapPin, UserRound, Users } from "lucide-react";
+import { CalendarDays, IndianRupee, MapPin, UserRound, Users } from "lucide-react";
 import type { Permission } from "@zook/core";
 import { DashboardPageShell, SectionHeader, StatusPill } from "@/components/dashboard-primitives/layout";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -21,6 +21,8 @@ type ClassRosterRow = {
   memberId: string;
   name: string;
   status: string;
+  paymentStatus?: string | null;
+  paidAt?: string | null;
   enrolledAt: string;
 };
 
@@ -54,6 +56,8 @@ function defaultClassForm(trainerId?: string) {
     description: "",
     trainerId: trainerId ?? "",
     maxCapacity: "12",
+    priceRupees: "0",
+    trainerCommissionPercent: "",
     startTime: toDateTimeLocalValue(start),
     endTime: toDateTimeLocalValue(end),
   };
@@ -101,6 +105,10 @@ export function ClassesDashboardRoute({
           description: form.description.trim() || undefined,
           classType: form.classType.trim(),
           maxCapacity: Number(form.maxCapacity),
+          pricePaise: Math.max(0, Math.round((Number.parseFloat(form.priceRupees) || 0) * 100)),
+          trainerCommissionBps: form.trainerCommissionPercent.trim()
+            ? Math.max(0, Math.round((Number.parseFloat(form.trainerCommissionPercent) || 0) * 100))
+            : null,
           startTime: new Date(form.startTime).toISOString(),
           endTime: new Date(form.endTime).toISOString(),
         },
@@ -236,6 +244,36 @@ export function ClassesDashboardRoute({
               />
             </label>
           </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Price (₹)
+              <input
+                type="number"
+                min={0}
+                step="1"
+                value={form.priceRupees}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, priceRupees: event.target.value }))
+                }
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Trainer commission override (%)
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="0.1"
+                value={form.trainerCommissionPercent}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, trainerCommissionPercent: event.target.value }))
+                }
+                placeholder="Use trainer default"
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+          </div>
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             Trainer
             <select
@@ -362,6 +400,12 @@ function ClassScheduleCard({
             <Users className="h-3.5 w-3.5" />
             {entry.enrollmentCount}/{entry.maxCapacity}
           </Pill>
+          <Pill tone={entry.pricePaise && entry.pricePaise > 0 ? "lime" : "neutral"}>
+            <IndianRupee className="h-3.5 w-3.5" />
+            {entry.pricePaise && entry.pricePaise > 0
+              ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(entry.pricePaise / 100)
+              : "Free"}
+          </Pill>
           <Pill tone="neutral">
             <UserRound className="h-3.5 w-3.5" />
             {entry.trainerName ?? "Trainer pending"}
@@ -423,7 +467,22 @@ function ClassScheduleCard({
                       Enrolled {formatDateTime(member.enrolledAt)}
                     </p>
                   </div>
-                  <StatusPill value={member.status} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusPill value={member.status} />
+                    {member.paymentStatus ? (
+                      <Pill
+                        tone={
+                          member.paymentStatus === "paid"
+                            ? "lime"
+                            : member.paymentStatus === "comp"
+                              ? "neutral"
+                              : "amber"
+                        }
+                      >
+                        {member.paymentStatus}
+                      </Pill>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>

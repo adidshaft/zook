@@ -24,7 +24,7 @@ import {
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
-import { useTrainerClients } from "@/lib/domains";
+import { useOrgExerciseTemplates, useSaveExerciseTemplate, useTrainerClients, type ExerciseTemplateRecord } from "@/lib/domains";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -46,6 +46,20 @@ function exerciseNameForTemplate(templateId: PlanTemplateId) {
   }
 }
 
+function exerciseFromTemplate(template?: ExerciseTemplateRecord | null) {
+  if (!template) return null;
+  return {
+    name: template.name,
+    sets: template.defaultSets ?? 3,
+    reps: template.defaultReps ? String(template.defaultReps) : "8-12",
+    restSeconds: template.defaultRestSeconds ?? 90,
+    equipment: template.equipment ?? undefined,
+    muscleGroup: template.muscleGroup ?? undefined,
+    tempo: template.tempo ?? undefined,
+    notes: template.notes ?? undefined,
+  };
+}
+
 export default function TrainerClientPlanScreen() {
   const router = useRouter();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
@@ -55,12 +69,15 @@ export default function TrainerClientPlanScreen() {
   const { palette } = useTheme();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
+  const exerciseTemplatesQuery = useOrgExerciseTemplates();
+  const saveExerciseTemplate = useSaveExerciseTemplate();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const fitnessGoal = fitnessGoalFor(client);
   const [status, setStatus] = useState<InlineNotice | null>(null);
   const [planTitle, setPlanTitle] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
+  const [selectedExerciseTemplateId, setSelectedExerciseTemplateId] = useState<string | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
   const [dietTitle, setDietTitle] = useState("");
@@ -81,6 +98,9 @@ export default function TrainerClientPlanScreen() {
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
+    const selectedExerciseTemplate =
+      exerciseTemplatesQuery.data?.templates.find((entry) => entry.id === selectedExerciseTemplateId) ?? null;
+    const templateExercise = exerciseFromTemplate(selectedExerciseTemplate);
     const starterExercise = exerciseNameForTemplate(template.id);
     return {
       title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
@@ -91,9 +111,10 @@ export default function TrainerClientPlanScreen() {
       content: {
         goal: fitnessGoal,
         template: template.id,
+        exerciseTemplateId: selectedExerciseTemplate?.id ?? null,
         sections: [{ title: template.title, body: template.body }],
         exercises: [
-          {
+          templateExercise ?? {
             name: starterExercise,
             sets: 3,
             reps: "8-12",
@@ -103,6 +124,22 @@ export default function TrainerClientPlanScreen() {
         ],
       },
     };
+  }
+
+  function saveCurrentExerciseAsTemplate() {
+    const payload = buildPlanPayload().content.exercises[0];
+    saveExerciseTemplate.mutate({
+      body: {
+        scope: "TRAINER",
+        name: payload.name,
+        equipment: "equipment" in payload ? payload.equipment ?? null : null,
+        muscleGroup: "muscleGroup" in payload ? payload.muscleGroup ?? null : null,
+        defaultSets: typeof payload.sets === "number" ? payload.sets : Number.parseInt(String(payload.sets), 10) || 3,
+        defaultReps: Number.parseInt(String(payload.reps), 10) || null,
+        defaultRestSeconds: payload.restSeconds ?? null,
+        notes: payload.notes ?? null,
+      },
+    });
   }
 
   async function saveDraft() {
@@ -266,10 +303,42 @@ export default function TrainerClientPlanScreen() {
                 );
               })}
             </View>
+            {exerciseTemplatesQuery.data?.templates.length ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Exercise templates</Text>
+                <View style={styles.chipRow}>
+                  {exerciseTemplatesQuery.data.templates.slice(0, 10).map((template) => {
+                    const selected = selectedExerciseTemplateId === template.id;
+                    return (
+                      <Pressable
+                        key={template.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setSelectedExerciseTemplateId(selected ? null : template.id)}
+                        style={({ pressed }) => [
+                          styles.templateChip,
+                          {
+                            backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                            borderColor: selected ? palette.accent.base : palette.border.default,
+                          },
+                          pressed ? styles.controlPressed : null,
+                        ]}
+                      >
+                        <Ionicons name={template.featured ? "star" : "barbell-outline"} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
+                        <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
             <View style={styles.actionRow}>
               <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>Save draft</ZookButton>
               <SecondaryButton testID="trainer-plan-template-help-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>Template notes</SecondaryButton>
             </View>
+            <SecondaryButton testID="trainer-save-exercise-template-button" onPress={saveCurrentExerciseAsTemplate} disabled={saveExerciseTemplate.isPending}>
+              Save exercise as template
+            </SecondaryButton>
             <SecondaryButton
               testID="trainer-publish-plan-button"
               onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member sees this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
@@ -321,6 +390,7 @@ const styles = StyleSheet.create({
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   backIcon: { fontSize: 26, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  sectionLabel: { ...typography.caption },
   templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },
   templateChipText: { ...typography.caption },
   actionRow: { flexDirection: "row", gap: spacing.sm },

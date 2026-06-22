@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { mobileApiFetch } from "@/lib/api";
+import { Linking } from "react-native";
+import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { queryKeys } from "@/lib/domains/shared/keys";
@@ -21,6 +22,9 @@ export function useEnrollInClass() {
       return mobileApiFetch<{
         enrollment: { id: string; status: string };
         remainingCapacity: number;
+        paymentRequired?: boolean;
+        checkoutUrl?: string | null;
+        session?: { id?: string | null } | null;
       }>(`/orgs/${activeOrgId}/classes/${classId}/enroll`, {
         method: "POST",
         token,
@@ -35,8 +39,26 @@ export function useEnrollInClass() {
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId) }),
       ]);
+      if (payload.paymentRequired && payload.checkoutUrl) {
+        const checkoutUrl = /^https?:\/\//i.test(payload.checkoutUrl)
+          ? payload.checkoutUrl
+          : toWebUrl(payload.checkoutUrl);
+        const returnUrl = `zook://payments/return?target=classes${payload.session?.id ? `&session=${encodeURIComponent(payload.session.id)}` : ""}`;
+        try {
+          const parsed = new URL(checkoutUrl);
+          parsed.searchParams.set("return_url", returnUrl);
+          await Linking.openURL(parsed.toString());
+        } catch {
+          const separator = checkoutUrl.includes("?") ? "&" : "?";
+          await Linking.openURL(`${checkoutUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`);
+        }
+        notifyMutationSuccess("Class checkout started.");
+        return;
+      }
       notifyMutationSuccess(
-        payload.enrollment.status === "waitlisted" ? "Added to waitlist." : "Class booked.",
+        payload.enrollment.status === "waitlisted"
+          ? "Added to waitlist. We'll prompt payment when a spot opens."
+          : "Class booked.",
       );
     },
     onError: (error) => {

@@ -213,6 +213,8 @@ export type CreateClassInput = {
   startTime: string;
   durationMin?: number;
   description?: string;
+  pricePaise?: number;
+  trainerCommissionBps?: number | null;
 };
 
 export function useCreateClass() {

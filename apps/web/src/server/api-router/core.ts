@@ -3402,6 +3402,7 @@ export async function startPaymentSessionCheckout(input: {
       | "SAAS_BILLING"
       | "MEMBERSHIP"
       | "SHOP_ORDER"
+      | "CLASS_BOOKING"
       | "PERSONAL_TRAINING"
       | "OTHER"
       | "MANUAL_ADJUSTMENT";

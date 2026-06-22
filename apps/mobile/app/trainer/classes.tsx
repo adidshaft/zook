@@ -18,7 +18,7 @@ import {
 import { useMyClasses } from "@/lib/domains";
 import { useCreateClass } from "@/lib/domains/trainer/queries";
 import { classDayHeading, classTypeVisual } from "@/features/member/classes/class-display";
-import { formatTime } from "@/lib/formatting";
+import { formatInr, formatTime } from "@/lib/formatting";
 import { radii, spacing, typography, layout, useTheme } from "@/lib/theme";
 
 const CLASS_TYPES = ["HIIT", "Strength", "Yoga", "Cycling", "Dance", "Boxing", "Mobility"];
@@ -48,6 +48,7 @@ export default function TrainerClasses() {
   const [name, setName] = useState("");
   const [classType, setClassType] = useState("Strength");
   const [capacity, setCapacity] = useState("16");
+  const [priceRupees, setPriceRupees] = useState("0");
   const [date, setDate] = useState<Date>(tomorrow());
   const [slot, setSlot] = useState(TIME_SLOTS[3]);
 
@@ -69,12 +70,14 @@ export default function TrainerClasses() {
         name: name.trim(),
         classType,
         maxCapacity: Number.parseInt(capacity, 10) || 16,
+        pricePaise: Math.max(0, Math.round((Number.parseFloat(priceRupees) || 0) * 100)),
         startTime: start.toISOString(),
         durationMin: 60,
       },
       {
         onSuccess: () => {
           setName("");
+          setPriceRupees("0");
           setShowForm(false);
         },
       },
@@ -127,6 +130,7 @@ export default function TrainerClasses() {
                 </View>
                 <FormField label="Capacity" value={capacity} onChangeText={setCapacity} keyboardType="number-pad" placeholder="16" style={styles.formField} />
               </View>
+              <FormField label="Price (₹)" value={priceRupees} onChangeText={setPriceRupees} keyboardType="decimal-pad" placeholder="0" />
               <Text style={[styles.formLabel, { color: palette.text.secondary }]}>Time</Text>
               <View style={styles.chipWrap}>
                 {TIME_SLOTS.map((time) => (
@@ -171,7 +175,7 @@ export default function TrainerClasses() {
                     <View style={styles.classCopy}>
                       <Text style={[styles.className, { color: palette.text.primary }]} numberOfLines={1}>{entry.name}</Text>
                       <Text style={[styles.classMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType}
+                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType} · {entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : "Free"}
                       </Text>
                     </View>
                     <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
