@@ -7,6 +7,13 @@ import { ZookButton } from "@/components/primitives";
 import { usePlanExercises } from "@/lib/domains/plans";
 import { glow, gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
 
+// The hero gradient is always dark in both themes, so its text must stay light
+// regardless of light/dark mode (otherwise light mode renders dark-on-dark).
+const ON_DARK_PRIMARY = "#F6FFE9";
+const ON_DARK_SECONDARY = "rgba(246,255,233,0.72)";
+const ON_DARK_CHIP_BG = "rgba(255,255,255,0.10)";
+const ON_DARK_CHIP_BORDER = "rgba(255,255,255,0.20)";
+
 export default function WorkoutCard({
   assignmentId,
   estimatedMinutes,
@@ -55,8 +62,8 @@ export default function WorkoutCard({
       />
       <View style={styles.content}>
         <Text style={[styles.eyebrow, { color: palette.accent.base }]}>TODAY&apos;S WORKOUT</Text>
-        <Text style={[styles.title, { color: palette.text.primary }]}>{planName}</Text>
-        <Text style={[styles.meta, { color: palette.text.secondary }]}>{meta}</Text>
+        <Text style={[styles.title, { color: ON_DARK_PRIMARY }]}>{planName}</Text>
+        <Text style={[styles.meta, { color: ON_DARK_SECONDARY }]}>{meta}</Text>
         {exerciseNames.length ? (
           <View style={styles.chips}>
             {exerciseNames.map((name) => (
@@ -64,10 +71,10 @@ export default function WorkoutCard({
                 key={name}
                 style={[
                   styles.chip,
-                  { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
+                  { borderColor: ON_DARK_CHIP_BORDER, backgroundColor: ON_DARK_CHIP_BG },
                 ]}
               >
-                <Text style={[styles.chipText, { color: palette.text.secondary }]} numberOfLines={1}>
+                <Text style={[styles.chipText, { color: ON_DARK_PRIMARY }]} numberOfLines={1}>
                   {name}
                 </Text>
               </View>
