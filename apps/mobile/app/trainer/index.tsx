@@ -164,6 +164,26 @@ export default function TrainerHomeScreen() {
             </Pressable>
           </AnimatedAppear>
 
+          <AnimatedAppear delay={38}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Refer a gym to Zook and earn"
+              onPress={() => router.push("/rewards" as never)}
+              style={({ pressed }) => (pressed ? styles.rowPressed : null)}
+            >
+              <Card variant="compact" contentStyle={styles.stack}>
+                <ListRow
+                  title="Refer a gym & earn"
+                  subtitle="Earn cash when a gym you refer subscribes to Zook"
+                  icon="gift-outline"
+                  trailing={
+                    <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
+                  }
+                />
+              </Card>
+            </Pressable>
+          </AnimatedAppear>
+
           <AnimatedAppear delay={40}>
             <SectionHeader title="Needs plan" />
             {clientsNeedingPlans ? (

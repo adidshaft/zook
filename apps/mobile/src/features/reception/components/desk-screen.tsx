@@ -139,6 +139,24 @@ export function ReceptionDeskScreenBody() {
               </ZookButton>
             </Card>
 
+            <Pressable
+              testID="reception-rewards"
+              accessibilityRole="button"
+              accessibilityLabel="Refer a gym to Zook and earn"
+              onPress={() => router.push("/rewards")}
+              style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
+            >
+              <Card variant="compact" padding={14} contentStyle={styles.liveFeedItem}>
+                <IconBubble icon="gift-outline" tone="lime" size={34} />
+                <View style={styles.liveFeedCopy}>
+                  <Text style={[styles.queueTitle, { color: palette.text.primary }]}>Refer a gym & earn</Text>
+                  <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                    Earn cash when a gym you refer subscribes to Zook
+                  </Text>
+                </View>
+              </Card>
+            </Pressable>
+
             <SectionHeader
               title="Recent activity"
               action={<Pill tone="neutral">{todayCount} today</Pill>}
