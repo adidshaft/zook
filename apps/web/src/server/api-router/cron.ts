@@ -4,6 +4,7 @@ import { getCronSecret } from "@zook/core";
 import { getPaymentProvider } from "@zook/core/providers";
 import { prisma, Prisma } from "@zook/db";
 import { draftPayoutsForMonth } from "../domains/payouts";
+import { settleReadyRewards } from "../domains/rewards/ledger";
 import { forbiddenError } from "../errors";
 import { ok } from "../response";
 import { createDirectNotification, jsonObject, pathMatches } from "./core";
@@ -403,6 +404,16 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
       skipped,
       failures: failures.slice(0, 10),
     });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["cron", "rewards-settle"])) {
+    const cronSecret = getCronSecret();
+    const authHeader = request.headers.get("authorization");
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      throw forbiddenError("Invalid cron authorization.");
+    }
+    const result = await settleReadyRewards();
+    return ok({ ok: true, ...result });
   }
 
   return undefined;

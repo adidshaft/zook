@@ -9,7 +9,7 @@ import {
   transitionPaymentSession,
 } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
-import { qualifyPlatformGymReferral } from "./domains/rewards/ledger";
+import { getPlatformReferralPolicy, qualifyPlatformGymReferral } from "./domains/rewards/ledger";
 import { ensurePaymentInvoiceDocument, ensureSaasInvoiceDocument } from "./invoices/generate";
 import { assertMinorConsentGranted } from "./minor-gates";
 
@@ -290,6 +290,8 @@ async function fulfillReferralReward(input: {
       return { reward: null, notification: null as DeferredNotificationInput | null };
     }
     const now = new Date();
+    const platformPolicy = await getPlatformReferralPolicy();
+    const clawbackDays = platformPolicy.clawbackWindowDays;
     const entry = await input.client.rewardLedgerEntry.create({
       data: {
         userId: referralCode.referrerUserId,
@@ -298,9 +300,9 @@ async function fulfillReferralReward(input: {
         fundingOrgId: input.orgId,
         referredUserId: redemption.referredUserId,
         amountPaise: policy.memberGymReferralRewardPaise,
-        status: "QUALIFIED",
+        status: clawbackDays === 0 ? "PAYABLE" : "QUALIFIED",
         qualifiedAt: now,
-        payableAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+        payableAt: new Date(now.getTime() + clawbackDays * 24 * 60 * 60 * 1000),
         metadata: {
           referralCodeId: input.referralCodeId,
           redemptionId: input.redemptionId,
@@ -309,8 +311,11 @@ async function fulfillReferralReward(input: {
     });
     await input.client.userRewardWallet.upsert({
       where: { userId: referralCode.referrerUserId },
-      create: { userId: referralCode.referrerUserId },
-      update: {},
+      create: {
+        userId: referralCode.referrerUserId,
+        balancePaise: entry.status === "PAYABLE" ? entry.amountPaise : 0,
+      },
+      update: entry.status === "PAYABLE" ? { balancePaise: { increment: entry.amountPaise } } : {},
     });
     return {
       reward: null,

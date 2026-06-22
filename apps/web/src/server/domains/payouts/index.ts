@@ -275,6 +275,9 @@ export async function markPayoutPaid(input: {
     where: { id: input.payoutId, orgId: input.orgId },
   });
   if (!payout) throw new Error("Payout not found");
+  if (payout.status === "paid") {
+    throw new Error("This payout has already been marked paid.");
+  }
   return prisma.trainerPayout.update({
     where: { id: payout.id },
     data: {

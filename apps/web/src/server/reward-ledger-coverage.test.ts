@@ -28,4 +28,21 @@ describe("reward ledger coverage", () => {
     expect(ledger).toContain('"GYM_TO_ZOOK_CASH"');
     expect(ledger).toContain("policy.qualifyingCycles");
   });
+
+  it("settles the reward lifecycle with promotion, clawback reversal, and caps", () => {
+    const cron = readFileSync("apps/web/src/server/api-router/cron.ts", "utf8");
+    // Promotion + reversal chokepoint
+    expect(ledger).toContain("export async function settleReadyRewards");
+    expect(ledger).toContain('status: "PAYABLE"');
+    expect(ledger).toContain('status: "REVERSED"');
+    // Per-user monthly cap guardrail
+    expect(ledger).toContain("policy.maxRewardsPerUserPerMonth");
+    expect(ledger).toContain('"CAPPED"');
+    // Scheduled settlement job
+    expect(cron).toContain('pathMatches(path, ["cron", "rewards-settle"])');
+    expect(cron).toContain("settleReadyRewards");
+    // Member-to-gym cash honors the configured clawback window, not a hardcode
+    expect(paymentRuntime).toContain("getPlatformReferralPolicy");
+    expect(paymentRuntime).not.toContain("14 * 24 * 60 * 60 * 1000");
+  });
 });

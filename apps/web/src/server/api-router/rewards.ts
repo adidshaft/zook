@@ -185,6 +185,15 @@ export async function handleRewards(request: NextRequest, path: string[]) {
     const withdrawal = await prisma.rewardWithdrawal.create({
       data: { userId, amountPaise: body.amountPaise },
     });
+    await writeAuditLog({
+      request,
+      actorUserId: userId,
+      action: "reward.withdrawal_requested",
+      entityType: "reward_withdrawal",
+      entityId: withdrawal.id,
+      riskLevel: "HIGH",
+      metadata: { amountPaise: withdrawal.amountPaise },
+    });
     return ok({ withdrawal });
   }
 
