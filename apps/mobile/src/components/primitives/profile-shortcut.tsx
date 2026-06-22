@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { useAuth } from "@/lib/auth";
 import { formatInitials } from "@/lib/formatting";
-import { typography } from "@/lib/theme";
+import { typography, useTheme } from "@/lib/theme";
 import { pressWithHaptics } from "./buttons";
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
@@ -17,6 +17,7 @@ export function ProfileShortcut({
   accessibilityLabel?: string;
 }) {
   const { session, status } = useAuth();
+  const { palette } = useTheme();
   const router = useRouter();
 
   if (status !== "authenticated") return null;
@@ -34,7 +35,13 @@ export function ProfileShortcut({
       hitSlop={iconOnlyHitSlop}
       style={({ pressed }) => [
         styles.profileShortcut,
-        { width: size, height: size, borderRadius: size / 2 },
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: palette.surface.accentSoft,
+          borderColor: palette.accent.soft,
+        },
         pressed ? styles.pressed : null,
       ]}
     >
@@ -47,7 +54,7 @@ export function ProfileShortcut({
           contentFit="cover"
         />
       ) : (
-        <Text style={styles.profileShortcutText}>{initials}</Text>
+        <Text style={[styles.profileShortcutText, { color: palette.accent.base }]}>{initials}</Text>
       )}
     </Pressable>
   );
@@ -56,8 +63,6 @@ export function ProfileShortcut({
 const styles = StyleSheet.create({
   profileShortcut: {
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.26)",
-    backgroundColor: "rgba(185,244,85,0.12)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -67,7 +72,6 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   profileShortcutText: {
-    color: "#B9F455",
     ...typography.button,
   },
   pressed: {
