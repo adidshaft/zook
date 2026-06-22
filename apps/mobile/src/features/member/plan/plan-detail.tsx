@@ -116,13 +116,30 @@ export default function Plans() {
           }}
         >
           <AppHeader
-            title="Plans & training"
-            subtitle="From your trainer · synced"
+            title="Your plan"
             showProfileShortcut={false}
+            leading={
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace("/plan"))}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                hitSlop={12}
+                style={({ pressed }) => [
+                  styles.headerBackButton,
+                  {
+                    backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                    borderColor: palette.border.default,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+              </Pressable>
+            }
           />
 
           {selectedAssignment ? (
-            <Card variant="selected" glow contentStyle={styles.activePlanContent}>
+            <Card variant="selected" contentStyle={styles.activePlanContent}>
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
                   <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>
@@ -148,18 +165,18 @@ export default function Plans() {
                 <ZookButton
                   testID="plans-start-session"
                   onPress={() => openAssignment(selectedAssignment.id)}
-                  icon="play-outline"
+                  icon="open-outline"
                   style={styles.activePlanPrimaryAction}
                 >
-                  Start today's session
+                  Open today's plan
                 </ZookButton>
                 <ZookButton
                   testID="plans-view-active"
-                  onPress={() => openAssignment(selectedAssignment.id)}
+                  onPress={() => setFilter(planKind(selectedAssignment).includes("diet") ? "diet" : "workout")}
                   variant="secondary"
                   style={styles.activePlanSecondaryAction}
                 >
-                  View
+                  See weekly list
                 </ZookButton>
               </View>
             </Card>
@@ -186,11 +203,7 @@ export default function Plans() {
             ) : null}
             {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
               <Card variant="compact" style={styles.emptyPlanCard}>
-                <EmptyState
-                  icon="clipboard-outline"
-                  title="No plan assigned"
-                  body="Your trainer will create and assign a workout plan for you."
-                />
+                <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign a workout plan here. Check back soon." />
               </Card>
             ) : null}
             {filteredPlans.map((assignment, index) => (
@@ -211,7 +224,7 @@ export default function Plans() {
                   icon={
                     planKind(assignment).includes("diet") ? "nutrition-outline" : "barbell-outline"
                   }
-                  tone={planKind(assignment).includes("diet") ? "blue" : "lime"}
+                  tone="neutral"
                   size={42}
                 />
                 <Text style={[styles.libraryTitle, { color: palette.text.primary }]}>
@@ -251,7 +264,7 @@ export function PlanDetailScreen() {
   const { activeOrgId, token } = useAuth();
   const plansQuery = useMyPlans();
   const completePlan = useCompletePlanAssignment();
-  const plans = plansQuery.data?.plans ?? [];
+  const plans = useMemo(() => plansQuery.data?.plans ?? [], [plansQuery.data?.plans]);
   const selectedAssignment =
     plans.find((assignment) => assignment.id === selectedAssignmentId) ??
     plans[0] ??
@@ -554,7 +567,7 @@ export function PlanDetailScreen() {
               <ProgressBar value={progress} label="Today" />
             </Card>
 
-            <SectionHeader title="Exercises" subtitle="Assigned by your coach" />
+            <SectionHeader title="Exercises" />
             <View style={styles.stack}>
               {exercisesQuery.isLoading ? (
                 <ExerciseListSkeleton />
@@ -570,8 +583,7 @@ export function PlanDetailScreen() {
               {!exercisesQuery.isLoading && !exercisesQuery.isError && !exercises.length ? (
                 <Card variant="compact">
                   <EmptyState
-                    title="No exercises yet"
-                    body="Assigned exercise details will appear here once your coach publishes them."
+                    title="No exercises"
                   />
                 </Card>
               ) : null}
@@ -596,16 +608,16 @@ export function PlanDetailScreen() {
                 icon="send-outline"
                 style={styles.stickyActionHalf}
               >
-                Send Feedback
+                Feedback
               </ZookButton>
               <ZookButton
                 testID="plan-detail-complete-workout"
                 onPress={() => void completeWorkout()}
                 disabled={!selectedAssignment || completePlan.isPending}
                 icon="checkmark-circle-outline"
-                style={styles.stickyActionHalf}
+                style={styles.stickyActionPrimary}
               >
-                {completePlan.isPending ? "Completing..." : "Complete Workout"}
+                {completePlan.isPending ? "Completing..." : "Complete workout"}
               </ZookButton>
             </View>
           </StickyActionBar>
@@ -628,7 +640,7 @@ export function PlanDetailScreen() {
               <View style={styles.sheetTitleCopy}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Tell coach</Text>
                 <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                  Send a quick note about this assignment.
+                  Send a note about this assignment.
                 </Text>
               </View>
               <Pressable
@@ -729,12 +741,20 @@ export function PlanDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerBackButton: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
   },
   stickyHeader: {
@@ -749,21 +769,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  detailHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  detailTitleBlock: {
-    flex: 1,
-    gap: 4,
-  },
-  detailTitle: {
-    ...typography.headerTitle,
-  },
-  detailSubtitle: {
-    ...typography.body,
   },
   sheetBackground: {
     borderWidth: 1,
@@ -833,16 +838,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   stack: {
-    gap: 10,
-  },
-  stateContent: {
-    minHeight: 72,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   activePlanContent: {
-    gap: 14,
+    gap: spacing.lg,
     padding: 16,
   },
   activePlanTop: {
@@ -886,7 +885,7 @@ const styles = StyleSheet.create({
     minWidth: 76,
   },
   progressContent: {
-    gap: 14,
+    gap: spacing.lg,
   },
   progressHeader: {
     flexDirection: "row",
@@ -907,31 +906,13 @@ const styles = StyleSheet.create({
   progressText: {
     ...typography.metric,
   },
-  featuredContent: {
-    gap: 14,
-  },
-  featuredTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
   eyebrow: {
     ...typography.eyebrow,
-  },
-  planMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 7,
-  },
-  metaDot: {
-    ...typography.small,
   },
   libraryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: spacing.sm,
   },
   fullWidth: {
     width: "100%",
@@ -942,7 +923,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     padding: 12,
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: "center",
   },
   libraryTitle: {
@@ -960,5 +941,8 @@ const styles = StyleSheet.create({
   },
   stickyActionHalf: {
     flex: 1,
+  },
+  stickyActionPrimary: {
+    flex: 1.6,
   },
 });

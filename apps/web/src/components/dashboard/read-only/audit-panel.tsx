@@ -57,15 +57,14 @@ export function AuditPanel({
         <SectionHeader
           eyebrow="Activity"
           title="Admin activity"
-          description="Sensitive changes, who made them, and when they happened."
-          badge={<Pill tone="blue">{auditLogs.length || auditLogCount} entries</Pill>}
+          badge={<Pill>{auditLogs.length || auditLogCount} entries</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
         />
         <div className="mt-5">
           {auditLogsState.error ? (
             <ErrorNotice message={auditLogsState.error} />
           ) : auditLogsState.loading && auditLogs.length === 0 ? (
-            <EmptyState title="Loading activity" description="Getting the latest admin actions." />
+            <EmptyState title="Loading admin activity" />
           ) : (
             <>
               <DataTable
@@ -117,7 +116,7 @@ export function AuditPanel({
                 ]}
                 rows={auditLogs}
                 rowKey={(log) => log.id}
-                empty="No admin activity is available yet."
+                empty="No activity."
               />
               <LoadMoreButton
                 count={auditLogs.length}
@@ -181,14 +180,13 @@ export function AuditPanel({
         <SectionHeader
           eyebrow="Assistant"
           title="Recent assistant drafts"
-          description="Review assisted drafts before anything member-facing is published."
           badge={
             <button
               type="button"
               onClick={() => setAiFilter("needs-review")}
               className="zook-focus rounded-full"
             >
-              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "lime"}>
+              <Pill tone={misconfiguredAiCount > 0 ? "amber" : "neutral"}>
                 {misconfiguredAiCount} need review
               </Pill>
             </button>
@@ -225,10 +223,7 @@ export function AuditPanel({
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState
-              title="Loading drafts"
-              description="Getting the latest assisted drafts for this gym."
-            />
+            <EmptyState title="Loading assistant drafts" />
           ) : visibleAiUsage.length ? (
             visibleAiUsage.slice(0, 8).map((usage) => (
               <button
@@ -256,8 +251,7 @@ export function AuditPanel({
             ))
           ) : (
             <EmptyState
-              title="No assistant drafts yet"
-              description="Assisted drafts will appear here after the team starts using the planner."
+              title="No assistant drafts"
             />
           )}
         </div>

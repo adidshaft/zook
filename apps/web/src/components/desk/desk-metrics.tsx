@@ -20,28 +20,25 @@ export function DeskMetrics({
         label="Today's check-ins"
         value={todayCount}
         icon={CheckCircle2}
-        tone="lime"
+        tone="sky"
       />
       <KPITile
         label="Pending review"
         value={pendingCount}
         icon={Clock}
-        tone={pendingCount > 0 ? "amber" : "lime"}
-        caption={pendingCount > 0 ? "Needs eyes" : "Clear"}
+        tone={pendingCount > 0 ? "amber" : "sky"}
       />
       <KPITile
         label="Member directory"
         value={memberCount}
         icon={Users}
         tone="sky"
-        caption="Active in this branch"
       />
       <KPITile
         label="Desk handoffs"
         value={handoffCount}
         icon={IndianRupee}
         tone="violet"
-        caption={handoffCount > 0 ? "Awaiting pickup" : "All clear"}
       />
     </section>
   );

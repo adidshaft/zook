@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { typography, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 
 export default function ClientDetailLayout() {
   const { palette } = useTheme();
@@ -7,17 +7,17 @@ export default function ClientDetailLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerBackButtonDisplayMode: "minimal",
-        headerStyle: { backgroundColor: palette.bg.app },
-        headerTintColor: palette.accent.base,
-        headerTitleStyle: typography.headerTitle,
+        // Each client-detail screen renders its own in-content header (with the
+        // Overview/Plan/Sessions segmented control + back), so suppress the
+        // native nav-bar header to avoid a duplicate title.
+        headerShown: false,
         contentStyle: { backgroundColor: palette.bg.app },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Client" }} />
-      <Stack.Screen name="plan" options={{ title: "Plan draft" }} />
-      <Stack.Screen name="sessions" options={{ title: "Sessions" }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="plan" />
+      <Stack.Screen name="diet" />
+      <Stack.Screen name="sessions" />
     </Stack>
   );
 }

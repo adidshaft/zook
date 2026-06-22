@@ -2,17 +2,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { Alert, RefreshControl, StyleSheet } from "react-native";
 import { useState } from "react";
+import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { EmptyState, Card, PrimaryButton, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { cleanReviewReason, titleCase } from "@/features/owner/helpers";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useHasPermission, useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
-import { layout, useTheme } from "@/lib/theme";
+import { formatReviewReason, titleCaseFromCode } from "@/lib/formatting";
+import { layout, spacing, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function OwnerApprovalsScreen() {
@@ -27,7 +29,12 @@ export default function OwnerApprovalsScreen() {
   const rejectJoinRequestMutation = useRejectJoinRequest();
   const [batchApproving, setBatchApproving] = useState(false);
   const joinRequests = (joinRequestsQuery.data?.joinRequests ?? []).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
-  const attentionAttempts = attentionQuery.data?.records ?? [];
+  // Only scans that still need a decision belong in the review queue, so the
+  // count and list stay aligned.
+  const attentionAttempts = (attentionQuery.data?.records ?? []).filter((record) => {
+    const status = String(record.status ?? "").toUpperCase();
+    return status === "PENDING_APPROVAL" || status === "FLAGGED";
+  });
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
   const joinItems: ApprovalItem[] = joinRequests.map((request) => ({
     id: request.id,
@@ -38,8 +45,8 @@ export default function OwnerApprovalsScreen() {
   const attendanceItems: ApprovalItem[] = attentionAttempts.map((record) => ({
     id: record.id,
     primaryText: record.user?.name ?? record.user?.email ?? "Member check-in",
-    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCase(record.status)}`,
-    reason: cleanReviewReason(
+    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCaseFromCode(record.status)}`,
+    reason: formatReviewReason(
       Array.isArray(record.suspiciousFlags) ? record.suspiciousFlags.join(", ") : null,
     ),
   }));
@@ -76,6 +83,36 @@ export default function OwnerApprovalsScreen() {
     );
   }
 
+  function confirmRejectJoinRequest(id: string) {
+    Alert.alert(
+      "Reject join request?",
+      "This person won't be added to the gym and would need to request again.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: () => {
+            void rejectJoinRequestMutation
+              .mutateAsync(id)
+              .then(() => {
+                showToast({
+                  tone: "success",
+                  haptic: "success",
+                  message: "Join request rejected.",
+                });
+              })
+              .catch((error) => {
+                const message =
+                  error instanceof Error ? error.message : "Unable to reject join request.";
+                showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+              });
+          },
+        },
+      ],
+    );
+  }
+
   const onRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
   };
@@ -99,18 +136,25 @@ export default function OwnerApprovalsScreen() {
             ),
           }}
         >
+          <ScreenHeader
+            title="Approvals"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
           <MetricGrid
             items={[
               {
                 label: "Join requests",
                 value: joinRequests.length,
-                hint: "Awaiting owner action",
                 tone: "amber",
               },
               {
                 label: "Scan reviews",
                 value: attentionAttempts.length,
-                hint: "Pending or flagged",
                 tone: "red",
               },
             ]}
@@ -119,30 +163,26 @@ export default function OwnerApprovalsScreen() {
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
             <Card variant="compact">
-              <EmptyState
-                title="All caught up"
-                body="New join requests and scan reviews will appear here"
-              />
+              <EmptyState icon="checkmark-done-outline" title="All caught up" body="No join requests or flagged check-ins need your review." />
             </Card>
           ) : null}
           {joinRequests.length ? (
             <>
               <SectionHeader
                 title={`Request list (${joinRequests.length})`}
-                subtitle="Pending join decisions"
                 action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton>}
               />
               <ApprovalQueue
                 testID="pending-approvals-list"
                 items={joinItems}
                 onApprove={(id) => approveJoinRequestMutation.mutate(id)}
-                onReject={(id) => rejectJoinRequestMutation.mutate(id)}
+                onReject={(id) => confirmRejectJoinRequest(id)}
               />
             </>
           ) : null}
           {attendanceItems.length ? (
             <>
-              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} subtitle="Pending and flagged scans." />
+              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} />
               <ApprovalQueue
                 items={attendanceItems}
                 onApprove={(id) => {
@@ -162,5 +202,16 @@ export default function OwnerApprovalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  headerContext: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
+  },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
+    paddingBottom: 96,
+  },
 });

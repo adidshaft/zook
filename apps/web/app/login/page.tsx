@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginPanel } from "@/components/login-panel";
@@ -11,8 +12,28 @@ import {
 } from "@/lib/public-i18n";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { getOrigins, webHostFromHeader } from "@/lib/origins";
+import { publicSocialImage } from "@/lib/public-metadata";
 import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
+
+export const metadata: Metadata = {
+  title: "Sign in | Zook",
+  description: "Sign in to Zook to continue to your gym dashboard, member portal, or checkout.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/login" },
+  openGraph: {
+    title: "Sign in to Zook",
+    description: "Continue to your gym dashboard, member portal, or checkout.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Sign in to Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sign in to Zook",
+    description: "Continue to your gym dashboard, member portal, or checkout.",
+    images: [publicSocialImage()],
+  },
+};
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;

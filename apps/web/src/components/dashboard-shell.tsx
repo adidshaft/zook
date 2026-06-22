@@ -21,22 +21,23 @@ const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
     "payments/refunds": "Start refunds, track their status, and see which payments can be refunded.",
     shop: "Manage products, photos, branch stock, low-stock alerts, and shop order handovers.",
     "shop/orders": "Track shop orders by payment and pickup status for the desk team.",
-    reports: "Review performance, member movement, revenue, and operational signals.",
+    reports: "Review performance, member movement, revenue, and daily signals.",
     billing: "Complete billing details before generating receipts and GST invoices.",
     members: "Approve joins, find members, and manage plan handoffs.",
     plans: "Create plans and open discounts, public offers, and referral tools from one place.",
+    classes: "Schedule upcoming group sessions for a branch and keep capacity visible for the desk team.",
     "plans/coupons": "Create and pause joining discounts for public plan purchases.",
     "plans/offers": "Publish public offers for plans or short campaigns.",
     "plans/referrals": "Create referral codes and tune rewards for members, trainers, and staff.",
     staff: "Invite Admin, Reception, and Trainer users with the right gym access.",
     notifications: "Send member updates and choose the exact audience before sending.",
-    "notifications/templates": "Keep reusable message drafts ready for common gym updates.",
+    "notifications/templates": "Keep reusable message drafts available for common gym updates.",
     "notifications/history": "Review delivery status and follow up on messages that need attention.",
     branches: "Manage locations, branch details, and the branch used for daily operations.",
     "public-profile": "Polish the gym page, photos, links, timings, and entry QR presentation.",
     audit: "Review important changes made by the team.",
     ai: "See which AI features are available now and which ones are still being prepared.",
-    settings: "Control core gym settings, payments, and message setup.",
+    settings: "Control core gym settings, payments, and message controls.",
   },
   hi: {
     attendance: "एंट्री QR दिखाएं, असामान्य चेक-इन देखें, और फ्रंट डेस्क अटेंडेंस साफ रखें.",
@@ -44,10 +45,11 @@ const sectionDescriptions: Record<"en" | "hi", Record<string, string>> = {
     "payments/refunds": "रिफंड शुरू करें, उनका स्टेटस देखें, और रिफंड योग्य पेमेंट पहचानें.",
     shop: "प्रोडक्ट, फोटो, ब्रांच स्टॉक, कम स्टॉक अलर्ट, और पिकअप हैंडओवर संभालें.",
     "shop/orders": "डेस्क टीम के लिए शॉप ऑर्डर को पेमेंट और पिकअप स्टेटस से ट्रैक करें.",
-    reports: "परफॉर्मेंस, मेंबर मूवमेंट, रेवेन्यू, और ऑपरेशन संकेत देखें.",
+    reports: "परफॉर्मेंस, मेंबर मूवमेंट, रेवेन्यू, और दैनिक संकेत देखें.",
     billing: "रसीद और GST इनवॉइस बनाने से पहले बिलिंग डिटेल पूरी करें.",
     members: "जॉइन रिक्वेस्ट मंज़ूर करें, मेंबर खोजें, और प्लान हैंडऑफ संभालें.",
     plans: "प्लान बनाएं और डिस्काउंट, ऑफर, रेफरल टूल एक जगह से खोलें.",
+    classes: "ब्रांच के लिए ग्रुप क्लास शेड्यूल करें और टीम को क्षमता साफ दिखाएं.",
     "plans/coupons": "पब्लिक प्लान खरीदारी के लिए जॉइनिंग डिस्काउंट बनाएं या रोकें.",
     "plans/offers": "प्लान या छोटे कैंपेन के लिए पब्लिक ऑफर प्रकाशित करें.",
     "plans/referrals": "मेंबर, ट्रेनर, और टीम के लिए रेफरल कोड और रिवॉर्ड संभालें.",
@@ -77,7 +79,7 @@ export function DashboardShell({
   isPlatformAdmin: boolean;
   roles: Role[];
   permissions?: Permission[];
-  user: { name: string; email: string; preferredLocale?: string | null };
+  user: { id?: string; name: string; email: string; preferredLocale?: string | null };
   children?: ReactNode;
 }) {
   const title = titleFromSection(section);
@@ -111,7 +113,7 @@ export function DashboardShell({
   const runtimeLabel = data.connected
     ? copy.dashboard.liveWorkspace
     : data.fallbackMode === "demo"
-      ? copy.dashboard.sampleData
+      ? copy.dashboard.fallbackWorkspace
       : "";
 
   if (!activeOrg) {

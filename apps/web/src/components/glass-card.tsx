@@ -12,7 +12,7 @@ export function GlassCard({
 }: {
   children: React.ReactNode;
   className?: string | undefined;
-  variant?: "default" | "strong" | "muted" | "selected" | "success" | "warning" | "danger";
+  variant?: "default" | "strong" | "muted" | "selected" | "warning" | "danger";
   interactive?: boolean;
   as?: React.ElementType;
 } & React.HTMLAttributes<HTMLDivElement>) {
@@ -21,9 +21,7 @@ export function GlassCard({
     strong: "zook-glass-strong rounded-[28px] p-6",
     muted: "rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-5",
     selected:
-      "rounded-[28px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5 shadow-[var(--shadow-glow-accent)] backdrop-blur-2xl",
-    success:
-      "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-success)_42%,transparent)] bg-[var(--surface-success-soft)] p-5 shadow-[var(--shadow-glow-accent)] backdrop-blur-2xl",
+      "rounded-[28px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-5 backdrop-blur-2xl",
     warning:
       "rounded-[28px] border border-[color-mix(in_srgb,var(--feedback-warning)_34%,transparent)] bg-[var(--surface-warning-soft)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-2xl",
     danger:

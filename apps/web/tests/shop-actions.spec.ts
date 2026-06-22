@@ -220,16 +220,70 @@ test.describe("shop actions", () => {
     ).resolves.toBeTruthy();
   });
 
-  test("product image upload and order refund UI parity are visible product gaps", async ({
+  test("owner sees product photo upload and refund route for paid shop orders", async ({
     page,
   }) => {
-    test.fail(
-      true,
-      "The current shop suite covers product/order APIs; stable image upload and refund controls still need dashboard UI surface.",
-    );
     await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true },
+    });
+    const product = await prisma.product.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        name: `Refundable Water ${Date.now()}`,
+        category: "WATER",
+        pricePaise: 5000,
+        stock: 10,
+      },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: member.id,
+        purpose: "SHOP_ORDER",
+        amountPaise: 5000,
+        status: "SUCCEEDED",
+        mode: "CASH",
+        provider: "manual",
+        recordedAt: new Date(),
+      },
+    });
+    const order = await prisma.shopOrder.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: member.id,
+        status: "READY_FOR_PICKUP",
+        paymentId: payment.id,
+        totalPaise: 5000,
+        pickupCode: "RFND42",
+      },
+    });
+    await prisma.shopOrderItem.create({
+      data: {
+        orgId: org.id,
+        orderId: order.id,
+        productId: product.id,
+        quantity: 1,
+        unitPaise: 5000,
+      },
+    });
+
     await page.goto("/dashboard/shop");
-    expect(await page.getByLabel(/product image/i).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /refund order/i }).count()).toBeGreaterThan(0);
+    await expect(page.getByText("Product photos")).toBeVisible({ timeout: 15_000 });
+    await page.goto("/dashboard/shop/orders");
+    await expect(page.getByText(order.id.slice(-8).toUpperCase())).toBeVisible({
+      timeout: 15_000,
+    });
+    const refundLink = page.getByRole("link", { name: /refund order/i }).first();
+    await expect(refundLink).toBeVisible();
+    await expect(refundLink).toHaveAttribute(
+      "href",
+      `/dashboard/payments?search=${encodeURIComponent(payment.id)}`,
+    );
   });
 });

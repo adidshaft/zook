@@ -1,0 +1,9 @@
+appId: com.zook.app
+name: 00-qa-smoke
+---
+- runFlow:
+    file: _helpers/open-qa-shortcut-attached.yaml
+    env:
+      shortcut_id: qa-reception-home
+      home_id: reception-home-screen
+- takeScreenshot: /tmp/zook-maestro/qa-smoke-reception-home.png

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   Card,
@@ -23,7 +23,7 @@ export default function AccountSettingsScreen() {
     <>
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Account" subtitle="Your member identity" showProfileShortcut={false} />
+          <AppHeader title="Account" showProfileShortcut={false} showBack />
           <Card variant="compact" contentStyle={styles.list}>
             <ListRow title="Name" subtitle={session?.user.name ?? "Not set"} icon="person-outline" />
             <ListRow title="Email" subtitle={session?.user.email ?? "Not set"} icon="mail-outline" />
@@ -31,9 +31,6 @@ export default function AccountSettingsScreen() {
           </Card>
           <Card variant="compact" contentStyle={styles.form}>
             <Text style={[styles.title, { color: palette.text.primary }]}>Contact verification</Text>
-            <Text style={[styles.helper, { color: palette.text.secondary }]}>
-              Add or update your email and mobile number with OTP verification.
-            </Text>
             <ContactVerifier
               activeOrgId={activeOrgId}
               currentValue={session?.user.email}
@@ -81,6 +78,7 @@ function ContactVerifier({
   const [requestedFor, setRequestedFor] = useState<string | undefined>();
   const [busy, setBusy] = useState<"request" | "verify" | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [status, setStatus] = useState<string | undefined>();
   const trimmedValue = value.trim();
   const title = kind === "email" ? "Email" : "Mobile number";
   const placeholder = kind === "email" ? "you@example.com" : "+91 98765 43210";
@@ -88,7 +86,7 @@ function ContactVerifier({
   const inputMode = kind === "email" ? "email" : "tel";
   const helper = useMemo(() => {
     if (!currentValue) {
-      return `No ${kind === "email" ? "email" : "mobile number"} linked yet.`;
+      return `No ${kind === "email" ? "email" : "mobile number"} linked.`;
     }
     return `Current: ${currentValue}`;
   }, [currentValue, kind]);
@@ -104,6 +102,7 @@ function ContactVerifier({
     }
     setBusy("request");
     setError(undefined);
+    setStatus(undefined);
     try {
       await memberApi.requestContactOtp({
         token,
@@ -112,7 +111,7 @@ function ContactVerifier({
       });
       setRequestedFor(trimmedValue);
       setCode("");
-      Alert.alert("OTP sent", `Enter the code sent to ${trimmedValue}.`);
+      setStatus(`Enter the code sent to ${trimmedValue}.`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not send OTP.");
     } finally {
@@ -130,6 +129,7 @@ function ContactVerifier({
     }
     setBusy("verify");
     setError(undefined);
+    setStatus(undefined);
     try {
       await memberApi.verifyContactOtp({
         token,
@@ -140,7 +140,7 @@ function ContactVerifier({
       await onVerified();
       setRequestedFor(undefined);
       setCode("");
-      Alert.alert(`${title} verified`, "Your account has been updated.");
+      setStatus(`${title} verified. Your account has been updated.`);
     } catch (verifyError) {
       setError(verifyError instanceof Error ? verifyError.message : "Could not verify OTP.");
     } finally {
@@ -159,6 +159,7 @@ function ContactVerifier({
         label={title}
         onChangeText={(nextValue) => {
           setValue(nextValue);
+          setStatus(undefined);
           if (requestedFor && nextValue.trim() !== requestedFor) {
             setRequestedFor(undefined);
             setCode("");
@@ -207,12 +208,24 @@ function ContactVerifier({
           {error}
         </Text>
       ) : null}
+      {!error && status ? (
+        <Text style={[styles.helper, { color: palette.text.secondary }]}>
+          {status}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   contactBlock: { gap: spacing.sm },
   error: typography.caption,
   form: { gap: spacing.md },

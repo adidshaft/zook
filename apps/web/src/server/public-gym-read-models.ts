@@ -50,6 +50,8 @@ export type PublicGymProfileData = {
     equipment: string[];
     gymType: string | null;
     openingHoursSummary: string | null;
+    latitude: number | null;
+    longitude: number | null;
     appStoreUrl: string | null;
     playStoreUrl: string | null;
   };
@@ -263,6 +265,8 @@ function demoPublicGymProfile(
       equipment: [],
       gymType: null,
       openingHoursSummary: null,
+      latitude: null,
+      longitude: null,
       appStoreUrl: null,
       playStoreUrl: null,
     },
@@ -374,6 +378,8 @@ async function publicGymProfileFromDb(
         typeof settingValues.openingHoursSummary === "string"
           ? settingValues.openingHoursSummary
           : null,
+      latitude: org.latitude ? Number(org.latitude) : null,
+      longitude: org.longitude ? Number(org.longitude) : null,
       appStoreUrl: typeof settingValues.appStoreUrl === "string" ? settingValues.appStoreUrl : null,
       playStoreUrl:
         typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,

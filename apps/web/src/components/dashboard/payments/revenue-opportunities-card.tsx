@@ -15,7 +15,6 @@ export function RevenueOpportunitiesCard({
       <SectionHeader
         eyebrow="Levers"
         title="Revenue opportunities"
-        description="Renewals, low stock, and scheduled messages that may need attention."
       />
       <ReadoutGrid
         className="mt-5"
@@ -38,7 +37,9 @@ export function RevenueOpportunitiesCard({
           },
           {
             label: "Plan ladder",
-            value: membershipPlans.length ? `${membershipPlans.length} live plans` : "Load plans",
+            value: membershipPlans.length
+              ? `${membershipPlans.length} available plans`
+              : "Load plans",
             meta: "Useful while talking renewals at the desk",
           },
         ]}

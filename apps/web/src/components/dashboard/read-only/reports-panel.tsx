@@ -5,7 +5,6 @@ import {
   BarChart3, 
   Calendar, 
   CircleAlert, 
-  Sparkles, 
   TrendingUp,
   IndianRupee,
   Users,
@@ -21,7 +20,6 @@ import {
   Donut,
   LegendItem,
   LineChart,
-  PulseDot,
   SectionHero,
 } from "../charts";
 import {
@@ -30,16 +28,10 @@ import {
   formatDaysRemaining,
   formatEnumLabel,
   formatInr,
+  formatInrCompact,
 } from "@/lib/format";
 import type { DashboardCharts, OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 import { CsvExportButton } from "../operational-shared";
-
-function formatInrCompact(paise: number) {
-  const rupees = paise / 100;
-  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
-  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}K`;
-  return `₹${Math.round(rupees)}`;
-}
 
 type TabId = "financials" | "attendance" | "members" | "snapshot";
 
@@ -99,7 +91,7 @@ export function ReportsPanel({
     { id: "financials" as TabId, label: "Financials", icon: IndianRupee },
     { id: "attendance" as TabId, label: "Attendance", icon: CalendarDays },
     { id: "members" as TabId, label: "Members & Growth", icon: Users },
-    { id: "snapshot" as TabId, label: "Snapshot & Governance", icon: ClipboardList },
+    { id: "snapshot" as TabId, label: "Overview & Records", icon: ClipboardList },
   ];
   const exportReports = [
     { fileName: "members.csv", label: "Members" },
@@ -125,15 +117,10 @@ export function ReportsPanel({
       <SectionHero
         eyebrow="Operational report pack"
         title="Reports & insights"
-        description="Memberships, floor activity, and revenue in one place. Drill into any KPI to see the underlying record."
         icon={BarChart3}
-        tone="lime"
+        tone="sky"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              <PulseDot tone="lime" size={6} />
-              Live
-            </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
               <Calendar size={11} />
               {selectedBranchName}
@@ -213,7 +200,7 @@ export function ReportsPanel({
               CSV exports
             </p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Downloads use the selected date range and branch scope.
+              Downloads follow the date range and branch.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -282,7 +269,7 @@ export function ReportsPanel({
                     <LineChart
                       series={revenueSeries}
                       labels={revenueLabels}
-                      tone="lime"
+                      tone="sky"
                       formatY={(v) => formatInrCompact(v * 100)}
                       formatTooltip={(v, label) => (label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100))}
                       ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
@@ -304,7 +291,7 @@ export function ReportsPanel({
                       total={channelTotal}
                       size={140}
                       thickness={14}
-                      tone="amber"
+                      tone="violet"
                       centerLabel={
                         <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">{cashShare}%</span>
                       }
@@ -312,12 +299,12 @@ export function ReportsPanel({
                     />
                     <div className="grid flex-1 gap-2">
                       <LegendItem
-                        tone="amber"
+                        tone="violet"
                         label="Cash / desk"
                         value={cashRupees > 0 ? formatInrCompact(cashRupees * 100) : "₹0"}
                       />
                       <LegendItem
-                        tone="lime"
+                        tone="sky"
                         label="Online / UPI"
                         value={onlineRupees > 0 ? formatInrCompact(onlineRupees * 100) : "₹0"}
                       />
@@ -422,16 +409,14 @@ export function ReportsPanel({
                 <div className="grid gap-5 lg:grid-cols-2">
                   <GlassCard className="p-5">
                     <SectionHeader
-                      eyebrow="Snapshot"
                       title="By the numbers"
-                      description="Quick read on memberships, floor activity, and trial runway."
                     />
                     <ReadoutGrid
                       className="mt-4"
                       columns={2}
                       items={[
                         {
-                          label: "Branch scope",
+                          label: "Branch",
                           value: selectedBranchName,
                           meta: "Filterable by branch",
                         },
@@ -482,7 +467,6 @@ export function ReportsPanel({
                       <SectionHeader
                         eyebrow="Governance"
                         title="Control status"
-                        description="Admin changes, pending messages, and unresolved checks."
                       />
                       <ReadoutGrid
                         className="mt-4"
@@ -504,7 +488,7 @@ export function ReportsPanel({
 
                     <GlassCard className="p-5">
                       <div className="flex items-center gap-2">
-                        <Sparkles size={16} className="text-[var(--accent)]" />
+                        <CircleAlert size={16} className="text-[var(--accent)]" />
                         <h2 className="text-base font-semibold text-[var(--text-primary)]">What deserves a second look</h2>
                       </div>
                       <div className="mt-4 grid gap-2">

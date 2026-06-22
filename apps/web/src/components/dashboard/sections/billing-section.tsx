@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
+import { useSearchParams } from "next/navigation";
+import { formatDate, formatEnumLabel, formatInr, formatUsageLimit } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import type {
-  OrganizationSnapshot,
-  OrganizationSummary,
-} from "@/components/dashboard/types";
+import type { OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
 
 const copy = {
   billingEyebrow: "Billing",
@@ -22,7 +21,7 @@ const copy = {
   trialEnds: "Trial ends",
   documentReadiness: "Document readiness",
   invoicesTitle: "Invoices",
-  invoicesDescription: "Invoices will appear here after the first paid billing cycle.",
+  invoicesDescription: "Invoices start after the first paid billing cycle.",
 };
 
 type BillingProfile = {
@@ -148,10 +147,22 @@ type SubscriptionDetail = {
   };
 };
 
-const billingProfileFields: Array<[string, keyof Pick<
-  BillingProfile,
-  "legalName" | "gstNumber" | "billingEmail" | "contactPhone" | "address" | "city" | "state" | "pincode"
->]> = [
+const billingProfileFields: Array<
+  [
+    string,
+    keyof Pick<
+      BillingProfile,
+      | "legalName"
+      | "gstNumber"
+      | "billingEmail"
+      | "contactPhone"
+      | "address"
+      | "city"
+      | "state"
+      | "pincode"
+    >,
+  ]
+> = [
   ["Legal business name", "legalName"],
   ["GST number", "gstNumber"],
   ["Billing email", "billingEmail"],
@@ -162,12 +173,8 @@ const billingProfileFields: Array<[string, keyof Pick<
   ["Pincode", "pincode"],
 ];
 
-function formatLimit(limit: number | null) {
-  return limit === null ? "Unlimited" : formatEnumLabel(String(limit));
-}
-
 function usageLine(used: number, limit: number | null) {
-  return `${formatEnumLabel(String(used))} / ${formatLimit(limit)}`;
+  return `${formatEnumLabel(String(used))} / ${formatUsageLimit(limit)}`;
 }
 
 export function BillingSection({
@@ -179,6 +186,7 @@ export function BillingSection({
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
 }) {
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<BillingProfile | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null);
@@ -188,6 +196,13 @@ export function BillingSection({
   const [status, setStatus] = useState("");
   const [selectedTier, setSelectedTier] = useState<"STARTER" | "GROWTH" | "PRO">("STARTER");
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+
+  useEffect(() => {
+    const requestedTier = searchParams.get("tier")?.trim().toUpperCase();
+    if (requestedTier === "STARTER" || requestedTier === "GROWTH" || requestedTier === "PRO") {
+      setSelectedTier(requestedTier);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let mounted = true;
@@ -263,7 +278,7 @@ export function BillingSection({
         {
           method: "POST",
           body: { tier: selectedTier, billingCycle },
-          feedback: { success: "Billing setup started." },
+          feedback: { success: "Billing started." },
         },
       );
       if (payload.checkoutUrl) {
@@ -272,7 +287,7 @@ export function BillingSection({
       }
       setStatus(`Billing mandate is ${formatEnumLabel(payload.mandate.status)}.`);
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to start billing setup.");
+      setStatus(cause instanceof Error ? cause.message : "Unable to start billing.");
     } finally {
       setMandateBusy(false);
     }
@@ -287,11 +302,11 @@ export function BillingSection({
         {
           method: "POST",
           body: {},
-          feedback: { success: "Subscription will cancel at period end." },
+          feedback: { success: "Subscription will cancel after this billing period." },
         },
       );
       setSubscription((current) => (current ? { ...current, ...payload } : payload));
-      setStatus("Subscription will cancel at the end of the current period.");
+      setStatus("Subscription will cancel after this billing period.");
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : "Unable to cancel subscription.");
     } finally {
@@ -305,17 +320,25 @@ export function BillingSection({
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
           {copy.billingEyebrow}
         </p>
-        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">{copy.billingTitle}</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{copy.billingDescription}</p>
+        <h2 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+          {copy.billingTitle}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          {copy.billingDescription}
+        </p>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{copy.gymStatus}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              {copy.gymStatus}
+            </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {formatEnumLabel(organization.status)}
             </p>
           </div>
           <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{copy.trialEnds}</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              {copy.trialEnds}
+            </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {organization.trialEndAt ? formatDate(organization.trialEndAt) : "Active"}
             </p>
@@ -326,15 +349,15 @@ export function BillingSection({
             </p>
             <p className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
               {profile?.invoiceReady
-                ? "Invoices ready"
+                ? "Invoices available"
                 : profile?.receiptReady
-                  ? "Receipts ready"
+                  ? "Receipts available"
                   : "Add details"}
             </p>
           </div>
         </div>
         <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-          Recorded revenue in the current view: {formatInr(summary.revenuePaise)}.
+          Recorded revenue: {formatInr(summary.revenuePaise)}.
         </p>
       </GlassCard>
       <GlassCard>
@@ -345,7 +368,10 @@ export function BillingSection({
         {profile ? (
           <div className="mt-5 grid gap-3">
             {billingProfileFields.map(([label, key]) => (
-              <label key={key} className="grid gap-1 text-xs font-medium text-[var(--text-secondary)]">
+              <label
+                key={key}
+                className="grid gap-1 text-xs font-medium text-[var(--text-secondary)]"
+              >
                 {label}
                 <input
                   value={String(profile[key as keyof BillingProfile] ?? "")}
@@ -367,10 +393,10 @@ export function BillingSection({
               {busy ? "Saving..." : "Save billing details"}
             </ZookButton>
             <div className="grid gap-2">
-              <Pill tone={profile.receiptReady ? "lime" : "amber"}>
+              <Pill tone={profile.receiptReady ? "blue" : "amber"}>
                 {profile.receiptReady ? "Receipts enabled" : "Receipts need details"}
               </Pill>
-              <Pill tone={profile.invoiceReady ? "lime" : "amber"}>
+              <Pill tone={profile.invoiceReady ? "blue" : "amber"}>
                 {profile.invoiceReady ? "Invoices enabled" : "Invoices need GST details"}
               </Pill>
             </div>
@@ -383,8 +409,9 @@ export function BillingSection({
       <GlassCard className="xl:col-span-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <Pill tone="lime">Free trial</Pill>
-            <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">{copy.trialBillingTitle}</h2>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              {copy.trialBillingTitle}
+            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {copy.trialBillingDescription}
             </p>
@@ -438,6 +465,7 @@ export function BillingSection({
             </p>
             <button
               type="button"
+              aria-label="Upgrade plan"
               disabled={mandateBusy}
               onClick={() => void setupBillingMandate()}
               className="zook-focus rounded-full bg-[var(--text-primary)] px-5 py-3 text-sm font-semibold text-[var(--bg)] disabled:cursor-wait disabled:opacity-60"
@@ -451,8 +479,10 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <Pill tone="blue">{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Plan packaging</h2>
+              <Pill>{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
+              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
+                Plan packaging
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 Zook plans are enforced by gym size, team size, branches, inventory, messaging, and
                 AI quotas. Core operations stay available once billing is set up.
@@ -460,11 +490,35 @@ export function BillingSection({
             </div>
             <div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2 lg:min-w-[560px]">
               {[
-                ["Members", usageLine(subscription.usage.activeMemberCount, subscription.entitlements.memberLimit)],
-                ["Branches", usageLine(subscription.usage.branchCount, subscription.entitlements.branchLimit)],
-                ["Staff", usageLine(subscription.usage.staffCount, subscription.entitlements.staffLimit)],
-                ["Trainers", usageLine(subscription.usage.trainerCount, subscription.entitlements.trainerLimit)],
-                ["Products", usageLine(subscription.usage.productCount, subscription.entitlements.productLimit)],
+                [
+                  "Members",
+                  usageLine(
+                    subscription.usage.activeMemberCount,
+                    subscription.entitlements.memberLimit,
+                  ),
+                ],
+                [
+                  "Branches",
+                  usageLine(subscription.usage.branchCount, subscription.entitlements.branchLimit),
+                ],
+                [
+                  "Staff",
+                  usageLine(subscription.usage.staffCount, subscription.entitlements.staffLimit),
+                ],
+                [
+                  "Trainers",
+                  usageLine(
+                    subscription.usage.trainerCount,
+                    subscription.entitlements.trainerLimit,
+                  ),
+                ],
+                [
+                  "Products",
+                  usageLine(
+                    subscription.usage.productCount,
+                    subscription.entitlements.productLimit,
+                  ),
+                ],
                 [
                   "Notifications/month",
                   usageLine(
@@ -474,19 +528,30 @@ export function BillingSection({
                 ],
                 [
                   "AI text/month",
-                  usageLine(subscription.usage.aiTextMonthlyCount, subscription.entitlements.aiTextMonthlyLimit),
+                  usageLine(
+                    subscription.usage.aiTextMonthlyCount,
+                    subscription.entitlements.aiTextMonthlyLimit,
+                  ),
                 ],
                 [
                   "AI images/month",
-                  usageLine(subscription.usage.aiImageMonthlyCount, subscription.entitlements.aiImageMonthlyLimit),
+                  usageLine(
+                    subscription.usage.aiImageMonthlyCount,
+                    subscription.entitlements.aiImageMonthlyLimit,
+                  ),
                 ],
                 ["Reports", formatEnumLabel(subscription.entitlements.reports)],
                 ["Support", formatEnumLabel(subscription.entitlements.support)],
                 ["Referrals", formatEnumLabel(subscription.entitlements.referrals)],
                 ["Onboarding", formatEnumLabel(subscription.entitlements.onboarding)],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-tertiary)]">{label}</p>
+                <div
+                  key={label}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3"
+                >
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                    {label}
+                  </p>
                   <p className="mt-1 font-semibold text-[var(--text-primary)]">{value}</p>
                 </div>
               ))}
@@ -509,15 +574,20 @@ export function BillingSection({
               >
                 Autopay {formatEnumLabel(subscription.mandate.status || "")}
               </Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Active subscription</h2>
+              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
+                Active subscription
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
                 {formatEnumLabel(subscription.subscription.tier)} plan ·{" "}
-                {formatInr(subscription.mandate.amountPaise)} per {subscription.mandate.billingPeriod}
-                {" "}via {formatEnumLabel(subscription.mandate.provider || "")} mandate.
+                {formatInr(subscription.mandate.amountPaise)} per{" "}
+                {subscription.mandate.billingPeriod} via{" "}
+                {formatEnumLabel(subscription.mandate.provider || "")} mandate.
               </p>
               <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Next charge</dt>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    Next charge
+                  </dt>
                   <dd className="font-medium text-[var(--text-primary)]">
                     {subscription.mandate.nextChargeAt
                       ? formatDate(subscription.mandate.nextChargeAt)
@@ -525,7 +595,9 @@ export function BillingSection({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Cycles paid</dt>
+                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    Cycles paid
+                  </dt>
                   <dd className="font-medium text-[var(--text-primary)]">
                     {subscription.mandate.paidCount} of {subscription.mandate.totalCount}
                   </dd>
@@ -539,20 +611,23 @@ export function BillingSection({
                 href={subscription.mandate.checkoutUrl}
                 className="zook-focus rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--bg)]"
               >
-                Complete setup
+                Complete billing
               </a>
             ) : null}
             {subscription.subscription.status === "ACTIVE" &&
             !subscription.subscription.cancelAtPeriodEnd ? (
-              <ZookButton
+              <ConfirmActionButton
                 type="button"
-                tone="ghost"
-                size="sm"
                 disabled={mandateBusy}
-                onClick={() => void cancelAtPeriodEnd()}
+                className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-sunken)] disabled:cursor-wait disabled:opacity-60"
+                title="Cancel after this billing period?"
+                description="Your gym keeps access until this paid period ends, then Zook stops future subscription charges."
+                confirmLabel="Cancel after period"
+                confirmTone="danger"
+                onConfirm={() => cancelAtPeriodEnd()}
               >
-                Cancel at period end
-              </ZookButton>
+                {mandateBusy ? "Cancelling..." : "Cancel after period"}
+              </ConfirmActionButton>
             ) : null}
           </div>
         </GlassCard>
@@ -561,11 +636,12 @@ export function BillingSection({
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <Pill tone="blue">Refer another gym</Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">Your platform referral code</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                Your platform referral code
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-                Share this code with another gym owner. When they sign up using it, both gyms get
-                an extended free trial.
+                Share this code with another gym owner. When they sign up using it, both gyms get an
+                extended free trial.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <code className="rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-2 font-mono text-base text-[var(--accent-strong)]">
@@ -580,10 +656,14 @@ export function BillingSection({
                   Copy code
                 </ZookButton>
               </div>
-              {copyStatus ? <p className="mt-3 text-xs text-[var(--text-secondary)]">{copyStatus}</p> : null}
+              {copyStatus ? (
+                <p className="mt-3 text-xs text-[var(--text-secondary)]">{copyStatus}</p>
+              ) : null}
             </div>
             <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm md:min-w-[180px]">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Gyms referred</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                Gyms referred
+              </p>
               <p className="mt-2 text-3xl font-semibold text-[var(--text-primary)]">
                 {subscription.platformReferral.referredCount}
               </p>
@@ -622,7 +702,7 @@ export function BillingSection({
                       target="_blank"
                       className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]/80"
                     >
-                      Open
+                      Download invoice PDF
                     </a>
                   ) : null}
                 </div>
@@ -630,7 +710,7 @@ export function BillingSection({
             ))
           ) : (
             <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
-              No invoices generated yet. Use Generate invoice from the Payments page after billing
+              No invoices generated. Use Generate invoice from the Payments page after billing
               details are complete.
             </p>
           )}

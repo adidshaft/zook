@@ -1,0 +1,1422 @@
+# Mobile UX/UI findings — remaining backlog
+
+Compiled while auditing the Zook mobile app across **all four roles, both light & dark, on iOS (simulator) and Android (emulator)**. Everything in this doc is **not yet fixed** — the items already fixed are on branch `mobile-ui-cleanup`. Each entry below states what's **at fault**, the **user experience** impact, and the **fix**.
+
+Confidence tags: **[bug]** = confirmed defect · **[ux]** = works but worse than it should · **[ui]** = visual/consistency · **[confirm]** = likely a demo-fixture artifact, verify against the real backend before touching · **[unverified]** = couldn't exercise (tooling/auth-gated).
+
+---
+
+## Fixed in `mobile-ui-cleanup`
+
+- **1.1 Reception "Verify scan" deep-link ignores the record** — current route reads
+  `recordId`, passes it to `ReceptionWorkspace`, and auto-opens the matching decision sheet.
+- **1.2 Billing single-tenant pluralization** — `activeMembersCopy()` now handles
+  "1 member currently counts" vs plural counts.
+- **2.1 Profile alias routes are functionally identical** — alias routes now redirect to
+  `/profile` with a focus param, and the profile screen scrolls to the relevant section.
+- **2.2 Owner web-handoff shown twice** — Owner Today no longer shows the broad web control-room
+  row; Owner More remains the web handoff hub.
+- **2.3 Plan tab is sparse with a single assignment** — single-workout members now see an inline
+  exercise preview below the primary plan card.
+- **2.4 Pause-membership control could explain itself** — active membership card now explains that
+  pausing freezes check-ins until the resume date and carries remaining days over.
+- **3.1 Two header systems with different title sizes** — this is now documented as an
+  intentional hierarchy: `ScreenHeader` owns tab-root landing titles, while `AppHeader` owns
+  compact pushed/detail headers.
+- **3.2 iOS-only glow shadows are no-ops on Android** — the remaining profile completion and
+  check-in success glow cues now use platform-explicit styles: iOS shadow props, Android
+  elevation.
+- **3.3 Pickup QR used decorative continuous motion** — the pickup QR is now static so scanners
+  and users get a steady target; the unused pulse animation exports were removed.
+- **3.4 Disabled assistant prompts looked actionable** — the coming-soon assistant state no
+  longer renders inert prompt chips or a duplicate status badge.
+- **3.5 Raised bottom-nav action used continuous pulse** — the raised member action keeps its
+  static emphasis but no longer renders a looping halo.
+- **3.6 Onboarding splash carried decorative cue clutter** — removed the ambient orbs, feature
+  chips, frame layer, and faux scan glyph so the intro focuses on the Zook mark and tap affordance.
+- **3.7 Settings/onboarding showed future-feature chips** — removed non-actionable coming-soon
+  language previews and the WhatsApp notification card from mobile settings/onboarding flows.
+- **3.8 Empty data states used future-feature wording** — replaced plan exercise and trainer-bio
+  "coming soon" fallbacks with neutral empty-state copy.
+- **6/R3 Typography alias sprawl** — mobile tokens now use four ordinary title roles plus an
+  explicit `heroTitle` for oversized hero/code moments; the vague `display` alias was removed.
+- **6/R4 Contrast audit token drift** — `contrast-audit.ts` now imports real `@zook/tokens`
+  palettes instead of reaching around the package boundary or duplicating values.
+- **6/R5 Stale mobile stylesheet keys** — removed unused/empty style entries left behind in
+  assistant, attendance, notifications, login, date-picker, and tracking surfaces.
+- **6/R6 Legacy membership/plan/foundation styles** — removed unused style blocks left behind
+  by extracted membership cards, plan detail states, and old primitive button/skeleton code.
+- **6/R7 Primitive alias sprawl** — removed unused card/screen/layout aliases from the mobile
+  primitive barrel so new code has one obvious component name to reach for.
+- **6/R8 Redundant primitive barrel shim** — removed the top-level `components/primitives.tsx`
+  re-export now that imports resolve directly to the primitives directory barrel.
+- **6/R9 Orphaned primitive story file** — removed the standalone mobile primitive story/demo
+  file because there is no mobile story runner or import path for it.
+- **6/R10 Unused primitive wrappers** — removed unused chip, metric, section, and layout helper
+  exports so the mobile primitive surface only exposes components with live callers.
+- **6/R11 Unused button aliases** — removed unused `DangerButton`, `GhostButton`,
+  `PrimaryLink`, and `SecondaryLink` wrappers in favor of `ZookButton` variants.
+- **6/R12 Generic button alias** — replaced the remaining internal `Button` alias call sites
+  with `ZookButton` and removed the alias export.
+- **6/R13 No-caller primitive wrappers** — removed the remaining unused `RoleChip`,
+  `LoadingState`, and `EntryCodeCard` primitive wrappers after exact reference checks.
+- **6/R14 Unused public primitive exports** — removed unused `ChipGroup` and old summary-card
+  variants, and made the raw `TextField` base private to the input primitive module.
+- **6/R15 Internal-only row/header helpers** — removed public `DetailRow` exports and folded
+  `SectionLabel` into `SectionHeader` after confirming no app callers.
+- **6/R16 Duplicate haptic press helper** — consolidated `pressWithHaptics` and its types in
+  `buttons.tsx` so foundation/input primitives use the same helper.
+- **6/R17 Legacy bottom nav implementation** — removed the unused `BottomNav` compatibility
+  export, old role tab arrays, and their style/import leftovers now that Expo Router tab layouts
+  own mobile navigation.
+- **6/R18 Foundation barrel aliases** — removed duplicate foundation re-exports for chips,
+  metric helpers, tone helpers, profile shortcuts, icon bubbles, and input fields so those
+  primitives only come through their dedicated barrels.
+- **6/R19 Non-actionable login SSO controls** — removed Apple/Google sign-in buttons and
+  "coming soon" login strings from the mobile sign-in card until those backends are live.
+- **6/R20 Disabled assistant route surface** — feature-disabled assistant visits now redirect
+  quietly, the QA shortcut is hidden with the same flag, and stale assistant nav strings are gone.
+- **6/R21 Primitive nav shim** — removed the leftover `nav.tsx` chip re-export shim and
+  exported chips directly from the primitive barrel.
+- **6/R22 Reception success pulse** — removed the extra success scale animation from the
+  verification result modal; success already has modal copy, haptics/toast, announcement, and
+  auto-dismiss.
+- **6/R23 Mobile SSO auth surface** — removed the unused Apple/Google auth context and mobile
+  domain-api methods left behind after the login SSO controls were removed.
+- **6/R24 Empty domain modules** — deleted no-op domain query/mutation files and empty barrels,
+  then trimmed affected exports to only point at modules with live code.
+- **6/R25 Mobile api-client alias** — removed the unused one-line `apiClient` re-export shim;
+  live callers already use `mobileApiFetch` directly or `domain-api`'s request client.
+- **6/R26 Primitive feedback shim** — removed the unused `feedback.tsx` primitive barrel and
+  exported feedback primitives plus network banners directly from the main primitive barrel.
+- **6/R27 Unused skeleton exports** — removed no-caller `TrackingHistorySkeleton` and
+  `SettingsSkeleton` shapes from the mobile skeleton module.
+- **6/R28 Primitive card barrel imports** — flattened the card primitive barrel so it directly
+  re-exports card helpers instead of creating unused local bindings.
+- **6/R29 Primitive category shims** — removed no-caller `cards.tsx`, `inputs.tsx`, and
+  `layout.tsx` primitive forwarding barrels; the main primitive barrel now exports the real
+  modules directly.
+- **6/R30 Placeholder mobile READMEs** — removed one-line scaffold README files under
+  `apps/mobile/src` that contained only directory headings and no useful local guidance.
+- **6/R31 No-caller domain hooks** — removed unused mobile domain query hooks and their
+  private query-key/invalidation leftovers for engagement, badges, goals, push devices,
+  tracking habits, product aliases, and privacy consents.
+- **6/R32 Unused query-key helpers** — trimmed no-caller mobile query-key helpers and
+  invalidation branches left behind after the domain-hook cleanup.
+- **6/R33 Internal domain prop types** — stopped publicly re-exporting domain component prop
+  types that only their own modules consume; app callers still import the item types they use.
+- **6/R34 Tracking display exports** — removed unused tracking header/history-summary display
+  exports and the unused history-series builder so the progress surface only keeps live helpers.
+- **6/R35 Trainer AI draft cue** — removed the always-off trainer AI drafting card and updated
+  the trainer QA flow to exercise the live manual plan builder instead of stale AI draft naming.
+- **6/R36 No-caller utility helpers** — removed the unused smart check-in reminder module,
+  dropped the unused biometric getter, and made toast/biometric helpers private where only their
+  own modules call them.
+- **6/R37 No-caller mobile exports** — removed leftover no-caller formatting, route-role,
+  motion, role-switch, last-values, and shop API exports after direct reference checks showed
+  the live screens use newer domain hooks/helpers instead.
+- **6/R38 Internal helper exports** — removed unused bottom-sheet/privileged PIN helper exports,
+  made profile-photo types internal, and trimmed no-caller owner/reception helper exports.
+- **6/R39 Profile component default exports** — removed unused default exports from profile
+  components where the mobile app imports the named components directly.
+- **6/R40 Redundant mobile comments** — removed duplicate domain-component and skeleton comments
+  that restated the surrounding component names or obvious JSX state.
+- **6/R41 Stale QA audit wording** — removed the obsolete AI-draft mention from the
+  unverified submit-path list after the always-off trainer AI drafting surface was removed.
+- **6/R42 Offline-demo fallback copy** — replaced the remaining "sample action" offline-demo
+  transport error with neutral copy for unsupported demo actions.
+- **6/R43 Web availability copy** — replaced remaining web "coming soon" and "not available yet"
+  empty-state labels with neutral published/pending/no-history wording.
+- **6/R44 Cross-app stale helper cleanup** — removed unused web mini-chart/chip/action helper
+  exports and neutralized stale refund/comment wording found by the cue scan.
+- **6/R45 Web unused public helpers** — removed no-caller locale-label/list exports and unused
+  ambient motion primitives from the public web helper modules.
+- **6/R46 Web no-caller hooks and exports** — removed unused query-hook modules, a stale server
+  barrel export, an unused internal error helper, and redundant join-page visual comments.
+- **6/R47 Web orphan overview components** — removed the no-caller overview wrapper/component
+  cluster and an unused operational offer-form type export.
+- **6/R48 Web primitive export trim** — removed unused dashboard skeleton/table-loader,
+  date/money input, and severity-tone helper exports from the web primitive modules.
+- **6/R49 Web domain barrel cleanup** — replaced no-caller server domain forwarding-barrel
+  imports with direct read-model/shared module imports and removed the empty forwarding files.
+- **6/R50 Web internal read-model types** — made no-caller server read-model types internal and
+  removed the now-unused plan exercise type file.
+- **6/R51 Mobile skeleton alias** — replaced the remaining `LoadingSkeleton` alias callers with
+  the canonical `Skeleton` primitive and removed the wrapper export.
+- **6/R52 Web placeholder README cleanup** — removed one-line scaffold README files from web
+  domain, query-hook, and overview component folders.
+- **6/R53 App-wide scaffold README cleanup** — removed remaining one-line placeholder README
+  files across app route, component, public asset, test, and website folders.
+- **6/R54 Web orphan UI stories** — removed no-runner Storybook demo files for shared web UI
+  primitives after confirming there is no tracked Storybook configuration or live import path.
+- **6/R55 Web AI preview wording** — replaced owner-dashboard "coming soon" assistant copy and
+  badge with neutral activity/review wording that matches the current read-only panel behavior.
+- **6/R56 Token legacy alias surface** — removed the no-caller `@zook/tokens` legacy alias
+  module after confirming live consumers import the current palette/token primitives directly.
+- **6/R57 Package scaffold README cleanup** — removed one-line placeholder README files from
+  package source, config, token, UI, and migration folders while keeping the substantive Figma
+  package READMEs.
+- **6/R58 Top-level scaffold README cleanup** — removed the remaining tracked one-line README
+  placeholders from app, artifact, docs, plans, package, and script grouping folders while
+  preserving READMEs with substantive guidance.
+- **6/R59 Visible QA shortcut gating** — hid login/profile "QA shortcuts" buttons behind an
+  explicit `EXPO_PUBLIC_QA_SHORTCUTS_ENABLED` development flag while preserving direct QA
+  deep links for screenshot automation.
+- **6/R60 Scan sample-data gating** — hid the local-only "Use sample data" scan helper behind
+  the same explicit QA shortcut flag so ordinary dev/product review builds do not show sample
+  attendance controls.
+- **6/R61 Platform console demo wording** — replaced demo/manual labels in the platform support
+  console with seeded-test, manual-entry, and provider/test event wording.
+- **6/R62 Public checkout test-mode label** — changed the simulated checkout CTA from
+  "sample mode" to "test mode" in public English/Hindi copy so it matches the surrounding
+  no-real-money payment explanation.
+- **6/R63 Public status provider wording** — replaced the public status page's "mock mode"
+  degradation label with provider-neutral test-provider wording.
+- **6/R64 Disabled demo replacement naming** — renamed mobile's no-demo Metro replacement
+  modules from `*-empty` to `*-disabled` so production bundle aliases describe the disabled
+  demo behavior directly.
+- **6/R65 Scan helper label** — renamed the gated local scan helper from "Use sample data" to
+  "Use test check-in" so the dev-only control describes its actual attendance action.
+- **6/R66 Runtime diagnostics mock wording** — changed staging implicit-provider diagnostics
+  from "mock mode" to "test-provider mode" to match the cleaned public status language.
+- **6/R67 Mobile local test wording** — replaced remaining mobile runtime/offline transport
+  "sample" and "demo mode" user-facing copy with local test wording while keeping internal
+  runtime identifiers unchanged.
+- **6/R68 Cross-app local test wording** — replaced remaining web/core/mobile build diagnostics
+  and checkout/dashboard labels that called local test surfaces "sample" or "demo mode".
+- **6/R69 Empty web domain indexes** — removed no-op server-domain `index.ts` files that only
+  exported `{}` and had no exact folder-import callers.
+- **6/R70 Empty web domain type placeholders** — removed no-op server-domain `types.ts` files
+  that only exported `{}` and had no exact type-import callers.
+- **6/R71 Dead web status-dot pulse API** — removed the unused `StatusDot` pulse prop so the
+  shared dashboard primitive no longer carries an uncalled animated status affordance.
+- **6/R72 Gym profile tab pulse cue** — removed the pulsing active-tab dot and stale decorative
+  comments from the gym profile setup panel; active tab selection remains visible through
+  background, border, text, and icon treatment.
+- **6/R73 Plan selector pending cue** — removed the decorative pulsing blur and stale comments
+  from the public plan selector pending overlay while keeping the spinner and status label.
+- **6/R74 Public hero ring motion** — removed the public home hero ring's infinite orbital
+  rotations; the static ring was later removed entirely in `R32`.
+- **6/R75 Dashboard pulse-dot motion** — changed the shared web `PulseDot` from an infinite
+  pulsing animation to a static status dot while preserving color, size, and layout.
+- **6/R76 Line chart endpoint pulse** — removed the dashboard line chart's infinite endpoint
+  halo loop and stale motion comments while keeping the static endpoint marker.
+- **6/R77 Public hero pointer glow** — removed the one-off cursor-following spotlight from the
+  public hero dashboard card and deleted the now-unused visual helper export.
+- **6/R78 Gym type option wording** — changed the public setup/profile gym type option from
+  "Premium fitness club" to neutral "Fitness club" and reused the shared gym-type list in the
+  start-gym flow.
+- **6/R79 Dashboard chart comment drift** — updated the shared dashboard section-header comment
+  to describe the component plainly instead of preserving stale "premium" visual language.
+- **6/R80 Mobile launch background orbs** — removed decorative background orbs from the native
+  launch fallback; the branded loading card and spinner remain as the functional loading state.
+- **6/R81 Mobile route background glows** — removed visual-only glow layers from the login
+  screen and gym username cover placeholder while preserving the functional content and cards.
+- **6/R82 Premium/styling wording cleanup** — replaced stale "premium"/"elegant" styling
+  comments in global CSS and neutralized the mobile demo gym tagline copy.
+- **6/R83 Mobile card glow call sites** — removed glow-only emphasis from active/selected
+  mobile cards where labels, chips, selected variants, and actions already communicate state.
+- **6/R84 Dead mobile card glow API** — removed the now-unused `Card` glow/glowTone API and
+  deleted amber/red glow token entries that no longer had app callers.
+- **6/R85 Scanner line glow layer** — removed the decorative scanner-line glow/shadow layer
+  and no-op Android override while keeping the animated scan line itself.
+- **6/R86 Product placeholder glow** — removed the product-card placeholder glow layer and
+  deleted the now-unused `glowColor` tone-palette field.
+- **6/R87 Screen ambient background layers** — removed the default `ZookScreen` ambient glow/wash
+  layers and the login-only opt-out prop so screens use the plain app background.
+- **6/R88 Mobile button glow shadow** — removed the decorative primary-button glow shadow path
+  and deleted now-unused mobile glow shadow tokens.
+- **6/R89 Web primary control glow shadows** — removed glow-token shadows from filled web
+  buttons, tab pills, and public gym CTAs where color, borders, focus, and hover states remain.
+- **6/R90 Web selected card glow** — removed the selected `GlassCard` glow shadow and deleted
+  the unused success card variant.
+- **6/R91 Dead web glow utility** — removed the unused `.zook-lime-glow` global utility and
+  its paper-mode override after reference checks showed no app callers.
+- **6/R92 Dead full glow token** — removed unused `--shadow-glow-accent` palette variables
+  after app/component code stopped referencing the full glow token.
+- **6/R93 Fallback workspace wording** — changed the web dashboard fallback label from
+  "Sample data" to "Test workspace" and neutralized stale icon-generation "premium" wording.
+- **6/R94 Radio-card selected glow** — removed the selected radio-card glow shadow and deleted
+  the now-unused subtle glow palette variables.
+- **6/R95 Dead exported glow tokens** — removed self-only `zookShadows.glowLime` and
+  `opacity.glowAmbient` exports after repo-wide reference checks showed no callers.
+- **6/R96 Static status dot naming** — renamed the shared web `PulseDot` helper to
+  `StatusDot` now that the component no longer carries pulse motion.
+- **6/R97 Primitive status-dot halo** — removed the decorative halo shadow from the
+  dashboard primitive `StatusDot` while preserving the status color cue.
+- **6/R98 Release-readiness wording** — changed stale "sample mode" release-check output to
+  the actual `offlineDemo` terminology used by the mobile config.
+- **6/R99 Dashboard copy guard** — added "sample data" to the dashboard copy guard so the
+  cleaned fallback workspace label cannot regress silently.
+- **6/R100 Dashboard disabled-cue guard** — removed stale dashboard-copy scan targets and added
+  guard patterns for "coming soon" and "not available yet" dashboard copy regressions.
+- **6/R101 AI launch-gate wording** — replaced release-check "coming soon" guidance with
+  neutral unavailable-state wording for staging AI certification.
+- **6/R102 Visual cue evidence gate** — added a dedicated external QA checklist section and
+  audit-check requirement for rendered visual-cue regression evidence.
+- **6/R103 Mock checkout fallback naming** — renamed the local mock-checkout fallback label key
+  from `sampleMembership` to `testMembership` while preserving the test payment route behavior.
+- **6/R104 Scan helper test naming** — renamed the local QA scan helper flag and test id from
+  sample-oriented names to test-check-in names so internal cues match the visible copy.
+- **6/R105 Reception and AI cue cleanup** — removed an unused reception `demoScreen` style and
+  replaced web AI read-only "preview/opened up" launch copy with current-state review wording.
+- **6/R106 Dashboard fallback copy key** — renamed the dashboard fallback workspace message key
+  from `sampleData` to `fallbackWorkspace` while keeping the visible "Test workspace" label.
+- **6/R107 Payment proof placeholder cue** — fixed the payment-proof asset-id input's invalid
+  placeholder color utility so its helper cue follows the shared dashboard input treatment.
+- **6/R108 Web fallback data labels** — replaced remaining user-facing dashboard/platform
+  "Demo" fallback labels with neutral test/live-data wording.
+- **6/R109 Mobile offline data banner** — changed the offline demo banner's visible label from
+  "Demo data" to "Test data" while leaving the local-only runtime guard behavior unchanged.
+- **6/R110 Mobile test-data banner naming** — renamed the mobile runtime banner component from
+  `DemoBanner` to `TestDataBanner` and removed the now-unused `app.demoMode` translations.
+- **6/R111 Terms test-data wording** — replaced public Terms "demo data" wording with
+  "test data" in English and Hindi acceptable-use copy.
+- **6/R112 Disabled mobile test-data errors** — changed disabled offline-demo replacement
+  module errors from "Demo data" to "Test data" while preserving the Metro replacement wiring.
+- **6/R113 Dashboard demo-data guard** — added `demo data` to the dashboard copy guard so
+  fallback workspace labels cannot regress to the old wording silently.
+- **6/R114 Mobile banner docs** — updated mobile redesign/premium-pass docs from the old
+  `DemoBanner`/`demo-banner` references to the current `TestDataBanner` test-data banner.
+- **6/R115 Auth plan glow guidance** — updated the premium auth/onboarding plan so future
+  login work keeps a plain `bg.app` background instead of reintroducing a radial glow layer.
+- **6/R116 Readiness signposting guidance** — updated the May readiness workflow so deferred
+  AI, WhatsApp, and language features use neutral gated/unavailable states instead of
+  "Coming Soon!" placeholder surfaces.
+- **6/R117 AI gate acceptance copy** — updated the web acceptance test for AI plan generation
+  gating to assert neutral unavailable copy instead of the removed "coming soon" wording.
+- **6/R118 Hardening plan AI gate wording** — updated the production hardening plan's AI
+  roadmap notes from "coming soon" language to neutral gated-state wording.
+- **6/R119 Runtime QA test-data wording** — updated runtime/deployment/QA docs so missing
+  backend checks refer to fatal config states instead of silent test data, and neutralized the
+  mobile-runtime AI gate note.
+- **6/R120 QA test-provider wording** — updated manual/production QA docs from `mock mode`
+  and `demo data` phrasing to test-provider/test-data wording while preserving explicit local
+  mock checkout route names.
+- **6/R121 Handbook test-data wording** — updated receptionist/local-device handbooks from
+  mixed demo/mock wording to test-data and test-provider terminology.
+
+## 1. Functional / correctness
+
+### 1.1 Reception "Verify scan" deep-link ignores the record  **[bug, fixed]**
+- **Fault:** `app/reception/verification/[recordId].tsx` renders the generic Front-Desk body and never reads the `recordId` param. The route exists to verify one specific flagged/pending scan (e.g. from a push notification or a tap in the queue).
+- **Experience:** A receptionist who taps a specific scan-to-review lands on the generic desk and has to hunt for it in the queue. The deep link is effectively dead.
+- **Fix:** Have `ReceptionWorkspace`/desk body accept `initialRecordId` and auto-open/scroll to that record's verification card (mirrors how `members/[id]` passes `initialMemberId`).
+
+### 1.2 Billing single-tenant pluralization  **[bug, minor, fixed]**
+- **Fault:** `app/owner/billing.tsx` — `"${activeMemberCount} members currently count toward your plan limits"` doesn't handle `=== 1` ("1 members … count").
+- **Experience:** A brand-new gym with one member sees ungrammatical copy.
+- **Fix:** Pluralize member/members and count/counts.
+
+---
+
+## 2. UX gaps (flows work, but could be clearer)
+
+### 2.1 Profile alias routes are functionally identical  **[ux, fixed]**
+- **Fault:** `/profile/edit`, `/profile/photo`, `/profile/extra-fields` all re-export the same `profile-screen.tsx` and render the identical screen (the only old differentiator — the native title — was removed when we fixed the double-header).
+- **Experience:** Tapping "Edit", "Photo", or "Profile details" doesn't take the user to a focused sub-screen as the labels imply; they all land on the full profile.
+- **Fix:** Either (a) make `profile-screen` read the route and scroll-to/expand the relevant section, or (b) collapse these to a single `/profile` and remove the alias links.
+
+### 2.2 Owner web-handoff shown twice  **[ux, minor, fixed]**
+- **Fault:** "Open web control room" is a prominent card on Owner → Today **and** the whole "Web control room" list on Owner → More.
+- **Experience:** Mild redundancy; the Today card eats prime real estate for a link.
+- **Fix:** Slim the Today card to a one-line row, or drop it (More already covers web).
+
+### 2.3 Plan tab is sparse with a single assignment  **[ux, minor, fixed]**
+- **Fault:** After de-duping (today vs schedule), a member with one plan sees only the "Today's workout" card and a lot of empty space.
+- **Experience:** Looks unfinished for single-plan members.
+- **Fix:** When there's one plan, surface its exercise preview inline (the data the Home card already shows) so the tab feels complete.
+
+### 2.4 Pause-membership control could explain itself  **[ux, minor, fixed]**
+- **Fault:** `active-membership-card.tsx` shows a date field + "Pause membership" with no explanation of what pausing does (freezes access, extends end date?).
+- **Experience:** Users hesitate on a consequential action. (We added a confirm dialog; the inline copy could still help.)
+- **Fix:** One line under the control: "Pausing freezes check-ins until the resume date; your remaining days carry over."
+
+---
+
+## 3. UI / consistency
+
+### 3.1 Two header systems with different title sizes  **[ui, fixed]**
+- **Fault:** Tab landings use `ScreenHeader` (display ~34px); pushed/secondary screens and the Shop tab use `AppHeader` (~20px). So the Shop tab's title is visibly smaller than its sibling tabs (Home/Plan/Progress).
+- **Experience:** Subtle inconsistency in the "weight" of screen titles across the app.
+- **Fix:** Closed as intentional hierarchy: `ScreenHeader` uses `typography.screenTitle` for tab-root landing pages, while `AppHeader` uses `typography.headerTitle` for pushed/detail screens. Both components now carry that contract in code comments.
+
+### 3.2 iOS-only glow shadows are no-ops on Android  **[ui, minor, fixed]**
+- **Fault:** A few elements use `shadowColor`/`shadowOpacity` glows without an Android `elevation` (e.g. the profile KYC progress pip, the scan accent glow). Android can't render `shadow*`.
+- **Experience:** Slightly flatter accents on Android (not broken). The tab bar and cards already handle this; these are leftovers.
+- **Fix:** Profile KYC completion and scan success cues now branch explicitly: iOS keeps shadow props, Android receives matching elevation. Scanner-line glow already uses an opacity rail on Android rather than shadow props.
+
+### 3.3 Pickup QR used decorative continuous motion  **[ui, minor, fixed]**
+- **Fault:** `PickupQrCode` wrapped the QR surface in a continuous breathing scale animation. That movement made a scannable code feel less stable without carrying state or urgency.
+- **Experience:** The pickup screen had a subtle decorative cue exactly where users and scanners need a steady target.
+- **Fix:** Render the QR as a static surface and remove the unused continuous pulse helpers (`PulseHalo`, `useBreathingScale`).
+
+### 3.4 Disabled assistant prompts looked actionable  **[ui, minor, fixed]**
+- **Fault:** When `AI_CHAT_ENABLED` is off, the assistant coming-soon screen still rendered suggested prompt chips and a separate "Coming Soon!" badge. The chips were visual-only and could not be tapped.
+- **Experience:** Users saw affordances that looked like useful starter prompts on a screen where chat is unavailable.
+- **Fix:** Keep the explanatory empty state, but remove the inert prompt chips and duplicate badge from the disabled route. Enabled assistant prompts are unchanged.
+
+### 3.5 Raised bottom-nav action used continuous pulse  **[ui, minor, fixed]**
+- **Fault:** The raised member nav action rendered a looping halo behind the icon. It did not communicate loading, focus, or a state change.
+- **Experience:** A persistent moving cue competed with normal navigation scanning.
+- **Fix:** Remove the looping halo while keeping the raised button's static accent fill, icon sizing, and press feedback.
+
+### 3.6 Onboarding splash carried decorative cue clutter  **[ui, minor, fixed]**
+- **Fault:** The splash screen layered ambient orb shapes, a separate frame, feature chips, and a faux scanner glyph around the Zook mark.
+- **Experience:** First launch felt busier than the rest of the cleaned mobile surfaces and repeated product cues before users reached onboarding.
+- **Fix:** Keep the brand mark, one concise value sentence, and the tap-to-continue affordance; remove the decorative layers and their styles.
+
+### 3.7 Settings/onboarding showed future-feature chips  **[ui, minor, fixed]**
+- **Fault:** Language onboarding/settings displayed disabled future-language chips, and notification settings had a separate WhatsApp "Coming Soon!" card.
+- **Experience:** Users saw non-actionable controls on screens meant for active preferences.
+- **Fix:** Remove the future-feature chip rows/cards and leave only currently configurable preferences.
+
+### 3.8 Empty data states used future-feature wording  **[ui, minor, fixed]**
+- **Fault:** The member Plan tab and public gym trainer cards used "coming soon" copy for missing exercise/bio data.
+- **Experience:** Normal empty data looked like an unfinished app feature.
+- **Fix:** Use neutral empty-state copy: "No exercises yet" and "No bio added yet."
+
+---
+
+## 4. Needs product/backend confirmation (likely demo-fixture artifacts)
+
+These look wrong in the offline-demo build but are probably mocked data. **Verify against the real API before changing UI.**
+
+- **[confirm]** Progress shows **"Sessions 3 / Active 3h 5m"** but Recent workouts is **empty** ("No workouts logged"). Summary counts and the workouts list diverge in the fixture; confirm they're consistent in production.
+- **[confirm]** Owner Revenue: **"today ₹82,400"** vs the 7-day chart headline **₹2,600**. The relationship between the tile and the chart value is unclear — confirm what each represents and label accordingly.
+- **[confirm]** Owner member detail: **Fitness goal** and **Notes** both render "Muscle gain" (notes defaulted to the goal in the fixture). If notes are genuinely empty, show an empty state instead of echoing the goal.
+- **[confirm]** Shop checkout total (**₹548 / 2 items**) doesn't match the cart (**₹149 / 1 item**) — this is the offline mock (`POST /shop/orders` returns the canned fixture order). Confirm production builds the order from the live cart.
+
+---
+
+## 5. Not yet verified (need device interaction or are gated)
+
+- **[unverified]** **Onboarding & login** — the demo auto-authenticates (session in SecureStore) and sign-out is below the fold, so the first-run/auth screens couldn't be reviewed. Need a logged-out build.
+- **[unverified]** **Submit paths** that render correctly and whose handlers read correct in code, but weren't tapped through end-to-end on device: scan check-in (needs a camera/QR), shop pay-completion (mock), membership renewal purchase, trainer plan create/assign, reception record-payment submit, profile photo upload.
+- **[unverified]** **Accessibility pass** — labels exist on most controls, but no systematic audit of tap-target sizes, dynamic-type scaling, or screen-reader order.
+- **[unverified]** **Tablet / large-screen** layout — only phone form factors were checked.
+- **Note (not a bug):** Android shows a red `expo-notifications` warning toast — push notifications require a dev/production build, not Expo Go, on Android SDK 53+. Expected in Expo Go only.
+
+---
+
+## 6. Code-health (no user-visible change)
+
+- **[code]** `member-scan-route.tsx` (~1.1k) and `shop-index-route.tsx` (~1.1k) remain large. Styles were already extracted to `*.styles.ts`; the stateful component bodies could be split into sub-components, but they share enough state that doing so risks regressions (this shape caused the earlier hooks-order crash). Refactor with care, behind tests.
+- **[code, fixed]** Typography alias cleanup (`R3`) is closed: `packages/tokens` keeps the
+  documented title hierarchy (`screenTitle`, `headerTitle`, `sectionTitle`, `cardTitle`) and the
+  oversized `heroTitle` escape hatch for onboarding/entry-code moments.
+- **[code, fixed]** Contrast audit drift (`R4`) is closed: the audit uses the real
+  `@zook/tokens` palettes as its source of truth.
+- **[code, fixed]** Stale mobile stylesheet keys (`R5`) is closed: unused styles from earlier
+  UI states were removed from assistant, attendance, notifications, login, date-picker, and
+  tracking files.
+- **[code, fixed]** Legacy membership/plan/foundation styles (`R6`) is closed: unused style
+  blocks left behind by extracted membership sections, old plan detail states, and replaced
+  primitive button/skeleton code were removed.
+- **[code, fixed]** Primitive alias sprawl (`R7`) is closed: unused `FieldCard`, `QueueCard`,
+  `PressableCard`, `KPIBox`, `ProgressRing`, `SectionTitle`, and old screen-shell aliases were
+  removed from the mobile primitive exports.
+- **[code, fixed]** Redundant primitive barrel shim (`R8`) is closed: the one-line
+  `components/primitives.tsx` re-export was removed, leaving `components/primitives/index.tsx`
+  as the single barrel for `@/components/primitives` imports.
+- **[code, fixed]** Orphaned primitive story file (`R9`) is closed: the unused
+  `mobile-ux-primitives.stories.tsx` demo component was removed after confirming no Storybook
+  script/config or app import references it.
+- **[code, fixed]** Unused primitive wrappers (`R10`) is closed: unused chip wrappers,
+  metric-card aliases, `ActionButtonRow`, `SwipeActionRow`, and `CollapsibleSection` were
+  removed after exact reference checks showed no app callers.
+- **[code, fixed]** Unused button aliases (`R11`) is closed: old button/link wrapper exports
+  with no app callers were removed; callers should use `ZookButton` with `variant`/`href`.
+- **[code, fixed]** Generic button alias (`R12`) is closed: internal `Button` alias usage in
+  empty states and confirm sheets now uses `ZookButton` directly.
+- **[code, fixed]** No-caller primitive wrappers (`R13`) is closed: `RoleChip`,
+  `LoadingState`, and `EntryCodeCard` were removed along with their barrel exports and
+  now-unused imports/styles.
+- **[code, fixed]** Unused public primitive exports (`R14`) is closed: `ChipGroup`,
+  `AlertCard`, `TaskResultCard`, and `WebHandoffCard` were removed after exact reference checks,
+  and `TextField` is no longer exported as a public primitive because only `Input`,
+  `FormField`, `SearchBar`, and `SearchField` use it internally.
+- **[code, fixed]** Internal-only row/header helpers (`R15`) is closed: `DetailRow` is no
+  longer exposed from primitive barrels, and `SectionLabel` was folded into `SectionHeader`
+  before deleting the standalone file.
+- **[code, fixed]** Duplicate haptic press helper (`R16`) is closed: `buttons.tsx` now owns
+  `pressWithHaptics`, `HapticWeight`, and `PressHandler`; foundation/input primitives import
+  that shared helper instead of carrying a second implementation.
+- **[code, fixed]** Legacy bottom nav implementation (`R17`) is closed: the unused
+  `BottomNav` compatibility component, role-specific tab arrays, nav styles, and stale fallback
+  colors/imports were removed from the primitive foundation module.
+- **[code, fixed]** Foundation barrel aliases (`R18`) is closed: `foundation.tsx` now exposes
+  the actual foundation surfaces/buttons only, while chips, metrics, tone helpers, profile
+  shortcuts, icon bubbles, date fields, and OTP inputs stay on their dedicated primitive barrels.
+- **[code, fixed]** Non-actionable login SSO controls (`R19`) is closed: the login surface no
+  longer presents Apple/Google controls whose fallback path was an unavailable/coming-soon error.
+- **[code, fixed]** Disabled assistant route surface (`R20`) is closed: `AI_CHAT_ENABLED=false`
+  no longer renders a polished coming-soon route or QA shortcut, and unused assistant translation
+  keys were removed.
+- **[code, fixed]** Primitive nav shim (`R21`) is closed: the last `nav.tsx` compatibility
+  barrel was deleted now that navigation is owned by Expo Router layouts and chips have their own
+  primitive module.
+- **[code, fixed]** Reception success pulse (`R22`) is closed: the verification result modal no
+  longer scales on success, and the now-unused `useScalePulse` helper was removed while keeping
+  the failure shake cue.
+- **[code, fixed]** Mobile SSO auth surface (`R23`) is closed: `useAuth()` and `authClient`
+  no longer expose Apple/Google sign-in methods with no mobile callers.
+- **[code, fixed]** Empty domain modules (`R24`) is closed: no-op `export {};` files and the
+  empty AI domain barrel were removed from ai, gym, notifications, privacy, reception, tracking,
+  and trainer domains.
+- **[code, fixed]** No-caller confirmation sheet (`R25`) is closed: the unused
+  `useConfirmSheet` bottom-sheet helper and its primitive barrel export were removed after exact
+  reference checks found no app callers.
+- **[code, fixed]** Decorative sparkle icons (`R26`) is closed: assistant, engagement
+  notification, and first-run home states now use domain-specific chat, heart, and compass icons
+  instead of generic sparkle flair.
+- **[code, fixed]** Dashboard tip decoration (`R27`) is closed: removed the owner tip card's
+  decorative blurred accent blob, replaced its sparkle link icon with a members icon, and deleted
+  the unused global `zook-shimmer` keyframe.
+- **[code, fixed]** Customisation panel decoration (`R28`) is closed: removed the owner/trainer
+  customisation panels' decorative blurred accent blobs and replaced generic sparkle setting icons
+  with assistant, money, and palette icons that match the actual controls.
+- **[code, fixed]** Public sparkle nav icons (`R29`) is closed: replaced decorative sparkle
+  icons in the public operations pill and gym facilities tab with location and building icons that
+  describe the linked context.
+- **[code, fixed]** Ambient web blur layers (`R30`) is closed: removed purely ornamental
+  full-screen coach background blobs and the join-review card accent blob while preserving the
+  actual card surfaces and content hierarchy.
+- **[code, fixed]** Shared dashboard hero flair (`R31`) is closed: removed the reusable
+  `SectionHero` corner blur blob and replaced remaining setup/report sparkle icons with tags and
+  alert icons that match the surfaces' actual meaning.
+- **[code, fixed]** Public hero ring ornament (`R32`) is closed: removed the decorative
+  `HeroRingOrnament` SVG and its only home-hero call site while keeping the useful grid backdrop
+  and KPI sparkline.
+- **[code, fixed]** Internal dashboard chart helpers (`R33`) is closed: `AnimatedNumber` and
+  `Sparkline` are no longer exported from `dashboard/charts.tsx` because exact reference checks
+  showed they are only used internally by the KPI tile.
+- **[code, fixed]** Internal dashboard primitive helpers (`R34`) is closed:
+  `staggerContainerVariants` and `DataTableColumn` are no longer exported because exact reference
+  checks showed they are only used inside their own primitive modules.
+- **[code, fixed]** Internal dashboard prefetch helpers (`R35`) is closed: dashboard shell
+  `withCursor` and `resourcePathsForDashboardHref` are no longer exported because only
+  `prefetchDashboardHref` is imported outside the prefetch module.
+- **[code, fixed]** Internal product image helpers (`R36`) is closed: shop product image
+  normalization helpers `uniqueProductImages` and `productImagesFromForm` are no longer exported
+  because exact reference checks showed they are only used inside `product-images.tsx`.
+- **[code, fixed]** Internal plan/product payload helpers (`R37`) is closed: operational
+  action payload builders `payloadForPlanForm` and `payloadForProductForm` are no longer exported
+  because exact reference checks showed only `createPlansProductsActions` is imported externally.
+- **[code, fixed]** Internal owner preference helpers (`R38`) is closed: dashboard
+  customisation defaults and local-storage loading are no longer exported because exact reference
+  checks showed only the panel component and owner-preferences hook are imported externally.
+- **[code, fixed]** Internal operational form factories (`R39`) is closed: plan, product,
+  default-policy, and branch form factories are no longer exported because exact reference checks
+  showed they are only called inside `controller-state.ts`.
+- **[code, fixed]** Internal dashboard leaf types (`R40`) is closed: chart point,
+  plan-mix point, and shop-order item aliases are no longer exported because exact reference checks
+  showed they are only used to compose exported dashboard models inside `types.ts`.
+- **[code, fixed]** Dead notification role threading (`R41`) is closed: notification composer
+  permission checks no longer accept or forward a `roles` parameter because exact reference checks
+  showed the helper only reads explicit notification permissions.
+- **[code, fixed]** Dead desk bottom nav (`R42`) is closed: removed the unused
+  `DeskBottomNav` component and its private `deskTabs` icon config because exact reference checks
+  showed the desk panel config's only external caller uses `withBranch`.
+- **[code, fixed]** Duplicate mobile role formatter (`R43`) is closed: appearance settings now
+  uses shared `titleCaseFromCode` for role labels instead of carrying a local title-case helper.
+- **[code, fixed]** Duplicate member initials helpers (`R44`) is closed: owner member detail
+  and member-list rows now use shared mobile `formatInitials` instead of carrying local copies.
+- **[code, fixed]** Duplicate gym join-mode tones (`R45`) is closed: gym search and gym
+  profile now share mobile `joinModeTone` instead of carrying identical local tone helpers.
+- **[code, fixed]** Duplicate mobile phone redaction helpers (`R46`) is closed: owner member
+  detail and member-list rows now use shared `formatRedactedPhone` while preserving their fallback
+  labels.
+- **[code, fixed]** Feature-local mobile age formatter (`R47`) is closed: reception surfaces
+  now use shared mobile `formatAgeLabel` instead of carrying date-of-birth age math locally.
+- **[code, fixed]** Reception age wrapper (`R48`) is closed: reception screens now import
+  shared `formatAgeLabel` directly instead of routing through a feature-local wrapper.
+- **[code, fixed]** Duplicate owner title formatter (`R49`) is closed: owner revenue, stock,
+  and approval screens now use shared `titleCaseFromCode` instead of a feature-local `titleCase`
+  helper.
+- **[code, fixed]** Duplicate approval reason formatter (`R50`) is closed: owner approvals
+  and reception desk approval flows now share mobile `formatReviewReason` while keeping their
+  existing screen-specific fallback copy.
+- **[code, fixed]** Duplicate phone reveal storage keys (`R51`) is closed: owner member detail
+  and reception desk flows now use shared mobile `phoneRevealStorageKey` while preserving their
+  owner/reception key namespaces.
+- **[code, fixed]** Duplicate mobile status tone helpers (`R52`) is closed: platform billing
+  rows and member-list rows now use the shared `StatusChip` status-label tone resolver instead
+  of carrying local status-to-tone mappings.
+- **[code, fixed]** Duplicate platform INR formatter (`R53`) is closed: mobile platform
+  billing now uses shared `formatInr` instead of carrying a local rupee formatter.
+- **[code, fixed]** Duplicate web INR formatters (`R54`) is closed: pricing and trainer
+  payouts now use shared web `formatInr` instead of carrying local rupee formatters.
+- **[code, fixed]** Duplicate mobile long-date formatters (`R55`) is closed: tracking entries
+  and member profile expiry copy now use shared `formatLongDate` while preserving their fallback
+  labels.
+- **[code, fixed]** Reception reason wrapper (`R56`) is closed: reception desk context now calls
+  shared `formatReviewReason` directly and the empty feature-local helper module was removed.
+- **[code, fixed]** Duplicate public plan labels (`R57`) is closed: the join page and plan
+  selector now share public plan validity/visit label helpers instead of carrying duplicate
+  Hindi/English copy logic.
+- **[code, fixed]** Duplicate mock checkout validity label (`R58`) is closed: mock checkout now
+  uses the shared public plan validity summary helper instead of carrying local Hindi/English
+  validity copy logic.
+- **[code, fixed]** Duplicate public join URL builders (`R59`) is closed: the join page,
+  plan selector, and coupon form now share `publicJoinHref` for plan/referral/coupon/lang query
+  construction.
+- **[code, fixed]** Duplicate compact rupee formatters (`R60`) is closed: dashboard overview
+  and read-only reports now share web `formatInrCompact` for K/L rupee chart labels.
+- **[code, fixed]** Duplicate staff invite role formatter (`R61`) is closed: staff invite copy
+  now uses shared web `formatEnumLabel` instead of carrying a local role formatter.
+- **[code, fixed]** Duplicate dashboard rupee formatter (`R62`) is closed: dashboard overview
+  now uses shared web `formatInr` for full rupee labels alongside `formatInrCompact`.
+- **[code, fixed]** Duplicate SaaS limit label helpers (`R63`) is closed: billing and platform
+  subscription views now share web `formatUsageLimit`, and the no-caller server limit formatter
+  was removed.
+- **[code, fixed]** Duplicate India phone input formatter (`R64`) is closed: start-gym and
+  gym-profile setup now share web `formatIndiaPhoneInput` instead of carrying identical local
+  input formatters.
+- **[code, fixed]** Duplicate web enum display formatting (`R65`) is closed: pricing,
+  public plan cards, and dashboard overview now use shared `formatEnumLabel` instead of
+  hand-rolled underscore replacement.
+- **[code, fixed]** Duplicate mobile role title-case helpers (`R66`) is closed: auth and role
+  switcher copy now reuse shared mobile `titleCaseFromCode` instead of local role formatter
+  copies.
+- **[code, fixed]** Duplicate reception status formatting (`R67`) is closed: reception desk,
+  orders, payments, and verification copy now use shared mobile `titleCaseFromCode` instead of
+  local underscore replacement.
+- **[code, fixed]** Duplicate shop order status formatting (`R68`) is closed: mobile shop
+  pickup and history status chips now use shared `titleCaseFromCode` instead of local underscore
+  replacement.
+- **[code, fixed]** Duplicate server document enum formatting (`R69`) is closed: invoice PDF
+  descriptions and receipt/invoice HTML rows now use shared web `formatEnumLabel` instead of
+  local underscore replacement.
+- **[code, fixed]** Duplicate body-progress visibility label (`R70`) is closed: the dashboard
+  body-composition timeline now uses shared web `formatEnumLabel` instead of local underscore
+  replacement.
+- **[code, fixed]** Direct mobile QA shortcut surfaces (`R71`) is closed: the QA launcher and
+  internal `__qa-*` helper routes now self-gate behind the same local feature flag used by the
+  visible shortcut buttons.
+- **[code, fixed]** Duplicate profile role display labels (`R72`) is closed: member profile
+  role-switching copy now uses shared mobile `formatRoleLabel`, preserving Reception/platform
+  wording without carrying a local formatter.
+- **[code, fixed]** Duplicate core email enum formatting (`R73`) is closed: staff invite email
+  copy now uses shared core `formatEnumLabel` instead of hand-built underscore replacement.
+- **[code, fixed]** Duplicate public username input cleanup (`R74`) is closed: start-gym and
+  gym-profile setup now share core `normalizeUsernameInput` instead of carrying identical
+  keystroke sanitizers.
+- **[code, fixed]** Duplicate mobile duration math (`R75`) is closed: member home,
+  attendance detail, and tracking summaries now share mobile duration formatters instead of
+  each carrying local hour/minute calculations.
+- **[code, fixed]** Duplicate mobile billing limit labels (`R76`) is closed: owner billing now
+  uses shared mobile `formatUsageLimit` instead of carrying a local Unlimited/number formatter.
+- **[code, fixed]** Ad hoc owner reminder date copy (`R77`) is closed: owner member renewal
+  reminders now use shared mobile `formatLongDate` instead of platform-default date formatting.
+- **[code, fixed]** Ad hoc attendance exception date/time copy (`R78`) is closed: the web
+  attendance approval feed now uses shared web date/time formatters instead of inline
+  `toLocale*String` calls.
+- **[code, fixed]** Ad hoc attendance QR time copy (`R79`) is closed: the web attendance QR
+  panel now uses shared `formatTime` for expiry, queue, and refresh timestamps.
+- **[code, fixed]** Ad hoc impersonation expiry copy (`R80`) is closed: the web impersonation
+  banner now uses shared `formatTime` instead of inline locale time formatting.
+- **[code, fixed]** Ad hoc staff invite expiry copy (`R81`) is closed: staff invite acceptance
+  now uses shared web `formatDate` instead of inline locale date formatting.
+- **[code, fixed]** Duplicate mobile time-only formatting (`R82`) is closed: tracking entries
+  and attendance detail now share mobile `formatTime` instead of local time helpers.
+- **[code, fixed]** Duplicate mobile visit-limit labels (`R83`) is closed: member renewal and
+  gym profile plan highlights now use shared mobile `formatVisitLimit` instead of hand-built
+  visit copy.
+- **[code, fixed]** Duplicate public plan summary labels (`R84`) is closed: public gym plan
+  cards now reuse localized `planValidityLabel`/`planVisitLabel` instead of assembling visit
+  copy inline.
+- **[code, fixed]** Duplicate mobile shop order date formatting (`R85`) is closed: shop order
+  history now uses shared mobile `formatDateTime` with its existing `Recently` fallback.
+- **[code, fixed]** Duplicate mobile remaining-visit copy (`R86`) is closed: active membership
+  and profile progress labels now use shared mobile `formatVisitLimit` instead of hand-built
+  visit pluralization.
+- **[ui, fixed]** Fake trainer check-in fallback (`R87`) is closed: trainer client detail now
+  shows a formatted real last workout time or an honest empty state instead of the hard-coded
+  `Today 7:14 AM` cue.
+- **[ui, fixed]** Empty trainer detail header cue (`R88`) is closed: the overview tab now uses
+  the same client-name subtitle as the plan and sessions tabs instead of passing an empty
+  subtitle prop.
+- **[code, fixed]** Duplicate trainer client tab logic (`R89`) is closed: overview, plan, and
+  sessions now share client selection and detail route helpers instead of repeating fallback
+  lookup and tab path construction.
+- **[ui, fixed]** Misleading trainer plans status (`R90`) is closed: the client sessions tab
+  now shows a neutral `No plans` status when the active plan count is zero instead of always
+  labeling the row `Active`.
+- **[ui, fixed]** Misleading trainer profile note chips (`R91`) is closed: diet and allergy
+  rows now show `Shared` only when member profile text exists, with neutral missing states
+  otherwise.
+- **[ui, fixed]** Misleading owner member subscription pill (`R92`) is closed: owner member
+  detail now uses shared membership status tones and a formatted empty-plan label instead of a
+  fixed lime pill with raw status text.
+- **[ui, fixed]** Misleading shop order status tone (`R93`) is closed: shop pickup and order
+  history now share order status tone logic instead of forcing the active pickup card status to
+  lime.
+- **[ui, fixed]** Misleading owner billing mandate tone (`R94`) is closed: owner billing now
+  tones mandate chips by actual mandate status instead of marking every existing mandate as
+  lime.
+- **[ui, fixed]** Misleading reception order status tone (`R95`) is closed: reception pickup
+  rows now use the shared shop order status tone instead of showing every order status as lime.
+- **[ui, fixed]** Misleading reception membership status tones (`R96`) is closed: reception
+  member and payment pickers now use shared membership status tones and formatted labels instead
+  of raw enum text with only active/amber coloring.
+- **[ui, fixed]** Misleading owner billing subscription tone (`R97`) is closed: owner billing
+  now tones SaaS subscription chips by actual trial/payment/suspended/cancelled status instead
+  of treating every non-active state as amber.
+- **[ui, fixed]** Duplicate owner billing setup status cue (`R98`) is closed: owner home and
+  billing now share SaaS subscription tone logic and the setup card uses formatted status copy
+  instead of raw enum text with a fixed amber tone.
+- **[ui, fixed]** Duplicate payment status tone logic (`R99`) is closed: membership payments
+  and owner revenue now share payment status tones, and owner revenue shop rows use shared shop
+  order tones instead of fixed success/amber cues.
+- **[ui, fixed]** Misleading owner stock pickup order tone (`R100`) is closed: owner stock
+  pickup rows now use the shared shop order status tone instead of a fixed success icon.
+- **[ui, fixed]** Misleading payment/order leading icon tones (`R101`) is closed: membership
+  payment rows and reception pickup rows now tone their leading icons from the same status
+  helpers used by their visible status chips.
+- **[ui, fixed]** Misleading web desk pickup status tone (`R102`) is closed: desk pickup order
+  chips now distinguish ready/paid, pending, fulfilled, and failed/refunded/cancelled states
+  instead of coloring every non-ready order as a warning.
+- **[ui, fixed]** Misleading web member subscription status tone (`R103`) is closed: the member
+  membership surface now tones pending, paused, expired, cancelled, failed, and refunded
+  subscriptions by status instead of showing every non-active subscription as a warning.
+- **[ui, fixed]** Misleading reception scan feed status tone (`R104`) is closed: live desk scan
+  rows now tone approved, pending, flagged, and rejected/failed attendance statuses separately
+  instead of showing every non-approved scan as a warning.
+- **[ui, fixed]** Duplicate notification status warning cue (`R105`) is closed: notification
+  history and composer delivery rows now share notification status tones so failed/cancelled,
+  scheduled/pending, and sent/delivered messages are visually distinct.
+- **[ui, fixed]** Misleading member scanner frame success cue (`R106`) is closed: the QR scanner
+  frame now tones idle, checking, accepted, and failed states separately instead of showing a
+  success frame before the server has verified the scan.
+- **[code, fixed]** Ad hoc profile activity date formatting (`R107`) is closed: member profile
+  activity rows now use shared mobile activity-date formatting instead of carrying local
+  today/yesterday date math and locale calls.
+- **[code, fixed]** Duplicate attendance status label formatting (`R108`) is closed: attendance
+  record details now use shared mobile enum label formatting instead of a route-local status
+  title-case helper.
+- **[code, fixed]** Ad hoc class schedule formatting (`R109`) is closed: the mobile classes
+  route now uses shared class schedule formatting instead of carrying local date/time locale
+  calls.
+- **[code, fixed]** Ad hoc owner chart delta formatting (`R110`) is closed: owner dashboard
+  charts now use shared signed-percent formatting instead of carrying a local delta formatter.
+- **[code, fixed]** Duplicate mobile danger tone normalization (`R111`) is closed: member list
+  badges and attention items now share primitive tone normalization instead of mapping
+  `danger` to `red` inline.
+- **[code, fixed]** Duplicate member check-in code cleanup (`R112`) is closed: the member
+  scanner now shares one local compaction helper for scanned and manually entered check-in
+  codes instead of repeating uppercase/alphanumeric regex cleanup.
+- **[code, fixed]** Duplicate mobile rupee input cleanup (`R113`) is closed: reception payment
+  amount fields now use shared mobile rupee-input normalization instead of repeating inline
+  amount sanitizers.
+- **[code, fixed]** Duplicate mobile web-media URL normalization (`R114`) is closed: profile
+  photos, member profile images, and public gym media now share web URL normalization instead
+  of carrying route-local URL helpers.
+- **[code, fixed]** Duplicate mobile OTP code cleanup (`R115`) is closed: login and auth
+  verification now use the shared tested OTP sanitizer instead of carrying their own six-digit
+  digit-normalization helpers.
+- **[code, fixed]** Duplicate web OTP code cleanup (`R116`) is closed: web login and member
+  contact verification now use a shared tested OTP sanitizer instead of slicing six-digit
+  codes inline in each component.
+- **[code, fixed]** Duplicate web pincode input cleanup (`R117`) is closed: gym onboarding
+  and profile setup now share tested Indian pincode normalization instead of repeating inline
+  digit-only six-character cleanup.
+- **[code, fixed]** Duplicate web India phone cleanup (`R118`) is closed: gym onboarding and
+  shared phone input formatting now use one tested local-digit normalizer instead of carrying
+  separate country-code stripping logic.
+- **[code, fixed]** Duplicate web GSTIN cleanup (`R119`) is closed: gym onboarding now uses
+  shared tested GSTIN normalization and validation instead of repeating uppercase, stripping,
+  and pattern checks inline.
+- **[ui, fixed]** Premature contact verification cue (`R120`) is closed: the member contact
+  completion panel no longer shows a fixed "OTP verified" badge, and its shield tone now
+  follows the actual number of completed contact methods.
+- **[ui, fixed]** Overstated empty contact warning cue (`R121`) is closed: the member contact
+  completion badge now uses neutral for zero contacts, warning for partially complete contact
+  setup, and success only when both contact methods are present.
+- **[code, fixed]** Ad hoc mobile date-picker label formatting (`R122`) is closed: the shared
+  date picker now uses mobile's centralized long-date formatter instead of carrying its own
+  date-label formatter.
+- **[code, fixed]** Ad hoc web dashboard number formatting (`R123`) is closed: dashboard
+  chart counters and body-composition metrics now use shared web number formatting instead
+  of calling `toLocaleString("en-IN")` inline.
+- **[code, fixed]** Ad hoc web motion counter formatting (`R124`) is closed: shared animated
+  counters now use the same web number formatter as dashboard counters instead of calling
+  `toLocaleString()` inline.
+- **[code, fixed]** Ad hoc web overview date label formatting (`R125`) is closed: the owner
+  dashboard overview now uses shared weekday-date formatting instead of carrying an inline
+  `toLocaleDateString("en-IN")` call.
+- **[code, fixed]** Ad hoc web checkout countdown formatting (`R126`) is closed: hosted
+  checkout expiry notices now use shared tested countdown formatting instead of carrying a
+  component-local minutes/seconds formatter.
+- **[ui, fixed]** Overstated inactive mobile autopay cue (`R127`) is closed: inactive autopay
+  now uses neutral icon and badge tones instead of blue informational tones, reserving success
+  treatment for live recurring renewal.
+- **[code, fixed]** Duplicate mobile branch-label cleanup (`R128`) is closed: profile,
+  reception, and branch selector surfaces now use shared mobile branch and org-location
+  formatters instead of carrying local org-prefix trimming helpers.
+- **[code, fixed]** Duplicate web desk initials cleanup (`R129`) is closed: desk queue rows
+  now use the shared web avatar-initials primitive instead of carrying a local one-letter
+  member initial formatter.
+- **[ui, fixed]** Understated web member autopay cue (`R130`) is closed: the member web
+  membership surface now uses success tone for active/authenticated autopay instead of
+  informational blue, matching the mobile recurring-renewal cue.
+- **[code, fixed]** Duplicate web desk member-label cleanup (`R131`) is closed: desk queue
+  and member surfaces now share the same member label helper instead of carrying separate
+  name/email/fallback logic.
+- **[code, fixed]** Duplicate web desk avatar fallback cleanup (`R132`) is closed: the desk
+  member detail now uses the shared web avatar-initials primitive instead of rendering its
+  own one-letter fallback block.
+- **[ui, fixed]** Overstated web private-ID cue (`R133`) is closed: member private-ID
+  badges on the web membership and desk member surfaces now use neutral treatment instead
+  of informational blue, matching their role as identifiers rather than status.
+- **[code, fixed]** Duplicate mobile profile-shortcut initials cleanup (`R134`) is closed:
+  the profile shortcut now uses the shared mobile initials formatter instead of carrying a
+  local name-splitting helper.
+- **[code, fixed]** Duplicate mobile public-gym initials cleanup (`R135`) is closed: public
+  gym and trainer fallback avatars now use the shared mobile initials formatter instead of
+  a route-local name-splitting helper.
+- **[code, fixed]** Dead mobile trainer initials helper cleanup (`R136`) is closed: the
+  unused trainer initials export was removed after fallback-avatar surfaces moved to shared
+  initials formatting.
+- **[code, fixed]** Duplicate mobile app branch-label cleanup (`R137`) is closed: owner and
+  trainer app routes now use the shared mobile branch-name formatter instead of carrying
+  route-local org-prefix trimming helpers.
+- **[code, fixed]** Duplicate web public avatar fallback cleanup (`R138`) is closed: public
+  gym trainer rows and discovery cards now use the shared web avatar-initials primitive
+  instead of hand-rendering one-letter fallback blocks.
+- **[ui, fixed]** Overstated web desk entry-code cue (`R139`) is closed: desk queue entry
+  codes now use neutral badge styling instead of informational blue, matching their role as
+  identifiers beside private handles.
+- **[ui, fixed]** Inconsistent web public join-mode cue (`R140`) is closed: public gym hero
+  and discovery cards now share join-mode tone mapping, reserving success for open join and
+  warning for approval-required gyms.
+- **[ui, fixed]** Overstated web public gym-type cue (`R141`) is closed: public gym type
+  metadata now uses neutral badge styling instead of informational blue, keeping status-like
+  color for join mode.
+- **[ui, fixed]** Overstated web notification template cue (`R142`) is closed: saved
+  notification template type metadata now uses neutral badge styling instead of informational
+  blue, keeping stronger tones for operational delivery states and budgets.
+- **[ui, fixed]** Overstated web dashboard header-label cue (`R143`) is closed: shop
+  product creation and member bulk-import header labels now use neutral badge styling instead
+  of informational blue, matching their role as form-mode and file-format metadata.
+- **[ui, fixed]** Overstated web trainer diet surface cue (`R144`) is closed: the trainer
+  diet-plan panel fallback "Web dashboard" badge now uses neutral styling, keeping lime
+  reserved for actual success notices.
+- **[ui, fixed]** Overstated web public amenity tags (`R145`) are closed: public gym
+  facilities and equipment now share neutral tag styling instead of blue/lime status-like
+  colors for plain content metadata.
+- **[ui, fixed]** Overstated web billing section labels (`R146`) are closed: billing plan
+  packaging and referral section labels now use neutral badges instead of informational blue,
+  keeping stronger color cues for actual billing state and actions.
+- **[ui, fixed]** Overstated web branch-form step cues (`R147`) are closed: create-branch
+  step markers now use neutral badges instead of informational blue, matching their role as
+  structural wayfinding rather than state.
+- **[ui, fixed]** Overstated web membership plan count cues (`R148`) are closed: membership
+  plan ladder and catalog header counts now use neutral badges instead of informational blue,
+  keeping status color on the plan rows themselves.
+- **[ui, fixed]** Overstated web dashboard table-count cues (`R149`) are closed: audit,
+  attendance, and payment history header counts now use neutral badges instead of
+  informational blue, keeping loading, error, and row status treatment separate.
+- **[ui, fixed]** Overstated web gym-start plan cue (`R150`) is closed: the selected setup
+  tier now uses a neutral badge instead of informational blue, matching its role as setup
+  metadata beside the billing-next label.
+- **[ui, fixed]** Overstated web staff assignment count cue (`R151`) is closed: the staff
+  roles header count now uses a neutral badge instead of informational blue, keeping status
+  treatment on loading, errors, and row-level status chips.
+- **[ui, fixed]** Overstated web class capacity cue (`R152`) is closed: scheduled class
+  enrollment/capacity detail now uses a neutral badge instead of informational blue, keeping
+  class state on the adjacent status chip.
+- **[ui, fixed]** Overstated mobile home empty-state accents (`R153`) are closed: first-run,
+  no-gym, and rest-day cards now use neutral icon accents instead of informational blue,
+  keeping lime and amber for active workout and membership states.
+- **[ui, fixed]** Overstated web notification history count cue (`R154`) is closed: the
+  visible-message count now uses a neutral badge instead of informational blue, keeping
+  delivery and notification states on the row-level status pills.
+- **[ui, fixed]** Overstated mobile owner member contact cues (`R155`) are closed: member
+  detail email and phone row icons now use neutral accents instead of informational blue,
+  keeping stronger color for subscription and workout state.
+- **[ui, fixed]** Overstated mobile trainer dashboard row cues (`R156`) are closed: recent
+  feedback and manual plan-builder leading icons now use neutral accents instead of
+  informational blue, keeping completion and mode state on the trailing chips.
+- **[ui, fixed]** Overstated mobile invoice document cue (`R157`) is closed: membership
+  invoice row document icons now use neutral accents instead of informational blue, keeping
+  status color tied to payment rows and chips.
+- **[ui, fixed]** Overstated mobile public gym address cue (`R158`) is closed: the public
+  gym profile address row now uses neutral styling instead of informational blue, keeping
+  stronger color on join, referral, and payment state.
+- **[ui, fixed]** Overstated mobile member plan schedule cue (`R159`) is closed: upcoming
+  plan schedule row icons now use neutral accents instead of informational blue, keeping
+  active workout and exercise cues lime.
+- **[ui, fixed]** Overstated mobile assistant context cue (`R160`) is closed: attached
+  profile/client context now uses neutral icon and label treatment instead of informational
+  blue, matching its role as metadata for the prompt.
+- **[ui, fixed]** Overstated web notification audience-total cue (`R161`) is closed: the
+  composer preview matched-recipient total now uses a neutral badge instead of informational
+  blue, keeping delivery outcome colors on receive and opt-out states.
+- **[ui, fixed]** Overstated web notification sender-quota cue (`R162`) is closed: the
+  composer preview sender-remaining total now uses a neutral badge instead of informational
+  blue, keeping stronger colors on gym availability and announcement limits.
+- **[ui, fixed]** Overstated mobile push-opened notification cue (`R163`) is closed: the
+  push/deep-link callout icon now uses a neutral accent instead of informational blue,
+  keeping notification type colors on list rows and details.
+- **[ui, fixed]** Overstated web platform inventory-count cues (`R164`) are closed: platform
+  broadcast, impersonation, and assistant activity header counts now use neutral badges
+  instead of informational blue, keeping status and severity colors in the rows.
+- **[ui, fixed]** Overstated web desk pickup aggregate cue (`R165`) is closed: the fulfilled
+  today summary count now uses a neutral badge instead of informational blue, keeping
+  fulfilled state color on individual order rows.
+- **[ui, fixed]** Overstated mobile permission rationale cue (`R166`) is closed: permission
+  sheet header icons now use neutral accents instead of informational blue, leaving the
+  permission action as the interactive emphasis.
+- **[ui, fixed]** Overstated web platform referral-count cue (`R167`) is closed: subscription
+  table referral counts now use neutral badges instead of informational blue, keeping status
+  color on organization and mandate state.
+- **[ui, fixed]** Overstated web branch active-count cue (`R168`) is closed: the branch list
+  header active-count aggregate now uses a neutral badge instead of informational blue,
+  keeping active/default/paused color on each branch row status pill.
+- **[ui, fixed]** Overstated web platform section-label cues (`R169`) are closed: platform
+  shell and loading section labels now use neutral badges instead of informational blue,
+  keeping environment and team/state cues on their existing tones.
+- **[ui, fixed]** Overstated web plan-growth link-count cues (`R170`) are closed: coupon,
+  offer, and referral link-card counts now use neutral badges instead of informational blue,
+  keeping stronger color cues for actual plan and promotion states.
+- **[ui, fixed]** Overstated web member diet macro cue (`R171`) is closed: meal calorie and
+  macro summary badges now use neutral styling instead of informational blue, matching their
+  role as nutritional metadata rather than delivery or health status.
+- **[ui, fixed]** Overstated web member private-ID cue (`R172`) is closed: the `/me` route
+  private identifier badge now uses neutral styling instead of informational blue, matching
+  the shared member membership surface and desk private-ID treatment.
+- **[ui, fixed]** Overstated web dashboard quantity-count cues (`R173`) are closed: branch
+  location, scheduled class, and tracked refund counts now use neutral badges instead of
+  blue/lime quantity-based styling, keeping stronger tones for availability and row states.
+- **[ui, fixed]** Overstated web settings hub card-label cues (`R174`) are closed: normal
+  settings card badges now use neutral styling instead of informational blue, keeping amber
+  only for cards that need action.
+- **[ui, fixed]** Overstated web public-visibility cues (`R175`) are closed: public/visible
+  badges for plans, member profiles, and body-composition entries now use neutral styling
+  instead of informational blue, keeping color on active, paused, private, and marketing states.
+- **[ui, fixed]** Overstated web pricing tier-label cues (`R176`) are closed: pricing tier
+  name badges now use neutral styling instead of lime/blue tier-based color, keeping the
+  promotional emphasis on the existing Popular label.
+- **[ui, fixed]** Overstated mobile assigned-plan type cues (`R177`) are closed: assigned
+  plan library icons now use neutral styling instead of blue/lime category color, keeping
+  plan type readable through the icon shape and plan title.
+- **[ui, fixed]** Overstated mobile membership focus callout cues (`R178`) are closed:
+  non-purchase membership focus icons now use neutral styling instead of informational blue,
+  keeping lime only for buy and checkout action targets.
+- **[ui, fixed]** Overstated web platform support visible-count cues (`R179`) are closed:
+  loaded user and payment support-console counts now use neutral badges instead of
+  informational blue, keeping amber for loading state.
+- **[ui, fixed]** Mis-toned web member autopay cue (`R180`) is closed: the `/me` route
+  autopay badge now uses the same live lime treatment as the shared member membership
+  surface instead of informational blue.
+- **[ui, fixed]** Overstated web page-label cues (`R181`) are closed: Diet, Pricing,
+  Member profile, Owner setup, Trainer, and Assigned client labels now use neutral badges
+  instead of lime, keeping lime for live, ready, saved, and success states.
+- **[ui, fixed]** Overstated web media/profile count cues (`R182`) are closed: body-photo,
+  product-photo, and member-profile header counts now use neutral badges instead of lime,
+  keeping stronger colors on row-level status and latest/private cues.
+- **[ui, fixed]** Overstated web public label cues (`R183`) are closed: gym discovery,
+  after-joining, and India operations labels now use neutral badges instead of lime,
+  keeping stronger colors for empty, unavailable, and join-state feedback.
+- **[ui, fixed]** Overstated web loading label cue (`R184`) is closed: the global loading
+  skeleton badge now uses neutral styling instead of lime, keeping loading represented by
+  the skeleton layout rather than a success-colored label.
+- **[ui, fixed]** Overstated web attendance exception-count cue (`R185`) is closed: the
+  exception-feed aggregate count now uses a neutral badge instead of lime, keeping amber on
+  the individual suspicious flag chips that actually need review.
+- **[ui, fixed]** Overstated web notification preview-count cues (`R186`) are closed:
+  delivery and quota preview counts now use neutral badges instead of lime/amber, keeping
+  the opt-out warning treatment on the explanatory callout.
+- **[ui, fixed]** Overstated web notification selected-recipient cue (`R187`) is closed:
+  the selected-recipient count now uses a neutral badge instead of lime, keeping recipient
+  choice represented by the selector state and list contents.
+- **[ui, fixed]** Overstated web gym profile username cue (`R188`) is closed: the Join QR
+  public-username badge now uses neutral styling instead of lime, keeping stronger colors
+  on visibility and unsaved-change state.
+- **[ui, fixed]** Overstated web staff invite label cue (`R189`) is closed: the staff invite
+  form label now uses a neutral badge instead of lime, keeping success emphasis for accepted
+  invites and completed actions.
+- **[ui, fixed]** Overstated web referral code label cue (`R190`) is closed: referral landing
+  code badges now use neutral styling instead of amber, keeping warning color for unavailable
+  or approval-required join states.
+- **[ui, fixed]** Overstated web public plan recommendation cue (`R191`) is closed: public
+  gym plan badges now use neutral styling instead of lime for the recommended plan, keeping
+  recommendation emphasis on the selected card treatment.
+- **[ui, fixed]** Overstated web public no-results label cue (`R192`) is closed: the gym
+  discovery no-results badge now uses neutral styling instead of amber, keeping warning
+  color for unavailable and approval-required states.
+- **[ui, fixed]** Overstated web platform header-label cues (`R193`) are closed:
+  Production and Platform team header badges now use neutral styling instead of
+  lime/amber, keeping stronger colors for live health, selected navigation, and warnings.
+- **[ui, fixed]** Overstated mobile platform metadata cues (`R194`) are closed:
+  the platform Live overview and shown-count chips now use neutral styling instead of
+  lime/amber, keeping color on fetch freshness and subscription row status.
+- **[ui, fixed]** Overstated mobile shop checkout step cues (`R195`) are closed:
+  checkout sequence chips 2 and 3 now use the same neutral styling as step 1 instead of
+  amber/lime, keeping color for actual payment, pickup, and error status.
+- **[ui, fixed]** Overstated mobile profile activity icon cues (`R196`) are closed:
+  recent activity row icons now use neutral styling instead of fixed lime, keeping activity
+  meaning in the row title/meta and color on actual membership or role status.
+- **[ui, fixed]** Overstated mobile reception today-count cues (`R197`) are closed:
+  the desk Today metric and live-feed count now use neutral styling instead of lime,
+  keeping stronger color on pending, flagged, and row-level attendance status.
+- **[ui, fixed]** Overstated mobile gym thumbnail fallback cue (`R198`) is closed:
+  gym cards without cover art now use a neutral business icon instead of lime, keeping
+  join-mode status color on the adjacent pill.
+- **[ui, fixed]** Overstated mobile trainer today-row cues (`R199`) are closed:
+  the trainer priority client row now uses neutral person and Today chips instead of
+  lime/amber, keeping emphasis on the section heading and real progress/adherence states.
+- **[ui, fixed]** Overstated mobile trainer adherence icon cue (`R200`) is closed:
+  the client sessions Adherence row now uses a neutral analytics icon instead of lime,
+  keeping progress meaning on the adjacent completion chip and active-plan status.
+- **[ui, fixed]** Overstated mobile reception payment row icons (`R201`) are closed:
+  the payment collection Member and Invoice rows now use neutral leading icons instead of
+  lime/amber, keeping state on the verified/missing pill, membership text, and amount due.
+- **[ui, fixed]** Overstated mobile trainer plan-row icon cue (`R202`) is closed:
+  active plan-work rows now use a neutral reader icon instead of amber, keeping row action
+  emphasis on the Open chip and Client Detail button.
+- **[ui, fixed]** Overstated mobile trainer draft-prompt icon cue (`R203`) is closed:
+  the saved-plan draft prompt now uses a neutral reader icon instead of amber, keeping
+  warning emphasis on the card variant and review copy.
+- **[ui, fixed]** Overstated mobile money-summary receipt cue (`R204`) is closed:
+  shared money summary cards now use a neutral receipt icon instead of fixed amber, keeping
+  emphasis on the amount, row details, and any audit/consequence copy.
+- **[ui, fixed]** Overstated mobile member plan preview icon cues (`R205`) are closed:
+  the Inside this plan loading and exercise-row icons now use neutral styling instead of
+  lime, keeping stronger color on the selected Today's workout card.
+- **[ui, fixed]** Overstated mobile owner stock row icon cue (`R206`) is closed:
+  low-stock product rows now use a neutral cube icon instead of amber, keeping warning
+  emphasis on the Low stock metric and Reorder action.
+- **[ui, fixed]** Overstated mobile approval queue row icon cue (`R207`) is closed:
+  shared approval queue cards now use a neutral checkmark icon instead of amber, keeping
+  urgency on queue headings, counts, reasons, and approve/reject actions.
+- **[ui, fixed]** Overstated mobile platform hero icon cue (`R208`) is closed:
+  the platform billing hero now uses a neutral shield icon instead of amber, keeping state
+  color on fetch freshness and subscription status chips.
+- **[ui, fixed]** Overstated mobile profile referral icon cue (`R209`) is closed:
+  the member profile referral card now uses a neutral gift icon instead of amber, keeping
+  action emphasis on the share button and success color on applied referral states.
+- **[ui, fixed]** Overstated mobile membership browser-return icon cue (`R210`) is closed:
+  the checkout browser-return card now uses a neutral open icon instead of amber, keeping
+  action emphasis on the Check status button and purchase focus states.
+- **[ui, fixed]** Overstated mobile owner member fitness-goal icon cue (`R211`) is closed:
+  owner member detail now uses a neutral barbell icon for Fitness goal instead of lime,
+  keeping status color on the adjacent subscription pill.
+- **[ui, fixed]** Overstated mobile attendance next-plan icon cue (`R212`) is closed:
+  attendance record Next up cards now use a neutral barbell icon instead of lime, keeping
+  action emphasis on the Open Plan chip.
+- **[ui, fixed]** Overstated mobile applied-referral icon cue (`R213`) is closed:
+  the find-gyms applied referral card now uses a neutral gift icon instead of lime, keeping
+  success emphasis on the card variant and applied-code copy.
+- **[ui, fixed]** Overstated web attendance QR method badge cue (`R214`) is closed:
+  the read-only attendance panel's Self-approved QR badge now uses neutral styling instead
+  of lime, keeping status color on individual attendance rows and approval queues.
+- **[ui, fixed]** Overstated web public app CTA label cue (`R215`) is closed:
+  the public home Member apps badge now uses neutral styling instead of amber, keeping
+  CTA emphasis on the section heading and store links.
+- **[ui, fixed]** Overstated public gym trainer certification cue (`R216`) is closed:
+  trainer certification chips now use neutral styling instead of amber, matching
+  descriptive specialty chips and avoiding warning-like emphasis on metadata.
+- **[ui, fixed]** Overstated public gym not-found label cue (`R217`) is closed:
+  the missing-gym page now uses a neutral label instead of amber for the repeated
+  Gym not found text, keeping the primary state on the heading and recovery action.
+- **[ui, fixed]** Decorative public home feature-grid color cues (`R218`) are closed:
+  owner/member feature rows now share neutral icon and hover styling instead of lime
+  and amber variants, removing category color that did not communicate state.
+- **[ui, fixed]** Overstated public plans coming-soon label cue (`R219`) is closed:
+  the empty public plans section now uses a neutral label instead of amber, keeping
+  the informational availability state from reading like a warning.
+- **[ui, fixed]** Overstated membership catalog live label cue (`R220`) is closed:
+  the create-plan form's static Live label now uses neutral styling instead of lime,
+  keeping success color for actual state changes and published plan outcomes.
+- **[ui, fixed]** Overstated platform incident checklist usage cue (`R221`) is closed:
+  the static Use during live support badge now uses neutral styling instead of amber,
+  keeping warning color for actual incident conditions and safety queues.
+- **[ui, fixed]** Overstated assisted-plan metadata cues (`R222`) are closed:
+  assisted coaching plan badges now use neutral styling instead of amber in the
+  coaching library and staff plan-production views, keeping warning color for review needs.
+- **[ui, fixed]** Overstated body timeline latest-photo cue (`R223`) is closed:
+  the Latest label on body progress photos now uses neutral styling instead of lime,
+  keeping success color for actual outcomes rather than positional metadata.
+- **[ui, fixed]** Overstated billing free-trial label cue (`R224`) is closed:
+  the Free trial badge now uses neutral styling instead of lime, keeping success color
+  for enabled billing readiness and actual payment outcomes.
+- **[ui, fixed]** Overstated refund availability count cue (`R225`) is closed:
+  the refund tracker's available count now uses neutral styling instead of amber, matching
+  the tracked count and keeping warning color for actual refund errors or blockers.
+- **[ui, fixed]** Overstated revenue KPI warning cue (`R226`) is closed:
+  the dashboard Revenue today KPI now uses the normal dashboard accent instead of amber,
+  keeping warning color for metrics that actually need attention.
+- **[ui, fixed]** Misleading dashboard plan-mix empty cue (`R227`) is closed:
+  the empty plan-mix donut now renders a zero arc instead of a full lime ring, and the
+  empty legend row no longer shows a success-colored swatch for a 0% state.
+- **[ui, fixed]** Overstated coaching pending-review count cue (`R228`) is closed:
+  the coaching library pending-review count now uses amber only when reviews are actually
+  pending, keeping the zero state neutral.
+- **[ui, fixed]** Overstated member join-request KPI cue (`R229`) is closed:
+  the member roster Join requests KPI now uses amber only when requests are pending,
+  keeping the Inbox clear state from reading as a warning.
+- **[ui, fixed]** Overstated platform support idle-live cue (`R230`) is closed:
+  the support console's idle Live badge now uses neutral styling instead of blue,
+  keeping stronger tone for actual support action feedback.
+- **[ui, fixed]** Overstated coach page live-signal cue (`R231`) is closed:
+  the coach web hero now shows neutral Live view metadata without a lime status dot,
+  keeping success indicators for live runtime state rather than static page context.
+- **[ui, fixed]** Overstated coach sessions KPI warning cue (`R232`) is closed:
+  the coach Sessions this week KPI now uses an informational tone instead of amber,
+  keeping warning color for items that actually need attention.
+- **[ui, fixed]** Overstated member roster count cue (`R233`) is closed:
+  the member roster hero count now uses neutral styling without a lime status dot,
+  keeping attention color on pending join requests and active member state.
+- **[ui, fixed]** Overstated desk branch context cue (`R234`) is closed:
+  the desk workspace branch pill now uses neutral styling without a lime status dot,
+  keeping live/check-in meaning on the actual desk metrics and actions.
+- **[ui, fixed]** Overstated desk check-in KPI success cue (`R235`) is closed:
+  the desk Today's check-ins KPI now uses the informational tone instead of lime,
+  matching the main dashboard and keeping success color for completed actions.
+- **[ui, fixed]** Overstated reports live metadata cue (`R236`) is closed:
+  the reports hero now shows neutral Live view metadata without a lime status dot,
+  keeping success indicators for runtime state and generated/export feedback.
+- **[ui, fixed]** Overstated payment-channel category color cues (`R237`) are closed:
+  the reports payment-channel chart now uses non-warning/non-success tones for cash
+  and online categories instead of amber and lime.
+- **[ui, fixed]** Overstated platform readiness clear-state cues (`R238`) are closed:
+  provider and safety readiness cards now use neutral styling when no blockers are
+  loaded, keeping amber reserved for setup gaps and unresolved reports.
+- **[ui, fixed]** Decorative public hero action-card cues (`R239`) are closed:
+  the Sell memberships and Publish join page cards now use neutral icon and hover
+  styling instead of warning/success colors for static product actions.
+- **[ui, fixed]** Overstated mobile owner revenue metric cues (`R240`) are closed:
+  the owner revenue summary now treats revenue as informational and manual records
+  as neutral totals, keeping success/warning tones for actual outcomes and queues.
+- **[ui, fixed]** Overstated trainer client open-chip cue (`R241`) is closed:
+  trainer client rows now render the static Open affordance as neutral instead of
+  amber, keeping warning color for review or attention states.
+- **[ui, fixed]** Overstated reception member selection cues (`R242`) are closed:
+  Picked and Selected member-list badges now use neutral styling instead of lime,
+  keeping success color for completed verification and pickup outcomes.
+- **[ui, fixed]** Misleading dashboard expiring-members attention cue (`R243`) is closed:
+  the overview attention row no longer shows a success-colored cue for zero expiring
+  memberships, and uses warning tone only when renewals are actually due soon.
+- **[ui, fixed]** Overstated dashboard payment-action cues (`R244`) are closed:
+  next-best payment actions now use the informational dashboard tone instead of
+  success color, keeping lime for actual success states rather than reconciliation prompts.
+- **[ui, fixed]** Overstated reception pickup-ready metric cue (`R245`) is closed:
+  the Ready pickup queue metric now uses the informational mobile tone instead of
+  success color, reserving lime for completed verification and pickup outcomes.
+- **[ui, fixed]** Overstated reception payment amount cue (`R246`) is closed:
+  the manual payment Amount metric now uses neutral styling instead of warning color,
+  leaving actual validation errors on the amount field itself.
+- **[ui, fixed]** Overstated member total KPI cue (`R247`) is closed:
+  the Total members roster KPI now uses the informational dashboard tone instead of
+  success color, keeping stronger state cues on active, pending, and expiring counts.
+- **[ui, fixed]** Decorative member roster hero cue (`R248`) is closed:
+  the member roster hero now uses the informational dashboard tone instead of
+  success color, keeping success/attention emphasis on the actual roster metrics.
+- **[ui, fixed]** Decorative coach overview cues (`R249`) are closed:
+  the trainer web hero and Assigned clients KPI now use the informational dashboard
+  tone instead of success color, keeping lime for actual outcomes and saved actions.
+- **[ui, fixed]** Decorative reports hero cue (`R250`) is closed:
+  the Reports & insights hero now uses the informational dashboard tone instead of
+  success color, keeping outcome tones for actual metrics and generated actions.
+- **[ui, fixed]** Decorative dashboard plan-mix ring cue (`R251`) is closed:
+  the plan-mix donut ring now uses the informational dashboard tone instead of
+  success color, while plan-category color remains in the legend rows.
+- **[ui, fixed]** Decorative reports revenue-line cue (`R252`) is closed:
+  the reports revenue trend line now uses the informational dashboard tone instead
+  of success color, leaving movement semantics to the adjacent delta chip.
+- **[ui, fixed]** Overstated mobile no-plan card warning cue (`R253`) is closed:
+  the active-member No plan assigned card now uses the informational mobile tone
+  instead of a warning surface, while pending and expired membership cards stay amber.
+- **[ui, fixed]** Overstated mobile workout-ready card cue (`R254`) is closed:
+  the Today workout card now uses the informational mobile tone instead of success
+  color, keeping lime for active sessions and logged workout outcomes.
+- **[ui, fixed]** Misleading dashboard low-stock attention cue (`R255`) is closed:
+  the overview inventory attention row now uses warning tone only when products are
+  actually low, and uses informational tone for the healthy inventory state.
+- **[ui, fixed]** Misleading dashboard join-request attention cue (`R256`) is closed:
+  the overview join-request attention row now uses danger tone only when requests are
+  actually pending, and uses informational tone for the clear inbox state.
+- **[code, fixed]** Stale dashboard attention success tone allowance (`R257`) is closed:
+  the overview attention-row type no longer allows lime now that attention rows use
+  only informational, warning, or danger tones.
+- **[ui, fixed]** Overstated mobile cart item-count cue (`R258`) is closed:
+  the shop cart header item-count chip now uses neutral styling instead of success
+  color, keeping stronger tones for payment and pickup outcomes.
+- **[ui, fixed]** Overstated member join-request clear KPI cue (`R259`) is closed:
+  the member roster Join requests KPI now uses informational tone for Inbox clear
+  instead of success color, while pending requests still use warning tone.
+- **[ui, fixed]** Overstated dashboard workflow clear/action cues (`R260`) are closed:
+  the operational Display QR entry workflow now uses informational tone, and join
+  request workflow badges use neutral tone when the queue is clear while preserving
+  warning tone for pending membership approvals.
+- **[ui, fixed]** Decorative public home role/loop cues (`R261`) are closed:
+  static public home role cards and operations-loop cards now use neutral or
+  informational styling instead of success/warning tones that implied live state.
+- **[ui, fixed]** Overstated reception queue-clear cue (`R262`) is closed:
+  the desk queue clear card now uses neutral styling instead of success color, while
+  pending and flagged entry queues still use warning and danger tones.
+- **[code, fixed]** Dead tracking summary tone metadata (`R263`) is closed:
+  the mobile tracking summary metric type and builder no longer carry unused tone
+  values, removing success/info metadata that the summary tiles never rendered.
+- **[code, fixed]** Dead mobile plan-mix tone metadata (`R264`) is closed:
+  the owner dashboard plan-mix type and demo data no longer carry unused success or
+  warning category tones because the mobile chart renders plan bars with one accent.
+- **[ui, fixed]** Overstated owner stock pickup metric cue (`R265`) is closed:
+  the Stock screen Pickups metric now uses informational tone instead of success
+  color because paid or ready orders are an operational queue, not a completed pickup.
+- **[ui, fixed]** Swapped trainer planning metric cues (`R266`) are closed:
+  the trainer dashboard Active plans metric now uses informational tone, while the
+  Needs plan action-required metric uses warning tone instead of success color.
+- **[ui, fixed]** Overstated platform cached-state cue (`R267`) is closed:
+  the mobile platform SaaS health Cached chip now uses neutral tone instead of
+  success color, keeping amber for active refresh state.
+- **[ui, fixed]** Overstated owner active-member metric cue (`R268`) is closed:
+  the owner mobile dashboard Active members metric now uses informational tone
+  instead of success color, keeping strong tones for actual outcomes and attention.
+- **[ui, fixed]** Overstated platform clear-state badges (`R269`) are closed:
+  the web platform health and safety badges now use neutral tone for Healthy and
+  zero-open clear states, while review-needed and open-report states stay warning.
+- **[ui, fixed]** Overstated platform summary clear cues (`R270`) are closed:
+  the platform command summary now uses neutral tone for Ready, Clear, and Healthy
+  clear states, while provider gaps, safety reviews, and suspended orgs stay warning.
+- **[ui, fixed]** Overstated trainer planning clear cue (`R271`) is closed:
+  the mobile trainer Plan work summary now uses neutral tone for the Clear queue
+  state, while active plan work that needs review remains warning.
+- **[ui, fixed]** Overstated web desk pending-clear cues (`R272`) are closed:
+  the Desk pending-review KPI and queue badge now avoid success tone when there are
+  zero pending records, while pending reviews still use warning tone.
+- **[ui, fixed]** Overstated notification delivery clear cue (`R273`) is closed:
+  the notification recipient panel now uses neutral tone for zero undelivered
+  messages, while undelivered recipients still use warning tone.
+- **[ui, fixed]** Overstated shop clear-queue badges (`R274`) are closed:
+  shop low-stock, ready-order, and settlement queue badges now use neutral tone for
+  zero-count clear states, while nonzero operational queues still use warning tone.
+- **[ui, fixed]** Overstated platform moderation/account clear badges (`R275`) are closed:
+  moderation flag and suspended-organization badges now use neutral tone for clear
+  or zero-count states, while pending flags and suspended accounts remain warning.
+- **[ui, fixed]** Overstated payment reconciliation clean cue (`R276`) is closed:
+  the payment reconciliation badge now uses neutral tone for the Clean state, while
+  failed or pending payment review queues still use warning tone.
+- **[ui, fixed]** Overstated read-only review clear cues (`R277`) are closed:
+  read-only notification and assistant review badges now use neutral tone for
+  zero-count clear states, while nonzero review queues remain warning.
+- **[ui, fixed]** Overstated desk pickup paid badge (`R278`) is closed:
+  the Desk pickup payment-method badge now uses neutral tone for Paid orders that
+  still need handoff, while pay-at-desk and code-verification states keep their cues.
+- **[ui, fixed]** Overstated class branch selection cue (`R279`) is closed:
+  the class scheduler branch context pill now uses informational tone for a selected
+  branch instead of success color, while missing branch context remains warning.
+- **[ui, fixed]** Overstated gym profile visibility cue (`R280`) is closed:
+  the gym profile setup visibility badge now uses informational tone for Public
+  visibility instead of success color, while restricted visibility remains warning.
+- **[ui, fixed]** Overstated coupons/offers active-count cues (`R281`) are
+  closed: dashboard promotion count badges now use informational tone when coupons
+  or offers are active, while zero-active states remain warning cues.
+- **[ui, fixed]** Overstated billing readiness cues (`R282`) are closed:
+  receipts-enabled and invoices-enabled badges now use informational tone for
+  configured billing details, while missing receipt or GST details remain warning.
+- **[ui, fixed]** Overstated membership plan active-state cues (`R283`) are
+  closed: dashboard plan catalog and member plan ladder badges now use
+  informational tone for Active availability, while Paused plans remain warning.
+- **[ui, fixed]** Overstated default-branch cues (`R284`) are closed: dashboard
+  branch list and gym profile setup badges now use informational tone for
+  Default/Main branch routing configuration instead of success color.
+- **[ui, fixed]** Overstated member marketing preference cues (`R285`) are
+  closed: member-list Marketing on/off profile badges now use neutral tone instead
+  of framing opt-in as success or opt-out as warning.
+- **[ui, fixed]** Overstated referral availability cues (`R286`) are closed:
+  referral policy Enabled and active referral-code statuses now use informational
+  tone, while paused or inactive referral states remain warning cues.
+- **[ui, fixed]** Overstated platform runtime online cue (`R287`) is closed:
+  the platform shell now uses informational tone for System online connectivity,
+  while demo fallback or unavailable data states remain warning cues.
+- **[ui, fixed]** Overstated member filter selected cue (`R288`) is closed:
+  the member roster selected filter pill now uses informational tone instead of
+  success color, while an unselected Pending Payment filter remains a warning cue.
+- **[ui, fixed]** Overstated coaching-library reviewed cue (`R289`) is closed:
+  reviewed plan rows now use informational tone instead of success color, while
+  plans that still need trainer review remain warning cues.
+- **[ui, fixed]** Overstated member autopay setting cues (`R290`) are closed:
+  web membership Autopay on badges now use informational tone instead of success
+  color, while subscription status badges keep their existing semantic treatment.
+- **[ui, fixed]** Overstated attendance QR readiness cues (`R291`) are closed:
+  Check-in ready and Attendance sync: Live indicators now use informational tone
+  instead of success color, while QR errors and pending scan review cues remain distinct.
+- **[ui, fixed]** Overstated shop normal-stock cue (`R292`) is closed:
+  mobile shop product cards now use informational tone for normal in-stock counts,
+  while low-stock and out-of-stock states keep warning and danger treatment.
+- **[ui, fixed]** Overstated mobile selected-role cues (`R293`) are closed:
+  selected workspace and active-role chips now use informational tone instead of
+  success color, while the role-switcher availability trigger keeps its affordance.
+- **[ui, fixed]** Overstated membership focus callout cue (`R294`) is closed:
+  buy and checkout focus banners now use informational tone instead of success
+  color, while non-purchase focus banners remain neutral.
+- **[ui, fixed]** Overstated trainer progress percentage cues (`R295`) are
+  closed: recent feedback and adherence percentage chips now use informational
+  tone instead of success color, while waiting states remain neutral.
+- **[ui, fixed]** Overstated workout in-progress cue (`R296`) is closed:
+  the member home in-progress workout card now uses informational tone instead of
+  success color, while the completed Workout logged card keeps success treatment.
+- **[ui, fixed]** Overstated public join mode cue (`R297`) is closed:
+  the public join checkout mode badge now uses informational tone instead of
+  success color, while unavailable join modes keep danger treatment.
+- **[ui, fixed]** Overstated platform support notice cue (`R298`) is closed:
+  support-console action notices now use informational tone by default and render
+  delete failures as danger instead of forcing every notice through success color.
+- **[ui, fixed]** Overstated member today-plan cue (`R299`) is closed:
+  the assigned Today workout icon now uses informational tone instead of success
+  color, while completed workout states keep success treatment.
+- **[ui, fixed]** Overstated impersonation active-session cue (`R300`) is
+  closed: platform impersonation Active sessions now use informational tone
+  instead of success color, while expired sessions remain warning cues.
+- **[ui, fixed]** Overstated web active-membership cues (`R301`) are closed:
+  web member subscription Active badges now use informational tone instead of
+  success color, while pending and failed membership states keep warning/danger cues.
+- **[ui, fixed]** Overstated mobile active-membership access cue (`R302`) is
+  closed: the member home Access active card now uses task/informational styling
+  instead of success treatment, while missing or expired access remains warning.
+- **[ui, fixed]** Overstated mobile gym profile context cues (`R303`) are
+  closed: Referral applied and Current membership rows now use informational tone
+  instead of success color, while approved join requests keep success treatment.
+- **[ui, fixed]** Overstated active check-in cue (`R304`) is closed:
+  the member home Active check-in timer icon now uses informational tone instead
+  of success color, while approved or completed attendance states keep their cues.
+- **[ui, fixed]** Overstated mobile active-plan cues (`R305`) are closed:
+  trainer session and member diet Active plan chips now use informational tone
+  instead of success color, while No plan states remain neutral.
+- **[ui, fixed]** Overstated owner member profile cue (`R306`) is closed:
+  the owner member profile summary now uses neutral compact styling instead of a
+  success surface, while the subscription status pill keeps semantic tone.
+- **[ui, fixed]** Overstated mobile referral-applied banner cue (`R307`) is
+  closed: the find-gyms referral banner now uses neutral compact styling instead
+  of a success surface, while the attached referral code stays visible in copy.
+- **[ui, fixed]** Overstated public join active-membership notices (`R308`) are
+  closed: existing-membership notices on the public join flow now use
+  informational tone instead of success styling, while pending approval remains
+  warning.
+- **[ui, fixed]** Overstated web trainer action notices (`R309`) are closed:
+  diet-plan and coach-workspace action notices now use informational tone instead
+  of success styling, while destructive failures keep their error treatment.
+- **[ui, fixed]** Overstated mobile trainer plan notice cards (`R310`) are
+  closed: trainer plan and diet feedback now uses informational compact cards
+  for successful actions, warning cards for missing-client prompts, and danger
+  cards for API failures instead of forcing every notice through success styling.
+- **[ui, fixed]** Overstated mobile profile and pickup cues (`R311`) are closed:
+  profile field saves now use informational tone and no longer show a decorative
+  completion dot, while the shop pickup-code card uses neutral compact styling
+  and keeps the order status chip as the semantic cue.
+- **[ui, fixed]** Overstated attendance next-step CTA cue (`R312`) is closed:
+  the post-approval Open Plan chip now uses informational tone instead of success
+  color, while the actual Approved entry-code chip keeps success treatment.
+- **[ui, fixed]** Overstated public plan benefit bullets (`R313`) are closed:
+  gym plan highlight rows no longer render warning-colored decorative bullets,
+  leaving the benefit copy as neutral supporting text.
+- **[ui, fixed]** Overstated contact and client readiness cues (`R314`) are
+  closed: account contact completion now uses informational tone when both
+  contacts are present, and the trainer client hero no longer shows a redundant
+  accent avatar dot beside the explicit active/paused member label.
+- **[ui, fixed]** Overstated member account metric cues (`R315`) are closed:
+  member contact helper text and membership summary metrics now use neutral text
+  treatment instead of lime emphasis, while explicit status pills keep their
+  semantic tone.
+- **[ui, fixed]** Overstated notification selection cues (`R316`) are closed:
+  selected notification rows, recipient navigation, and selected-recipient remove
+  chips now use neutral styling instead of lime success emphasis, while delivery
+  status pills keep semantic tone.
+- **[ui, fixed]** Overstated desk and shop handoff cues (`R317`) are closed:
+  desk action toasts, receipt-ready panels, active-check-in context, member
+  avatar fallbacks, and Open in Desk navigation now use informational or neutral
+  styling instead of lime success emphasis.
+- **[ui, fixed]** Overstated dashboard selection cues (`R318`) are closed:
+  shop tabs, settlement status filters, and branch setup Done chips now use
+  neutral or informational selected-state styling instead of lime success
+  emphasis.
+- **[ui, fixed]** Overstated setup and coach selected cues (`R319`) are closed:
+  start-gym step, amenity, and equipment selections plus the coach Overview nav
+  active state now use neutral selected styling instead of lime success emphasis.
+- **[ui, fixed]** Overstated dashboard feedback panels (`R320`) are closed:
+  plan and branch status messages now use informational styling, and the shop
+  product edit panel now uses a neutral editing surface instead of lime emphasis.
+- **[ui, fixed]** Overstated catalog/import/hour cues (`R321`) are closed:
+  membership catalog/edit panels, CSV import summaries, loaded-row helper text,
+  and branch Open hour toggles now use neutral or informational styling instead
+  of lime success emphasis.
+- **[ui, fixed]** Overstated platform support live badge (`R322`) is closed:
+  the default support-console badge now uses neutral Console copy instead of a
+  live-state label, while action notices keep their explicit informational or
+  danger tone.
+- **[ui, fixed]** Overstated pickup selected-row cue (`R323`) is closed:
+  highlighted desk pickup rows now use neutral selected styling instead of lime
+  success emphasis, while the Code verified pill keeps success treatment.
+- **[ui, fixed]** Overstated mobile autopay live cue (`R324`) is closed:
+  active mobile autopay icon, status helper text, and badge now use informational
+  tone instead of lime success emphasis.
+- **[ui, fixed]** Overstated mobile duplicate completion cues (`R325`) are
+  closed: completed exercise rows no longer add a second lime icon beside the
+  checked control, and attendance status details use informational tone while the
+  explicit Approved chip keeps success treatment.
+- **[ui, fixed]** Overstated live/latest presentation labels (`R326`) are
+  closed: dashboard, reception, coach, report, platform, and tracking surfaces
+  now use neutral overview/snapshot/current wording instead of live/latest labels
+  where no realtime status is being conveyed.
+- **[code, fixed]** Duplicate web membership surface (`R327`) is closed: the
+  logged-in `/me` route now reuses the shared member membership renderer used by
+  private handle and public slug routes, so membership UI cleanup stays in one
+  component.
+- **[ui, fixed]** Overstated dashboard readout freshness cues (`R328`) are
+  closed: settlement, notifications, revenue, and attendance panels now use
+  current/recent/available wording instead of live/latest labels where no
+  realtime stream is being conveyed.
+- **[ui, fixed]** Overstated dashboard loading and snapshot cues (`R329`) are
+  closed: dashboard/platform loading shells and the owner overview hero now use
+  neutral loading/current/recent wording instead of live/realtime/latest labels
+  for static server snapshots.
+- **[ui, fixed]** Overstated roster, plan, order, and audit freshness cues
+  (`R330`) are closed: dashboard and mobile loading/summary copy now uses
+  current/recent/appear wording instead of live/latest phrasing for static
+  lists and document panels.
+- **[ui, fixed]** Overstated operational live-language cues (`R331`) are
+  closed: coach, classes, settings, growth, and platform operations copy now
+  uses active/current/production/support wording instead of live labels for
+  static readouts and navigation surfaces.
+- **[ui, fixed]** Overstated current-item freshness cues (`R332`) are closed:
+  pricing, body-composition, attendance, and member-profile copy now uses
+  command/current wording instead of live/latest labels for static helper text
+  and positional badges.
+- **[ui, fixed]** Overstated privileged PIN readiness fallback (`R333`) is
+  closed: the mobile privileged-action fallback now describes the PIN prompt as
+  still loading instead of presenting the action as not ready.
+- **[ui, fixed]** Overstated contact, membership, referral, and workout ready
+  cues (`R334`) are closed: helper copy now uses confirmed/active/copied/
+  assigned wording instead of ready phrasing for non-operational states.
+- **[ui, fixed]** Overstated dashboard setup and document ready cues (`R335`)
+  are closed: branch setup, reconciliation, billing, settings, and offline
+  receipt copy now uses available/configured/generated wording for static
+  setup and document states.
+- **[ui, fixed]** Overstated static readiness filler (`R336`) is closed:
+  gym-profile, notifications, attendance, no-plan, and public-gym helper copy
+  now removes "when ready" phrasing or uses available wording where no live
+  readiness state is being conveyed.
+- **[ui, fixed]** Overstated dashboard workspace live label (`R337`) is
+  closed: the dashboard shell now labels connected workspace context as current
+  in English and Hindi instead of live.
+- **[code, fixed]** Generic dashboard ready-success tone mapping (`R338`) is
+  closed: shared status-pill tone inference no longer treats every label
+  containing "ready" as success, leaving readiness color to explicit
+  domain-specific call sites.
+- **[ui, fixed]** Overstated desk receipt ready label (`R339`) is closed:
+  dashboard payment messages and the desk receipt card now describe generated
+  receipts as generated instead of ready.
+- **[ui, fixed]** Overstated mobile shop checkout readiness copy (`R340`) is
+  closed: checkout creation and pre-payment pickup helper copy now use
+  created/available-after-payment wording while preserving true pickup-ready
+  order states.
+- **[ui, fixed]** Overstated Razorpay checkout readiness copy (`R341`) is
+  closed: the web checkout panel now describes the loaded payment action as
+  available instead of ready, while the button keeps the explicit pay/authorize
+  action.
+- **[ui, fixed]** Overstated mobile inbox latest metadata (`R342`) is closed:
+  notification inbox header copy now uses recent wording instead of latest for
+  static timestamp metadata.

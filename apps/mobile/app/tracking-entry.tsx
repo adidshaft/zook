@@ -15,17 +15,20 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, trackingApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export default function TrackingEntryScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const bottomPadding = useBottomScrollPadding();
   const { activeOrgId, token } = useAuth();
   const [title, setTitle] = useState("");
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("45");
   const [mode, setMode] = useState<"workout" | "body">("workout");
   const [weightKg, setWeightKg] = useState("");
   const [bodyFatPercent, setBodyFatPercent] = useState("");
@@ -51,7 +54,8 @@ export default function TrackingEntryScreen() {
     setError(null);
     try {
       const startedAt = new Date();
-      const endedAt = new Date(startedAt.getTime() + 45 * 60_000);
+      const duration = Math.max(1, Number.parseInt(durationMinutes, 10) || 45);
+      const endedAt = new Date(startedAt.getTime() + duration * 60_000);
       await memberApi.createTrackingWorkout({
         token,
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
@@ -79,7 +83,7 @@ export default function TrackingEntryScreen() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.workouts() }),
       ]);
       showToast({ tone: "success", haptic: "success", message: "Workout saved." });
-      router.replace("/tracking" as never);
+      router.replace("/progress" as never);
     } catch (caught) {
       const nextError = new Error(getApiErrorMessage(caught));
       setError(nextError);
@@ -128,7 +132,7 @@ export default function TrackingEntryScreen() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.bodyProgress() }),
       ]);
       showToast({ tone: "success", haptic: "success", message: "Body measurements saved." });
-      router.replace("/tracking" as never);
+      router.replace("/progress" as never);
     } catch (caught) {
       const nextError = new Error(getApiErrorMessage(caught));
       setError(nextError);
@@ -141,8 +145,8 @@ export default function TrackingEntryScreen() {
   return (
     <>
       <ZookScreen testID="tracking-entry-screen">
-        <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} subtitle={mode === "workout" ? "Add a completed session" : "Track body composition"} showProfileShortcut={false} />
+        <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}>
+          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} showProfileShortcut={false} showBack />
           <SegmentedControl
             options={[
               { value: "workout", label: "Workout" },
@@ -155,7 +159,8 @@ export default function TrackingEntryScreen() {
           {mode === "workout" ? (
             <>
               <SectionHeader title="Session" />
-              <FormField testID="tracking-entry-title" label="Workout title" value={title} onChangeText={setTitle} placeholder="Maestro workout" />
+              <FormField testID="tracking-entry-title" label="Workout title" value={title} onChangeText={setTitle} placeholder="e.g. Push day" />
+              <FormField testID="tracking-entry-duration" label="Duration (minutes)" value={durationMinutes} onChangeText={setDurationMinutes} keyboardType="number-pad" placeholder="45" />
               <SectionHeader title="Exercise" />
               <FormField testID="tracking-entry-exercise-0-name" label="Exercise name" value={exerciseName} onChangeText={setExerciseName} placeholder="Push press" />
               <FormField testID="tracking-entry-exercise-0-sets" label="Sets" value={sets} onChangeText={setSets} keyboardType="number-pad" placeholder="3" />
@@ -194,5 +199,11 @@ export default function TrackingEntryScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
 });

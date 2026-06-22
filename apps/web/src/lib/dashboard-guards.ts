@@ -15,6 +15,7 @@ const sectionAccessPermissions: Record<string, Permission[]> = {
   "shop/orders": ["SHOP_FULFILL_ORDER"],
   staff: ["ORG_MANAGE_STAFF"],
   plans: ["MEMBERSHIP_PLAN_MANAGE"],
+  classes: ["TRAINERS_MANAGE", "PLANS_CREATE"],
   "plans/coupons": ["COUPONS_MANAGE"],
   "plans/offers": ["COUPONS_MANAGE"],
   "plans/referrals": ["REFERRALS_MANAGE"],

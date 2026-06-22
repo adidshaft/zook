@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { Camera } from "expo-camera";
+import Constants from "expo-constants";
 import * as Location from "expo-location";
-import * as Notifications from "expo-notifications";
+import type * as NotificationsModule from "expo-notifications";
 
 import {
   BottomSheetBackdrop,
@@ -12,7 +13,8 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { IconBubble, ZookButton } from "./foundation";
+import { ZookButton } from "./foundation";
+import { IconBubble } from "./icon-bubble";
 
 export type PermissionKind = "camera" | "location" | "notifications";
 
@@ -46,6 +48,17 @@ const permissionCopy: Record<PermissionKind, PermissionCopy> = {
 };
 
 const ASKED_PREFIX = "zook_permission_rationale_asked";
+const NativeNotifications = (() => {
+  if (Constants.executionEnvironment === "storeClient") {
+    return null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go crashes if this native module is imported eagerly.
+    return require("expo-notifications") as typeof NotificationsModule;
+  } catch {
+    return null;
+  }
+})();
 
 export function useRequestPermissionWithRationale(kind: PermissionKind) {
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -145,7 +158,7 @@ export function useRequestPermissionWithRationale(kind: PermissionKind) {
     >
       <BottomSheetView style={styles.sheet}>
         <View style={styles.header}>
-          <IconBubble icon={copy.icon} tone="blue" size={42} />
+          <IconBubble icon={copy.icon} tone="neutral" size={42} />
           <View style={styles.copy}>
             <Text style={[styles.title, { color: palette.text.primary }]}>{copy.title}</Text>
             <Text style={[styles.body, { color: palette.text.secondary }]}>{copy.body}</Text>
@@ -179,10 +192,10 @@ async function getPermissionStatus(kind: PermissionKind): Promise<PermissionStat
   if (kind === "location") {
     return Location.getForegroundPermissionsAsync();
   }
-  if (Platform.OS === "web") {
+  if (Platform.OS === "web" || !NativeNotifications) {
     return { granted: false, canAskAgain: false };
   }
-  return Notifications.getPermissionsAsync();
+  return NativeNotifications.getPermissionsAsync();
 }
 
 async function requestPermission(kind: PermissionKind): Promise<PermissionStatus> {
@@ -192,10 +205,10 @@ async function requestPermission(kind: PermissionKind): Promise<PermissionStatus
   if (kind === "location") {
     return Location.requestForegroundPermissionsAsync();
   }
-  if (Platform.OS === "web") {
+  if (Platform.OS === "web" || !NativeNotifications) {
     return { granted: false, canAskAgain: false };
   }
-  return Notifications.requestPermissionsAsync({
+  return NativeNotifications.requestPermissionsAsync({
     ios: {
       allowAlert: true,
       allowBadge: true,

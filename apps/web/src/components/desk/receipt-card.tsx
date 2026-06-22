@@ -11,8 +11,8 @@ export function ReceiptCard({
   receipt: ReceiptDetails;
 }) {
   return (
-    <div className="mt-5 rounded-[22px] border border-lime-300/20 bg-lime-300/10 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-lime-100/70">
+    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
         {copy.receiptReady}
       </p>
       <p className="mt-2 text-lg font-semibold text-white">{receipt.title}</p>

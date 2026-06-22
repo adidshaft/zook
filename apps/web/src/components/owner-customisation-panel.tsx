@@ -3,13 +3,12 @@
 import { motion } from "framer-motion";
 import {
   BarChart3,
-  Bell,
+  Bot,
   Eye,
   EyeOff,
   LayoutDashboard,
   PieChart,
   Settings2,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,8 +19,7 @@ export type OwnerWidgetKey =
   | "attendanceBars"
   | "planMix"
   | "aiUsage"
-  | "staffActivity"
-  | "tip";
+  | "staffActivity";
 
 type OwnerPrefs = {
   widgets: Record<OwnerWidgetKey, boolean>;
@@ -30,14 +28,13 @@ type OwnerPrefs = {
   numberFormat: "in" | "international";
 };
 
-export const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
+const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
   widgets: {
     revenueChart: true,
     attendanceBars: true,
     planMix: true,
     aiUsage: true,
     staffActivity: true,
-    tip: true,
   },
   accent: "lime",
   density: "comfortable",
@@ -46,7 +43,7 @@ export const OWNER_PREFS_DEFAULTS: OwnerPrefs = {
 
 const STORAGE_KEY = "zook.owner.prefs.v1";
 
-export function loadOwnerPrefs(): OwnerPrefs {
+function loadOwnerPrefs(): OwnerPrefs {
   if (typeof window === "undefined") return OWNER_PREFS_DEFAULTS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -103,19 +100,13 @@ const WIDGET_META: ReadonlyArray<WidgetMeta> = [
     key: "aiUsage",
     label: "AI usage tile",
     description: "Assistant quota for this month",
-    icon: Sparkles,
+    icon: Bot,
   },
   {
     key: "staffActivity",
     label: "Staff activity",
     description: "Recent audit-log summary",
     icon: LayoutDashboard,
-  },
-  {
-    key: "tip",
-    label: "Zook tip",
-    description: "Contextual operator nudge",
-    icon: Bell,
   },
 ];
 
@@ -176,11 +167,7 @@ export function OwnerCustomisationPanel() {
   const visibleCount = Object.values(prefs.widgets).filter(Boolean).length;
 
   return (
-    <GlassCard className="relative overflow-hidden p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] blur-3xl"
-      />
+    <GlassCard className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Settings2 size={16} className="text-[var(--accent-strong)]" />
@@ -286,7 +273,7 @@ export function OwnerCustomisationPanel() {
           animate={{ opacity: 1, y: 0 }}
           className="mt-4 text-xs text-[var(--accent-strong)]"
         >
-          {savedAt ? "Saved" : "Loaded preferences"}
+          {savedAt ? "Saved" : "Preferences"}
         </motion.p>
       ) : null}
     </GlassCard>

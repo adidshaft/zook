@@ -1,6 +1,7 @@
 "use client";
 
 import { webApiFetch } from "@/lib/api-client";
+import { formatTime } from "@/lib/format";
 
 export function ImpersonationBanner({
   id,
@@ -22,7 +23,7 @@ export function ImpersonationBanner({
     <div className="sticky top-0 z-[100] flex flex-wrap items-center justify-between gap-3 border-b border-red-200/30 bg-red-700 px-4 py-3 text-sm font-semibold text-white shadow-lg">
       <span>
         Impersonating {targetEmail}
-        {adminEmail ? ` as ${adminEmail}` : ""} until {new Date(expiresAt).toLocaleTimeString()}
+        {adminEmail ? ` as ${adminEmail}` : ""} until {formatTime(expiresAt)}
       </span>
       <button
         type="button"

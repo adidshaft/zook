@@ -51,13 +51,6 @@ if (NativeNotifications) {
   });
 }
 
-function getNativeNotifications() {
-  if (!NativeNotifications) {
-    throw new Error("Push alerts need a signed phone build. In-app alerts still work here.");
-  }
-  return NativeNotifications;
-}
-
 type PushPermissionState = "unknown" | "undetermined" | "granted" | "denied" | "unsupported";
 type PushSyncStatus =
   | "idle"
@@ -109,6 +102,17 @@ const expoGoPushValue: PushNotificationsContextValue = {
   openSystemSettings: async () => {},
 };
 
+const nativeUnsupportedPushValue: PushNotificationsContextValue = {
+  permissionState: "unsupported",
+  syncStatus: "unsupported",
+  isExpoGo: false,
+  projectIdConfigured: Boolean(getExpoProjectId()),
+  requestEnablePush: async () => false,
+  disablePush: async () => {},
+  refreshRegistration: async () => {},
+  openSystemSettings: async () => {},
+};
+
 function normalizePermissionState(
   status: NotificationsModule.NotificationPermissionsStatus,
 ): PushPermissionState {
@@ -134,7 +138,7 @@ function trimErrorMessage(error: unknown) {
     return "Push alerts need a signed phone build. In-app alerts still work here.";
   }
   if (/project.?id/i.test(message)) {
-    return "Push alerts are not available in this build yet.";
+    return "Push alerts are unavailable in this build.";
   }
   return message;
 }
@@ -167,7 +171,28 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
     );
   }
 
-  const notifications = getNativeNotifications();
+  if (!NativeNotifications) {
+    return (
+      <PushNotificationsContext.Provider value={nativeUnsupportedPushValue}>
+        {children}
+      </PushNotificationsContext.Provider>
+    );
+  }
+
+  return (
+    <PushNotificationsProviderInner notifications={NativeNotifications}>
+      {children}
+    </PushNotificationsProviderInner>
+  );
+}
+
+function PushNotificationsProviderInner({
+  children,
+  notifications,
+}: {
+  children: ReactNode;
+  notifications: typeof NotificationsModule;
+}) {
   const { activeOrgId, registerLogoutCleanup, status, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -341,7 +366,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
       const projectId = getExpoProjectId();
       if (!projectId) {
         setSyncStatus("error");
-        setError("Push alerts are not available in this build yet.");
+        setError("Push alerts are unavailable in this build.");
         return false;
       }
 
@@ -386,7 +411,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
         return false;
       }
     },
-    [ensureAndroidChannels, registerExpoPushToken],
+    [ensureAndroidChannels, notifications, registerExpoPushToken],
   );
 
   useEffect(() => {

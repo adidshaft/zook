@@ -60,11 +60,11 @@ If counts are high, the prior plans are incomplete — fix those first, then ret
 For each:
 
 1. **If it's still imported anywhere** — move to a dedicated file in `apps/mobile/src/components/primitives/`:
-   - `ZookScreen`, `SafeAreaScreen` → already in `layout.tsx`? If not, move there.
+   - `ZookScreen`, `SafeAreaScreen` → already in `foundation.tsx`/layout primitives? If not, move there.
    - `AppHeader`, `AppHeader` → `header.tsx` (new)
    - `BottomNav` → delete (no longer used after #09)
    - `DockTab*`, role tabs → delete (no longer used after #05/#06/#07/#09)
-   - Anything else still imported → move to the appropriate split file (`cards.tsx`, `buttons.tsx`, `feedback.tsx`)
+   - Anything else still imported → move to the appropriate split file (`summary-cards.tsx`, `buttons.tsx`, `feedback-primitives.tsx`)
 
 2. **If it's no longer imported** — delete.
 

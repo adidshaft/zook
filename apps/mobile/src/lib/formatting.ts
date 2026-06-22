@@ -6,21 +6,10 @@ function toDate(value?: string | Date | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatShortDate(value?: string | Date | null) {
+export function formatLongDate(value?: string | Date | null, fallback = "Not available") {
   const date = toDate(value);
   if (!date) {
-    return "Not available";
-  }
-  return date.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-export function formatLongDate(value?: string | Date | null) {
-  const date = toDate(value);
-  if (!date) {
-    return "Not available";
+    return fallback;
   }
   return date.toLocaleDateString(undefined, {
     day: "numeric",
@@ -29,14 +18,29 @@ export function formatLongDate(value?: string | Date | null) {
   });
 }
 
-export function formatDateTime(value?: string | Date | null) {
+export function formatDateTime(
+  value?: string | Date | null,
+  fallback = "Not available",
+  locale?: string,
+) {
   const date = toDate(value);
   if (!date) {
-    return "Not available";
+    return fallback;
   }
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     day: "numeric",
     month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function formatTime(value?: string | Date | null, fallback = "--") {
+  const date = toDate(value);
+  if (!date) {
+    return fallback;
+  }
+  return date.toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -72,6 +76,41 @@ export function formatRelativeDate(value?: string | Date | null) {
   return formatLongDate(date);
 }
 
+export function formatActivityDate(value?: string | Date | null, fallback = "Recently") {
+  const date = toDate(value);
+  if (!date) {
+    return fallback;
+  }
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
+  const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  if (sameDay(date, today)) return `Today, ${time}`;
+  if (sameDay(date, yesterday)) return `Yesterday, ${time}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+export function formatClassSchedule(startTime?: string | Date | null, endTime?: string | Date | null) {
+  const start = toDate(startTime);
+  const end = toDate(endTime);
+  if (!start || !end) {
+    return "Schedule not available";
+  }
+  return `${start.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })} · ${start.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })} - ${end.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+}
+
 export function formatInr(valuePaise?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -80,11 +119,142 @@ export function formatInr(valuePaise?: number | null) {
   }).format((valuePaise ?? 0) / 100);
 }
 
+export function normalizeRupeeInput(value: string) {
+  const compact = value.replace(/[₹,\s]/g, "").replace(/[^\d.]/g, "");
+  const [whole = "", ...fractionParts] = compact.split(".");
+  const fraction = fractionParts.join("").slice(0, 2);
+
+  if (!compact.includes(".")) {
+    return whole;
+  }
+
+  return `${whole}.${fraction}`;
+}
+
 export function formatCompactNumber(value?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value ?? 0);
+}
+
+export function formatSignedPercent(value?: number | null) {
+  const safe = Number.isFinite(value) ? Number(value) : 0;
+  const sign = safe > 0 ? "+" : "";
+  return `${sign}${safe.toFixed(Number.isInteger(safe) ? 0 : 1)}%`;
+}
+
+export function formatUsageLimit(
+  limit?: number | null,
+  options: { compact?: boolean; unlimitedLabel?: string } = {},
+) {
+  if (limit == null) {
+    return options.unlimitedLabel ?? "Unlimited";
+  }
+  return options.compact ? formatCompactNumber(limit) : String(limit);
+}
+
+export function formatVisitLimit(limit?: number | null, fallback = "Unlimited") {
+  if (!limit) {
+    return fallback;
+  }
+  return `${limit} ${limit === 1 ? "visit" : "visits"}`;
+}
+
+export function toneForShopOrderStatus(status?: string | null) {
+  if (status === "FULFILLED" || status === "READY_FOR_PICKUP" || status === "PAID") {
+    return "lime" as const;
+  }
+  if (status === "PENDING_PAYMENT") {
+    return "amber" as const;
+  }
+  if (status === "FAILED" || status === "CANCELLED" || status === "REFUNDED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
+export function toneForSaasSubscriptionStatus(status?: string | null) {
+  if (status === "ACTIVE" || status === "TRIAL_ACTIVE") {
+    return "lime" as const;
+  }
+  if (status === "TRIAL_EXPIRING" || status === "PAYMENT_PENDING") {
+    return "amber" as const;
+  }
+  if (status === "TRIAL_EXPIRED" || status === "SUSPENDED" || status === "CANCELLED" || status === "DELETED") {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
+export function toneForPaymentStatus(status?: string | null) {
+  if (status === "SUCCEEDED") {
+    return "lime" as const;
+  }
+  if (status === "CREATED" || status === "PENDING" || status === "REQUIRES_ACTION") {
+    return "amber" as const;
+  }
+  if (
+    status === "FAILED" ||
+    status === "CANCELLED" ||
+    status === "EXPIRED" ||
+    status === "REFUNDED" ||
+    status === "PARTIALLY_REFUNDED" ||
+    status === "DISPUTED"
+  ) {
+    return "red" as const;
+  }
+  return "neutral" as const;
+}
+
+export function formatElapsedTimer(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatCompactMinutes(
+  minutes?: number | null,
+  options: { includeZeroMinutes?: boolean; separator?: string } = {},
+) {
+  const totalMinutes = Math.max(0, Math.floor(minutes ?? 0));
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  if (!hours) {
+    return `${remainingMinutes}m`;
+  }
+  const separator = options.separator ?? "";
+  if (remainingMinutes || options.includeZeroMinutes) {
+    return `${hours}h${separator}${remainingMinutes}m`;
+  }
+  return `${hours}h`;
+}
+
+export function formatDurationSeconds(
+  totalSeconds?: number | null,
+  options: {
+    fallback?: string;
+    includeZeroMinutes?: boolean;
+    minimumMinutes?: number;
+    separator?: string;
+  } = {},
+) {
+  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
+    return options.fallback ?? "In progress";
+  }
+  const minutes = Math.max(
+    options.minimumMinutes ?? 0,
+    Math.floor(Math.max(0, totalSeconds) / 60),
+  );
+  return formatCompactMinutes(minutes, {
+    includeZeroMinutes: options.includeZeroMinutes,
+    separator: options.separator,
+  });
 }
 
 export function titleCaseFromCode(value?: string | null) {
@@ -99,6 +269,73 @@ export function titleCaseFromCode(value?: string | null) {
     .join(" ");
 }
 
+export function formatRoleLabel(role?: string | null) {
+  if (role === "RECEPTIONIST") return "Reception";
+  if (role === "PLATFORM_ADMIN") return "Platform operator";
+  return titleCaseFromCode(role);
+}
+
+export function formatInitials(name?: string | null, fallback?: string | null) {
+  const source = name?.trim() || fallback?.trim() || "Member";
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+export function formatBranchName(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+  options: { collapseOrgMatch?: boolean; fallback?: string | null } = {},
+) {
+  const org = orgName?.trim();
+  const branch = branchName?.trim();
+  if (!branch) return options.fallback ?? null;
+  if (!org || !branch.startsWith(org)) return branch;
+  return (
+    branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim() ||
+    (options.collapseOrgMatch ? (options.fallback ?? null) : branch)
+  );
+}
+
+export function formatOrgLocationLine(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+  city: string | null | undefined,
+) {
+  const org = orgName?.trim();
+  const branchLabel = formatBranchName(org, branchName);
+  if (!org && !branchLabel) return "No active gym";
+  const location = org && branchLabel && branchLabel !== org
+    ? `${org} · ${branchLabel}`
+    : org || branchLabel || "";
+  return city ? `${location}, ${city}` : location;
+}
+
+export function formatRedactedPhone(phone?: string | null, fallback = "No phone") {
+  if (!phone) return fallback;
+  return `****${phone.slice(-4)}`;
+}
+
+export function formatAgeLabel(dateOfBirth?: string | Date | null, fallback = "DOB not added") {
+  const date = toDate(dateOfBirth);
+  if (!date) return fallback;
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDelta = today.getMonth() - date.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < date.getDate())) {
+    age -= 1;
+  }
+  return `${age} years`;
+}
+
+export function formatReviewReason(reason?: string | null, fallback = "Desk approval is required.") {
+  if (!reason) return fallback;
+  return reason.replace("Attendance approval mode is enabled.", "Desk approval is required.");
+}
+
 export function joinModeLabel(
   mode?: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY" | string | null,
 ) {
@@ -106,4 +343,11 @@ export function joinModeLabel(
   if (mode === "APPROVAL_REQUIRED") return "Approval required";
   if (mode === "INVITE_ONLY") return "Invite only";
   return titleCaseFromCode(mode);
+}
+
+export function joinModeTone(mode?: string | null) {
+  if (mode === "OPEN_JOIN") return "lime" as const;
+  if (mode === "APPROVAL_REQUIRED") return "amber" as const;
+  if (mode === "INVITE_ONLY") return "violet" as const;
+  return "neutral" as const;
 }

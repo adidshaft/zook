@@ -37,6 +37,44 @@ export function useGeneratePaymentDocument() {
   });
 }
 
+export function useRefundPayment(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({
+      paymentId,
+      reason,
+      amountPaise,
+    }: {
+      paymentId: string;
+      reason: string;
+      amountPaise?: number;
+    }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ payment: OrgPaymentRecord }>(
+        `/orgs/${ctx.orgId}/payments/${paymentId}/refund`,
+        {
+          method: "POST",
+          token: ctx.token,
+          orgId: ctx.orgId,
+          body: { reason, ...(amountPaise ? { amountPaise } : {}) },
+        },
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        invalidations.payments.all(queryClient, resolvedOrgId),
+        invalidations.owner.dashboard(queryClient, resolvedOrgId),
+      ]);
+      notifyMutationSuccess("Refund issued.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Refund could not be issued.");
+    },
+  });
+}
+
 export function useRecordManualPayment(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();

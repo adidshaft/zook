@@ -11,6 +11,7 @@ type HomeSignals = MemberHomeData & {
 export type HomeState =
   | { kind: "noOrg" }
   | { kind: "expiredMembership" }
+  | { kind: "membershipPendingActivation"; gymName: string }
   | { kind: "noPlan"; gymName: string; daysLeft: number }
   | { kind: "todayRest"; planName: string; streak: number }
   | {
@@ -63,6 +64,12 @@ export function deriveHomeState(home: HomeSignals | undefined): HomeState {
       kind: "noPlan",
       gymName: home.activeOrganization.name,
       daysLeft: home.activeMembership.daysLeft ?? 0,
+    };
+  }
+  if (home.activeOrganization && !home.activeMembership) {
+    return {
+      kind: "membershipPendingActivation",
+      gymName: home.activeOrganization.name,
     };
   }
   return { kind: "firstRun", gymUsername: home.activeOrganization.username ?? undefined };

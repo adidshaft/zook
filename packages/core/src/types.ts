@@ -94,6 +94,7 @@ export type PaymentPurpose =
   | "SAAS_BILLING"
   | "MEMBERSHIP"
   | "SHOP_ORDER"
+  | "CLASS_BOOKING"
   | "PERSONAL_TRAINING"
   | "OTHER"
   | "MANUAL_ADJUSTMENT";
@@ -230,6 +231,7 @@ export interface AuthOrganizationSummary {
   orgId: string;
   name: string;
   username: string;
+  logoUrl?: string | null;
   status: OrganizationStatus;
   city: string;
   state: string;
@@ -408,14 +410,12 @@ export interface UserSafetyState {
 }
 
 export type TrackingWindow = "TODAY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-export type TrackingTone = "lime" | "amber" | "blue" | "violet";
 
 export interface TrackingSummaryMetric {
   id: string;
   label: string;
   value: string;
   detail: string;
-  tone: TrackingTone;
 }
 
 export interface WorkoutExercise {

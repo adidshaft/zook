@@ -10,10 +10,9 @@ import type { MemberListProps } from "./types";
 
 export type { MemberListFilter, MemberListProps, MemberRowItem } from "./types";
 
-// Supports loading, error, empty, filtered, searched, and populated member states.
 export function MemberList({
   availableFilters,
-  emptyState = { title: "No members found", subtitle: "Try a different search or filter." },
+  emptyState = { title: "No members", subtitle: "Try a different search or filter." },
   filter,
   isError,
   isLoading,
@@ -30,6 +29,7 @@ export function MemberList({
   onRefresh,
   header,
   scrollEnabled = true,
+  style,
 }: MemberListProps) {
   const { palette } = useTheme();
   const renderItem = ({ item, index }: { item: typeof items[number]; index: number }) => (
@@ -44,6 +44,7 @@ export function MemberList({
   return (
     <FlatList
       testID={testID}
+      style={style}
       data={isLoading || isError ? [] : items}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}

@@ -13,7 +13,7 @@ import {
 import { defaultBranchHoursText } from "../sections/branch-hours-editor";
 import type { BranchFormState } from "../sections/branches-section";
 
-export function createEmptyPlanForm() {
+function createEmptyPlanForm() {
   return {
     name: "",
     type: "HYBRID" as MembershipPlanType,
@@ -28,7 +28,7 @@ export function createEmptyPlanForm() {
 
 export type PlanForm = ReturnType<typeof createEmptyPlanForm>;
 
-export function createEmptyProductForm() {
+function createEmptyProductForm() {
   return {
     name: "",
     category: "OTHER" as ProductCategory,
@@ -70,8 +70,6 @@ export function createEmptyOfferForm() {
   };
 }
 
-export type OfferForm = ReturnType<typeof createEmptyOfferForm>;
-
 export function createEmptyReferralForm() {
   return {
     code: "",
@@ -81,7 +79,7 @@ export function createEmptyReferralForm() {
   };
 }
 
-export function createDefaultPolicyForm() {
+function createDefaultPolicyForm() {
   return {
     enabled: true,
     referrerRewardType: "DAYS" as RewardType,
@@ -104,7 +102,7 @@ export function createEmptyStaffInvite() {
   };
 }
 
-export function createEmptyBranchForm(organization: OrganizationSnapshot): BranchFormState {
+function createEmptyBranchForm(organization: OrganizationSnapshot): BranchFormState {
   return {
     name: "",
     address: "",

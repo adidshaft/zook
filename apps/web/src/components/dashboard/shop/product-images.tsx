@@ -15,7 +15,7 @@ export const productCategories: ProductCategory[] = [
   "OTHER",
 ];
 
-export function uniqueProductImages(values: Array<string | null | undefined>) {
+function uniqueProductImages(values: Array<string | null | undefined>) {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {
@@ -28,7 +28,7 @@ export function uniqueProductImages(values: Array<string | null | undefined>) {
   return result;
 }
 
-export function productImagesFromForm(form: ProductFormState) {
+function productImagesFromForm(form: ProductFormState) {
   return uniqueProductImages([...form.imagePreviewUrls, form.imagePreviewUrl]);
 }
 
@@ -61,14 +61,13 @@ export function ProductPhotosField({
             Add up to 6 clear photos. The first photo appears first in the shop.
           </p>
         </div>
-        <Pill tone={images.length ? "lime" : "neutral"}>{images.length}/6 photos</Pill>
+        <Pill>{images.length}/6 photos</Pill>
       </div>
       {images.length < 6 ? (
         <ImageAssetUpload
           orgId={orgId}
           category="product_image"
           label="Add photo"
-          helper="Square or slightly wide"
           valueUrl={images[0] ?? ""}
           aspectClassName="h-20"
           onUploaded={(asset) =>
@@ -125,7 +124,7 @@ export function ProductPhotosField({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/12 bg-black/20 px-4 py-5 text-center text-sm text-white/42">
-          No product photos attached yet.
+          No product photos attached.
         </div>
       )}
     </div>

@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -10,18 +12,42 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ZookButton } from "@/components/primitives";
+import { IconBubble, ZookButton } from "@/components/primitives";
 import { setStoredValue } from "@/lib/storage";
-import { typography, useTheme } from "@/lib/theme";
+import { gradients, layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const INTRO_COMPLETE = "intro";
 
-const valueProps = [
-  "Find a gym near you. Pune, Mumbai, Bengaluru, Delhi, and 50+ cities.",
-  "Scan in seconds. Track every workout. See your progress.",
-  "Plans, payments, and pickup — all in one app.",
+const valueProps: Array<{
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: "lime" | "blue" | "violet";
+  gradient: readonly [string, string];
+  eyebrow: string;
+  copy: string;
+}> = [
+  {
+    icon: "location-outline",
+    tone: "lime",
+    gradient: gradients.heroCardAccent,
+    eyebrow: "Find your gym",
+    copy: "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
+  },
+  {
+    icon: "barbell-outline",
+    tone: "blue",
+    gradient: gradients.classBlue,
+    eyebrow: "Train & track",
+    copy: "Scan in seconds, follow your plan, and watch every workout add up.",
+  },
+  {
+    icon: "sparkles-outline",
+    tone: "violet",
+    gradient: gradients.classViolet,
+    eyebrow: "All in one",
+    copy: "Memberships, classes, payments and store pickup — all in one place.",
+  },
 ];
 
 export default function OnboardingStep() {
@@ -40,6 +66,13 @@ export function ValuePropsStep() {
   const cardWidth = width;
   const { palette } = useTheme();
 
+  function clearAutoScrollTimer() {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
   useEffect(() => {
     if (userScrolled) {
       return undefined;
@@ -55,20 +88,16 @@ export function ValuePropsStep() {
       });
     }, 2600);
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
+    return clearAutoScrollTimer;
   }, [cardWidth, userScrolled]);
+
+  useEffect(() => {
+    return clearAutoScrollTimer;
+  }, []);
 
   function stopAutoScroll() {
     setUserScrolled(true);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    clearAutoScrollTimer();
   }
 
   async function finishOnboarding() {
@@ -132,10 +161,26 @@ export function ValuePropsStep() {
           }}
           scrollEventThrottle={16}
         >
-          {valueProps.map((copy, index) => (
-            <View key={copy} style={[styles.valueCard, { backgroundColor: index % 2 === 0 ? palette.bg.elevated : palette.bg.sunken, width: cardWidth }]}>
-              <Text style={[styles.valueNumber, { color: palette.accent.base }]}>0{index + 1}</Text>
-              <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{copy}</Text>
+          {valueProps.map((item, index) => (
+            <View key={item.eyebrow} style={[styles.valueCard, { width: cardWidth }]}>
+              <View style={[styles.valuePanel, { borderColor: palette.border.subtle }]}>
+                <LinearGradient
+                  colors={item.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0.8, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <Text style={[styles.valueNumber, { color: palette.text.tertiary }]}>
+                  0{index + 1} / 0{valueProps.length}
+                </Text>
+                <View style={styles.valuePanelBody}>
+                  <IconBubble icon={item.icon} tone={item.tone} size={56} />
+                  <Text style={[styles.valueEyebrow, { color: palette.accent.base }]}>
+                    {item.eyebrow.toUpperCase()}
+                  </Text>
+                  <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{item.copy}</Text>
+                </View>
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -143,9 +188,9 @@ export function ValuePropsStep() {
 
       <View style={styles.footer}>
         <View style={styles.dots}>
-          {valueProps.map((copy, index) => (
+          {valueProps.map((item, index) => (
             <View
-              key={copy}
+              key={item.eyebrow}
               style={[
                 styles.dot,
                 { backgroundColor: palette.border.strong },
@@ -182,38 +227,51 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 8,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   brand: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 32,
-    lineHeight: 38,
+    ...typography.display,
   },
   kicker: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
-    lineHeight: 22,
+    ...typography.body,
   },
   valueStage: {
     overflow: "hidden",
     alignSelf: "stretch",
   },
   valueCard: {
-    minHeight: 380,
+    minHeight: 400,
+    justifyContent: "center",
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: spacing.lg,
+  },
+  valuePanel: {
+    flex: 1,
+    borderRadius: 28,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    overflow: "hidden",
+    padding: spacing.xl,
     justifyContent: "space-between",
-    paddingHorizontal: 28,
-    paddingVertical: 32,
+  },
+  valuePanelBody: {
+    gap: spacing.md,
   },
   valueNumber: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 13,
+    ...typography.caption,
+    letterSpacing: 1,
+  },
+  valueEyebrow: {
+    ...typography.eyebrow,
+    letterSpacing: 1.4,
+    marginTop: spacing.xs,
   },
   valueCopy: {
-    ...typography.display,
+    ...typography.heroTitle,
   },
   footer: {
     gap: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   dots: {
     flexDirection: "row",

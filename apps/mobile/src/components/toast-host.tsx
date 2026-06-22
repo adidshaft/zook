@@ -9,12 +9,13 @@ import Reanimated, {
   withTiming,
 } from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { spacing, typography, useTheme } from "@/lib/theme";
+import { elevation, spacing, typography, useTheme } from "@/lib/theme";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
 
 export function ToastHost() {
   const insets = useSafeAreaInsets();
   const { palette, mode } = useTheme();
+  const isAndroid = Platform.OS === "android";
   const [toast, setToast] = useState<ToastPayload | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const opacity = useSharedValue(0);
@@ -68,17 +69,38 @@ export function ToastHost() {
     },
     amber: {
       borderColor: palette.feedback.warning,
-      backgroundColor: palette.surface.warningSoft,
+      backgroundColor:
+        mode === "dark"
+          ? isAndroid
+            ? "#2B2412"
+            : palette.surface.warningSoft
+          : isAndroid
+            ? "#FFF4DD"
+            : palette.surface.warningSoft,
       shadowColor: palette.feedback.warning,
     },
     danger: {
       borderColor: palette.feedback.danger,
-      backgroundColor: palette.surface.dangerSoft,
+      backgroundColor:
+        mode === "dark"
+          ? isAndroid
+            ? "#2D1715"
+            : palette.surface.dangerSoft
+          : isAndroid
+            ? "#FDE8E6"
+            : palette.surface.dangerSoft,
       shadowColor: palette.feedback.danger,
     },
     success: {
       borderColor: palette.feedback.success,
-      backgroundColor: palette.surface.successSoft,
+      backgroundColor:
+        mode === "dark"
+          ? isAndroid
+            ? "#15271F"
+            : palette.surface.successSoft
+          : isAndroid
+            ? "#E8F6EE"
+            : palette.surface.successSoft,
       shadowColor: palette.feedback.success,
     },
   } satisfies Record<ToastTone, { borderColor: string; backgroundColor: string; shadowColor: string }>;
@@ -128,10 +150,11 @@ export function ToastHost() {
           style={[
             styles.toast,
             toneStyle[toast.tone],
-            {
-              shadowColor: toneStyle[toast.tone].shadowColor,
-              shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.28 : 0.12) : 0,
-            },
+            elevation(6, toneStyle[toast.tone].shadowColor, {
+              shadowOpacity: mode === "dark" ? 0.28 : 0.12,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 12 },
+            }),
             toastStyle,
           ]}
         >

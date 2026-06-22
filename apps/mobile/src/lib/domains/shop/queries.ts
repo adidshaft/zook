@@ -26,10 +26,6 @@ export function useShopProducts(orgId?: string) {
   });
 }
 
-export function useOrgProducts(orgId?: string) {
-  return useShopProducts(orgId);
-}
-
 export function useMyShopOrders() {
   const { status, token } = useAuth();
   return useQuery({

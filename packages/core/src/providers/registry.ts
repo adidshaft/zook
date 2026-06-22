@@ -389,7 +389,8 @@ function resolveEmailProvider(): ProviderResolution<EmailProvider> {
 
 function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
   const selectionValue = env(process.env.PAYMENT_PROVIDER);
-  const selectedProvider = selectionValue ?? "mock";
+  const defaultProvider = process.env.APP_ENV?.trim() === "production" ? "disabled" : "mock";
+  const selectedProvider = selectionValue ?? defaultProvider;
   const envState = envFlags([
     "PAYMENT_PROVIDER",
     "RAZORPAY_KEY_ID",
@@ -413,7 +414,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     return createDisabledResolution({
       category: "payment",
       selectionEnv: "PAYMENT_PROVIDER",
-      defaultProvider: "mock",
+      defaultProvider,
       supportedProviders: ["mock", "razorpay", "disabled"],
       env: envState,
     });
@@ -434,7 +435,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
         category: "payment",
         selectionEnv: "PAYMENT_PROVIDER",
         selectedProvider,
-        defaultProvider: "mock",
+        defaultProvider,
         supportedProviders: ["mock", "razorpay", "disabled"],
         missingEnv,
         env: envState,
@@ -467,7 +468,7 @@ function resolvePaymentProvider(): ProviderResolution<PaymentProvider> {
     category: "payment",
     selectionEnv: "PAYMENT_PROVIDER",
     selectedProvider,
-    defaultProvider: "mock",
+    defaultProvider,
     supportedProviders: ["mock", "razorpay", "disabled"],
     env: envState,
     mode: "live",

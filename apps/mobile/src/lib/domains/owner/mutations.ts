@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { invalidations } from "@/lib/domains/shared/invalidate";
+import { queryKeys } from "@/lib/domains/shared/keys";
 import {
   getMutationContext,
   notifyMutationError,
@@ -97,7 +98,7 @@ export function useUpgradeSaasSubscription(orgId?: string) {
   return useMutation({
     mutationFn: (input: {
       tier: "STARTER" | "GROWTH" | "PRO";
-      billingCycle: "MONTHLY" | "YEARLY";
+      billingCycle: "MONTHLY" | "SEMIANNUAL" | "YEARLY";
     }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
       return mobileApiFetch<{
@@ -153,5 +154,266 @@ export function useCancelSaasSubscription(orgId?: string) {
     onError: (error) => {
       notifyMutationError(error, "Subscription could not be cancelled.");
     },
+  });
+}
+
+export function useMarkPayoutPaid(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ payoutId, method, note }: { payoutId: string; method: string; note?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ payout: { id: string; status: string } }>(
+        `/orgs/${ctx.orgId}/payouts/${payoutId}/mark-paid`,
+        {
+          method: "POST",
+          token: ctx.token,
+          orgId: ctx.orgId,
+          body: { method, ...(note ? { note } : {}) },
+        },
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.owner.payouts(resolvedOrgId) });
+      notifyMutationSuccess("Payout marked paid.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Could not mark payout paid.");
+    },
+  });
+}
+
+export function useUpdatePayoutConfig(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({
+      trainerUserId,
+      config,
+    }: {
+      trainerUserId: string;
+      config: {
+        baseMonthlyPaise: number;
+        ptCommissionPercent: number;
+        perSessionFeePaise: number;
+        payDay: number;
+      };
+    }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ config: unknown }>(
+        `/orgs/${ctx.orgId}/trainers/${trainerUserId}/payout-config`,
+        { method: "PUT", token: ctx.token, orgId: ctx.orgId, body: config },
+      );
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["org", resolvedOrgId, "trainer", variables.trainerUserId, "payout-config"],
+      });
+      notifyMutationSuccess("Payout settings saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save payout settings."),
+  });
+}
+
+export function useUpdateReferralPolicy(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (patch: Record<string, unknown>) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ policy: unknown }>(`/orgs/${ctx.orgId}/referral-policy`, {
+        method: "PATCH",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: patch,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "referral-policy"] });
+      notifyMutationSuccess("Referral settings saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save referral settings."),
+  });
+}
+
+export type MembershipPlanInput = {
+  name: string;
+  description?: string;
+  type: "DURATION" | "VISIT_PACK" | "DATE_RANGE" | "HYBRID" | "TRIAL";
+  pricePaise: number;
+  durationDays?: number;
+  visitLimit?: number;
+  publicVisible?: boolean;
+};
+
+export function useSaveMembershipPlan(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ planId, body }: { planId?: string; body: MembershipPlanInput }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      const path = planId
+        ? `/orgs/${ctx.orgId}/membership-plans/${planId}`
+        : `/orgs/${ctx.orgId}/membership-plans`;
+      return mobileApiFetch<{ plan: { id: string } }>(path, {
+        method: planId ? "PATCH" : "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
+      notifyMutationSuccess("Plan saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save plan."),
+  });
+}
+
+export function useDeleteMembershipPlan(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (planId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/membership-plans/${planId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
+      notifyMutationWarning("Plan removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove plan."),
+  });
+}
+
+export type CouponInput = {
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise?: number;
+  valuePercentBps?: number;
+  maxRedemptions?: number;
+  perUserLimit?: number;
+  active?: boolean;
+};
+
+export function useSaveCoupon(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ couponId, body }: { couponId?: string; body: CouponInput }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      const path = couponId
+        ? `/orgs/${ctx.orgId}/coupons/${couponId}`
+        : `/orgs/${ctx.orgId}/coupons`;
+      return mobileApiFetch<{ coupon: { id: string } }>(path, {
+        method: couponId ? "PATCH" : "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
+      notifyMutationSuccess("Coupon saved.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not save coupon."),
+  });
+}
+
+export function useDeleteCoupon(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (couponId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/coupons/${couponId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
+      notifyMutationWarning("Coupon removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove coupon."),
+  });
+}
+
+export type StaffRole = "ADMIN" | "RECEPTIONIST" | "TRAINER";
+
+export function useInviteStaff(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (body: { email: string; role: StaffRole; branchId?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ invite: { id: string } }>(`/orgs/${ctx.orgId}/staff/invite`, {
+        method: "POST",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationSuccess("Invite sent.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not send invite."),
+  });
+}
+
+export function useUpdateStaffRole(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: ({ assignmentId, role, branchId }: { assignmentId: string; role: StaffRole; branchId?: string }) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ assignment: { id: string } }>(`/orgs/${ctx.orgId}/staff/${assignmentId}`, {
+        method: "PATCH",
+        token: ctx.token,
+        orgId: ctx.orgId,
+        body: { role, ...(branchId ? { branchId } : {}) },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationSuccess("Role updated.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not update role."),
+  });
+}
+
+export function useRemoveStaff(orgId?: string) {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useMutation({
+    mutationFn: (assignmentId: string) => {
+      const ctx = getMutationContext(token, resolvedOrgId);
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${ctx.orgId}/staff/${assignmentId}`, {
+        method: "DELETE",
+        token: ctx.token,
+        orgId: ctx.orgId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
+      notifyMutationWarning("Staff member removed.");
+    },
+    onError: (error) => notifyMutationError(error, "Could not remove staff member."),
   });
 }

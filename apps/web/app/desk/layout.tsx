@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "../../messages/dashboard/en.json";
 import hiMessages from "../../messages/dashboard/hi.json";
-import { DeskChrome } from "@/components/desk/desk-chrome";
 import {
   destinationToHref,
   hasCoachAccess,
@@ -45,15 +44,7 @@ export default async function DeskLayout({ children }: { children: ReactNode }) 
       messages={resolveDeskMessages(locale)}
       timeZone="Asia/Kolkata"
     >
-      <DeskChrome
-        orgId={session.activeOrgId}
-        orgName={session.activeOrganization.name}
-        locale={locale}
-        permissions={session.activeOrganization.permissions}
-        canOpenManagement={session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)}
-      >
-        {children}
-      </DeskChrome>
+      {children}
     </NextIntlClientProvider>
   );
 }

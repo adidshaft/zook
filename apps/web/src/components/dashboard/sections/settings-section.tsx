@@ -70,11 +70,11 @@ export function SettingsSection({
       href: "/dashboard/billing",
       icon: ReceiptText,
       permission: "ORG_MANAGE_BILLING",
-      badge: needsBillingSetup ? "Action needed" : "Ready",
+      badge: needsBillingSetup ? "Action needed" : "Configured",
       urgent: needsBillingSetup,
     },
     {
-      title: "Organization profile",
+      title: "Gym profile",
       description:
         "Edit gym name, public username, contact details, join mode, photos, app links, and QR pages.",
       href: "/dashboard/public-profile",
@@ -85,7 +85,7 @@ export function SettingsSection({
     {
       title: "Branches and locations",
       description:
-        "Add a branch, assign managers, set hours, pause locations, and choose the default branch.",
+        "Add a branch, assign managers, set hours, pause locations, and choose the main branch.",
       href: "/dashboard/branches",
       icon: MapPin,
       permission: "ORG_MANAGE_LOCATION",
@@ -144,8 +144,8 @@ export function SettingsSection({
               Owner control center
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
-              Billing, organization profile, branch setup, team access, attendance, and message
-              controls live here. Use the cards below to jump directly to the workflow you need.
+              Billing, gym profile, branch details, team access, attendance, and message
+              controls are here. Use the cards below to jump directly to the workflow you need.
             </p>
           </div>
           {needsBillingSetup ? (
@@ -177,7 +177,7 @@ export function SettingsSection({
                   <Icon size={18} />
                 </span>
                 {card.badge ? (
-                  <Pill tone={card.urgent ? "amber" : "blue"}>{card.badge}</Pill>
+                  <Pill tone={card.urgent ? "amber" : "neutral"}>{card.badge}</Pill>
                 ) : null}
               </div>
               <h3 className="mt-4 text-base font-semibold text-[var(--text-primary)]">
@@ -202,7 +202,7 @@ export function SettingsSection({
             </span>
             <div>
               <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-                Organization snapshot
+                Gym overview
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 {organization.name} · {organization.city}
@@ -232,7 +232,7 @@ export function SettingsSection({
         <GlassCard>
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">{copy.integrations}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Provider status is managed centrally; billing and messaging setup links are available
+            Service status is managed centrally; billing and messaging links are available
             above.
           </p>
           <div className="mt-4 grid gap-3">

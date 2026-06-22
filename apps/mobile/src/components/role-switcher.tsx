@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 
@@ -12,7 +13,10 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
+import { normalizeWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { titleCaseFromCode } from "@/lib/formatting";
+import { gymBrandColor } from "@/lib/gym-brand";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -22,17 +26,9 @@ type RoleCombo = {
   key: string;
   orgId: string;
   orgName: string;
+  logoUrl?: string | null;
   role: Role;
 };
-
-function titleCaseRole(role: Role) {
-  return role
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 export function RoleSwitcherChip() {
   const { palette } = useTheme();
@@ -49,6 +45,7 @@ export function RoleSwitcherChip() {
         key: `${organization.orgId}:${role}`,
         orgId: organization.orgId,
         orgName: organization.name,
+        logoUrl: organization.logoUrl,
         role,
       })),
     );
@@ -56,7 +53,7 @@ export function RoleSwitcherChip() {
 
   const currentOrgId = ctx?.org?.orgId ?? activeOrgId;
   const currentLabel = ctx?.org
-    ? `${ctx.org.name} · ${titleCaseRole(ctx.role)}`
+    ? `${ctx.org.name} · ${titleCaseFromCode(ctx.role)}`
     : ctx?.isPlatformAdmin
       ? "Zook · Platform Admin"
       : "Zook · Member";
@@ -190,12 +187,12 @@ export function RoleSwitcherChip() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseRole(combo.role)}`}
+                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
                     subtitle={selected ? "Current workspace" : "Switch to this workspace"}
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
-                        tone={selected ? "lime" : "neutral"}
+                        tone={selected ? "blue" : "neutral"}
                       />
                     }
                     trailing={
@@ -236,18 +233,21 @@ export function RoleSwitcherContextPill() {
         key: `${organization.orgId}:${role}`,
         orgId: organization.orgId,
         orgName: organization.name,
+        logoUrl: organization.logoUrl,
         role,
       })),
     );
   }, [session?.organizations]);
 
   const currentOrgId = ctx?.org?.orgId ?? activeOrgId;
-  const currentOrgName = ctx?.org?.name ?? "Zook";
+  const currentOrganization =
+    session?.organizations.find((organization) => organization.orgId === currentOrgId) ?? ctx?.org ?? null;
+  const currentOrgName = currentOrganization?.name ?? "Zook";
+  const currentLogoUrl = currentOrganization?.logoUrl;
   const rolesInOrg =
     session?.organizations.find((organization) => organization.orgId === currentOrgId)?.roles ?? [];
-  const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseRole(ctx.role) : null;
+  const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseFromCode(ctx.role) : null;
   const canSwitch = combos.length > 1;
-  const initial = currentOrgName.trim().charAt(0).toUpperCase() || "Z";
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -303,9 +303,7 @@ export function RoleSwitcherContextPill() {
         },
       ]}
     >
-      <View style={[styles.contextAvatar, { backgroundColor: palette.surface.accentSoft }]}>
-        <Text style={[styles.contextAvatarText, { color: palette.accent.base }]}>{initial}</Text>
-      </View>
+      <GymLogoAvatar orgName={currentOrgName} logoUrl={currentLogoUrl} />
       <Text numberOfLines={1} style={[styles.contextName, { color: palette.text.primary }]}>
         {currentOrgName}
       </Text>
@@ -385,12 +383,12 @@ export function RoleSwitcherContextPill() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseRole(combo.role)}`}
+                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
                     subtitle={selected ? "Current workspace" : "Switch to this workspace"}
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
-                        tone={selected ? "lime" : "neutral"}
+                        tone={selected ? "blue" : "neutral"}
                       />
                     }
                     trailing={
@@ -413,6 +411,34 @@ export function RoleSwitcherContextPill() {
         </BottomSheetView>
       </BottomSheetModal>
     </>
+  );
+}
+
+function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
+  const [didFail, setDidFail] = useState(false);
+  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
+  const brand = gymBrandColor(orgName);
+
+  useEffect(() => {
+    setDidFail(false);
+  }, [normalizedLogoUrl]);
+
+  if (normalizedLogoUrl && !didFail) {
+    return (
+      <Image
+        source={{ uri: normalizedLogoUrl }}
+        style={styles.contextAvatarImage}
+        contentFit="cover"
+        transition={120}
+        onError={() => setDidFail(true)}
+      />
+    );
+  }
+
+  return (
+    <View style={[styles.contextAvatar, { backgroundColor: brand.soft }]}>
+      <Text style={[styles.contextAvatarText, { color: brand.solid }]}>{brand.initial}</Text>
+    </View>
   );
 }
 
@@ -443,7 +469,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
-    maxWidth: 280,
+    maxWidth: Platform.OS === "android" ? 232 : 280,
     minHeight: 36,
     minWidth: 0,
     paddingLeft: 6,
@@ -454,6 +480,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 20,
     justifyContent: "center",
+    width: 20,
+  },
+  contextAvatarImage: {
+    borderRadius: 999,
+    height: 20,
     width: 20,
   },
   contextAvatarText: {
@@ -468,7 +499,7 @@ const styles = StyleSheet.create({
   },
   contextRole: {
     ...typography.caption,
-    maxWidth: 72,
+    maxWidth: Platform.OS === "android" ? 54 : 72,
   },
   contextTriggerPressed: {
     opacity: 0.84,

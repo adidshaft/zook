@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export type DomainTone = "neutral" | "lime" | "amber" | "danger" | "blue" | "violet";
 
@@ -39,4 +40,5 @@ export type MemberListProps = {
   onRefresh?: () => void;
   header?: ReactNode;
   scrollEnabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 };

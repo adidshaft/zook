@@ -1,8 +1,5 @@
-"use client";
-
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import type { Permission } from "@zook/core";
 import {
   ClipboardCheck,
@@ -16,8 +13,8 @@ import { DashboardLocaleToggle } from "@/components/dashboard-locale-toggle";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ThemeToggleButton } from "@/components/theme-preference-switcher";
-import { useOperationalResource } from "@/lib/use-operational-resource";
 import { deskTranslations } from "./copy";
+import { DeskPendingBadge } from "./desk-pending-badge";
 
 type DeskChromeTab = {
   href: string;
@@ -71,6 +68,8 @@ export function DeskChrome({
   children,
   orgId,
   orgName,
+  branchId,
+  activeTab,
   locale,
   permissions,
   canOpenManagement,
@@ -78,21 +77,13 @@ export function DeskChrome({
   children: ReactNode;
   orgId: string;
   orgName: string;
+  branchId: string | null;
+  activeTab: "queue" | "member" | "payment" | "pickup";
   locale?: string | null;
   permissions: Permission[];
   canOpenManagement?: boolean;
 }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const branchId = searchParams.get("branchId");
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
-  const pendingState = useOperationalResource<{ records: unknown[] }>({
-    path: branchId
-      ? `/api/orgs/${orgId}/attendance/live?branchId=${encodeURIComponent(branchId)}`
-      : `/api/orgs/${orgId}/attendance/live`,
-    refreshMs: 15_000,
-  });
-  const pendingCount = pendingState.data?.records.length ?? 0;
   const visibleTabs = tabs.filter((tab) =>
     hasAnyPermission(permissions, tab.permissions, Boolean(canOpenManagement)),
   );
@@ -128,9 +119,10 @@ export function DeskChrome({
         <nav className="mx-auto mt-3 flex max-w-5xl gap-2 overflow-x-auto pb-1">
           {visibleTabs.map((tab) => {
             const active =
-              tab.href === "/desk"
-                ? pathname === tab.href
-                : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+              (tab.href === "/desk" && activeTab === "queue") ||
+              (tab.href === "/desk/members" && activeTab === "member") ||
+              (tab.href === "/desk/payments" && activeTab === "payment") ||
+              (tab.href === "/desk/orders" && activeTab === "pickup");
             return (
               <Link
                 key={tab.href}
@@ -138,20 +130,14 @@ export function DeskChrome({
                 aria-current={active ? "page" : undefined}
                 className={`zook-focus inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition border ${
                   active
-                    ? "border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)]"
+                    ? "border-[var(--accent-fill)] bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
                     : "border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
                 }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
-                {tab.href === "/desk" && pendingCount > 0 ? (
-                  <span
-                    className={`grid min-h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${
-                      active ? "bg-black/10 dark:bg-white/20 text-[var(--text-on-accent)]" : "bg-[var(--surface-accent-soft)] text-[var(--accent-strong)] border border-[var(--border)]"
-                    }`}
-                  >
-                    {pendingCount}
-                  </span>
+                {tab.href === "/desk" ? (
+                  <DeskPendingBadge orgId={orgId} branchId={branchId} active={active} />
                 ) : null}
               </Link>
             );

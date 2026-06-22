@@ -18,17 +18,13 @@ export function ShopStatusCard({
 }) {
   return (
     <GlassCard>
-      <SectionHeader
-        eyebrow="Queue health"
-        title="Shop status"
-        description="A quick operational read on how shop traffic is moving right now."
-      />
+      <SectionHeader eyebrow="Queue health" title="Shop status" />
       <ReadoutGrid
         className="mt-5"
         columns={1}
         items={[
           {
-            label: "Stock scope",
+            label: "Stock branch",
             value: branchScope.selectedBranch ? selectedBranchName : "All branches",
             meta: branchScope.selectedBranch
               ? "Products and stock changes apply to this branch"

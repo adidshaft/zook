@@ -1,10 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { renderMembershipSurface } from "@/components/member-membership-surface";
+import { resolvePublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { isReservedSlug, isValidSlugFormat } from "@/server/member-slug";
 
-export default async function MemberSlugPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function MemberSlugPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { slug } = await params;
+  const locale = resolvePublicLocale((await searchParams) ?? {});
   const normalizedSlug = slug.toLowerCase();
   if (!isValidSlugFormat(normalizedSlug) || isReservedSlug(normalizedSlug)) {
     notFound();
@@ -20,5 +28,5 @@ export default async function MemberSlugPage({ params }: { params: Promise<{ slu
     redirect(`/m/${ownSlug}`);
   }
 
-  return renderMembershipSurface(session);
+  return renderMembershipSurface(session, locale);
 }

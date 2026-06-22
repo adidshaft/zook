@@ -20,6 +20,11 @@ const googleSignInPlugins = googleIosUrlScheme
       ],
     ]
   : [];
+function resolveAppleSignInPlugins() {
+  return process.env.EAS_BUILD_PLATFORM?.trim().toLowerCase() === "android"
+    ? []
+    : ["expo-apple-authentication"];
+}
 
 const baseConfig = {
   name: "Zook",
@@ -34,6 +39,11 @@ const baseConfig = {
     image: "./assets/splash.png",
     resizeMode: "contain",
     backgroundColor: "#070908",
+    dark: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#070908",
+    },
   },
   ios: {
     supportsTablet: true,
@@ -97,7 +107,6 @@ const baseConfig = {
       },
     ],
     "expo-secure-store",
-    "expo-apple-authentication",
     ...googleSignInPlugins,
     [
       "expo-build-properties",
@@ -165,13 +174,13 @@ const runtimeVersion = appVersion;
 
 const apiBaseUrlByProfile = {
   local: "http://localhost:3000/api",
-  staging: "https://staging.zookfit.in/api",
-  production: "https://app.zookfit.in/api",
+  staging: "https://zookfit.in/api",
+  production: "https://zookfit.in/api",
 };
 
 const webUrlByProfile = {
   local: "http://localhost:3000",
-  staging: "https://staging.zookfit.in",
+  staging: "https://zookfit.in",
   production: "https://zookfit.in",
 };
 
@@ -274,16 +283,17 @@ module.exports = () => {
   const sentryProject = (process.env.SENTRY_MOBILE_PROJECT ?? process.env.SENTRY_PROJECT)?.trim();
   const shouldConfigureNativeSentry = releaseProfile !== "local" && sentryOrg && sentryProject;
   if (apiMode === "offline-demo" && releaseProfile !== "local") {
-    throw new Error("Sample mode is only available for local mobile builds.");
+    throw new Error("Local test mode is only available for local mobile builds.");
   }
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ?? process.env.EAS_PROJECT_ID ?? baseConfig.extra?.eas?.projectId;
+  const plugins = [...(baseConfig.plugins ?? []), ...resolveAppleSignInPlugins()];
 
   return {
     ...baseConfig,
     plugins: shouldConfigureNativeSentry
       ? [
-          ...(baseConfig.plugins ?? []),
+          ...plugins,
           [
             "@sentry/react-native/expo",
             {
@@ -293,7 +303,7 @@ module.exports = () => {
             },
           ],
         ]
-      : baseConfig.plugins,
+      : plugins,
     scheme: "zook",
     version: appVersion,
     runtimeVersion: {
@@ -326,6 +336,7 @@ module.exports = () => {
       pushEnvironment: resolvePushEnvironment(releaseProfile),
       AI_CHAT_ENABLED: process.env.EXPO_PUBLIC_AI_CHAT_ENABLED?.trim() ?? "",
       AI_DRAFT_ENABLED: process.env.EXPO_PUBLIC_AI_DRAFT_ENABLED?.trim() ?? "",
+      QA_SHORTCUTS_ENABLED: process.env.EXPO_PUBLIC_QA_SHORTCUTS_ENABLED?.trim() ?? "",
       ...(expoProjectId ? { expoProjectId } : {}),
       eas: {
         ...(baseConfig.extra?.eas ?? {}),

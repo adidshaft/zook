@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { formatInr } from "@/lib/format";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
 import { deskTranslations } from "@/components/desk/copy";
@@ -34,6 +35,7 @@ export function useDeskWorkspace({
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
+  const [orderSort, setOrderSort] = useState<"newest" | "oldest" | "status">("newest");
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
     purpose: "MEMBERSHIP",
@@ -79,10 +81,34 @@ export function useDeskWorkspace({
     refreshMs: 30_000,
   });
 
-  const members = membersState.data?.members ?? [];
+  const members = useMemo(() => membersState.data?.members ?? [], [membersState.data?.members]);
   const pendingRecords = pendingState.data?.records ?? [];
   const todayRecords = todayState.data?.records ?? [];
-  const activeOrders = ordersState.data?.orders ?? [];
+  const activeOrders = useMemo(() => {
+    const orders = [...(ordersState.data?.orders ?? [])];
+    if (orderSort === "oldest") {
+      return orders.sort(
+        (left, right) =>
+          new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime(),
+      );
+    }
+    if (orderSort === "status") {
+      const rank: Record<string, number> = {
+        READY_FOR_PICKUP: 0,
+        PENDING_PAYMENT: 1,
+        PAID: 2,
+      };
+      return orders.sort(
+        (left, right) =>
+          (rank[left.status] ?? 9) - (rank[right.status] ?? 9) ||
+          new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
+      );
+    }
+    return orders.sort(
+      (left, right) =>
+        new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
+    );
+  }, [orderSort, ordersState.data?.orders]);
   const payAtDeskOrders = activeOrders.filter(
     (order) => order.status === "PENDING_PAYMENT" && !order.paymentId,
   );
@@ -116,15 +142,7 @@ export function useDeskWorkspace({
     }
   }, [members, selectedMember]);
 
-  useEffect(() => {
-    if (!initialMemberUserId || paymentForm.memberUserId) return;
-    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
-    if (member) {
-      selectMember(member);
-    }
-  }, [initialMemberUserId, members, paymentForm.memberUserId]);
-
-  function memberPaymentDefaults(member: MemberRow | null) {
+  const memberPaymentDefaults = useCallback((member: MemberRow | null) => {
     const subscription = member?.activeSubscription;
     const plan = (plansState.data?.plans ?? []).find(
       (candidate) => candidate.id === subscription?.planId,
@@ -135,13 +153,13 @@ export function useDeskWorkspace({
       subscriptionId: canActivateExisting && subscription?.id ? subscription.id : "",
       amountRupees: plan ? String(plan.pricePaise / 100) : "",
     };
-  }
+  }, [plansState.data?.plans]);
 
   function updatePaymentForm(patch: Partial<PaymentFormState>) {
     setPaymentForm((current) => ({ ...current, ...patch }));
   }
 
-  function selectMember(member: MemberRow) {
+  const selectMember = useCallback((member: MemberRow) => {
     const defaults = memberPaymentDefaults(member);
     setSelectedMember(member);
     setPaymentForm((current) => ({
@@ -151,7 +169,15 @@ export function useDeskWorkspace({
       subscriptionId: defaults.subscriptionId,
       amountRupees: defaults.amountRupees || current.amountRupees,
     }));
-  }
+  }, [memberPaymentDefaults]);
+
+  useEffect(() => {
+    if (!initialMemberUserId || paymentForm.memberUserId) return;
+    const member = members.find((candidate) => candidate.user?.id === initialMemberUserId);
+    if (member) {
+      selectMember(member);
+    }
+  }, [initialMemberUserId, members, paymentForm.memberUserId, selectMember]);
 
   function selectPaymentOrder(order: ShopOrder) {
     setPaymentForm((current) => ({
@@ -332,7 +358,12 @@ export function useDeskWorkspace({
     try {
       setBusyId("payment");
       setToast("");
-      const amountPaise = Math.round(Number(paymentForm.amountRupees) * 100);
+      const amountError = getRupeeAmountError(paymentForm.amountRupees);
+      if (amountError) {
+        setToast(amountError);
+        return;
+      }
+      const amountPaise = Math.round(Number(normalizeRupeeInput(paymentForm.amountRupees)) * 100);
       const selectedOrder = activeOrders.find((order) => order.id === paymentForm.shopOrderId);
       const body = {
         purpose: paymentForm.purpose,
@@ -447,6 +478,7 @@ export function useDeskWorkspace({
       busyId,
       toast,
       memberQuery,
+      orderSort,
       filteredMembers,
       selectedMember,
       paymentForm,
@@ -465,6 +497,7 @@ export function useDeskWorkspace({
     },
     actions: {
       setMemberQuery,
+      setOrderSort,
       setMessageDraft,
       setPickupDraft,
       selectMember,

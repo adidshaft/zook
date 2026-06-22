@@ -4,7 +4,9 @@ import { useState } from "react";
 import type * as React from "react";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import type { PaymentRow } from "@/components/dashboard/types";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { PaymentHistoryCard } from "./payment-history-card";
 import { PaymentMetricCards } from "./payment-metric-cards";
 import { PaymentReconciliationCard } from "./payment-reconciliation-card";
@@ -13,6 +15,20 @@ import { RevenueOpportunitiesCard } from "./revenue-opportunities-card";
 import { SettlementQueueCard } from "./settlement-queue-card";
 import type { PaymentReceiptState } from "./payments-utils";
 import type { ManualPaymentForm, PaymentDocumentKind, PaymentsPanelProps } from "./types";
+
+type RefundDraft = {
+  payment: PaymentRow;
+  amountRupees: string;
+  reason: string;
+};
+
+function refundedAmountFor(payment: PaymentRow) {
+  return payment.refundedAmountPaise ?? 0;
+}
+
+function remainingRefundAmount(payment: PaymentRow) {
+  return Math.max(payment.amountPaise - refundedAmountFor(payment), 0);
+}
 
 export function PaymentsPanel({
   orgId,
@@ -41,6 +57,7 @@ export function PaymentsPanel({
   const [manualPaymentBusy, setManualPaymentBusy] = useState(false);
   const [documentBusyId, setDocumentBusyId] = useState<string | null>(null);
   const [refundBusyId, setRefundBusyId] = useState<string | null>(null);
+  const [refundDraft, setRefundDraft] = useState<RefundDraft | null>(null);
   const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -87,7 +104,7 @@ export function PaymentsPanel({
           }),
         ),
       );
-      setManualPaymentStatus(`${selectedReadyOrders.length} ready orders settled.`);
+      setManualPaymentStatus(`${selectedReadyOrders.length} pickup orders settled.`);
       setSelectedOrderIds([]);
       shopOrdersState.reload?.();
     } catch (cause) {
@@ -102,7 +119,12 @@ export function PaymentsPanel({
     try {
       setManualPaymentBusy(true);
       setManualPaymentStatus("");
-      const amountPaise = Math.round(Number(manualPayment.amountRupees) * 100);
+      const amountError = getRupeeAmountError(manualPayment.amountRupees);
+      if (amountError) {
+        setManualPaymentStatus(amountError);
+        return;
+      }
+      const amountPaise = Math.round(Number(normalizeRupeeInput(manualPayment.amountRupees)) * 100);
       const payload = await webApiFetch<{ payment?: PaymentRow }>(
         `/api/orgs/${orgId}/manual-payments`,
         {
@@ -168,21 +190,34 @@ export function PaymentsPanel({
     }
   }
 
-  async function quickRefundPayment(payment: PaymentRow) {
+  function openRefundDraft(payment: PaymentRow) {
     if (!payment.orgId) {
       setManualPaymentStatus("This payment is missing its gym link.");
       return;
     }
-    const alreadyRefunded = payment.refundedAmountPaise ?? 0;
-    const remainingPaise = Math.max(payment.amountPaise - alreadyRefunded, 0);
-    const amount = window.prompt(
-      `Refund amount in rupees, up to ${(remainingPaise / 100).toFixed(2)}`,
-      (remainingPaise / 100).toFixed(2),
-    );
-    if (!amount) return;
-    const reason = window.prompt("Reason for refund", "Duplicate payment");
-    if (!reason?.trim()) return;
-    const amountPaise = Math.round(Number(amount) * 100);
+    const remainingPaise = remainingRefundAmount(payment);
+    setManualPaymentStatus("");
+    setRefundDraft({
+      payment,
+      amountRupees: (remainingPaise / 100).toFixed(2),
+      reason: "Duplicate payment",
+    });
+  }
+
+  async function submitRefundDraft() {
+    if (!refundDraft) return;
+    const { payment, amountRupees, reason } = refundDraft;
+    const remainingPaise = remainingRefundAmount(payment);
+    const amountError = getRupeeAmountError(amountRupees);
+    if (amountError) {
+      setManualPaymentStatus(amountError);
+      return;
+    }
+    if (!reason.trim()) {
+      setManualPaymentStatus("Add a refund reason before submitting.");
+      return;
+    }
+    const amountPaise = Math.round(Number(normalizeRupeeInput(amountRupees)) * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0 || amountPaise > remainingPaise) {
       setManualPaymentStatus(`Enter an amount between Rs. 1 and Rs. ${(remainingPaise / 100).toFixed(2)}.`);
       return;
@@ -196,6 +231,7 @@ export function PaymentsPanel({
         feedback: { success: "Refund submitted.", error: "Unable to refund payment." },
       });
       paymentsState.reload?.();
+      setRefundDraft(null);
       setManualPaymentStatus("Refund submitted from payment history.");
     } catch (cause) {
       setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to refund payment.");
@@ -215,6 +251,69 @@ export function PaymentsPanel({
         pendingPayments={pendingPayments}
         documentReadyPayments={documentReadyPayments}
       />
+      {refundDraft ? (
+        <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface-raised)]/82 p-4 shadow-[var(--shadow-md)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                Refund draft
+              </p>
+              <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                {refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? "Payment"} ·{" "}
+                {formatInr(remainingRefundAmount(refundDraft.payment))} refundable
+              </h3>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Confirming sends an irreversible refund request when this payment supports automatic refunds.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRefundDraft(null)}
+              className="zook-focus rounded-full border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-secondary)]"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-[0.6fr_1fr_auto]">
+            <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
+              Refund amount
+              <input
+                value={refundDraft.amountRupees}
+                inputMode="decimal"
+                onChange={(event) =>
+                  setRefundDraft((current) =>
+                    current ? { ...current, amountRupees: event.target.value } : current,
+                  )
+                }
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
+              Refund reason
+              <input
+                value={refundDraft.reason}
+                onChange={(event) =>
+                  setRefundDraft((current) =>
+                    current ? { ...current, reason: event.target.value } : current,
+                  )
+                }
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+              />
+            </label>
+            <ConfirmActionButton
+              className="zook-focus self-end rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_38%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
+              title={`Refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "this payment"}?`}
+              description={`This will submit a refund for ${refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? "this payment"}. Refund requests cannot be undone from the dashboard.`}
+              confirmLabel="Submit refund"
+              confirmTone="danger"
+              onConfirm={() => submitRefundDraft()}
+              disabled={refundBusyId === refundDraft.payment.id}
+            >
+              {refundBusyId === refundDraft.payment.id ? "Submitting..." : "Submit refund"}
+            </ConfirmActionButton>
+          </div>
+        </section>
+      ) : null}
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <PaymentHistoryCard
           orgId={orgId}
@@ -224,7 +323,7 @@ export function PaymentsPanel({
           documentBusyId={documentBusyId}
           onGenerateDocument={(payment, kind) => void generatePaymentDocument(payment, kind)}
           refundBusyId={refundBusyId}
-          onRefundPayment={(payment) => void quickRefundPayment(payment)}
+          onRefundPayment={openRefundDraft}
         />
         <OfflinePaymentCard
           orgId={orgId}

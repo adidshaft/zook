@@ -5,11 +5,10 @@ import { spacing } from "@/lib/theme";
 import { AttentionListItem } from "./item";
 import type { AttentionCardProps } from "./types";
 
-export type { AttentionCardProps, AttentionItem } from "./types";
+export type { AttentionItem } from "./types";
 
-// Supports empty and populated attention states across owner and trainer surfaces.
 export function AttentionCard({
-  emptyState = { title: "Nothing needs attention", subtitle: "You are all caught up." },
+  emptyState = { title: "Nothing needs attention" },
   items,
   title = "Needs attention",
 }: AttentionCardProps) {
@@ -20,7 +19,7 @@ export function AttentionCard({
         {items.length ? (
           items.map((item) => <AttentionListItem key={item.id} item={item} />)
         ) : (
-          <EmptyState title={emptyState.title} body={emptyState.subtitle ?? ""} />
+          <EmptyState title={emptyState.title} body={emptyState.subtitle} />
         )}
       </Card>
     </>

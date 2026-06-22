@@ -3,8 +3,8 @@ import type { Href } from "expo-router";
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Button } from "./buttons";
-import { IconBubble } from "./foundation";
+import { ZookButton } from "./buttons";
+import { IconBubble } from "./icon-bubble";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 type IonIconName = keyof typeof Ionicons.glyphMap;
@@ -16,7 +16,7 @@ type EmptyStateCta = {
 };
 
 export function EmptyState({
-  icon = "information-circle-outline",
+  icon,
   title,
   body,
   cta,
@@ -34,13 +34,13 @@ export function EmptyState({
 
   return (
     <View testID={testID} style={styles.container}>
-      <IconBubble icon={icon} size={48} tone="neutral" />
+      {icon ? <IconBubble icon={icon} size={48} tone="neutral" /> : null}
       <View style={styles.copy}>
         <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
         {body ? <Text style={[styles.body, { color: palette.text.secondary }]}>{body}</Text> : null}
       </View>
       {cta ? (
-        <Button
+        <ZookButton
           variant="secondary"
           size="sm"
           href={cta.href}
@@ -48,7 +48,7 @@ export function EmptyState({
           accessibilityLabel={cta.label}
         >
           {cta.label}
-        </Button>
+        </ZookButton>
       ) : null}
       {action ? <View style={styles.action}>{action}</View> : null}
     </View>

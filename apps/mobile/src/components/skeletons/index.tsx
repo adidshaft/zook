@@ -67,6 +67,20 @@ export function PlansSkeleton() {
   );
 }
 
+export function ClassesSkeleton() {
+  return (
+    <View style={styles.stack}>
+      {[0, 1, 2].map((item) => (
+        <Card key={item} variant="compact" contentStyle={styles.planCard}>
+          <RowSkeleton iconSize={46} action="chip" surface={false} />
+          <Skeleton width="84%" height={13} borderRadius={7} />
+          <Skeleton width="100%" height={34} borderRadius={17} />
+        </Card>
+      ))}
+    </View>
+  );
+}
+
 export function ExerciseListSkeleton() {
   return (
     <View style={styles.stack}>
@@ -161,20 +175,6 @@ export function TrainerClientsSkeleton() {
   );
 }
 
-export function TrackingHistorySkeleton() {
-  return (
-    <View style={styles.stack}>
-      <Card variant="compact" contentStyle={styles.chartCard}>
-        <Skeleton width="42%" height={16} borderRadius={8} />
-        <Skeleton width="100%" height={156} borderRadius={18} />
-      </Card>
-      {[0, 1, 2, 3, 4].map((item) => (
-        <RowSkeleton key={item} iconSize={34} action="chip" />
-      ))}
-    </View>
-  );
-}
-
 export function FindGymsSkeleton() {
   return (
     <View style={styles.stack}>
@@ -224,25 +224,9 @@ export function GymDetailSkeleton() {
   );
 }
 
-export function SettingsSkeleton() {
-  const { palette } = useTheme();
-  return (
-    <View style={styles.stack}>
-      {[0, 1, 2].map((item) => (
-        <Card key={item} variant="compact" contentStyle={styles.listCard}>
-          <RowSkeleton iconSize={34} action="chip" surface={false} />
-          <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
-          <RowSkeleton iconSize={34} action="chip" surface={false} />
-        </Card>
-      ))}
-    </View>
-  );
-}
-
 export function HomeSkeleton() {
   return (
     <View style={styles.stack}>
-      {/* Banner Skeleton */}
       <Card variant="compact" contentStyle={styles.row}>
         <Skeleton width={34} height={34} borderRadius={17} />
         <View style={styles.copy}>
@@ -252,7 +236,6 @@ export function HomeSkeleton() {
         <Skeleton width={58} height={28} borderRadius={14} />
       </Card>
 
-      {/* Main Home Card Skeleton */}
       <Card variant="selected" contentStyle={styles.membershipCard}>
         <View style={styles.row}>
           <Skeleton width={46} height={46} borderRadius={23} />
@@ -309,9 +292,6 @@ const styles = StyleSheet.create({
   },
   listCard: {
     gap: 10,
-  },
-  chartCard: {
-    gap: spacing.md,
   },
   searchBar: {
     flexDirection: "row",

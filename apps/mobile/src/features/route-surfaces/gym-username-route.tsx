@@ -24,6 +24,7 @@ import { Image } from "expo-image";
 import {
   EmptyState,
   Card,
+  IconBubble,
   InfoRow,
   AppHeader,
   Pill,
@@ -31,14 +32,27 @@ import {
   QueryErrorState,
   SectionHeader,
   useRequestPermissionWithRationale,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
-import { toWebUrl } from "@/lib/api";
+import { AmenityGrid } from "@/components/domain/amenity-grid";
+import { GymReviews } from "@/features/member/gym/gym-reviews";
+import { GalleryViewer } from "@/features/member/gym/gallery-viewer";
+import { formatDistanceKm, useGymDistanceKm } from "@/lib/use-gym-distance";
+import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { gymApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
+import {
+  formatInitials,
+  formatInr,
+  formatLongDate,
+  formatVisitLimit,
+  joinModeLabel,
+  joinModeTone,
+  titleCaseFromCode,
+} from "@/lib/formatting";
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -70,6 +84,7 @@ export default function GymProfileScreen() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<PublicTrainer | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const [inviteCode, setInviteCode] = useState(referralCode ?? "");
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -86,19 +101,33 @@ export default function GymProfileScreen() {
     : gym?.coverImageUrl
       ? [gym.coverImageUrl]
       : [];
-  const coverImageUrl = normalizeMediaUrl(gym?.coverImageUrl);
-  const logoUrl = normalizeMediaUrl(gym?.logoUrl);
+  const coverImageUrl = normalizeWebUrl(gym?.coverImageUrl);
+  const logoUrl = normalizeWebUrl(gym?.logoUrl);
   const viewerState = gymQuery.data?.viewerState;
+  const distanceKm = useGymDistanceKm(gym?.latitude, gym?.longitude);
+  const distanceLabel = formatDistanceKm(distanceKm);
   const effectiveReferral = referralCode ?? gymQuery.data?.referral?.code ?? undefined;
+
+  function openDirections() {
+    if (!gym) return;
+    const query =
+      gym.latitude != null && gym.longitude != null
+        ? `${gym.latitude},${gym.longitude}`
+        : encodeURIComponent(gym.address ?? `${gym.name}, ${gym.city}, ${gym.state}`);
+    void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+  }
   const profileBranches = gymQuery.data?.branches ?? [];
   const selectedGymBranchId =
     profileBranches.find((branch) => branch.id === selectedBranchId)?.id ??
     profileBranches.find((branch) => branch.isDefault)?.id ??
     profileBranches[0]?.id;
 
-  function setStatusMessage(message: string | null) {
-    queryClient.setQueryData(statusMessageKey, message);
-  }
+  const setStatusMessage = useCallback(
+    (message: string | null) => {
+      queryClient.setQueryData(statusMessageKey, message);
+    },
+    [queryClient, statusMessageKey],
+  );
 
   useEffect(() => {
     usernameRef.current = username;
@@ -143,7 +172,7 @@ export default function GymProfileScreen() {
         return;
       }
       refreshAfterCheckoutRef.current = false;
-      setStatusMessage("Refreshing membership status...");
+      setStatusMessage("Updating membership status...");
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -155,7 +184,7 @@ export default function GymProfileScreen() {
       });
     });
     return () => subscription.remove();
-  }, [queryClient]);
+  }, [queryClient, setStatusMessage]);
 
   async function requestMembership() {
     if (!gym) {
@@ -290,14 +319,13 @@ export default function GymProfileScreen() {
               </Pressable>
             }
             trailing={
-              <Pill tone={toneForJoinMode(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
+              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
             }
           />
         ) : (
           <AppHeader
             eyebrow="Gym profile"
             title="Membership profile"
-            subtitle="We’ll load plan details, join rules, and referral support for this gym."
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -348,8 +376,7 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : null}
-                  <View style={[styles.coverGlow, { backgroundColor: palette.surface.accentSoft }]} />
-                  <Text style={[styles.coverEyebrow, { color: palette.feedback.warning }]}>{gym.tagline ?? gym.name}</Text>
+                  <Text style={[styles.coverEyebrow, { color: palette.accent.base }]}>{gym.tagline ?? gym.name}</Text>
                   <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{plans.length} plans available</Text>
                   <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
                   {gym.openingHoursSummary ? (
@@ -364,7 +391,7 @@ export default function GymProfileScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>{initialsForName(gym.name)}</Text>
+                    <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>{formatInitials(gym.name, "T")}</Text>
                   )}
                 </View>
               </View>
@@ -382,7 +409,7 @@ export default function GymProfileScreen() {
 
               <View style={styles.viewerStateStack}>
                 {effectiveReferral ? (
-                  <InfoRow label="Referral applied" value={effectiveReferral} tone="lime" />
+                  <InfoRow label="Referral applied" value={effectiveReferral} tone="blue" />
                 ) : null}
                 {viewerState?.activeMembership ? (
                   <InfoRow
@@ -392,7 +419,7 @@ export default function GymProfileScreen() {
                         ? `Active until ${formatLongDate(viewerState.activeMembership.endsAt)}`
                         : "Already active"
                     }
-                    tone="lime"
+                    tone="blue"
                   />
                 ) : null}
                 {viewerState?.pendingJoinRequest ? (
@@ -408,7 +435,7 @@ export default function GymProfileScreen() {
                     value={
                       viewerState.approvedJoinRequest.reviewedAt
                         ? `Approved ${formatLongDate(viewerState.approvedJoinRequest.reviewedAt)}`
-                        : "Approved and ready for payment"
+                        : "Approved for payment"
                     }
                     tone="lime"
                   />
@@ -416,17 +443,13 @@ export default function GymProfileScreen() {
               </View>
             </Card>
 
-            <SectionHeader
-              eyebrow="Inside"
-              title="Gym profile"
-              subtitle="Facility, trainers, access, and location details."
-            />
+            <SectionHeader eyebrow="Inside" title="Gym profile" />
 
             <Card style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow
                 label="Address"
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
-                tone="blue"
+                tone="neutral"
               />
               {gym.equipment?.length ? (
                 <View style={styles.inlineChipBlock}>
@@ -442,6 +465,30 @@ export default function GymProfileScreen() {
               ) : null}
             </Card>
 
+            <SectionHeader eyebrow="Getting there" title="Location" />
+            <Card contentStyle={styles.locationCard}>
+              <View style={styles.locationRow}>
+                <IconBubble icon="location-outline" tone="lime" size={42} />
+                <View style={styles.locationCopy}>
+                  <Text style={[styles.locationAddress, { color: palette.text.primary }]}>
+                    {gym.address ?? `${gym.city}, ${gym.state}`}
+                  </Text>
+                  <Text style={[styles.locationCity, { color: palette.text.secondary }]}>
+                    {distanceLabel ?? `${gym.city}, ${gym.state}`}
+                  </Text>
+                </View>
+                {distanceLabel ? <Pill tone="lime">{distanceLabel}</Pill> : null}
+              </View>
+              <ZookButton variant="secondary" icon="navigate-outline" onPress={openDirections}>
+                Get directions
+              </ZookButton>
+            </Card>
+
+            <SectionHeader eyebrow="At a glance" title="What's inside" />
+            <Card contentStyle={styles.amenityCard}>
+              <AmenityGrid sources={[...(gym.amenities ?? []), ...(gym.equipment ?? []), gym.gymType]} />
+            </Card>
+
             {gallery.length ? (
               <ScrollView
                 horizontal
@@ -449,21 +496,24 @@ export default function GymProfileScreen() {
                 contentContainerStyle={styles.galleryRow}
               >
                 {gallery.map((imageUrl, index) => (
-                  <Image
+                  <Pressable
                     key={`${imageUrl}-${index}`}
-                    source={{ uri: normalizeMediaUrl(imageUrl) }}
-                    style={styles.galleryImage}
-                    contentFit="cover"
-                  />
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel={`Photo ${index + 1} of ${gallery.length}`}
+                    onPress={() => setGalleryIndex(index)}
+                    style={({ pressed }) => (pressed ? { opacity: 0.88 } : null)}
+                  >
+                    <Image
+                      source={{ uri: normalizeWebUrl(imageUrl) }}
+                      style={styles.galleryImage}
+                      contentFit="cover"
+                    />
+                  </Pressable>
                 ))}
               </ScrollView>
             ) : null}
 
-            <SectionHeader
-              eyebrow="Coaches"
-              title="Trainer team"
-              subtitle="Visible trainer profiles for this gym."
-            />
+            <SectionHeader eyebrow="Coaches" title="Trainer team" />
 
             <View style={styles.trainerStack}>
               {trainers.length ? (
@@ -480,21 +530,21 @@ export default function GymProfileScreen() {
                       <Card contentStyle={styles.trainerCard}>
                         {trainer.profilePhotoUrl ? (
                           <Image
-                            source={{ uri: normalizeMediaUrl(trainer.profilePhotoUrl) }}
+                            source={{ uri: normalizeWebUrl(trainer.profilePhotoUrl) }}
                             style={styles.trainerImage}
                             contentFit="cover"
                           />
                         ) : (
                           <View style={[styles.trainerImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
                             <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
-                              {initialsForName(trainer.name)}
+                              {formatInitials(trainer.name, "T")}
                             </Text>
                           </View>
                         )}
                         <View style={styles.trainerCopy}>
                           <Text style={[styles.trainerName, { color: palette.text.primary }]}>{trainer.name}</Text>
                           <Text style={[styles.sectionBody, { color: palette.text.secondary }]} numberOfLines={2}>
-                            {trainer.bio ?? "Bio coming soon."}
+                            {trainer.bio ?? "No bio added."}
                           </Text>
                           <View style={styles.trainerSpecialties}>
                             {normalizeSpecialties(trainer.specialties)
@@ -513,10 +563,7 @@ export default function GymProfileScreen() {
                     </Pressable>
                   ))
               ) : (
-                <EmptyState
-                  title="No public trainer profiles"
-                  body="This gym has not published trainer profiles yet."
-                />
+                <EmptyState title="No public trainer profiles" />
               )}
             </View>
 
@@ -547,16 +594,14 @@ export default function GymProfileScreen() {
                   {viewerState?.activeMembership?.remainingVisits !== null &&
                   viewerState?.activeMembership?.remainingVisits !== undefined
                     ? `${viewerState.activeMembership.remainingVisits} visits remaining`
-                    : "Choose a plan when you’re ready."}
+                    : "Choose a plan to continue."}
                 </Text>
               </Card>
             </View>
 
-            <SectionHeader
-              eyebrow="Join path"
-              title="How to join"
-              subtitle="Follow these steps to start your membership."
-            />
+            <GymReviews orgId={gym.id} />
+
+            <SectionHeader eyebrow="Join path" title="How to join" />
 
             <Card contentStyle={styles.timelineCard}>
               {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
@@ -621,10 +666,7 @@ export default function GymProfileScreen() {
             <SectionHeader eyebrow="Plans" title="Membership options" />
 
             {!plans.length ? (
-              <EmptyState
-                title="No public plans yet"
-                body="This gym is public, but it has not published any plans for mobile sign-up yet."
-              />
+              <EmptyState title="No public plans" />
             ) : null}
 
             <View style={styles.planStack}>
@@ -644,7 +686,7 @@ export default function GymProfileScreen() {
                 const badges = [
                   ...(pricedPlan.badges ?? []),
                   hasReferralPrice ? "Referral price" : null,
-                  plan.visitLimit ? `${plan.visitLimit} visits` : null,
+                  plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
                 ].filter((item): item is string => Boolean(item));
 
                 return (
@@ -690,7 +732,6 @@ export default function GymProfileScreen() {
                   <View style={styles.planBenefits}>
                     {buildPlanHighlights(plan).map((item) => (
                       <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
-                        <View style={[styles.planBenefitDot, { backgroundColor: palette.feedback.warning }]} />
                         <Text style={[styles.planBenefitText, { color: palette.text.secondary }]}>{item}</Text>
                       </View>
                     ))}
@@ -738,21 +779,21 @@ export default function GymProfileScreen() {
               <View style={styles.trainerSheetHeader}>
                 {selectedTrainer.profilePhotoUrl ? (
                   <Image
-                    source={{ uri: normalizeMediaUrl(selectedTrainer.profilePhotoUrl) }}
+                    source={{ uri: normalizeWebUrl(selectedTrainer.profilePhotoUrl) }}
                     style={styles.trainerSheetImage}
                     contentFit="cover"
                   />
                 ) : (
                   <View style={[styles.trainerSheetImageFallback, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
                     <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
-                      {initialsForName(selectedTrainer.name)}
+                      {formatInitials(selectedTrainer.name, "T")}
                     </Text>
                   </View>
                 )}
                 <View style={styles.trainerCopy}>
                   <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? "Bio will appear once this trainer publishes it."}
+                    {selectedTrainer.bio ?? "No trainer bio published."}
                   </Text>
                 </View>
               </View>
@@ -770,15 +811,13 @@ export default function GymProfileScreen() {
           ) : null}
         </BottomSheetView>
       </BottomSheetModal>
+      <GalleryViewer images={gallery} initialIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
       {notificationPermission.permissionSheet}
     </ZookScreen>
   );
 }
 
-function buildJoinSteps(
-  joinMode: "OPEN_JOIN" | "APPROVAL_REQUIRED" | "INVITE_ONLY",
-  referralCode?: string,
-) {
+function buildJoinSteps(joinMode: string, referralCode?: string) {
   if (joinMode === "APPROVAL_REQUIRED") {
     return [
       {
@@ -801,18 +840,22 @@ function buildJoinSteps(
       {
         title: "Secure a referral",
         body: referralCode
-          ? `Referral ${referralCode} is already attached.`
+          ? `Referral ${referralCode} is attached.`
           : "A referral or invite is required before you can continue.",
       },
       {
         title: "Review plans",
-        body: "Once the code is accepted, plans are ready to join.",
+        body: "Once the code is accepted, plans can be joined.",
       },
       {
         title: "Pay securely",
         body: "Payment activates the membership once the invite rules are met.",
       },
     ];
+  }
+
+  if (joinMode !== "OPEN_JOIN") {
+    console.warn("Unknown join mode; defaulting to OPEN_JOIN flow", joinMode);
   }
 
   return [
@@ -826,7 +869,7 @@ function buildJoinSteps(
     },
     {
       title: "Start training",
-      body: "Scan the gym QR, get a unique entry code, and show it at the floor or desk.",
+      body: "Scan the gym QR, get a unique entry code, and present it at the floor or desk.",
     },
   ];
 }
@@ -839,13 +882,6 @@ function normalizeSpecialties(value: unknown) {
     return Object.values(value).filter((item): item is string => typeof item === "string");
   }
   return [];
-}
-
-function normalizeMediaUrl(value?: string | null) {
-  if (!value) {
-    return undefined;
-  }
-  return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
 
 function checkoutUrl(value: string) {
@@ -865,11 +901,6 @@ function checkoutUrlWithReturnUrl(value: string, sessionId?: string | null) {
   }
 }
 
-function initialsForName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return (parts[0]?.[0] ?? "T").concat(parts[1]?.[0] ?? "").toUpperCase();
-}
-
 function buildPlanHighlights(plan: {
   durationDays?: number | null;
   visitLimit?: number | null;
@@ -879,7 +910,7 @@ function buildPlanHighlights(plan: {
 }) {
   const highlights = [
     plan.durationDays ? `${plan.durationDays} days` : null,
-    plan.visitLimit ? `${plan.visitLimit} visits` : null,
+    plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
     plan.validityDays ? `${plan.validityDays} validity days` : null,
     plan.startDate && plan.endDate
       ? `${formatLongDate(plan.startDate)} to ${formatLongDate(plan.endDate)}`
@@ -887,19 +918,6 @@ function buildPlanHighlights(plan: {
   ].filter(Boolean) as string[];
 
   return highlights.length ? highlights : ["Flexible membership", "Secure payment"];
-}
-
-function toneForJoinMode(joinMode?: string) {
-  if (joinMode === "OPEN_JOIN") {
-    return "lime" as const;
-  }
-  if (joinMode === "APPROVAL_REQUIRED") {
-    return "amber" as const;
-  }
-  if (joinMode === "INVITE_ONLY") {
-    return "violet" as const;
-  }
-  return "neutral" as const;
 }
 
 const styles = StyleSheet.create({
@@ -961,19 +979,11 @@ const styles = StyleSheet.create({
   gymLogoFallbackText: {
     ...typography.headerTitle,
   },
-  coverGlow: {
-    position: "absolute",
-    top: -44,
-    right: -24,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-  },
   coverEyebrow: {
     ...typography.eyebrow,
   },
   coverTitle: {
-    ...typography.display,
+    ...typography.heroTitle,
   },
   coverBody: {
     ...typography.body,
@@ -991,6 +1001,28 @@ const styles = StyleSheet.create({
   },
   profileDetailsCard: {
     gap: 10,
+  },
+  amenityCard: {
+    gap: 10,
+  },
+  locationCard: {
+    gap: spacing.md,
+  },
+  locationRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  locationAddress: {
+    ...typography.cardTitle,
+  },
+  locationCity: {
+    ...typography.small,
   },
   inlineChipBlock: {
     gap: 8,
@@ -1193,12 +1225,6 @@ const styles = StyleSheet.create({
   planBenefitRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  planBenefitDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   planBenefitText: {
     ...typography.body,

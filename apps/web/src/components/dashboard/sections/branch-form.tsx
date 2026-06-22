@@ -46,7 +46,7 @@ export function BranchForm({
 
   return (
     <div className="grid gap-4">
-      {isStepLayout && <Pill tone="blue" className="w-fit">Step 1 · Location</Pill>}
+      {isStepLayout && <Pill className="w-fit">Step 1 · Location</Pill>}
       
       {variant === "full" && (
         <div className="grid gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
@@ -104,7 +104,7 @@ export function BranchForm({
         </div>
       )}
 
-      {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 2 · Details</Pill>}
+      {isStepLayout && <Pill className="w-fit mt-2">Step 2 · Details</Pill>}
 
       <div className="grid gap-3 md:grid-cols-2">
         <TextInput
@@ -214,18 +214,18 @@ export function BranchForm({
 
       {variant === "full" && (
         <>
-          {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 3 · Plans and Products</Pill>}
+          {isStepLayout && <Pill className="w-fit mt-2">Step 3 · Plans and Products</Pill>}
           <div className="grid gap-2">
             <span className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-              Commerce setup
-              <HelpHint label="Commerce setup" title="Commerce setup">
-                Shared uses the current gym plans and products. Custom lets this branch use its
+              Plans and products
+              <HelpHint label="Plans and products" title="Plans and products">
+                Shared uses the gym plans and products. Custom lets this branch use its
                 own pricing and product list before members are attached.
               </HelpHint>
             </span>
             <RadioCardGroup
               name={`${mode}-branch-commerce-setup`}
-              label="Commerce setup"
+              label="Plans and products"
               value={form.commerceSetup ?? "SHARED"}
               onChange={(value) =>
                 setForm((current) => ({
@@ -236,12 +236,12 @@ export function BranchForm({
               options={[
                 {
                   value: "SHARED",
-                  label: "Use current plans and products",
-                  description: "Branch sells the current gym plans and shop catalog.",
+                  label: "Use gym plans and products",
+                  description: "Branch sells the gym plans and shop catalog.",
                 },
                 {
                   value: "CUSTOM",
-                  label: "Set separate pricing later",
+                  label: "Set separate pricing",
                   description: "Branch can use its own pricing and product list before launch.",
                 },
               ]}
@@ -250,7 +250,7 @@ export function BranchForm({
         </>
       )}
 
-      {isStepLayout && <Pill tone="blue" className="w-fit mt-2">Step 4 · Working Hours</Pill>}
+      {isStepLayout && <Pill className="w-fit mt-2">Step 4 · Working Hours</Pill>}
       <BranchHoursEditor
         value={form.hoursText}
         onChange={(hoursText) => setForm((current) => ({ ...current, hoursText }))}

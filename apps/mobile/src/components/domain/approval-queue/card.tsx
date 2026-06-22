@@ -26,7 +26,7 @@ export function ApprovalQueueCard({
       <ListRow
         title={item.primaryText}
         subtitle={[item.secondaryText, item.metaText].filter(Boolean).join(" · ")}
-        leading={<IconBubble icon="checkmark-done-outline" tone="amber" />}
+        leading={<IconBubble icon="checkmark-done-outline" tone="neutral" />}
       />
       {item.reason ? <Text style={[styles.reason, { color: palette.text.secondary }]}>{item.reason}</Text> : null}
       {item.context ? <View>{item.context}</View> : null}

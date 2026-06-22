@@ -36,6 +36,6 @@ export function IdentityCard({
 const styles = StyleSheet.create({
   card: { alignItems: "center", flexDirection: "row", gap: spacing.md, minHeight: 88 },
   copy: { flex: 1, gap: 4 },
-  name: typography.title,
+  name: typography.cardTitle,
   meta: typography.small,
 });

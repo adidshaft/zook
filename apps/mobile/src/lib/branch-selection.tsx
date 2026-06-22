@@ -108,7 +108,7 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
     staleTime: 60_000,
   });
 
-  const branches = branchesQuery.data ?? [];
+  const branches = useMemo(() => branchesQuery.data ?? [], [branchesQuery.data]);
   const storedBranch =
     hydratedOrgId === activeOrgId
       ? branches.find((branch) => branch.id === storedBranchId)

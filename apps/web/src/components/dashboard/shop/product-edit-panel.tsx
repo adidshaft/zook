@@ -33,7 +33,7 @@ export function ProductEditPanel({
   adjustStock: (productId: string) => Promise<void>;
 }) {
   return (
-    <div className="mt-4 rounded-[20px] border border-lime-300/20 bg-lime-300/6 p-4">
+    <div className="mt-4 rounded-[20px] border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-medium text-white">Edit {product.name}</p>

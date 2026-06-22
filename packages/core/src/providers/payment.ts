@@ -120,6 +120,10 @@ export interface PaymentProvider extends DiagnosticProvider {
   cancelMandate(input: { mandateId: string; reason?: string; cancelAtCycleEnd?: boolean }): Promise<{ mandateId: string; status: string }>;
 }
 
+function getWebhookEventHeader(headers?: Record<string, string | undefined>) {
+  return headers?.["x-razorpay-event-id"]?.trim() || headers?.["X-Razorpay-Event-Id"]?.trim();
+}
+
 export class MockPaymentProvider implements PaymentProvider {
   readonly providerName = "mock";
   readonly mode = "mock" as const;
@@ -172,7 +176,9 @@ export class MockPaymentProvider implements PaymentProvider {
 
   async verifyWebhook(input: PaymentWebhookVerificationInput): Promise<PaymentWebhookVerificationResult> {
     const payload = typeof input.rawBody === "string" ? JSON.parse(input.rawBody) : JSON.parse(input.rawBody.toString("utf8"));
-    const providerEventId = `mock:${payload.sessionId ?? payload.id ?? "unknown"}:${payload.status ?? "PENDING"}`;
+    const providerEventId =
+      getWebhookEventHeader(input.headers) ??
+      `mock:${payload.sessionId ?? payload.id ?? "unknown"}:${payload.status ?? "PENDING"}`;
     return { valid: true, providerEventId };
   }
 
@@ -180,13 +186,16 @@ export class MockPaymentProvider implements PaymentProvider {
     const payload =
       typeof input.rawBody === "string" ? JSON.parse(input.rawBody) : JSON.parse(input.rawBody.toString("utf8"));
     const paymentStatus = (payload.status as PaymentStatus | undefined) ?? "PENDING";
+    const providerEventId =
+      getWebhookEventHeader(input.headers) ??
+      `mock:${payload.sessionId ?? payload.id ?? "unknown"}:${paymentStatus}`;
     return {
       provider: this.providerName,
-      providerEventId: `mock:${payload.sessionId ?? payload.id ?? "unknown"}:${paymentStatus}`,
+      providerEventId,
       eventType: `payment.${String(paymentStatus).toLowerCase()}`,
       paymentStatus,
       providerOrderId: payload.sessionId,
-      idempotencyKey: `mock:${payload.sessionId ?? payload.id ?? "unknown"}:${paymentStatus}`,
+      idempotencyKey: providerEventId,
       rawPayload: payload
     };
   }
@@ -388,7 +397,9 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     const event = JSON.parse(rawBody) as { event?: string; created_at?: number };
     return {
       valid: true,
-      providerEventId: `${event.event ?? "unknown"}:${event.created_at ?? "unknown"}`
+      providerEventId:
+        getWebhookEventHeader(input.headers) ??
+        `${event.event ?? "unknown"}:${event.created_at ?? "unknown"}`
     };
   }
 
@@ -427,7 +438,9 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       (subscriptionEntity.notes as Record<string, unknown> | undefined) ??
       (invoiceEntity.notes as Record<string, unknown> | undefined) ??
       undefined;
-    const providerEventId = `${eventType}:${providerPaymentId || String(refundEntity.id ?? "") || providerOrderId || providerSubscriptionId || "unknown"}:${payload.created_at ?? "unknown"}`;
+    const providerEventId =
+      getWebhookEventHeader(input.headers) ??
+      `${eventType}:${providerPaymentId || String(refundEntity.id ?? "") || providerOrderId || providerSubscriptionId || "unknown"}:${payload.created_at ?? "unknown"}`;
 
     let paymentStatus: PaymentStatus = "PENDING";
     if (

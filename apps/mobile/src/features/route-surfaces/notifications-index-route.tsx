@@ -3,7 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetView,
+  BottomSheetScrollView,
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -63,7 +63,7 @@ function iconForType(type?: string | null): keyof typeof Ionicons.glyphMap {
   if (type === "PLAN") return "barbell-outline";
   if (type === "OPERATIONAL") return "settings-outline";
   if (type === "TRANSACTIONAL") return "card-outline";
-  if (type === "ENGAGEMENT") return "sparkles-outline";
+  if (type === "ENGAGEMENT") return "heart-outline";
   return "notifications-outline";
 }
 
@@ -116,12 +116,15 @@ export default function NotificationsScreen() {
   useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
   const detailSheetRef = useRef<BottomSheetModal>(null);
   const autoMarkedNotificationRef = useRef<string | null>(null);
-  const detailSnapPoints = useMemo(() => ["34%"], []);
+  const detailSnapPoints = useMemo(() => ["38%", "72%"], []);
   const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set());
   const [markAllBusy, setMarkAllBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [olderExpanded, setOlderExpanded] = useState(false);
-  const notifications = (notificationsQuery.data?.notifications ?? []) as InboxNotification[];
+  const notifications = useMemo(
+    () => (notificationsQuery.data?.notifications ?? []) as InboxNotification[],
+    [notificationsQuery.data?.notifications],
+  );
   const unreadCount = notifications.filter((item) => !item.readAt).length;
   const latestLabel = notifications[0]?.notification?.createdAt
     ? formatRelativeDate(notifications[0].notification.createdAt)
@@ -137,53 +140,56 @@ export default function NotificationsScreen() {
     [],
   );
 
-  async function markRead(id: string) {
-    if (!token || busyIds.has(id)) {
-      return;
-    }
-    const previous = queryClient.getQueryData<{ notifications: InboxNotification[] }>([
-      "me",
-      "notifications",
-    ]);
-    try {
-      setBusyIds((current) => new Set(current).add(id));
-      queryClient.setQueryData<{ notifications: InboxNotification[] }>(
-        ["me", "notifications"],
-        (current) => ({
-          notifications:
-            current?.notifications.map((item) =>
-              item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
-            ) ?? [],
-        }),
-      );
-      await notificationsApi.markRead({ id, token });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
-        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
-      ]);
-      showToast({ tone: "success", haptic: "success", message: "Notification marked read." });
-    } catch (error) {
-      if (previous) {
-        queryClient.setQueryData(["me", "notifications"], previous);
+  const markRead = useCallback(
+    async (id: string) => {
+      if (!token || busyIds.has(id)) {
+        return;
       }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
-        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      const previous = queryClient.getQueryData<{ notifications: InboxNotification[] }>([
+        "me",
+        "notifications",
       ]);
-      showToast({
-        title: "Action failed",
-        message: error instanceof Error ? error.message : "Notification could not be updated.",
-        tone: "danger",
-        haptic: "error",
-      });
-    } finally {
-      setBusyIds((current) => {
-        const next = new Set(current);
-        next.delete(id);
-        return next;
-      });
-    }
-  }
+      try {
+        setBusyIds((current) => new Set(current).add(id));
+        queryClient.setQueryData<{ notifications: InboxNotification[] }>(
+          ["me", "notifications"],
+          (current) => ({
+            notifications:
+              current?.notifications.map((item) =>
+                item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
+              ) ?? [],
+          }),
+        );
+        await notificationsApi.markRead({ id, token });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        ]);
+        showToast({ tone: "success", haptic: "success", message: "Notification marked read." });
+      } catch (error) {
+        if (previous) {
+          queryClient.setQueryData(["me", "notifications"], previous);
+        }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
+          queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+        ]);
+        showToast({
+          title: "Action failed",
+          message: error instanceof Error ? error.message : "Notification could not be updated.",
+          tone: "danger",
+          haptic: "error",
+        });
+      } finally {
+        setBusyIds((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [busyIds, queryClient, token],
+  );
 
   async function markAllRead() {
     if (!token || markAllBusy) return;
@@ -278,7 +284,7 @@ export default function NotificationsScreen() {
       autoMarkedNotificationRef.current = matchingUnread.id;
       void markRead(matchingUnread.id);
     }
-  }, [notifications, routeParams.notificationId]);
+  }, [markRead, notifications, routeParams.notificationId]);
 
   useEffect(() => {
     if (!focusedNotification) {
@@ -365,9 +371,9 @@ export default function NotificationsScreen() {
                 title="Inbox"
                 subtitle={
                   unreadCount > 0
-                    ? `${unreadCount} unread${latestLabel ? ` · latest ${latestLabel}` : ""}`
+                    ? `${unreadCount} unread${latestLabel ? ` · recent ${latestLabel}` : ""}`
                     : latestLabel
-                      ? `All caught up · latest ${latestLabel}`
+                      ? `All caught up · recent ${latestLabel}`
                       : "All caught up"
                 }
                 leading={
@@ -416,7 +422,7 @@ export default function NotificationsScreen() {
 
               {routeParams.notificationId ? (
                 <Card variant="selected" contentStyle={styles.calloutContent}>
-                  <IconBubble icon="notifications" tone="blue" size={36} />
+                  <IconBubble icon="notifications" tone="neutral" size={36} />
                   <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
                       ? "Attendance alert received"
@@ -434,7 +440,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <EmptyState title="No notifications" body="You're all caught up." />
+                <EmptyState icon="notifications-outline" title="You're all caught up" body="New alerts about your membership, classes and coaching land here." />
               ) : null}
             </View>
           }
@@ -470,7 +476,7 @@ export default function NotificationsScreen() {
           ])}
           bottomInset={Math.max(insets.bottom, 12)}
         >
-          <BottomSheetView style={styles.detailSheet}>
+          <BottomSheetScrollView contentContainerStyle={styles.detailSheet}>
             <View style={styles.detailHeader}>
               <IconBubble
                 icon={iconForType(focusedNotification?.notification?.type)}
@@ -507,7 +513,7 @@ export default function NotificationsScreen() {
             <Text style={[styles.detailBody, { color: palette.text.primary }]}>
               {focusedNotification?.notification?.body ?? "No details available."}
             </Text>
-          </BottomSheetView>
+          </BottomSheetScrollView>
         </BottomSheetModal>
       </ZookScreen>
     </>
@@ -627,24 +633,9 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.bodyStrong,
   },
-  loadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-  },
-  loadingText: {
-    ...typography.body,
-  },
-  dateGroup: {
-    gap: 8,
-  },
   dateGroupLabel: {
     ...typography.caption,
     paddingHorizontal: 4,
-  },
-  list: {
-    gap: 8,
   },
   pressed: {
     opacity: 0.92,

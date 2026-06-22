@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import type { DiagnosticProvider, ProviderInstanceDiagnostics } from "../types";
 import { zookLogger } from "../logger";
+import { formatEnumLabel } from "../utils/format";
 
 export interface OtpEmailInput {
   to: string;
@@ -199,7 +200,7 @@ function buildNotificationEmail(input: NotificationEmailInput): EmailMessage {
 }
 
 function buildStaffInviteEmail(input: StaffInviteEmailInput): EmailMessage {
-  const roleLabel = input.role.replaceAll("_", " ").toLowerCase();
+  const roleLabel = formatEnumLabel(input.role, { casing: "lower" });
   return {
     subject: `You're invited to join ${input.organizationName} on Zook`,
     previewText: `${input.organizationName} invited you as ${roleLabel}.`,

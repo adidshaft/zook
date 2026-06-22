@@ -122,7 +122,8 @@ disabled button on Android (ripple, dimmed).
 
 **What:** `GlassCard` → `Card`, `GlassInput` → `Input` (the theme is no longer glass).
 
-**Where:** `apps/mobile/src/components/primitives/cards.tsx`, `inputs.tsx`, and ~all
+**Where:** `apps/mobile/src/components/primitives/foundation.tsx`,
+`input-primitives.tsx`, and ~all
 usages (`grep -rln "GlassCard\|GlassInput" apps/mobile`).
 
 **How:** Rename the components and add `export const GlassCard = Card;` /

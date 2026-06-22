@@ -3,17 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
-  IconBubble,
   ListRow,
   AppHeader,
   QueryErrorState,
   SecondaryButton,
   StatusChip,
+  toneForStatusLabel,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { formatInr } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type PlatformSubscriptionsPayload = {
@@ -42,15 +43,6 @@ type PlatformSubscriptionsPayload = {
   }>;
 };
 
-function formatInr(paise?: number | null) {
-  if (!paise) return "₹0";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
-}
-
 function formatDate(value?: string | null) {
   if (!value) return "Not scheduled";
   return new Intl.DateTimeFormat("en-IN", {
@@ -58,13 +50,6 @@ function formatDate(value?: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function statusTone(status?: string | null) {
-  if (!status) return "amber" as const;
-  if (["ACTIVE", "AUTHENTICATED", "TRIAL_ACTIVE"].includes(status)) return "lime" as const;
-  if (["SUSPENDED", "CANCELLED", "FAILED", "PAST_DUE"].includes(status)) return "red" as const;
-  return "amber" as const;
 }
 
 export default function PlatformMobile() {
@@ -99,7 +84,6 @@ export default function PlatformMobile() {
             eyebrow="Platform operator"
             title="Platform billing"
             subtitle={`${session?.user.name ?? "Platform team"} · SaaS health and mandate state`}
-            chip={<StatusChip status="Live overview" tone="lime" />}
             centered
             showProfileShortcut={false}
           />
@@ -114,12 +98,11 @@ export default function PlatformMobile() {
           </ZookButton>
 
           <Card contentStyle={styles.heroContent}>
-            <IconBubble icon="shield-checkmark-outline" tone="amber" size={52} />
             <View style={styles.heroCopy}>
               <Text style={[styles.title, { color: palette.text.primary }]}>SaaS subscriptions are visible on mobile.</Text>
               <Text style={[styles.body, { color: palette.text.secondary }]}>
-                Use this screen for quick billing health checks. Pricing edits, trial extensions,
-                credits, notes, and policy changes still open in the web console for full review.
+                Pricing edits, trial extensions, credits, notes, and policy changes still open in
+                the web console for full review.
               </Text>
             </View>
           </Card>
@@ -127,11 +110,7 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>SaaS health</Text>
-              {subscriptionsQuery.isFetching ? (
-                <StatusChip status="Refreshing" tone="amber" />
-              ) : (
-                <StatusChip status="Cached" tone="lime" />
-              )}
+              {subscriptionsQuery.isFetching ? <StatusChip status="Updating" tone="amber" /> : null}
             </View>
             {summary ? (
               <View style={styles.summaryGrid}>
@@ -165,28 +144,27 @@ export default function PlatformMobile() {
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent gyms</Text>
-              <StatusChip status={`${rows.length} shown`} tone="amber" />
             </View>
-            {rows.map((row) => (
-              <ListRow
-                key={row.orgId}
-                title={row.orgName}
-                subtitle={`${row.tier ?? "FREE"} ${row.billingCycle ?? "MONTHLY"} · ${formatInr(row.priceLockedPaise)} · next ${formatDate(row.nextBillingAt)} · ${row.referredCount} referrals`}
-                icon="business-outline"
-                tone={statusTone(row.subscriptionStatus ?? row.orgStatus)}
-                trailing={
-                  <View style={styles.rowStatus}>
-                    <StatusChip
-                      status={row.subscriptionStatus ?? row.orgStatus}
-                      tone={statusTone(row.subscriptionStatus ?? row.orgStatus)}
-                    />
-                    <Text style={[styles.rowMeta, { color: palette.text.secondary }]}>
-                      Mandate {row.mandateStatus ?? "missing"} · {row.mandatePaidCount} paid
-                    </Text>
-                  </View>
-                }
-              />
-            ))}
+            {rows.map((row) => {
+              const status = row.subscriptionStatus ?? row.orgStatus;
+              return (
+                <ListRow
+                  key={row.orgId}
+                  title={row.orgName}
+                  subtitle={`${row.tier ?? "FREE"} ${row.billingCycle ?? "MONTHLY"} · ${formatInr(row.priceLockedPaise)} · next ${formatDate(row.nextBillingAt)} · ${row.referredCount} referrals`}
+                  icon="business-outline"
+                  tone={toneForStatusLabel(status)}
+                  trailing={
+                    <View style={styles.rowStatus}>
+                      <StatusChip status={status} />
+                      <Text style={[styles.rowMeta, { color: palette.text.secondary }]}>
+                        Mandate {row.mandateStatus ?? "missing"} · {row.mandatePaidCount} paid
+                      </Text>
+                    </View>
+                  }
+                />
+              );
+            })}
           </Card>
 
           <SecondaryButton testID="platform-sign-out" icon="log-out-outline" onPress={() => void logout()}>
@@ -203,7 +181,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
   },

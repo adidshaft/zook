@@ -17,7 +17,7 @@ export function FeaturePillars({ locale }: { locale: PublicLocale }) {
             </div>
             <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("forOwners")}</h2>
           </div>
-          <FeatureGrid items={ownerFeatures} tone="lime" />
+          <FeatureGrid items={ownerFeatures} />
         </GlassCard>
       </Reveal>
       <Reveal delay={0.15} id="for-members" className="scroll-mt-6">
@@ -29,33 +29,22 @@ export function FeaturePillars({ locale }: { locale: PublicLocale }) {
             </div>
             <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("forMembers")}</h2>
           </div>
-          <FeatureGrid items={memberFeatures} tone="amber" />
+          <FeatureGrid items={memberFeatures} />
         </GlassCard>
       </Reveal>
     </section>
   );
 }
 
-function FeatureGrid({
-  items,
-  tone,
-}: {
-  items: ReturnType<typeof homeData>["ownerFeatures"];
-  tone: "lime" | "amber";
-}) {
-  const hoverClass =
-    tone === "lime"
-      ? "hover:border-[var(--border-focus)]"
-      : "hover:border-[color-mix(in_srgb,var(--feedback-warning)_50%,transparent)]";
-  const iconClass = tone === "lime" ? "text-[var(--accent-strong)]" : "text-[var(--feedback-warning)]";
+function FeatureGrid({ items }: { items: ReturnType<typeof homeData>["ownerFeatures"] }) {
   return (
     <Stagger className="mt-7 grid gap-2.5 sm:grid-cols-2" gap={0.05}>
       {items.map(([Icon, label]) => (
         <StaggerItem
           key={label}
-          className={`group flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3.5 text-sm text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] ${hoverClass}`}
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3.5 text-sm text-[var(--text-secondary)] transition hover:border-[var(--border-focus)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
         >
-          <Icon size={16} className={`shrink-0 transition ${iconClass}`} />
+          <Icon size={16} className="shrink-0 text-[var(--text-tertiary)] transition group-hover:text-[var(--text-secondary)]" />
           <span className="flex-1">{label}</span>
           <ArrowUpRight size={13} className="text-[var(--text-tertiary)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </StaggerItem>

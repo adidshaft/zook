@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { DeskChrome } from "@/components/desk/desk-chrome";
 import { DeskWorkspace } from "@/components/desk/desk-workspace";
 import { getDeskRouteContext } from "@/lib/desk-route";
 
@@ -20,5 +21,17 @@ export default async function DeskPage({
     redirect(`/desk/orders${params.size > 0 ? `?${params.toString()}` : ""}`);
   }
   const desk = await getDeskRouteContext(resolvedSearch, "/desk");
-  return <DeskWorkspace {...desk} activeTab="queue" />;
+  return (
+    <DeskChrome
+      orgId={desk.orgId}
+      orgName={desk.orgName}
+      branchId={desk.branch?.id ?? null}
+      activeTab="queue"
+      locale={desk.locale}
+      permissions={desk.permissions}
+      canOpenManagement={desk.canOpenManagement}
+    >
+      <DeskWorkspace {...desk} activeTab="queue" />
+    </DeskChrome>
+  );
 }

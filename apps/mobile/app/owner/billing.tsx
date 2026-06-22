@@ -3,37 +3,72 @@ import { useState } from "react";
 import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
+  BranchSelectorChip,
   EmptyState,
   Card,
   ListRow,
   QueryErrorState,
+  ScreenHeader,
   StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
   useCancelSaasSubscription,
   useCreateSaasBillingMandate,
   useOwnerBillingSubscription,
   useUpgradeSaasSubscription,
 } from "@/lib/domains/owner";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { toWebUrl } from "@/lib/api";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type Tier = "STARTER" | "GROWTH" | "PRO";
-type BillingCycle = "MONTHLY" | "YEARLY";
+type BillingCycle = "MONTHLY" | "SEMIANNUAL" | "YEARLY";
+
+const CYCLE_OPTIONS: BillingCycle[] = ["MONTHLY", "SEMIANNUAL", "YEARLY"];
+const CYCLE_LABEL: Record<BillingCycle, string> = {
+  MONTHLY: "Monthly",
+  SEMIANNUAL: "6 months",
+  YEARLY: "Yearly",
+};
+const CYCLE_PERIOD: Record<BillingCycle, string> = {
+  MONTHLY: "month",
+  SEMIANNUAL: "6 months",
+  YEARLY: "year",
+};
+const CYCLE_PRICE_KEY: Record<BillingCycle, "monthly" | "semiannual" | "yearly"> = {
+  MONTHLY: "monthly",
+  SEMIANNUAL: "semiannual",
+  YEARLY: "yearly",
+};
 
 const tiers: Tier[] = ["STARTER", "GROWTH", "PRO"];
 
-function formatLimit(value?: number | null) {
-  return value == null ? "Unlimited" : String(value);
+function usageLine(used?: number, limit?: number | null) {
+  return `${used ?? 0} / ${formatUsageLimit(limit)}`;
 }
 
-function usageLine(used?: number, limit?: number | null) {
-  return `${used ?? 0} / ${formatLimit(limit)}`;
+function activeMembersCopy(count: number) {
+  const noun = count === 1 ? "member" : "members";
+  const verb = count === 1 ? "counts" : "count";
+  return `${count} ${noun} ${verb} toward your plan limits`;
+}
+
+function toneForMandateStatus(status?: string | null) {
+  if (status === "ACTIVE" || status === "AUTHENTICATED") {
+    return "lime" as const;
+  }
+  if (status === "FAILED" || status === "CANCELLED") {
+    return "red" as const;
+  }
+  if (status === "CREATED" || status === "PENDING" || status === "HALTED" || status === "PAUSED") {
+    return "amber" as const;
+  }
+  return "neutral" as const;
 }
 
 function resolveCheckoutUrl(value?: string | null, target: "owner-billing" = "owner-billing") {
@@ -95,7 +130,7 @@ export default function OwnerBillingScreen() {
   }
 
   function confirmCancel() {
-    Alert.alert("Cancel subscription?", "The subscription will be marked to cancel at period end.", [
+    Alert.alert("Cancel subscription?", "The subscription is marked to cancel at period end.", [
       { text: "Keep", style: "cancel" },
       {
         text: "Cancel",
@@ -135,20 +170,22 @@ export default function OwnerBillingScreen() {
             ),
           }}
         >
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { color: palette.text.tertiary }]}>Owner billing</Text>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Trial and SaaS setup</Text>
-            <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
-              Keep trial access, mandate setup, subscription status, and referral billing context visible on mobile.
-            </Text>
-          </View>
+          <ScreenHeader
+            title="Billing"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
 
           {billingQuery.isError ? (
             <QueryErrorState error={billingQuery.error} onRetry={() => void billingQuery.refetch()} />
           ) : null}
 
           {!billingQuery.isError && !data ? (
-            <EmptyState title="Loading billing" body="Subscription and mandate state will appear here." />
+            <EmptyState title="Loading billing" />
           ) : null}
 
           {data ? (
@@ -164,8 +201,8 @@ export default function OwnerBillingScreen() {
                     </Text>
                   </View>
                   <StatusChip
-                    status={subscription?.status ?? "UNKNOWN"}
-                    tone={subscription?.status === "ACTIVE" ? "lime" : "amber"}
+                    status={titleCaseFromCode(subscription?.status ?? "UNKNOWN")}
+                    tone={toneForSaasSubscriptionStatus(subscription?.status)}
                   />
                 </View>
                 <ListRow
@@ -180,7 +217,7 @@ export default function OwnerBillingScreen() {
                 />
                 <ListRow
                   title="Active members"
-                  subtitle={`${data.activeMemberCount} members currently count toward SaaS limits`}
+                  subtitle={activeMembersCopy(data.activeMemberCount)}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
               </Card>
@@ -192,10 +229,13 @@ export default function OwnerBillingScreen() {
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
                       {mandate
                         ? `${titleCaseFromCode(mandate.status)} · ${formatInr(mandate.amountPaise)}`
-                        : "No SaaS mandate is set up yet."}
+                        : "No payment mandate is set up."}
                     </Text>
                   </View>
-                  <StatusChip status={mandate?.status ?? "MISSING"} tone={mandate ? "lime" : "amber"} />
+                  <StatusChip
+                    status={titleCaseFromCode(mandate?.status ?? "MISSING")}
+                    tone={mandate ? toneForMandateStatus(mandate.status) : "amber"}
+                  />
                 </View>
                 {mandate?.nextChargeAt ? (
                   <ListRow
@@ -224,19 +264,19 @@ export default function OwnerBillingScreen() {
                   </View>
                 </View>
                 <View style={styles.cycleRow}>
-                  {(["MONTHLY", "YEARLY"] as BillingCycle[]).map((item) => (
+                  {CYCLE_OPTIONS.map((item) => (
                     <ZookButton
                       key={item}
                       size="sm"
                       variant={cycle === item ? "primary" : "secondary"}
                       onPress={() => setCycle(item)}
                     >
-                      {titleCaseFromCode(item)}
+                      {CYCLE_LABEL[item]}
                     </ZookButton>
                   ))}
                 </View>
                 {tiers.map((tier) => {
-                  const price = data.pricing[tier]?.[cycle === "YEARLY" ? "yearly" : "monthly"] ?? 0;
+                  const price = data.pricing[tier]?.[CYCLE_PRICE_KEY[cycle]] ?? 0;
                   return (
                     <View key={tier} style={styles.planRow}>
                       <View style={styles.rowCopy}>
@@ -244,7 +284,7 @@ export default function OwnerBillingScreen() {
                           {titleCaseFromCode(tier)}
                         </Text>
                         <Text style={[styles.body, { color: palette.text.secondary }]}>
-                          {formatInr(price)} / {cycle === "YEARLY" ? "year" : "month"}
+                          {formatInr(price)} / {CYCLE_PERIOD[cycle]}
                         </Text>
                       </View>
                       <ZookButton
@@ -330,26 +370,17 @@ export default function OwnerBillingScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "flex-start",
+    gap: 6,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 14,
     paddingBottom: 96,
-  },
-  header: {
-    gap: 5,
-  },
-  eyebrow: {
-    ...typography.caption,
-    textTransform: "uppercase",
-  },
-  title: {
-    ...typography.screenTitle,
-  },
-  subtitle: {
-    ...typography.body,
   },
   stack: {
     gap: spacing.md,

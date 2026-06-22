@@ -4,7 +4,7 @@ import {
   getOrganizationDashboardData,
   getOrganizationDashboardFastData,
   getPlatformDashboardData,
-} from "@/server/domains/overview";
+} from "@/server/domains/overview/read-models";
 import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
@@ -59,7 +59,7 @@ const demoAiUsage = zookDemoFixtures.aiUsageRecords.map((usage) => ({
   provider: "demo",
   requestType: usage.requestType,
   promptSummary: usage.promptSummary,
-  responseSummary: "Draft ready for trainer review",
+  responseSummary: "Draft prepared for trainer review",
   tokenEstimate: 420,
   costEstimatePaise: 0,
   quotaConsumed: usage.quotaConsumed,

@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, UserCheck, UserPlus, Users } from "lucide-react";
-import { KPITile, PulseDot, SectionHero } from "../charts";
+import { KPITile, SectionHero } from "../charts";
 import type { JoinRequestRow, MemberRow } from "@/components/dashboard/types";
 
 export function MemberSummary({
@@ -27,13 +27,11 @@ export function MemberSummary({
       <SectionHero
         eyebrow="Members"
         title="Member roster"
-        description="Manage joins, payments, plans, and personal records - all of one member, in one place."
         icon={Users}
-        tone="lime"
+        tone="sky"
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--accent-strong)]">
-              <PulseDot tone="lime" size={6} />
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               {members.length} {members.length === 1 ? "member" : "members"}
             </span>
             {joinRequests.length > 0 ? (
@@ -51,8 +49,7 @@ export function MemberSummary({
           label="Total members"
           value={members.length}
           icon={Users}
-          tone="lime"
-          caption="In your roster"
+          tone="sky"
         />
         <KPITile
           label="Active"
@@ -67,7 +64,7 @@ export function MemberSummary({
           label="Join requests"
           value={joinRequests.length}
           icon={UserPlus}
-          tone="amber"
+          tone={joinRequests.length > 0 ? "amber" : "sky"}
           caption={joinRequests.length > 0 ? "Needs approval" : "Inbox clear"}
         />
         <KPITile
@@ -75,7 +72,7 @@ export function MemberSummary({
           value={expiringCount}
           icon={AlertCircle}
           tone={expiringCount > 0 ? "rose" : "lime"}
-          caption={expiringCount > 0 ? "In next 7 days" : "All current"}
+          caption={expiringCount > 0 ? "In next 7 days" : "None expiring"}
         />
       </div>
     </>

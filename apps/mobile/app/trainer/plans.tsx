@@ -6,22 +6,22 @@ import {
   EmptyState,
   AppHeader,
   Card,
-  IconBubble,
   QueryErrorState,
   SectionHeader,
-  StatusChip,
   ZookScreen,
 } from "@/components/primitives";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { layout, useTheme } from "@/lib/theme";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
+import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
-  const { activeOrgId, session } = useAuth();
+  const { activeOrgId } = useAuth();
   const { palette } = useTheme();
+  const bottomPadding = useBottomScrollPadding();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
   const plannedClients = (clientsQuery.data?.clients ?? []).filter(
@@ -44,7 +44,7 @@ export default function TrainerPlansScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -54,29 +54,17 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <AppHeader
-            eyebrow="Trainer"
-            title="Plan work"
-            subtitle={`${session?.user.name ?? "Trainer"} · active client plans`}
-            chip={<StatusChip status="Trainer" tone="neutral" />}
-          />
-          <SectionHeader
-            title="Active plan work"
-            subtitle={`${plannedClients.length} ${plannedClients.length === 1 ? "client" : "clients"}`}
-          />
-          <Card variant="compact" contentStyle={styles.summaryCard}>
-            <IconBubble icon="clipboard-outline" tone={plannedClients.length ? "amber" : "lime"} size={42} />
-            <View style={styles.summaryCopy}>
-              <SectionHeader
-                title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
-                subtitle={
-                  plannedClients.length
-                    ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
-                    : "New plan work will appear here when clients need assignments."
-                }
-              />
-            </View>
-            <StatusChip status={plannedClients.length ? "Review" : "Clear"} tone={plannedClients.length ? "amber" : "lime"} />
+          <AppHeader title="Plan work" />
+          <SectionHeader title="Active plan work" />
+          <Card variant="compact">
+            <SectionHeader
+              title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
+              subtitle={
+                plannedClients.length
+                  ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
+                  : "No client plans need assignment."
+              }
+            />
           </Card>
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
@@ -86,7 +74,7 @@ export default function TrainerPlansScreen() {
             ) : plannedClients.length ? (
               plannedClients.map((client) => <PlanRow key={client.id ?? client.memberUserId} client={client} />)
             ) : (
-              <EmptyState title="No active plan work" body="Client plans will appear here after you create or assign them." />
+              <EmptyState icon="clipboard-outline" title="No active plan work" body="Clients who need a plan or an update will appear here." />
             )}
           </View>
         </ScrollView>
@@ -98,13 +86,10 @@ export default function TrainerPlansScreen() {
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
-    gap: 10,
+    gap: spacing.sm,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding + 32,
-    paddingTop: 8,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  summaryCard: { alignItems: "center", flexDirection: "row", gap: 12 },
-  summaryCopy: { flex: 1, minWidth: 0 },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

@@ -1,23 +1,19 @@
 import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { Pill } from "@/components/glass-card";
-import { joinModeLabelForLocale, publicT, type PublicLocale } from "@/lib/public-i18n";
+import { joinModeLabelForLocale, joinModeTone, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
-
-function fallbackAmenities(org: PublicGym) {
-  return org.amenities.length
-    ? org.amenities
-    : ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"];
-}
 
 export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
+  const coverAlt = locale === "hi" ? `${org.name} जिम की तस्वीर` : `${org.name} gym interior`;
+  const logoAlt = locale === "hi" ? `${org.name} लोगो` : `${org.name} logo`;
   return (
     <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
       {org.coverImageUrl ? (
         <Image
           src={org.coverImageUrl}
-          alt={`${org.name} gym interior`}
+          alt={coverAlt}
           fill
           sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
           className="object-cover opacity-20 dark:opacity-30"
@@ -31,7 +27,7 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-[var(--border)]">
             <Image
               src={org.coverImageUrl}
-              alt={`${org.name} gym`}
+              alt={coverAlt}
               fill
               sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
               className="object-cover"
@@ -41,18 +37,13 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
         ) : (
           <div className="relative mb-5 h-40 w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-sunken)] via-[var(--surface-raised)] to-[var(--bg-sunken)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,var(--accent-soft)_35%,transparent_65%)]" />
-            <div className="relative grid h-full place-items-center">
-              <span className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)]/70 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-[var(--text-secondary)] backdrop-blur">
-                Cover photo coming soon
-              </span>
-            </div>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
           {org.logoUrl ? (
             <Image
               src={org.logoUrl}
-              alt={`${org.name} logo`}
+              alt={logoAlt}
               width={56}
               height={56}
               sizes="56px"
@@ -61,8 +52,8 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
             />
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <Pill tone="lime">{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
-            {org.gymType ? <Pill tone="blue">{org.gymType}</Pill> : null}
+            <Pill tone={joinModeTone(org.joinMode)}>{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
+            {org.gymType ? <Pill>{org.gymType}</Pill> : null}
           </div>
         </div>
         <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-tight text-[var(--text-primary)] md:text-7xl">
@@ -78,13 +69,18 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
           <p className="mt-3 text-sm text-[var(--accent-strong)] font-semibold">{org.openingHoursSummary}</p>
         ) : null}
 
-        <div className="mt-7 flex flex-wrap gap-2 relative">
-          {fallbackAmenities(org).map((amenity) => (
-            <Pill key={amenity} className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]">
-              {amenity}
-            </Pill>
-          ))}
-        </div>
+        {org.amenities.length ? (
+          <div className="mt-7 flex flex-wrap gap-2 relative">
+            {org.amenities.map((amenity) => (
+              <Pill
+                key={amenity}
+                className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+              >
+                {amenity}
+              </Pill>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-10 flex flex-wrap gap-6 relative">
           {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (

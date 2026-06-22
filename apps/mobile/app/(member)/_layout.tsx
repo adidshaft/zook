@@ -1,27 +1,37 @@
-import { Tabs } from "expo-router";
+import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
+import { useEffect } from "react";
 
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
-import { useMyNotifications } from "@/lib/domains/notifications";
 import { useGeofenceCheckout } from "@/lib/use-geofence-checkout";
 
 export default function MemberLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useLocalSearchParams<{ view?: string | string[] }>();
   const geofenceCheckout = useGeofenceCheckout();
-  const notificationsQuery = useMyNotifications({
-    select: (data) =>
-      data.notifications.filter((notification) => !notification.readAt).length,
-  });
-  const unread = notificationsQuery.data ?? 0;
+
+  useEffect(() => {
+    const rawView = Array.isArray(params.view) ? params.view[0] : params.view;
+    const target = rawView
+      ? {
+          home: "/",
+          plan: "/plan",
+          scan: "/scan",
+          progress: "/progress",
+          shop: "/shop",
+        }[rawView]
+      : undefined;
+    if (target && pathname !== target) {
+      router.replace(target as never);
+    }
+  }, [params.view, pathname, router]);
 
   return (
     <>
       <Tabs
         tabBar={(props) => (
-          <RoleTabBar
-            {...props}
-            badges={{ you: unread }}
-            centerAction={{ routeName: "scan" }}
-          />
+          <RoleTabBar {...props} centerAction={{ routeName: "scan" }} />
         )}
         screenOptions={{
           headerShown: false,
@@ -67,19 +77,18 @@ export default function MemberLayout() {
           name="shop"
           options={{
             title: "Shop",
-            href: null,
-            tabBarItemStyle: { display: "none" },
-          }}
-        />
-        <Tabs.Screen name="diet" options={{ href: null, tabBarItemStyle: { display: "none" } }} />
-        <Tabs.Screen
-          name="you"
-          options={{
-            title: "You",
             tabBarIcon: ({ color, focused, size }) => (
-              <Icon name="you" focused={focused} size={size} color={color} />
+              <Icon name="shop" focused={focused} size={size} color={color} />
             ),
           }}
+        />
+        <Tabs.Screen
+          name="diet"
+          options={{ title: "Diet", href: null, tabBarItemStyle: { display: "none" } }}
+        />
+        <Tabs.Screen
+          name="coaching"
+          options={{ title: "Coaching", href: null, tabBarItemStyle: { display: "none" } }}
         />
       </Tabs>
       {geofenceCheckout.permissionSheet}

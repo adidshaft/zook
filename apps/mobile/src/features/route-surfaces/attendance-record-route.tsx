@@ -20,6 +20,9 @@ import {
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
+import { useMemberHome } from "@/lib/domains";
+import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { formatDurationSeconds, formatTime, titleCaseFromCode } from "@/lib/formatting";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -37,35 +40,43 @@ type AttendanceRecord = {
   source?: string | null;
 };
 
+function toAttendanceFallbackRecord(
+  home: MemberHomeData,
+  attendanceRecordId?: string,
+): AttendanceRecord | null {
+  if (!attendanceRecordId) {
+    return null;
+  }
+  if (home.activeCheckIn?.id === attendanceRecordId) {
+    return {
+      id: home.activeCheckIn.id,
+      checkedInAt: home.activeCheckIn.checkedInAt,
+      checkedOutAt: home.activeCheckIn.checkedOutAt,
+      checkoutReason: home.activeCheckIn.checkoutReason,
+      durationSeconds: home.activeCheckIn.durationSeconds,
+      status: home.activeCheckIn.status,
+      branchName: home.activeCheckIn.branchName ?? null,
+      source: home.activeCheckIn.source ?? null,
+      reason: home.activeMembership?.status === "ACTIVE" ? "Membership active." : undefined,
+    };
+  }
+  const recent = home.recentAttendance.find((record) => record.id === attendanceRecordId);
+  if (!recent) {
+    return null;
+  }
+  return {
+    id: recent.id,
+    checkedInAt: recent.checkedInAt,
+    checkedOutAt: recent.checkedOutAt,
+    checkoutReason: recent.checkoutReason,
+    durationSeconds: recent.durationSeconds,
+    status: recent.status,
+    source: recent.source ?? null,
+  };
+}
+
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function formatTime(value?: string | null) {
-  if (!value) return "--:--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--:--";
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
-function formatDuration(totalSeconds?: number | null) {
-  if (typeof totalSeconds !== "number" || totalSeconds < 0) {
-    return "In progress";
-  }
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${Math.max(minutes, 1)}m`;
-}
-
-function titleCaseStatus(status?: string | null) {
-  if (status === "PENDING_APPROVAL") return "Pending";
-  if (status === "APPROVED") return "Approved";
-  if (status === "FLAGGED") return "Flagged";
-  if (status === "REJECTED") return "Rejected";
-  return "Recorded";
 }
 
 const fallbackDefaultBranchName = ["Default", "Branch"].join(" ");
@@ -76,10 +87,11 @@ export default function AttendanceResultScreen() {
   const routeParams = useLocalSearchParams<{
     attendanceRecordId?: string | string[];
   }>();
-  const { status, token } = useAuth();
+  const { activeOrgId, status, token } = useAuth();
   const { palette } = useTheme();
   const activeRole = useRoleContext()?.role;
   const queryClient = useQueryClient();
+  const memberHomeQuery = useMemberHome();
   const attendanceRecordId = firstParam(routeParams.attendanceRecordId);
   const attendanceQuery = useQuery({
     queryKey: ["me", "attendance", attendanceRecordId],
@@ -93,8 +105,37 @@ export default function AttendanceResultScreen() {
   });
   const { refetch: refetchAttendance } = attendanceQuery;
   const recordFromApi = attendanceQuery.data?.attendance ?? null;
+  const memberHomeSnapshot =
+    memberHomeQuery.data ??
+    queryClient.getQueryData<MemberHomeData>(["me", "home", activeOrgId ?? null]) ??
+    null;
+  const fallbackAttendance = memberHomeSnapshot
+    ? toAttendanceFallbackRecord(memberHomeSnapshot, attendanceRecordId)
+    : null;
   const warning =
     queryClient.getQueryData<string>(["me", "attendanceWarning", attendanceRecordId]) ?? "";
+  const dismissAttendance = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/scan");
+  };
+  const dismissButton = (
+    <Pressable
+      onPress={dismissAttendance}
+      accessibilityRole="button"
+      accessibilityLabel="Dismiss attendance details"
+      hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
+      style={({ pressed }) => [
+        styles.iconButton,
+        { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+        pressed ? styles.controlPressed : null,
+      ]}
+    >
+      <Ionicons name="close" size={20} color={palette.text.primary} />
+    </Pressable>
+  );
 
   useEffect(() => {
     if (!attendanceRecordId) {
@@ -125,7 +166,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" />
+            <AppHeader title="Attendance" leading={dismissButton} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -137,7 +178,7 @@ export default function AttendanceResultScreen() {
     );
   }
 
-  if (!attendanceRecordId || !recordFromApi) {
+  if (!attendanceRecordId || (!recordFromApi && !fallbackAttendance)) {
     return (
       <>
         <ZookScreen>
@@ -146,7 +187,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" />
+            <AppHeader title="Attendance" leading={dismissButton} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
@@ -164,7 +205,7 @@ export default function AttendanceResultScreen() {
     );
   }
 
-  const record = recordFromApi;
+  const record: AttendanceRecord = recordFromApi ?? fallbackAttendance!;
 
   const pending = record.status === "PENDING_APPROVAL";
   const blocked = record.status === "REJECTED" || record.status === "FLAGGED";
@@ -191,20 +232,7 @@ export default function AttendanceResultScreen() {
           <AppHeader
             title="Attendance"
             subtitle={pending ? branchName : undefined}
-            leading={
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace("/scan"))}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
-                  pressed ? styles.controlPressed : null,
-                ]}
-              >
-                <Ionicons name="chevron-back" size={20} color={palette.text.primary} />
-              </Pressable>
-            }
+            leading={dismissButton}
           />
 
           <View style={styles.hero}>
@@ -212,7 +240,7 @@ export default function AttendanceResultScreen() {
               tone={tone}
               icon={pending ? "time-outline" : blocked ? "alert-circle-outline" : "checkmark"}
               size={pending ? 88 : 92}
-              progress={pending ? 0.52 : 0.86}
+              progress={pending ? 0.52 : blocked ? 0.66 : 1}
             />
             <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
               {pending
@@ -295,7 +323,7 @@ export default function AttendanceResultScreen() {
                 disabled={attendanceQuery.isFetching}
                 icon="refresh-outline"
               >
-                {attendanceQuery.isFetching ? "Refreshing..." : "Refresh status"}
+                {attendanceQuery.isFetching ? "Updating..." : "Refresh status"}
               </ZookButton>
               <ZookButton href="/" variant="secondary" icon="home-outline">
                 Back to Home
@@ -318,7 +346,7 @@ export default function AttendanceResultScreen() {
             </>
           ) : (
             <>
-              <Card glow contentStyle={styles.approvedCodeContent}>
+              <Card contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
                   <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
                   {code ? (
@@ -336,35 +364,39 @@ export default function AttendanceResultScreen() {
                 <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
                 <DetailLine
                   label="Check-in"
-                  value={formatTime(record.checkedInAt)}
+                  value={formatTime(record.checkedInAt, "--:--")}
                   icon="time-outline"
                 />
                 <DetailLine
                   label="Check-out"
-                  value={record.checkedOutAt ? formatTime(record.checkedOutAt) : "In progress"}
+                  value={record.checkedOutAt ? formatTime(record.checkedOutAt, "--:--") : "In progress"}
                   icon="stop-circle-outline"
                 />
                 <DetailLine
                   label="Duration"
-                  value={formatDuration(record.durationSeconds)}
+                  value={formatDurationSeconds(record.durationSeconds, {
+                    includeZeroMinutes: true,
+                    minimumMinutes: 1,
+                    separator: " ",
+                  })}
                   icon="timer-outline"
                 />
                 <DetailLine label="Branch" value={branchName} icon="shield-checkmark-outline" />
                 <DetailLine label="Plan" value={planName} icon="reader-outline" />
                 <DetailLine
                   label="Status"
-                  value={titleCaseStatus(record.status)}
+                  value={titleCaseFromCode(record.status ?? "RECORDED")}
                   icon="checkmark-circle-outline"
                   highlight
                 />
               </Card>
 
               <Card contentStyle={styles.nextContent}>
-                <IconBubble icon="barbell-outline" tone="lime" size={44} />
+                <IconBubble icon="barbell-outline" tone="neutral" size={44} />
                 <View style={styles.nextCopy}>
                   <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
                   <Text style={[styles.nextBody, { color: palette.text.secondary }]}>
-                    Open your latest assigned plan when you are ready.
+                    Open your current assigned plan.
                   </Text>
                 </View>
                 <Link href={planTarget} asChild>
@@ -374,7 +406,7 @@ export default function AttendanceResultScreen() {
                     style={({ pressed }) => (pressed ? styles.controlPressed : null)}
                     hitSlop={6}
                   >
-                    <ZookChip tone="lime" icon="chevron-forward">
+                    <ZookChip tone="blue" icon="chevron-forward">
                       Open Plan
                     </ZookChip>
                   </Pressable>
@@ -406,9 +438,9 @@ function DetailLine({
   return (
     <ListRow
       title={label}
-      leading={<IconBubble icon={icon} tone={highlight ? "lime" : "neutral"} size={28} />}
+      leading={<IconBubble icon={icon} tone={highlight ? "blue" : "neutral"} size={28} />}
       trailing={
-        <Text style={[styles.detailValue, { color: highlight ? palette.accent.base : palette.text.primary }]}>
+        <Text style={[styles.detailValue, { color: highlight ? palette.feedback.info : palette.text.primary }]}>
           {value}
         </Text>
       }
@@ -437,12 +469,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   notFoundTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
     textAlign: "center",
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
@@ -475,7 +507,7 @@ const styles = StyleSheet.create({
     ...typography.small,
   },
   pendingCode: {
-    ...typography.display,
+    ...typography.heroTitle,
     fontVariant: ["tabular-nums"],
   },
   codePressed: {
@@ -499,7 +531,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reasonTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   reasonBody: {
     ...typography.small,
@@ -520,14 +552,6 @@ const styles = StyleSheet.create({
   warningBody: {
     ...typography.small,
   },
-  historyLink: {
-    minHeight: 34,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  historyText: {
-    ...typography.small,
-  },
   approvedCodeContent: {
     padding: 14,
     gap: spacing.md,
@@ -537,7 +561,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   approvedCode: {
-    ...typography.display,
+    ...typography.heroTitle,
     fontVariant: ["tabular-nums"],
   },
   codeDetail: {
@@ -572,7 +596,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   nextTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   nextBody: {
     ...typography.small,

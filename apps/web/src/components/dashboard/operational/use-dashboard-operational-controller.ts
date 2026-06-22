@@ -22,6 +22,7 @@ export function useDashboardOperationalController({
   initialPaymentsPage,
 }: DashboardOperationalPanelProps) {
   const state = useDashboardOperationalState(organization);
+  const { setPolicyForm } = state;
   const resources = useDashboardOperationalResources({
     orgId,
     mode,
@@ -36,7 +37,7 @@ export function useDashboardOperationalController({
 
   useEffect(() => {
     if (!resources.referralPolicy) return;
-    state.setPolicyForm({
+    setPolicyForm({
       enabled: resources.referralPolicy.enabled,
       referrerRewardType: resources.referralPolicy.referrerRewardType,
       referrerRewardValue: resources.referralPolicy.referrerRewardValue.toString(),
@@ -48,7 +49,7 @@ export function useDashboardOperationalController({
       trainerReferralEnabled: resources.referralPolicy.trainerReferralEnabled,
       staffReferralEnabled: resources.referralPolicy.staffReferralEnabled,
     });
-  }, [resources.referralPolicy, state.setPolicyForm]);
+  }, [resources.referralPolicy, setPolicyForm]);
 
   const plansProductsActions = createPlansProductsActions({
     orgId,

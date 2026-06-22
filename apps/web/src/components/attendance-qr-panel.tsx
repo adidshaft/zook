@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { GlassCard, Pill } from "./glass-card";
 import { AvatarInitials, StatusDot } from "./dashboard-primitives";
 import { webApiFetch } from "@/lib/api-client";
+import { formatTime } from "@/lib/format";
 
 type PendingAttendanceRecord = {
   id: string;
@@ -100,9 +101,25 @@ export function AttendanceQrPanel({
       return;
     }
 
+    // Encode the QR as a universal link on our own associated domain rather
+    // than the raw signed blob. A member's native camera can then open the
+    // link, which iOS/Android hand straight to the app (-> /checkin -> auto
+    // check-in). The in-app scanner also understands this URL form, and users
+    // without the app land on the /checkin web fallback. Param names are the
+    // ones both the deep-link route and the in-app scanner parse.
+    const origin =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "https://zookfit.in";
+    const linkParams = new URLSearchParams({ qrPayload });
+    if (checkInCode) {
+      linkParams.set("checkInCode", checkInCode);
+    }
+    const qrContent = `${origin}/checkin?${linkParams.toString()}`;
+
     let active = true;
     setQrRenderError("");
-    void QRCode.toDataURL(qrPayload, {
+    void QRCode.toDataURL(qrContent, {
       errorCorrectionLevel: "M",
       margin: 2,
       width: 600,
@@ -125,7 +142,7 @@ export function AttendanceQrPanel({
     return () => {
       active = false;
     };
-  }, [qrPayload]);
+  }, [qrPayload, checkInCode]);
 
   return (
     <GlassCard variant="strong" className="rounded-[24px] border-[var(--border)] bg-[var(--bg-sunken)] shadow-none">
@@ -228,9 +245,8 @@ export function AttendanceQrPanel({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="lime">Check-in ready</Pill>
                 {branchName ? <Pill>{branchName}</Pill> : null}
-                {expiresAt ? <Pill>Expires {new Date(expiresAt).toLocaleTimeString()}</Pill> : null}
+                {expiresAt ? <Pill>Expires {formatTime(expiresAt)}</Pill> : null}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 p-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
@@ -277,7 +293,6 @@ export function AttendanceQrPanel({
         <div className="mt-3 grid gap-2">
           {(queueRecords.length ? queueRecords.slice(0, 4) : []).map((record) => {
             const name = record.user?.name ?? "Member review";
-            const checkedInAt = record.checkedInAt ? new Date(record.checkedInAt) : null;
             const flagged = record.status === "FLAGGED";
             return (
               <div key={record.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2">
@@ -289,7 +304,7 @@ export function AttendanceQrPanel({
                   </p>
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">
-                  {checkedInAt ? checkedInAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
+                  {record.checkedInAt ? formatTime(record.checkedInAt) : "--"}
                 </p>
                 <StatusDot tone={flagged ? "red" : "amber"} />
               </div>
@@ -297,19 +312,19 @@ export function AttendanceQrPanel({
           })}
           {!queueRecords.length ? (
             <p className="rounded-xl border border-dashed border-[var(--border)] px-3 py-4 text-sm text-[var(--text-tertiary)]">
-              No pending or flagged scans right now.
+              No pending or flagged scans.
             </p>
           ) : null}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 px-4 py-3 text-xs text-[var(--text-tertiary)]">
         <span className="inline-flex items-center gap-2 text-[var(--accent-strong)]">
-          <StatusDot tone="lime" /> Attendance sync: Live
+          <StatusDot tone="blue" /> Attendance active
         </span>
         <span>Token ID: {qrPayload ? qrPayload.slice(-8) : "--"}</span>
         <span>
           Last refreshed:{" "}
-          {lastRefreshedAt ? lastRefreshedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
+          {lastRefreshedAt ? formatTime(lastRefreshedAt) : "--"}
         </span>
         <button onClick={() => void loadToken()} className="inline-flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent)]">
           <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> Refresh

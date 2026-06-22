@@ -443,7 +443,7 @@ Expected:
 
 1. Open the client plan area.
 2. Confirm AI assistant state:
-   - If `AI_FEATURES_ENABLED=false`, it should show unavailable or coming-soon state.
+   - If `AI_FEATURES_ENABLED=false`, it should show neutral unavailable-state copy.
    - If local mock AI is enabled, draft generation should be deterministic and clearly review-gated.
 3. Create or generate a structured plan.
 4. Edit exercises, sets, reps, notes, or schedule.
@@ -725,7 +725,7 @@ Expected:
 
 - Installed build launches without Metro.
 - Build does not show `DEMO MODE`.
-- Missing backend URL produces a fatal configuration screen, not silent demo data.
+- Missing backend URL produces a fatal configuration screen, not silent test data.
 - Login, role selection, scan, notifications, and logout work against selected backend.
 - Push permission denial keeps in-app inbox usable.
 - Physical device camera scan works for attendance QR.

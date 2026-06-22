@@ -1,6 +1,6 @@
 export type SaasTier = "FREE" | "STARTER" | "GROWTH" | "PRO";
 export type PaidSaasTier = Exclude<SaasTier, "FREE">;
-export type SaasBillingCycle = "MONTHLY" | "YEARLY";
+export type SaasBillingCycle = "MONTHLY" | "SEMIANNUAL" | "YEARLY";
 
 export type SaasEntitlements = {
   memberLimit: number | null;
@@ -24,6 +24,7 @@ export type SaasPlanDefinition = {
   name: string;
   description: string;
   monthly: number;
+  semiannual: number;
   yearly: number;
   entitlements: SaasEntitlements;
 };
@@ -34,6 +35,7 @@ export const defaultSaasPlanCatalog = {
     name: "Trial",
     description: "Trial access for new gyms while billing setup is completed.",
     monthly: 0,
+    semiannual: 0,
     yearly: 0,
     entitlements: {
       memberLimit: 25,
@@ -57,6 +59,7 @@ export const defaultSaasPlanCatalog = {
     name: "Starter",
     description: "For single-branch gyms starting with digital memberships and attendance.",
     monthly: 149_900,
+    semiannual: 799_000,
     yearly: 1_499_000,
     entitlements: {
       memberLimit: 100,
@@ -80,6 +83,7 @@ export const defaultSaasPlanCatalog = {
     name: "Growth",
     description: "For growing gyms with larger teams, shop inventory, and advanced campaigns.",
     monthly: 399_900,
+    semiannual: 2_199_000,
     yearly: 3_999_000,
     entitlements: {
       memberLimit: 500,
@@ -103,6 +107,7 @@ export const defaultSaasPlanCatalog = {
     name: "Pro",
     description: "For multi-branch operators that need higher limits and premium support.",
     monthly: 799_900,
+    semiannual: 4_399_000,
     yearly: 7_999_000,
     entitlements: {
       memberLimit: null,
@@ -150,6 +155,7 @@ export function saasPlanCatalogFromSetting(value: unknown) {
       catalog[tier] = {
         ...base,
         monthly: tier === "FREE" ? 0 : positiveNumber(config.monthlyPaise, base.monthly),
+        semiannual: tier === "FREE" ? 0 : positiveNumber(config.semiannualPaise, base.semiannual),
         yearly: tier === "FREE" ? 0 : positiveNumber(config.yearlyPaise, base.yearly),
         entitlements: {
           ...base.entitlements,
@@ -183,6 +189,7 @@ export function pricingFromPlanCatalog(catalog: Record<SaasTier, SaasPlanDefinit
     (pricing, tier) => {
       pricing[tier] = {
         monthly: catalog[tier].monthly,
+        semiannual: catalog[tier].semiannual,
         yearly: catalog[tier].yearly,
         memberLimit: catalog[tier].entitlements.memberLimit,
         entitlements: catalog[tier].entitlements,
@@ -193,14 +200,11 @@ export function pricingFromPlanCatalog(catalog: Record<SaasTier, SaasPlanDefinit
       PaidSaasTier,
       {
         monthly: number;
+        semiannual: number;
         yearly: number;
         memberLimit: number | null;
         entitlements: SaasEntitlements;
       }
     >,
   );
-}
-
-export function formatSaasLimit(limit: number | null) {
-  return limit === null ? "unlimited" : String(limit);
 }

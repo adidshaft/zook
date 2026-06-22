@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LayoutAnimation, Platform, UIManager } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
-import { OfflineBanner } from "./foundation";
+import { OfflineBanner } from "./offline-banner";
 import { useT } from "@/lib/i18n";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {

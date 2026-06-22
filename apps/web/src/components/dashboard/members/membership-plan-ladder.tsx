@@ -26,19 +26,15 @@ export function MembershipPlanLadder({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Membership setup"
+        eyebrow="Membership plans"
         title="Membership plan ladder"
-        description="Use the live pricing ladder below to see which plans are public, how they are shaped, and which ones are currently active."
-        badge={<Pill tone="blue">{membershipPlans.length} plans</Pill>}
+        badge={<Pill>{membershipPlans.length} plans</Pill>}
       />
       <div className="mt-5">
         {membershipPlansState.error ? (
           <ErrorNotice message={membershipPlansState.error} />
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-          <EmptyState
-            title="Loading plan ladder"
-            description="Pulling the latest membership plans for this organization."
-          />
+          <EmptyState title="Loading plan ladder" />
         ) : (
           <DataTable
             columns={[
@@ -72,11 +68,11 @@ export function MembershipPlanLadder({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill
                       value={plan.active ? "Active" : "Paused"}
-                      tone={plan.active ? "lime" : "amber"}
+                      tone={plan.active ? "blue" : "amber"}
                     />
                     <StatusPill
                       value={plan.publicVisible ? "Public" : "Private"}
-                      tone={plan.publicVisible ? "blue" : "neutral"}
+                      tone="neutral"
                     />
                   </div>
                 ),
@@ -84,7 +80,7 @@ export function MembershipPlanLadder({
             ]}
             rows={membershipPlans}
             rowKey={(plan) => plan.id}
-            empty="No membership plans are available yet."
+            empty="No plans."
           />
         )}
       </div>

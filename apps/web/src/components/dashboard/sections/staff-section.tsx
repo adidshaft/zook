@@ -6,7 +6,7 @@ import { ErrorNotice } from "../operational-shared";
 import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
-import { HelpHint, ManagedOn, SearchableSelect } from "../../ui";
+import { ManagedOn, SearchableSelect } from "../../ui";
 import { ZookButton } from "../../zook-button";
 import type {
   BranchRow,
@@ -119,30 +119,26 @@ export function StaffSection({
         <div className="mb-5 grid gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="inline-flex items-center gap-2 font-medium text-[var(--text-primary)]">
-                Invite staff
-                <HelpHint label="Invite email" title="Invite email">
-                  We email a sign-in link. The recipient confirms with a one-time code and joins
-                  this gym with the role you pick.
-                </HelpHint>
-              </p>
+              <p className="font-medium text-[var(--text-primary)]">Invite staff</p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 Invite email sends a sign-in link. Reception users should be tied to one branch;
                 admins and trainers can work across assigned gym areas.
               </p>
             </div>
-            <Pill tone="lime">Invite</Pill>
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-            <input
-              value={staffInvite.email}
-              onChange={(event) =>
-                setStaffInvite((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder="staff@example.com"
-              type="email"
-              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
-            />
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Staff email
+              <input
+                value={staffInvite.email}
+                onChange={(event) =>
+                  setStaffInvite((current) => ({ ...current, email: event.target.value }))
+                }
+                placeholder="staff@example.com"
+                type="email"
+                className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
+              />
+            </label>
             <SearchableSelect
               label="Role"
               value={staffInvite.role}
@@ -186,8 +182,7 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Team"
           title="Operational roles"
-          description="Your team and their roles."
-          badge={<Pill tone="blue">{staffAssignments.length} assignments</Pill>}
+          badge={<Pill>{staffAssignments.length} assignments</Pill>}
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
           Created in Trainer app.
@@ -196,10 +191,7 @@ export function StaffSection({
           {staffState.error ? (
             <ErrorNotice message={staffState.error} />
           ) : staffState.loading && staffAssignments.length === 0 ? (
-            <EmptyState
-              title="Loading staff"
-              description="Pulling role assignments for this organization."
-            />
+            <EmptyState title="Loading staff" />
           ) : (
             <DataTable
               columns={[
@@ -337,7 +329,7 @@ export function StaffSection({
               ]}
               rows={staffAssignments}
               rowKey={(assignment) => assignment.id}
-              empty="No staff assignments are recorded beyond members."
+              empty="No staff assignments."
             />
           )}
         </div>
@@ -347,7 +339,6 @@ export function StaffSection({
         <SectionHeader
           eyebrow="Access"
           title="What each role can do"
-          description="Use this when explaining access to a new team member."
         />
         <div className="mt-5 grid gap-3">
           {roleCapabilitySections.map((section) => (
@@ -379,10 +370,9 @@ export function StaffSection({
       <GlassCard>
         <SectionHeader
           eyebrow="Coach Output"
-          title="Plan production"
-          description="Trainer-written and assisted plans appear here so owners can review the delivery load."
+          title="Plan delivery"
           badge={
-            <Pill tone="amber">
+            <Pill>
               {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
             </Pill>
           }
@@ -391,10 +381,7 @@ export function StaffSection({
           {coachPlansState.error ? (
             <ErrorNotice message={coachPlansState.error} />
           ) : coachPlansState.loading && coachPlans.length === 0 ? (
-            <EmptyState
-              title="Loading coaching plans"
-              description="Pulling the current training library."
-            />
+            <EmptyState title="Loading coaching plans" />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (
               <div key={plan.id} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
@@ -407,7 +394,7 @@ export function StaffSection({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <StatusPill value={formatEnumLabel(plan.status)} />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
+                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
                     <ConfirmActionButton
                       title={
                         plan.assignmentCount > 0
@@ -417,7 +404,7 @@ export function StaffSection({
                       description={
                         plan.assignmentCount > 0
                           ? "Assigned plans are archived so member history remains intact."
-                          : "This unused plan will be removed from the training library."
+                          : "This plan will be removed from the training library."
                       }
                       confirmLabel={plan.assignmentCount > 0 ? "Archive" : "Delete"}
                       onConfirm={() => deleteCoachPlan(plan)}
@@ -434,10 +421,7 @@ export function StaffSection({
               </div>
             ))
           ) : (
-            <EmptyState
-              title="No coaching plans yet"
-              description="Trainers have not published any plans for this org."
-            />
+            <EmptyState title="No coaching plans" />
           )}
           {coachPlans.length > 6 ? (
             <Link

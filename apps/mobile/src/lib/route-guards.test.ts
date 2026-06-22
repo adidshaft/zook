@@ -41,7 +41,7 @@ describe("mobile route guards", () => {
 
   it("guards trainer subroutes by trainer permissions", () => {
     expect(checkRouteAccess("/trainer/clients", new Set(["MEMBERS_VIEW"]), false)).toBe(true);
-    expect(checkRouteAccess("/trainer/clients", new Set(["PT_RECORD"]), false)).toBe(false);
+    expect(checkRouteAccess("/trainer/clients", new Set(["PT_RECORD"]), false)).toBe(true);
     expect(checkRouteAccess("/trainer/plans", new Set(["PT_RECORD"]), false)).toBe(true);
   });
 });

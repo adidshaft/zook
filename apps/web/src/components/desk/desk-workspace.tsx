@@ -1,7 +1,6 @@
 "use client";
 
 import { Pill } from "@/components/glass-card";
-import { PulseDot } from "@/components/dashboard/charts";
 import { useDeskWorkspace } from "@/lib/use-desk-workspace";
 import { DeskMetrics } from "./desk-metrics";
 import { DeskMessageDraftForm, DeskPickupDraftForm } from "./desk-status-forms";
@@ -39,10 +38,7 @@ export function DeskWorkspace({
   return (
     <div className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone="lime">
-          <PulseDot tone="lime" size={6} />
-          <span className="ml-1.5">{branch?.name ?? copy.mainBranch}</span>
-        </Pill>
+        <Pill>{branch?.name ?? copy.mainBranch}</Pill>
         <Pill>
           {state.todayRecords.length} {copy.checkInsToday}
         </Pill>
@@ -62,7 +58,7 @@ export function DeskWorkspace({
       ) : null}
 
       {state.toast ? (
-        <div className="rounded-2xl border border-lime-300/25 bg-lime-300/10 px-4 py-3 text-sm text-lime-100">
+        <div className="rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
           {state.toast}
         </div>
       ) : null}
@@ -143,11 +139,13 @@ export function DeskWorkspace({
         <PickupTab
           copy={copy}
           activeOrders={state.pickupOrders}
+          orderSort={state.orderSort}
           fulfilledToday={state.fulfilledToday}
           verifiedOrderIds={state.verifiedOrderIds}
           skippedCodeOrderIds={state.skippedCodeOrderIds}
           busyId={state.busyId}
           onVerifyPickupCode={(order) => void actions.verifyPickupCode(order)}
+          onOrderSortChange={actions.setOrderSort}
           onSkipCode={actions.skipPickupCode}
           onJumpToShopPayment={actions.jumpToShopPayment}
           onFulfillOrder={(orderId) => void actions.fulfillOrder(orderId)}

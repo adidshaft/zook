@@ -63,7 +63,7 @@ export function JoinCheckoutButton({
         fallbackCheckoutUrl ??
         (payload?.data?.session?.id ? `/checkout/${payload.data.session.id}` : null);
       if (!checkoutUrl) {
-        throw new Error("Payment is not available for this plan yet.");
+        throw new Error("Payment is unavailable for this plan.");
       }
       toast.success("Payment started.");
       window.location.assign(checkoutUrl);

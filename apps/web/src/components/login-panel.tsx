@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Mail, Smartphone } from "lucide-react";
@@ -11,6 +11,7 @@ import { ZookButton } from "./zook-button";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import type { WebHost } from "@/lib/host-routing";
 import { getOrigins, webHostFromHeader, type WebOrigins } from "@/lib/origins";
+import { sanitizeOtpValue } from "@/lib/otp";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
 const containerVariants: Variants = {
@@ -72,15 +73,11 @@ function loadScript(src: string) {
       script.dataset.loaded = "true";
       resolve();
     };
-    script.onerror = () => reject(new Error("Sign-in provider could not load."));
+    script.onerror = () => reject(new Error("Sign-in service could not load."));
     if (!existing) {
       document.head.appendChild(script);
     }
   });
-}
-
-function sanitizeOtpCode(value: string) {
-  return value.replace(/\D/g, "").slice(0, 6);
 }
 
 function isValidEmail(value: string) {
@@ -131,27 +128,36 @@ export function LoginPanel({
   locale = "en",
   currentHost,
   origins,
+  initialIdentifier,
+  initialCode = "",
+  initialStage = "identifier",
 }: {
   locale?: PublicLocale;
   currentHost?: WebHost;
   origins?: WebOrigins;
+  initialIdentifier?: string;
+  initialCode?: string;
+  initialStage?: "identifier" | "otp";
 }) {
   const searchParams = useSearchParams();
-  const t = (
-    key: Parameters<typeof publicT>[1],
-    replacements: Record<string, string | number> = {},
-  ) => publicT(locale, key, replacements);
-  const initialIdentifier = searchParams.get("email") ?? "";
+  const t = useCallback(
+    (
+      key: Parameters<typeof publicT>[1],
+      replacements: Record<string, string | number> = {},
+    ) => publicT(locale, key, replacements),
+    [locale],
+  );
+  const seededIdentifier = initialIdentifier ?? searchParams.get("identifier") ?? searchParams.get("email") ?? "";
   const [loginMethod, setLoginMethod] = useState<LoginMethod>(
-    initialIdentifier.includes("@") ? "email" : "phone",
+    seededIdentifier.includes("@") ? "email" : "phone",
   );
-  const [email, setEmail] = useState(initialIdentifier.includes("@") ? initialIdentifier : "");
-  const [phone, setPhone] = useState(initialIdentifier && !initialIdentifier.includes("@") ? initialIdentifier : "");
+  const [email, setEmail] = useState(seededIdentifier.includes("@") ? seededIdentifier : "");
+  const [phone, setPhone] = useState(seededIdentifier && !seededIdentifier.includes("@") ? seededIdentifier : "");
   const [identifier, setIdentifier] = useState(
-    initialIdentifier.includes("@") ? initialIdentifier : "",
+    seededIdentifier,
   );
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"identifier" | "otp">("identifier");
+  const [code, setCode] = useState(sanitizeOtpValue(initialCode));
+  const [stage, setStage] = useState<"identifier" | "otp">(initialStage);
   const [submitting, setSubmitting] = useState<"request" | "verify" | null>(null);
   const [ssoSubmitting, setSsoSubmitting] = useState<"google" | "apple" | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -161,7 +167,9 @@ export function LoginPanel({
   const otpRef = useRef<HTMLInputElement>(null);
   const redirectLabel = loginDestinationLabel(searchParams.get("redirect"));
   const [message, setMessage] = useState(
-    redirectLabel
+    initialStage === "otp" && seededIdentifier
+      ? t("otpSent", { identifier: seededIdentifier })
+      : redirectLabel
       ? `Sign in to continue to ${redirectLabel}.`
       : searchParams.get("redirect") === "/platform"
         ? t("signInPlatform")
@@ -171,6 +179,49 @@ export function LoginPanel({
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  const redirectHrefForSession = useCallback((session: LoginSession, redirect: string | null) => {
+    const resolvedOrigins = origins ?? getOrigins();
+    const resolvedCurrentHost =
+      currentHost ?? webHostFromHeader(window.location.host, resolvedOrigins);
+    return destinationToHref(
+      resolvePostLoginDestination(session, redirect),
+      resolvedCurrentHost,
+      resolvedOrigins,
+    );
+  }, [currentHost, origins]);
+
+  const completeSsoSignIn = useCallback(
+    async (
+      provider: "google" | "apple",
+      body: { idToken: string } | { identityToken: string },
+      redirectOverride?: string | null,
+    ) => {
+      setSsoSubmitting(provider);
+      try {
+        const response = await fetch(`/api/auth/${provider}/callback`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
+          body: JSON.stringify(body),
+        });
+        const payload = await parseApiResponse<{
+          session?: AuthSessionSummary;
+        }>(response);
+        const redirect = redirectOverride ?? searchParams.get("redirect");
+        const safeRedirect =
+          redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
+        toast.success(t("verifyContinue"));
+        window.location.href = redirectHrefForSession(payload.session, safeRedirect);
+      } catch (error) {
+        const nextMessage =
+          error instanceof Error ? error.message : "Sign-in could not be completed.";
+        setMessage(nextMessage);
+        toast.error(nextMessage);
+        setSsoSubmitting(null);
+      }
+    },
+    [redirectHrefForSession, searchParams, t],
+  );
 
   useEffect(() => {
     if (!window.location.hash.includes("id_token=") && !window.location.hash.includes("error=")) {
@@ -203,7 +254,7 @@ export function LoginPanel({
       return;
     }
     void completeSsoSignIn("google", { idToken }, redirect);
-  }, []);
+  }, [completeSsoSignIn]);
 
   useEffect(() => {
     if (stage === "identifier") {
@@ -234,17 +285,6 @@ export function LoginPanel({
 
   function selectedIdentifier() {
     return loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
-  }
-
-  function redirectHrefForSession(session: LoginSession, redirect: string | null) {
-    const resolvedOrigins = origins ?? getOrigins();
-    const resolvedCurrentHost =
-      currentHost ?? webHostFromHeader(window.location.host, resolvedOrigins);
-    return destinationToHref(
-      resolvePostLoginDestination(session, redirect),
-      resolvedCurrentHost,
-      resolvedOrigins,
-    );
   }
 
   async function requestOtp({ resend = false }: { resend?: boolean } = {}) {
@@ -292,7 +332,7 @@ export function LoginPanel({
     setSubmitting("verify");
     try {
       const trimmedIdentifier = identifier.trim() || selectedIdentifier();
-      const otpCode = sanitizeOtpCode(overrideCode ?? code);
+      const otpCode = sanitizeOtpValue(overrideCode ?? code);
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
@@ -316,35 +356,6 @@ export function LoginPanel({
       setMessage(nextMessage);
       toast.error(nextMessage);
       setSubmitting(null);
-    }
-  }
-
-  async function completeSsoSignIn(
-    provider: "google" | "apple",
-    body: { idToken: string } | { identityToken: string },
-    redirectOverride?: string | null,
-  ) {
-    setSsoSubmitting(provider);
-    try {
-      const response = await fetch(`/api/auth/${provider}/callback`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-zook-intent": "mutate" },
-        body: JSON.stringify(body),
-      });
-      const payload = await parseApiResponse<{
-        session?: AuthSessionSummary;
-      }>(response);
-      const redirect = redirectOverride ?? searchParams.get("redirect");
-      const safeRedirect =
-        redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : null;
-      toast.success(t("verifyContinue"));
-      window.location.href = redirectHrefForSession(payload.session, safeRedirect);
-    } catch (error) {
-      const nextMessage =
-        error instanceof Error ? error.message : "Sign-in could not be completed.";
-      setMessage(nextMessage);
-      toast.error(nextMessage);
-      setSsoSubmitting(null);
     }
   }
 
@@ -419,7 +430,7 @@ export function LoginPanel({
   }
 
   function handleOtpChange(value: string) {
-    const nextCode = sanitizeOtpCode(value);
+    const nextCode = sanitizeOtpValue(value);
     setCode(nextCode);
     if (nextCode.length === 6 && submitting === null) {
       void verifyOtp(nextCode);
@@ -444,6 +455,7 @@ export function LoginPanel({
       </motion.h1>
       <motion.p
         variants={itemVariants}
+        id="login-status"
         className="mt-2 text-sm leading-6 text-[var(--text-secondary)]"
         role="alert"
         aria-live="polite"
@@ -537,7 +549,7 @@ export function LoginPanel({
         ) : null}
         {stage === "otp" ? (
           <>
-            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-tertiary)]">
+            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-secondary)]">
               {t("otp")}
             </label>
             <input
@@ -546,12 +558,18 @@ export function LoginPanel({
               ref={otpRef}
               inputMode="numeric"
               autoComplete="one-time-code"
+              aria-describedby="login-status login-otp-helper"
+              aria-required="true"
               placeholder="6-digit code"
               value={code}
               onChange={(event) => handleOtpChange(event.target.value)}
               maxLength={6}
+              required
               className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
             />
+            <p id="login-otp-helper" className="text-xs leading-5 text-[var(--text-secondary)]">
+              {t("otpHint", { identifier })}
+            </p>
           </>
         ) : null}
         {stage === "otp" && resendCooldown > 0 ? (

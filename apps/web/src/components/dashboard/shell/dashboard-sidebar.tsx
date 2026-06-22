@@ -119,13 +119,6 @@ export function DashboardSidebar({
             {copy.nav.platformAdmin}
           </Link>
         ) : null}
-
-        <div className="mt-auto rounded-[20px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] p-4">
-          <p className="text-sm font-semibold text-[var(--text-primary)]">Zook OS · India’s 1st Operating System for Gyms</p>
-          <p className="mt-2 text-xs leading-5 text-[var(--text-tertiary)]">
-            Control room for memberships, QR attendance, desk payments, trainers, and audit logs.
-          </p>
-        </div>
       </GlassCard>
     </aside>
   );

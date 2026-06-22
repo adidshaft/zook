@@ -133,6 +133,29 @@ export interface MemberDashboardData {
   preferences: NotificationPreferenceRecord[];
 }
 
+export interface MemberClassRecord {
+  id: string;
+  orgId: string;
+  branchId: string;
+  branchName?: string | null;
+  trainerId: string;
+  trainerName?: string | null;
+  name: string;
+  description?: string | null;
+  classType: string;
+  maxCapacity: number;
+  pricePaise?: number | null;
+  trainerCommissionBps?: number | null;
+  startTime: string;
+  endTime: string;
+  recurrenceRule?: string | null;
+  status: string;
+  createdAt: string;
+  enrollmentCount: number;
+  remainingCapacity: number;
+  myEnrollmentStatus?: string | null;
+}
+
 export interface PublicPlanSummary {
   id: string;
   name: string;
@@ -438,6 +461,7 @@ export interface ReceptionQueueRecord {
   id: string;
   status: string;
   checkedInAt: string;
+  branchId?: string | null;
   branchName?: string | null;
   source?: string;
   suspiciousFlags?: string[] | null;
@@ -467,7 +491,6 @@ export interface OwnerDashboardChartPoint {
 export interface OwnerDashboardPlanMixPoint {
   label: string;
   value: number;
-  tone?: "lime" | "sky" | "amber" | "violet" | string;
 }
 
 export interface OwnerDashboardCharts {
@@ -530,6 +553,7 @@ export interface OwnerBillingSubscriptionData {
     string,
     {
       monthly: number;
+      semiannual?: number;
       yearly: number;
       memberLimit?: number | null;
       entitlements?: OwnerBillingSubscriptionData["entitlements"];
@@ -716,6 +740,65 @@ export interface MealLogRecord {
   notes?: string | null;
 }
 
+export type HabitCategory =
+  | "HYDRATION"
+  | "SLEEP"
+  | "STEPS"
+  | "PROTEIN"
+  | "STRETCHING"
+  | "CUSTOM";
+
+export interface HabitLogRecord {
+  id: string;
+  habitId: string;
+  loggedAt?: string | null;
+  value?: number | null;
+  notes?: string | null;
+  completed: boolean;
+}
+
+export interface PtPlanRecord {
+  id: string;
+  orgId?: string;
+  trainerUserId?: string;
+  name: string;
+  description?: string | null;
+  durationDays?: number | null;
+  sessionCount?: number | null;
+  pricePaise: number;
+  active?: boolean;
+  createdAt?: string | null;
+}
+
+export interface PtSubscriptionRecord {
+  id: string;
+  memberUserId: string;
+  memberName?: string | null;
+  trainerUserId?: string;
+  ptPlanId?: string | null;
+  planName?: string | null;
+  status: string;
+  totalSessions?: number | null;
+  remainingSessions?: number | null;
+  amountPaise: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface HabitRecord {
+  id: string;
+  title: string;
+  category: HabitCategory | string;
+  targetValue?: number | null;
+  unit?: string | null;
+  frequency: "DAILY" | "WEEKLY" | string;
+  visibility?: string | null;
+  active?: boolean;
+  createdAt?: string | null;
+  logs?: HabitLogRecord[];
+}
+
 export interface TrainerPayoutLineRecord {
   id: string;
   kind: string;
@@ -727,6 +810,7 @@ export interface TrainerPayoutLineRecord {
 export interface TrainerPayoutRecord {
   id: string;
   trainerId: string;
+  trainerName?: string | null;
   totalPaise: number;
   status: string;
   period?: string | null;

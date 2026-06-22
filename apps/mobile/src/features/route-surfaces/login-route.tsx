@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import * as AppleAuthentication from "expo-apple-authentication";
-import Constants from "expo-constants";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ApiError } from "@zook/core/api";
 import {
-  ActivityIndicator,
   Keyboard,
   LayoutAnimation,
   Linking,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -27,47 +23,18 @@ import {
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { spacing, typography, useTheme, type Palette } from "@/lib/theme";
+import { sanitizeOtpValue } from "@/lib/otp";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import { spacing, typography, useTheme } from "@/lib/theme";
 
-type BusyAction = "otp" | "apple" | "google" | null;
+type BusyAction = "otp" | null;
 type LoginMethod = "phone" | "email";
+type MessageTone = "neutral" | "danger" | "success";
 
 const TERMS_URL = "https://zookfit.in/terms";
 const PRIVACY_URL = "https://zookfit.in/privacy";
 const OTP_RESEND_COOLDOWN_SECONDS = 30;
 const OTP_RATE_LIMIT_FALLBACK_SECONDS = 60;
-
-let googleSignInConfigured = false;
-let googleSignInModule:
-  | typeof import("@react-native-google-signin/google-signin")
-  | null
-  | undefined;
-
-async function getGoogleSigninModule() {
-  if (googleSignInModule !== undefined) {
-    return googleSignInModule;
-  }
-  try {
-    googleSignInModule = await import("@react-native-google-signin/google-signin");
-  } catch {
-    googleSignInModule = null;
-  }
-  return googleSignInModule;
-}
-
-function sanitizeOtpCode(value: string) {
-  return value
-    .normalize("NFKC")
-    .replace(/[^0-9]/g, "")
-    .slice(0, 6);
-}
-
-function isCanceledAuthError(error: unknown) {
-  return (
-    error instanceof Error &&
-    ("code" in error ? String(error.code) === "ERR_REQUEST_CANCELED" : false)
-  );
-}
 
 function readRetryAfterSeconds(error: ApiError) {
   const details = error.details;
@@ -110,28 +77,11 @@ function isValidEmailIdentifier(value: string) {
   return /^\S+@\S+\.\S+$/.test(value.trim());
 }
 
-async function configureGoogleSignIn() {
-  if (googleSignInConfigured) return;
-  const module = await getGoogleSigninModule();
-  if (!module) {
-    throw new Error("Google sign-in is not available in Expo Go.");
-  }
-  module.GoogleSignin.configure({
-    scopes: ["email", "profile"],
-    webClientId:
-      (Constants.expoConfig?.extra?.googleWebClientId as string | undefined) ??
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId:
-      (Constants.expoConfig?.extra?.googleIosClientId as string | undefined) ??
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  });
-  googleSignInConfigured = true;
-}
-
 export default function Login() {
-  const { requestOtp, signInWithApple, signInWithGoogle, verifyOtp } = useAuth();
+  const { requestOtp, verifyOtp } = useAuth();
   const { t } = useI18n();
   const { palette } = useTheme();
+  const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const params = useLocalSearchParams<{ prefill?: string; reason?: string }>();
   const otpInputRef = useRef<OtpInputHandle>(null);
   const verifyingRef = useRef(false);
@@ -143,10 +93,21 @@ export default function Login() {
   const [stage, setStage] = useState<"identifier" | "otp">("identifier");
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<MessageTone>("neutral");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
   const [accountLocked, setAccountLocked] = useState(false);
   const busy = busyAction !== null;
+
+  function showMessage(nextMessage: string, tone: MessageTone = "neutral") {
+    setMessage(nextMessage);
+    setMessageTone(tone);
+  }
+
+  function clearMessage() {
+    setMessage("");
+    setMessageTone("neutral");
+  }
 
   useEffect(() => {
     const prefill = Array.isArray(params.prefill) ? params.prefill[0] : params.prefill;
@@ -166,10 +127,10 @@ export default function Login() {
   useEffect(() => {
     const reason = Array.isArray(params.reason) ? params.reason[0] : params.reason;
     if (reason === "proactive") {
-      setMessage(t("auth.verifyToContinue"));
+      showMessage(t("auth.verifyToContinue"));
     }
     if (reason === "expired") {
-      setMessage(t("auth.sessionExpired"));
+      showMessage(t("auth.sessionExpired"));
     }
   }, [params.reason, t]);
 
@@ -191,7 +152,7 @@ export default function Login() {
 
   useEffect(() => {
     if (rateLimitCooldown <= 0) return undefined;
-    setMessage(tooManyAttemptsMessage(rateLimitCooldown));
+    showMessage(tooManyAttemptsMessage(rateLimitCooldown), "danger");
     const timer = setInterval(() => {
       setRateLimitCooldown((current) => Math.max(0, current - 1));
     }, 1000);
@@ -227,16 +188,16 @@ export default function Login() {
   function handleOtpError(error: unknown) {
     if (isAccountLockedError(error)) {
       setAccountLocked(true);
-      setMessage(getApiErrorMessage(error));
+      showMessage(getApiErrorMessage(error), "danger");
       return;
     }
     if (error instanceof ApiError && error.status === 429) {
       const seconds = readRetryAfterSeconds(error);
       setRateLimitCooldown(seconds);
-      setMessage(tooManyAttemptsMessage(seconds));
+      showMessage(tooManyAttemptsMessage(seconds), "danger");
       return;
     }
-    setMessage(getApiErrorMessage(error));
+    showMessage(getApiErrorMessage(error), "danger");
   }
 
   async function requestCode(resend = false) {
@@ -249,18 +210,17 @@ export default function Login() {
         ? !isValidEmailIdentifier(identifier)
         : !isValidPhoneIdentifier(identifier)
     ) {
-      setMessage(identifierInvalidMessage);
+      showMessage(identifierInvalidMessage, "danger");
       return;
     }
     setBusyAction("otp");
     setAccountLocked(false);
     try {
-      const result = await requestOtp(identifier);
-      void sanitizeOtpCode(result.devOtp ?? "");
+      await requestOtp(identifier);
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setStage("otp");
       setCode("");
-      setMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }));
+      showMessage(t(resend ? "auth.freshCodeSent" : "auth.codeSent", { identifier }), "success");
       setRateLimitCooldown(0);
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS);
     } catch (error) {
@@ -272,7 +232,7 @@ export default function Login() {
 
   async function submitOtp(overrideCode?: string) {
     const identifier = selectedIdentifier();
-    const nextCode = sanitizeOtpCode(overrideCode ?? code);
+    const nextCode = sanitizeOtpValue(overrideCode ?? code);
     if (verifyingRef.current || accountLocked || rateLimitCooldown > 0 || nextCode.length !== 6) {
       return;
     }
@@ -280,7 +240,7 @@ export default function Login() {
     setBusyAction("otp");
     try {
       await verifyOtp(identifier, nextCode);
-      setMessage(t("auth.signedIn"));
+      showMessage(t("auth.signedIn"), "success");
     } catch (error) {
       handleOtpError(error);
     } finally {
@@ -298,7 +258,7 @@ export default function Login() {
   }
 
   function handleOtpChange(value: string) {
-    const nextCode = sanitizeOtpCode(value);
+    const nextCode = sanitizeOtpValue(value);
     setCode(nextCode);
     if (nextCode.length === 6) {
       Keyboard.dismiss();
@@ -306,82 +266,8 @@ export default function Login() {
     }
   }
 
-  async function handleAppleSignIn() {
-    setBusyAction("apple");
-    setMessage("");
-    try {
-      const available = await AppleAuthentication.isAvailableAsync();
-      if (!available) {
-        setMessage(t("auth.appleUnavailable"));
-        return;
-      }
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-      if (!credential.identityToken) {
-        setMessage(t("auth.appleNoToken"));
-        return;
-      }
-      const fullName = [
-        credential.fullName?.givenName,
-        credential.fullName?.middleName,
-        credential.fullName?.familyName,
-      ]
-        .filter(Boolean)
-        .join(" ");
-      await signInWithApple(credential.identityToken, fullName || undefined);
-      setMessage(t("auth.signedIn"));
-    } catch (error) {
-      if (isCanceledAuthError(error)) return;
-      setMessage(
-        error instanceof ApiError && error.status === 501
-          ? t("auth.appleComingSoon")
-          : getApiErrorMessage(error),
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setBusyAction("google");
-    setMessage("");
-    try {
-      await configureGoogleSignIn();
-      const module = await getGoogleSigninModule();
-      if (!module) {
-        setMessage(t("auth.googleUnavailable"));
-        return;
-      }
-      if (Platform.OS === "android") {
-        await module.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      }
-      const response = await module.GoogleSignin.signIn();
-      if (response.type !== "success") return;
-      const idToken = response.data.idToken ?? (await module.GoogleSignin.getTokens()).idToken;
-      if (!idToken) {
-        setMessage(t("auth.googleNoToken"));
-        return;
-      }
-      await signInWithGoogle(idToken);
-      setMessage(t("auth.signedIn"));
-    } catch (error) {
-      setMessage(
-        error instanceof ApiError && error.status === 501
-          ? t("auth.googleComingSoon")
-          : getApiErrorMessage(error),
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
   return (
-    <ZookScreen ambient={false} testID="login-screen">
-      <View pointerEvents="none" style={[styles.accentGlow, { backgroundColor: palette.surface.accentSoft }]} />
+    <ZookScreen testID="login-screen">
       <KeyboardAwareScreen
         scrollViewProps={{
           contentInsetAdjustmentBehavior: "never",
@@ -389,10 +275,17 @@ export default function Login() {
         }}
       >
         <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.heroSection}>
-          <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>{t("auth.heroEyebrow")}</Text>
-          <View style={styles.logoRow}>
-            <BrandMark size="lg" />
-            <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
+          <BrandMark size="lg" style={styles.heroMark} />
+          <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
+          <View
+            style={[
+              styles.heroEyebrowPill,
+              { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.soft },
+            ]}
+          >
+            <Text style={[styles.heroEyebrow, { color: palette.accent.base }]}>
+              {t("auth.heroEyebrow")}
+            </Text>
           </View>
           <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{t("auth.heroBody")}</Text>
         </Animated.View>
@@ -427,7 +320,7 @@ export default function Login() {
                       message === t("auth.invalidEmailOnly") ||
                       message === t("auth.invalidMobile")
                     ) {
-                      setMessage("");
+                      clearMessage();
                     }
                   }}
                   onBlur={() => setIdentifierTouched(true)}
@@ -460,7 +353,7 @@ export default function Login() {
                             message === t("auth.invalidEmailOnly") ||
                             message === t("auth.invalidMobile")
                           ) {
-                            setMessage("");
+                            clearMessage();
                           }
                         }}
                         style={[
@@ -535,6 +428,7 @@ export default function Login() {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setStage("identifier");
                     resetOtpState();
+                    clearMessage();
                   }}
                   disabled={busy}
                   variant="secondary"
@@ -545,31 +439,6 @@ export default function Login() {
               </View>
             ) : (
               <>
-                <View style={styles.dividerRow}>
-                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
-                  <Text style={[styles.dividerText, { color: palette.text.tertiary }]}>or continue with</Text>
-                  <View style={[styles.dividerLine, { backgroundColor: palette.border.default }]} />
-                </View>
-                <View style={styles.ssoRow}>
-                  <SsoButton
-                    testID="login-apple"
-                    label="Apple"
-                    mark="A"
-                    busy={busyAction === "apple"}
-                    disabled={busy}
-                    palette={palette}
-                    onPress={() => void handleAppleSignIn()}
-                  />
-                  <SsoButton
-                    testID="login-google"
-                    label="Google"
-                    mark="G"
-                    busy={busyAction === "google"}
-                    disabled={busy}
-                    palette={palette}
-                    onPress={() => void handleGoogleSignIn()}
-                  />
-                </View>
                 <Text style={[styles.legalText, { color: palette.text.tertiary }]}>
                   By continuing you agree to our{" "}
                   <Text
@@ -591,57 +460,40 @@ export default function Login() {
                   </Text>
                   .
                 </Text>
+                {showQaShortcuts ? (
+                  <ZookButton
+                    testID="login-qa-shortcuts"
+                    variant="ghost"
+                    onPress={() => router.push("/qa" as never)}
+                  >
+                    QA shortcuts
+                  </ZookButton>
+                ) : null}
               </>
             )}
           </Card>
         </Animated.View>
 
-        {message ? <Text testID="login-message" style={[styles.messageText, { color: palette.text.secondary }]}>{message}</Text> : null}
+        {message ? (
+          <Text
+            testID="login-message"
+            style={[
+              styles.messageText,
+              {
+                color:
+                  messageTone === "danger"
+                    ? palette.feedback.danger
+                    : messageTone === "success"
+                      ? palette.feedback.success
+                      : palette.text.secondary,
+              },
+            ]}
+          >
+            {message}
+          </Text>
+        ) : null}
       </KeyboardAwareScreen>
     </ZookScreen>
-  );
-}
-
-function SsoButton({
-  busy,
-  disabled,
-  label,
-  mark,
-  onPress,
-  palette,
-  testID,
-}: {
-  busy: boolean;
-  disabled: boolean;
-  label: string;
-  mark: string;
-  onPress: () => void;
-  palette: Palette;
-  testID?: string;
-}) {
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.ssoButton,
-        { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
-        pressed && !disabled ? { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base } : null,
-        disabled ? styles.ssoButtonDisabled : null,
-      ]}
-    >
-      {busy ? (
-        <ActivityIndicator size="small" color={palette.text.primary} />
-      ) : (
-        <Text style={[styles.ssoMark, { color: palette.text.primary }]}>{mark}</Text>
-      )}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} style={[styles.ssoLabel, { color: palette.text.primary }]}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -653,35 +505,36 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     gap: 16,
   },
-  accentGlow: {
-    borderRadius: 999,
-    height: 360,
-    opacity: 0.8,
-    position: "absolute",
-    right: -140,
-    top: -96,
-    width: 360,
-  },
   heroSection: {
-    gap: 8,
+    alignItems: "center",
+    gap: spacing.sm,
     position: "relative",
-    paddingVertical: 12,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  heroMark: {
+    width: 72,
+    height: 72,
+    marginBottom: spacing.xs,
+  },
+  heroEyebrowPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   heroEyebrow: {
     ...typography.eyebrow,
-  },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginTop: -4,
+    letterSpacing: 1,
   },
   heroTitle: {
-    ...typography.screenTitle,
+    ...typography.display,
   },
   heroBody: {
     ...typography.body,
-    marginTop: 8,
+    textAlign: "center",
+    maxWidth: 300,
+    marginTop: 2,
   },
   formCard: {
     borderRadius: 24,
@@ -728,60 +581,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 132,
   },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    ...typography.caption,
-  },
-  ssoRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  ssoButton: {
-    flex: 1,
-    minHeight: 48,
-    borderCurve: "continuous",
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  ssoButtonDisabled: {
-    opacity: 0.6,
-  },
-  ssoMark: {
-    width: 18,
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 16,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  ssoLabel: {
-    ...typography.button,
-  },
   legalText: {
     ...typography.caption,
     textAlign: "center",
   },
   legalLink: {
     fontFamily: "Inter_700Bold",
-  },
-  busyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  busyText: {
-    ...typography.button,
   },
   messageText: {
     ...typography.body,

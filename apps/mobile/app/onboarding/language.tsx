@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -16,12 +16,9 @@ type LanguageOption = {
 };
 
 const languageOptions: LanguageOption[] = [
-  { value: "system", label: "Use device language", caption: "Match your phone settings" },
   { value: "en", label: "English", caption: "English" },
   { value: "hi", label: "हिंदी", caption: "Hindi" },
 ];
-
-const comingSoonLanguages = ["தமிழ்", "తెలుగు", "ಕನ್ನಡ", "मराठी", "বাংলা"];
 
 export default function OnboardingLanguageStep() {
   const router = useRouter();
@@ -35,7 +32,7 @@ export default function OnboardingLanguageStep() {
     setBusy(true);
     try {
       await setLocalePreference(selected);
-      router.push("/onboarding/value-props" as never);
+      router.replace("/onboarding/value-props" as never);
     } catch {
       showToast({
         title: "Couldn't save language",
@@ -96,21 +93,6 @@ export default function OnboardingLanguageStep() {
           })}
         </View>
 
-        <View style={styles.comingSoon}>
-          <Text style={[styles.comingSoonHeader, { color: palette.text.secondary }]}>More languages on the way</Text>
-          <View style={styles.comingSoonChips}>
-            {comingSoonLanguages.map((name) => (
-              <View
-                key={name}
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-                style={[styles.comingSoonChip, { backgroundColor: palette.bg.elevated, borderColor: palette.border.subtle }]}
-              >
-                <Text style={[styles.comingSoonChipText, { color: palette.text.tertiary }]}>{name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -129,7 +111,7 @@ export default function OnboardingLanguageStep() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   content: {
     flexGrow: 1,
@@ -180,29 +162,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     lineHeight: 18,
-  },
-  comingSoon: {
-    gap: 10,
-  },
-  comingSoonHeader: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  comingSoonChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  comingSoonChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  comingSoonChipText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
   },
   footer: {
     gap: 12,

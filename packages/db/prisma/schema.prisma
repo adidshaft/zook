@@ -141,9 +141,15 @@ enum PaymentPurpose {
   SAAS_BILLING
   MEMBERSHIP
   SHOP_ORDER
+  CLASS_BOOKING
   PERSONAL_TRAINING
   OTHER
   MANUAL_ADJUSTMENT
+}
+
+enum ExerciseTemplateScope {
+  ORG
+  TRAINER
 }
 
 enum PaymentEventStatus {
@@ -448,7 +454,35 @@ enum SaaSTier {
 
 enum SaaSBillingCycle {
   MONTHLY
+  SEMIANNUAL
   YEARLY
+}
+
+enum RewardLedgerKind {
+  GYM_TO_ZOOK_CASH
+  MEMBER_TO_GYM_CASH
+  GYM_TO_ZOOK_DAYS
+  MEMBER_TO_GYM_DAYS
+}
+
+enum RewardLedgerSource {
+  PLATFORM
+  ORG
+}
+
+enum RewardLedgerStatus {
+  PENDING
+  QUALIFIED
+  PAYABLE
+  PAID
+  REVERSED
+}
+
+enum RewardWithdrawalStatus {
+  REQUESTED
+  PAID
+  REJECTED
+  CANCELLED
 }
 
 enum ContentModerationKind {
@@ -1648,6 +1682,9 @@ model ReferralPolicy {
   referralCodeExpiryDays Int      @default(90)
   trainerReferralEnabled Boolean  @default(true)
   staffReferralEnabled   Boolean  @default(false)
+  trainerRewardType      String   @default("DAYS")
+  trainerRewardValue     Int      @default(7)
+  memberGymReferralRewardPaise Int @default(0)
   updatedById            String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
@@ -1687,17 +1724,98 @@ model ReferralReward {
   @@index([referralCodeId])
 }
 
+model UserRewardWallet {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  balancePaise Int      @default(0)
+  currency     String   @default("INR")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model RewardLedgerEntry {
+  id             String             @id @default(cuid())
+  userId         String
+  kind           RewardLedgerKind
+  source         RewardLedgerSource
+  fundingOrgId   String?
+  referredOrgId  String?
+  referredUserId String?
+  amountPaise    Int
+  status         RewardLedgerStatus @default(PENDING)
+  qualifiedAt    DateTime?
+  payableAt      DateTime?
+  paidAt         DateTime?
+  reversedAt     DateTime?
+  payoutId       String?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, kind, referredOrgId])
+  @@unique([userId, kind, referredUserId])
+  @@index([userId, status])
+  @@index([source, fundingOrgId, status])
+  @@index([referredOrgId])
+  @@index([referredUserId])
+  @@index([payoutId])
+}
+
+model RewardWithdrawal {
+  id             String                 @id @default(cuid())
+  userId         String
+  amountPaise    Int
+  currency       String                 @default("INR")
+  status         RewardWithdrawalStatus @default(REQUESTED)
+  requestedAt    DateTime               @default(now())
+  reviewedById   String?
+  reviewedAt     DateTime?
+  paidAt         DateTime?
+  paidMethod     String?
+  paidNote       String?
+  proofFileAssetId String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId, status])
+  @@index([status, requestedAt])
+}
+
+model GymReview {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  rating    Int
+  body      String?
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([orgId, status, createdAt])
+  @@index([userId])
+}
+
 model OrgReferralPartnership {
   id                     String   @id @default(cuid())
   sourceOrgId            String
   targetOrgId            String
+  referrerUserId         String?
+  referrerRole           Role?
+  referrerOrgId          String?
+  code                   String?
   referralPolicySnapshot Json
   status                 String   @default("active")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
   @@unique([sourceOrgId, targetOrgId])
+  @@unique([referrerUserId, targetOrgId])
   @@index([targetOrgId, status])
+  @@index([referrerUserId])
+  @@index([code])
 }
 
 model Offer {
@@ -1954,6 +2072,8 @@ model Class {
   description    String?
   classType      String
   maxCapacity    Int
+  pricePaise     Int      @default(0)
+  trainerCommissionBps Int?
   startTime      DateTime
   endTime        DateTime
   recurrenceRule String?
@@ -1970,11 +2090,41 @@ model ClassEnrollment {
   classId     String
   memberId    String
   status      String    @default("confirmed")
+  paymentId   String?
+  paymentSessionId String?
+  paidAt      DateTime?
+  refundPaymentId String?
+  refundedAt  DateTime?
   enrolledAt  DateTime  @default(now())
   cancelledAt DateTime?
 
   @@unique([classId, memberId])
   @@index([memberId, status])
+  @@index([paymentSessionId])
+  @@index([paymentId])
+}
+
+model ExerciseTemplate {
+  id                 String                @id @default(cuid())
+  orgId              String
+  scope              ExerciseTemplateScope
+  createdByUserId    String?
+  name               String
+  muscleGroup        String?
+  equipment          String?
+  defaultSets        Int?
+  defaultReps        Int?
+  defaultRestSeconds Int?
+  tempo              String?
+  notes              String?
+  featured           Boolean               @default(false)
+  active             Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([orgId, scope, createdByUserId, name])
+  @@index([orgId, scope])
+  @@index([orgId, active, featured])
 }
 
 model PlanContent {

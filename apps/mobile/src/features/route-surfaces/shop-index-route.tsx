@@ -14,7 +14,6 @@ import {
   RefreshControl,
   ScrollView,
   type ScrollViewProps,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -29,6 +28,7 @@ import {
   AppHeader,
   MoneySummaryCard,
   ProductCard,
+  ProfileShortcut,
   SearchBar,
   SectionHeader,
   Skeleton,
@@ -36,9 +36,10 @@ import {
   StatusChip,
   ZookButton,
   ZookScreen,
+  type PillTone,
 } from "@/components/primitives";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
-import { formatInr } from "@/lib/formatting";
+import { formatDateTime, formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
   useCreateShopOrder,
@@ -47,18 +48,28 @@ import {
   type ShopOrderRecord,
 } from "@/lib/domains";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
+import { paymentsApi } from "@/lib/domain-api";
 import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { PickupQrCode } from "@/components/primitives/pickup-qr";
 import { getMobileApiMode } from "@/lib/runtime-mode";
+import { shopStyles as styles } from "./shop-index-route.styles";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
+type PersistedCheckoutContext = {
+  checkoutSession: {
+    id: string;
+    provider?: string;
+    checkoutUrl?: string;
+  } | null;
+  order: ShopOrderViewRecord | null;
+};
 type OptimisticShopOrder = Pick<
   ShopOrderRecord,
   "id" | "status" | "pickupCode" | "totalPaise" | "items"
@@ -87,6 +98,15 @@ function iconForCategory(category: Category) {
   if (category === "TOWEL") return "shirt-outline" as const;
   if (category === "SHAKER") return "flask-outline" as const;
   return "nutrition-outline" as const;
+}
+
+function toneForCategory(category: Category): PillTone {
+  if (category === "WATER") return "blue";
+  if (category === "TOWEL") return "amber";
+  if (category === "SHAKER") return "violet";
+  if (category === "PROTEIN_SHAKE") return "lime";
+  if (category === "SUPPLEMENT") return "violet";
+  return "blue";
 }
 
 function checkoutUrl(url: string) {
@@ -148,8 +168,9 @@ export default function Shop() {
     checkoutUrl?: string | string[];
     totalPaise?: string | string[];
     focus?: string | string[];
+    qaBrowse?: string | string[];
   }>();
-  const { activeOrgId, session } = useAuth();
+  const { activeOrgId, session, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState("");
@@ -181,7 +202,8 @@ export default function Shop() {
         : "browse";
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
-  const products = productsQuery.data?.products ?? [];
+  const checkoutContextStoragePrefix = `zook_shop_checkout_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
+  const products = useMemo(() => productsQuery.data?.products ?? [], [productsQuery.data?.products]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -224,12 +246,45 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const recentOrders = (ordersQuery.data?.orders ?? []).slice(0, 3);
+  // Called unconditionally (before any state-based early return) to keep hook order stable.
+  const contentPaddingBottom = useBottomScrollPadding({ hasStickyAction: itemCount > 0 });
   const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
   const urlOrderId = firstParam(params.orderId);
   const urlSessionId = firstParam(params.sessionId);
   const urlProvider = firstParam(params.provider);
   const urlCheckoutUrl = firstParam(params.checkoutUrl);
   const urlTotalPaise = Number(firstParam(params.totalPaise) ?? 0);
+  const qaBrowse = firstParam(params.qaBrowse) === "1";
+  const checkoutContextStorageKey = urlOrderId
+    ? `${checkoutContextStoragePrefix}_${urlOrderId}`
+    : order?.id
+      ? `${checkoutContextStoragePrefix}_${order.id}`
+      : null;
+
+  useEffect(() => {
+    if (!qaBrowse) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      await deleteStoredValue(cartStorageKey);
+      if (order?.id) {
+        await deleteStoredValue(`${checkoutContextStoragePrefix}_${order.id}`);
+      }
+      if (cancelled) {
+        return;
+      }
+      setCart({});
+      setOrder(null);
+      setCheckoutSession(null);
+      setWaitingCheckoutSessionId(null);
+      router.replace("/shop" as never);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cartStorageKey, checkoutContextStoragePrefix, order?.id, qaBrowse, router]);
 
   useEffect(() => {
     if (!urlOrderId || checkoutState !== "pickup") {
@@ -356,10 +411,59 @@ export default function Shop() {
     });
   }, [urlCheckoutUrl, urlProvider, urlSessionId]);
 
+  useEffect(() => {
+    if (!urlOrderId || !checkoutContextStorageKey) {
+      return;
+    }
+    let cancelled = false;
+    void getStoredValue(checkoutContextStorageKey).then((stored) => {
+      if (cancelled || !stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as PersistedCheckoutContext;
+        if (!order && parsed.order?.id === urlOrderId) {
+          setOrder(parsed.order);
+        }
+        if (!checkoutSession && parsed.checkoutSession?.id) {
+          setCheckoutSession(parsed.checkoutSession);
+        }
+      } catch {
+        void deleteStoredValue(checkoutContextStorageKey);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutContextStorageKey, checkoutSession, order, urlOrderId]);
+
+  useEffect(() => {
+    if (!checkoutContextStorageKey) {
+      return;
+    }
+    if (!order?.id || order.status !== "PENDING_PAYMENT") {
+      void deleteStoredValue(checkoutContextStorageKey);
+      return;
+    }
+    const payload: PersistedCheckoutContext = {
+      order,
+      checkoutSession,
+    };
+    void setStoredValue(checkoutContextStorageKey, JSON.stringify(payload));
+  }, [checkoutContextStorageKey, checkoutSession, order]);
+
   const refreshShopCheckoutStatus = useCallback(async () => {
     if (!order) return;
     setCheckingCheckoutStatus(true);
     try {
+      if (checkoutSession?.id && token) {
+        await paymentsApi.refreshPaymentSession({
+          token,
+          sessionId: checkoutSession.id,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        });
+      }
       const refreshed = await ordersQuery.refetch();
       const refreshedOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
       if (refreshedOrder && refreshedOrder.status !== "PENDING_PAYMENT") {
@@ -367,6 +471,9 @@ export default function Shop() {
         setCart({});
         setWaitingCheckoutSessionId(null);
         void deleteStoredValue(cartStorageKey);
+        if (checkoutContextStorageKey) {
+          void deleteStoredValue(checkoutContextStorageKey);
+        }
         router.replace(`/shop/pickup/${refreshedOrder.id}` as never);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["shop", "products"] }),
@@ -376,10 +483,26 @@ export default function Shop() {
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["me", "shop-orders"] });
+      showToast({
+        tone: "amber",
+        haptic: "warning",
+        message: "Payment is still pending. Try again in a moment.",
+      });
     } finally {
       setCheckingCheckoutStatus(false);
     }
-  }, [cartStorageKey, order, ordersQuery, queryClient, router]);
+  }, [
+    activeOrgId,
+    cartStorageKey,
+    checkoutContextStorageKey,
+    checkoutSession?.id,
+    order,
+    ordersQuery,
+    queryClient,
+    router,
+    selectedBranchId,
+    token,
+  ]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -435,7 +558,7 @@ export default function Shop() {
         provider: result.session.provider,
         ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
       });
-      showToast({ tone: "success", haptic: "success", message: "Checkout ready." });
+      showToast({ tone: "success", haptic: "success", message: "Checkout created." });
       router.push({
         pathname: "/shop/checkout",
         params: {
@@ -481,8 +604,12 @@ export default function Shop() {
       const refreshed = await ordersQuery.refetch();
       const paidOrder = refreshed.data?.orders.find((candidate) => candidate.id === order.id);
       setOrder(paidOrder ?? { ...order, status: "READY_FOR_PICKUP" });
+      setCheckoutSession(null);
       setCart({});
       void deleteStoredValue(cartStorageKey);
+      if (checkoutContextStorageKey) {
+        void deleteStoredValue(checkoutContextStorageKey);
+      }
       showToast({ tone: "success", haptic: "success", message: "Payment confirmed." });
       router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
     } catch (error) {
@@ -557,6 +684,7 @@ export default function Shop() {
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -566,7 +694,7 @@ export default function Shop() {
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
         ) : null}
-        <Card variant="success" contentStyle={styles.pickupContent}>
+        <Card variant="compact" contentStyle={styles.pickupContent}>
           <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
           <Pressable
             onPress={async () => {
@@ -584,12 +712,13 @@ export default function Shop() {
                 ? `Copy pickup code ${order.pickupCode}`
                 : "Pickup code pending"
             }
+            accessibilityState={{ disabled: !order.pickupCode }}
             disabled={!order.pickupCode}
             hitSlop={6}
           >
             <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
           </Pressable>
-          <StatusChip status={order.status.replace(/_/g, " ")} tone="lime" />
+          <StatusChip status={titleCaseFromCode(order.status)} tone={toneForShopOrderStatus(order.status)} />
         </Card>
         {canShowPickupQr ? (
           <Card variant="compact" contentStyle={styles.pickupQrContent}>
@@ -654,6 +783,7 @@ export default function Shop() {
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -668,7 +798,7 @@ export default function Shop() {
           amount={formatInr(order.totalPaise)}
           rows={[
             { label: "Items", value: `${order.items.length} item${order.items.length === 1 ? "" : "s"}` },
-            { label: "Pickup", value: "Ready at gym desk after payment" },
+            { label: "Pickup", value: "Available at gym desk after payment" },
             { label: "Branch", value: activeOrganization?.name ?? "Selected gym" },
           ]}
           consequence="After payment, Zook creates a pickup code for desk verification. Do not collect without the code."
@@ -682,12 +812,12 @@ export default function Shop() {
           <ListRow
             title={t("shop.getPickupCode")}
             subtitle={t("shop.makeDeskCode")}
-            trailing={<StatusChip status="2" tone="amber" />}
+            trailing={<StatusChip status="2" tone="neutral" />}
           />
           <ListRow
             title={t("shop.collectAtDesk")}
             subtitle={t("shop.showPickupCode")}
-            trailing={<StatusChip status="3" tone="lime" />}
+            trailing={<StatusChip status="3" tone="neutral" />}
           />
           <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
             <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
@@ -719,12 +849,13 @@ export default function Shop() {
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
           leading={headerBackButton}
+          trailing={<ProfileShortcut />}
           chip={
             <View style={styles.headerChipStack}>
               <BranchSelectorChip />
               <StatusChip
                 status={`${itemCount} ${t(itemCount === 1 ? "shop.item" : "shop.items")}`}
-                tone="lime"
+                tone="neutral"
               />
             </View>
           }
@@ -786,7 +917,7 @@ export default function Shop() {
               />
             ))
           ) : (
-            <EmptyState title={t("shop.yourCartEmpty")} body={t("shop.cartEmptyBody")} />
+            <EmptyState icon="cart-outline" title={t("shop.yourCartEmpty")} />
           )}
         </Card>
         <Card variant="compact" contentStyle={styles.totalRow}>
@@ -815,15 +946,11 @@ export default function Shop() {
         accessibilityLabel={t("shop.openMiniCart")}
       >
         <Text style={[styles.miniCartText, { color: palette.text.onAccent }]}>
-          {itemCount} items · {formatInr(totalPaise)}
+          {itemCount} {t(itemCount === 1 ? "shop.item" : "shop.items")} · {formatInr(totalPaise)}
         </Text>
         <Ionicons name="chevron-forward" size={18} color={palette.text.onAccent} />
       </Pressable>
     ) : null;
-
-  const contentPaddingBottom = useBottomScrollPadding({
-    hasStickyAction: Boolean(miniCart),
-  });
 
   return (
     <ShopShell selectedPath="/shop" floatingAction={miniCart} refreshControl={refreshControl} noScroll={true}>
@@ -846,7 +973,13 @@ export default function Shop() {
               name={item.name}
               price={formatInr(item.pricePaise)}
               stock={fulfillmentLabel}
-              tone={item.stock <= 0 ? "red" : lowStock ? "amber" : "lime"}
+              tone={
+                item.stock <= 0
+                  ? "red"
+                  : lowStock
+                    ? "amber"
+                    : toneForCategory(item.category as Category)
+              }
               imageUrl={productImageUrl}
               quantity={cart[item.id] ?? 0}
               icon={iconForCategory(item.category as Category)}
@@ -863,37 +996,63 @@ export default function Shop() {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 12 }}>
             <AppHeader
-              title={t("shop.deskPickup")}
-              subtitle={activeOrganization?.name ?? t("shop.activeGym")}
+              title="Shop"
+              subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
               chip={<BranchSelectorChip />}
+              leading={router.canGoBack() ? headerBackButton : undefined}
               showProfileShortcut={false}
               trailing={
-                <Pressable
-                  testID="shop-open-cart"
-                  onPress={() => router.push("/shop/cart" as never)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("shop.openCart")}
-                  style={[
-                    styles.cartIcon,
-                    {
-                      borderColor: palette.border.subtle,
-                      backgroundColor: palette.bg.elevated,
-                    },
-                  ]}
-                >
-                  <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
-                  {itemCount ? (
-                    <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
-                      <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
-                        {itemCount}
-                      </Text>
-                    </View>
-                  ) : null}
-                </Pressable>
+                <View style={styles.headerActions}>
+                  <ProfileShortcut />
+                  <Pressable
+                    testID="shop-open-cart"
+                    onPress={() => router.push("/shop/cart" as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("shop.openCart")}
+                    style={[
+                      styles.cartIcon,
+                      {
+                        borderColor: palette.border.subtle,
+                        backgroundColor: palette.bg.elevated,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
+                    {itemCount ? (
+                      <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
+                        <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
+                          {itemCount}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                </View>
               }
             />
 
             <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
+
+            {recentOrders.length ? (
+              <Card variant="compact" contentStyle={styles.orderHistoryContent}>
+                <SectionHeader title="Order history" />
+                {recentOrders.map((historyOrder) => (
+                  <ListRow
+                    key={historyOrder.id}
+                    title={`${formatInr(historyOrder.totalPaise)} · ${historyOrder.items.length} ${
+                      historyOrder.items.length === 1 ? "item" : "items"
+                    }`}
+                    subtitle={formatDateTime(historyOrder.createdAt, "Recently", "en-IN")}
+                    onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
+                    trailing={
+                      <StatusChip
+                        status={titleCaseFromCode(historyOrder.status)}
+                        tone={toneForShopOrderStatus(historyOrder.status)}
+                      />
+                    }
+                  />
+                ))}
+              </Card>
+            ) : null}
 
             <ScrollView
               horizontal
@@ -990,7 +1149,7 @@ export default function Shop() {
         }
         ListEmptyComponent={
           !productsQuery.isLoading && cartHydrated && !productsQuery.isError && !filteredProducts.length ? (
-            <EmptyState title={t("shop.noProductsFound")} body={t("shop.noProductsFoundBody")} />
+            <EmptyState icon="storefront-outline" title={t("shop.noProductsFound")} />
           ) : null
         }
         showsVerticalScrollIndicator={false}
@@ -1017,7 +1176,7 @@ function BrowserReturnCard({
           Continue in browser
         </Text>
         <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-          Come back after payment. We will refresh your order status automatically.
+          Come back after payment. Zook refreshes your order status automatically.
         </Text>
       </View>
       <ZookButton
@@ -1110,241 +1269,3 @@ function ShopShell({
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  scroller: {
-    flex: 1,
-  },
-  content: {
-    width: "100%",
-    maxWidth: layout.contentWidth + layout.screenPadding * 2,
-    alignSelf: "center",
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: 20,
-    gap: 12,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerChipStack: {
-    alignSelf: "flex-start",
-    gap: 6,
-  },
-  browserReturnContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    flexWrap: "wrap",
-  },
-  browserReturnCopy: {
-    flex: 1,
-    minWidth: 190,
-    gap: 4,
-  },
-  browserReturnTitle: {
-    ...typography.cardTitle,
-  },
-  browserReturnBody: {
-    ...typography.body,
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  cartBadgeText: {
-    ...typography.navLabel,
-  },
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    columnGap: 10,
-    rowGap: 12,
-  },
-  productCard: {
-    flex: 1,
-    maxWidth: "48.5%",
-    height: 206,
-  },
-  columnWrapper: {
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  categoryRail: {
-    gap: 8,
-    paddingRight: layout.screenPadding,
-  },
-  categoryChip: {
-    minHeight: 40,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  categoryChipPressed: {
-    opacity: 0.84,
-  },
-  categoryChipActive: {},
-  categoryChipText: {
-    ...typography.caption,
-  },
-  categoryChipTextActive: {},
-  categoryCount: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  categoryCountActive: {},
-  categoryCountText: {
-    fontSize: 10,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 12,
-  },
-  categoryCountTextActive: {},
-  miniCart: {
-    minHeight: 54,
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  miniCartText: {
-    flexShrink: 1,
-    minWidth: 0,
-    ...typography.button,
-  },
-  floatingAction: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    zIndex: 35,
-  },
-  stack: {
-    gap: 10,
-  },
-  stateCardContent: {
-    padding: 0,
-  },
-  productSkeleton: {
-    gap: spacing.sm,
-    padding: 12,
-  },
-  skeletonFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  cartLineTrailing: {
-    alignItems: "flex-end",
-    gap: spacing.xs,
-  },
-  cartLinePrice: {
-    ...typography.caption,
-  },
-  cartStepper: {
-    minHeight: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  cartStepperButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartStepperButtonPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.96 }],
-  },
-  cartStepperDisabled: {
-    opacity: 0.35,
-  },
-  cartQuantity: {
-    minWidth: 22,
-    textAlign: "center",
-    ...typography.caption,
-  },
-  cardBody: {
-    ...typography.body,
-  },
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  totalText: {
-    ...typography.metric,
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  actionHalf: {
-    flex: 1,
-    minWidth: 0,
-  },
-  checkoutContent: {
-    gap: 10,
-  },
-  checkoutTotal: {
-    borderTopWidth: 1,
-    paddingTop: 14,
-    marginTop: 4,
-  },
-  pickupContent: {
-    alignItems: "center",
-    gap: 10,
-  },
-  pickupLabel: {
-    ...typography.eyebrow,
-  },
-  pickupCode: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: "Inter_600SemiBold",
-    fontVariant: ["tabular-nums"],
-  },
-  pickupQrContent: {
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  pickupQrTitle: {
-    ...typography.cardTitle,
-    textAlign: "center",
-  },
-  pickupQrCode: {
-    ...typography.caption,
-    fontVariant: ["tabular-nums"],
-  },
-});

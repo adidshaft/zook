@@ -2,8 +2,9 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MemberList } from "@/components/domain/member-list";
+import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
-import { ageLabel } from "../helpers";
+import { formatAgeLabel, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -105,7 +106,6 @@ export function ReceptionMembersScreenBody() {
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
                   title={`${selectedMemberIds.size} member${selectedMemberIds.size === 1 ? "" : "s"} selected`}
-                  subtitle="Record attendance for everyone in one tap."
                 />
                 <FormField
                   testID="reception-bulk-attendance-reason"
@@ -141,7 +141,7 @@ export function ReceptionMembersScreenBody() {
                   title="Desk actions"
                   subtitle={
                     member?.name
-                      ? `${member.name} selected · ${ageLabel(member.dateOfBirth)}`
+                      ? `${member.name} selected · ${formatAgeLabel(member.dateOfBirth)}`
                       : "Search or select a member"
                   }
                 />
@@ -149,8 +149,8 @@ export function ReceptionMembersScreenBody() {
                   title="Membership"
                   subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
                   trailing={
-                    <Pill tone={membership?.status === "ACTIVE" ? "lime" : "amber"}>
-                      {membership?.status ?? "No membership"}
+                    <Pill tone={membership ? toneForStatus(membership.status) : "amber"}>
+                      {membership ? titleCaseFromCode(membership.status) : "No membership"}
                     </Pill>
                   }
                 />
@@ -189,7 +189,7 @@ export function ReceptionMembersScreenBody() {
                 ) : null}
               </Card>
             ) : null}
-            <View style={styles.stack}>
+            <View style={[styles.stack, styles.memberListSection]}>
               <MemberList
                 testID="reception-member"
                 searchTestID="reception-member-search"
@@ -199,7 +199,7 @@ export function ReceptionMembersScreenBody() {
                 onRetry={() => void membersQuery.refetch()}
                 searchValue={memberSearch}
                 onSearchChange={setMemberSearch}
-                emptyState={{ title: "No members found", subtitle: "Try a different name or email." }}
+                emptyState={{ title: "No members", subtitle: "Try a different name or email." }}
                 onPressMember={(user) => {
                   if (multiSelectMode) {
                     toggleMemberSelection(user.id);
@@ -209,7 +209,7 @@ export function ReceptionMembersScreenBody() {
                   }
                 }}
                 onRevealPhone={(user) => revealMemberPhone(user.id)}
-                scrollEnabled={false}
+                style={styles.memberList}
               />
               {hiddenMemberCount ? (
                 <Text style={[styles.resultHint, { color: palette.text.tertiary }]}>

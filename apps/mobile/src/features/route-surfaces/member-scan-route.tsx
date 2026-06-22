@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { CameraView, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,7 +12,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -23,6 +22,8 @@ import {
   EmptyState,
   IconBubble,
   AppHeader,
+  type PillTone,
+  ProfileShortcut,
   ScannerFrame,
   useRequestPermissionWithRationale,
   ZookButton,
@@ -35,7 +36,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/domains";
-import { getMobileAppEnv } from "@/lib/runtime-mode";
+import { getMobileAppEnv, isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
   enqueueAttendanceScan,
   getQueuedAttendanceScans,
@@ -43,8 +44,9 @@ import {
   removeQueuedAttendanceScan,
 } from "@/lib/offline-attendance-queue";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { elevation, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { scanStyles as styles } from "./member-scan-route.styles";
 
 type ScanResult = {
   attendance: {
@@ -75,6 +77,13 @@ type AttendanceResultHref = {
   };
 };
 
+function toneForScanState(state: ScanState): PillTone {
+  if (state === "accepted") return "lime";
+  if (state === "checking") return "amber";
+  if (state === "failed") return "red";
+  return "neutral";
+}
+
 const ATTENDANCE_DEVICE_ID_STORAGE_KEY = "zook_attendance_device_id";
 const SCAN_CONFIRMATION_VISIBLE_MS = 420;
 const CHECK_IN_MOMENT_VISIBLE_MS = 1400;
@@ -93,10 +102,9 @@ function CameraActiveBottomNavHider() {
 function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
   const { palette } = useTheme();
   const progress = useRef(new RNAnimated.Value(0)).current;
-  const isIOS = Platform.OS === "ios";
   // Sweep edge-to-edge within the frame with a small inset so the line never
-  // clips the corner brackets. Derived from the real frame size instead of a
-  // magic constant so it always spans the full scan window.
+  // clips the corner brackets. Derived from the frame size so it spans the
+  // full scan window.
   const travel = Math.max(40, frameSize / 2 - 20);
 
   useEffect(() => {
@@ -143,18 +151,9 @@ function AnimatedLaser({ frameSize = 280 }: { frameSize?: number }) {
     <RNAnimated.View
       style={[
         styles.scanLineRail,
-        isIOS
-          ? { shadowColor: palette.accent.base, shadowOpacity: 0.82 }
-          : styles.scanLineRailAndroid,
         animatedStyle,
       ]}
     >
-      <View
-        style={[
-          styles.scanLineGlow,
-          { backgroundColor: palette.accent.base, opacity: isIOS ? 0.34 : 0.18 },
-        ]}
-      />
       <View style={[styles.scanLineCore, { backgroundColor: palette.accent.base }]} />
     </RNAnimated.View>
   );
@@ -178,8 +177,12 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function compactCheckInCodeInput(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 function normalizeCheckInCode(value: string) {
-  const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const compact = compactCheckInCodeInput(value);
   const match = /^([A-Z]{2})([0-9]{4})$/.exec(compact);
   return match ? `${match[1]}-${match[2]}` : "";
 }
@@ -220,6 +223,8 @@ function readScannedAttendancePayload(
 export default function Scan() {
   const { mode, palette } = useTheme();
   const isDark = mode === "dark";
+  const showDevTestScan =
+    __DEV__ && getMobileAppEnv() === "local" && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const codePlaceholderColor = palette.text.tertiary;
   const cameraBadgeSurface = isDark ? palette.bg.elevated : palette.surface.raised;
   const getVerificationItemStyle = (state: VerificationStep["state"]) => {
@@ -247,6 +252,7 @@ export default function Scan() {
     };
   };
   const router = useRouter();
+  const autoScanParams = useLocalSearchParams<{ autoQrPayload?: string; autoCheckInCode?: string }>();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const memberHomeQuery = useMemberHome();
@@ -267,6 +273,7 @@ export default function Scan() {
   const [replayingQueue, setReplayingQueue] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const completedRef = useRef(false);
+  const autoSubmittedRef = useRef(false);
   const codePrefixRef = useRef<TextInput>(null);
   const codeDigitsRef = useRef<TextInput>(null);
 
@@ -407,7 +414,7 @@ export default function Scan() {
     return false;
   }
 
-  async function replayQueuedScans() {
+  const replayQueuedScans = useCallback(async () => {
     if (!token || replayingQueue) {
       return;
     }
@@ -456,19 +463,19 @@ export default function Scan() {
         showToast({
           tone: "success",
           haptic: "success",
-          message: synced === 1 ? "Saved check-in synced." : `${synced} saved check-ins synced.`,
+          message: synced === 1 ? "Saved check-in confirmed." : `${synced} saved check-ins confirmed.`,
         });
       }
     } finally {
       setReplayingQueue(false);
     }
-  }
+  }, [deviceId, queryClient, replayingQueue, token]);
 
   useEffect(() => {
     if (token) {
       void replayQueuedScans();
     }
-  }, [deviceId, token]);
+  }, [replayQueuedScans, token]);
 
   const hasCamera = cameraPermission.status?.granted;
   const cameraBlocked =
@@ -479,7 +486,7 @@ export default function Scan() {
     const message = cameraBlocked
       ? "Camera access blocked. Open device settings to allow QR scanning."
       : hasCamera
-        ? "Camera ready. Point the camera at your gym QR code."
+        ? "Camera available. Point it at your gym QR code."
         : "Camera permission needed before scanning.";
     AccessibilityInfo.announceForAccessibility(message);
   }, [cameraBlocked, hasCamera, scanMode]);
@@ -494,10 +501,10 @@ export default function Scan() {
         label:
           scanMode === "code"
             ? codeReady
-              ? "Code ready"
+              ? "Code entered"
               : "Enter code"
             : hasCamera
-              ? "Camera ready"
+              ? "Camera available"
               : "Camera needed",
         state: captureComplete ? "complete" : "idle",
       },
@@ -533,6 +540,32 @@ export default function Scan() {
     ];
   }, [codeReady, hasCamera, scanMode, scanState]);
 
+  useFocusEffect(
+    useCallback(() => {
+      resetScan();
+    }, []),
+  );
+
+  // Auto-submit when the screen is reached from a check-in deep link (native
+  // camera scans the gym QR -> universal link -> /checkin -> here). Runs once.
+  useEffect(() => {
+    if (autoSubmittedRef.current || !token) {
+      return;
+    }
+    const qrPayload = autoScanParams.autoQrPayload;
+    const checkInCode = autoScanParams.autoCheckInCode;
+    if (qrPayload) {
+      autoSubmittedRef.current = true;
+      void completeScan(String(qrPayload), "qr");
+    } else if (checkInCode) {
+      const normalized = normalizeCheckInCode(String(checkInCode)) || String(checkInCode);
+      autoSubmittedRef.current = true;
+      void completeScan(normalized, "code");
+    }
+    // completeScan is a stable closure for this purpose; the ref guard prevents re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoScanParams.autoQrPayload, autoScanParams.autoCheckInCode, token]);
+
   async function completeScan(payload: string, kind: "qr" | "code" = "qr") {
     if (completedRef.current) {
       return;
@@ -552,7 +585,7 @@ export default function Scan() {
           .toUpperCase()
           .includes("EXPIRED") ||
           (typeof activeMembership?.daysLeft === "number" && activeMembership.daysLeft <= 0));
-      if (membershipExpired) {
+      if (membershipExpired && !memberHomeQuery.isFetching) {
         throw new Error("Membership expired. Renew before checking in.");
       }
       const result = await attendanceApi.scan<ScanResult>({
@@ -690,7 +723,7 @@ export default function Scan() {
   }
 
   function handlePrefixChange(value: string) {
-    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const compact = compactCheckInCodeInput(value);
     const letters = compact.replace(/[^A-Z]/g, "").slice(0, 2);
     const digits = compact.replace(/[^0-9]/g, "").slice(0, 4);
     setCodePrefix(letters);
@@ -703,7 +736,7 @@ export default function Scan() {
   }
 
   function handleDigitsChange(value: string) {
-    const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const compact = compactCheckInCodeInput(value);
     const pastedMatch = /^([A-Z]{2})([0-9]{1,4})$/.exec(compact);
     if (pastedMatch) {
       setCodePrefix(pastedMatch[1] ?? "");
@@ -743,9 +776,12 @@ export default function Scan() {
           }}
         >
           <AppHeader
-            title="Scan Gym QR"
+            title="Scan to check in"
             contextSlot={<RoleSwitcherChip />}
-            subtitle="Server-authoritative check-in for your active gym"
+            subtitle="Point your camera at the QR code at your gym"
+            showBack
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+            trailing={<ProfileShortcut />}
             showProfileShortcut={false}
           />
 
@@ -815,7 +851,7 @@ export default function Scan() {
                       body={
                         cameraBlocked
                           ? "Open device settings to allow QR scanning."
-                          : "Allow camera access when you are ready to scan the gym QR."
+                          : "Allow camera access to scan the gym QR."
                       }
                     />
                     <ZookButton
@@ -836,7 +872,7 @@ export default function Scan() {
                   </View>
                 )}
                 <View pointerEvents="none" style={styles.scannerOverlay}>
-                  <ScannerFrame size={280} tone={scanState === "failed" ? "red" : "lime"}>
+                  <ScannerFrame size={280} tone={toneForScanState(scanState)}>
                     <AnimatedLaser frameSize={280} />
                   </ScannerFrame>
                 </View>
@@ -978,6 +1014,7 @@ export default function Scan() {
             </Card>
           )}
 
+          {scanState !== "idle" || cameraBlocked || (scanMode === "scan" && !hasCamera) ? (
           <Card variant="compact" contentStyle={styles.validationContent}>
             {verificationSteps.map((item) => (
               <View
@@ -1014,6 +1051,7 @@ export default function Scan() {
               </View>
             ))}
           </Card>
+          ) : null}
 
           {errorMessage ? (
             <Card variant="warning" contentStyle={styles.errorContent}>
@@ -1054,7 +1092,7 @@ export default function Scan() {
                 variant="secondary"
                 icon="refresh-outline"
                 busy={replayingQueue}
-                busyLabel="Syncing"
+                busyLabel="Saving"
                 style={styles.retryButton}
               >
                 Retry now
@@ -1062,16 +1100,16 @@ export default function Scan() {
             </Card>
           ) : null}
 
-          {__DEV__ && getMobileAppEnv() === "local" ? (
+          {showDevTestScan ? (
             <Pressable
-              testID="scan-dev-sample"
+              testID="scan-dev-test"
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
-              accessibilityLabel="Use sample data"
+              accessibilityLabel="Try check-in"
               style={styles.devLink}
             >
               <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>
-                Use sample data
+                Try check-in
               </Text>
             </Pressable>
           ) : null}
@@ -1126,308 +1164,35 @@ function CheckInMoment({
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onDone}>
-      <View style={styles.checkInMomentBackdrop}>
+      <View style={[styles.checkInMomentBackdrop, { backgroundColor: palette.bg.overlay }]}>
         <RNAnimated.View style={[styles.checkInMomentContent, { opacity, transform: [{ scale }] }]}>
-          <View style={[styles.checkInMomentTick, { backgroundColor: palette.accent.base }]}>
+          <View
+            style={[
+              styles.checkInMomentTick,
+              { backgroundColor: palette.accent.base },
+              Platform.OS === "android"
+                ? elevation(6, palette.accent.base, {
+                    elevation: 6,
+                    shadowOpacity: 0.24,
+                    shadowRadius: 24,
+                    shadowOffset: { width: 0, height: 8 },
+                  })
+                : {
+                    shadowColor: palette.accent.base,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.28,
+                    shadowRadius: 24,
+                  },
+            ]}
+          >
             <Ionicons name="checkmark" size={58} color={palette.text.onAccent} />
           </View>
-          <Text style={styles.checkInMomentGym} numberOfLines={1}>{gymName}</Text>
-          <Text style={styles.checkInMomentTitle}>Checked in</Text>
+          <Text style={[styles.checkInMomentGym, { color: palette.text.secondary }]} numberOfLines={1}>
+            {gymName}
+          </Text>
+          <Text style={[styles.checkInMomentTitle, { color: palette.text.primary }]}>Checked in</Text>
         </RNAnimated.View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    width: "100%",
-    maxWidth: layout.contentWidth,
-    alignSelf: "center",
-    paddingTop: 20,
-    paddingBottom: layout.bottomNavContentPadding,
-    gap: 12,
-  },
-  validationContent: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    padding: 12,
-  },
-  validationItem: {
-    minHeight: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  validationText: {
-    ...typography.caption,
-  },
-  cameraCard: {
-    minHeight: 430,
-    borderRadius: 28,
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  camera: {
-    flex: 1,
-  },
-  cameraFallback: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  cameraFallbackTitle: {
-    ...typography.cardTitle,
-  },
-  cameraFallbackText: {
-    ...typography.small,
-  },
-  permissionButton: {
-    minHeight: 44,
-    marginTop: spacing.xs,
-  },
-  blockedPermissionContent: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  blockedPermissionCopy: {
-    flex: 1,
-    gap: 4,
-    minWidth: 180,
-  },
-  permissionRecoveryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    width: "100%",
-  },
-  permissionRecoveryAction: {
-    flex: 1,
-    minWidth: 132,
-  },
-  errorContent: {
-    gap: spacing.sm,
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  errorText: {
-    flex: 1,
-    ...typography.small,
-  },
-  retryButton: {
-    minHeight: 40,
-  },
-  scannerOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cameraBadge: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 14,
-    minHeight: 34,
-    borderRadius: 17,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  cameraBadgeText: {
-    ...typography.caption,
-  },
-  scanLineRail: {
-    width: 248,
-    height: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  scanLineRailAndroid: {
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  scanLineGlow: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 18,
-    borderRadius: 999,
-  },
-  scanLineCore: {
-    width: "100%",
-    height: 4,
-    borderRadius: 999,
-    opacity: 0.96,
-  },
-  helpContent: {
-    minHeight: 74,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  helpCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  helpTitle: {
-    ...typography.cardTitle,
-  },
-  helpBody: {
-    ...typography.small,
-  },
-  manualCodeLink: {
-    minHeight: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  linkPressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.98 }],
-  },
-  manualCodeLinkText: {
-    ...typography.caption,
-  },
-  scanHint: {
-    textAlign: "center",
-    ...typography.small,
-  },
-  codeContent: {
-    padding: 12,
-    gap: spacing.sm,
-  },
-  codeHeader: {
-    gap: 4,
-  },
-  codeTitle: {
-    ...typography.cardTitle,
-  },
-  codeHint: {
-    ...typography.small,
-  },
-  codeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  codeInput: {
-    minHeight: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    textAlign: "center",
-    ...typography.bodyStrong,
-  },
-  codePrefixInput: {
-    width: 74,
-    letterSpacing: 1.4,
-  },
-  codeDigitsInput: {
-    flex: 1,
-    letterSpacing: 2,
-  },
-  codeDivider: {
-    ...typography.cardTitle,
-  },
-  codeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  codeButtonDisabled: {
-    opacity: 0.45,
-  },
-  checkingText: {
-    ...typography.small,
-  },
-  checkingDot: {},
-  backToScannerLink: {
-    alignSelf: "center",
-    minHeight: 44,
-    borderRadius: 22,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-  },
-  devLink: {
-    alignSelf: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  devLinkText: {
-    textDecorationLine: "underline",
-    ...typography.caption,
-  },
-  codeValidationHint: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    marginTop: 6,
-    paddingLeft: 4,
-  },
-  checkInMomentBackdrop: {
-    alignItems: "center",
-    backgroundColor: "rgba(17,21,15,0.94)",
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.xl,
-  },
-  checkInMomentContent: {
-    alignItems: "center",
-    gap: spacing.md,
-    maxWidth: layout.contentWidth,
-    width: "100%",
-  },
-  checkInMomentTick: {
-    alignItems: "center",
-    borderRadius: 999,
-    height: 104,
-    justifyContent: "center",
-    shadowColor: "#8DFF9A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
-    width: 104,
-  },
-  checkInMomentGym: {
-    color: "#DDE8D8",
-    maxWidth: "86%",
-    textAlign: "center",
-    ...typography.title,
-  },
-  checkInMomentTitle: {
-    color: "#FFFFFF",
-    textAlign: "center",
-    ...typography.display,
-  },
-});

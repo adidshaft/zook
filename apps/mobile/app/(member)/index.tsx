@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
+
 import {
   Card,
   AnimatedAppear,
@@ -19,33 +21,24 @@ import {
   QueryErrorState,
   ScreenHeader,
   StatStrip,
-  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HomeSkeleton } from "@/components/skeletons";
 import { Banners } from "@/features/member/home/banners";
+import { ClassesStrip } from "@/features/member/home/classes-strip";
+import { CoachingStrip } from "@/features/member/home/coaching-strip";
 import { renderHomeCard } from "@/features/member/home/render";
 import { deriveHomeState } from "@/features/member/home/state";
 import { useAuth } from "@/lib/auth";
 import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { formatCompactMinutes, formatElapsedTimer } from "@/lib/formatting";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
-
-function formatDuration(totalSeconds: number) {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
 
 function secondsSince(value: string) {
   const startedAt = new Date(value).getTime();
@@ -78,9 +71,9 @@ function ActiveCheckInCard({
   }, [activeCheckIn.checkedInAt]);
 
   return (
-    <Card glow contentStyle={styles.activeSessionCard}>
+    <Card contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
-        <IconBubble icon="time-outline" tone="lime" size={42} />
+        <IconBubble icon="time-outline" tone="blue" size={42} />
         <View style={styles.activeSessionCopy}>
           <Text style={[styles.activeSessionLabel, { color: palette.text.secondary }]}>
             Active check-in
@@ -91,7 +84,7 @@ function ActiveCheckInCard({
         </View>
       </View>
       <Text style={[styles.activeSessionTimer, { color: palette.accent.base }]}>
-        {formatDuration(elapsedSeconds)}
+        {formatElapsedTimer(elapsedSeconds)}
       </Text>
       <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
         Re-scan the branch QR to check out, or stop it here.
@@ -108,65 +101,65 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
   const { palette } = useTheme();
   const membership = home?.activeMembership;
   const organization = home?.activeOrganization;
-  const plan = home?.activePlan;
   const daysLeft = membership?.daysLeft;
   const visitsLeft = membership?.remainingVisits;
+  const hasMembership = Boolean(membership);
   const isExpired =
-    !membership ||
-    String(membership.status ?? "").toLowerCase().includes("expired") ||
-    (typeof daysLeft === "number" && daysLeft <= 0);
-  const statusLabel = isExpired ? "Renewal needed" : "Access active";
-  const detail =
-    [
-      typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
-      typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ") || "Membership synced with desk";
+    hasMembership &&
+    (String(membership?.status ?? "").toLowerCase().includes("expired") ||
+      (typeof daysLeft === "number" && daysLeft <= 0));
+  const needsAction = !hasMembership || isExpired;
+  const statusLabel = !hasMembership
+    ? "No active membership"
+    : isExpired
+      ? "Renewal needed"
+      : "Access active";
+  const detail = !hasMembership
+    ? "Browse plans to start training here"
+    : [
+        typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
+        typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || "Membership active";
 
   return (
     <Card
-      semanticSurface={isExpired ? "warningCard" : "successCard"}
+      semanticSurface={needsAction ? "warningCard" : undefined}
+      variant="compact"
       contentStyle={styles.membershipCard}
-      accessibilityLabel={`${statusLabel}. ${plan?.name ?? "Membership"}. ${detail}. ${organization?.name ?? "Gym"}.`}
+      pressable={!needsAction}
+      onPress={!needsAction ? () => router.push("/membership" as never) : undefined}
+      accessibilityLabel={`${statusLabel}. ${detail}. ${organization?.name ?? "Gym"}.`}
     >
       <View style={styles.membershipTop}>
         <IconBubble
-          icon={isExpired ? "warning-outline" : "shield-checkmark-outline"}
-          tone={isExpired ? "amber" : "lime"}
-          size={44}
+          icon={!hasMembership ? "card-outline" : isExpired ? "warning-outline" : "shield-checkmark-outline"}
+          tone={needsAction ? "amber" : "lime"}
+          size={40}
         />
         <View style={styles.membershipCopy}>
           <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
             Membership access
           </Text>
           <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
-            {plan?.name ?? "Active membership"}
+            {statusLabel}
           </Text>
           <Text style={[styles.membershipMeta, { color: palette.text.secondary }]}>
-            {organization?.name ?? "Your gym"} · {detail}
+            {detail}
           </Text>
         </View>
-        <StatusChip status={statusLabel} tone={isExpired ? "amber" : "lime"} />
+        {needsAction ? null : <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />}
       </View>
-      <View style={styles.membershipActions}>
-        <ZookButton
-          onPress={() => router.push("/scan" as never)}
-          icon="qr-code-outline"
-          style={styles.membershipAction}
-          variant={isExpired ? "secondary" : "primary"}
-        >
-          Scan QR
-        </ZookButton>
+      {needsAction ? (
         <ZookButton
           onPress={() => router.push("/membership" as never)}
-          icon={isExpired ? "card-outline" : "receipt-outline"}
-          variant="secondary"
-          style={styles.membershipAction}
+          icon="card-outline"
+          fullWidth
         >
-          {isExpired ? "Renew" : "Details"}
+          {hasMembership ? "Renew membership" : "Get membership"}
         </ZookButton>
-      </View>
+      ) : null}
     </Card>
   );
 }
@@ -184,7 +177,8 @@ export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const streakDays = home?.streakDays ?? 0;
   const weeklyVisits = countThisWeek(home?.recentAttendance ?? []);
-  const activeMinutes = Math.round((trackingQuery.data?.summary.totalDuration ?? 0) / 60);
+  // summary.totalDuration is already in minutes (backend sums durationMinutes).
+  const activeMinutes = Math.round(trackingQuery.data?.summary.totalDuration ?? 0);
   const workoutsLogged = trackingQuery.data?.summary.weeklyCount ?? 0;
   const habitsDone = trackingQuery.data?.habits.length ?? 0;
 
@@ -211,11 +205,12 @@ export default function HomeScreen() {
         >
           <ScreenHeader
             title={`Hello, ${firstName}`}
-            contextSlot={<RoleSwitcherContextPill />}
             trailing={<ProfileShortcut />}
             meta={
               streakDays > 0 ? (
-                <HeaderMeta icon="flame">{streakDays}-day streak</HeaderMeta>
+                <HeaderMeta icon="flame" tone="accent">
+                  {streakDays}-day streak
+                </HeaderMeta>
               ) : null
             }
             scrollY={scrollY}
@@ -241,6 +236,12 @@ export default function HomeScreen() {
               ) : null}
               <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
               <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
+                <ClassesStrip />
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 140 : 100}>
+                <CoachingStrip />
+              </AnimatedAppear>
+              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open progress"
@@ -249,15 +250,15 @@ export default function HomeScreen() {
                 >
                   <StatStrip
                     items={[
-                      { label: "Visits", value: String(weeklyVisits), icon: "walk-outline" },
-                      { label: "Active", value: formatMinutes(activeMinutes), icon: "time-outline" },
-                      { label: "Workouts", value: String(workoutsLogged), icon: "barbell-outline" },
-                      { label: "Habits", value: String(habitsDone), icon: "checkmark-circle-outline" },
+                      { label: "Visits", value: String(weeklyVisits) },
+                      { label: "Active", value: formatCompactMinutes(activeMinutes) },
+                      { label: "Workouts", value: String(workoutsLogged) },
+                      { label: "Habits", value: String(habitsDone) },
                     ]}
                   />
                 </Pressable>
               </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
+              <AnimatedAppear delay={activeCheckIn ? 200 : 160}>
                 <Banners home={home} />
               </AnimatedAppear>
             </>
@@ -285,22 +286,13 @@ function countThisWeek(records: Array<{ checkedInAt?: string | null }>) {
   }).length;
 }
 
-function formatMinutes(minutes: number) {
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  return remaining ? `${hours}h${remaining}m` : `${hours}h`;
-}
-
 const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
     gap: spacing.lg,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 20,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   statStripPressed: {
@@ -356,18 +348,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   membershipTitle: {
-    ...typography.titleSmall,
+    ...typography.cardTitle,
   },
   membershipMeta: {
     ...typography.small,
-  },
-  membershipActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  membershipAction: {
-    flex: 1,
-    minWidth: 132,
   },
 });

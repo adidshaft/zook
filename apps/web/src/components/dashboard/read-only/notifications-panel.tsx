@@ -12,7 +12,7 @@ import type {
   OrganizationSnapshot,
   OrganizationSummary,
 } from "@/components/dashboard/types";
-import type { Permission, Role } from "@zook/core";
+import type { Permission } from "@zook/core";
 import { HelpHint } from "../../ui";
 
 export function NotificationsPanel({
@@ -20,7 +20,6 @@ export function NotificationsPanel({
   organization,
   summary,
   initialNotifications,
-  roles = [],
   permissions = [],
   view = "compose",
 }: {
@@ -28,7 +27,6 @@ export function NotificationsPanel({
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   initialNotifications: NotificationSnapshot[];
-  roles?: Role[];
   permissions?: Permission[];
   view?: "compose" | "templates" | "history";
 }) {
@@ -43,7 +41,7 @@ export function NotificationsPanel({
         initialNotifications={
           initialNotifications.map((notification) => ({
             ...notification,
-            body: notification.body ?? "Message body is syncing. Open history again in a moment.",
+            body: notification.body ?? "Message body unavailable.",
             pushEnabled: Boolean(notification.pushEnabled),
             createdAt:
               typeof notification.createdAt === "string"
@@ -57,7 +55,7 @@ export function NotificationsPanel({
 
   return (
     <div className="grid gap-4">
-      <NotificationComposerPanel orgId={orgId} roles={roles} permissions={permissions} />
+      <NotificationComposerPanel orgId={orgId} permissions={permissions} />
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <GlassCard>
           <SectionHeader
@@ -76,7 +74,7 @@ export function NotificationsPanel({
                 href="/dashboard/notifications/history?status=attention"
                 className="zook-focus rounded-full"
               >
-                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "lime"}>
+                <Pill tone={summary.notificationQueueCount > 0 ? "amber" : "neutral"}>
                   {summary.notificationQueueCount} need attention
                 </Pill>
               </Link>
@@ -86,20 +84,19 @@ export function NotificationsPanel({
             className="mt-5"
             items={[
               {
-                label: "Org status",
+                label: "Gym status",
                 value: formatEnumLabel(organization.status),
-                meta: "Broadcasts respect active org availability",
+                meta: "Messages follow gym availability",
               },
               {
                 label: "Recent sends",
                 value: formatCompactNumber(initialNotifications.length),
-                meta: "Current history in this org snapshot",
+                meta: "Recent notification history",
               },
               {
                 label: "Audience",
-                value:
-                  summary.activeMembers > 0 ? "Live member targeting" : "No active audience yet",
-                meta: "Live member list",
+                value: summary.activeMembers > 0 ? "Member targeting" : "No active audience",
+                meta: "Member list",
               },
               {
                 label: "Escalation load",
@@ -107,7 +104,7 @@ export function NotificationsPanel({
                   summary.pendingAttendanceApprovals > 0
                     ? `${summary.pendingAttendanceApprovals} pending`
                     : "Clear",
-                meta: "Useful for operational notices",
+                meta: "Useful for member messages",
               },
             ]}
             columns={2}
@@ -117,7 +114,6 @@ export function NotificationsPanel({
           <SectionHeader
             eyebrow="Recent Messages"
             title="Recent notifications"
-            description="A quick read on the latest updates sent from this gym."
             action={
               <Link
                 href="/dashboard/notifications/history"
@@ -155,10 +151,7 @@ export function NotificationsPanel({
                 </Link>
               ))
             ) : (
-              <EmptyState
-                title="No notifications sent yet"
-                description="Compose the first update when you are ready to reach members."
-              />
+              <EmptyState title="No notifications sent" />
             )}
           </div>
         </GlassCard>

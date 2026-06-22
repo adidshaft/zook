@@ -9,6 +9,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useEffect, useRef, type ReactNode } from "react";
+import { formatNumber } from "@/lib/format";
 
 const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -164,9 +165,9 @@ export function Counter({
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const rounded = useTransform(spring, (v) => {
-    if (value >= 1000) return Math.round(v).toLocaleString();
+    if (value >= 1000) return formatNumber(Math.round(v));
     if (value % 1 === 0) return Math.round(v).toString();
-    return v.toFixed(1);
+    return formatNumber(v, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
   });
 
   useEffect(() => {
@@ -181,7 +182,10 @@ export function Counter({
     return (
       <span ref={ref} className={className}>
         {prefix}
-        {value.toLocaleString()}
+        {formatNumber(value, {
+          maximumFractionDigits: value % 1 === 0 ? 0 : 1,
+          minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+        })}
         {suffix}
       </span>
     );
@@ -193,104 +197,5 @@ export function Counter({
       <motion.span>{rounded}</motion.span>
       {suffix}
     </span>
-  );
-}
-
-/** Slow ambient float for decorative blobs. */
-export function Float({
-  children,
-  amplitude = 12,
-  duration = 9,
-  className,
-}: {
-  children: ReactNode;
-  amplitude?: number;
-  duration?: number;
-  className?: string;
-}) {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-  return (
-    <motion.div
-      animate={{ y: [0, -amplitude, 0, amplitude * 0.6, 0] }}
-      transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/** Marquee-style infinite text strip. */
-export function Marquee({
-  children,
-  duration = 28,
-  className,
-}: {
-  children: ReactNode;
-  duration?: number;
-  className?: string;
-}) {
-  return (
-    <div className={`relative overflow-hidden ${className ?? ""}`}>
-      <motion.div
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration, repeat: Infinity, ease: "linear" }}
-        className="flex w-max gap-12"
-      >
-        {children}
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
-/**
- * Spotlight that follows the cursor inside a container — adds a subtle
- * radial glow for premium feel on hero cards.
- */
-export function PointerSpotlight({
-  className,
-  size = 320,
-  color = "color-mix(in srgb, var(--accent) 12%, transparent)",
-}: {
-  className?: string;
-  size?: number;
-  color?: string;
-}) {
-  const x = useMotionValue(-1000);
-  const y = useMotionValue(-1000);
-  const ref = useRef<HTMLDivElement>(null);
-  return (
-    <div
-      ref={ref}
-      onPointerMove={(e) => {
-        const rect = ref.current?.getBoundingClientRect();
-        if (!rect) return;
-        x.set(e.clientX - rect.left);
-        y.set(e.clientY - rect.top);
-      }}
-      onPointerLeave={() => {
-        x.set(-1000);
-        y.set(-1000);
-      }}
-      className={`pointer-events-auto absolute inset-0 ${className ?? ""}`}
-    >
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute rounded-full blur-2xl"
-        style={{
-          x,
-          y,
-          width: size,
-          height: size,
-          translateX: "-50%",
-          translateY: "-50%",
-          background: `radial-gradient(closest-side, ${color}, transparent)`,
-        }}
-      />
-    </div>
   );
 }

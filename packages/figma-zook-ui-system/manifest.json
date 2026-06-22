@@ -4,6 +4,7 @@
   "main": "dist/main.js",
   "editorType": ["figma"],
   "menu": [
+    { "name": "Generate Editable UI Kit On Current Page", "command": "generate-current-page" },
     { "name": "Generate Full UI System", "command": "generate-full" },
     { "name": "Create Corrected MVP Pass", "command": "corrected-mvp-pass" }
   ]

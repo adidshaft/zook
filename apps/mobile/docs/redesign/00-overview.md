@@ -7,7 +7,7 @@ This folder contains the implementation plans for a multi-phase redesign of `app
 The mobile app has accumulated four classes of problems:
 
 1. **Mega-screens with internal `?view=` toggles** — `reception.tsx` (2,048 lines), `owner/index.tsx` (1,226), `trainer/index.tsx` (447), `membership.tsx` (1,278), `scan.tsx` (1,058), `index.tsx` (1,061), `profile.tsx` (895), `gym/[username].tsx` (1,197) — most of them pack 3–5 unrelated surfaces into a single component with a `view` query param branch.
-2. **Two parallel design systems** — `src/components/primitives/foundation.tsx` (3,712 lines) sits alongside the split primitives (`buttons.tsx`, `cards.tsx`, `inputs.tsx`, `layout.tsx`, `nav.tsx`, `feedback.tsx`). Some screens import old, some import split. The `theme.ts` file has 6 `@deprecated` aliases still in active use.
+2. **Two parallel design systems** — `src/components/primitives/foundation.tsx` (3,712 lines) sits alongside the split primitives (`buttons.tsx`, input/metric/layout primitives, and feedback primitives). Some screens import old, some import split. The `theme.ts` file has 6 `@deprecated` aliases still in active use.
 3. **Three sources of truth for "who is the user"** — server-side `session.organizations[].roles`, client-side `activeRole` in AsyncStorage, and `getOfflineDemoRoleOverride()`. Reconciled ad-hoc in `_layout.tsx` and `auth.tsx`. Demo mode leaks into auth via identifier sniffing.
 4. **No domain layer** — `src/lib/query-hooks.ts` is 1,583 lines with 50 hooks for every role and concern mixed together.
 
@@ -88,8 +88,8 @@ apps/mobile/
     │   ├── primitives/
     │   │   ├── index.tsx         # Barrel
     │   │   ├── old.tsx        # 3,712 lines — strangle in plan #11
-    │   │   ├── buttons.tsx, cards.tsx, inputs.tsx, layout.tsx,
-    │   │   ├── nav.tsx, feedback.tsx, bottom-nav-context.tsx,
+    │   │   ├── buttons.tsx, input-primitives.tsx, metric-primitives.tsx,
+    │   │   ├── layout-primitives.tsx, feedback-primitives.tsx, bottom-nav-context.tsx,
     │   │   ├── keyboard-aware-screen.tsx, pickup-qr.tsx,
     │   │   ├── animated-appear.tsx, date-picker-field.tsx, otp-input.tsx,
     │   │   └── network-banner.tsx
@@ -99,7 +99,7 @@ apps/mobile/
     │   └── expo-safe-bottom-sheet.tsx
     └── lib/
         ├── auth.tsx              # Auth provider (754 line useAuth)
-        ├── api.ts, api-client.tsx, domain-api.ts
+        ├── api.ts, domain-api.ts
         ├── query-hooks.ts        # 1,583 lines, 50 hooks — split in plan #04
         ├── route-guards.ts       # path → required role/permission
         ├── theme.ts              # tokens; rewrite in plan #03

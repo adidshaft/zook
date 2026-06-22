@@ -1,15 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
-import { ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, ScreenHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
-import { layout } from "@/lib/theme";
+import { formatLongDate } from "@/lib/formatting";
+import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type MemberFilter = "all" | "active" | "expiring" | "expired";
@@ -38,28 +40,31 @@ export default function OwnerMembersScreen() {
     }
   }, [params.filter]);
 
-  async function sendReminder(input: { memberUserId: string; name: string; endsAt?: string | null }) {
-    if (!token || !activeOrgId) return;
-    try {
-      const dateLabel = input.endsAt ? new Date(input.endsAt).toLocaleDateString() : "soon";
-      await ownerApi.sendMemberNotification({
-        token,
-        orgId: activeOrgId,
-        memberUserId: input.memberUserId,
-        title: "Membership expiring soon",
-        body: `Your membership ends on ${dateLabel}. Renew in the app.`,
-        metadata: { reason: "manual_expiring_membership_reminder", endsAt: input.endsAt },
-      });
-      showToast({ tone: "success", haptic: "success", message: `Reminder sent to ${input.name}.` });
-    } catch (error) {
-      showToast({
-        title: "Reminder not sent",
-        message: error instanceof Error ? error.message : "Try again.",
-        tone: "danger",
-        haptic: "error",
-      });
-    }
-  }
+  const sendReminder = useCallback(
+    async (input: { memberUserId: string; name: string; endsAt?: string | null }) => {
+      if (!token || !activeOrgId) return;
+      try {
+        const dateLabel = formatLongDate(input.endsAt, "soon");
+        await ownerApi.sendMemberNotification({
+          token,
+          orgId: activeOrgId,
+          memberUserId: input.memberUserId,
+          title: "Membership expiring soon",
+          body: `Your membership ends on ${dateLabel}. Renew in the app.`,
+          metadata: { reason: "manual_expiring_membership_reminder", endsAt: input.endsAt },
+        });
+        showToast({ tone: "success", haptic: "success", message: `Reminder sent to ${input.name}.` });
+      } catch (error) {
+        showToast({
+          title: "Reminder not sent",
+          message: error instanceof Error ? error.message : "Try again.",
+          tone: "danger",
+          haptic: "error",
+        });
+      }
+    },
+    [activeOrgId, token],
+  );
 
   const filteredMembers = useMemo(() => {
     const term = debouncedMemberSearch.trim().toLowerCase();
@@ -122,7 +127,7 @@ export default function OwnerMembersScreen() {
               : undefined,
         };
       }),
-    [filteredMembers, activeOrgId, token],
+    [filteredMembers, sendReminder],
   );
   const selectedFilter: MemberListFilter =
     memberFilter === "all" ? { kind: "all" } : { kind: "status", status: memberFilter };
@@ -134,10 +139,22 @@ export default function OwnerMembersScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ZookScreen testID="owner-home-screen">
+      <ZookScreen testID="owner-members-screen">
         <KeyboardAwareScreen noScroll={true} style={styles.content}>
           <MemberList
             testID="owner-view-members"
+            header={
+              <ScreenHeader
+                title="Members"
+                subtitle={`${membersQuery.data?.members.length ?? 0} total`}
+                contextSlot={
+                  <>
+                    <RoleSwitcherContextPill />
+                    <BranchSelectorChip />
+                  </>
+                }
+              />
+            }
             items={memberItems}
             isLoading={membersQuery.isLoading}
             isError={membersQuery.isError}
@@ -169,5 +186,12 @@ export default function OwnerMembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, paddingHorizontal: 16, flex: 1 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    paddingHorizontal: spacing.md,
+    flex: 1,
+  },
 });

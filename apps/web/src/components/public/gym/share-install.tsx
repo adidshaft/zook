@@ -61,7 +61,7 @@ export function ReferralCard({ org, locale }: { org: PublicGym; locale: PublicLo
       <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("referralCopy")}</p>
       <Link
         href={localizedPath(`/join/${org.username}`, locale, { ref: "" })}
-        className="zook-focus mt-5 inline-flex rounded-full bg-[var(--accent-fill)] px-5 py-3 text-sm font-semibold text-[var(--text-on-accent)] shadow-[var(--shadow-glow-accent)] transition hover:bg-[var(--accent-soft)]"
+        className="zook-focus mt-5 inline-flex rounded-full bg-[var(--accent-fill)] px-5 py-3 text-sm font-semibold text-[var(--text-on-accent)] transition hover:bg-[var(--accent-soft)]"
       >
         {t("shareJoinLink")}
       </Link>

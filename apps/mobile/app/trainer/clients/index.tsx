@@ -5,14 +5,12 @@ import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import {
   AppHeader,
-  SectionHeader,
-  StatusChip,
   ZookScreen,
 } from "@/components/primitives";
 import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
-import { layout } from "@/lib/theme";
+import { layout, spacing } from "@/lib/theme";
 
 export default function TrainerClientsScreen() {
   const router = useRouter();
@@ -74,20 +72,17 @@ export default function TrainerClientsScreen() {
             availableFilters={[{ kind: "all" }, { kind: "status", status: "active" }, { kind: "status", status: "pending" }]}
             onPressMember={(client) => router.push(`/trainer/clients/${client.id}` as never)}
             emptyState={{
-              title: clients.length ? "No matching clients" : "No clients yet",
-              subtitle: clients.length ? "Try another search or filter." : "Clients will appear here when your gym adds them.",
+              title: clients.length ? "No matching clients" : "No clients",
+              subtitle: clients.length ? "Try another search or filter." : "No clients added by your gym.",
             }}
             refreshing={refreshing}
             onRefresh={onRefresh}
             header={
               <>
                 <AppHeader
-                  eyebrow="Trainer"
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
-                  chip={<StatusChip status="Trainer" tone="neutral" />}
                 />
-                <SectionHeader title="Clients" />
               </>
             }
           />
@@ -100,10 +95,10 @@ export default function TrainerClientsScreen() {
 const styles = StyleSheet.create({
   container: {
     alignSelf: "center",
-    maxWidth: layout.contentWidth,
-    width: "100%",
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    maxWidth: layout.contentWidth,
+    paddingHorizontal: spacing.md,
+    width: "100%",
+    paddingTop: layout.screenContentTopPadding,
   },
 });

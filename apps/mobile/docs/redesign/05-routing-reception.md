@@ -190,7 +190,7 @@ import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveAttendance, useRejectAttendance } from "@/lib/domains/attendance";
 import { DeskHeader } from "@/features/reception/components/desk-header";
 import { DeskQueueCard } from "@/features/reception/components/desk-queue-card";
-import { DemoBanner } from "@/components/demo-banner";
+import { TestDataBanner } from "@/components/test-data-banner";
 
 export default function ReceptionDeskScreen() {
   const queue = useOrgAttendancePending();
@@ -201,7 +201,7 @@ export default function ReceptionDeskScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ZookScreen testID="reception-desk-screen">
-        <DemoBanner />
+        <TestDataBanner />
         <ScrollView
           refreshControl={<RefreshControl refreshing={queue.isRefetching} onRefresh={queue.refetch} />}
         >

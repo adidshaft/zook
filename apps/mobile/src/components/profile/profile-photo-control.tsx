@@ -14,7 +14,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { toWebUrl } from "@/lib/api";
+import { normalizeWebUrl } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/auth";
 import {
   filesApi,
@@ -26,7 +26,7 @@ import { typography, useTheme } from "@/lib/theme";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
 
-export type ProfilePhotoSavedPayload = {
+type ProfilePhotoSavedPayload = {
   profilePhotoAssetId?: string;
   profilePhotoUrl?: string | null;
   upload?: FileUploadResponse | null;
@@ -34,7 +34,7 @@ export type ProfilePhotoSavedPayload = {
   removed?: boolean;
 };
 
-export type ProfilePhotoControlProps = {
+type ProfilePhotoControlProps = {
   token?: string;
   orgId?: string;
   name?: string | null;
@@ -55,13 +55,6 @@ function initialsForName(name?: string | null) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-}
-
-function normalizePhotoUrl(value?: string | null) {
-  const trimmed = value?.trim();
-  if (!trimmed) return undefined;
-  if (/^(file|content|https?):\/\//i.test(trimmed)) return trimmed;
-  return toWebUrl(trimmed);
 }
 
 function showPrimer(kind: "camera" | "library") {
@@ -156,7 +149,7 @@ export function ProfilePhotoControl({
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const initials = useMemo(() => initialsForName(name), [name]);
-  const visibleUri = normalizePhotoUrl(previewUri ?? committedUrl);
+  const visibleUri = normalizeWebUrl(previewUri ?? committedUrl, { allowDeviceUri: true });
   const hasPhoto = Boolean(previewUri ?? committedUrl);
 
   useEffect(() => {
@@ -345,8 +338,6 @@ export function ProfilePhotoControl({
     </Pressable>
   );
 }
-
-export default ProfilePhotoControl;
 
 const styles = StyleSheet.create({
   control: {

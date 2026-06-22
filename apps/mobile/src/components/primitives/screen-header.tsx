@@ -1,15 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
 import type { SharedValue } from "react-native-reanimated";
 
+import { normalizeWebUrl } from "@/lib/api";
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
-import { layout, materials, spacing, typography, useTheme } from "@/lib/theme";
+import { materials, spacing, typography, useTheme } from "@/lib/theme";
+import { gymBrandColor } from "@/lib/gym-brand";
 
 type HeaderContext = {
   orgName: string;
+  logoUrl?: string | null;
   onPress: () => void;
   roleTag?: string;
 };
@@ -17,6 +22,7 @@ type HeaderContext = {
 export function ScreenHeader({
   title,
   subtitle,
+  titleAccessory,
   context,
   contextSlot,
   trailing,
@@ -26,6 +32,7 @@ export function ScreenHeader({
 }: {
   title: string;
   subtitle?: string;
+  titleAccessory?: ReactNode;
   context?: HeaderContext;
   contextSlot?: ReactNode;
   trailing?: ReactNode;
@@ -85,12 +92,30 @@ export function ScreenHeader({
         </Text>
       </Reanimated.View>
 
-      <View style={styles.utilityRow}>
-        {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : <View />}
-        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-      </View>
+      {contextSlot || context || trailing ? (
+        <View style={styles.utilityRow}>
+          {contextSlot || context ? (
+            <View style={styles.utilityLeading}>
+              {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : null}
+            </View>
+          ) : null}
+          {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+        </View>
+      ) : null}
       <Reanimated.View style={[styles.titleBlock, titleStyle]}>
-        <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+        <View style={styles.titleRow}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.title,
+              titleAccessory ? styles.titleWithAccessory : null,
+              { color: palette.text.primary },
+            ]}
+          >
+            {title}
+          </Text>
+          {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
+        </View>
         {subtitle ? (
           <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
         ) : null}
@@ -102,7 +127,6 @@ export function ScreenHeader({
 
 function ContextPill({ context }: { context: HeaderContext }) {
   const { palette } = useTheme();
-  const initial = context.orgName.trim().charAt(0).toUpperCase() || "Z";
   return (
     <Pressable
       accessibilityRole="button"
@@ -119,9 +143,7 @@ function ContextPill({ context }: { context: HeaderContext }) {
         },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: palette.surface.accentSoft }]}>
-        <Text style={[styles.avatarText, { color: palette.accent.base }]}>{initial}</Text>
-      </View>
+      <GymLogoAvatar orgName={context.orgName} logoUrl={context.logoUrl} />
       <Text numberOfLines={1} style={[styles.contextText, { color: palette.text.primary }]}>
         {context.orgName}
       </Text>
@@ -135,14 +157,57 @@ function ContextPill({ context }: { context: HeaderContext }) {
   );
 }
 
+function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
+  const [didFail, setDidFail] = useState(false);
+  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
+  const brand = gymBrandColor(orgName);
+
+  useEffect(() => {
+    setDidFail(false);
+  }, [normalizedLogoUrl]);
+
+  if (normalizedLogoUrl && !didFail) {
+    return (
+      <Image
+        source={{ uri: normalizedLogoUrl }}
+        style={styles.avatarImage}
+        contentFit="cover"
+        transition={120}
+        onError={() => setDidFail(true)}
+      />
+    );
+  }
+
+  return (
+    <View style={[styles.avatar, { backgroundColor: brand.soft }]}>
+      <Text style={[styles.avatarText, { color: brand.solid }]}>{brand.initial}</Text>
+    </View>
+  );
+}
+
 export function HeaderMeta({
   icon,
   children,
+  tone = "neutral",
 }: {
   icon?: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
+  tone?: "neutral" | "accent";
 }) {
   const { palette } = useTheme();
+  if (tone === "accent") {
+    return (
+      <View
+        style={[
+          styles.accentMeta,
+          { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.soft },
+        ]}
+      >
+        {icon ? <Ionicons name={icon} size={14} color={palette.accent.base} /> : null}
+        <Text style={[styles.accentMetaText, { color: palette.accent.base }]}>{children}</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.inlineMeta}>
       {icon ? <Ionicons name={icon} size={15} color={palette.text.secondary} /> : null}
@@ -154,20 +219,30 @@ export function HeaderMeta({
 const styles = StyleSheet.create({
   root: {
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: Platform.OS === "android" ? spacing.sm : spacing.md,
     paddingTop: spacing.xs,
     width: "100%",
   },
   utilityRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
-    height: 44,
-    justifyContent: "space-between",
+    gap: Platform.OS === "android" ? spacing.xs : spacing.sm,
+    minHeight: 0,
+  },
+  utilityLeading: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    minWidth: 0,
   },
   trailing: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.xs,
+    marginLeft: "auto",
+    minHeight: 36,
   },
   contextPill: {
     alignItems: "center",
@@ -176,7 +251,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
-    maxWidth: layout.contentWidth - 112,
+    maxWidth: "100%",
     minHeight: 36,
     minWidth: 0,
     paddingLeft: 6,
@@ -187,6 +262,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 20,
     justifyContent: "center",
+    width: 20,
+  },
+  avatarImage: {
+    borderRadius: 999,
+    height: 20,
     width: 20,
   },
   avatarText: {
@@ -201,13 +281,38 @@ const styles = StyleSheet.create({
   },
   roleTag: {
     ...typography.caption,
-    maxWidth: 76,
+    maxWidth: Platform.OS === "android" ? 56 : 76,
   },
   titleBlock: {
+    alignSelf: "stretch",
     gap: spacing.xs,
+    width: "100%",
+  },
+  titleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    minWidth: 0,
+    width: "100%",
   },
   title: {
-    ...typography.display,
+    // Tab-root screens intentionally use the larger landing-page title scale;
+    // pushed screens route through AppHeader's compact headerTitle token.
+    ...typography.screenTitle,
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  titleWithAccessory: {
+    paddingRight: spacing.sm,
+  },
+  titleAccessory: {
+    alignItems: "flex-end",
+    flexShrink: 1,
+    marginLeft: "auto",
+    maxWidth: "54%",
+    minWidth: 0,
   },
   subtitle: {
     ...typography.small,
@@ -225,6 +330,19 @@ const styles = StyleSheet.create({
   inlineMetaText: {
     ...typography.small,
     fontFamily: "Inter_600SemiBold",
+  },
+  accentMeta: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  accentMetaText: {
+    ...typography.caption,
   },
   compactBar: {
     alignItems: "center",

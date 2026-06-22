@@ -1,46 +1,35 @@
 import QRCode from "react-native-qrcode-svg";
-import { Platform, StyleSheet, View } from "react-native";
-import Reanimated from "@/lib/reanimated-lite";
-import { useBreathingScale } from "@/lib/motion";
+import { StyleSheet, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { radii, spacing, useTheme } from "@/lib/theme";
+import { elevation, radii, spacing, useTheme } from "@/lib/theme";
 
 const qrPaper = "#FFFFFF";
 const qrInk = "#11150F";
 
 export function PickupQrCode({ value }: { value: string }) {
-  const breathingStyle = useBreathingScale(true);
   const { mode, palette } = useTheme();
   const t = useT();
   const isDark = mode === "dark";
-  const qrShadow =
-    Platform.OS === "ios"
-      ? {
-          shadowColor: palette.bg.sunken,
-          shadowOpacity: isDark ? 0.2 : 0.08,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
-        }
-      : { elevation: 2 };
+  const qrShadow = elevation(2, palette.bg.sunken, {
+    shadowOpacity: isDark ? 0.2 : 0.08,
+  });
   return (
-    <Reanimated.View style={breathingStyle}>
-      <View
-        accessibilityRole="image"
-        accessibilityLabel={t("shop.signedPickupQrCode")}
-        style={[
-          styles.shell,
-          {
-            backgroundColor: isDark ? palette.surface.raised : palette.bg.elevated,
-            borderColor: palette.border.subtle,
-            ...qrShadow,
-          },
-        ]}
-      >
-        <View style={styles.paper}>
-          <QRCode value={value} size={176} backgroundColor={qrPaper} color={qrInk} />
-        </View>
+    <View
+      accessibilityRole="image"
+      accessibilityLabel={t("shop.signedPickupQrCode")}
+      style={[
+        styles.shell,
+        {
+          backgroundColor: isDark ? palette.surface.raised : palette.bg.elevated,
+          borderColor: palette.border.subtle,
+        },
+        qrShadow,
+      ]}
+    >
+      <View style={styles.paper}>
+        <QRCode value={value} size={176} backgroundColor={qrPaper} color={qrInk} />
       </View>
-    </Reanimated.View>
+    </View>
   );
 }
 

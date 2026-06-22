@@ -1,33 +1,34 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
   Card,
-  IconBubble,
   AppHeader,
   SecondaryButton,
   SegmentedControl,
   SectionHeader,
-  StatusChip,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { AiDraftPanel } from "@/features/trainer/components/ai-draft-panel";
 import {
   clientDetailTabs,
   fitnessGoalFor,
   planTemplates,
+  selectedTrainerClient,
+  trainerClientDetailPath,
   type ClientDetailTab,
   type PlanTemplateId,
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { plansApi, trainerApi } from "@/lib/domain-api";
-import { useTrainerClients } from "@/lib/domains";
+import { useOrgExerciseTemplates, useSaveExerciseTemplate, useTrainerClients, type ExerciseTemplateRecord } from "@/lib/domains";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+
+type InlineNotice = { message: string; tone: "info" | "warning" | "danger" };
 
 function exerciseNameForTemplate(templateId: PlanTemplateId) {
   switch (templateId) {
@@ -45,36 +46,61 @@ function exerciseNameForTemplate(templateId: PlanTemplateId) {
   }
 }
 
+function exerciseFromTemplate(template?: ExerciseTemplateRecord | null) {
+  if (!template) return null;
+  return {
+    name: template.name,
+    sets: template.defaultSets ?? 3,
+    reps: template.defaultReps ? String(template.defaultReps) : "8-12",
+    restSeconds: template.defaultRestSeconds ?? 90,
+    equipment: template.equipment ?? undefined,
+    muscleGroup: template.muscleGroup ?? undefined,
+    tempo: template.tempo ?? undefined,
+    notes: template.notes ?? undefined,
+  };
+}
+
 export default function TrainerClientPlanScreen() {
   const router = useRouter();
-  const { id = "", focus } = useLocalSearchParams<{ id: string; focus?: string }>();
+  const { id = "" } = useLocalSearchParams<{ id: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
+  const exerciseTemplatesQuery = useOrgExerciseTemplates();
+  const saveExerciseTemplate = useSaveExerciseTemplate();
+  const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? "Client";
   const fitnessGoal = fitnessGoalFor(client);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<InlineNotice | null>(null);
   const [planTitle, setPlanTitle] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
+  const [selectedExerciseTemplateId, setSelectedExerciseTemplateId] = useState<string | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
   const [dietTitle, setDietTitle] = useState("");
   const [calorieTarget, setCalorieTarget] = useState("2000");
   const [proteinG, setProteinG] = useState("120");
-  const [dietStatus, setDietStatus] = useState("");
+  const [dietStatus, setDietStatus] = useState<InlineNotice | null>(null);
 
-  useEffect(() => {
-    if (focus === "ai") {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
-    }
-  }, [focus]);
+  const noticeTextColor = {
+    info: palette.feedback.info,
+    warning: palette.feedback.warning,
+    danger: palette.feedback.danger,
+  };
+  const noticeCardVariant = {
+    info: "compact",
+    warning: "warning",
+    danger: "danger",
+  } as const;
 
   function buildPlanPayload() {
     const template = planTemplates.find((item) => item.id === selectedTemplate) ?? planTemplates[0]!;
+    const selectedExerciseTemplate =
+      exerciseTemplatesQuery.data?.templates.find((entry) => entry.id === selectedExerciseTemplateId) ?? null;
+    const templateExercise = exerciseFromTemplate(selectedExerciseTemplate);
     const starterExercise = exerciseNameForTemplate(template.id);
     return {
       title: planTitle.trim() || `${clientName} ${template.label.toLowerCase()} plan`,
@@ -85,9 +111,10 @@ export default function TrainerClientPlanScreen() {
       content: {
         goal: fitnessGoal,
         template: template.id,
+        exerciseTemplateId: selectedExerciseTemplate?.id ?? null,
         sections: [{ title: template.title, body: template.body }],
         exercises: [
-          {
+          templateExercise ?? {
             name: starterExercise,
             sets: 3,
             reps: "8-12",
@@ -99,13 +126,29 @@ export default function TrainerClientPlanScreen() {
     };
   }
 
+  function saveCurrentExerciseAsTemplate() {
+    const payload = buildPlanPayload().content.exercises[0];
+    saveExerciseTemplate.mutate({
+      body: {
+        scope: "TRAINER",
+        name: payload.name,
+        equipment: "equipment" in payload ? payload.equipment ?? null : null,
+        muscleGroup: "muscleGroup" in payload ? payload.muscleGroup ?? null : null,
+        defaultSets: typeof payload.sets === "number" ? payload.sets : Number.parseInt(String(payload.sets), 10) || 3,
+        defaultReps: Number.parseInt(String(payload.reps), 10) || null,
+        defaultRestSeconds: payload.restSeconds ?? null,
+        notes: payload.notes ?? null,
+      },
+    });
+  }
+
   async function saveDraft() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select a client before saving.");
+      setStatus({ message: "Select a client before saving.", tone: "warning" });
       return null;
     }
     setSavingPlan(true);
-    setStatus("");
+    setStatus(null);
     try {
       const result = await plansApi.create<{ plan: { id: string; title: string } }>({
         token,
@@ -113,12 +156,12 @@ export default function TrainerClientPlanScreen() {
         body: buildPlanPayload(),
       });
       setSavedPlan({ id: result.plan.id, title: result.plan.title });
-      setStatus(`${result.plan.title} saved as a draft.`);
+      setStatus({ message: `${result.plan.title} saved as a draft.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Draft saved." });
       return result.plan;
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setStatus(message);
+      setStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
       return null;
     } finally {
@@ -128,11 +171,11 @@ export default function TrainerClientPlanScreen() {
 
   async function assignPlan() {
     if (!token || !activeOrgId || !client) {
-      setStatus("Select a client before assigning.");
+      setStatus({ message: "Select a client before assigning.", tone: "warning" });
       return;
     }
     setSavingPlan(true);
-    setStatus("");
+    setStatus(null);
     try {
       const nextPlanTitle = planTitle.trim() || `${clientName} workout plan`;
       const existingPlan = savedPlan && savedPlan.title === nextPlanTitle ? savedPlan : null;
@@ -154,11 +197,11 @@ export default function TrainerClientPlanScreen() {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       await queryClient.invalidateQueries({ queryKey: ["me", "notifications"] });
       setSavedPlan({ id: plan.id, title: plan.title });
-      setStatus(`${plan.title} assigned. ${clientName} can now see it.`);
+      setStatus({ message: `${plan.title} assigned. ${clientName} can now see it.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Plan assigned." });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setStatus(message);
+      setStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setSavingPlan(false);
@@ -167,11 +210,11 @@ export default function TrainerClientPlanScreen() {
 
   async function publishDietPlan() {
     if (!token || !activeOrgId || !client || !client.trainerUserId) {
-      setDietStatus("Select a client before publishing diet.");
+      setDietStatus({ message: "Select a client before publishing diet.", tone: "warning" });
       return;
     }
     setSavingPlan(true);
-    setDietStatus("");
+    setDietStatus(null);
     try {
       const title = dietTitle.trim() || `${clientName} diet plan`;
       const result = await trainerApi.createClientDietPlan<{ plan: { id: string; title: string } }>({
@@ -195,11 +238,11 @@ export default function TrainerClientPlanScreen() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
-      setDietStatus(`${result.plan.title} published. ${clientName} can log meals now.`);
+      setDietStatus({ message: `${result.plan.title} published. ${clientName} can log meals now.`, tone: "info" });
       showToast({ tone: "success", haptic: "success", message: "Diet plan published." });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      setDietStatus(message);
+      setDietStatus({ message, tone: "danger" });
       showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
     } finally {
       setSavingPlan(false);
@@ -207,7 +250,7 @@ export default function TrainerClientPlanScreen() {
   }
 
   function selectTab(tab: ClientDetailTab) {
-    router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never);
+    router.replace(trainerClientDetailPath(id, tab) as never);
   }
 
   return (
@@ -231,11 +274,10 @@ export default function TrainerClientPlanScreen() {
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
               </Pressable>
             }
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
           <SegmentedControl options={clientDetailTabs} value="plan" onChange={selectTab} />
           <Card contentStyle={styles.stack}>
-            <SectionHeader title="Plan builder" subtitle="Create a trainer-owned draft before assigning." />
+            <SectionHeader title="Plan builder" />
             <FormField testID="trainer-plan-title" label="Plan title" value={planTitle} onChangeText={setPlanTitle} />
             <View style={styles.chipRow}>
               {planTemplates.map((template) => {
@@ -261,13 +303,45 @@ export default function TrainerClientPlanScreen() {
                 );
               })}
             </View>
+            {exerciseTemplatesQuery.data?.templates.length ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Exercise templates</Text>
+                <View style={styles.chipRow}>
+                  {exerciseTemplatesQuery.data.templates.slice(0, 10).map((template) => {
+                    const selected = selectedExerciseTemplateId === template.id;
+                    return (
+                      <Pressable
+                        key={template.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setSelectedExerciseTemplateId(selected ? null : template.id)}
+                        style={({ pressed }) => [
+                          styles.templateChip,
+                          {
+                            backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                            borderColor: selected ? palette.accent.base : palette.border.default,
+                          },
+                          pressed ? styles.controlPressed : null,
+                        ]}
+                      >
+                        <Ionicons name={template.featured ? "star" : "barbell-outline"} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
+                        <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
             <View style={styles.actionRow}>
               <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>Save draft</ZookButton>
-              <SecondaryButton testID="trainer-generate-ai-draft-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>AI drafting is off</SecondaryButton>
+              <SecondaryButton testID="trainer-plan-template-help-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>Template notes</SecondaryButton>
             </View>
+            <SecondaryButton testID="trainer-save-exercise-template-button" onPress={saveCurrentExerciseAsTemplate} disabled={saveExerciseTemplate.isPending}>
+              Save exercise as template
+            </SecondaryButton>
             <SecondaryButton
               testID="trainer-publish-plan-button"
-              onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member will see this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
+              onPress={() => Alert.alert(`Publish to ${clientName}?`, "The member sees this plan immediately.", [{ text: "Cancel", style: "cancel" }, { text: "Publish", onPress: () => void assignPlan() }])}
               disabled={!canPublishAssignedPlan || savingPlan}
               onLongPress={!canPublishAssignedPlan ? () => showToast({ title: "Owner approval required", tone: "amber" }) : undefined}
             >
@@ -276,15 +350,18 @@ export default function TrainerClientPlanScreen() {
           </Card>
           {savedPlan ? (
             <Card variant="warning" contentStyle={styles.draftPromptContent}>
-              <View style={styles.attentionHeader}>
-                <IconBubble icon="reader-outline" tone="amber" />
-                <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
-              </View>
+              <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{savedPlan.title} is saved as a draft. Review before assigning.</Text>
             </Card>
           ) : null}
-          {status ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{status}</Text></Card> : null}
+          {status ? (
+            <Card variant={noticeCardVariant[status.tone]} contentStyle={styles.statusContent}>
+              <Text style={[styles.statusText, { color: noticeTextColor[status.tone] }]}>
+                {status.message}
+              </Text>
+            </Card>
+          ) : null}
           <Card contentStyle={styles.stack}>
-            <SectionHeader title="Diet plan" subtitle="Four-meal publish flow for the assigned client." />
+            <SectionHeader title="Diet plan" />
             <FormField testID="trainer-diet-title" label="Diet title" value={dietTitle} onChangeText={setDietTitle} placeholder={`${clientName} diet plan`} />
             <View style={styles.actionRow}>
               <FormField label="Calories" value={calorieTarget} onChangeText={setCalorieTarget} keyboardType="number-pad" style={styles.actionHalf} />
@@ -294,8 +371,13 @@ export default function TrainerClientPlanScreen() {
               Publish 4-meal diet
             </SecondaryButton>
           </Card>
-          {dietStatus ? <Card variant="success" contentStyle={styles.statusContent}><Text style={[styles.statusText, { color: palette.accent.base }]}>{dietStatus}</Text></Card> : null}
-          <AiDraftPanel clientId={id} />
+          {dietStatus ? (
+            <Card variant={noticeCardVariant[dietStatus.tone]} contentStyle={styles.statusContent}>
+              <Text style={[styles.statusText, { color: noticeTextColor[dietStatus.tone] }]}>
+                {dietStatus.message}
+              </Text>
+            </Card>
+          ) : null}
         </ScrollView>
       </ZookScreen>
     </>
@@ -303,18 +385,18 @@ export default function TrainerClientPlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   backIcon: { fontSize: 26, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  sectionLabel: { ...typography.caption },
   templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },
   templateChipText: { ...typography.caption },
   actionRow: { flexDirection: "row", gap: spacing.sm },
   actionHalf: { flex: 1 },
-  stack: { gap: 10 },
-  attentionHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  draftPromptContent: { gap: 12 },
+  stack: { gap: spacing.sm },
+  draftPromptContent: { gap: spacing.sm },
   cardBody: { ...typography.body },
   statusContent: { padding: 14 },
   statusText: { ...typography.bodyStrong },

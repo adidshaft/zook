@@ -39,13 +39,24 @@ export function MembersPage({
   const searchParams = useSearchParams();
   const [subscriptionBusy, setSubscriptionBusy] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState("");
+  const [subscriptionStatusTone, setSubscriptionStatusTone] = useState<
+    "neutral" | "success" | "danger"
+  >("neutral");
   const [switchPlanId, setSwitchPlanId] = useState("");
+  const [pauseResumesAt, setPauseResumesAt] = useState(() =>
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  );
   const [pauseReason, setPauseReason] = useState("");
   const [memberFilter, setMemberFilter] = useState<MemberFilter>(() =>
     statusFromParam(searchParams.get("status")),
   );
   const [memberSearch, setMemberSearch] = useState(() => searchParams.get("search") ?? "");
   const [selectedBulkMemberIds, setSelectedBulkMemberIds] = useState<string[]>([]);
+  const [memberAccessBusyId, setMemberAccessBusyId] = useState<string | null>(null);
+  const [memberAccessStatus, setMemberAccessStatus] = useState("");
+  const [memberAccessStatusTone, setMemberAccessStatusTone] = useState<"neutral" | "lime" | "red">(
+    "neutral",
+  );
   const selectedSubscription = memberDetailState.data?.member.subscriptions[0] ?? null;
   const selectedBulkMembers = members.filter((member) =>
     selectedBulkMemberIds.includes(member.user?.id ?? ""),
@@ -127,7 +138,9 @@ export function MembersPage({
     ]);
     const csv = [
       ["Name", "Email", "Phone", "Subscription"].join(","),
-      ...rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")),
+      ...rows.map((row) =>
+        row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","),
+      ),
     ].join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
@@ -137,10 +150,85 @@ export function MembersPage({
     URL.revokeObjectURL(url);
   }
 
+  async function updateMemberAccess(memberUserId: string, status: "active" | "inactive") {
+    setMemberAccessBusyId(memberUserId);
+    setMemberAccessStatus("");
+    setMemberAccessStatusTone("neutral");
+    try {
+      await webApiFetch(`/api/orgs/${orgId}/members/${memberUserId}/status`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+        feedback: {
+          success: status === "active" ? "Member reactivated." : "Member deactivated.",
+          error: "Unable to update member access.",
+        },
+      });
+      membersState.reload();
+      if (selectedMemberId === memberUserId) {
+        memberDetailState.reload();
+      }
+      setMemberAccessStatusTone("lime");
+      setMemberAccessStatus(
+        status === "active" ? "Member can access the gym again." : "Member access is inactive.",
+      );
+    } catch (error) {
+      setMemberAccessStatusTone("red");
+      setMemberAccessStatus(
+        error instanceof Error ? error.message : "Unable to update member access.",
+      );
+    } finally {
+      setMemberAccessBusyId(null);
+    }
+  }
+
+  async function bulkArchiveMembers() {
+    const selectedIds = [...selectedBulkMemberIds];
+    if (!selectedIds.length) return;
+    setMemberAccessBusyId("bulk");
+    setMemberAccessStatus("");
+    setMemberAccessStatusTone("neutral");
+    try {
+      await Promise.all(
+        selectedIds.map((memberUserId) =>
+          webApiFetch(`/api/orgs/${orgId}/members/${memberUserId}/status`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: "inactive" }),
+            feedback: { success: false, error: "Unable to archive selected members." },
+          }),
+        ),
+      );
+      setSelectedBulkMemberIds([]);
+      membersState.reload();
+      if (selectedMemberId && selectedIds.includes(selectedMemberId)) {
+        memberDetailState.reload();
+      }
+      setMemberAccessStatusTone("lime");
+      setMemberAccessStatus(
+        `${selectedIds.length} member${selectedIds.length === 1 ? "" : "s"} archived.`,
+      );
+    } catch (error) {
+      setMemberAccessStatusTone("red");
+      setMemberAccessStatus(error instanceof Error ? error.message : "Unable to archive members.");
+    } finally {
+      setMemberAccessBusyId(null);
+    }
+  }
+
   async function updateSubscription(action: "switch" | "pause" | "resume") {
     if (!selectedSubscription) return;
+    const pauseDateIso = pauseResumesAt
+      ? new Date(`${pauseResumesAt}T00:00:00.000Z`).toISOString()
+      : "";
+    if (action === "pause" && !pauseDateIso) {
+      setSubscriptionStatusTone("danger");
+      setSubscriptionStatus("Choose a resume date before pausing.");
+      return;
+    }
     setSubscriptionBusy(action);
     setSubscriptionStatus("");
+    setSubscriptionStatusTone("neutral");
     try {
       await webApiFetch(`/api/orgs/${orgId}/subscriptions/${selectedSubscription.id}/${action}`, {
         method: "POST",
@@ -149,7 +237,7 @@ export function MembersPage({
           ...(action === "switch" ? { planId: switchPlanId } : {}),
           ...(action === "pause"
             ? {
-                resumesAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                resumesAt: pauseDateIso,
                 reason: pauseReason || undefined,
               }
             : {}),
@@ -166,9 +254,19 @@ export function MembersPage({
       });
       memberDetailState.reload();
       membersState.reload();
-      setSubscriptionStatus("Membership updated.");
+      setSubscriptionStatusTone("success");
+      setSubscriptionStatus(
+        action === "switch"
+          ? "Membership switched to the new plan."
+          : action === "pause"
+            ? `Membership paused until ${pauseResumesAt}.`
+            : "Membership resumed.",
+      );
     } catch (error) {
-      setSubscriptionStatus(error instanceof Error ? error.message : "Unable to update membership.");
+      setSubscriptionStatusTone("danger");
+      setSubscriptionStatus(
+        error instanceof Error ? error.message : "Unable to update membership.",
+      );
     } finally {
       setSubscriptionBusy(null);
     }
@@ -209,8 +307,13 @@ export function MembersPage({
                 selectedBulkMemberIds={selectedBulkMemberIds}
                 toggleBulkMember={toggleBulkMember}
                 exportSelectedMembers={exportSelectedMembers}
+                bulkArchiveMembers={bulkArchiveMembers}
                 clearSelection={() => setSelectedBulkMemberIds([])}
                 setSelectedMemberId={setSelectedMemberId}
+                memberAccessBusyId={memberAccessBusyId}
+                memberAccessStatus={memberAccessStatus}
+                memberAccessStatusTone={memberAccessStatusTone}
+                updateMemberAccess={updateMemberAccess}
               />
               <MemberDetailDrawer
                 selectedMemberId={selectedMemberId}
@@ -218,12 +321,15 @@ export function MembersPage({
                 membershipPlans={membershipPlans}
                 switchPlanId={switchPlanId}
                 setSwitchPlanId={setSwitchPlanId}
+                pauseResumesAt={pauseResumesAt}
+                setPauseResumesAt={setPauseResumesAt}
                 pauseReason={pauseReason}
                 setPauseReason={setPauseReason}
                 subscriptionBusy={subscriptionBusy}
                 subscriptionStatus={subscriptionStatus}
+                subscriptionStatusTone={subscriptionStatusTone}
                 setSelectedMemberId={setSelectedMemberId}
-                updateSubscription={(action) => void updateSubscription(action)}
+                updateSubscription={updateSubscription}
               />
             </div>
             {joinRequestsPanel}

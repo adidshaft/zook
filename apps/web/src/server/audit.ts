@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { redactPII } from "@zook/core";
 import { Prisma, prisma } from "@zook/db";
-import { createRequestContext } from "./context";
+import { createRequestContext, getForwardedClientIp } from "./context";
 import { currentRequestId } from "./request-state";
 
 export async function writeAuditLog(input: {
@@ -18,6 +18,7 @@ export async function writeAuditLog(input: {
 }) {
   const requestId = currentRequestId();
   const ctx = input.request ? await createRequestContext(input.request) : null;
+  const ipAddress = input.request ? getForwardedClientIp(input.request) : undefined;
   const metadata = {
     ...(input.metadata ?? {}),
     ...(ctx?.impersonationSessionId
@@ -32,9 +33,7 @@ export async function writeAuditLog(input: {
       ...(input.actorUserId ? { actorUserId: input.actorUserId } : {}),
       ...(requestId ? { requestId } : {}),
       ...(input.entityId ? { entityId: input.entityId } : {}),
-      ...(input.request?.headers.get("x-forwarded-for")
-        ? { ipAddress: input.request.headers.get("x-forwarded-for") as string }
-        : {}),
+      ...(ipAddress ? { ipAddress } : {}),
       ...(input.request?.headers.get("user-agent")
         ? { userAgent: input.request.headers.get("user-agent") as string }
         : {}),

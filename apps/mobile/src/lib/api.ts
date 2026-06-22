@@ -138,6 +138,23 @@ export function toWebUrl(path: string) {
   return `${getMobileWebBaseUrl()}${normalizePath(path)}`;
 }
 
+export function normalizeWebUrl(
+  value?: string | null,
+  options: { allowDeviceUri?: boolean; resolveRelative?: boolean } = {},
+) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (options.allowDeviceUri && /^(file|content):\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return options.resolveRelative === false ? undefined : toWebUrl(trimmed);
+}
+
 function createHttpTransport(): MobileApiTransport {
   async function request<T>(path: string, init: MobileApiRequestInit = {}): Promise<T> {
     const { body: rawBody, branchId, orgId, skipAuthRefresh, token, ...requestInit } = init;

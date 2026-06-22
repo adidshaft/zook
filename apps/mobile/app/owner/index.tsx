@@ -1,21 +1,20 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Linking, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, Share, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, WebHandoffCard, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
-import { formatCompactNumber, formatInr } from "@/lib/formatting";
-import { layout, typography, useTheme } from "@/lib/theme";
-import { useAuth } from "@/lib/auth";
+import { formatBranchName, formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
@@ -24,6 +23,7 @@ export default function OwnerCommandScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
   const roleContext = useRoleContext();
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
@@ -37,8 +37,13 @@ export default function OwnerCommandScreen() {
   const joinRequests = (dashboard?.joinRequests ?? []).filter(
     (request) => String(request.status ?? "").toLowerCase() === "pending",
   );
-  const attentionAttempts = attentionQuery.data?.records ?? [];
-  const lowStock = dashboard?.products ?? [];
+  const attentionAttempts = (attentionQuery.data?.records ?? []).filter((record) => {
+    const status = String(record.status ?? "").toUpperCase();
+    return status === "PENDING_APPROVAL" || status === "FLAGGED";
+  });
+  const lowStock = (dashboard?.products ?? []).filter(
+    (product) => (product.stock ?? 0) <= (product.lowStockThreshold ?? 0),
+  );
   const expiringSoon = dashboard?.summary?.expiringMemberships ?? 0;
   const paymentExceptionCount =
     paymentsQuery.data?.payments.filter((payment) => payment.status !== "SUCCEEDED").length ?? 0;
@@ -50,19 +55,19 @@ export default function OwnerCommandScreen() {
           id: "plans",
           label: "Create membership plans",
           done: setupStatus.hasMembershipPlans,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/membership-plans"),
+          onPress: () => router.push("/owner/plans"),
         },
         {
           id: "qr",
           label: "Display your check-in QR",
           done: setupStatus.hasQrDisplayed,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/attendance/qr-display"),
+          onPress: () => router.push("/owner/entry-qr"),
         },
         {
           id: "staff",
           label: "Invite staff",
           done: setupStatus.staffCount > 1,
-          onPress: () => void Linking.openURL("https://zookfit.in/dashboard/staff"),
+          onPress: () => router.push("/owner/staff"),
         },
         {
           id: "join",
@@ -128,6 +133,7 @@ export default function OwnerCommandScreen() {
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
   const subscription = billingQuery.data?.subscription;
   const billingReady =
+    !canManageBilling ||
     subscription?.status === "ACTIVE" ||
     (mandateStatus &&
       ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
@@ -137,12 +143,17 @@ export default function OwnerCommandScreen() {
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
     "Main branch";
+  const orgName = roleContext?.org?.name ?? "Gym";
+  const branchLabel = formatBranchName(orgName, branchName, {
+    collapseOrgMatch: true,
+    fallback: "Main branch",
+  });
   const metrics: MetricTileItem[] = [
     {
       label: "Active members",
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
-      hint: branchName,
-      tone: "lime",
+      hint: branchLabel ?? undefined,
+      tone: "blue",
       icon: "people-outline",
       onPress: () => router.push("/owner/members"),
     },
@@ -151,7 +162,7 @@ export default function OwnerCommandScreen() {
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
       hint:
         (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
-          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending review`
+          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending ${(dashboard?.summary?.pendingAttendanceApprovals ?? 0) === 1 ? "review" : "reviews"}`
           : undefined,
       tone: "blue",
       icon: "qr-code-outline",
@@ -204,26 +215,10 @@ export default function OwnerCommandScreen() {
         >
           <ScreenHeader
             title="Today"
-            subtitle={branchName}
-            contextSlot={<RoleSwitcherContextPill />}
+            subtitle={orgName}
+            titleAccessory={<BranchSelectorChip />}
             scrollY={scrollY}
           />
-          <AnimatedAppear delay={0}>
-            <WebHandoffCard
-              title="Open web control room"
-              description="Use web for branches, staff, reports, attendance QR console, and provider diagnostics."
-              destination="Dashboard"
-              action={
-                <ZookButton
-                  size="sm"
-                  icon="open-outline"
-                  onPress={() => void Linking.openURL("https://zookfit.in/dashboard")}
-                >
-                  Open web
-                </ZookButton>
-              }
-            />
-          </AnimatedAppear>
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
           {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
               {dashboard ? (
@@ -244,7 +239,10 @@ export default function OwnerCommandScreen() {
                           gym can operate normally.
                         </Text>
                       </View>
-                      <StatusChip status={subscription?.status ?? "SETUP"} tone="amber" />
+                      <StatusChip
+                        status={subscription ? titleCaseFromCode(subscription.status) : "Setup"}
+                        tone={toneForSaasSubscriptionStatus(subscription?.status)}
+                      />
                     </View>
                     <ZookButton
                       size="sm"
@@ -265,9 +263,7 @@ export default function OwnerCommandScreen() {
                 ) : (
                   <Card variant="compact">
                     <EmptyState
-                      icon="checkmark-done-outline"
                       title="All clear"
-                      body="Nothing needs your attention right now"
                     />
                   </Card>
                 )}
@@ -288,22 +284,22 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 16,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.md,
     paddingBottom: 96,
   },
   billingCard: {
-    gap: 12,
+    gap: spacing.sm,
   },
   billingHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.sm,
   },
   billingCopy: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: spacing.xxs,
   },
   billingTitle: {
     ...typography.cardTitle,

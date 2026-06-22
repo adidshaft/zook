@@ -26,13 +26,13 @@ export type OrganizationSummary = {
   staffCount: number;
 };
 
-export type DashboardChartPoint = {
+type DashboardChartPoint = {
   date: string;
   label: string;
   value: number;
 };
 
-export type DashboardPlanMixPoint = {
+type DashboardPlanMixPoint = {
   label: string;
   value: number;
   tone: "lime" | "sky" | "amber" | "violet";
@@ -95,6 +95,11 @@ export type MemberRow = {
     profilePhotoUrl?: string | null;
     notes?: string | null;
   };
+  membership?: {
+    status: string;
+    joinedAt?: string | Date | null;
+    leftAt?: string | Date | null;
+  } | null;
   user: {
     id: string;
     name: string;
@@ -187,6 +192,29 @@ export type MembershipPlanRow = {
   visitLimit?: number | null;
   validityDays?: number | null;
   createdAt: string;
+};
+
+export type ClassRow = {
+  id: string;
+  orgId: string;
+  branchId: string;
+  branchName?: string | null;
+  trainerId: string;
+  trainerName?: string | null;
+  name: string;
+  description?: string | null;
+  classType: string;
+  maxCapacity: number;
+  pricePaise?: number | null;
+  trainerCommissionBps?: number | null;
+  startTime: string | Date;
+  endTime: string | Date;
+  recurrenceRule?: string | null;
+  status: string;
+  createdAt: string | Date;
+  enrollmentCount: number;
+  remainingCapacity: number;
+  myEnrollmentStatus?: string | null;
 };
 
 export type StaffAssignmentRow = {
@@ -372,7 +400,7 @@ export type BodyProgressEntryRow = {
   visibility?: string | null;
 };
 
-export type ShopOrderItemRow = {
+type ShopOrderItemRow = {
   id: string;
   productId: string;
   quantity: number;

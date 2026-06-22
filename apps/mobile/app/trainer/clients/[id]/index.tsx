@@ -7,9 +7,9 @@ import {
   AuditWarning,
   FormField,
   Card,
-  IconBubble,
   ListRow,
   AppHeader,
+  QueryErrorState,
   SegmentedControl,
   StatusChip,
   ZookButton,
@@ -20,12 +20,15 @@ import {
   averageCompletionFor,
   clientDetailTabs,
   fitnessGoalFor,
-  initialsFor,
   planCountLabel,
+  selectedTrainerClient,
+  trainerClientDetailPath,
+  type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
+import { formatDateTime, formatInitials } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -36,12 +39,15 @@ export default function TrainerClientOverviewScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const clientsQuery = useTrainerClients();
-  const client = clientsQuery.data?.clients.find((candidate) => candidate.memberUserId === id) ?? null;
+  const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
   const fitnessGoal = fitnessGoalFor(client);
   const averageCompletion = averageCompletionFor(client);
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
+  const lastWorkoutStartedAt = recentWorkouts[0]?.startedAt;
   const activePlans = client?.summary?.activePlans ?? 0;
+  const dietPreference = client?.summary?.dietPreference?.trim();
+  const allergies = client?.summary?.allergies?.trim();
   const [noteText, setNoteText] = useState("");
   const [noteSaved, setNoteSaved] = useState(false);
   const [bodyWeight, setBodyWeight] = useState("");
@@ -99,13 +105,17 @@ export default function TrainerClientOverviewScreen() {
     }
   }
 
+  function selectTab(tab: ClientDetailTab) {
+    router.replace(trainerClientDetailPath(id, tab) as never);
+  }
+
   return (
     <>
       <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
           <AppHeader
             title="Client Detail"
-            subtitle=""
+            subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
@@ -120,13 +130,17 @@ export default function TrainerClientOverviewScreen() {
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
               </Pressable>
             }
-            chip={<StatusChip status="Trainer" tone="neutral" />}
           />
-          <SegmentedControl options={clientDetailTabs} value="overview" onChange={(tab) => router.replace(`/trainer/clients/${id}${tab === "overview" ? "" : `/${tab}`}` as never)} />
+          <SegmentedControl options={clientDetailTabs} value="overview" onChange={selectTab} />
 
-          {!clientsQuery.isLoading && !client ? (
+          {clientsQuery.isError ? (
+            <Card variant="compact">
+              <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} />
+            </Card>
+          ) : null}
+
+          {!clientsQuery.isLoading && !clientsQuery.isError && !client ? (
             <Card variant="compact" contentStyle={styles.notFoundContent}>
-              <IconBubble icon="person-outline" tone="neutral" size={42} />
               <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
               <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
             </Card>
@@ -135,8 +149,7 @@ export default function TrainerClientOverviewScreen() {
           <Card variant="compact" contentStyle={styles.clientHeroContent}>
             <View style={styles.clientHeroTop}>
               <View style={[styles.clientAvatar, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
-                <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{initialsFor(clientName)}</Text>
-                <View style={[styles.clientAvatarDot, { backgroundColor: palette.accent.base, borderColor: palette.bg.elevated }]} />
+                <Text style={[styles.clientAvatarText, { color: palette.text.primary }]}>{formatInitials(clientName, "ZK")}</Text>
               </View>
               <View style={styles.clientHeroCopy}>
                 <Text numberOfLines={1} style={[styles.clientHeroName, { color: palette.text.primary }]}>{clientName}</Text>
@@ -155,19 +168,36 @@ export default function TrainerClientOverviewScreen() {
               <View style={styles.clientHeroMetric}>
                 <Ionicons name="barbell-outline" size={22} color={palette.accent.base} />
                 <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>PT pack</Text>
-                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active plans` : "Create first plan"}</Text>
+                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active ${activePlans === 1 ? "plan" : "plans"}` : "Create first plan"}</Text>
               </View>
             </View>
-            <ZookButton testID="trainer-ai-draft-button" href={`/trainer/clients/${id}/plan` as never} icon="sparkles-outline" disabled={!client}>
-              Open AI draft
-            </ZookButton>
+            <View style={styles.heroActions}>
+              <ZookButton testID="trainer-create-plan-button" href={`/trainer/clients/${id}/plan` as never} icon="reader-outline" disabled={!client} style={styles.heroAction}>
+                Workout plan
+              </ZookButton>
+              <ZookButton testID="trainer-create-diet-button" href={`/trainer/clients/${id}/diet` as never} variant="secondary" icon="restaurant-outline" disabled={!client} style={styles.heroAction}>
+                Diet plan
+              </ZookButton>
+            </View>
           </Card>
 
           <Card variant="compact" contentStyle={styles.stack}>
             <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />} />
-            <ListRow title="Diet note" subtitle={client?.summary?.dietPreference ?? "Not shared"} trailing={<StatusChip status="Visible" tone="neutral" />} />
-            <ListRow title="Allergy note" subtitle={client?.summary?.allergies ?? "None added"} trailing={<StatusChip status="Clear" tone="neutral" />} />
-            <ListRow title="Last check-in" subtitle={recentWorkouts[0]?.startedAt ?? "Today 7:14 AM"} trailing={<StatusChip status="Tracked" tone="neutral" />} />
+            <ListRow
+              title="Diet note"
+              subtitle={dietPreference || "Not shared"}
+              trailing={<StatusChip status={dietPreference ? "Shared" : "Missing"} tone="neutral" />}
+            />
+            <ListRow
+              title="Allergy note"
+              subtitle={allergies || "None added"}
+              trailing={<StatusChip status={allergies ? "Shared" : "Not added"} tone="neutral" />}
+            />
+            <ListRow
+              title="Last check-in"
+              subtitle={formatDateTime(lastWorkoutStartedAt, "No workout logged", "en-IN")}
+              trailing={<StatusChip status={lastWorkoutStartedAt ? "Tracked" : "No log"} tone="neutral" />}
+            />
             <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Needs feedback" : `${averageCompletion}%`} tone="amber" />} />
           </Card>
 
@@ -190,7 +220,7 @@ export default function TrainerClientOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: 12, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: 8, width: "100%" },
+  content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   backIcon: { fontSize: 26, lineHeight: 28 },
@@ -199,15 +229,16 @@ const styles = StyleSheet.create({
   clientHeroTop: { alignItems: "center", flexDirection: "row", gap: spacing.lg },
   clientAvatar: { alignItems: "center", borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
   clientAvatarText: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
-  clientAvatarDot: { borderRadius: 11, borderWidth: 4, bottom: 10, height: 22, position: "absolute", right: 2, width: 22 },
-  clientHeroCopy: { flex: 1, gap: 8, minWidth: 0 },
+  clientHeroCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   clientHeroName: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   clientStatusText: { fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
   clientHeroMetrics: { flexDirection: "row", gap: spacing.lg },
   clientHeroMetric: { flex: 1, gap: 6 },
+  heroActions: { flexDirection: "row", gap: 8 },
+  heroAction: { flex: 1 },
   metricLabel: { fontSize: 15, lineHeight: 20 },
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
   cardTitle: { ...typography.cardTitle },
-  stack: { gap: 10 },
+  stack: { gap: spacing.sm },
 });

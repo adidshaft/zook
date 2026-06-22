@@ -7,7 +7,7 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
 import type { ShopOrderRow } from "@/components/dashboard/types";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { ShopOrderPaymentControl } from "../payments/shop-order-payment-control";
 import type { ResourceState } from "./types";
 
@@ -15,8 +15,8 @@ const copy = {
   title: "Pickup and fulfillment queue",
   description: "Orders needing payment, pickup verification, or review.",
   loadingTitle: "Loading shop orders",
-  loadingBody: "Pulling the latest order queue.",
-  empty: "No shop orders are currently recorded for this organization.",
+  loadingBody: "Loading order queue.",
+  empty: "No shop orders recorded for this gym.",
 };
 
 function orderDeskNote(order: ShopOrderRow) {
@@ -25,6 +25,10 @@ function orderDeskNote(order: ShopOrderRow) {
   if (order.status === "FULFILLED") return "Already fulfilled";
   if (order.status === "CANCELLED") return "Cancelled";
   return "Review order";
+}
+
+function canRefundOrder(order: ShopOrderRow) {
+  return Boolean(order.paymentId && ["READY_FOR_PICKUP", "FULFILLED"].includes(order.status));
 }
 
 export function ShopOrdersSection({
@@ -45,14 +49,16 @@ export function ShopOrdersSection({
         eyebrow="Orders"
         title={copy.title}
         description={copy.description}
-        badge={<Pill tone={readyOrders.length ? "amber" : "lime"}>{readyOrders.length} ready</Pill>}
+        badge={
+          <Pill tone={readyOrders.length ? "amber" : "neutral"}>{readyOrders.length} pickup</Pill>
+        }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
       <ManagedOn surface="desk" className="mt-4">
-        Ready pickup orders are handed over in Desk after identity verification.
+        Pickup orders are handed over in Desk after identity verification.
       </ManagedOn>
       {status ? (
-        <p className="mt-3 rounded-2xl border border-lime-300/20 bg-lime-300/8 px-4 py-3 text-sm text-lime-100">
+        <p className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 px-4 py-3 text-sm text-blue-50">
           {status}
         </p>
       ) : null}
@@ -85,6 +91,11 @@ export function ShopOrdersSection({
                 ),
               },
               {
+                id: "created",
+                header: "Created",
+                render: (order) => formatDateTime(order.createdAt),
+              },
+              {
                 id: "pickup",
                 header: "Pickup",
                 render: (order) => order.pickupCode ?? "Awaiting code",
@@ -103,12 +114,15 @@ export function ShopOrdersSection({
                 align: "right",
                 render: (order) =>
                   order.status === "READY_FOR_PICKUP" ? (
-                    <Link
-                      href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
-                      className="zook-focus rounded-full border border-lime-300/35 px-3 py-1 text-xs font-semibold text-lime-100 transition hover:bg-lime-300/10"
-                    >
-                      Open in Desk
-                    </Link>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Link
+                        href={`/desk/orders?orderId=${encodeURIComponent(order.id)}`}
+                        className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
+                      >
+                        Open in Desk
+                      </Link>
+                      {canRefundOrder(order) ? <RefundOrderLink order={order} /> : null}
+                    </div>
                   ) : order.status === "PENDING_PAYMENT" && !order.paymentId ? (
                     <ShopOrderPaymentControl
                       orgId={orgId}
@@ -120,7 +134,10 @@ export function ShopOrdersSection({
                       }}
                     />
                   ) : order.status === "FULFILLED" ? (
-                    <span className="text-xs text-white/35">Already fulfilled</span>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <span className="text-xs text-white/35">Already fulfilled</span>
+                      {canRefundOrder(order) ? <RefundOrderLink order={order} /> : null}
+                    </div>
                   ) : order.status === "CANCELLED" ? (
                     <span className="text-xs text-white/35">Cancelled</span>
                   ) : (
@@ -135,5 +152,17 @@ export function ShopOrdersSection({
         )}
       </div>
     </GlassCard>
+  );
+}
+
+function RefundOrderLink({ order }: { order: ShopOrderRow }) {
+  if (!order.paymentId) return null;
+  return (
+    <Link
+      href={`/dashboard/payments?search=${encodeURIComponent(order.paymentId)}`}
+      className="zook-focus rounded-full border border-white/12 px-3 py-1 text-xs font-semibold text-white/68 transition hover:bg-white/8 hover:text-white"
+    >
+      Refund order
+    </Link>
   );
 }

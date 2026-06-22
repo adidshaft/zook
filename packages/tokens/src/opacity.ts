@@ -5,5 +5,4 @@ export const opacity = {
   glassStroke: 0.14,
   subtleStroke: 0.1,
   dim: 0.56,
-  glowAmbient: 0.14,
 };

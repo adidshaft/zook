@@ -188,8 +188,44 @@ describe("auth service", () => {
         ipAddress: "203.0.113.10",
         userAgent: "vitest",
       }),
-    ).rejects.toThrow("Fixed OTP is disabled in production");
+    ).rejects.toThrow("Fixed OTP is disabled in this environment");
     expect(repo.sessions).toHaveLength(0);
+  });
+
+  it("rejects a configured fixed otp in staging until explicitly enabled", async () => {
+    process.env.APP_ENV = "staging";
+    process.env.OTP_FIXED_CODE_DEV = "000000";
+    delete process.env.ALLOW_FIXED_OTP_IN_STAGING;
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+
+    await expect(
+      service.verifyOtp({
+        identifier: email,
+        code: "000000",
+        userId: "user_1",
+        ipAddress: "203.0.113.10",
+        userAgent: "vitest",
+      }),
+    ).rejects.toThrow("Fixed OTP is disabled in this environment");
+    expect(repo.sessions).toHaveLength(0);
+  });
+
+  it("accepts the configured fixed otp in staging only when explicitly enabled", async () => {
+    process.env.APP_ENV = "staging";
+    process.env.OTP_FIXED_CODE_DEV = "000000";
+    process.env.ALLOW_FIXED_OTP_IN_STAGING = "true";
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+
+    const session = await service.verifyOtp({
+      identifier: email,
+      code: "000000",
+      userId: "user_1",
+    });
+
+    expect(session.token).toBeTruthy();
+    expect(repo.sessions).toHaveLength(1);
   });
 
   it("invalid otp fails and increments attempts", async () => {

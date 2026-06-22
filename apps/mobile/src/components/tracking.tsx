@@ -1,36 +1,8 @@
-import { Link } from "expo-router";
-import type { Href } from "expo-router";
-import type { TrackingSummaryMetric, WorkoutHistorySeries, WorkoutLogEntry } from "@zook/core";
+import type { TrackingSummaryMetric, WorkoutLogEntry } from "@zook/core";
+import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { radii, useTheme } from "@/lib/theme";
-
-export function TrackingSectionHeader({
-  title,
-  href,
-  linkLabel
-}: {
-  title: string;
-  href?: Href;
-  linkLabel?: string;
-}) {
-  const t = useT();
-  const { palette } = useTheme();
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
-        {title}
-      </Text>
-      {href ? (
-        <Link href={href}>
-          <Text style={[styles.sectionLink, { color: palette.text.secondary }]}>
-            {linkLabel ?? t("common.seeAll")}
-          </Text>
-        </Link>
-      ) : null}
-    </View>
-  );
-}
+import { gradients, radii, useTheme } from "@/lib/theme";
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
   const { palette } = useTheme();
@@ -44,6 +16,12 @@ export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric 
         },
       ]}
     >
+      <LinearGradient
+        colors={gradients.cardSheen}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
       <Text style={[styles.summaryLabel, { color: palette.text.secondary }]}>
         {metric.label}
       </Text>
@@ -188,49 +166,6 @@ export function WorkoutLogCard({
   );
 }
 
-export function WorkoutHistorySummary({ series }: { series: WorkoutHistorySeries }) {
-  const t = useT();
-  const { palette } = useTheme();
-  return (
-    <View
-      style={[
-        styles.historyCard,
-        {
-          borderColor: palette.border.default,
-          backgroundColor: palette.surface.raised,
-        },
-      ]}
-    >
-      <Text style={[styles.historyLabel, { color: palette.text.primary }]}>
-        {series.label}
-      </Text>
-      <View style={styles.historyMetrics}>
-        <View style={styles.historyMetricBlock}>
-          <Text style={[styles.historyMetricValue, { color: palette.text.primary }]}>
-            {series.totalDurationLabel}
-          </Text>
-          <Text style={[styles.historyMetricLabel, { color: palette.text.secondary }]}>
-            {t("tracking.totalDuration")}
-          </Text>
-        </View>
-        <View style={styles.historyMetricBlock}>
-          <Text style={[styles.historyMetricValue, { color: palette.text.primary }]}>
-            {series.sessionCountLabel}
-          </Text>
-          <Text style={[styles.historyMetricLabel, { color: palette.text.secondary }]}>
-            {t("tracking.sessions")}
-          </Text>
-        </View>
-      </View>
-      <View style={[styles.historyCallout, { backgroundColor: palette.surface.accentSoft }]}>
-        <Text style={[styles.historyCalloutText, { color: palette.accent.base }]}>
-          {series.completionLabel}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 function MetaPill({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
   const { palette } = useTheme();
   return (
@@ -252,23 +187,12 @@ function MetaPill({ label, value, compact = false }: { label: string; value: str
 }
 
 const styles = StyleSheet.create({
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between"
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "900"
-  },
-  sectionLink: {
-    fontSize: 13,
-    fontWeight: "700"
-  },
   summaryTile: {
     width: "48%",
     borderRadius: 20,
+    borderCurve: "continuous",
     borderWidth: 1,
+    overflow: "hidden",
     padding: 14,
     minHeight: 112,
     gap: 7
@@ -285,8 +209,6 @@ const styles = StyleSheet.create({
   summaryDetail: {
     fontSize: 13,
     lineHeight: 18
-  },
-  summaryDetailPositive: {
   },
   logCard: {
     borderRadius: 30,
@@ -378,12 +300,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1
   },
-  statusDone: {
-  },
-  statusOptional: {
-  },
-  statusSkipped: {
-  },
   statusText: {
     fontSize: 11,
     fontWeight: "800"
@@ -394,41 +310,5 @@ const styles = StyleSheet.create({
   notesTextCompact: {
     fontSize: 12,
     lineHeight: 17
-  },
-  historyCard: {
-    borderRadius: 30,
-    borderWidth: 1,
-    padding: 18,
-    gap: 14
-  },
-  historyLabel: {
-    fontSize: 12,
-    fontWeight: "700"
-  },
-  historyMetrics: {
-    flexDirection: "row",
-    gap: 12
-  },
-  historyMetricBlock: {
-    flex: 1,
-    gap: 4
-  },
-  historyMetricValue: {
-    fontSize: 28,
-    fontWeight: "900",
-    lineHeight: 30
-  },
-  historyMetricLabel: {
-    fontSize: 12,
-    fontWeight: "700"
-  },
-  historyCallout: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 16,
-    paddingVertical: 14
-  },
-  historyCalloutText: {
-    fontSize: 13,
-    fontWeight: "700"
   }
 });

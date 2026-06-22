@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { AvatarInitials } from "../dashboard-primitives";
 import { GlassCard, Pill } from "../glass-card";
 import { ZookButton, ZookButtonLink } from "../zook-button";
 import type { DeskCopy } from "./copy";
@@ -34,6 +35,7 @@ export function MemberTab({
 }) {
   const [showPhone, setShowPhone] = useState(false);
   const phone = selectedMember?.user?.phone;
+  const emergencyContact = selectedMember?.user?.emergencyContact;
   const activeCheckIn = selectedMember?.activeCheckIn;
   const selectedPhoto =
     selectedMember?.profile.profilePhotoUrl ?? selectedMember?.user?.profilePhotoUrl ?? null;
@@ -92,13 +94,14 @@ export function MemberTab({
                   className="h-20 w-20 shrink-0 rounded-3xl object-cover"
                 />
               ) : (
-                <div className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl bg-lime-300/15 text-2xl font-semibold text-lime-100">
-                  {memberLabel(selectedMember).slice(0, 1)}
-                </div>
+                <AvatarInitials
+                  name={memberLabel(selectedMember)}
+                  className="h-20 w-20 rounded-3xl border-white/10 bg-white/8 text-2xl text-white/70"
+                />
               )}
               <div className="min-w-0">
                 {selectedMember.user?.privateHandle ? (
-                  <Pill tone="blue">
+                  <Pill>
                     {copy.privateId}: {selectedMember.user.privateHandle}
                   </Pill>
                 ) : null}
@@ -137,15 +140,15 @@ export function MemberTab({
                   {copy.recentActivity}
                 </p>
                 {activeCheckIn ? (
-                  <div className="mt-3 rounded-2xl border border-lime-300/25 bg-lime-300/10 p-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-lime-100/70">
+                  <div className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-blue-100/70">
                       {copy.activeCheckIn}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-lime-50">
+                    <p className="mt-1 text-sm font-medium text-blue-50">
                       Since {formatDateTime(activeCheckIn.checkedInAt)}
                     </p>
                     {activeCheckIn.branchName ? (
-                      <p className="mt-1 text-xs text-lime-50/60">{activeCheckIn.branchName}</p>
+                      <p className="mt-1 text-xs text-blue-50/60">{activeCheckIn.branchName}</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -166,6 +169,28 @@ export function MemberTab({
                     </p>
                   ) : null}
                 </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                  Emergency contact
+                </p>
+                {emergencyContact?.name || emergencyContact?.phone ? (
+                  <div className="mt-2 text-sm text-white/68">
+                    <p className="font-medium text-white">
+                      {emergencyContact.name || "Contact"}
+                    </p>
+                    {emergencyContact.phone ? (
+                      <a
+                        href={`tel:${emergencyContact.phone}`}
+                        className="mt-1 inline-block text-white/58 underline-offset-4 hover:underline"
+                      >
+                        {emergencyContact.phone}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-white/42">Not added by member.</p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <ZookButtonLink

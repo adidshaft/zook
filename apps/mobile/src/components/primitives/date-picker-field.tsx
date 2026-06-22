@@ -1,9 +1,12 @@
 import { useState } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatLongDate } from "@/lib/formatting";
 import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -35,13 +38,7 @@ export function DatePickerField({
   const fallbackDate = value ?? maximumDate ?? new Date();
   const [draft, setDraft] = useState(fallbackDate);
   const isDark = mode === "dark";
-  const formatted = value
-    ? new Intl.DateTimeFormat(undefined, {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(value)
-    : placeholder;
+  const formatted = value ? formatLongDate(value) : placeholder;
   const fieldSurface = mode === "dark" ? palette.surface.default : palette.surface.accentSoft;
   const sheetSurface =
     Platform.OS === "ios"
@@ -63,6 +60,18 @@ export function DatePickerField({
 
   function commit() {
     onChange(draft);
+    setOpen(false);
+  }
+
+  function handleAndroidChange(event: DateTimePickerEvent, nextDate?: Date) {
+    if (event.type === "dismissed") {
+      close();
+      return;
+    }
+    if (nextDate) {
+      setDraft(nextDate);
+      onChange(nextDate);
+    }
     setOpen(false);
   }
 
@@ -96,6 +105,17 @@ export function DatePickerField({
         </Text>
         <Ionicons name="calendar-outline" size={18} color={palette.text.secondary} />
       </Pressable>
+      {Platform.OS === "android" && open ? (
+        <DateTimePicker
+          display="calendar"
+          mode="date"
+          maximumDate={maximumDate}
+          minimumDate={minimumDate}
+          value={draft}
+          onChange={handleAndroidChange}
+        />
+      ) : null}
+      {Platform.OS !== "android" ? (
       <Modal animationType="fade" transparent visible={open} onRequestClose={close}>
         <Pressable
           accessibilityLabel={t("common.dismiss")}
@@ -117,9 +137,8 @@ export function DatePickerField({
                   borderColor: palette.border.subtle,
                   backgroundColor: sheetSurface,
                   shadowColor: isDark ? palette.bg.sunken : palette.text.primary,
-                  shadowOpacity: Platform.OS === "ios" ? (isDark ? 0.2 : 0.1) : 0,
+                  shadowOpacity: isDark ? 0.2 : 0.1,
                 },
-                Platform.OS === "android" ? styles.androidCard : null,
               ]}
             >
               {Platform.OS === "ios" ? (
@@ -142,7 +161,7 @@ export function DatePickerField({
               <View style={styles.cardContent}>
                 <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>{label}</Text>
                 <DateTimePicker
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  display="spinner"
                   mode="date"
                   maximumDate={maximumDate}
                   minimumDate={minimumDate}
@@ -186,6 +205,7 @@ export function DatePickerField({
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
     </View>
   );
 }
@@ -232,9 +252,6 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: -6 },
     elevation: 4,
-  },
-  androidCard: {
-    borderRadius: 24,
   },
   cardContent: {
     gap: spacing.lg,

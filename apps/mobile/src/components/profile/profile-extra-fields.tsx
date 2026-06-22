@@ -32,7 +32,7 @@ const genderOptions: Array<{ label: string; value: GenderValue }> = [
   { label: "Male", value: "male" },
   { label: "Female", value: "female" },
   { label: "Non-binary", value: "non_binary" },
-  { label: "Prefer not to say", value: "prefer_not_to_say" },
+  { label: "Not specified", value: "prefer_not_to_say" },
 ];
 
 const localeOptions: Array<{ label: string; value: LocaleValue }> = [
@@ -172,23 +172,12 @@ export function ProfileExtraFields() {
     <Card contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
-            <View
-              style={[
-                styles.completionDot,
-                {
-                  backgroundColor: palette.accent.base,
-                  shadowColor: palette.accent.base,
-                },
-              ]}
-            />
-          </View>
+          <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
           <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
             {completedCount}/5 safety and KYC fields complete.
           </Text>
         </View>
-        {savedKey ? <Pill tone="lime">Saved</Pill> : null}
+        {savedKey ? <Pill tone="blue">Saved</Pill> : null}
       </View>
 
       <View style={styles.fieldGroup}>
@@ -242,7 +231,6 @@ export function ProfileExtraFields() {
 
       <PreferenceToggle
         title="Marketing opt-in"
-        subtitle="Offers and gym updates."
         value={marketingOptIn}
         disabled={savingKey === "marketingOptIn"}
         onValueChange={(value) => {
@@ -350,7 +338,7 @@ function PreferenceToggle({
 }: {
   disabled?: boolean;
   onValueChange: (value: boolean) => void;
-  subtitle: string;
+  subtitle?: string;
   title: string;
   value: boolean;
 }) {
@@ -359,7 +347,7 @@ function PreferenceToggle({
     <View style={styles.preferenceRow}>
       <View style={styles.preferenceCopy}>
         <Text style={[styles.preferenceTitle, { color: palette.text.primary }]}>{title}</Text>
-        <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+        {subtitle ? <Text style={[styles.preferenceSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text> : null}
       </View>
       <ThemedSwitch
         value={value}
@@ -379,18 +367,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-  },
-  titleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  completionDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   title: {
     ...typography.sectionTitle,
@@ -444,5 +420,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
-export default ProfileExtraFields;

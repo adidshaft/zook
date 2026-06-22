@@ -108,7 +108,7 @@ Verify:
 
 - [ ] `/desk` opens for receptionist account.
 - [ ] Mobile Desk, Members, Payments, Orders tabs open.
-- [ ] Code verify shows success/pending/rejected states using demo/test data.
+- [ ] Code verify shows success/pending/rejected states using test data.
 - [ ] Manual payment form blocks duplicate taps.
 - [ ] Pickup fulfilment requires confirmation.
 - [ ] Phone reveal permission gate is visible.

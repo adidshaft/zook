@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, CouponRow } from "@/components/dashboard/types";
-import { HelpHint } from "../../../ui";
+import { EmptyState } from "../../../dashboard-primitives";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
 import type { CouponFormState } from "./types";
@@ -37,12 +37,7 @@ export function CouponControls({
 }: CouponControlsProps) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="inline-flex items-center gap-2 font-medium text-white">
-        Coupons
-        <HelpHint label="Discount value" title="Discount value">
-          For percentages, enter the percent members should see. For fixed amount, enter rupees.
-        </HelpHint>
-      </p>
+      <p className="font-medium text-white">Coupons</p>
       <div className="mt-3 grid gap-3">
         <div className="grid gap-3 md:grid-cols-[1fr_150px]">
           <TextInput
@@ -103,6 +98,13 @@ export function CouponControls({
             {formBusy === "coupon" ? "Creating..." : "Create coupon"}
           </ZookButton>
         </div>
+        {!coupons.length ? (
+          <EmptyState
+            title="No coupons"
+            description="Create a code above to offer a controlled joining discount."
+            className="border-white/10 bg-black/20"
+          />
+        ) : null}
         {coupons.slice(0, 4).map((coupon) => (
           <div key={coupon.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
             {editingCouponId === coupon.id ? (

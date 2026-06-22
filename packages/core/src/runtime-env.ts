@@ -135,6 +135,10 @@ export function getAllowedFixedOtp(env: NodeJS.ProcessEnv = process.env) {
   return fixedOtp && isFixedOtpAllowed(env) ? fixedOtp : undefined;
 }
 
+export function getConfiguredFixedOtp(env: NodeJS.ProcessEnv = process.env) {
+  return env.OTP_FIXED_CODE_DEV?.trim() || undefined;
+}
+
 function isStrongSecret(value: string) {
   const trimmed = value.trim();
   if (trimmed.length < 32) {
@@ -171,6 +175,25 @@ export function canReturnDevOtp(env: NodeJS.ProcessEnv = process.env) {
     return true;
   }
   return getAppEnv(env) === "local" && isTruthy(env.ALLOW_DEV_OTP_RESPONSE);
+}
+
+export function getCronSecret(env: NodeJS.ProcessEnv = process.env) {
+  const secret = env.CRON_SECRET?.trim();
+  if (secret) {
+    return secret;
+  }
+
+  if (getAppEnv(env) === "local") {
+    return undefined;
+  }
+
+  throw new RuntimeConfigError([
+    {
+      level: "error",
+      code: "CRON_SECRET_REQUIRED",
+      message: "CRON_SECRET must be configured outside local environments.",
+    },
+  ]);
 }
 
 export function isMockPaymentCompletionAllowed(env: NodeJS.ProcessEnv = process.env) {
@@ -221,7 +244,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
     issues.push({
       level: "error",
       code: "OFFLINE_DEMO_NON_LOCAL",
-      message: "Sample mode is only available in local builds.",
+      message: "Local test mode is only available in local builds.",
     });
   }
 
@@ -236,6 +259,20 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
           level: "error",
           code: "ZOOK_QR_SECRET_REQUIRED",
           message: "ZOOK_QR_SECRET must be configured outside local environments.",
+        });
+      }
+    }
+
+    try {
+      getCronSecret(env);
+    } catch (error) {
+      if (error instanceof RuntimeConfigError) {
+        issues.push(...error.issues);
+      } else {
+        issues.push({
+          level: "error",
+          code: "CRON_SECRET_REQUIRED",
+          message: "CRON_SECRET must be configured outside local environments.",
         });
       }
     }
@@ -321,7 +358,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Run
       issues.push({
         level: "warning",
         code: `STAGING_IMPLICIT_${key}`,
-        message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect an intentional mock mode.`,
+        message: `${key}=mock is implicit in staging. Set it explicitly so diagnostics reflect intentional test-provider mode.`,
       });
     }
     if (normalizedProvider(env, "RATE_LIMIT_PROVIDER", "memory") === "memory" && !env.RATE_LIMIT_PROVIDER?.trim()) {

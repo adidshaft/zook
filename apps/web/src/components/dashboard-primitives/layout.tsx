@@ -2,12 +2,10 @@
 
 import clsx from "clsx";
 import { motion, type Variants } from "framer-motion";
-import { Check, AlertTriangle, X, Circle } from "lucide-react";
 import { Pill, ProductPanel, type PillTone } from "../glass-card";
-import { HelpHint } from "../ui";
 import { toneFromStatus } from "./stats";
 
-export const staggerContainerVariants: Variants = {
+const staggerContainerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -55,13 +53,13 @@ export function SectionHeader({
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">{title}</h2>
-          {description ? (
-            <HelpHint label={title} title={title}>
-              {description}
-            </HelpHint>
-          ) : null}
           {badge}
         </div>
+        {description ? (
+          <div className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
+            {description}
+          </div>
+        ) : null}
       </div>
       {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
     </motion.div>
@@ -104,24 +102,21 @@ export function DashboardPageShell({
 
 export function StatusDot({
   tone = "neutral",
-  pulse = false,
 }: {
   tone?: PillTone;
-  pulse?: boolean;
 }) {
   const tones: Record<PillTone, string> = {
-    neutral: "bg-[var(--text-tertiary)] shadow-[0_0_0_4px_var(--border-subtle)]",
-    lime: "bg-[var(--accent)] shadow-[0_0_0_4px_var(--surface-accent-soft)]",
-    amber: "bg-[var(--feedback-warning)] shadow-[0_0_0_4px_var(--surface-warning-soft)]",
-    red: "bg-[var(--feedback-danger)] shadow-[0_0_0_4px_var(--surface-danger-soft)]",
-    blue: "bg-[var(--feedback-info)] shadow-[0_0_0_4px_var(--surface-info-soft)]",
+    neutral: "bg-[var(--text-tertiary)]",
+    lime: "bg-[var(--accent)]",
+    amber: "bg-[var(--feedback-warning)]",
+    red: "bg-[var(--feedback-danger)]",
+    blue: "bg-[var(--feedback-info)]",
   };
   return (
     <span
       className={clsx(
         "inline-block h-2.5 w-2.5 rounded-full",
         tones[tone],
-        pulse ? "animate-pulse" : null,
       )}
       aria-hidden="true"
     />
@@ -154,16 +149,6 @@ export function AvatarInitials({
   );
 }
 
-export function ActionRow({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string | undefined;
-}) {
-  return <div className={clsx("flex flex-wrap items-center gap-2", className)}>{children}</div>;
-}
-
 export function StatusPill({
   value,
   tone,
@@ -174,21 +159,12 @@ export function StatusPill({
   className?: string | undefined;
 }) {
   const resolvedTone = tone ?? toneFromStatus(value);
-  const Icon =
-    resolvedTone === "lime"
-      ? Check
-      : resolvedTone === "amber"
-        ? AlertTriangle
-        : resolvedTone === "red"
-          ? X
-          : Circle;
   return (
     <Pill
       tone={resolvedTone}
       aria-label={`Status: ${value}`}
       {...(className ? { className } : {})}
     >
-      <Icon className="h-3 w-3" aria-hidden="true" />
       {value}
     </Pill>
   );

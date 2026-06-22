@@ -1,6 +1,6 @@
 "use client";
 
-import { HelpHint, RadioCardGroup } from "../../ui";
+import { RadioCardGroup } from "../../ui";
 import { ZookButton } from "../../zook-button";
 
 type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
@@ -169,12 +169,7 @@ export function BranchHoursEditor({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-white">Working hours</p>
-          <p className="mt-1 inline-flex items-center gap-2 text-xs text-white/45">
-            {formatBranchHoursSummary(hours)}
-            <HelpHint label="Working hours" title="Working hours" size="xs">
-              Changes save with the parent Branch form. Click Save branch to persist.
-            </HelpHint>
-          </p>
+          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours)}</p>
         </div>
         <ZookButton
           type="button"
@@ -200,7 +195,7 @@ export function BranchHoursEditor({
       />
       {allClosed ? (
         <p className="mt-3 rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
-          This branch will appear closed on the public page.
+          This branch is closed on the public page.
         </p>
       ) : null}
       <div className="mt-4 grid gap-2">
@@ -224,7 +219,7 @@ export function BranchHoursEditor({
                   className={`zook-focus rounded-full border px-3 py-2 text-xs font-medium transition ${
                     isClosed
                       ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
-                      : "border-lime-300/30 bg-lime-300/10 text-lime-100"
+                      : "border-blue-300/25 bg-blue-300/10 text-blue-50"
                   }`}
                 >
                   {isClosed ? "Closed" : "Open"}

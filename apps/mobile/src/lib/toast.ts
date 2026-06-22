@@ -20,7 +20,7 @@ export function subscribeToast(listener: (payload: ToastPayload) => void) {
   };
 }
 
-export function runHaptic(tone: HapticTone) {
+function runHaptic(tone: HapticTone) {
   if (Platform.OS === "web") {
     return;
   }
@@ -44,23 +44,6 @@ export function messageFromError(error: unknown, fallback: string) {
     return error.message;
   }
   return fallback;
-}
-
-export function notifySaved(message: string) {
-  showToast({ tone: "success", haptic: "success", message });
-}
-
-export function notifyDestroyed(message: string) {
-  showToast({ tone: "amber", haptic: "warning", message });
-}
-
-export function notifyError(error: unknown, fallback = "Please try again.") {
-  showToast({
-    title: "Action failed",
-    tone: "danger",
-    haptic: "error",
-    message: messageFromError(error, fallback),
-  });
 }
 
 export function showToast({

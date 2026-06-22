@@ -22,7 +22,7 @@ export function ShopSection(props: ShopSectionProps) {
             href={tab.href}
             className={`zook-focus rounded-full border px-4 py-2 text-sm font-semibold transition ${
               tab.active
-                ? "border-lime-300/45 bg-lime-300/14 text-lime-100"
+                ? "border-white/20 bg-white/8 text-white"
                 : "border-white/10 text-white/60 hover:bg-white/8 hover:text-white"
             }`}
           >

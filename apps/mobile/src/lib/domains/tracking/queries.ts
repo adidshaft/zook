@@ -5,6 +5,7 @@ import { queryKeys } from "@/lib/domains/shared/keys";
 import type {
   BodyProgressEntryRecord,
   DietPlanRecord,
+  HabitRecord,
   MealLogRecord,
 } from "@/lib/domains/shared/types";
 
@@ -49,14 +50,17 @@ export function useMyTrackingWorkouts() {
   });
 }
 
-export function useMyTrackingHabits() {
-  const { status, token } = useAuth();
+export function useMyHabits() {
+  const { status, token, activeOrgId } = useAuth();
   return useQuery({
     queryKey: queryKeys.tracking.habits(),
     queryFn: () =>
-      mobileApiFetch<{ habits: Array<Record<string, unknown>> }>("/me/tracking/habits", { token }),
+      mobileApiFetch<{ habits: HabitRecord[] }>("/me/tracking/habits", {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
     enabled: status === "authenticated" && Boolean(token),
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
   });
 }
 

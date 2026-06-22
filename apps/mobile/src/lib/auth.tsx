@@ -21,7 +21,9 @@ import {
   getOfflineDemoRoleOverride,
   isOfflineDemoMode,
 } from "./demo-mode";
+import { titleCaseFromCode } from "./formatting";
 import { applySessionLocalePreference } from "./i18n";
+import { sanitizeOtpValue } from "./otp";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 import { typography, useTheme } from "./theme";
 
@@ -40,6 +42,7 @@ const SESSION_PROACTIVE_WINDOW_MS = 60 * 1000;
 const ORG_ROLE_PRIORITY: Role[] = ["OWNER", "ADMIN", "RECEPTIONIST", "TRAINER", "MEMBER"];
 type LogoutCleanup = () => Promise<void> | void;
 let authQueryClient: QueryClient | undefined;
+let qaResetInFlight = false;
 
 export function setAuthQueryClient(queryClient: QueryClient) {
   authQueryClient = queryClient;
@@ -50,20 +53,8 @@ export function setAuthQueryClient(queryClient: QueryClient) {
   };
 }
 
-function sanitizeOtpCode(value: string) {
-  return value
-    .normalize("NFKC")
-    .replace(/[^0-9]/g, "")
-    .slice(0, 6);
-}
-
-function titleCaseRole(role: Role) {
-  return role
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+export function isQaResetInFlight() {
+  return qaResetInFlight;
 }
 
 interface RequestOtpResult {
@@ -84,12 +75,11 @@ interface AuthContextValue {
   proactiveLogin?: { identifier?: string; triggeredAt: number };
   biometricEnabled: boolean;
   requestOtp: (identifier: string) => Promise<RequestOtpResult>;
-  signInWithApple: (identityToken: string, fullName?: string) => Promise<void>;
-  signInWithGoogle: (idToken: string) => Promise<void>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<string | void>;
   clearExpiredSession: () => Promise<void>;
+  resetQaSession: () => Promise<void>;
   defaultRolePreference?: Role;
   switchOrg: (orgId: string) => Promise<void>;
   switchRole: (role: Role) => Promise<void>;
@@ -189,6 +179,10 @@ function fallbackSessionExpiresAt() {
   return new Date(Date.now() + SESSION_FALLBACK_MS).toISOString();
 }
 
+function branchStorageKey(orgId?: string) {
+  return `zook_active_branch_${orgId ?? "global"}`;
+}
+
 function normalizeSessionExpiresAt(value?: string | null) {
   const expiresAt = value ? new Date(value).getTime() : Number.NaN;
   if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
@@ -218,11 +212,7 @@ async function authenticateBiometric() {
   return result.success;
 }
 
-export async function getBiometricUnlockEnabled() {
-  return (await getStoredValue(BIOMETRIC_ENABLED_STORAGE_KEY)) === "1";
-}
-
-export async function setStoredBiometricUnlockEnabled(enabled: boolean) {
+async function setStoredBiometricUnlockEnabled(enabled: boolean) {
   if (enabled && !(await biometricAvailable())) {
     return false;
   }
@@ -342,6 +332,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearExpiredSession = useCallback(async () => {
     await clearSession();
     setError("Your session expired. Sign in again to continue.");
+  }, [clearSession]);
+
+  const resetQaSession = useCallback(async () => {
+    const tokenValue = tokenRef.current;
+    const organizations = sessionRef.current?.organizations ?? [];
+    qaResetInFlight = true;
+    try {
+      if (tokenValue) {
+        await authClient.logout(tokenValue);
+      }
+    } catch {
+      // Keep simulator QA flows deterministic even if remote logout fails.
+    } finally {
+      await Promise.all([
+        deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY),
+        deleteStoredValue(branchStorageKey()),
+        ...organizations.map((organization) => deleteStoredValue(branchStorageKey(organization.orgId))),
+      ]);
+      await clearSession();
+      setError(undefined);
+    }
   }, [clearSession]);
 
   const refreshAccessToken = useCallback(
@@ -571,7 +582,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp = useCallback(
     async (identifier: string, code: string) => {
-      const normalizedCode = sanitizeOtpCode(code);
+      const normalizedCode = sanitizeOtpValue(code);
       const result = await authClient.verifyOtp(identifier, normalizedCode);
       const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
       const refreshTokenValue = result.refreshToken;
@@ -588,61 +599,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ]);
       refreshTokenRef.current = refreshTokenValue;
       await hydrate(result.token);
+      qaResetInFlight = false;
       await maybePromptForBiometric();
     },
     [hydrate, maybePromptForBiometric],
-  );
-
-  const completeTokenSignIn = useCallback(
-    async (
-      tokenValue: string,
-      expiresAtValue?: string | null,
-      refreshTokenValue?: string | null,
-      refreshExpiresAtValue?: string | null,
-    ) => {
-      const expiresAt = normalizeSessionExpiresAt(expiresAtValue);
-      await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
-      await Promise.all([
-        setStoredValue(SESSION_STORAGE_KEY, tokenValue),
-        setStoredValue(SESSION_EXPIRES_AT_STORAGE_KEY, expiresAt),
-        refreshTokenValue
-          ? setStoredValue(REFRESH_SESSION_STORAGE_KEY, refreshTokenValue)
-          : Promise.resolve(),
-        refreshExpiresAtValue
-          ? setStoredValue(REFRESH_SESSION_EXPIRES_AT_STORAGE_KEY, refreshExpiresAtValue)
-          : Promise.resolve(),
-      ]);
-      refreshTokenRef.current = refreshTokenValue ?? undefined;
-      await hydrate(tokenValue, activeOrgId, activeRole);
-      await maybePromptForBiometric();
-    },
-    [activeOrgId, activeRole, hydrate, maybePromptForBiometric],
-  );
-
-  const signInWithApple = useCallback(
-    async (identityToken: string, fullName?: string) => {
-      const result = await authClient.signInWithApple(identityToken, fullName);
-      await completeTokenSignIn(
-        result.token,
-        result.expiresAt,
-        result.refreshToken,
-        result.refreshExpiresAt,
-      );
-    },
-    [completeTokenSignIn],
-  );
-
-  const signInWithGoogle = useCallback(
-    async (idToken: string) => {
-      const result = await authClient.signInWithGoogle(idToken);
-      await completeTokenSignIn(
-        result.token,
-        result.expiresAt,
-        result.refreshToken,
-        result.refreshExpiresAt,
-      );
-    },
-    [completeTokenSignIn],
   );
 
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
@@ -685,7 +645,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!targetOrg) {
-        throw new Error("Organization not available for this account");
+        throw new Error("Gym not available for this account");
       }
       const correctedRole = defaultRoleForOrg(targetOrg.roles);
       await Promise.all([
@@ -699,7 +659,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrgIdState(orgId);
       setActiveRoleState(correctedRole);
       await hydrate(tokenValue, orgId, correctedRole);
-      await invalidateAllQueries();
+      void invalidateAllQueries();
     },
     [hydrate],
   );
@@ -724,17 +684,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (roleSwitchOverlayTimerRef.current) {
         clearTimeout(roleSwitchOverlayTimerRef.current);
       }
-      setRoleSwitchMessage(`Switching to ${titleCaseRole(role)}...`);
+      setRoleSwitchMessage(`Switching to ${titleCaseFromCode(role)}...`);
       try {
         await setStoredValue(ACTIVE_ROLE_STORAGE_KEY, role);
         activeRoleRef.current = role;
         setActiveRoleState(role);
         await hydrate(tokenValue, currentOrgId, role);
-        if (isOfflineDemoMode()) {
-          void invalidateRoleScopedQueries();
-        } else {
-          await invalidateRoleScopedQueries();
-        }
+        void invalidateRoleScopedQueries();
       } catch (error) {
         setRoleSwitchMessage(null);
         throw error;
@@ -803,12 +759,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       proactiveLogin,
       biometricEnabled,
       requestOtp,
-      signInWithApple,
-      signInWithGoogle,
       verifyOtp,
       logout,
       refresh,
       clearExpiredSession,
+      resetQaSession,
       switchOrg,
       switchRole,
       setDefaultRole,
@@ -832,13 +787,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       offlineMode,
       proactiveLogin,
       refresh,
+      resetQaSession,
       registerLogoutCleanup,
       requestOtp,
       session,
       setDefaultRole,
       setBiometricEnabled,
-      signInWithApple,
-      signInWithGoogle,
       status,
       switchOrg,
       switchRole,
@@ -895,7 +849,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   roleSwitchText: {
-    ...typography.h2,
+    ...typography.headerTitle,
     textAlign: "center",
   },
 });

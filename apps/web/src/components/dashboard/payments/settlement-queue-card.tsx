@@ -54,9 +54,8 @@ export function SettlementQueueCard({
       <SectionHeader
         eyebrow="Settlement Queue"
         title="Orders affecting cashflow"
-        description="Orders waiting for payment or pickup appear here."
         badge={
-          <Pill tone={queuedOrders.length ? "amber" : "lime"}>
+          <Pill tone={queuedOrders.length ? "amber" : "neutral"}>
             {queuedOrders.length} unsettled
           </Pill>
         }
@@ -69,10 +68,7 @@ export function SettlementQueueCard({
         {shopOrdersState.error ? (
           <ErrorNotice message={shopOrdersState.error} />
         ) : shopOrdersState.loading && shopOrders.length === 0 ? (
-          <EmptyState
-            title="Loading settlement queue"
-            description="Pulling live shop order payment states."
-          />
+          <EmptyState title="Loading settlement queue" />
         ) : (
           <>
             <SettlementFilters
@@ -167,12 +163,7 @@ export function SettlementQueueCard({
               ]}
               rows={filteredShopOrders}
               rowKey={(order) => order.id}
-              empty={
-                <EmptyState
-                  title="No shop orders in this view"
-                  description="Orders appear here when payment or pickup needs front-desk follow-up."
-                />
-              }
+              empty={<EmptyState title="No shop orders" />}
             />
           </>
         )}
@@ -210,7 +201,7 @@ function SettlementFilters({
           onClick={() => setOrderStatusFilter(value)}
           className={`zook-focus rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
             orderStatusFilter === value
-              ? "border-lime-300/45 bg-lime-300/12 text-lime-100"
+              ? "border-white/20 bg-white/8 text-white"
               : "border-white/10 text-white/55 hover:bg-white/8"
           }`}
         >
@@ -223,7 +214,7 @@ function SettlementFilters({
         title={`Settle ${selectedReadyOrders.length} ${
           selectedReadyOrders.length === 1 ? "order" : "orders"
         }?`}
-        description="Each order will be marked as fulfilled without a pickup code. This action is logged."
+        description="Each order is marked as fulfilled without a pickup code. This action is logged."
         confirmLabel="Settle"
         className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
       >

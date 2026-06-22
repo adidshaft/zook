@@ -18,22 +18,6 @@ export function TextInput({
   );
 }
 
-export function DatePicker({
-  label,
-  className,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return <TextInput {...props} type="date" label={label} className={className} />;
-}
-
-export function MoneyInput({
-  label,
-  className,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return <TextInput {...props} inputMode="decimal" label={label} className={className} />;
-}
-
 export function SelectInput({
   label,
   children,

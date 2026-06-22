@@ -9,7 +9,7 @@ export default function NoOrgCard() {
       body="Find your gym to unlock membership, plans, check-ins, and trainer updates."
       ctaHref="/gyms"
       ctaLabel="Find your gym"
-      tone="blue"
+      tone="neutral"
     />
   );
 }

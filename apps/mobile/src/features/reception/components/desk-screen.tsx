@@ -1,15 +1,39 @@
-import { View, Text } from "react-native";
+import { Pressable, View, Text } from "react-native";
+import { useRouter } from "expo-router";
 
 import { ApprovalQueue } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, PrimaryButton, SectionHeader, ZookButton } from "@/components/primitives";
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
-import { formatDateTime } from "@/lib/formatting";
+import { useMyClasses } from "@/lib/domains";
+import { formatDateTime, formatTime, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
+import type { PillTone } from "@/components/primitives";
+
+function toneForAttendanceStatus(status?: string | null): PillTone {
+  if (status === "APPROVED") return "lime";
+  if (status === "REJECTED" || status === "FAILED") return "red";
+  if (status === "FLAGGED") return "red";
+  if (status === "PENDING_APPROVAL") return "amber";
+  return "neutral";
+}
+
+function iconForAttendanceStatus(status?: string | null) {
+  if (status === "APPROVED") return "checkmark-circle-outline" as const;
+  if (status === "REJECTED" || status === "FAILED") return "close-circle-outline" as const;
+  return "alert-circle-outline" as const;
+}
 
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
+  const router = useRouter();
+  const classesQuery = useMyClasses();
+  const todayClasses = (classesQuery.data?.classes ?? []).filter((entry) => {
+    const start = new Date(entry.startTime);
+    const now = new Date();
+    return start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth() && start.getDate() === now.getDate();
+  });
   const {
     approvalItems,
     approvalQueue,
@@ -31,6 +55,8 @@ export function ReceptionDeskScreenBody() {
     verifyCode,
     verifyEntryCode,
   } = useReceptionWorkspace();
+  const firstQueueItem =
+    approvalQueue.find((attempt) => attempt.status === "FLAGGED") ?? approvalQueue[0] ?? null;
 
   return (
     <>
@@ -39,13 +65,24 @@ export function ReceptionDeskScreenBody() {
               subtitle={
                 pendingCount || flaggedCount
                   ? "Review pending and flagged entry attempts before they age out."
-                  : "No pending or flagged scans need the desk right now."
+                  : "No pending or flagged scans need the desk."
               }
               meta={`${pendingCount} pending · ${flaggedCount} flagged`}
               status={pendingCount || flaggedCount ? "Review required" : "Active"}
-              tone={flaggedCount ? "red" : pendingCount ? "amber" : "lime"}
+              tone={flaggedCount ? "red" : pendingCount ? "amber" : "neutral"}
               icon={flaggedCount ? "alert-circle-outline" : "shield-checkmark-outline"}
               actionLabel="Open approval queue"
+              onPress={
+                firstQueueItem
+                  ? () => {
+                      if (!canApproveAttendance) {
+                        showOwnerApprovalRequired();
+                        return;
+                      }
+                      openDecisionSheet(firstQueueItem);
+                    }
+                  : undefined
+              }
             />
             <MetricGrid
               columns={3}
@@ -53,21 +90,18 @@ export function ReceptionDeskScreenBody() {
                 {
                   label: "Today",
                   value: todayCount,
-                  hint: "Check-ins",
-                  tone: "lime",
+                  tone: "neutral",
                   icon: "qr-code-outline",
                 },
                 {
                   label: "Pending",
                   value: pendingCount,
-                  hint: "Awaiting approval",
                   tone: "amber",
                   icon: "flash-outline",
                 },
                 {
                   label: "Flagged",
                   value: flaggedCount,
-                  hint: "Needs attention",
                   tone: "red",
                   icon: "alert-circle-outline",
                 },
@@ -75,10 +109,7 @@ export function ReceptionDeskScreenBody() {
             />
 
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Verify Entry Code"
-                subtitle="Enter ZK code for attendance or pickup lookup without leaving the desk."
-              />
+              <SectionHeader title="Verify Entry Code" />
               <FormField
                 testID="reception-verify-code"
                 label="Code"
@@ -98,44 +129,70 @@ export function ReceptionDeskScreenBody() {
               >
                 {verifyingCode ? "Verifying..." : "Verify Code"}
               </PrimaryButton>
+              <ZookButton
+                testID="reception-entry-qr-button"
+                variant="secondary"
+                icon="qr-code-outline"
+                onPress={() => router.push("/reception/entry-qr")}
+              >
+                Display entry QR
+              </ZookButton>
             </Card>
 
+            <Pressable
+              testID="reception-rewards"
+              accessibilityRole="button"
+              accessibilityLabel="Refer a gym to Zook and earn"
+              onPress={() => router.push("/rewards")}
+              style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
+            >
+              <Card variant="compact" padding={14} contentStyle={styles.liveFeedItem}>
+                <IconBubble icon="gift-outline" tone="lime" size={34} />
+                <View style={styles.liveFeedCopy}>
+                  <Text style={[styles.queueTitle, { color: palette.text.primary }]}>Refer a gym & earn</Text>
+                  <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                    Earn cash when a gym you refer subscribes to Zook
+                  </Text>
+                </View>
+              </Card>
+            </Pressable>
+
             <SectionHeader
-              title="Live feed"
-              subtitle="Recent check-ins for this gym."
-              action={<Pill tone="lime">{todayCount} today</Pill>}
+              title="Recent activity"
+              action={<Pill tone="neutral">{todayCount} today</Pill>}
             />
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <EmptyState title="No scans yet" body="Approved check-ins will appear here." />
+                <EmptyState icon="scan-outline" title="No check-ins yet" body="Member check-ins for today will appear here." />
               ) : null}
-              {recentScans.map((scan) => (
-                <Card
-                  key={scan.id}
-                  variant="compact"
-                  padding={12}
-                  contentStyle={styles.liveFeedItem}
-                >
-                  <IconBubble
-                    icon={scan.status === "APPROVED" ? "checkmark-circle-outline" : "alert-circle-outline"}
-                    tone={scan.status === "APPROVED" ? "lime" : "amber"}
-                    size={34}
-                  />
-                  <View style={styles.liveFeedCopy}>
-                    <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
-                      {scan.user?.name ?? scan.user?.email ?? "Member"}
-                    </Text>
-                    <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                      {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
-                      {scan.plan?.name ?? "Membership"}
-                    </Text>
-                  </View>
-                  <Pill tone={scan.status === "APPROVED" ? "lime" : "amber"}>
-                    {scan.status.replace(/_/g, " ")}
-                  </Pill>
-                </Card>
-              ))}
+              {recentScans.map((scan) => {
+                const statusTone = toneForAttendanceStatus(scan.status);
+                return (
+                  <Card
+                    key={scan.id}
+                    variant="compact"
+                    padding={12}
+                    contentStyle={styles.liveFeedItem}
+                  >
+                    <IconBubble
+                      icon={iconForAttendanceStatus(scan.status)}
+                      tone={statusTone}
+                      size={34}
+                    />
+                    <View style={styles.liveFeedCopy}>
+                      <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
+                        {scan.user?.name ?? scan.user?.email ?? "Member"}
+                      </Text>
+                      <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
+                        {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
+                        {scan.plan?.name ?? "Membership"}
+                      </Text>
+                    </View>
+                    <Pill tone={statusTone}>{titleCaseFromCode(scan.status)}</Pill>
+                  </Card>
+                );
+              })}
             </View>
 
             <SectionHeader
@@ -173,6 +230,44 @@ export function ReceptionDeskScreenBody() {
                 openDecisionSheet(attempt);
               }}
             />
+
+            {todayClasses.length ? (
+              <>
+                <SectionHeader
+                  title="Today's classes"
+                  action={<Pill tone="neutral">{todayClasses.length}</Pill>}
+                />
+                <View style={styles.liveFeed}>
+                  {todayClasses.map((entry) => (
+                    <Pressable
+                      key={entry.id}
+                      testID={`reception-class-${entry.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View roster for ${entry.name}`}
+                      onPress={() =>
+                        router.push(`/reception/class-roster?classId=${entry.id}&name=${encodeURIComponent(entry.name)}` as never)
+                      }
+                      style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
+                    >
+                      <Card variant="compact" padding={12} contentStyle={styles.liveFeedItem}>
+                        <IconBubble icon="calendar-outline" tone="blue" size={34} />
+                        <View style={styles.liveFeedCopy}>
+                          <Text style={[styles.queueTitle, { color: palette.text.primary }]} numberOfLines={1}>
+                            {entry.name}
+                          </Text>
+                          <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                            {formatTime(entry.startTime)} · {entry.trainerName ? `Coach ${entry.trainerName}` : entry.classType}
+                          </Text>
+                        </View>
+                        <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
+                          {entry.enrollmentCount}/{entry.maxCapacity}
+                        </Pill>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
     </>
   );
 }

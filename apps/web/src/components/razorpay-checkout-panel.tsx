@@ -59,6 +59,7 @@ export function RazorpayCheckoutPanel({
   const returnUrl = returnUrlOverride ?? asString(checkoutData.returnUrl);
   const providerReference = subscriptionId ?? orderId;
   const isRecurring = Boolean(subscriptionId);
+  const ctaLabel = handoffState === "failed" ? "Try checkout again" : isRecurring ? "Authorize autopay" : "Pay securely";
 
   const canOpen = Boolean(providerReference && keyId && amountPaise && scriptReady && !scriptError);
   const statusText = useMemo(() => {
@@ -71,8 +72,9 @@ export function RazorpayCheckoutPanel({
       return isRecurring
         ? "Autopay authorization submitted. Waiting for confirmation."
         : "Payment submitted. Waiting for confirmation.";
-    if (handoffState === "failed") return "Payment was closed before confirmation.";
-    return isRecurring ? "Ready to authorize autopay." : "Ready for secure payment.";
+    if (handoffState === "failed")
+      return "Razorpay was closed before confirmation. Retry checkout here or return to Zook to start a new payment link.";
+    return isRecurring ? "Autopay authorization is available." : "Secure checkout is available.";
   }, [amountPaise, handoffState, isRecurring, keyId, providerReference, scriptError, scriptReady]);
 
   useEffect(() => {
@@ -132,10 +134,9 @@ export function RazorpayCheckoutPanel({
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">Secure checkout</p>
           {!scriptReady && !scriptError ? (
-            <div role="status" aria-label={statusText} className="mt-3 grid gap-2">
-              <div className="h-3 w-60 animate-pulse rounded-full bg-[var(--border-subtle)]" />
-              <div className="h-3 w-40 animate-pulse rounded-full bg-[var(--border-subtle)]/70" />
-            </div>
+            <p role="status" className="mt-2 text-sm text-[var(--text-secondary)]">
+              {statusText}
+            </p>
           ) : (
             <p className="mt-2 text-sm text-[var(--text-secondary)]">{statusText}</p>
           )}
@@ -146,7 +147,7 @@ export function RazorpayCheckoutPanel({
           state={handoffState === "opening" ? "loading" : "idle"}
           onClick={openCheckout}
         >
-          {isRecurring ? "Authorize autopay" : "Pay securely"}
+          {ctaLabel}
         </ZookButton>
       </div>
     </div>

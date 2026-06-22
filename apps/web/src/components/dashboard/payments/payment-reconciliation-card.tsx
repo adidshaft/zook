@@ -24,9 +24,8 @@ export function PaymentReconciliationCard({
       <SectionHeader
         eyebrow="Reconciliation"
         title="Payment reconciliation"
-        description="A focused check for what is settled, what still needs proof, and what should be chased before closing the day."
         badge={
-          <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "lime"}>
+          <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "neutral"}>
             {failedPayments.length || pendingPayments.length ? "Review queue" : "Clean"}
           </Pill>
         }
@@ -39,12 +38,12 @@ export function PaymentReconciliationCard({
           {
             label: "Settled payments",
             value: formatCompactNumber(succeededPayments.length),
-            meta: "Ready for day-end totals",
+            meta: "Available for day-end totals",
           },
           {
             label: "Pending",
             value: formatCompactNumber(pendingPayments.length),
-            meta: "Await confirmation or proof",
+            meta: "Await confirmation or receipt",
           },
           {
             label: "Failed/rejected",
@@ -65,12 +64,12 @@ export function PaymentReconciliationCard({
             copy: `${formatInr(summary.cashCollectedPaise)} desk-collected amount should match cash/UPI/card slips.`,
           },
           {
-            title: "Attach proof",
-            copy: "Offline payments should include a reference or uploaded proof before owner review.",
+            title: "Add receipt details",
+            copy: "Offline payments should include a reference or uploaded receipt before owner review.",
           },
           {
             title: "Refund watch",
-            copy: "Use the refunds tab for partial or failed-payment correction instead of editing history.",
+            copy: "Use the refunds tab for partial or failed-payment corrections.",
           },
         ].map((item) => (
           <div key={item.title} className="rounded-[22px] border border-white/10 bg-black/20 p-4">

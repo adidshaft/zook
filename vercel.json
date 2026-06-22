@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/trainer-payouts-draft",
       "schedule": "1 0 1 * *"
+    },
+    {
+      "path": "/api/cron/rewards-settle",
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Premium dashboard primitives — SVG charts and KPI tiles that animate
- * on mount. All charts are zero-dep, hand-rolled SVG with smooth motion
- * via framer-motion. They respect prefers-reduced-motion.
+ * Dashboard primitives — SVG charts and KPI tiles with reduced-motion-aware
+ * mount transitions.
  */
 
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
+import { formatNumber } from "@/lib/format";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -37,7 +37,7 @@ export type ChartTone = keyof typeof TONE_COLORS;
  * Counter — animated number rolling up from 0 (or current value).
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function AnimatedNumber({
+function AnimatedNumber({
   value,
   format,
   duration = 1.2,
@@ -53,7 +53,11 @@ export function AnimatedNumber({
   const mv = useMotionValue(0);
   const spring = useSpring(mv, { duration: duration * 1000, bounce: 0 });
   const display = useTransform(spring, (v) =>
-    format ? format(v) : value % 1 === 0 ? Math.round(v).toLocaleString("en-IN") : v.toFixed(1),
+    format
+      ? format(v)
+      : value % 1 === 0
+        ? formatNumber(Math.round(v))
+        : formatNumber(v, { maximumFractionDigits: 1, minimumFractionDigits: 1 }),
   );
 
   useEffect(() => {
@@ -67,7 +71,12 @@ export function AnimatedNumber({
   if (reduce) {
     return (
       <span ref={ref} {...(className != null ? { className } : {})}>
-        {format ? format(value) : value.toLocaleString("en-IN")}
+        {format
+          ? format(value)
+          : formatNumber(value, {
+              maximumFractionDigits: value % 1 === 0 ? 0 : 1,
+              minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+            })}
       </span>
     );
   }
@@ -125,7 +134,7 @@ export function DeltaChip({
  * Sparkline — tiny inline trend chart.
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function Sparkline({
+function Sparkline({
   values,
   tone = "lime",
   width = 96,
@@ -261,7 +270,7 @@ export function KPITile({
         {trend && trend.length > 1 ? (
           <Sparkline values={trend} tone={tone} width={80} height={24} className="shrink-0" />
         ) : (
-          <span className="text-[11px] text-[var(--text-tertiary)] shrink-0">No trend yet</span>
+          <span className="text-[11px] text-[var(--text-tertiary)] shrink-0">No trend</span>
         )}
         {delta != null ? (
           <div className="shrink-0">
@@ -441,7 +450,6 @@ export function LineChart({
           </text>
         );
       })}
-      {/* area + line */}
       <motion.path
         d={area}
         fill={`url(#line-area-${id})`}
@@ -459,18 +467,6 @@ export function LineChart({
         initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ duration: 1.2, ease: EASE }}
-      />
-      {/* last point pulse */}
-      <motion.circle
-        cx={last[0]}
-        cy={last[1]}
-        r="11"
-        fill={color}
-        opacity="0.18"
-        initial={reduce ? { scale: 1, opacity: 0.18 } : { scale: 0 }}
-        animate={{ scale: [0.6, 1.4, 0.9], opacity: [0.3, 0, 0.3] }}
-        transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut", delay: 1 }}
-        style={{ transformOrigin: `${last[0]}px ${last[1]}px` }}
       />
       <motion.circle
         cx={last[0]}
@@ -691,7 +687,10 @@ export function LegendItem({
       <div className="flex items-center gap-2 min-w-0">
         <span
           className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: TONE_COLORS[tone], boxShadow: `0 0 8px color-mix(in srgb, ${TONE_COLORS[tone]} 33%, transparent)` }}
+          style={{
+            background: TONE_COLORS[tone],
+            filter: `drop-shadow(0 0 8px color-mix(in srgb, ${TONE_COLORS[tone]} 33%, transparent))`,
+          }}
         />
         <span className="truncate text-xs text-[var(--text-secondary)]">{label}</span>
       </div>
@@ -701,7 +700,7 @@ export function LegendItem({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Section hero — premium section header with icon + meta + optional CTA.
+ * Section hero — section header with icon, meta, and optional CTA.
  * ────────────────────────────────────────────────────────────────────────── */
 
 export function SectionHero({
@@ -728,11 +727,6 @@ export function SectionHero({
         aria-hidden
         className="absolute inset-x-0 top-0 h-px opacity-60"
         style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full blur-3xl"
-        style={{ background: `color-mix(in srgb, ${color} 8%, transparent)` }}
       />
       <div className="flex items-start gap-4">
         {Icon ? (
@@ -813,21 +807,9 @@ export function ActivityRow({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
- * Pulse dot — small live indicator.
- * ────────────────────────────────────────────────────────────────────────── */
-
-export function PulseDot({ tone = "lime", size = 8 }: { tone?: ChartTone; size?: number }) {
+export function StatusDot({ tone = "lime", size = 8 }: { tone?: ChartTone; size?: number }) {
   const color = TONE_COLORS[tone];
   return (
-    <span className="relative inline-flex" style={{ width: size, height: size }}>
-      <motion.span
-        className="absolute inset-0 rounded-full"
-        style={{ background: color }}
-        animate={{ scale: [1, 2, 1], opacity: [0.55, 0, 0.55] }}
-        transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-      />
-      <span className="relative h-full w-full rounded-full" style={{ background: color }} />
-    </span>
+    <span className="inline-flex rounded-full" style={{ width: size, height: size, background: color }} />
   );
 }

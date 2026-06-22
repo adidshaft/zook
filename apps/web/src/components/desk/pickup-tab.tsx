@@ -1,4 +1,4 @@
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import { HelpHint, ManagedOn } from "../ui";
 import { ZookButton } from "../zook-button";
@@ -6,14 +6,24 @@ import type { DeskCopy } from "./copy";
 import type { ShopOrder } from "./types";
 import { orderItemsSummary } from "./utils";
 
+function toneForPickupOrderStatus(status: ShopOrder["status"]) {
+  if (status === "READY_FOR_PICKUP" || status === "PAID") return "lime";
+  if (status === "PENDING_PAYMENT") return "amber";
+  if (["CANCELLED", "FAILED", "REFUNDED"].includes(status)) return "red";
+  if (status === "FULFILLED") return "blue";
+  return "neutral";
+}
+
 export function PickupTab({
   copy,
   activeOrders,
+  orderSort,
   fulfilledToday,
   verifiedOrderIds,
   skippedCodeOrderIds,
   busyId,
   onVerifyPickupCode,
+  onOrderSortChange,
   onSkipCode,
   onJumpToShopPayment,
   onFulfillOrder,
@@ -21,11 +31,13 @@ export function PickupTab({
 }: {
   copy: DeskCopy;
   activeOrders: ShopOrder[];
+  orderSort: "newest" | "oldest" | "status";
   fulfilledToday: number;
   verifiedOrderIds: string[];
   skippedCodeOrderIds: string[];
   busyId: string;
   onVerifyPickupCode: (order: ShopOrder) => void;
+  onOrderSortChange: (sort: "newest" | "oldest" | "status") => void;
   onSkipCode: (orderId: string, reason: string) => void;
   onJumpToShopPayment: (order: ShopOrder) => void;
   onFulfillOrder: (orderId: string) => void;
@@ -41,9 +53,25 @@ export function PickupTab({
             Verify identity in person before handover.
           </ManagedOn>
         </div>
-        <Pill tone="blue">
-          {fulfilledToday} {copy.fulfilledToday}
-        </Pill>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-xs text-white/45">
+            Sort
+            <select
+              value={orderSort}
+              onChange={(event) =>
+                onOrderSortChange(event.target.value as "newest" | "oldest" | "status")
+              }
+              className="zook-focus ml-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs font-semibold text-white outline-none"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="status">Status</option>
+            </select>
+          </label>
+          <Pill>
+            {fulfilledToday} {copy.fulfilledToday}
+          </Pill>
+        </div>
       </div>
       <div className="mt-5 grid gap-3">
         {activeOrders.map((order) => {
@@ -55,7 +83,7 @@ export function PickupTab({
               key={order.id}
               className={`rounded-[22px] border p-4 ${
                 highlightedOrderId === order.id
-                  ? "border-lime-300/40 bg-lime-300/8"
+                  ? "border-white/20 bg-white/8"
                   : "border-white/10 bg-black/20"
               }`}
             >
@@ -64,6 +92,9 @@ export function PickupTab({
                   <p className="font-medium text-white">{order.user?.name ?? "Member"}</p>
                   <p className="mt-1 text-xs text-white/35">
                     Order {order.id.slice(-8).toUpperCase()}
+                  </p>
+                  <p className="mt-1 text-xs text-white/35">
+                    Created {formatDateTime(order.createdAt)}
                   </p>
                   <p className="mt-1 text-sm text-white/48">{orderItemsSummary(order)}</p>
                   {order.pickupCode ? (
@@ -76,10 +107,10 @@ export function PickupTab({
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone={order.status === "READY_FOR_PICKUP" ? "lime" : "amber"}>
+                    <Pill tone={toneForPickupOrderStatus(order.status)}>
                       {formatEnumLabel(order.status)}
                     </Pill>
-                    <Pill tone={payAtDesk ? "amber" : "lime"}>
+                    <Pill tone={payAtDesk ? "amber" : "neutral"}>
                       {payAtDesk ? copy.payAtDesk : copy.paid}
                     </Pill>
                     <Pill>{formatInr(order.totalPaise)}</Pill>

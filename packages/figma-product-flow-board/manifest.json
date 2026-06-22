@@ -1,0 +1,9 @@
+{
+  "name": "Zook Product Flow Board",
+  "id": "zook-product-flow-board-local",
+  "api": "1.0.0",
+  "main": "audit-board.js",
+  "editorType": [
+    "figma"
+  ]
+}

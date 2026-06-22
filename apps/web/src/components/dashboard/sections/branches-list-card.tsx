@@ -21,7 +21,7 @@ function branchSetupSteps(branch: BranchRow, hasReceptionist: boolean, hasBranch
     { label: "Manager assigned", done: Boolean(branch.managerId) },
     { label: "Working hours set", done: Boolean(branch.operatingHours) },
     { label: "Reception assigned", done: hasReceptionist },
-    { label: "Plans ready", done: hasBranchPlan },
+    { label: "Plans added", done: hasBranchPlan },
   ];
 }
 
@@ -67,8 +67,7 @@ export function BranchesListCard({
       <SectionHeader
         eyebrow="Locations"
         title="Branch list"
-        description="Keep addresses, managers, and active branches ready for member check-ins and staff work."
-        badge={<Pill tone="blue">{branches.filter((branch) => branch.active).length} active</Pill>}
+        badge={<Pill>{branches.filter((branch) => branch.active).length} active</Pill>}
       />
       <div className="mt-5 grid gap-3">
         {branchesState.error ? <ErrorNotice message={branchesState.error} /> : null}
@@ -101,8 +100,8 @@ export function BranchesListCard({
         ))}
         {!branches.length && !branchesState.loading ? (
           <EmptyState
-            title="No branches yet"
-            description="Add the first location to unlock branch-level attendance and stock controls."
+            title="No branches"
+            description="Add the first location for branch-level attendance and stock controls."
           />
         ) : null}
       </div>
@@ -149,7 +148,7 @@ function BranchSummaryRow({
           {steps.map((step) => (
             <span
               key={step.label}
-              className={`rounded-full border px-2 py-1 text-[0.68rem] ${step.done ? "border-lime-300/30 bg-lime-300/10 text-lime-100" : "border-white/10 bg-black/20 text-white/45"}`}
+              className={`rounded-full border px-2 py-1 text-[0.68rem] ${step.done ? "border-blue-300/25 bg-blue-300/10 text-blue-50" : "border-white/10 bg-black/20 text-white/45"}`}
             >
               {step.done ? "Done: " : "Todo: "}
               {step.label}
@@ -159,8 +158,8 @@ function BranchSummaryRow({
       </div>
       <div className="flex flex-wrap justify-end gap-2">
         <StatusPill
-          value={branch.isDefault ? "Default" : branch.active ? "Active" : "Paused"}
-          tone={branch.isDefault ? "lime" : branch.active ? "blue" : "amber"}
+          value={branch.isDefault ? "Primary" : branch.active ? "Active" : "Paused"}
+          tone={branch.isDefault || branch.active ? "blue" : "amber"}
         />
         <ZookButton
           type="button"
@@ -173,19 +172,19 @@ function BranchSummaryRow({
         {!branch.isDefault ? (
           <ConfirmActionButton
             title="Make this the primary location?"
-            description="New attendance, QR displays, and operational defaults will use this location. Existing data stays intact."
+            description="New attendance and QR flows move to this location. Existing data stays intact."
             confirmLabel="Make primary"
             onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
             disabled={formBusy === `branch:${branch.id}`}
             className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
           >
-            Make default
+            Make primary
           </ConfirmActionButton>
         ) : null}
         {!branch.isDefault && branch.active ? (
           <ConfirmActionButton
             title="Deactivate branch?"
-            description="Existing attendance, payments, and history stay intact. The branch stops appearing in active operational flows."
+            description="Existing attendance, payments, and history stay intact. Members and staff stop using this branch."
             confirmLabel="Deactivate"
             onConfirm={() => onDeactivate(branch)}
             disabled={formBusy === `branch:${branch.id}:delete`}

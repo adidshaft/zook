@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { normalizeUsernameInput } from "@zook/core/services/organization-service";
 import { ArrowRight } from "lucide-react";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
-import { equipmentOptions } from "./gym-profile-fields";
+import { equipmentOptions, gymTypes } from "./gym-profile-fields";
 import { webApiFetch } from "@/lib/api-client";
-import { joinModeLabel } from "@/lib/format";
-
-const gymTypes = [
-  "Strength gym",
-  "Premium fitness club",
-  "Cross-training box",
-  "Yoga and wellness studio",
-  "Personal training studio",
-];
+import {
+  formatIndiaPhoneInput,
+  isValidGstin,
+  joinModeLabel,
+  normalizeGstinInput,
+  normalizeIndiaPhoneDigits,
+  normalizeIndianPincodeInput,
+} from "@/lib/format";
 
 const amenityOptions = [
   "Certified trainers",
@@ -74,8 +74,6 @@ const INDIAN_STATES = [
   "Puducherry",
 ];
 
-const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-
 type CreateOrgResponse = {
   org: {
     id: string;
@@ -99,40 +97,13 @@ function safeOwnerEmail(value: string) {
   return value;
 }
 
-function normalizeIndiaPhone(value: string) {
-  let clean = value;
-  if (clean.startsWith("+91")) {
-    clean = clean.slice(3);
-  }
-  const digits = clean.replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) {
-    return digits.slice(2);
-  }
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return digits.slice(1);
-  }
-  return digits.slice(0, 10);
-}
-
-function formatIndiaPhone(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
-    return trimmed;
-  }
-  let clean = value;
-  if (clean.startsWith("+91")) {
-    clean = clean.slice(3);
-  }
-  let digits = clean.replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) {
-    digits = digits.slice(2);
-  } else if (digits.length === 11 && digits.startsWith("0")) {
-    digits = digits.slice(1);
-  }
-  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
-}
-
-export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
+export function StartGymPanel({
+  ownerEmail,
+  initialTier = "STARTER",
+}: {
+  ownerEmail: string;
+  initialTier?: "STARTER" | "GROWTH" | "PRO";
+}) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -160,9 +131,9 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
       ? Boolean(
           name.trim() &&
           username.trim() &&
-          normalizeIndiaPhone(contactPhone).length === 10 &&
+          normalizeIndiaPhoneDigits(contactPhone).length === 10 &&
           contactEmail.trim() &&
-          (!gstNumber.trim() || GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())),
+          (!gstNumber.trim() || isValidGstin(normalizeGstinInput(gstNumber))),
         )
       : step === 1
         ? Boolean(address.trim() && city.trim() && state.trim() && /^\d{6}$/.test(pincode))
@@ -181,15 +152,15 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   }
 
   async function createGym() {
-    const normalizedGstNumber = gstNumber.trim().toUpperCase();
-    if (normalizedGstNumber && !GSTIN_PATTERN.test(normalizedGstNumber)) {
+    const normalizedGstNumber = normalizeGstinInput(gstNumber);
+    if (normalizedGstNumber && !isValidGstin(normalizedGstNumber)) {
       setMessage("GST number must be a valid 15-character GSTIN.");
       return;
     }
     if (
       !name.trim() ||
       !username.trim() ||
-      normalizeIndiaPhone(contactPhone).length !== 10 ||
+      normalizeIndiaPhoneDigits(contactPhone).length !== 10 ||
       !address.trim() ||
       !city.trim() ||
       !state.trim() ||
@@ -214,7 +185,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
         body: {
           name,
           username,
-          contactPhone: formatIndiaPhone(contactPhone).replace(/\s/g, ""),
+          contactPhone: formatIndiaPhoneInput(contactPhone).replace(/\s/g, ""),
           contactEmail,
           gstNumber: normalizedGstNumber || undefined,
           address,
@@ -228,7 +199,12 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
           visibility,
         },
       });
-      window.location.href = `/dashboard/billing?created=${payload.org.id}&setup=billing`;
+      const billingParams = new URLSearchParams({
+        created: payload.org.id,
+        setup: "billing",
+        tier: initialTier.toLowerCase(),
+      });
+      window.location.href = `/dashboard/billing?${billingParams.toString()}`;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create gym.");
     } finally {
@@ -238,9 +214,10 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
 
   function goNext() {
     if (!canContinue) {
+      const normalizedGstNumber = normalizeGstinInput(gstNumber);
       setMessage(
         step === 0
-          ? gstNumber.trim() && !GSTIN_PATTERN.test(gstNumber.trim().toUpperCase())
+          ? normalizedGstNumber && !isValidGstin(normalizedGstNumber)
             ? "GST number must be a valid 15-character GSTIN."
             : "Add gym name, public username, 10-digit phone, and contact email to continue."
           : "Add address, city, state, and a 6-digit pincode so members can find the gym.",
@@ -254,21 +231,23 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
       <GlassCard variant="strong">
-        <Pill tone="lime">Owner setup</Pill>
-        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
+        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-[var(--text-primary)] md:text-6xl">
           Start your gym on Zook.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
           Create the gym, main branch, owner access, two-month trial, and public profile from the
           web. Mobile stays focused on daily execution.
         </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Pill>{initialTier} plan selected</Pill>
+        </div>
         <div className="mt-8 grid gap-3">
           {[
-            "Creates the organization and default branch",
+            "Creates the gym and main branch",
             "Assigns you as owner",
             "Starts a two-month free trial before billing begins",
             "Publishes a public username for profile links",
-            "Opens billing setup next so you can add the card for month 3",
+            "Opens billing next so you can add the card for month 3",
           ].map((item, index) => (
             <div
               key={item}
@@ -302,7 +281,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 onClick={() => setStep(item.id)}
                 className={`rounded-full border px-3 py-2 text-xs font-semibold ${
                   step === item.id
-                    ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                    ? "border-white/20 bg-white/8 text-white"
                     : item.id < step
                       ? "border-white/15 bg-white/8 text-white/70"
                       : "border-white/10 bg-black/20 text-white/35"
@@ -338,7 +317,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 <input
                   value={username}
                   onChange={(event) =>
-                    setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                    setUsername(normalizeUsernameInput(event.target.value))
                   }
                   placeholder="your-gym"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
@@ -377,7 +356,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 </span>
                 <input
                   value={contactPhone}
-                  onChange={(event) => setContactPhone(formatIndiaPhone(event.target.value))}
+                  onChange={(event) => setContactPhone(formatIndiaPhoneInput(event.target.value))}
                   onFocus={() => {
                     if (!contactPhone.trim()) setContactPhone("+91 ");
                   }}
@@ -393,12 +372,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 <input
                   value={gstNumber}
                   onChange={(event) =>
-                    setGstNumber(
-                      event.target.value
-                        .toUpperCase()
-                        .replace(/[^0-9A-Z]/g, "")
-                        .slice(0, 15),
-                    )
+                    setGstNumber(normalizeGstinInput(event.target.value))
                   }
                   placeholder="22AAAAA0000A1Z5"
                   aria-describedby="gst-helper"
@@ -472,7 +446,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 <input
                   value={pincode}
                   onChange={(event) =>
-                    setPincode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))
+                    setPincode(normalizeIndianPincodeInput(event.target.value))
                   }
                   placeholder="6-digit pincode"
                   className="zook-focus rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none"
@@ -537,7 +511,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                       onClick={() => toggleAmenity(option)}
                       className={`rounded-full border px-3 py-2 text-xs font-medium ${
                         amenities.includes(option)
-                          ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                          ? "border-white/20 bg-white/8 text-white"
                           : "border-white/10 bg-white/5 text-white/50"
                       }`}
                     >
@@ -552,7 +526,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                 </p>
                 <p className="mt-2 text-xs leading-5 text-white/42">
                   Select what members should see on the public gym profile. You can refine this
-                  later from Gym profile.
+                  from Gym profile.
                 </p>
                 <div className="mt-3 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-3">
                   <div className="flex flex-wrap gap-2">
@@ -563,7 +537,7 @@ export function StartGymPanel({ ownerEmail }: { ownerEmail: string }) {
                         onClick={() => toggleEquipment(option)}
                         className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
                           equipment.includes(option)
-                            ? "border-lime-300/45 bg-lime-300/15 text-lime-100"
+                            ? "border-white/20 bg-white/8 text-white"
                             : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
                         }`}
                       >

@@ -59,13 +59,13 @@ export function membershipStatusGuidance(status?: string | null, daysLeft?: numb
     };
   }
   return {
-    title: "Membership ready",
+    title: "Membership active",
     body: "Your QR entry and member benefits are active for this gym.",
     action: "Renew or change plan",
   };
 }
 
-export function isAutopayLive(autopay?: { status?: string | null } | null) {
+export function isAutopayEnabled(autopay?: { status?: string | null } | null) {
   return Boolean(
     autopay &&
       ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(

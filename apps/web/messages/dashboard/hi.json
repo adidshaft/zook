@@ -48,10 +48,10 @@
     "settings": "सेटिंग"
   },
   "dashboard": {
-    "liveWorkspace": "लाइव वर्कस्पेस",
-    "sampleData": "सैंपल डेटा",
+    "liveWorkspace": "मौजूदा वर्कस्पेस",
+    "fallbackWorkspace": "टेस्ट वर्कस्पेस",
     "emptyOrganization": "अभी कोई जिम उपलब्ध नहीं है.",
-    "emptyOrganizationDescription": "आपका साइन-इन चालू है, लेकिन इस अकाउंट से अभी कोई जिम जुड़ा नहीं है. मालिक सेटअप से जिम प्रोफाइल बना सकते हैं.",
+    "emptyOrganizationDescription": "आपका साइन-इन चालू है, लेकिन इस अकाउंट से अभी कोई जिम जुड़ा नहीं है. मालिक यहीं से जिम प्रोफाइल बना सकते हैं.",
     "startGym": "जिम शुरू करें",
     "liveOrganization": "लाइव जिम",
     "gymStatus": "जिम स्टेटस",
@@ -83,7 +83,7 @@
     "inboundRequests": "इनबाउंड रिक्वेस्ट",
     "checkInsToday": "आज चेक-इन",
     "trialEnd": "ट्रायल खत्म",
-    "setupEyebrow": "मालिक सेटअप",
+    "setupEyebrow": "मालिक शुरुआत",
     "setupTitle": "{orgName} में आपका स्वागत है",
     "setupDescription": "ये बेसिक काम पूरे करें ताकि मेंबर जुड़ सकें, टीम काम कर सके, और जिम लिंक शेयर हो सके.",
     "createFirstPlan": "पहला प्लान बनाएं",
@@ -106,7 +106,7 @@
   },
   "payments": {
     "recordOffline": "ऑफलाइन पेमेंट रिकॉर्ड करें",
-    "receiptReady": "रसीद तैयार है",
+    "receiptReady": "रसीद बन गई है",
     "settlementQueue": "कैशफ्लो वाले ऑर्डर"
   },
   "desk": {

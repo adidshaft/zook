@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { CheckCircle2, LockKeyhole, MapPin, Building } from "lucide-react";
+import { CheckCircle2, Circle, LockKeyhole, MapPin, Building } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -11,6 +12,8 @@ import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import { PlanSelector } from "@/components/plan-selector";
+import { publicJoinHref } from "@/lib/public-join-url";
+import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import {
   alternatePublicLocale,
   joinModeLabelForLocale,
@@ -26,6 +29,7 @@ import {
   type PublicGymReferral,
 } from "@/server/public-gym-read-models";
 import { resolveSessionSummaryFromToken } from "@/server/session";
+import { publicAbsoluteUrl } from "@/lib/public-metadata";
 
 function discountFor(referral: PublicGymReferral | null, planPricePaise: number) {
   if (!referral || referral.status !== "active") {
@@ -47,17 +51,13 @@ function joinPath(
   couponCode?: string,
   locale: PublicLocale = "en",
 ) {
-  const query = new URLSearchParams({ plan: planHandle });
-  if (referral) {
-    query.set("ref", referral.code);
-  }
-  if (couponCode) {
-    query.set("coupon", couponCode);
-  }
-  if (locale === "hi") {
-    query.set("lang", "hi");
-  }
-  return `/join/${username}?${query.toString()}`;
+  return publicJoinHref({
+    username,
+    plan: planHandle,
+    referralCode: referral?.code,
+    couponCode,
+    locale,
+  });
 }
 
 function loginRedirect(path: string, locale: PublicLocale = "en") {
@@ -66,25 +66,6 @@ function loginRedirect(path: string, locale: PublicLocale = "en") {
     query.set("lang", "hi");
   }
   return `/login?${query.toString()}`;
-}
-
-function validityLabel(plan: { durationDays: number | null; type: string }, locale: PublicLocale) {
-  if (plan.durationDays) {
-    return locale === "hi" ? `${plan.durationDays} दिन` : `${plan.durationDays} days`;
-  }
-  if (plan.type === "TRIAL") {
-    return locale === "hi" ? "ट्रायल एक्सेस" : "Trial access";
-  }
-  return locale === "hi" ? "विज़िट पैक" : "Visit pack";
-}
-
-function visitLabel(visitLimit: number | null, locale: PublicLocale) {
-  if (!visitLimit) {
-    return locale === "hi" ? "असीमित विज़िट" : "Unlimited visits";
-  }
-  return locale === "hi"
-    ? `${visitLimit} विज़िट`
-    : `${visitLimit} ${visitLimit === 1 ? "visit" : "visits"}`;
 }
 
 async function getViewerJoinState(orgId: string) {
@@ -126,6 +107,50 @@ async function getViewerJoinState(orgId: string) {
   }
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const data = await getPublicGymProfileData(username).catch(() => null);
+  if (!data) {
+    return {
+      title: "Join gym | Zook",
+      description: "Continue your membership signup in Zook.",
+      robots: { index: false, follow: false },
+    };
+  }
+  return {
+    title: `Join ${data.org.name} | Zook`,
+    description: `Continue membership signup for ${data.org.name} in ${data.org.city}.`,
+    alternates: { canonical: `/join/${data.org.username}` },
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: `Join ${data.org.name} | Zook`,
+      description: `Continue membership signup for ${data.org.name}.`,
+      type: "website",
+      images: [
+        {
+          url:
+            data.org.coverImageUrl ??
+            publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+          alt: `Join ${data.org.name} on Zook`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Join ${data.org.name} | Zook`,
+      description: `Continue membership signup for ${data.org.name}.`,
+      images: [
+        data.org.coverImageUrl ??
+          publicAbsoluteUrl(`/g/${data.org.username}/opengraph-image`),
+      ],
+    },
+  };
+}
+
 export default async function JoinPage({
   params,
   searchParams,
@@ -161,6 +186,11 @@ export default async function JoinPage({
   );
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
   const nextLocale = alternatePublicLocale(locale);
+  const checkoutSteps = [
+    { label: "Pay", state: "current" as const },
+    { label: "Confirm", state: "upcoming" as const },
+    { label: "Activate", state: "upcoming" as const },
+  ];
 
   if (!org || !selectedPlan) {
     return (
@@ -222,7 +252,7 @@ export default async function JoinPage({
               copy={t("membershipInProgressCopy")}
               href={membershipPath}
               cta={t("viewMembership")}
-              tone="lime"
+              tone="blue"
             />
           ) : viewerJoinState?.pendingJoinRequest ? (
             <MembershipStateNotice
@@ -317,16 +347,12 @@ export default async function JoinPage({
 
         <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
           <GlassCard variant="strong">
-            <Pill tone="lime">{joinModeLabelForLocale(joinMode, locale)}</Pill>
+            <Pill tone="blue">{joinModeLabelForLocale(joinMode, locale)}</Pill>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
               {t("reviewMembership")}
             </h1>
 
-            {/* Elegant Gym Identity Card */}
-            <div className="relative mt-5 overflow-hidden rounded-3xl border border-[var(--border-focus)]/25 bg-gradient-to-br from-[var(--surface-raised)]/90 to-[var(--bg-sunken)]/90 p-5 md:p-6 shadow-md transition-all duration-300 hover:shadow-lg">
-              {/* Decorative radial ambient glow behind the logo */}
-              <div className="absolute -top-12 -left-12 h-32 w-32 rounded-full bg-[var(--accent-soft)]/20 blur-3xl pointer-events-none" />
-              
+            <div className="mt-5 rounded-3xl border border-[var(--border-focus)]/25 bg-gradient-to-br from-[var(--surface-raised)]/90 to-[var(--bg-sunken)]/90 p-5 shadow-md transition-all duration-300 hover:shadow-lg md:p-6">
               <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 {org.logoUrl ? (
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-inner">
@@ -397,7 +423,7 @@ export default async function JoinPage({
                       {resolvePlanName(selectedPlan)}
                     </h3>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)}
+                      {planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)}
                     </p>
                   </div>
                   <span className="text-lg font-bold text-[var(--accent-strong)]">
@@ -429,7 +455,7 @@ export default async function JoinPage({
                           : "/me"
                     }
                     cta={t("viewMembership")}
-                    tone="lime"
+                    tone="blue"
                   />
                 )}
                 {data.connected ? (
@@ -479,7 +505,7 @@ export default async function JoinPage({
                         {t("plan")}
                       </th>
                       <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
-                        {resolvePlanName(selectedPlan)} ({validityLabel(selectedPlan, locale)} · {visitLabel(selectedPlan.visitLimit, locale)})
+                        {resolvePlanName(selectedPlan)} ({planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)})
                       </td>
                     </tr>
                     <BreakdownRow label="Base Price" value={formatInr(selectedPlan.pricePaise)} />
@@ -519,17 +545,27 @@ export default async function JoinPage({
                 
                 {/* Checkout Progress Steps in a neat horizontal bar */}
                 <div className="mt-4 flex items-center justify-between gap-1 border-t border-[var(--border-subtle)] pt-4 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                  <span className="flex items-center gap-1 font-semibold text-[var(--accent-strong)]">
-                    <CheckCircle2 size={12} className="shrink-0" /> Pay
-                  </span>
-                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 size={12} className="shrink-0" /> Confirm
-                  </span>
-                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 size={12} className="shrink-0" /> Activate
-                  </span>
+                  {checkoutSteps.map((step, index) => {
+                    const isCurrent = step.state === "current";
+                    const Icon = isCurrent ? CheckCircle2 : Circle;
+
+                    return (
+                      <div key={step.label} className="contents">
+                        <span
+                          className={`flex items-center gap-1 ${
+                            isCurrent
+                              ? "font-semibold text-[var(--accent-strong)]"
+                              : "text-[var(--text-tertiary)]"
+                          }`}
+                        >
+                          <Icon size={12} className="shrink-0" /> {step.label}
+                        </span>
+                        {index < checkoutSteps.length - 1 ? (
+                          <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Secure Payment warning inline */}
@@ -557,11 +593,11 @@ function MembershipStateNotice({
   cta: string;
   href: string;
   title: string;
-  tone: "amber" | "lime";
+  tone: "amber" | "blue";
 }) {
   const toneClass =
-    tone === "lime"
-      ? "border-[var(--border)] bg-[var(--surface-accent-soft)] text-[var(--text-primary)]"
+    tone === "blue"
+      ? "border-[var(--border)] bg-[var(--surface-info-soft)] text-[var(--text-primary)]"
       : "border-[var(--border)] bg-[var(--surface-warning-soft)] text-[var(--text-primary)]";
 
   return (

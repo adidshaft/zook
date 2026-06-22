@@ -9,8 +9,23 @@ import { PublicNav } from "@/components/public/nav/public-nav";
 import { destinationToUrl } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getOrigins } from "@/lib/origins";
+import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 
-export async function renderMembershipSurface(session: AuthSessionSummary) {
+function toneForMemberSubscriptionStatus(status: string | null | undefined) {
+  if (status === "ACTIVE") return "blue";
+  if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") {
+    return "amber";
+  }
+  if (["EXPIRED", "CANCELLED", "REJECTED", "FAILED", "REFUNDED"].includes(status ?? "")) {
+    return "red";
+  }
+  return "blue";
+}
+
+export async function renderMembershipSurface(
+  session: AuthSessionSummary,
+  locale: PublicLocale = "en",
+) {
   const origins = getOrigins();
   const memberPrivateUrl = session.user.slug
     ? destinationToUrl({ host: "public", path: `/m/${session.user.slug}` }, origins)
@@ -40,14 +55,13 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
   ]);
 
   return (
-    <main className="min-h-screen px-5 py-5">
+    <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <PublicNav locale="en" />
+        <PublicNav locale={locale} />
 
         <GlassCard variant="strong" className="p-6 md:p-8">
-          <Pill tone="lime">Member profile</Pill>
           {session.user.privateHandle ? (
-            <Pill tone="blue" className="ml-2">
+            <Pill>
               Private ID: {session.user.privateHandle}
             </Pill>
           ) : null}
@@ -83,7 +97,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
                   <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
+                        <Pill tone={toneForMemberSubscriptionStatus(subscription.status)}>
                           {formatEnumLabel(subscription.status)}
                         </Pill>
                         {autopay ? <Pill tone="blue">Autopay on</Pill> : null}
@@ -97,7 +111,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
                     </div>
                     <div className="text-left md:text-right">
                       <p className="text-sm text-white/45">Plan value</p>
-                      <p className="mt-1 text-2xl font-semibold text-lime-200">
+                      <p className="mt-1 text-2xl font-semibold text-white">
                         {formatInr(plan?.pricePaise ?? payment?.amountPaise ?? 0)}
                       </p>
                     </div>
@@ -105,7 +119,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
 
                   <div className="mt-5 grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <CalendarDays className="text-lime-200" size={18} />
+                      <CalendarDays className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Valid until
                       </p>
@@ -114,7 +128,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <Dumbbell className="text-lime-200" size={18} />
+                      <Dumbbell className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Visits
                       </p>
@@ -125,7 +139,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <CreditCard className="text-lime-200" size={18} />
+                      <CreditCard className="text-white/45" size={18} />
                       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-white/35">
                         Last payment
                       </p>
@@ -139,7 +153,7 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
 
                   {organization?.username ? (
                     <Link
-                      href={`/g/${organization.username}`}
+                      href={localizedPath(`/g/${organization.username}`, locale)}
                       className="zook-focus mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/72 transition hover:bg-white/8 hover:text-white"
                     >
                       <MapPin size={16} aria-hidden="true" />
@@ -152,12 +166,12 @@ export async function renderMembershipSurface(session: AuthSessionSummary) {
           </section>
         ) : (
           <GlassCard className="p-6 text-center">
-            <h2 className="text-2xl font-semibold text-white">No membership yet</h2>
+            <h2 className="text-2xl font-semibold text-white">No membership</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
-              Find your gym, choose a plan, and continue with payment to see your membership here.
+              Find your gym, choose a plan, and continue with payment.
             </p>
             <Link
-              href="/gyms"
+              href={localizedPath("/gyms", locale)}
               className="zook-focus mt-5 inline-flex rounded-full bg-lime-300 px-5 py-3 text-sm font-semibold text-black"
             >
               Find a gym

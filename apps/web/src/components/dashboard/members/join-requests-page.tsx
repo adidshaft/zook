@@ -1,9 +1,9 @@
 "use client";
 
+import { ConfirmActionButton } from "../../confirm-action-button";
 import { ErrorNotice } from "../operational-shared";
 import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
-import { ZookButton } from "../../zook-button";
 import type { JoinRequestRow } from "@/components/dashboard/types";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 
@@ -34,8 +34,7 @@ export function JoinRequestQueue({
       <SectionHeader
         eyebrow="Pipeline"
         title="Join request queue"
-        description="Approval-required requests appear here so owners can approve or reject memberships before payment."
-        badge={<Pill tone={joinRequests.length ? "amber" : "lime"}>{joinRequests.length} pending</Pill>}
+        badge={<Pill tone={joinRequests.length ? "amber" : "neutral"}>{joinRequests.length} pending</Pill>}
       />
       {queueError ? (
         <div className="mt-5">
@@ -66,25 +65,28 @@ export function JoinRequestQueue({
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <ZookButton
-                    type="button"
-                    size="sm"
-                    onClick={() => void updateJoinRequest(request.id, "approve")}
+                  <ConfirmActionButton
+                    className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Approve membership request?"
+                    description={`Approve ${planNamesById.get(request.planId ?? "") ?? "this membership request"} so the member can continue to payment.`}
+                    confirmLabel="Approve"
+                    onConfirm={() => updateJoinRequest(request.id, "approve")}
                     disabled={queueBusyId === request.id}
-                    state={queueBusyId === request.id ? "loading" : "idle"}
                   >
-                    Approve
-                  </ZookButton>
-                  <ZookButton
-                    type="button"
-                    tone="danger"
-                    size="sm"
-                    onClick={() => void updateJoinRequest(request.id, "reject")}
+                    {queueBusyId === request.id ? "Working..." : "Approve"}
+                  </ConfirmActionButton>
+                  <ConfirmActionButton
+                    className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_38%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                    title="Reject membership request?"
+                    description="Rejecting sends the member back to the request step. They need to apply again to continue."
+                    confirmLabel="Reject"
+                    confirmTone="danger"
+                    aria-label="Reject membership request"
+                    onConfirm={() => updateJoinRequest(request.id, "reject")}
                     disabled={queueBusyId === request.id}
-                    state={queueBusyId === request.id ? "loading" : "idle"}
                   >
-                    Reject
-                  </ZookButton>
+                    {queueBusyId === request.id ? "Working..." : "Reject"}
+                  </ConfirmActionButton>
                 </div>
               </div>
             </div>
@@ -92,7 +94,7 @@ export function JoinRequestQueue({
         ) : (
           <EmptyState
             title="Queue is clear"
-            description="Open-join or already-reviewed memberships will not stack up here."
+            description="Open-join and reviewed memberships stay out of this queue."
           />
         )}
       </div>

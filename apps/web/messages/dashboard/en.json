@@ -48,10 +48,10 @@
     "settings": "Settings"
   },
   "dashboard": {
-    "liveWorkspace": "Live workspace",
-    "sampleData": "Sample data",
+    "liveWorkspace": "Current workspace",
+    "fallbackWorkspace": "Test workspace",
     "emptyOrganization": "No active gym is available yet.",
-    "emptyOrganizationDescription": "Your sign-in is active, but no gym is connected to this account yet. Owners can create a gym profile from setup.",
+    "emptyOrganizationDescription": "Your sign-in is active, but no gym is connected to this account yet. Owners can create a gym profile from here.",
     "startGym": "Start a gym",
     "liveOrganization": "Live gym",
     "gymStatus": "Gym status",
@@ -83,7 +83,7 @@
     "inboundRequests": "inbound requests",
     "checkInsToday": "check-ins today",
     "trialEnd": "Trial end",
-    "setupEyebrow": "Owner setup",
+    "setupEyebrow": "Owner start",
     "setupTitle": "Welcome to {orgName}",
     "setupDescription": "Finish these basics so members can join, staff can operate, and the gym link is ready to share.",
     "createFirstPlan": "Create first plan",
@@ -106,7 +106,7 @@
   },
   "payments": {
     "recordOffline": "Record offline payment",
-    "receiptReady": "Receipt ready",
+    "receiptReady": "Receipt generated",
     "settlementQueue": "Orders affecting cashflow"
   },
   "desk": {

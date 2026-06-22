@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Sparkles, Image } from "lucide-react";
+import { normalizeUsernameInput } from "@zook/core/services/organization-service";
+import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Tags, Image } from "lucide-react";
 import {
   DataTable,
   EmptyState,
@@ -13,7 +14,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ImageAssetUpload } from "./image-asset-upload";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
-import { formatEnumLabel } from "@/lib/format";
+import { formatEnumLabel, formatIndiaPhoneInput, normalizeIndianPincodeInput } from "@/lib/format";
 import {
   amenityOptions,
   ChipPicker,
@@ -128,24 +129,6 @@ function appOrigin() {
   return window.location.origin;
 }
 
-function formatIndiaPhone(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "+" || trimmed === "+9" || trimmed === "+91") {
-    return trimmed;
-  }
-  let clean = value;
-  if (clean.startsWith("+91")) {
-    clean = clean.slice(3);
-  }
-  let digits = clean.replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) {
-    digits = digits.slice(2);
-  } else if (digits.length === 11 && digits.startsWith("0")) {
-    digits = digits.slice(1);
-  }
-  return digits ? `+91 ${digits.slice(0, 10)}` : "+91 ";
-}
-
 export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
   const [payload, setPayload] = useState<OrgProfilePayload | null>(null);
   const [form, setForm] = useState<ProfileForm | null>(null);
@@ -240,8 +223,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
     return (
       <GlassCard>
         <EmptyState
-          title="Loading gym setup"
-          description={status || "Pulling organization profile, public links, and QR setup."}
+          title="Loading gym profile"
+          description={status || "Pulling gym profile, public links, and QR details."}
         />
       </GlassCard>
     );
@@ -250,7 +233,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
   const tabItems = [
     { id: "basic" as const, label: "Basic Details", icon: Info },
     { id: "location" as const, label: "Address & Branches", icon: MapPin },
-    { id: "features" as const, label: "Facilities & Tags", icon: Sparkles },
+    { id: "features" as const, label: "Facilities & Tags", icon: Tags },
     { id: "media" as const, label: "Photos & Logo", icon: Image },
     { id: "qr" as const, label: "QR & Public Links", icon: QrCode },
   ];
@@ -260,12 +243,11 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
       <GlassCard variant="strong">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
           <SectionHeader
-            eyebrow="Web-only setup"
+            eyebrow="Web profile"
             title="Gym profile and membership links"
-            description="Owners set up the public gym profile here. Members can find the gym, open the profile link, or use the membership link when they are ready to buy a plan."
             badge={
               <div className="flex flex-wrap gap-2">
-                <Pill tone={form.visibility === "PUBLIC" ? "lime" : "amber"}>
+                <Pill tone={form.visibility === "PUBLIC" ? "blue" : "amber"}>
                   {formatEnumLabel(form.visibility)}
                 </Pill>
                 {hasUnsavedChanges ? <Pill tone="amber">Unsaved changes</Pill> : null}
@@ -309,7 +291,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
         ) : null}
       </GlassCard>
 
-      {/* Premium Horizontal Sub-Tab bar */}
       <div className="flex justify-start overflow-x-auto no-scrollbar rounded-3xl border border-[var(--border)] bg-[var(--surface)]/95 p-1.5 backdrop-blur-xl">
         <div className="flex gap-1.5 w-full">
           {tabItems.map((tab) => {
@@ -328,32 +309,25 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               >
                 <Icon size={14} className={`shrink-0 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
                 <span>{tab.label}</span>
-                {isActive && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-strong)] animate-pulse shrink-0 ml-0.5" />
-                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Active Tab Panel Content */}
       <div className="relative min-h-[400px]">
         {activeTab === "basic" && (
           <GlassCard>
             <SectionHeader
               eyebrow="Identity"
               title="Public gym details"
-              description="These details render on the public gym page, mobile gym profile, and join flow."
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Gym name" value={form.name} onChange={(value) => update("name", value)} />
               <Field
                 label="Public username"
                 value={form.username}
-                onChange={(value) =>
-                  update("username", value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-                }
+                onChange={(value) => update("username", normalizeUsernameInput(value))}
                 placeholder="irnfitnesssim"
               />
               <Field
@@ -365,7 +339,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <Field
                 label="Contact phone"
                 value={form.contactPhone}
-                onChange={(value) => update("contactPhone", formatIndiaPhone(value))}
+                onChange={(value) => update("contactPhone", formatIndiaPhoneInput(value))}
               />
               <SelectField
                 label="Gym type"
@@ -400,7 +374,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Location"
               title="Address and main branch"
-              description="The main branch follows this address for MVP setup. Advanced multi-branch editing can live here later."
+              description="The main branch follows this address. Multi-branch editing stays in branch settings."
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field
@@ -413,7 +387,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               <Field
                 label="Pincode"
                 value={form.pincode}
-                onChange={(value) => update("pincode", value.replace(/[^0-9]/g, "").slice(0, 6))}
+                onChange={(value) => update("pincode", normalizeIndianPincodeInput(value))}
               />
             </div>
             <DataTable
@@ -431,14 +405,14 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                   render: (branch) => (
                     <StatusPill
                       value={branch.isDefault ? "Main branch" : branch.active ? "Active" : "Inactive"}
-                      tone={branch.isDefault ? "lime" : "neutral"}
+                      tone={branch.isDefault ? "blue" : "neutral"}
                     />
                   ),
                 },
               ]}
               rows={payload.branches}
               rowKey={(branch) => branch.id}
-              empty="No branches yet."
+              empty="No branches."
             />
           </GlassCard>
         )}
@@ -448,7 +422,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Features"
               title="Aesthetics and amenities"
-              description="These options display on your profile so members know what your gym offers."
             />
             <div className="mt-5 grid gap-4">
               <TextAreaField
@@ -484,7 +457,6 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             <SectionHeader
               eyebrow="Photos"
               title="Images and gallery"
-              description="Add the logo, cover photo, and gallery images members will see."
             />
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -521,11 +493,8 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 value={form.galleryText}
                 onChange={(value) => update("galleryText", textToList(value).slice(0, 15).join("\n"))}
                 rows={5}
-                placeholder="Uploaded photos appear here. You can also paste one image link per line."
+                placeholder="Paste one image link per line."
               />
-              <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 px-4 py-3 text-xs leading-5 text-[var(--text-tertiary)]">
-                Google Maps photo sync is not connected yet. Upload the best 15 photos here for now.
-              </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {previewGallery.slice(0, 15).map((imageUrl, index) => (
                   <img
@@ -546,7 +515,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
               eyebrow="Join QR"
               title="Gym profile QR"
               description="Print this QR at reception, on posters, or on Instagram. It opens the public gym profile first; members can continue to membership purchase from there."
-              badge={<Pill tone="lime">/{form.username}</Pill>}
+              badge={<Pill>/{form.username}</Pill>}
             />
             <div className="mt-5 grid gap-5 md:grid-cols-[200px_1fr]">
               <div className="rounded-[28px] border border-[var(--border)] bg-white p-4 max-w-[200px] mx-auto md:mx-0">
@@ -568,7 +537,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                     {
                       label: "Membership link",
                       value: joinUrl,
-                      meta: "Use this only when people should choose a plan",
+                      meta: "Share when people should choose a plan",
                     },
                   ]}
                 />

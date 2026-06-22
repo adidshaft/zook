@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   copy: { backgroundColor: "transparent", flex: 1, gap: 4 },
-  title: { backgroundColor: "transparent", ...typography.title },
+  title: { backgroundColor: "transparent", ...typography.headerTitle },
   body: { backgroundColor: "transparent", ...typography.body },
   chip: {
     alignSelf: "flex-start",

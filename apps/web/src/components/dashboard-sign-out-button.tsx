@@ -19,11 +19,11 @@ export function DashboardSignOutButton({
   busyLabel?: string | undefined;
 }) {
   const queryClient = useQueryClient();
-  const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    setReady(true);
+    setMounted(true);
   }, []);
 
   async function signOut() {
@@ -39,7 +39,7 @@ export function DashboardSignOutButton({
       tone="ghost"
       size={compact ? "sm" : "md"}
       fullWidth={!compact}
-      disabled={!ready || signingOut}
+      disabled={!mounted || signingOut}
       state={signingOut ? "loading" : "idle"}
       data-testid="dashboard-sign-out"
       aria-label={compact ? (signingOut ? busyLabel : label) : undefined}

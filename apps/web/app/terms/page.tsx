@@ -38,7 +38,7 @@ const termsCopy = {
       ],
       [
         "Acceptable use",
-        "Do not misuse Zook, bypass access controls, share another person's entry code, upload harmful content, impersonate others, or use demo data as a substitute for real member consent.",
+        "Do not misuse Zook, bypass access controls, share another person's entry code, upload harmful content, impersonate others, or use test data as a substitute for real member consent.",
       ],
       [
         "Support",
@@ -75,7 +75,7 @@ const termsCopy = {
       ],
       [
         "स्वीकार्य उपयोग",
-        "Zook का दुरुपयोग, access controls bypass, किसी और का entry code share, harmful content upload, impersonation, या demo data को वास्तविक member consent के स्थान पर इस्तेमाल न करें.",
+        "Zook का दुरुपयोग, access controls bypass, किसी और का entry code share, harmful content upload, impersonation, या test data को वास्तविक member consent के स्थान पर इस्तेमाल न करें.",
       ],
       [
         "सहायता",

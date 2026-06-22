@@ -14,7 +14,7 @@ import { webApiFetch } from "@/lib/api-client";
 const copy = {
   referralsDescription:
     "Create member, staff, and trainer referral codes with clear monthly limits.",
-  referralEmpty: "Referral performance appears after the first share.",
+  referralEmpty: "Referral performance starts after the first share.",
   policyDescription: "Set the reward, friend discount, and monthly cap.",
   maxDiscount: "Maximum discount (%)",
 };
@@ -76,7 +76,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
         title="Referral codes"
         description={copy.referralsDescription}
         badge={
-          <Pill tone={props.referralPolicy?.enabled === false ? "amber" : "lime"}>
+          <Pill tone={props.referralPolicy?.enabled === false ? "amber" : "blue"}>
             {props.referralPolicy?.enabled === false ? "Paused" : "Enabled"}
           </Pill>
         }
@@ -165,7 +165,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                     </div>
                     <StatusPill
                       value={item.code.status}
-                      tone={item.code.status === "active" ? "lime" : "amber"}
+                      tone={item.code.status === "active" ? "blue" : "amber"}
                     />
                     <div className="flex flex-wrap justify-end gap-2">
                       <ZookButton

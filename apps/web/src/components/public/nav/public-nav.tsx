@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
 import { Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
@@ -27,8 +27,8 @@ export function PublicNav({
       <div className="flex items-center gap-2 pl-2">
         <ZookLogo />
         <div className="hidden md:block">
-          <Pill tone="lime">
-            <Sparkles size={12} />
+          <Pill>
+            <MapPin size={12} />
             {publicT(locale, "indiaOps")}
           </Pill>
         </div>

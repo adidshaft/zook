@@ -19,24 +19,43 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { AccessibilityInfo, Alert, Keyboard, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  AccessibilityInfo,
+  Alert,
+  InteractionManager,
+  Keyboard,
+  Modal,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
 import {
+  BranchSelectorChip,
   FormField,
   Card,
   AnimatedAppear,
+  HeaderMeta,
   IconBubble,
   PrimaryButton,
+  ProfileShortcut,
   ScreenHeader,
   SecondaryButton,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
-import { formatInr } from "@/lib/formatting";
+import {
+  formatAgeLabel,
+  formatInr,
+  formatReviewReason,
+  titleCaseFromCode,
+} from "@/lib/formatting";
 import {
   useApproveAttendance,
   useManualAttendance,
@@ -52,13 +71,12 @@ import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
-import { useScalePulse, useShake } from "@/lib/motion";
+import { useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
-import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
-import { ageLabel, deskReasonCopy, phoneRevealStorageKey } from "./helpers";
 import { receptionWorkspaceStyles as styles } from "./styles";
 
 export { receptionWorkspaceStyles } from "./styles";
@@ -104,8 +122,10 @@ export function useReceptionWorkspace() {
 
 function useReceptionWorkspaceState({
   initialMemberId = null,
+  initialRecordId = null,
 }: {
   initialMemberId?: string | null;
+  initialRecordId?: string | null;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -160,7 +180,7 @@ function useReceptionWorkspaceState({
       lastReceptionMemberId = selectedMemberId;
     }
   }, [selectedMemberId]);
-  const approvalQueue = queueQuery.data?.records ?? [];
+  const approvalQueue = useMemo(() => queueQuery.data?.records ?? [], [queueQuery.data?.records]);
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
   ).length;
@@ -179,6 +199,18 @@ function useReceptionWorkspaceState({
       setSelectedMemberId(initialMemberId);
     }
   }, [initialMemberId]);
+
+  useEffect(() => {
+    if (!initialRecordId) {
+      return;
+    }
+    const attempt =
+      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
+    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
+      return;
+    }
+    openDecisionSheet(attempt);
+  }, [approvalQueue, initialRecordId, selectedDecisionAttempt?.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -218,13 +250,13 @@ function useReceptionWorkspaceState({
           phone: record.user?.phone,
           avatarUrl: record.user?.profilePhotoUrl ?? record.profile.profilePhotoUrl,
           status,
-          meta: ageLabel(record.user?.dateOfBirth),
+          meta: formatAgeLabel(record.user?.dateOfBirth),
           phoneRevealed: revealedPhones.has(record.profile.userId),
           badges:
             multiSelectMode && isMultiChecked
-              ? [{ label: "Picked", tone: "lime" }]
+              ? [{ label: "Picked", tone: "neutral" }]
               : !multiSelectMode && isSelectedSingle
-                ? [{ label: "Selected", tone: "lime" }]
+                ? [{ label: "Selected", tone: "neutral" }]
                 : undefined,
         };
       }),
@@ -232,7 +264,12 @@ function useReceptionWorkspaceState({
   );
   const approvalItems = useMemo<ApprovalItem[]>(
     () =>
-      approvalQueue.map((attempt) => {
+      approvalQueue
+        .filter((attempt) => {
+          const status = String(attempt.status ?? "").toUpperCase();
+          return status === "PENDING_APPROVAL" || status === "FLAGGED";
+        })
+        .map((attempt) => {
         const flags = Array.isArray(attempt.suspiciousFlags)
           ? attempt.suspiciousFlags
           : [attempt.source ?? "scan"];
@@ -240,9 +277,10 @@ function useReceptionWorkspaceState({
           id: attempt.id,
           primaryText: attempt.user?.name ?? attempt.user?.email ?? "Member check-in",
           secondaryText: `${attempt.branchName ?? "Main branch"} · ${attempt.plan?.name ?? "Membership"}`,
-          metaText: attempt.status.replace(/_/g, " "),
-          reason: deskReasonCopy(
+          metaText: titleCaseFromCode(attempt.status),
+          reason: formatReviewReason(
             Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+            "Desk approval required.",
           ),
           context: (
             <View style={styles.auditTrail}>
@@ -259,9 +297,21 @@ function useReceptionWorkspaceState({
   );
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
-      (record) => record.profile.userId === selectedMemberId,
+      (record) =>
+        record.profile.userId === selectedMemberId || record.user?.id === selectedMemberId,
     ) ?? null;
-  const memberRecord = selectedMemberRecord;
+  useEffect(() => {
+    if (!initialMemberId || selectedMemberRecord || !(membersQuery.data?.members.length)) {
+      return;
+    }
+    const fallbackMemberId = membersQuery.data.members[0]?.profile.userId ?? null;
+    if (fallbackMemberId) {
+      setSelectedMemberId(fallbackMemberId);
+    }
+  }, [initialMemberId, membersQuery.data?.members, selectedMemberRecord]);
+  const memberRecord =
+    selectedMemberRecord ??
+    (initialMemberId ? (membersQuery.data?.members ?? [])[0] ?? null : null);
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
@@ -269,6 +319,7 @@ function useReceptionWorkspaceState({
   const activeRole = roleContext?.role;
   const isDemo = Boolean(roleContext?.isDemo);
   const canSwitchBranches = branches.length > 1;
+  const activeOrganizationName = activeOrganization?.name ?? "Active gym";
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
     : "Active gym";
@@ -380,11 +431,11 @@ function useReceptionWorkspaceState({
     setSelectedDecisionAttempt(attempt);
     setDecisionReason(
       attempt.rejectionReason ??
-        deskReasonCopy(
+        formatReviewReason(
           Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
+          "Desk approval required.",
         ),
     );
-    decisionSheetRef.current?.present();
   }
 
   function closeDecisionSheet() {
@@ -397,7 +448,7 @@ function useReceptionWorkspaceState({
     setRevealedPhones((current) => {
       const next = new Set(current);
       next.add(memberId);
-      void setStoredValue(phoneRevealStorageKey(activeOrgId), JSON.stringify(Array.from(next)));
+      void setStoredValue(phoneRevealStorageKey("reception", activeOrgId), JSON.stringify(Array.from(next)));
       return next;
     });
     if (token && activeOrgId) {
@@ -415,7 +466,7 @@ function useReceptionWorkspaceState({
   useEffect(() => {
     let mounted = true;
     setRevealedPhones(new Set());
-    void getStoredValue(phoneRevealStorageKey(activeOrgId)).then((stored) => {
+    void getStoredValue(phoneRevealStorageKey("reception", activeOrgId)).then((stored) => {
       if (!mounted) return;
       if (!stored) {
         setRevealedPhones(new Set());
@@ -539,7 +590,7 @@ function useReceptionWorkspaceState({
         return;
       }
       if (!result.match) {
-        const message = "No active entry or pickup code found.";
+        const message = "No active entry or pickup code.";
         presentVerificationResult({ tone: "danger", message });
         showToast({ tone: "amber", haptic: "warning", message });
         return;
@@ -547,7 +598,7 @@ function useReceptionWorkspaceState({
       const name = result.match.user?.name ?? result.match.user?.email ?? "member";
       if (result.match.type === "attendance") {
         if (result.match.valid) {
-          const status = (result.match.record?.status ?? "approved").replace(/_/g, " ");
+          const status = titleCaseFromCode(result.match.record?.status ?? "approved");
           presentVerificationResult({
             tone: "success",
             type: "attendance",
@@ -580,9 +631,9 @@ function useReceptionWorkspaceState({
           message: "Pickup verified",
           detail: `Order total: ${formatInr(result.match.order?.totalPaise ?? 0)}`,
         });
-        showToast({ tone: "success", haptic: "success", message: `Pickup ready for ${name}` });
+        showToast({ tone: "success", haptic: "success", message: `Pickup verified for ${name}` });
       } else {
-        const status = (result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready").replace(/_/g, " ");
+        const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
         const message = `Pickup code found for ${name}, but status is ${status}.`;
         presentVerificationResult({
           tone: "danger",
@@ -616,7 +667,7 @@ function useReceptionWorkspaceState({
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${payment.payment.mode.replace(/_/g, " ")}.`;
+      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${titleCaseFromCode(payment.payment.mode)}.`;
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
@@ -683,6 +734,7 @@ function useReceptionWorkspaceState({
 
   return {
     activeRole,
+    activeOrganizationName,
     approvalItems,
     approvalQueue,
     approveAttendance,
@@ -736,6 +788,7 @@ function useReceptionWorkspaceState({
     recordPaymentMutation,
     refreshing,
     rejectAttendance,
+    selectedBranchName: selectedBranch?.name ?? null,
     rejectAttendanceMutation,
     revealMemberPhone,
     router,
@@ -778,31 +831,47 @@ function useReceptionWorkspaceState({
 export function ReceptionWorkspace({
   children,
   initialMemberId = null,
+  initialRecordId = null,
+  noScroll = false,
   showMemberContext = false,
   subtitle,
   title,
   testID = "reception-home-screen",
+  isDetailView = false,
 }: {
   children: ReactNode;
   initialMemberId?: string | null;
+  initialRecordId?: string | null;
+  noScroll?: boolean;
   showMemberContext?: boolean;
-  subtitle: string;
+  subtitle?: string;
   title: string;
   testID?: string;
+  /** Pushed detail screens (member/[id], verification) show a back button. */
+  isDetailView?: boolean;
 }) {
-  const state = useReceptionWorkspaceState({ initialMemberId });
+  const state = useReceptionWorkspaceState({ initialMemberId, initialRecordId });
   const { mode, palette } = useTheme();
   const scrollY = useSharedValue(0);
   const isDark = mode === "dark";
+  const isHomeScreen =
+    testID === "reception-home-screen" &&
+    !isDetailView &&
+    !showMemberContext &&
+    !initialMemberId &&
+    !initialRecordId;
   const headerControlStyle = {
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
+  const deskLabel =
+    state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk";
 
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
       <ZookScreen testID={testID}>
         <KeyboardAwareScreen
+          noScroll={noScroll}
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
@@ -821,93 +890,116 @@ export function ReceptionWorkspace({
             ),
           }}
         >
-        <ScreenHeader
-          title={title}
-          subtitle={subtitle}
-          contextSlot={testID === "reception-home-screen" ? <RoleSwitcherContextPill /> : undefined}
-          scrollY={scrollY}
-          trailing={
-            <Pressable
-              testID="reception-back"
-              onPress={state.activeRole === "OWNER" || state.activeRole === "ADMIN"
-                ? () => state.router.replace("/owner")
-                : () => {
-                    if (state.router.canGoBack()) {
-                      state.router.back();
-                    } else {
-                      state.router.replace("/");
-                    }
-                  }}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-              hitSlop={12}
-              style={[styles.backButton, headerControlStyle]}
-            >
-              <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
-            </Pressable>
-          }
-        />
-
-        <Pressable
-          testID="reception-gym-selector"
-          onPress={state.openBranchSwitcher}
-          accessibilityRole="button"
-          accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
-          disabled={!state.canSwitchBranches}
-          style={({ pressed }) => [
-            styles.gymSelector,
-            {
-              borderColor: palette.border.default,
-              backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-            },
-            pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
-          ]}
-        >
-          <Ionicons name="business-outline" size={22} color={palette.text.primary} />
-          <View style={styles.gymSelectorCopy}>
-            <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
-              {state.gymSelectorLabel}
-            </Text>
-            <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-              {state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk"}
-            </Text>
-          </View>
-          {state.canSwitchBranches ? (
-            <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
-          ) : null}
-        </Pressable>
-
-        {showMemberContext ? (
-          <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
-            <IconBubble
-              icon={state.member ? "person-outline" : "person-add-outline"}
-              tone={state.member ? "lime" : "amber"}
-              size={34}
+          <View style={noScroll ? styles.contentNoScroll : undefined}>
+            <ScreenHeader
+              title={isHomeScreen ? "Today" : title}
+              subtitle={isHomeScreen ? undefined : subtitle}
+              meta={
+                isHomeScreen ? (
+                  <View style={styles.headerMetaRow}>
+                    <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
+                    <HeaderMeta icon="scan-outline">{deskLabel}</HeaderMeta>
+                  </View>
+                ) : undefined
+              }
+              contextSlot={!isHomeScreen ? <RoleSwitcherContextPill /> : undefined}
+              scrollY={scrollY}
+              trailing={
+                isDetailView ? (
+                  <Pressable
+                    testID="reception-back"
+                    onPress={() => (state.router.canGoBack() ? state.router.back() : state.router.replace("/reception"))}
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    hitSlop={12}
+                    style={[styles.backButton, headerControlStyle]}
+                  >
+                    <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+                  </Pressable>
+                ) : state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? (
+                  <Pressable
+                    testID="reception-back"
+                    onPress={() => state.router.replace("/owner")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Back to owner tools"
+                    hitSlop={12}
+                    style={[styles.backButton, headerControlStyle]}
+                  >
+                    <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
+                  </Pressable>
+                ) : (
+                  <ProfileShortcut />
+                )
+              }
             />
-            <View style={styles.memberContextCopy}>
-              <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
-                {state.member?.name ?? "No member selected"}
-              </Text>
-              <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
-                {state.member?.email ?? "Search members before recording payments or attendance"}
-                {state.membership?.status ? ` · ${state.membership.status.replace(/_/g, " ")}` : ""}
-              </Text>
-            </View>
-            {state.member ? (
+
+            {isHomeScreen ? (
+              <View style={styles.workspaceChipRow}>
+                <BranchSelectorChip />
+              </View>
+            ) : (
               <Pressable
-                onPress={() => state.setSelectedMemberId(null)}
+                testID="reception-gym-selector"
+                onPress={state.openBranchSwitcher}
                 accessibilityRole="button"
-                accessibilityLabel="Clear selected member"
-                style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
+                accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
+                disabled={!state.canSwitchBranches}
+                style={({ pressed }) => [
+                  styles.gymSelector,
+                  {
+                    borderColor: palette.border.default,
+                    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
+                  },
+                  pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
+                ]}
               >
-                <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
+                <Ionicons name="business-outline" size={22} color={palette.text.primary} />
+                <View style={styles.gymSelectorCopy}>
+                  <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
+                    {state.gymSelectorLabel}
+                  </Text>
+                  <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
+                    {deskLabel}
+                  </Text>
+                </View>
+                {state.canSwitchBranches ? (
+                  <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
+                ) : null}
               </Pressable>
+            )}
+
+            {showMemberContext ? (
+              <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
+                <IconBubble
+                  icon={state.member ? "person-outline" : "person-add-outline"}
+                  tone={state.member ? "lime" : "amber"}
+                  size={34}
+                />
+                <View style={styles.memberContextCopy}>
+                  <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
+                    {state.member?.name ?? "No member selected"}
+                  </Text>
+                  <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
+                    {state.member?.email ?? "Search members before recording payments or attendance"}
+                    {state.membership?.status ? ` · ${titleCaseFromCode(state.membership.status)}` : ""}
+                  </Text>
+                </View>
+                {state.member ? (
+                  <Pressable
+                    onPress={() => state.setSelectedMemberId(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear selected member"
+                    style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
+                  >
+                    <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
+                  </Pressable>
+                ) : null}
+              </Card>
             ) : null}
-          </Card>
-        ) : null}
-        <AnimatedAppear delay={0}>
-          {children}
-        </AnimatedAppear>
+            <AnimatedAppear delay={0} style={noScroll ? styles.animatedContentNoScroll : undefined}>
+              {children}
+            </AnimatedAppear>
+          </View>
         </KeyboardAwareScreen>
         <VerificationResultModal />
         <ApprovalDecisionSheet />
@@ -932,6 +1024,23 @@ function ApprovalDecisionSheet() {
     setDecisionReason,
     setSelectedDecisionAttempt,
   } = useReceptionWorkspace();
+  useEffect(() => {
+    if (!selectedDecisionAttempt) {
+      return;
+    }
+    let cancelled = false;
+    const task = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) {
+          decisionSheetRef.current?.present();
+        }
+      });
+    });
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
+  }, [decisionSheetRef, selectedDecisionAttempt]);
   const sheetBackground = StyleSheet.flatten([
     styles.sheetBackground,
     {
@@ -1062,12 +1171,10 @@ function VerificationResultModal() {
   const { palette } = useTheme();
   const { dismissVerificationResult, verificationResult } = useReceptionWorkspace();
   const success = verificationResult?.tone === "success";
-  const { animatedStyle: pulseStyle, pulse } = useScalePulse();
   const { animatedStyle: shakeStyle, shake } = useShake();
   useEffect(() => {
     if (!verificationResult) return;
-    if (success) pulse();
-    else shake();
+    if (!success) shake();
     AccessibilityInfo.announceForAccessibility(
       [
         success ? "Verification successful." : "Verification failed.",
@@ -1080,7 +1187,7 @@ function VerificationResultModal() {
     );
     const timer = setTimeout(dismissVerificationResult, success ? 1400 : 4000);
     return () => clearTimeout(timer);
-  }, [dismissVerificationResult, pulse, shake, success, verificationResult]);
+  }, [dismissVerificationResult, shake, success, verificationResult]);
   const photo = verificationResult?.photoUrl;
   const backdropColor = success ? "rgba(17,21,15,0.94)" : `${palette.feedback.danger}E6`;
   return (
@@ -1096,7 +1203,7 @@ function VerificationResultModal() {
           { backgroundColor: backdropColor },
         ]}
       >
-        <Reanimated.View style={[styles.verificationModalContent, success ? pulseStyle : shakeStyle]}>
+        <Reanimated.View style={[styles.verificationModalContent, success ? null : shakeStyle]}>
           {photo ? (
             <Image
               source={{ uri: photo }}

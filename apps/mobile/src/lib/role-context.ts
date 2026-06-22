@@ -51,6 +51,6 @@ export function useRoleContext(): RoleContext | null {
 }
 
 export function useCanSwitchRole() {
-  const ctx = useRoleContext();
-  return (ctx?.availableRoles.length ?? 0) > 1;
+  const context = useRoleContext();
+  return Boolean(context && context.availableRoles.length > 1);
 }

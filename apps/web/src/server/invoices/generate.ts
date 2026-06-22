@@ -41,6 +41,7 @@ type PaymentDocumentContext = {
 
 function invoiceKindForPurpose(purpose: string): InvoiceKind {
   if (purpose === "SHOP_ORDER") return "SHOP";
+  if (purpose === "CLASS_BOOKING") return "PT";
   if (purpose === "PERSONAL_TRAINING") return "PT";
   if (purpose === "SAAS_BILLING") return "SAAS";
   if (purpose === "OTHER" || purpose === "MANUAL_ADJUSTMENT") return "MANUAL";
@@ -61,6 +62,7 @@ function inclusiveGstBreakdown(totalPaise: number, gstRateBps: number) {
 
 function lineDescription(purpose: string) {
   if (purpose === "SHOP_ORDER") return "Shop order";
+  if (purpose === "CLASS_BOOKING") return "Class booking";
   if (purpose === "PERSONAL_TRAINING") return "Personal training";
   if (purpose === "SAAS_BILLING") return "Zook SaaS subscription";
   if (purpose === "MANUAL_ADJUSTMENT") return "Manual invoice";

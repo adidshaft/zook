@@ -11,10 +11,12 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   AppState,
   type AppStateStatus,
   ActivityIndicator,
   Linking,
+  LayoutChangeEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -26,6 +28,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
+  BranchSelectorChip,
   IconBubble,
   AppHeader,
   MoneySummaryCard,
@@ -46,7 +49,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatInr, formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
 import {
   useGeneratePaymentDocument,
   useGymProfile,
@@ -210,7 +213,7 @@ export default function MembershipScreen() {
   const gymUsername =
     latestSubscription?.organization?.username ?? activeOrganization?.username ?? undefined;
   const gymQuery = useGymProfile(gymUsername ?? "");
-  const availablePlans = gymQuery.data?.plans ?? [];
+  const availablePlans = useMemo(() => gymQuery.data?.plans ?? [], [gymQuery.data?.plans]);
   const activeCount = memberships.filter((s) => s.status === "ACTIVE").length;
   const expiringSoonCount = memberships.filter((s) => {
     if (s.status !== "ACTIVE" || !s.endsAt) return false;
@@ -234,6 +237,9 @@ export default function MembershipScreen() {
   const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const handledFocusRef = useRef<string | null>(null);
+  const sectionOffsetsRef = useRef<Record<string, number>>({});
   useAppFocusInvalidation([["me", "home"]]);
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
@@ -244,6 +250,32 @@ export default function MembershipScreen() {
     if (!renewalTarget) return;
     setSelectedPlanId(planIdFor(renewalTarget) ?? availablePlans[0]?.id);
   }, [availablePlans, renewalTarget]);
+
+  const focusTarget = useMemo(() => {
+    switch (routeParams.focus) {
+      case "buy":
+      case "checkout":
+      case "history":
+      case "payments":
+      case "membership":
+        return routeParams.focus;
+      default:
+        return null;
+    }
+  }, [routeParams.focus]);
+
+  function registerSectionOffset(section: "active" | "history" | "payments", event: LayoutChangeEvent) {
+    sectionOffsetsRef.current[section] = event.nativeEvent.layout.y;
+  }
+
+  function scrollToSection(section: "active" | "history" | "payments") {
+    const y = sectionOffsetsRef.current[section];
+    if (typeof y !== "number") {
+      return false;
+    }
+    scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true });
+    return true;
+  }
 
   const refreshMembershipAfterCheckout = useCallback(async () => {
     setCheckingCheckoutStatus(true);
@@ -287,6 +319,49 @@ export default function MembershipScreen() {
     setRenewalTarget(null);
     setRenewalStatus("");
   }
+
+  useEffect(() => {
+    if (!focusTarget) {
+      handledFocusRef.current = null;
+      return;
+    }
+    if (handledFocusRef.current === focusTarget) {
+      return;
+    }
+    if (focusTarget === "buy" || focusTarget === "checkout") {
+      if (!latestSubscription) {
+        handledFocusRef.current = focusTarget;
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      openRenewal(latestSubscription);
+      scrollToSection("active");
+      return;
+    }
+    if (membershipsQuery.isLoading) {
+      return;
+    }
+    if (focusTarget === "history") {
+      if (!scrollToSection(sortedSubscriptions.length > 1 ? "history" : "payments")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      return;
+    }
+    if (focusTarget === "payments") {
+      if (!scrollToSection("payments")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+      return;
+    }
+    if (focusTarget === "membership") {
+      if (!scrollToSection("active")) {
+        return;
+      }
+      handledFocusRef.current = focusTarget;
+    }
+  }, [focusTarget, latestSubscription, membershipsQuery.isLoading, sortedSubscriptions.length]);
 
   async function renewMembership() {
     if (!token || !renewalTarget) return;
@@ -414,7 +489,25 @@ export default function MembershipScreen() {
     }
   }
 
-  async function pauseOrResumeMembership(subscription: MembershipRecord) {
+  function pauseOrResumeMembership(subscription: MembershipRecord) {
+    // Resuming is safe/positive — do it immediately. Pausing freezes gym
+    // access until the resume date, so confirm first to avoid a misfire that
+    // leaves the member unable to check in.
+    if (subscription.status === "PAUSED") {
+      void performPauseOrResume(subscription);
+      return;
+    }
+    Alert.alert(
+      "Pause membership?",
+      `Your access stays frozen until ${formatLongDate(pauseResumesAt.toISOString())}. You can resume anytime before then.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Pause", style: "destructive", onPress: () => void performPauseOrResume(subscription) },
+      ],
+    );
+  }
+
+  async function performPauseOrResume(subscription: MembershipRecord) {
     if (!token) return;
     setMembershipActionBusy(true);
     setMembershipActionStatus("");
@@ -476,7 +569,7 @@ export default function MembershipScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       showToast({
-        title: kind === "receipt" ? "Receipt not ready" : "Invoice not ready",
+        title: kind === "receipt" ? "Receipt unavailable" : "Invoice unavailable",
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",
@@ -510,6 +603,7 @@ export default function MembershipScreen() {
     <>
       <ZookScreen testID="membership-screen">
         <ScrollView
+          ref={scrollViewRef}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
@@ -525,7 +619,12 @@ export default function MembershipScreen() {
           <AppHeader
             eyebrow="Membership"
             title="Your plans"
-            contextSlot={<RoleSwitcherChip />}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherChip />
+                <BranchSelectorChip />
+              </View>
+            }
             subtitle={
               memberships.length
                 ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`
@@ -550,15 +649,43 @@ export default function MembershipScreen() {
             showProfileShortcut={false}
           />
 
-          {routeParams.focus === "membership" ? (
+          {focusTarget ? (
             <Card variant="selected" contentStyle={styles.calloutContent}>
-              <IconBubble icon="notifications" tone="blue" size={36} />
+              <IconBubble
+                icon={
+                  focusTarget === "history" || focusTarget === "payments"
+                    ? "receipt-outline"
+                    : focusTarget === "buy" || focusTarget === "checkout"
+                      ? "card-outline"
+                      : "notifications"
+                }
+                tone={focusTarget === "buy" || focusTarget === "checkout" ? "blue" : "neutral"}
+                size={36}
+              />
               <View style={styles.calloutCopy}>
-                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>Membership update</Text>
+                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>
+                  {focusTarget === "buy"
+                    ? "Choose a plan"
+                    : focusTarget === "checkout"
+                      ? "Continue checkout"
+                      : focusTarget === "history"
+                        ? "Membership history"
+                        : focusTarget === "payments"
+                          ? "Payment documents"
+                          : "Membership update"}
+                </Text>
                 <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
-                  {routeParams.subscriptionId
-                    ? "Your subscription has been updated."
-                    : "Showing your current status."}
+                  {focusTarget === "buy" || focusTarget === "checkout"
+                    ? latestSubscription
+                      ? "We opened the renewal flow for this membership."
+                      : "Browse gyms and purchase a membership to get started."
+                    : focusTarget === "history"
+                      ? "Jumped to your previous memberships and payment trail."
+                      : focusTarget === "payments"
+                        ? "Receipts and invoices are below."
+                        : routeParams.subscriptionId
+                          ? "Your subscription has been updated."
+                          : "Membership status is below."}
                 </Text>
               </View>
             </Card>
@@ -566,11 +693,10 @@ export default function MembershipScreen() {
 
           {waitingCheckoutSessionId ? (
             <Card variant="compact" contentStyle={styles.browserReturnContent}>
-              <IconBubble icon="open-outline" tone="amber" size={36} />
               <View style={styles.browserReturnCopy}>
                 <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-                  Return when done. We will refresh your membership as soon as you come back.
+                  Return after checkout. Zook refreshes your membership when you come back.
                 </Text>
               </View>
               <ZookButton
@@ -588,7 +714,6 @@ export default function MembershipScreen() {
 
           {!membershipsQuery.isLoading && !memberships.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
-              <IconBubble icon="card-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No memberships</Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
@@ -602,8 +727,8 @@ export default function MembershipScreen() {
           ) : null}
 
           {latestSubscription ? (
-            <>
-              <SectionHeader title="Active membership" />
+            <View onLayout={(event) => registerSectionOffset("active", event)}>
+              <SectionHeader title="Active plan" />
               <ActiveMembershipCard
                 activeOrganizationName={activeOrganization?.name}
                 actionBusy={membershipActionBusy}
@@ -624,18 +749,22 @@ export default function MembershipScreen() {
                 onEnable={(subscription) => void enableAutopay(subscription)}
                 subscription={latestSubscription}
               />
-            </>
+            </View>
           ) : null}
 
-          <MembershipHistorySection subscriptions={sortedSubscriptions} />
+          <View onLayout={(event) => registerSectionOffset("history", event)}>
+            <MembershipHistorySection subscriptions={sortedSubscriptions} />
+          </View>
 
-          <PaymentsSection
-            documentBusyKey={documentBusyKey}
-            invoices={invoices}
-            onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
-            onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
-            payments={payments}
-          />
+          <View onLayout={(event) => registerSectionOffset("payments", event)}>
+            <PaymentsSection
+              documentBusyKey={documentBusyKey}
+              invoices={invoices}
+              onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
+              onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
+              payments={payments}
+            />
+          </View>
         </ScrollView>
         <RenewalSheet
           availablePlans={availablePlans}
@@ -770,7 +899,7 @@ function RenewalSheet({
             {loadingPlans ? <PlansSkeleton /> : null}
             {!loadingPlans && !plans.length ? (
               <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                No alternate plans are published yet. Same-plan renewal will be requested.
+                No alternate plans are published. Same-plan renewal is requested.
               </Text>
             ) : null}
             {plans.map((plan) => {
@@ -838,10 +967,10 @@ function RenewalSheet({
               },
               {
                 label: "Visits",
-                value: selectedPlan.visitLimit ? `${selectedPlan.visitLimit} visits` : "Unlimited",
+                value: formatVisitLimit(selectedPlan.visitLimit),
               },
             ]}
-            consequence="The renewed membership activates after payment confirmation from the provider or gym desk."
+            consequence="The renewed membership activates after payment confirmation from the payment service or gym desk."
           />
         ) : null}
 
@@ -891,9 +1020,13 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
-    gap: 14,
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  headerContext: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
   },
   iconButton: {
     width: 44,
@@ -916,17 +1049,6 @@ const styles = StyleSheet.create({
     ...typography.cardTitle,
   },
   calloutBody: {
-    ...typography.body,
-  },
-  pausePicker: {
-    minHeight: 52,
-  },
-  loadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  loadingText: {
     ...typography.body,
   },
   browserReturnContent: {
@@ -961,185 +1083,6 @@ const styles = StyleSheet.create({
   emptyBody: {
     ...typography.body,
     textAlign: "center",
-  },
-  featuredContent: {
-    gap: spacing.md,
-  },
-  featuredHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
-  featuredCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  featuredTitle: {
-    ...typography.headerTitle,
-  },
-  featuredOrg: {
-    ...typography.body,
-  },
-  progressSection: {
-    gap: 6,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  progressFillWarning: {
-  },
-  progressLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  progressText: {
-    ...typography.caption,
-  },
-  progressTextWarning: {
-  },
-  progressTextMuted: {
-    ...typography.small,
-  },
-  membershipMetaLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-  },
-  membershipMetaText: {
-    ...typography.caption,
-  },
-  autopayContent: {
-    gap: spacing.md,
-  },
-  autopayHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
-  autopayCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  autopayTitle: {
-    ...typography.cardTitle,
-  },
-  autopayBody: {
-    ...typography.small,
-  },
-  autopayStatus: {
-    ...typography.small,
-  },
-  stack: {
-    gap: 8,
-  },
-  historyContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  historyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  historyCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  historyTitle: {
-    ...typography.cardTitle,
-  },
-  historyBody: {
-    ...typography.small,
-  },
-  emptyPaymentContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  paymentContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  paymentIcon: {
-    alignSelf: "flex-start",
-  },
-  paymentCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  paymentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  paymentTitle: {
-    flex: 1,
-    ...typography.cardTitle,
-  },
-  paymentAmount: {
-    ...typography.cardTitle,
-  },
-  paymentBody: {
-    ...typography.small,
-  },
-  paymentMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  documentHint: {
-    flexShrink: 1,
-    ...typography.small,
-  },
-  documentActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    paddingTop: 2,
-  },
-  documentButton: {
-    minHeight: 40,
-    minWidth: 96,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-  },
-  documentButtonPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.985 }],
-  },
-  documentButtonDisabled: {
-    opacity: 0.45,
-  },
-  documentButtonText: {
-    ...typography.small,
-    fontWeight: "700",
-  },
-  invoiceContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  invoiceCopy: {
-    flex: 1,
-    gap: 4,
   },
   sheetBackground: {
     borderWidth: 1,
@@ -1222,15 +1165,6 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
   },
   planOptionMeta: {
-    ...typography.small,
-  },
-  renewalSummary: {
-    gap: 4,
-  },
-  summaryTitle: {
-    ...typography.bodyStrong,
-  },
-  summaryBody: {
     ...typography.small,
   },
   statusMessage: {

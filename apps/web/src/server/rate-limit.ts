@@ -42,6 +42,8 @@ export const defaultRateLimitRules = {
   otpVerifyByEmail: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByIdentifier: { limit: 8, windowMs: 10 * 60 * 1000 },
   otpVerifyByIp: { limit: 12, windowMs: 10 * 60 * 1000 },
+  authRefreshByIp: { limit: 120, windowMs: 10 * 60 * 1000 },
+  ssoCallbackByIp: { limit: 30, windowMs: 10 * 60 * 1000 },
   aiRequestByUser: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationSendByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
   paymentSessionByActor: { limit: 12, windowMs: 10 * 60 * 1000 },
@@ -56,11 +58,14 @@ export const defaultRateLimitRules = {
   organizationCreateByActor: { limit: 1, windowMs: 24 * 60 * 60 * 1000 },
   publicOrgSearchByIp: { limit: 100, windowMs: 60 * 1000 },
   joinRequestByActorOrg: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
-  manualPaymentByActorOrg: { limit: 2, windowMs: 24 * 60 * 60 * 1000 },
+  manualPaymentByActorOrg: { limit: 50, windowMs: 24 * 60 * 60 * 1000 },
   referralRedeemByActor: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
   staffInviteByActorOrg: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
   branchCreationByOwner: { limit: 10, windowMs: 24 * 60 * 60 * 1000 },
   branchCreationBurstByOwner: { limit: 1, windowMs: 60 * 1000 },
+  paymentRefundByActorOrg: { limit: 6, windowMs: 60 * 60 * 1000 },
+  subscriptionChangeByActor: { limit: 12, windowMs: 60 * 60 * 1000 },
+  couponValidateByIp: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationOrgAllDaily: { limit: 50, windowMs: 24 * 60 * 60 * 1000 },
   notificationOrgOperationalDaily: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
   notificationOrgPromoDaily: { limit: 2, windowMs: 24 * 60 * 60 * 1000 },
@@ -326,7 +331,12 @@ export async function assertRateLimit(
     throw rateLimitedError("Too many requests. Please try again shortly.");
   }
 
-  const result = await getRateLimitStore().consume(`${ruleName}:${identity}`, rule);
+  let result: Awaited<ReturnType<RateLimitStore["consume"]>>;
+  try {
+    result = await getRateLimitStore().consume(`${ruleName}:${identity}`, rule);
+  } catch {
+    throw rateLimitedError("Too many requests. Please try again shortly.");
+  }
   if (!result.allowed) {
     const retryAfterSeconds = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000));
     throw rateLimitedError(

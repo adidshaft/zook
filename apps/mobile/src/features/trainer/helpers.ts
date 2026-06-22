@@ -55,18 +55,23 @@ export const clientDetailTabs: Array<{ label: string; value: ClientDetailTab }> 
 
 export type ClientDetailTab = "overview" | "plan" | "sessions";
 
-export function planCountLabel(count: number) {
-  return `${count} active ${count === 1 ? "plan" : "plans"}`;
+export function trainerClientDetailPath(clientId: string, tab: ClientDetailTab) {
+  return `/trainer/clients/${clientId}${tab === "overview" ? "" : `/${tab}`}`;
 }
 
-export function initialsFor(name?: string | null) {
-  const cleanName = name?.trim();
-  if (!cleanName) return "ZK";
-  return cleanName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+export function selectedTrainerClient(
+  clients: TrainerClientRecord[] | undefined,
+  clientId: string,
+) {
+  return (
+    clients?.find((candidate) => candidate.memberUserId === clientId || candidate.id === clientId) ??
+    clients?.[0] ??
+    null
+  );
+}
+
+export function planCountLabel(count: number) {
+  return `${count} active ${count === 1 ? "plan" : "plans"}`;
 }
 
 export function fitnessGoalFor(client?: TrainerClientRecord | null) {
@@ -89,7 +94,7 @@ export function progressTimelineFor(client?: TrainerClientRecord | null) {
       title: entry.feedback ? "Plan feedback" : "Plan progress",
       body: entry.feedback ?? `${entry.completionPct}% complete`,
       status: `${entry.completionPct}%`,
-      tone: "lime" as const,
+      tone: "blue" as const,
     })),
     ...(client?.summary?.recentWorkouts ?? []).map((workout) => ({
       id: `workout-${workout.id}`,

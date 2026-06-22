@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
-import { formatLongDate, titleCaseFromCode } from "@/lib/formatting";
+import { formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
@@ -32,6 +32,7 @@ export function ActiveMembershipCard({
   const { palette } = useTheme();
   const guidance = membershipStatusGuidance(subscription.status, daysLeft);
   const guidanceTone = toneForStatus(subscription.status);
+  const guidanceShowsIcon = guidanceTone === "amber" || guidanceTone === "red";
   const isWarning = daysLeft !== null && daysLeft <= 7;
   const durationDays = subscription.plan?.durationDays ?? subscription.plan?.validityDays ?? null;
   const daysProgress =
@@ -105,7 +106,7 @@ export function ActiveMembershipCard({
         <View style={styles.membershipMetaLine}>
           <Ionicons name="walk-outline" size={14} color={palette.accent.base} />
           <Text style={[styles.membershipMetaText, { color: palette.text.secondary }]}>
-            {subscription.remainingVisits} visits remaining
+            {formatVisitLimit(subscription.remainingVisits)} remaining
           </Text>
         </View>
       ) : null}
@@ -119,17 +120,20 @@ export function ActiveMembershipCard({
                 ? palette.feedback.warning
                 : guidanceTone === "red"
                   ? palette.feedback.danger
-                  : palette.border.subtle,
+                  : "transparent",
             backgroundColor:
               guidanceTone === "amber"
                 ? palette.surface.warningSoft
                 : guidanceTone === "red"
                   ? palette.surface.dangerSoft
-                  : palette.surface.default,
+                  : "transparent",
+            paddingHorizontal: guidanceTone === "amber" || guidanceTone === "red" ? spacing.md : 0,
           },
         ]}
       >
-        <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+        {guidanceShowsIcon ? (
+          <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+        ) : null}
         <View style={styles.guidanceCopy}>
           <Text style={[styles.guidanceTitle, { color: palette.text.primary }]}>
             {guidance.title}
@@ -156,6 +160,9 @@ export function ActiveMembershipCard({
             minimumDate={pauseMinimumDate()}
             onChange={onPauseDateChange}
           />
+          <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
+            Pausing freezes check-ins until this date, and your remaining days carry over.
+          </Text>
         </View>
       ) : null}
       <ZookButton
@@ -165,12 +172,7 @@ export function ActiveMembershipCard({
         onPress={() => onPauseOrResume(subscription)}
         icon={subscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
       >
-        {subscription.status === "PAUSED"
-          ? "Resume membership"
-          : `Pause until ${pauseResumesAt.toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}`}
+        {subscription.status === "PAUSED" ? "Resume membership" : "Pause membership"}
       </ZookButton>
       {actionStatus ? (
         <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
@@ -250,6 +252,10 @@ const styles = StyleSheet.create({
   },
   pausePicker: {
     marginTop: -spacing.xs,
+    gap: spacing.xs,
+  },
+  pauseHelp: {
+    ...typography.small,
   },
   statusMessage: {
     ...typography.small,

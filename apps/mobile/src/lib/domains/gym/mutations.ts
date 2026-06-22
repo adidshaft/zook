@@ -1,1 +1,27 @@
-export {};
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mobileApiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
+
+export function useSubmitReview(orgId?: string | null) {
+  const queryClient = useQueryClient();
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: ({ rating, body }: { rating: number; body: string }) => {
+      if (!token || !orgId) {
+        throw new Error("Sign in again to post a review.");
+      }
+      return mobileApiFetch<{ review: { id: string } }>(`/orgs/${orgId}/reviews`, {
+        method: "POST",
+        token,
+        orgId,
+        body: { rating, body },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["org", orgId, "reviews"] });
+      notifyMutationSuccess("Thanks for your review!");
+    },
+    onError: (error) => notifyMutationError(error, "Could not post your review."),
+  });
+}

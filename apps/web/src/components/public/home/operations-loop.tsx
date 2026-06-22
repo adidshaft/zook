@@ -2,14 +2,11 @@ import { MotionSurface, Reveal, Stagger, StaggerItem } from "@/components/motion
 import { type PublicLocale } from "@/lib/public-i18n";
 import { homeData } from "./home-data";
 
-function toneClass(tone: string) {
-  if (tone === "amber") {
-    return "border-[color-mix(in_srgb,var(--feedback-warning)_36%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]";
-  }
-  if (tone === "sky") {
+function toneClass(tone: "neutral" | "info") {
+  if (tone === "info") {
     return "border-[color-mix(in_srgb,var(--feedback-info)_36%,transparent)] bg-[var(--surface-info-soft)] text-[var(--feedback-info)]";
   }
-  return "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]";
+  return "border-[var(--border-subtle)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]";
 }
 
 export function OperationsLoop({ locale }: { locale: PublicLocale }) {

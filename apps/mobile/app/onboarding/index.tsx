@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
 import { useReduceMotion } from "@/lib/motion";
-import { useTheme } from "@/lib/theme";
+import { layout, useTheme } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function OnboardingSplash() {
   const navigateNext = useCallback(() => {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
-    router.push("/onboarding/value-props" as never);
+    router.replace("/onboarding/language" as never);
   }, [router]);
 
   useEffect(() => {
@@ -68,18 +68,36 @@ export default function OnboardingSplash() {
       style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
     >
       <View style={styles.center}>
-        <Reanimated.View style={[styles.wordmark, wordmarkStyle]}>
-          <BrandMark size="lg" />
-          <Text style={[styles.wordmarkText, { color: palette.accent.base }]}>Zook</Text>
+        <Reanimated.View
+          style={[
+            styles.heroCard,
+            wordmarkStyle,
+            {
+              backgroundColor: palette.surface.default,
+              borderColor: palette.border.default,
+            },
+          ]}
+        >
+          <View style={styles.wordmark}>
+            <BrandMark size="lg" />
+            <Text style={[styles.wordmarkText, { color: palette.text.primary }]}>Zook</Text>
+          </View>
+          <Text style={[styles.heroSubtitle, { color: palette.text.secondary }]}>
+            Check-ins, memberships, plans, and the front desk flow in one place.
+          </Text>
         </Reanimated.View>
         <Reanimated.View style={[styles.scanMark, markStyle]}>
-          <View style={styles.scanCorners}>
-            <View style={[styles.corner, styles.cornerTopLeft, { borderColor: palette.accent.base }]} />
-            <View style={[styles.corner, styles.cornerTopRight, { borderColor: palette.accent.base }]} />
-            <View style={[styles.corner, styles.cornerBottomLeft, { borderColor: palette.accent.base }]} />
-            <View style={[styles.corner, styles.cornerBottomRight, { borderColor: palette.accent.base }]} />
+          <View
+            style={[
+              styles.scanBadge,
+              {
+                backgroundColor: palette.surface.accentSoft,
+                borderColor: palette.border.subtle,
+              },
+            ]}
+          >
+            <Text style={[styles.scanLabel, { color: palette.text.primary }]}>Gym ops, without the clutter.</Text>
           </View>
-          <Text style={[styles.scanText, { color: palette.text.secondary }]}>scan to enter</Text>
         </Reanimated.View>
       </View>
     </Pressable>
@@ -89,13 +107,22 @@ export default function OnboardingSplash() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: layout.screenPadding,
   },
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 28,
+  },
+  heroCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 28,
+    borderWidth: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    gap: 14,
   },
   wordmark: {
     flexDirection: "row",
@@ -104,49 +131,30 @@ const styles = StyleSheet.create({
   },
   wordmarkText: {
     fontFamily: "Inter_900Black",
-    fontSize: 58,
+    fontSize: 46,
     letterSpacing: 0,
+  },
+  heroSubtitle: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 15,
+    lineHeight: 22,
   },
   scanMark: {
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
-  scanCorners: {
-    width: 64,
-    height: 64,
+  scanBadge: {
+    minWidth: 220,
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
   },
-  corner: {
-    position: "absolute",
-    width: 18,
-    height: 18,
-  },
-  cornerTopLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-  },
-  cornerTopRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-  },
-  cornerBottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-  },
-  cornerBottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-  },
-  scanText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
+  scanLabel: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
     letterSpacing: 0,
   },
 });

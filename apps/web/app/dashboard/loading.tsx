@@ -8,10 +8,13 @@ export default function DashboardLoading() {
 
   return (
     <main
-      aria-live="polite"
+      aria-busy="true"
       aria-label="Loading dashboard section"
       className="zook-shell-bg min-h-dvh overflow-hidden px-3 py-4 sm:px-5 lg:px-6 xl:px-8"
     >
+      <div role="status" aria-live="polite" className="sr-only">
+        Loading dashboard section.
+      </div>
       <div className="fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-[var(--border-subtle)]">
         <div className="h-full w-1/3 animate-[zook-dashboard-loading_900ms_ease-in-out_infinite] rounded-r-full bg-[var(--accent)]" />
       </div>
@@ -52,10 +55,10 @@ export default function DashboardLoading() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
-                  Aarogya Strength
+                  Loading organization
                 </p>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Loading live command board
+                  Loading command board
                 </p>
               </div>
               <div className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-secondary)]">
@@ -69,7 +72,7 @@ export default function DashboardLoading() {
               Today's Command Board
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
-              Preparing real-time gym operations, attendance, revenue, and member signals.
+              Preparing gym operations, attendance, revenue, and member signals.
             </p>
           </div>
 

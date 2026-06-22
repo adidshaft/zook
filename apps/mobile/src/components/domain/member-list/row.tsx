@@ -2,30 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card, Pill, ZookButton } from "@/components/primitives";
+import { Card, normalizePillTone, Pill, StatusChip, ZookButton } from "@/components/primitives";
+import { formatInitials, formatRedactedPhone } from "@/lib/formatting";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
-
-function initialsFor(name: string, email?: string | null) {
-  const source = name.trim() || email?.trim() || "Member";
-  return source
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
-function redactPhone(phone?: string | null) {
-  if (!phone) return "No phone";
-  return `****${phone.slice(-4)}`;
-}
-
-function statusTone(status: MemberRowItem["status"]) {
-  if (status === "active") return "lime";
-  if (status === "expiring" || status === "pending") return "amber";
-  return "red";
-}
 
 export function MemberListRow({
   item,
@@ -57,7 +38,7 @@ export function MemberListRow({
       ) : (
         <View style={[styles.avatar, { backgroundColor: palette.accent.base }]}>
           <Text style={[styles.avatarText, { color: palette.text.onAccent }]}>
-            {initialsFor(item.name, item.email)}
+            {formatInitials(item.name, item.email)}
           </Text>
         </View>
       )}
@@ -70,7 +51,7 @@ export function MemberListRow({
         </Text>
         <View style={styles.metaRow}>
           <Text numberOfLines={1} style={[styles.phoneText, { color: palette.text.secondary }]}>
-            {item.phoneRevealed ? (item.phone ?? "No phone") : redactPhone(item.phone)}
+            {item.phoneRevealed ? (item.phone ?? "No phone") : formatRedactedPhone(item.phone)}
           </Text>
           {showReveal ? (
             <Pressable
@@ -86,14 +67,14 @@ export function MemberListRow({
             </Pressable>
           ) : null}
           {item.badges?.map((badge) => (
-            <Pill key={badge.label} tone={badge.tone === "danger" ? "red" : badge.tone}>
+            <Pill key={badge.label} tone={normalizePillTone(badge.tone)}>
               {badge.label}
             </Pill>
           ))}
         </View>
       </View>
       <View style={styles.trailing}>
-        <Pill tone={statusTone(item.status)}>{item.status}</Pill>
+        <StatusChip status={item.status} />
         {item.action ? (
           <ZookButton
             size="sm"

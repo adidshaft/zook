@@ -1,9 +1,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, IconBubble, Pill, SectionHeader } from "@/components/primitives";
-import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { formatDateTime, formatInr, titleCaseFromCode, toneForPaymentStatus } from "@/lib/formatting";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { toneForStatus } from "./helpers";
 import type { InvoiceRecord, MembershipPaymentRecord, PaymentDocumentKind } from "./types";
 
 export function PaymentsSection({
@@ -41,12 +40,12 @@ export function PaymentsSection({
             const documentHint = canGenerate
               ? payment.receiptNumber
                 ? `Receipt ${payment.receiptNumber}`
-                : "Receipt and invoice are available for confirmed payments."
-              : `Documents unlock after payment succeeds. Current status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
+                : "Generate a receipt or invoice."
+              : `Documents are available after payment succeeds. Status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
             return (
               <Card key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>
-                  <IconBubble icon="receipt-outline" tone="lime" size={34} />
+                  <IconBubble icon="receipt-outline" tone={toneForPaymentStatus(payment.status)} size={34} />
                 </View>
                 <View style={styles.paymentCopy}>
                   <View style={styles.paymentHeader}>
@@ -62,9 +61,7 @@ export function PaymentsSection({
                     {formatDateTime(payment.recordedAt ?? payment.createdAt)}
                   </Text>
                   <View style={styles.paymentMetaRow}>
-                    <Pill
-                      tone={payment.status === "SUCCEEDED" ? "lime" : toneForStatus(payment.status)}
-                    >
+                    <Pill tone={toneForPaymentStatus(payment.status)}>
                       {titleCaseFromCode(payment.status ?? "CREATED")}
                     </Pill>
                     <Text numberOfLines={2} style={[styles.documentHint, { color: palette.text.secondary }]}>
@@ -96,13 +93,7 @@ export function PaymentsSection({
         </View>
       ) : (
         <Card variant="compact" contentStyle={styles.emptyPaymentContent}>
-          <IconBubble icon="receipt-outline" tone="neutral" size={36} />
-          <View style={styles.emptyCopy}>
-            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments yet</Text>
-            <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-              Transaction history will appear here.
-            </Text>
-          </View>
+          <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments</Text>
         </Card>
       )}
       {invoices.length ? (
@@ -111,7 +102,7 @@ export function PaymentsSection({
           <View style={styles.stack}>
             {invoices.map((invoice) => (
               <Card key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
-                <IconBubble icon="newspaper-outline" tone="blue" size={34} />
+                <IconBubble icon="newspaper-outline" tone="neutral" size={34} />
                 <View style={styles.invoiceCopy}>
                   <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
                     {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
@@ -216,19 +207,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyPaymentContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  emptyCopy: {
-    flex: 1,
-    gap: 4,
+    alignItems: "flex-start",
   },
   emptyTitle: {
     ...typography.cardTitle,
-  },
-  emptyBody: {
-    ...typography.small,
   },
   paymentContent: {
     flexDirection: "row",

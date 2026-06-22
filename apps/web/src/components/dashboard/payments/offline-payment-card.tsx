@@ -1,7 +1,8 @@
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 import { formatDateTime, formatInr } from "@/lib/format";
+import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import { SectionHeader } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
 import { PaymentProofUpload } from "../../payment-proof-upload";
@@ -36,6 +37,9 @@ export function OfflinePaymentCard({
   lastReceipt: PaymentReceiptState | null;
   onRecordOfflinePayment: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const [amountTouched, setAmountTouched] = React.useState(false);
+  const amountError = getRupeeAmountError(manualPayment.amountRupees);
+
   return (
     <GlassCard>
       <SectionHeader
@@ -43,7 +47,7 @@ export function OfflinePaymentCard({
         title="Collected at the desk"
         description={
           <span className="inline-flex items-center gap-2">
-            Use this for cash, UPI, card, or bank transfer membership payments.
+            Cash, UPI, card, or bank transfer membership payments.
             <HelpHint label="Payment mode" title="Payment mode">
               UPI is a direct bank transfer via PhonePe or GPay. Cash and Card are recorded for
               reconciliation. Bank Transfer may settle in one to two days.
@@ -51,7 +55,17 @@ export function OfflinePaymentCard({
           </span>
         }
       />
-      <form className="mt-5 grid gap-3" onSubmit={(event) => onRecordOfflinePayment(event)}>
+      <form
+        className="mt-5 grid gap-3"
+        onSubmit={(event) => {
+          setAmountTouched(true);
+          if (amountError) {
+            event.preventDefault();
+            return;
+          }
+          onRecordOfflinePayment(event);
+        }}
+      >
         <div className="flex flex-wrap gap-2">
           {modeOptions.map((mode) => (
             <button
@@ -106,16 +120,43 @@ export function OfflinePaymentCard({
             }))}
         />
         <div className="grid gap-3 md:grid-cols-2">
-          <input
-            value={manualPayment.amountRupees}
-            onChange={(event) =>
-              setManualPayment((current) => ({ ...current, amountRupees: event.target.value }))
-            }
-            inputMode="decimal"
-            placeholder="Amount"
-            className="zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
-            required
-          />
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+            Amount
+            <div
+              className={`flex min-h-11 items-center rounded-2xl border bg-[var(--bg-sunken)] px-4 ${
+                amountTouched && amountError
+                  ? "border-rose-500/60"
+                  : "border-[var(--border)]"
+              }`}
+            >
+              <span className="pr-2 text-sm font-semibold text-[var(--text-secondary)]">₹</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={manualPayment.amountRupees}
+                onBlur={() => setAmountTouched(true)}
+                onChange={(event) =>
+                  setManualPayment((current) => ({
+                    ...current,
+                    amountRupees: normalizeRupeeInput(event.target.value),
+                  }))
+                }
+                inputMode="decimal"
+                placeholder="2500"
+                aria-invalid={amountTouched && amountError ? true : undefined}
+                className="zook-focus min-h-11 flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
+                required
+              />
+            </div>
+            {amountTouched && amountError ? (
+              <span className="text-xs text-rose-500 dark:text-rose-300">{amountError}</span>
+            ) : (
+              <span className="text-xs text-[var(--text-tertiary)]">
+                Enter the collected amount in rupees.
+              </span>
+            )}
+          </label>
           <select
             value={manualPayment.mode}
             onChange={(event) =>
@@ -170,7 +211,7 @@ export function OfflinePaymentCard({
       {lastReceipt ? (
         <div className="mt-5 rounded-[22px] border border-[var(--accent-strong)]/20 bg-[var(--surface-accent-soft)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-            Receipt ready
+            Receipt generated
           </p>
           <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{lastReceipt.title}</p>
           <div className="mt-3 grid gap-2 text-sm text-[var(--text-secondary)]">

@@ -98,6 +98,77 @@ test.describe("branches, staff, settings, and billing actions", () => {
     ).resolves.toBeNull();
   });
 
+  test("owner invites staff from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const inviteEmail = `staff-ui-invite-${Date.now()}@zook.local`;
+
+    await page.goto("/dashboard/staff");
+    await expect(page.getByText("Invite staff")).toBeVisible({ timeout: 30_000 });
+    await page.getByLabel("Staff email").fill(inviteEmail);
+    await page.getByLabel("Role").click();
+    await page.getByRole("option", { name: "Admin" }).click();
+    await page.getByRole("button", { name: "Invite staff" }).click();
+
+    await expect(
+      page.getByText("Invite email sent. The sign-in link expires in 7 days."),
+    ).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      prisma.staffInvitation.findFirst({
+        where: { orgId: org.id, email: inviteEmail, role: "ADMIN" },
+      }),
+    ).resolves.toMatchObject({
+      acceptedAt: null,
+    });
+  });
+
+  test("owner changes staff role from the dashboard table", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const staffUser = await prisma.user.create({
+      data: {
+        email: `staff-ui-role-${Date.now()}@zook.local`,
+        name: "UI Role Staff",
+      },
+    });
+    await prisma.organizationUser.create({
+      data: { orgId: org.id, userId: staffUser.id, status: "active" },
+    });
+    const assignment = await prisma.organizationRoleAssignment.create({
+      data: {
+        orgId: org.id,
+        userId: staffUser.id,
+        role: "TRAINER",
+        assignedById: owner.id,
+      },
+    });
+
+    await page.goto("/dashboard/staff");
+    await expect(page.getByRole("heading", { name: "Operational roles" })).toBeVisible({
+      timeout: 30_000,
+    });
+    const row = page.getByRole("row", { name: new RegExp(staffUser.email!, "i") });
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await row.getByRole("button", { name: "Role" }).click();
+    await row.locator("select").first().selectOption("RECEPTIONIST");
+    await row.locator("select").nth(1).selectOption(branch.id);
+    await row.getByRole("button", { name: "Save" }).click();
+
+    await expect
+      .poll(() => prisma.organizationRoleAssignment.findUnique({ where: { id: assignment.id } }), {
+        timeout: 15_000,
+      })
+      .toMatchObject({ role: "RECEPTIONIST", branchId: branch.id });
+    await expect(row.getByText(/Receptionist/i)).toBeVisible({ timeout: 15_000 });
+    await expect(row.getByText(branch.name)).toBeVisible();
+  });
+
   test("settings profile and join mode changes appear on the public profile", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
@@ -140,16 +211,39 @@ test.describe("branches, staff, settings, and billing actions", () => {
     await expect(page.getByText("Action-tested training floor")).toBeVisible();
   });
 
-  test("invoice PDF download and mock payment-provider connect toggle are visible product gaps", async ({
+  test("owner can connect the mock billing provider and download invoice PDFs from billing", async ({
     page,
   }) => {
-    test.fail(
-      true,
-      "Billing currently exposes profile/subscription state and HTML receipts; PDF invoice download and provider connect toggles need product UI.",
-    );
     await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const invoiceNumber = `PW-BILL-${Date.now()}`;
+    await prisma.invoice.create({
+      data: {
+        orgId: org.id,
+        userId: owner.id,
+        kind: "SAAS",
+        invoiceNumber,
+        buyerName: org.name,
+        lineItems: [{ description: "Starter subscription", quantity: 1, amountPaise: 149900 }],
+        subtotalPaise: 149900,
+        gstPaise: 26982,
+        totalPaise: 176882,
+        amountPaise: 176882,
+        taxPaise: 26982,
+      },
+    });
+
     await page.goto("/dashboard/billing");
-    expect(await page.getByRole("button", { name: /connect mock provider/i }).count()).toBe(1);
-    expect(await page.getByRole("button", { name: /download invoice pdf/i }).count()).toBe(1);
+    await expect(page.getByRole("button", { name: /connect mock provider/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(invoiceNumber)).toBeVisible({ timeout: 15_000 });
+    const pdfLink = page.getByRole("link", { name: /download invoice pdf/i }).first();
+    await expect(pdfLink).toBeVisible();
+    await expect(pdfLink).toHaveAttribute(
+      "href",
+      new RegExp(`/api/orgs/${org.id}/invoices/.+/pdf`),
+    );
   });
 });

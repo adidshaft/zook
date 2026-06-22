@@ -6,6 +6,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { HelpHint } from "./ui";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
+import { formatDate, formatTime } from "@/lib/format";
 
 type AttendanceQueueRecord = {
   id: string;
@@ -69,7 +70,7 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Exception feed</h2>
-          <p className="mt-1 text-sm text-[var(--text-tertiary)]">QR entry is self-approved; unusual scans appear here only when flagged.</p>
+          <p className="mt-1 text-sm text-[var(--text-tertiary)]">QR entry is self-approved; unusual scans are flagged for review.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <a
@@ -79,14 +80,14 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
           >
             Export CSV
           </a>
-          <Pill tone="lime">{records.length} exceptions</Pill>
+          <Pill>{records.length} exceptions</Pill>
         </div>
       </div>
       {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
       <div className="mt-5 grid gap-3">
         {!records.length ? (
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-sm text-[var(--text-tertiary)]">
-            No flagged check-ins right now.
+            No flagged check-ins.
           </div>
         ) : null}
         {records.map((record) => (
@@ -98,11 +99,11 @@ export function AttendanceApprovalsPanel({ orgId }: { orgId: string }) {
                   <Pill>{record.status}</Pill>
                 </div>
                 <p className="mt-2 text-sm text-[var(--text-tertiary)]">
-                  {record.plan?.name ?? "Membership"} · {new Date(record.checkedInAt).toLocaleTimeString()}
+                  {record.plan?.name ?? "Membership"} · {formatTime(record.checkedInAt)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                   {record.subscription?.endsAt
-                    ? `Expiry ${new Date(record.subscription.endsAt).toLocaleDateString()}`
+                    ? `Expiry ${formatDate(record.subscription.endsAt)}`
                     : "No expiry available"}
                   {record.subscription?.remainingVisits !== undefined && record.subscription?.remainingVisits !== null
                     ? ` · ${record.subscription.remainingVisits} visits left`

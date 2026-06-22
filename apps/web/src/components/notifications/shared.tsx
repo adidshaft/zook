@@ -1,6 +1,7 @@
 "use client";
 
-import type { Permission, Role } from "@zook/core";
+import type { Permission } from "@zook/core";
+import type { PillTone } from "../glass-card";
 
 export type NotificationType =
   | "TRANSACTIONAL"
@@ -55,6 +56,13 @@ export type NotificationRow = {
     scheduled: number;
   };
 };
+
+export function toneForNotificationStatus(status: string | null | undefined): PillTone {
+  if (status === "SENT" || status === "DELIVERED") return "lime";
+  if (status === "FAILED" || status === "CANCELLED") return "red";
+  if (status === "SCHEDULED" || status === "REQUESTED" || status === "PENDING") return "amber";
+  return "neutral";
+}
 
 export type TemplateRow = {
   id: string;
@@ -168,7 +176,6 @@ export function permissionAudience(audience: Audience): PermissionAudience {
 }
 
 export function canUseNotificationOption(input: {
-  roles: Role[];
   permissions: Permission[];
   type: NotificationType;
   audience: PermissionAudience;

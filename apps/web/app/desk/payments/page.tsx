@@ -1,3 +1,4 @@
+import { DeskChrome } from "@/components/desk/desk-chrome";
 import { DeskWorkspace } from "@/components/desk/desk-workspace";
 import { getDeskRouteContext } from "@/lib/desk-route";
 
@@ -13,5 +14,17 @@ export default async function DeskPaymentsPage({
 }) {
   const resolvedSearch = await searchParams;
   const desk = await getDeskRouteContext(resolvedSearch, "/desk/payments");
-  return <DeskWorkspace {...desk} activeTab="payment" />;
+  return (
+    <DeskChrome
+      orgId={desk.orgId}
+      orgName={desk.orgName}
+      branchId={desk.branch?.id ?? null}
+      activeTab="payment"
+      locale={desk.locale}
+      permissions={desk.permissions}
+      canOpenManagement={desk.canOpenManagement}
+    >
+      <DeskWorkspace {...desk} activeTab="payment" />
+    </DeskChrome>
+  );
 }

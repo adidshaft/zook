@@ -1,15 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Card } from "./foundation";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
-type IonIconName = keyof typeof Ionicons.glyphMap;
-
 export function StatStrip({
   items,
 }: {
-  items: Array<{ label: string; value: string; icon?: IonIconName }>;
+  items: Array<{ label: string; value: string }>;
 }) {
   const { palette } = useTheme();
   const visibleItems = items.slice(0, 4);
@@ -20,7 +17,6 @@ export function StatStrip({
         <View key={`${item.label}-${index}`} style={styles.item}>
           {index > 0 ? <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} /> : null}
           <View style={styles.itemContent}>
-            {item.icon ? <Ionicons name={item.icon} size={16} color={palette.accent.base} /> : null}
             <Text numberOfLines={1} style={[styles.value, { color: palette.text.primary }]}>
               {item.value}
             </Text>

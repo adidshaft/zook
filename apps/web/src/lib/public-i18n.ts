@@ -2,8 +2,6 @@ export type PublicLocale = "en" | "hi";
 
 type SearchParamsLike = Record<string, string | string[] | undefined> | undefined;
 
-export const publicLocales: PublicLocale[] = ["en", "hi"];
-
 export function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -12,12 +10,13 @@ export function resolvePublicLocale(searchParams?: SearchParamsLike): PublicLoca
   return firstParam(searchParams?.lang)?.toLowerCase() === "hi" ? "hi" : "en";
 }
 
-export function alternatePublicLocale(locale: PublicLocale): PublicLocale {
-  return locale === "hi" ? "en" : "hi";
+export function resolvePublicLocaleFromHeader(acceptLanguage?: string | null): PublicLocale {
+  if (!acceptLanguage) return "en";
+  return /\bhi\b/i.test(acceptLanguage) ? "hi" : "en";
 }
 
-export function publicLocaleLabel(locale: PublicLocale) {
-  return locale === "hi" ? "हिंदी" : "English";
+export function alternatePublicLocale(locale: PublicLocale): PublicLocale {
+  return locale === "hi" ? "en" : "hi";
 }
 
 export function localizedPath(
@@ -57,6 +56,12 @@ export function joinModeLabelForLocale(mode: string | null | undefined, locale: 
   return mode ? mode.replace(/[-_]+/g, " ").toLowerCase() : "Unknown";
 }
 
+export function joinModeTone(mode: string | null | undefined) {
+  if (mode === "OPEN_JOIN") return "lime" as const;
+  if (mode === "APPROVAL_REQUIRED") return "amber" as const;
+  return "neutral" as const;
+}
+
 export const publicMessages = {
   en: {
     languageSwitch: "हिंदी",
@@ -83,6 +88,9 @@ export const publicMessages = {
     membersValue: "QR entry, plans, progress",
     staff: "Staff",
     staffValue: "Desk approvals and coaching",
+    rolesLabel: "roles",
+    recordLabel: "record",
+    uptimeLabel: "uptime",
     forOwners: "For gym owners",
     forMembers: "For members",
     membershipManagement: "Membership management",
@@ -103,11 +111,11 @@ export const publicMessages = {
     socialProof: "Social proof",
     socialTitle: "Built around the roles that keep a gym moving.",
     socialCopy:
-      "The product evidence in this release comes from the live Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
+      "The product evidence in this release comes from Zook workflows in the app: owners, members, trainers, and front desk staff all have dedicated paths.",
     proofOwnerWeb:
       "Owner setup stays on web, where plans, payments, staff, and reports are easier to review.",
     proofMemberMobile:
-      "Member workflows stay on mobile, so entry, workout plans, and progress live where members already check in.",
+      "Member workflows stay on mobile, so entry, workout plans, and progress sit where members already check in.",
     proofSharedRecord:
       "Desk and trainer workflows use the same operating record, reducing delays during busy hours.",
     opsLoopLabel: "Operating loop",
@@ -124,9 +132,9 @@ export const publicMessages = {
     loopGrowCopy: "Owners track revenue, stock, staff, billing, and audit activity in one view.",
     memberApps: "Member apps",
     memberAppsCopy:
-      "Mobile distribution badges will link to the live stores when the apps are published.",
-    iosSoon: "iOS app coming soon",
-    androidSoon: "Android app coming soon",
+      "Mobile distribution badges will link to the app stores when the apps are published.",
+    iosSoon: "iOS store link pending",
+    androidSoon: "Android store link pending",
     downloadIos: "Download on iOS",
     downloadAndroid: "Get it on Android",
     privacy: "Privacy",
@@ -150,7 +158,7 @@ export const publicMessages = {
     startingAt: "Starting at",
     perMonth: "month",
     publicPlans: "public plans",
-    plansComingSoon: "Plans coming soon",
+    plansComingSoon: "Plans not published",
     publicSignupPending: "Public sign-up pending",
     noResults: "No results",
     noGyms: "No gyms in this city yet",
@@ -186,13 +194,13 @@ export const publicMessages = {
     paymentActivation: "Your membership is activated after payment confirmation.",
     afterJoining: "What happens after you join",
     afterJoiningCopy:
-      "Zook keeps the next steps visible, so you know when payment, entry, training, and pickup are ready.",
+      "Zook keeps payment, entry, training, and pickup steps visible in one place.",
     afterJoinScan: "Scan at entry",
     afterJoinScanCopy: "Use the mobile QR code; reception can approve edge cases from the desk.",
     afterJoinTrain: "Follow your plan",
     afterJoinTrainCopy: "Trainer plans, progress, notes, and feedback stay attached to your membership.",
     afterJoinPickup: "Pick up orders",
-    afterJoinPickupCopy: "Shop orders use pickup codes so the desk knows exactly what is ready.",
+    afterJoinPickupCopy: "Shop orders use pickup codes so the desk can match each pickup.",
     trustTitle: "Trust, pricing, and support",
     trustCopy:
       "Plan prices are shown before checkout, payment status is visible after payment, and the gym team can help from the same operating record.",
@@ -200,23 +208,25 @@ export const publicMessages = {
     transparentPricingCopy:
       "You see duration, visits, discounts, and final amount before moving into payment.",
     facilities: "Photos & Facilities",
-    facilitiesPending: "Facilities will appear once the gym publishes them.",
+    facilitiesPending: "Facilities not published.",
+    galleryTitle: "Photos & Gallery",
+    galleryCopy: "Explore the gym's published facility, workout-floor, and training-space photos.",
     equipment: "Equipment",
-    equipmentPending: "Equipment will appear once the gym publishes the list.",
+    equipmentPending: "Equipment not published.",
     shareOrInstall: "Share or install",
     shareInstallCopyPrefix: "Scan the QR, open this gym in Zook, or install the app and search for",
     appStore: "App Store",
     playStore: "Play Store",
     downloadQr: "Download QR",
     visibleTrainers: "Visible trainers",
-    trainersPending: "Trainer profiles will appear after the gym publishes them.",
-    bioComingSoon: "Bio coming soon.",
+    trainersPending: "Trainer profiles not published.",
+    bioComingSoon: "Bio not published.",
+    reviews: "Reviews",
+    reviewsPending: "Member reviews not published yet.",
     referral: "Referral",
     referralCopy:
       "Have a referral or invite code? Apply it during payment so the gym can track the source and any eligible discount.",
     shareJoinLink: "Share join link",
-    reviews: "Reviews",
-    reviewsPending: "Member reviews will appear here once the gym enables them.",
     choosePlan: "Choose plan",
     changingPlan: "Changing the plan...",
     verifyEmail: "Verify email",
@@ -261,9 +271,8 @@ export const publicMessages = {
     membershipActivates: "Membership activates",
     testMode:
       "Test mode is on for this environment. The next page simulates payment outcomes and will not collect real money.",
-    simulatedPayment: "Pay securely · sample mode",
+    simulatedPayment: "Pay securely · test mode",
     statusLabel: "Zook status",
-    statusCopy: "Live status for the services Zook uses right now.",
     lastChecked: "Last checked",
     components: "Services",
     component: "Service",
@@ -299,8 +308,9 @@ export const publicMessages = {
     invalidPhone: "Enter a valid mobile number.",
     unableSendOtp: "Unable to send code.",
     unableVerifyOtp: "Unable to verify code.",
+    otpHint: "Enter the 6-digit code sent to {identifier}.",
     otpSent: "Code sent to {identifier}.",
-    freshOtpSent: "Fresh code sent to {identifier}.",
+    freshOtpSent: "New code sent to {identifier}.",
     testCode: "Test code: {code}.",
     resendAvailable: "Resend code available in {seconds}s",
   },
@@ -329,6 +339,9 @@ export const publicMessages = {
     membersValue: "QR एंट्री, प्लान, प्रगति",
     staff: "स्टाफ",
     staffValue: "डेस्क स्वीकृति और कोचिंग",
+    rolesLabel: "भूमिकाएं",
+    recordLabel: "रिकॉर्ड",
+    uptimeLabel: "अपटाइम",
     forOwners: "जिम मालिकों के लिए",
     forMembers: "सदस्यों के लिए",
     membershipManagement: "सदस्यता प्रबंधन",
@@ -370,8 +383,8 @@ export const publicMessages = {
     loopGrowCopy: "मालिक revenue, stock, staff, billing और audit activity एक जगह देखते हैं.",
     memberApps: "सदस्य ऐप्स",
     memberAppsCopy: "ऐप प्रकाशित होने पर मोबाइल वितरण बैज लाइव स्टोर से जुड़ेंगे.",
-    iosSoon: "iOS ऐप जल्द आएगा",
-    androidSoon: "Android ऐप जल्द आएगा",
+    iosSoon: "iOS स्टोर लिंक लंबित",
+    androidSoon: "Android स्टोर लिंक लंबित",
     downloadIos: "iOS पर डाउनलोड करें",
     downloadAndroid: "Android पर पाएं",
     privacy: "गोपनीयता",
@@ -395,7 +408,7 @@ export const publicMessages = {
     startingAt: "शुरुआत",
     perMonth: "माह",
     publicPlans: "सार्वजनिक प्लान",
-    plansComingSoon: "प्लान जल्द आएंगे",
+    plansComingSoon: "प्लान प्रकाशित नहीं हैं",
     publicSignupPending: "सार्वजनिक साइन-अप लंबित",
     noResults: "कोई परिणाम नहीं",
     noGyms: "इस शहर में अभी कोई जिम नहीं",
@@ -431,13 +444,13 @@ export const publicMessages = {
     paymentActivation: "भुगतान पुष्टि के बाद सदस्यता सक्रिय होगी.",
     afterJoining: "जुड़ने के बाद क्या होगा",
     afterJoiningCopy:
-      "Zook अगले कदम साफ दिखाता है, ताकि भुगतान, एंट्री, ट्रेनिंग और पिकअप की स्थिति समझ में रहे.",
+      "Zook भुगतान, एंट्री, ट्रेनिंग और पिकअप के कदम एक जगह साफ दिखाता है.",
     afterJoinScan: "एंट्री पर स्कैन",
     afterJoinScanCopy: "मोबाइल QR इस्तेमाल करें; ज़रूरत पड़ने पर रिसेप्शन डेस्क से समीक्षा कर सकता है.",
     afterJoinTrain: "अपना प्लान फॉलो करें",
     afterJoinTrainCopy: "ट्रेनर प्लान, प्रगति, नोट्स और फीडबैक आपकी सदस्यता से जुड़े रहते हैं.",
     afterJoinPickup: "ऑर्डर पिकअप करें",
-    afterJoinPickupCopy: "शॉप ऑर्डर पिकअप कोड से चलते हैं ताकि डेस्क को पता रहे क्या तैयार है.",
+    afterJoinPickupCopy: "शॉप ऑर्डर पिकअप कोड से चलते हैं ताकि डेस्क हर पिकअप मिला सके.",
     trustTitle: "भरोसा, कीमत और सहायता",
     trustCopy:
       "चेकआउट से पहले प्लान कीमत दिखती है, भुगतान के बाद स्थिति दिखती है, और जिम टीम उसी रिकॉर्ड से मदद कर सकती है.",
@@ -446,6 +459,8 @@ export const publicMessages = {
       "भुगतान से पहले अवधि, विज़िट, छूट और अंतिम राशि साफ दिखती है.",
     facilities: "सुविधाएं और तस्वीरें",
     facilitiesPending: "जिम प्रकाशित करेगा तो सुविधाएं यहां दिखेंगी.",
+    galleryTitle: "तस्वीरें और गैलरी",
+    galleryCopy: "जिम की प्रकाशित सुविधा, वर्कआउट फ्लोर और ट्रेनिंग स्पेस की तस्वीरें देखें.",
     equipment: "उपकरण",
     equipmentPending: "जिम सूची प्रकाशित करेगा तो उपकरण यहां दिखेंगे.",
     shareOrInstall: "शेयर या इंस्टॉल",
@@ -455,13 +470,13 @@ export const publicMessages = {
     downloadQr: "QR डाउनलोड करें",
     visibleTrainers: "दिखने वाले ट्रेनर",
     trainersPending: "जिम प्रकाशित करेगा तो ट्रेनर प्रोफाइल यहां दिखेंगी.",
-    bioComingSoon: "बायो जल्द आएगा.",
+    bioComingSoon: "बायो प्रकाशित नहीं है.",
+    reviews: "समीक्षाएं",
+    reviewsPending: "सदस्य समीक्षाएं अभी प्रकाशित नहीं हैं.",
     referral: "रेफरल",
     referralCopy:
       "रेफरल या आमंत्रण कोड है? भुगतान के दौरान लगाएं ताकि जिम स्रोत और छूट ट्रैक कर सके.",
     shareJoinLink: "जॉइन लिंक शेयर करें",
-    reviews: "रिव्यू",
-    reviewsPending: "जिम सक्षम करेगा तो सदस्य रिव्यू यहां दिखेंगे.",
     choosePlan: "प्लान चुनें",
     changingPlan: "प्लान बदला जा रहा है...",
     verifyEmail: "ईमेल सत्यापित करें",
@@ -505,9 +520,8 @@ export const publicMessages = {
     membershipActivates: "सदस्यता सक्रिय",
     testMode:
       "इस वातावरण में टेस्ट मोड चालू है. अगला पेज भुगतान परिणामों का सिमुलेशन करेगा और असली पैसा नहीं लेगा.",
-    simulatedPayment: "सुरक्षित भुगतान · सैंपल मोड",
+    simulatedPayment: "सुरक्षित भुगतान · टेस्ट मोड",
     statusLabel: "Zook स्थिति",
-    statusCopy: "Zook जिन सेवाओं का अभी उपयोग कर रहा है उनकी लाइव स्थिति.",
     lastChecked: "अंतिम जांच",
     components: "सेवाएं",
     component: "सेवा",
@@ -543,6 +557,7 @@ export const publicMessages = {
     invalidPhone: "सही मोबाइल नंबर दर्ज करें.",
     unableSendOtp: "कोड भेजा नहीं जा सका.",
     unableVerifyOtp: "कोड सत्यापित नहीं हो सका.",
+    otpHint: "{identifier} पर भेजा गया 6 अंकों वाला कोड दर्ज करें.",
     otpSent: "{identifier} पर कोड भेजा गया.",
     freshOtpSent: "{identifier} पर नया कोड भेजा गया.",
     testCode: "टेस्ट कोड: {code}.",

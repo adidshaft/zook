@@ -11,12 +11,13 @@ tags:
     env:
       email: trainer@zook.local
       home_id: trainer-home-screen
+      home_path: zook:///trainer
 - takeScreenshot: /tmp/zook-maestro/trainer/home.png
 
-- openLink: zook:///trainer?view=clients
+- openLink: zook:///trainer/clients
 - extendedWaitUntil:
     visible:
-      id: "trainer-home-screen"
+      id: "trainer-clients-screen"
     timeout: 15000
 - tapOn:
     id: "trainer-client-row-first"
@@ -25,42 +26,69 @@ tags:
       id: "trainer-client-detail-screen"
     timeout: 15000
 - tapOn:
-    id: "trainer-ai-draft-button"
+    id: "trainer-create-plan-button"
 - extendedWaitUntil:
     visible:
-      id: "trainer-ai-draft-screen"
+      id: "trainer-client-plan-screen"
     timeout: 15000
 - tapOn:
-    id: "trainer-generate-ai-draft"
-- scrollUntilVisible:
-    element:
-      id: "trainer-save-ai-edits"
-    direction: DOWN
-    timeout: 30000
+    id: "trainer-plan-title"
+    optional: true
+- inputText: "Maestro Strength Draft"
+- hideKeyboard:
+    optional: true
 - tapOn:
-    id: "trainer-save-ai-edits"
-- scrollUntilVisible:
-    element:
-      id: "trainer-ai-draft-status"
-    direction: UP
+    id: "trainer-save-draft-button"
+    optional: true
+- takeScreenshot: /tmp/zook-maestro/trainer/manual-plan.png
+- tapOn:
+    id: "back-button"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "trainer-client-detail-screen"
     timeout: 15000
+- tapOn:
+    id: "trainer-note"
+    optional: true
+- inputText: "Maestro note"
+- hideKeyboard:
+    optional: true
 - scrollUntilVisible:
     element:
-      id: "trainer-assign-ai-plan"
+      id: "trainer-save-note-button"
     direction: DOWN
     timeout: 10000
+    centerElement: true
 - tapOn:
-    id: "trainer-assign-ai-plan"
+    id: "trainer-save-note-button"
+    optional: true
 - scrollUntilVisible:
     element:
-      id: "trainer-ai-draft-status"
-    direction: UP
-    timeout: 15000
-- takeScreenshot: /tmp/zook-maestro/trainer/ai-draft.png
+      id: "trainer-client-body-weight"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: "trainer-client-body-weight"
+    optional: true
+- inputText: "73.4"
+- hideKeyboard:
+    optional: true
+- tapOn:
+    id: "trainer-client-body-save"
+    optional: true
 
-- openLink: zook:///trainer?view=plans
+- openLink: zook:///trainer/plans
 - extendedWaitUntil:
     visible:
-      id: "trainer-home-screen"
+      id: "trainer-plans-screen"
     timeout: 15000
 - takeScreenshot: /tmp/zook-maestro/trainer/plans.png
+
+- openLink: zook:///trainer/payouts
+- extendedWaitUntil:
+    visible:
+      id: "trainer-payouts-screen"
+    timeout: 15000
+- takeScreenshot: /tmp/zook-maestro/trainer/payouts.png

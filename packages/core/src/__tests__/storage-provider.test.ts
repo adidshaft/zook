@@ -101,6 +101,30 @@ describe("storage provider", () => {
     ).toMatchObject({ extension: "webp", visibility: "public" });
   });
 
+  it("rejects SVG uploads for public-facing logo assets", () => {
+    expect(() =>
+      validateStorageFile({
+        category: "org_logo",
+        contentType: "image/svg+xml",
+        sizeBytes: 1024,
+        originalName: "logo.svg",
+        visibility: "public"
+      })
+    ).toThrow(/Unsupported MIME type/);
+  });
+
+  it("rejects SVG uploads for AI generated image assets", () => {
+    expect(() =>
+      validateStorageFile({
+        category: "ai_generated_image",
+        contentType: "image/svg+xml",
+        sizeBytes: 1024,
+        originalName: "draft.svg",
+        visibility: "org"
+      })
+    ).toThrow(/Unsupported MIME type/);
+  });
+
   it("stores local files on disk and produces verifiable signed urls", async () => {
     const rootDir = await mkdtemp(path.join(tmpdir(), "zook-storage-"));
     tempDirs.push(rootDir);

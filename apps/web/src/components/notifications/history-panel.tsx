@@ -7,7 +7,11 @@ import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "../glass-card";
 import { ZookButton } from "../zook-button";
-import type { NotificationRecipientRow, NotificationRow } from "./shared";
+import {
+  toneForNotificationStatus,
+  type NotificationRecipientRow,
+  type NotificationRow,
+} from "./shared";
 
 export function NotificationHistoryPanel({
   orgId,
@@ -103,7 +107,7 @@ export function NotificationHistoryPanel({
               Delivery history for recent member messages, audience, and delivery state.
             </p>
           </div>
-          <Pill tone="blue">{visibleNotifications.length} messages</Pill>
+          <Pill>{visibleNotifications.length} messages</Pill>
         </div>
         {statusFilter ? (
           <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/52">
@@ -125,7 +129,7 @@ export function NotificationHistoryPanel({
               onClick={() => void openRecipients(notification)}
               className={`zook-focus rounded-[22px] border p-4 text-left transition ${
                 selectedNotification?.id === notification.id
-                  ? "border-lime-300/45 bg-lime-300/8"
+                  ? "border-white/20 bg-white/8"
                   : "border-white/10 bg-black/20 hover:bg-white/6"
               }`}
             >
@@ -149,10 +153,10 @@ export function NotificationHistoryPanel({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
+                  <Pill tone={toneForNotificationStatus(notification.status)}>
                     {formatEnumLabel(notification.status)}
                   </Pill>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-lime-100">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-white/65">
                     View recipients
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className="sr-only">Open recipients</span>
@@ -163,7 +167,7 @@ export function NotificationHistoryPanel({
           ))}
           {!visibleNotifications.length ? (
             <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-              No messages match this view.
+              No messages match.
             </p>
           ) : null}
         </div>
@@ -177,7 +181,7 @@ export function NotificationHistoryPanel({
                 <h2 className="text-xl font-semibold">Recipients</h2>
                 <p className="mt-2 text-sm text-white/50">{selectedNotification.title}</p>
               </div>
-              <Pill tone={undeliveredCount > 0 ? "amber" : "lime"}>
+              <Pill tone={undeliveredCount > 0 ? "amber" : "neutral"}>
                 {undeliveredCount} undelivered
               </Pill>
             </div>
@@ -240,9 +244,6 @@ export function NotificationHistoryPanel({
         ) : (
           <div className="rounded-[24px] border border-white/10 bg-black/20 p-5">
             <h2 className="text-xl font-semibold">Recipient detail</h2>
-            <p className="mt-2 text-sm text-white/50">
-              Choose a message to see delivery status for each member.
-            </p>
           </div>
         )}
       </GlassCard>

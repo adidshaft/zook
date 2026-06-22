@@ -9,7 +9,7 @@ export function MemberListEmptyState({
 }) {
   return (
     <Card variant="compact">
-      <EmptyState title={title} body={subtitle ?? ""} />
+      <EmptyState title={title} body={subtitle} />
     </Card>
   );
 }

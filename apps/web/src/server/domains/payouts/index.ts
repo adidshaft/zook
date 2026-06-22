@@ -27,6 +27,10 @@ export function calculatePtClawback(amountPaise: number, commissionPercent: numb
   return -calculatePtCommission(amountPaise, commissionPercent);
 }
 
+export function calculateClassCommission(amountPaise: number, commissionBps: number) {
+  return Math.round((amountPaise * commissionBps) / 10_000);
+}
+
 export async function getPayoutConfig(orgId: string, trainerId: string) {
   return (
     (await prisma.trainerPayoutConfig.findUnique({
@@ -160,6 +164,51 @@ export async function accruePtSessionFee(input: {
   });
 }
 
+export async function accrueClassBookingCommission(input: {
+  orgId: string;
+  trainerId: string;
+  classId: string;
+  paymentId: string;
+  amountPaise: number;
+  commissionBps?: number | null;
+  className?: string | null;
+  createdById?: string | null;
+}) {
+  return prisma.$transaction(async (tx) => {
+    const period = payoutPeriod();
+    const config = await tx.trainerPayoutConfig.findUnique({
+      where: { orgId_trainerId: { orgId: input.orgId, trainerId: input.trainerId } },
+    });
+    const commissionBps = input.commissionBps ?? (config?.ptCommissionPercent ?? 0) * 100;
+    const amountPaise = calculateClassCommission(input.amountPaise, commissionBps);
+    const percentLabel = commissionBps % 100 === 0 ? `${commissionBps / 100}%` : `${commissionBps / 100}%`;
+    const line = await tx.trainerPayoutLine.upsert({
+      where: {
+        orgId_trainerId_kind_sourceId: {
+          orgId: input.orgId,
+          trainerId: input.trainerId,
+          kind: "CLASS_COMMISSION",
+          sourceId: input.paymentId,
+        },
+      },
+      update: { amountPaise },
+      create: {
+        orgId: input.orgId,
+        trainerId: input.trainerId,
+        period,
+        kind: "CLASS_COMMISSION",
+        sourceType: "class_booking",
+        sourceId: input.paymentId,
+        description: `Group class${input.className ? ` · ${input.className}` : ""} (${percentLabel})`,
+        amountPaise,
+        createdById: input.createdById ?? null,
+      },
+    });
+    await ensurePayout(tx, input.orgId, input.trainerId, period);
+    return line;
+  });
+}
+
 export async function accruePtClawback(input: {
   orgId: string;
   trainerId: string;
@@ -275,6 +324,9 @@ export async function markPayoutPaid(input: {
     where: { id: input.payoutId, orgId: input.orgId },
   });
   if (!payout) throw new Error("Payout not found");
+  if (payout.status === "paid") {
+    throw new Error("This payout has already been marked paid.");
+  }
   return prisma.trainerPayout.update({
     where: { id: payout.id },
     data: {

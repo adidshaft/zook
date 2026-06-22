@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { resolvePlanName } from "@zook/ui";
 import { GlassCard, Pill } from "@/components/glass-card";
-import { formatInr } from "@/lib/format";
+import { formatEnumLabel, formatInr } from "@/lib/format";
+import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import { priceSummary } from "@/lib/public-gym-profile";
 import { localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan } from "./types";
@@ -27,8 +28,7 @@ export function GymPlansGrid({
     return (
       <section id="plans" className="scroll-mt-5">
         <GlassCard>
-          <Pill tone="amber">{t("plansComingSoon")}</Pill>
-          <h2 className="mt-4 text-2xl font-semibold text-[var(--text-primary)]">{priceSummary([], locale)}</h2>
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{priceSummary([], locale)}</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("noPublicPlanCopy")}</p>
         </GlassCard>
       </section>
@@ -49,8 +49,8 @@ export function GymPlansGrid({
           >
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <Pill tone={plan.id === recommendedPlanId ? "lime" : "neutral"}>
-                  {plan.id === recommendedPlanId ? t("mostPopular") : plan.type.replaceAll("_", " ")}
+                <Pill>
+                  {plan.id === recommendedPlanId ? t("mostPopular") : formatEnumLabel(plan.type)}
                 </Pill>
                 <h2 className="mt-4 max-w-full truncate text-2xl font-semibold text-[var(--text-primary)]">
                   {resolvePlanName(plan)}
@@ -62,12 +62,7 @@ export function GymPlansGrid({
             </div>
             <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{plan.description}</p>
             <p className="mt-4 text-sm text-[var(--text-tertiary)]">
-              {plan.durationDays
-                ? `${plan.durationDays} ${t("days")}`
-                : plan.type === "TRIAL"
-                  ? t("trial")
-                  : t("visitPack")}{" "}
-              · {plan.visitLimit || t("unlimited")} {plan.visitLimit === 1 ? t("visit") : t("visits")}
+              {planValidityLabel(plan, locale)} · {planVisitLabel(plan.visitLimit, locale)}
             </p>
           </GlassCard>
         </Link>

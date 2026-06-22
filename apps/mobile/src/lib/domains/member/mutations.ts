@@ -1,1 +1,99 @@
-export {};
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Linking } from "react-native";
+import { mobileApiFetch, toWebUrl } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useBranchSelection } from "@/lib/branch-selection";
+import { queryKeys } from "@/lib/domains/shared/keys";
+import {
+  notifyMutationError,
+  notifyMutationSuccess,
+  notifyMutationWarning,
+} from "@/lib/domains/shared/request";
+
+export function useEnrollInClass() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
+  return useMutation({
+    mutationFn: async ({ classId }: { classId: string }) => {
+      if (!activeOrgId || !token) {
+        throw new Error("Sign in again to book a class.");
+      }
+      return mobileApiFetch<{
+        enrollment: { id: string; status: string };
+        remainingCapacity: number;
+        paymentRequired?: boolean;
+        checkoutUrl?: string | null;
+        session?: { id?: string | null } | null;
+      }>(`/orgs/${activeOrgId}/classes/${classId}/enroll`, {
+        method: "POST",
+        token,
+        orgId: activeOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      });
+    },
+    onSuccess: async (payload) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.member.classes(activeOrgId, selectedBranchId),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId) }),
+      ]);
+      if (payload.paymentRequired && payload.checkoutUrl) {
+        const checkoutUrl = /^https?:\/\//i.test(payload.checkoutUrl)
+          ? payload.checkoutUrl
+          : toWebUrl(payload.checkoutUrl);
+        const returnUrl = `zook://payments/return?target=classes${payload.session?.id ? `&session=${encodeURIComponent(payload.session.id)}` : ""}`;
+        try {
+          const parsed = new URL(checkoutUrl);
+          parsed.searchParams.set("return_url", returnUrl);
+          await Linking.openURL(parsed.toString());
+        } catch {
+          const separator = checkoutUrl.includes("?") ? "&" : "?";
+          await Linking.openURL(`${checkoutUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`);
+        }
+        notifyMutationSuccess("Class checkout started.");
+        return;
+      }
+      notifyMutationSuccess(
+        payload.enrollment.status === "waitlisted"
+          ? "Added to waitlist. We'll prompt payment when a spot opens."
+          : "Class booked.",
+      );
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Class booking could not be completed.");
+    },
+  });
+}
+
+export function useCancelEnrollment() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
+  return useMutation({
+    mutationFn: async ({ classId }: { classId: string }) => {
+      if (!activeOrgId || !token) {
+        throw new Error("Sign in again to manage your booking.");
+      }
+      return mobileApiFetch<{ ok: boolean }>(`/orgs/${activeOrgId}/classes/${classId}/enroll`, {
+        method: "DELETE",
+        token,
+        orgId: activeOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.member.classes(activeOrgId, selectedBranchId),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId) }),
+      ]);
+      notifyMutationWarning("Booking cancelled.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Could not cancel your booking.");
+    },
+  });
+}

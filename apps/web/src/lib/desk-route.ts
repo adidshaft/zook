@@ -25,6 +25,7 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
   const origins = getOrigins();
   const postLoginHref = () =>
     destinationToHref(resolvePostLoginDestination(session), "dashboard", origins);
+  const activePermissions = session.activeOrganization?.permissions ?? [];
 
   if (session.user.isPlatformAdmin || hasOwnerDashboardAccess(session)) {
     if (!session.activeOrgId) {
@@ -40,6 +41,7 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
       orgName: organization.name,
       branch: data.branchScope.selectedBranch,
       locale: session.user.preferredLocale ?? "en",
+      permissions: activePermissions,
       initialOrderId: search.orderId,
       canOpenManagement: true,
       redirectedFromDashboard: false,
@@ -77,6 +79,7 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
     orgName: organization.name,
     branch: data.branchScope.selectedBranch,
     locale: session.user.preferredLocale ?? "en",
+    permissions: activePermissions,
     initialOrderId: search.orderId,
     canOpenManagement: false,
     redirectedFromDashboard: search.from === "dashboard",

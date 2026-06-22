@@ -132,7 +132,7 @@ const fileRules: Record<
   },
   org_logo: {
     maxSizeBytes: 4 * megabyte,
-    contentTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
+    contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "public",
     allowedVisibilities: ["public"],
     defaultExtension: "png",
@@ -153,7 +153,7 @@ const fileRules: Record<
   },
   ai_generated_image: {
     maxSizeBytes: 6 * megabyte,
-    contentTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
+    contentTypes: ["image/jpeg", "image/png", "image/webp"],
     defaultVisibility: "org",
     allowedVisibilities: ["org", "public"],
     defaultExtension: "png",

@@ -1,5 +1,16 @@
 import { Prisma, prisma } from "@zook/db";
-import type { PlanExerciseSummary } from "./types";
+
+interface PlanExerciseSummary {
+  id: string;
+  name: string;
+  sets?: string | null;
+  equipment?: string | null;
+  reps?: string | null;
+  day?: string | null;
+  raw?: string | null;
+  orderIndex: number;
+  completed: boolean;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);

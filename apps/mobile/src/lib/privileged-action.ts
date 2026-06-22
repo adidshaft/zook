@@ -14,7 +14,7 @@ async function promptForOrgPin(label: string): Promise<boolean> {
     return privilegedPinPrompt(label);
   }
   return new Promise((resolve) => {
-    Alert.alert(label, "PIN entry is not ready yet. Try again after the app finishes loading.", [
+    Alert.alert(label, "PIN entry is still loading. Try again after the app finishes opening.", [
       { text: "OK", onPress: () => resolve(false) },
     ]);
   });

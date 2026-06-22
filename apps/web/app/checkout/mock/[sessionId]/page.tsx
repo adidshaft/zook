@@ -3,6 +3,8 @@ import { Prisma, prisma } from "@zook/db";
 import { notFound } from "next/navigation";
 import { CheckoutPanel } from "@/components/checkout-panel";
 import { ZookLogo } from "@/components/zook-logo";
+import { resolvePublicLocale } from "@/lib/public-i18n";
+import { planValiditySummaryLabel } from "@/lib/public-plan-labels";
 
 function getMetadataString(metadata: unknown, key: string) {
   if (!metadata || Array.isArray(metadata) || typeof metadata !== "object") {
@@ -41,16 +43,6 @@ function safePaymentReturnUrl(value?: string) {
   }
 }
 
-function planValidityLabel(plan: { durationDays: number | null; visitLimit: number | null }) {
-  const parts = [
-    plan.durationDays ? `${plan.durationDays} days` : null,
-    plan.visitLimit
-      ? `${plan.visitLimit} visit${plan.visitLimit === 1 ? "" : "s"}`
-      : "Unlimited visits",
-  ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Gym-defined validity";
-}
-
 export default async function MockCheckoutPage({
   params,
   searchParams,
@@ -63,11 +55,24 @@ export default async function MockCheckoutPage({
   }
   const { sessionId } = await params;
   const resolvedSearchParams = await searchParams;
+  const locale = resolvePublicLocale(resolvedSearchParams);
+  const copy =
+    locale === "hi"
+      ? {
+          testMembership: "टेस्ट सदस्यता",
+          confirmationRequired: "पुष्टि आवश्यक",
+          testBanner: "टेस्ट मोड - यह असली पेमेंट नहीं है. किसी भी परिणाम पर क्लिक करके सिमुलेट करें.",
+        }
+      : {
+          testMembership: "Test membership",
+          confirmationRequired: "Confirmation required",
+          testBanner: "TEST MODE - No real payment. Click any outcome to simulate.",
+        };
   let session = null;
   try {
     session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
   } catch {
-    // Payment records may be unavailable during local samples.
+    // Payment records may be unavailable during local test runs.
   }
   const canRenderLocalDemo = sessionId === "demo" && getAppEnv() !== "production";
   if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {
@@ -112,16 +117,16 @@ export default async function MockCheckoutPage({
         amountPaise: session.amountPaise,
         purpose: session.purpose,
         status: session.status,
-        planName: plan?.name ?? (session.id === "demo" ? "Sample membership" : null),
-        validityLabel: plan ? planValidityLabel(plan) : null,
-        activationLabel: "Confirmation required",
+        planName: plan?.name ?? (session.id === "demo" ? copy.testMembership : null),
+        validityLabel: plan ? planValiditySummaryLabel(plan, locale) : null,
+        activationLabel: copy.confirmationRequired,
       }
     : null;
 
   return (
     <main className="grid min-h-screen place-items-center px-5 py-16">
       <div className="fixed inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-black shadow-lg shadow-amber-950/20">
-        TEST MODE - No real payment. Click any outcome to simulate.
+        {copy.testBanner}
       </div>
       <div className="absolute left-5 top-5">
         <ZookLogo />

@@ -5,14 +5,8 @@ import type {
   OwnerDashboardCharts,
   OwnerDashboardPlanMixPoint,
 } from "@/lib/domains/shared/types";
-import { formatCompactNumber, formatInr } from "@/lib/formatting";
+import { formatCompactNumber, formatInr, formatSignedPercent } from "@/lib/formatting";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
-
-function formatDelta(value?: number) {
-  const safe = Number.isFinite(value) ? Number(value) : 0;
-  const sign = safe > 0 ? "+" : "";
-  return `${sign}${safe.toFixed(Number.isInteger(safe) ? 0 : 1)}%`;
-}
 
 function pointMax(points: OwnerDashboardChartPoint[]) {
   return Math.max(1, ...points.map((point) => Math.max(0, point.value)));
@@ -87,7 +81,7 @@ function ChartCard({
             },
           ]}
         >
-          {formatDelta(delta)}
+          {formatSignedPercent(delta)}
         </Text>
       </View>
       <ChartBars accent={palette.accent.fill} labelColor={palette.text.tertiary} points={points} />
@@ -141,7 +135,7 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
           })
         ) : (
           <Text style={[styles.empty, { color: palette.text.secondary }]}>
-            Active member plans will appear here.
+            No active member plans.
           </Text>
         )}
       </View>
@@ -155,7 +149,7 @@ export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Live charts</Text>
+        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Trends</Text>
         <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
           Revenue, attendance, and member trends
         </Text>

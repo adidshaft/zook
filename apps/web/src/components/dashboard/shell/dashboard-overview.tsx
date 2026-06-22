@@ -4,7 +4,6 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  Bot,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
@@ -12,13 +11,13 @@ import {
   Dumbbell,
   IndianRupee,
   Package,
-  Sparkles,
   TrendingUp,
   UserPlus,
   Users,
 } from "lucide-react";
 import { AvatarInitials } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
+import { formatEnumLabel, formatInr, formatInrCompact, formatWeekdayDate } from "@/lib/format";
 import {
   ActivityRow,
   BarChart,
@@ -28,8 +27,8 @@ import {
   KPITile,
   LegendItem,
   LineChart,
-  PulseDot,
   SectionHero,
+  StatusDot,
 } from "../charts";
 import {
   useOwnerPrefs,
@@ -47,20 +46,9 @@ type AttentionRow = {
   icon: typeof ClipboardList;
   title: string;
   subtitle: string;
-  tone: "lime" | "amber" | "sky" | "rose";
+  tone: "amber" | "sky" | "rose";
   href: string;
 };
-
-function formatInr(paise: number) {
-  return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-}
-
-function formatInrCompact(paise: number) {
-  const rupees = paise / 100;
-  if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(1)}L`;
-  if (rupees >= 1000) return `₹${(rupees / 1000).toFixed(1)}K`;
-  return `₹${Math.round(rupees)}`;
-}
 
 export function DashboardOverview({
   activeOrg,
@@ -104,7 +92,7 @@ export function DashboardOverview({
   const products = hydratedData?.products ?? data.products;
   const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
   const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
-  const isHydratingDetails = data.connected && dashboardQuery.isFetching;
+  const isRefreshingDashboard = data.connected && dashboardQuery.isFetching;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
 
@@ -120,7 +108,7 @@ export function DashboardOverview({
       icon: ClipboardList,
       title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
       subtitle: "Approve to start onboarding",
-      tone: "rose",
+      tone: summary.joinRequests > 0 ? "rose" : "sky",
       href: "/dashboard/members/join-requests",
     },
     {
@@ -129,14 +117,14 @@ export function DashboardOverview({
       subtitle: products.length
         ? products.slice(0, 2).map((product) => product.name).join(", ")
         : "Pickup inventory is healthy",
-      tone: "amber",
+      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
       href: "/dashboard/shop",
     },
     {
       icon: CalendarClock,
       title: `${summary.expiringMemberships} memberships expiring soon`,
       subtitle: "Renewal window: next 7 days",
-      tone: "lime",
+      tone: summary.expiringMemberships > 0 ? "amber" : "sky",
       href: "/dashboard/members",
     },
     {
@@ -154,7 +142,7 @@ export function DashboardOverview({
           {
             icon: AlertTriangle,
             title: "Gym is not active",
-            subtitle: `Current status: ${activeOrg.status.replaceAll("_", " ").toLowerCase()}`,
+            subtitle: `Status: ${formatEnumLabel(activeOrg.status)}`,
             tone: "rose" as const,
             href: "/dashboard/settings",
           },
@@ -164,8 +152,8 @@ export function DashboardOverview({
       ? [
           {
             icon: ClipboardList,
-            title: "Finish branch setup",
-            subtitle: "Choose a primary branch so inventory and attendance stay scoped.",
+            title: "Finish branch details",
+            subtitle: "Choose a primary branch for inventory and attendance.",
             tone: "amber" as const,
             href: "/dashboard/branches",
           },
@@ -220,8 +208,8 @@ export function DashboardOverview({
           {
             icon: IndianRupee,
             title: "Confirm first payment path",
-            subtitle: "Run a small membership payment before tomorrow's pilot traffic.",
-            tone: "lime" as const,
+            subtitle: "Run a small membership payment before inviting members.",
+            tone: "sky" as const,
             href: "/dashboard/payments",
           },
         ]
@@ -230,7 +218,7 @@ export function DashboardOverview({
             icon: IndianRupee,
             title: "Reconcile today's money",
             subtitle: `${formatInr(summary.cashCollectedPaise)} collected at desk today.`,
-            tone: "lime" as const,
+            tone: "sky" as const,
             href: "/dashboard/payments",
           },
         ]),
@@ -238,11 +226,7 @@ export function DashboardOverview({
 
   const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money", [nextBestActions]);
 
-  const todayLabel = useMemo(() => new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  }), []);
+  const todayLabel = useMemo(() => formatWeekdayDate(new Date()), []);
 
   useEffect(() => {
     const showPanel = () => setShowCustomisationPanel(true);
@@ -260,17 +244,17 @@ export function DashboardOverview({
       <SectionHero
         eyebrow="Today's command board"
         title="Run the gym, not the spreadsheet"
-        description={`Live signal across ${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"}. ${todayLabel}.`}
+        description={`${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"} today. ${todayLabel}.`}
         icon={TrendingUp}
         tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              <PulseDot tone={accent} size={6} />
-              Live
+              <StatusDot tone={accent} size={6} />
+              Today
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? (isHydratingDetails ? "Fast metrics loaded" : "Server-truth data") : "Demo mode"}
+              {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Server data") : "Local data"}
             </span>
           </div>
         }
@@ -322,7 +306,6 @@ export function DashboardOverview({
           tone={accent}
           trend={memberTrend}
           delta={charts.deltas.memberGrowth30d}
-          caption="Server-recorded"
         />
         <KPITile
           label="Today's check-ins"
@@ -331,24 +314,21 @@ export function DashboardOverview({
           tone="sky"
           trend={attendanceTrend}
           delta={charts.deltas.attendance7d}
-          caption="QR entries"
         />
         <KPITile
           label="Revenue today"
           value={revenueRupees}
           format={(v) => formatInrCompact(v * 100)}
           icon={IndianRupee}
-          tone="amber"
+          tone={accent}
           trend={revenueTrend}
           delta={charts.deltas.revenue7d}
-          caption="Confirmed payments"
         />
         <KPITile
           label="Join requests"
           value={summary.joinRequests}
           icon={UserPlus}
           tone="rose"
-          caption="Awaiting approval"
           href="/dashboard/members/join-requests"
         />
         <KPITile
@@ -356,7 +336,6 @@ export function DashboardOverview({
           value={summary.lowStockProducts}
           icon={Package}
           tone="violet"
-          caption="Shop alerts"
           href="/dashboard/shop"
         />
       </div>
@@ -380,7 +359,6 @@ export function DashboardOverview({
                   </span>
                   <DeltaChip delta={charts.deltas.revenue7d} />
                 </div>
-                <p className="mt-1 text-xs text-[var(--text-tertiary)]">Today is the latest mark</p>
               </div>
               <Link
                 href="/dashboard/reports"
@@ -483,11 +461,11 @@ export function DashboardOverview({
           </div>
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:items-center">
             <Donut
-              value={planMix[0]?.value ?? 1}
-              total={Math.max(planMixTotal, 1)}
+              value={planMix[0]?.value ?? 0}
+              total={planMixTotal}
               size={140}
               thickness={14}
-              tone="lime"
+              tone="sky"
               centerLabel={
                 <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                   {planMixTotal}
@@ -504,7 +482,10 @@ export function DashboardOverview({
                   value={`${Math.round((slice.value / Math.max(planMixTotal, 1)) * 100)}%`}
                 />
               )) : (
-                <LegendItem tone="lime" label="No active plan mix yet" value="0%" />
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
+                  <span className="truncate text-xs text-[var(--text-secondary)]">No active plan mix</span>
+                  <span className="text-xs font-semibold tabular-nums text-[var(--text-primary)]">0%</span>
+                </div>
               )}
             </div>
           </div>
@@ -513,11 +494,11 @@ export function DashboardOverview({
       </div>
       ) : null}
 
-      {/* AI + Staff + Tip — bottom strip */}
-      {prefs.widgets.aiUsage || prefs.widgets.staffActivity || prefs.widgets.tip ? (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      {/* AI + Staff — bottom strip */}
+      {prefs.widgets.aiUsage || prefs.widgets.staffActivity ? (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {prefs.widgets.aiUsage ? (
-        <GlassCard className="p-5 lg:col-span-4">
+        <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">AI usage</h2>
             <Link href="/dashboard/ai" className="text-xs font-medium text-[var(--accent)] hover:underline">
@@ -545,7 +526,7 @@ export function DashboardOverview({
                 [
                   ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
                   ["Recent logs", `${aiUsage.length}`],
-                  ["Provider", data.connected ? "Connected" : "Demo"],
+                  ["Data", data.connected ? "Server" : "Local"],
                 ] as const
               ).map(([label, value]) => (
                 <div
@@ -562,7 +543,7 @@ export function DashboardOverview({
         ) : null}
 
         {prefs.widgets.staffActivity ? (
-        <GlassCard className="p-5 lg:col-span-5">
+        <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent staff activity</h2>
             <Link href="/dashboard/audit" className="text-xs font-medium text-[var(--accent)] hover:underline">
@@ -579,35 +560,9 @@ export function DashboardOverview({
                 <strong className="tabular-nums">{summary.staffCount}</strong> staff roles ·{" "}
                 <strong className="tabular-nums">{auditLogCount}</strong> audit records
               </span>
-              <span className="block text-xs text-[var(--text-tertiary)]">
-                Open audit log for exact actions and timestamps
-              </span>
+              <span className="block text-xs text-[var(--text-tertiary)]">Exact actions and timestamps</span>
             </span>
             <ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />
-          </Link>
-        </GlassCard>
-        ) : null}
-
-        {prefs.widgets.tip ? (
-        <GlassCard className="relative overflow-hidden p-5 lg:col-span-3">
-          <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-lime-300/8 blur-3xl" />
-          <div className="flex items-center gap-2">
-            <Bot size={16} className="text-[var(--accent)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-              Zook tip
-            </span>
-          </div>
-          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-            {summary.todayAttendance === 0
-              ? "No check-ins recorded today yet. Try a reminder campaign when the gym confirms it."
-              : `${summary.todayAttendance} members checked in today. Keep the desk queue clear before peak hours.`}
-          </p>
-          <Link
-            href="/dashboard/members"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
-          >
-            <Sparkles size={12} />
-            View members
           </Link>
         </GlassCard>
         ) : null}
@@ -615,7 +570,7 @@ export function DashboardOverview({
       ) : null}
 
       {showCustomisationPanel ? (
-        <Suspense fallback={<div className="h-20 animate-pulse rounded-[28px] bg-[var(--surface-raised)]" />}>
+        <Suspense fallback={<div className="h-20 rounded-[28px] bg-[var(--surface-raised)]" />}>
           <LazyOwnerCustomisationPanel />
         </Suspense>
       ) : null}

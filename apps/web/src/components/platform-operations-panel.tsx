@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DataTable,
   EmptyState,
@@ -9,7 +10,8 @@ import {
   StatusPill,
   toneFromStatus,
 } from "./dashboard-primitives";
-import { GlassCard, Pill } from "./glass-card";
+import { ConfirmActionButton } from "./confirm-action-button";
+import { GlassCard, Pill, type PillTone } from "./glass-card";
 import { ZookButton } from "./zook-button";
 import {
   formatCompactNumber,
@@ -17,6 +19,7 @@ import {
   formatDateTime,
   formatEnumLabel,
   formatInr,
+  formatUsageLimit,
 } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
@@ -233,7 +236,7 @@ export function PlatformOperationsPanel({
   initialOrgs,
   initialFlags,
   initialProviders,
-  initialSection = "readiness",
+  initialSection = "business-overview",
 }: {
   initialOrgs: PlatformOrganization[];
   initialFlags: PlatformAbuseFlag[];
@@ -253,7 +256,10 @@ export function PlatformOperationsPanel({
   const [paymentSearchRows, setPaymentSearchRows] = useState<PlatformPaymentRow[] | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PlatformPaymentDetail | null>(null);
   const [paymentDetailBusyId, setPaymentDetailBusyId] = useState<string | null>(null);
-  const [supportNotice, setSupportNotice] = useState("");
+  const [supportNotice, setSupportNoticeState] = useState<{
+    message: string;
+    tone: PillTone;
+  } | null>(null);
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const activeSection = initialSection;
@@ -269,9 +275,16 @@ export function PlatformOperationsPanel({
   const showWebhooks = activeSection === "webhooks";
   const showAudit = activeSection === "audit";
   const showOrganizations = activeSection === "organizations";
-  const showSubscriptions = activeSection === "subscriptions";
+  const showSubscriptions =
+    activeSection === "business-overview" ||
+    activeSection === "subscriptions" ||
+    activeSection === "referrals";
   const showAssistant = activeSection === "ai-traffic";
   const showSafety = activeSection === "abuse-flags";
+
+  function setSupportNotice(message: string, tone: PillTone = "blue") {
+    setSupportNoticeState({ message, tone });
+  }
 
   const organizationsState = useOperationalResource<{ orgs: PlatformOrganization[] }>({
     path: "/api/platform/orgs",
@@ -378,21 +391,21 @@ export function PlatformOperationsPanel({
   );
   const cockpitItems = useMemo(() => [
     {
-      label: "Ready providers",
+      label: "Active services",
       value: formatCompactNumber(readyProviders.length),
-      meta: "Can serve production traffic",
+      meta: "Configured member services",
     },
     {
-      label: "Provider setup gaps",
+      label: "Service reviews",
       value: formatCompactNumber(misconfiguredProviders.length),
-      meta: "Check env + partner dashboards",
+      meta: "Check service dashboards",
     },
     {
       label: "Active gyms",
       value: formatCompactNumber(
         organizations.filter((org) => org.status === "ACTIVE").length,
       ),
-      meta: "Currently allowed to operate",
+      meta: "Allowed to operate",
     },
     {
       label: "Trial risk",
@@ -409,24 +422,24 @@ export function PlatformOperationsPanel({
     {
       step: "Confirm blast radius",
       owner: "Platform",
-      signal: `${misconfiguredProviders.length} provider gap${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
+      signal: `${misconfiguredProviders.length} service issue${misconfiguredProviders.length === 1 ? "" : "s"} · ${openFlags.length} safety review${openFlags.length === 1 ? "" : "s"}`,
     },
     {
-      step: "Check provider dashboards",
+      step: "Check service dashboards",
       owner: "Ops",
       signal: misconfiguredProviders.length
         ? misconfiguredProviders.map(([category]) => formatEnumLabel(category)).join(", ")
-        : "All configured providers report ready/default",
+        : "All service checks are clear",
     },
     {
-      step: "Freeze risky tenant actions",
+      step: "Pause risky gym actions",
       owner: "Support",
       signal: suspendedOrganizations.length
         ? `${suspendedOrganizations.length} paused gym${suspendedOrganizations.length === 1 ? "" : "s"}`
-        : "No gym is paused right now",
+        : "No paused gyms",
     },
     {
-      step: "Notify pilot owners",
+      step: "Notify trial owners",
       owner: "Business",
       signal: trialRiskOrganizations.length
         ? `${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} near conversion`
@@ -452,7 +465,7 @@ export function PlatformOperationsPanel({
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to update organization status.",
+        cause instanceof Error ? cause.message : "Unable to update gym status.",
       );
     } finally {
       setBusyOrgId(null);
@@ -460,7 +473,7 @@ export function PlatformOperationsPanel({
   }
 
   async function softDeleteOrganization(org: PlatformOrganization) {
-    if (!typedConfirmation(`Soft-delete ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
+    if (!typedConfirmation(`Archive ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
       return;
     }
     const reason = window.prompt("Reason")?.trim();
@@ -475,7 +488,7 @@ export function PlatformOperationsPanel({
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to soft-delete organization.",
+        cause instanceof Error ? cause.message : "Unable to archive gym account.",
       );
     } finally {
       setBusyOrgId(null);
@@ -511,7 +524,7 @@ export function PlatformOperationsPanel({
   }
 
   async function renameOrganization(org: PlatformOrganization) {
-    const name = window.prompt("New organization name", org.name)?.trim();
+    const name = window.prompt("New gym name", org.name)?.trim();
     if (!name) return;
     const username = window.prompt("New username", org.username)?.trim();
     if (!username) return;
@@ -553,11 +566,11 @@ export function PlatformOperationsPanel({
       setStatusError("");
       setBusyOrgId(orgId);
       await webApiFetch(path, { method, body });
-      setSupportNotice("Organization updated");
+      setSupportNotice("Gym account updated");
       organizationsState.reload();
     } catch (cause) {
       setStatusError(
-        cause instanceof Error ? cause.message : "Unable to update organization.",
+        cause instanceof Error ? cause.message : "Unable to update gym account.",
       );
     } finally {
       setBusyOrgId(null);
@@ -699,13 +712,13 @@ export function PlatformOperationsPanel({
   }
 
   async function deleteBroadcast(broadcastId: string) {
-    const confirmed = window.confirm("Delete this broadcast?");
-    if (!confirmed) return;
     try {
       setBroadcastBusyId(broadcastId);
       await webApiFetch(`/api/platform/broadcasts/${broadcastId}`, { method: "DELETE" });
       setSupportNotice("Broadcast deleted");
       broadcastsState.reload();
+    } catch (cause) {
+      setSupportNotice(cause instanceof Error ? cause.message : "Unable to delete broadcast", "red");
     } finally {
       setBroadcastBusyId(null);
     }
@@ -734,9 +747,8 @@ export function PlatformOperationsPanel({
         <SectionHeader
           eyebrow="Command"
           title="Platform health cockpit"
-          description="Production-facing signal for provider setup, tenant health, conversion risk, and safety load."
           badge={
-            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "lime"}>
+            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
               {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
             </Pill>
           }
@@ -745,11 +757,11 @@ export function PlatformOperationsPanel({
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {[
             {
-              title: "Provider alerts",
+              title: "Service alerts",
               body: misconfiguredProviders.length
-                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need setup before full production confidence.`
-                : "Core providers are not reporting setup blockers.",
-              tone: misconfiguredProviders.length ? "amber" : "lime",
+                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need review before launch.`
+                : "Core services are not reporting issues.",
+              tone: misconfiguredProviders.length ? "amber" : "neutral",
             },
             {
               title: "Gym activation",
@@ -759,16 +771,16 @@ export function PlatformOperationsPanel({
             {
               title: "Safety queue",
               body: openFlags.length
-                ? "Review open reports before expanding pilot traffic."
-                : "No unresolved safety reports in the loaded queue.",
-              tone: openFlags.length ? "amber" : "lime",
+                ? "Review open reports before inviting more gyms."
+                : "No unresolved safety reports.",
+              tone: openFlags.length ? "amber" : "neutral",
             },
           ].map((item) => (
             <div
               key={item.title}
               className="rounded-[22px] border border-white/10 bg-black/20 p-4"
             >
-              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "lime"} />
+              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "neutral"} />
               <p className="mt-3 text-sm leading-6 text-white/58">{item.body}</p>
             </div>
           ))}
@@ -782,8 +794,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Support"
             title="Platform support console"
-            description="Recent users and payments are loaded by default. Search narrows the list, and Details opens the full operational record."
-            badge={supportNotice ? <Pill tone="lime">{supportNotice}</Pill> : <Pill tone="blue">Live</Pill>}
+            badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : undefined}
           />
           <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
             {showUsers ? (
@@ -791,9 +802,8 @@ export function PlatformOperationsPanel({
               <SectionHeader
                 eyebrow="Users"
                 title="User search and details"
-                description="Find members, staff, owners, and demo accounts across the platform."
                 badge={
-                  <Pill tone={usersState.loading ? "amber" : "blue"}>
+                  <Pill tone={usersState.loading ? "amber" : "neutral"}>
                     {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
                   </Pill>
                 }
@@ -893,7 +903,7 @@ export function PlatformOperationsPanel({
                     columns={3}
                     items={[
                       {
-                        label: "Organizations",
+                        label: "Gym links",
                         value: formatCompactNumber(selectedUser.organizations.length),
                         meta: "Active and historical links",
                       },
@@ -928,7 +938,7 @@ export function PlatformOperationsPanel({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No gym access found.</p>
+                          <p className="text-sm text-white/45">No gym access.</p>
                         )}
                       </div>
                     </div>
@@ -952,7 +962,7 @@ export function PlatformOperationsPanel({
                             </button>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No payments found for this user.</p>
+                          <p className="text-sm text-white/45">No payments for this user.</p>
                         )}
                       </div>
                     </div>
@@ -966,10 +976,9 @@ export function PlatformOperationsPanel({
             <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
               <SectionHeader
                 eyebrow="Payments"
-                title="Payment ledger"
-                description="Demo and live payment records appear here immediately after checkout or desk payment creation."
+                title="Payment records"
                 badge={
-                  <Pill tone={paymentsState.loading ? "amber" : "blue"}>
+                  <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
                     {paymentsState.loading && !paymentRows.length
                       ? "Loading"
                       : `${paymentRows.length} visible`}
@@ -997,7 +1006,7 @@ export function PlatformOperationsPanel({
                         <div>
                           <p className="font-medium text-white">{payment.id}</p>
                           <p className="mt-1 text-xs text-white/45">
-                            {payment.providerRef ?? payment.provider ?? "Manual/demo"}
+                            {payment.providerRef ?? payment.provider ?? "Manual entry"}
                           </p>
                         </div>
                       ),
@@ -1065,7 +1074,7 @@ export function PlatformOperationsPanel({
                       {
                         label: "Status",
                         value: formatEnumLabel(selectedPayment.payment.status),
-                        meta: selectedPayment.payment.provider ?? "manual/demo",
+                        meta: selectedPayment.payment.provider ?? "Manual entry",
                       },
                       {
                         label: "Refunds",
@@ -1079,7 +1088,7 @@ export function PlatformOperationsPanel({
                       {
                         label: "Events",
                         value: formatCompactNumber(selectedPayment.events.length),
-                        meta: "Provider and mock events",
+                        meta: "Payment events",
                       },
                     ]}
                   />
@@ -1132,7 +1141,7 @@ export function PlatformOperationsPanel({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-white/45">No payment events recorded yet.</p>
+                          <p className="text-sm text-white/45">No payment events recorded.</p>
                         )}
                       </div>
                     </div>
@@ -1154,8 +1163,7 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Broadcasts"
               title="Platform broadcasts"
-              description="Create operational notices and publish them to active gyms."
-              badge={<Pill tone="blue">{broadcasts.length} loaded</Pill>}
+              badge={<Pill>{broadcasts.length} broadcast{broadcasts.length === 1 ? "" : "s"}</Pill>}
               action={
                 <ZookButton size="sm" onClick={() => void createBroadcast()}>
                   New broadcast
@@ -1212,21 +1220,24 @@ export function PlatformOperationsPanel({
                         >
                           Expire
                         </ZookButton>
-                        <ZookButton
-                          size="sm"
-                          tone="danger"
+                        <ConfirmActionButton
+                          className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={broadcastBusyId === broadcast.id}
-                          onClick={() => void deleteBroadcast(broadcast.id)}
+                          title="Delete this broadcast?"
+                          description="This removes the broadcast from this console. Published recipients may have seen it."
+                          confirmLabel="Delete"
+                          confirmTone="danger"
+                          onConfirm={() => deleteBroadcast(broadcast.id)}
                         >
                           Delete
-                        </ZookButton>
+                        </ConfirmActionButton>
                       </div>
                     ),
                   },
                 ]}
                 rows={broadcasts}
                 rowKey={(broadcast) => broadcast.id}
-                empty="No broadcasts yet."
+                empty="No entries."
               />
             </div>
           </GlassCard>
@@ -1239,8 +1250,7 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Moderation"
               title="Content moderation queue"
-              description="Review flagged content and record a platform decision."
-              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "lime"}>{moderationFlags.length} flags</Pill>}
+              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "neutral"}>{moderationFlags.length} flags</Pill>}
             />
             <div className="mt-5">
               <DataTable
@@ -1293,7 +1303,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={moderationFlags}
                 rowKey={(flag) => flag.id}
-                empty="No moderation flags."
+                empty="No flags."
               />
             </div>
           </GlassCard>
@@ -1307,20 +1317,19 @@ export function PlatformOperationsPanel({
         <GlassCard>
           <SectionHeader
             eyebrow="Impersonations"
-            title="Support impersonation history"
-            description="Recent audited sessions started by platform support."
-            badge={<Pill tone="blue">{impersonations.length} sessions</Pill>}
+            title="Support access log"
+            badge={<Pill>{impersonations.length} sessions</Pill>}
           />
           <div className="mt-5">
             <DataTable
               columns={[
                 {
                   id: "target",
-                  header: "Target",
+                  header: "Account",
                   render: (session) => (
                     <div>
                       <p className="font-medium text-white">{session.targetUserId}</p>
-                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No org scope"}</p>
+                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No gym selected"}</p>
                     </div>
                   ),
                 },
@@ -1340,14 +1349,14 @@ export function PlatformOperationsPanel({
                   render: (session) => (
                     <StatusPill
                       value={session.endedAt ? "Ended" : new Date(session.expiresAt).getTime() < Date.now() ? "Expired" : "Active"}
-                      tone={session.endedAt ? "blue" : new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "lime"}
+                      tone={!session.endedAt && new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "blue"}
                     />
                   ),
                 },
               ]}
               rows={impersonations}
               rowKey={(session) => session.id}
-              empty="No impersonation sessions."
+              empty="No sessions."
             />
           </div>
         </GlassCard>
@@ -1431,7 +1440,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="System checks"
             title="Service status"
-            description="A quick view of the services Zook depends on. Private settings stay hidden."
+            description="Services Zook depends on, with sensitive settings hidden."
             badge={
               <Pill tone={misconfiguredProviders.length ? "red" : "lime"}>
                 {misconfiguredProviders.length} need setup
@@ -1447,19 +1456,19 @@ export function PlatformOperationsPanel({
             <ReadoutGrid
               items={[
                 {
-                  label: "Ready",
+                  label: "Active services",
                   value: formatCompactNumber(readyProviders.length),
-                  meta: "Services ready for use",
+                  meta: "Configured for use",
                 },
                 {
-                  label: "Basic setup",
+                  label: "Standard settings",
                   value: formatCompactNumber(defaultProviders.length),
-                  meta: "Services using the standard setup",
+                  meta: "Services using standard settings",
                 },
                 {
                   label: "Needs attention",
                   value: formatCompactNumber(misconfiguredProviders.length),
-                  meta: "Services that still need setup",
+                  meta: "Services needing review",
                 },
                 {
                   label: "Open safety reviews",
@@ -1478,8 +1487,8 @@ export function PlatformOperationsPanel({
                     <div>
                       <p className="font-medium text-white">{formatEnumLabel(category)}</p>
                       <p className="mt-1 text-xs text-white/45">
-                        Setup {provider.configured ? "complete" : "needed"} · Running{" "}
-                        {provider.activeProvider ? "ready" : "not ready"}
+                        {provider.configured ? "Configured" : "Review needed"} · Service{" "}
+                        {provider.activeProvider ? "active" : "inactive"}
                       </p>
                     </div>
                   ),
@@ -1510,18 +1519,18 @@ export function PlatformOperationsPanel({
                   id: "env",
                   header: "Needs",
                   render: ([, provider]) =>
-                    (provider.missingEnv?.length ?? 0) ? "Setup required" : "Nothing",
+                    (provider.missingEnv?.length ?? 0) ? "Review needed" : "Nothing",
                 },
                 {
                   id: "last",
                   header: "Checked",
                   render: ([, provider]) =>
-                    provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Just now",
+                    provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Not checked",
                 },
               ]}
               rows={providerEntries}
               rowKey={([category]) => category}
-              empty="Service status is not available yet."
+              empty="No checks."
             />
           </div>
         </GlassCard>
@@ -1534,8 +1543,7 @@ export function PlatformOperationsPanel({
           <SectionHeader
             eyebrow="Incident mode"
             title="Production incident checklist"
-            description="A simple first-response lane for provider outages, payment trouble, safety escalations, and tenant-impacting issues."
-            badge={<Pill tone="amber">Use during live support</Pill>}
+            description="First-response steps for service outages, payment trouble, safety escalations, and gym-impacting issues."
           />
           <div className="mt-5 grid gap-3">
             {incidentChecklist.map((item, index) => (
@@ -1555,7 +1563,7 @@ export function PlatformOperationsPanel({
             ))}
           </div>
           <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
-            In production, keep destructive tenant actions paused until provider status, audit
+            In production, keep destructive gym actions paused until service status, audit
             trail, customer impact, and rollback owner are all known.
           </div>
         </GlassCard>
@@ -1569,9 +1577,8 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Organizations"
               title="Gym accounts"
-              description="Review active gyms and pause accounts when the platform team needs to step in."
               badge={
-                <Pill tone={suspendedOrganizations.length ? "amber" : "lime"}>
+                <Pill tone={suspendedOrganizations.length ? "amber" : "neutral"}>
                   {suspendedOrganizations.length} suspended
                 </Pill>
               }
@@ -1595,7 +1602,7 @@ export function PlatformOperationsPanel({
                 columns={[
                   {
                     id: "org",
-                    header: "Organization",
+                    header: "Gym",
                     render: (org) => (
                       <div>
                         <p className="font-medium text-white">{org.name}</p>
@@ -1661,7 +1668,7 @@ export function PlatformOperationsPanel({
                 ]}
                 rows={organizations}
                 rowKey={(org) => org.id}
-                empty="No organizations are currently available."
+                empty="No accounts."
               />
             </div>
             {selectedOrganization ? (
@@ -1669,7 +1676,7 @@ export function PlatformOperationsPanel({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
-                      Organization details
+                      Gym account details
                     </p>
                     <h3 className="mt-2 text-lg font-semibold text-white">
                       {selectedOrganization.name}
@@ -1691,7 +1698,7 @@ export function PlatformOperationsPanel({
                     {
                       label: "Status",
                       value: formatEnumLabel(selectedOrganization.status),
-                      meta: "Current platform state",
+                      meta: "Platform account status",
                     },
                     {
                       label: "Join mode",
@@ -1731,7 +1738,7 @@ export function PlatformOperationsPanel({
                 />
                 <div className="mt-4 rounded-[18px] border border-white/10 bg-black/20 p-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                    Advanced actions
+                    Account actions
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
@@ -1803,7 +1810,7 @@ export function PlatformOperationsPanel({
                       onClick={() => void softDeleteOrganization(selectedOrganization)}
                       disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
                     >
-                      Soft delete
+                      Archive
                     </ZookButton>
                   </div>
                 </div>
@@ -1817,7 +1824,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Watchlist"
               title="Safety review"
-              description="A short view of gyms and reports that may need attention."
             />
             <ReadoutGrid
               className="mt-5"
@@ -1831,7 +1837,7 @@ export function PlatformOperationsPanel({
                 {
                   label: "Paused gyms",
                   value: formatCompactNumber(suspendedOrganizations.length),
-                  meta: "Currently paused by the platform team",
+                  meta: "Paused by the platform team",
                 },
                 {
                   label: "Recent assistant activity",
@@ -1846,7 +1852,6 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Contacts"
               title="Gym contact list"
-              description="The first people to contact when a gym needs help or review."
             />
             <div className="mt-5 grid gap-3">
               {organizations.slice(0, 4).map((org) => (
@@ -1878,8 +1883,7 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Assistant"
               title="Recent assistant activity"
-              description="A quick view of assisted drafts across gyms."
-              badge={<Pill tone="blue">{usage.length} events</Pill>}
+              badge={<Pill>{usage.length} events</Pill>}
             />
             <div className="mt-5">
               {usageState.error ? (
@@ -1887,10 +1891,7 @@ export function PlatformOperationsPanel({
                   {usageState.error}
                 </p>
               ) : usageState.loading && usage.length === 0 ? (
-                <EmptyState
-                  title="Loading activity"
-                  description="Getting the latest assisted drafts."
-                />
+                <EmptyState title="Loading assistant activity" />
               ) : (
                 <DataTable
                   columns={[
@@ -1930,7 +1931,7 @@ export function PlatformOperationsPanel({
                   ]}
                   rows={usage}
                   rowKey={(row) => row.id}
-                  empty="No assistant activity is currently available."
+                  empty="No activity."
                 />
               )}
             </div>
@@ -1938,7 +1939,18 @@ export function PlatformOperationsPanel({
         </div>
         ) : null}
 
-        {showSubscriptions ? <PlatformSubscriptionsSection /> : null}
+        {showSubscriptions ? (
+          <PlatformSubscriptionsSection
+            mode={
+              activeSection === "referrals"
+                ? "referrals"
+                : activeSection === "business-overview"
+                  ? "overview"
+                  : "subscriptions"
+            }
+            initialFlags={initialFlags}
+          />
+        ) : null}
 
         {showSafety ? (
         <div id="abuse-flags" className="scroll-mt-5">
@@ -1946,9 +1958,8 @@ export function PlatformOperationsPanel({
             <SectionHeader
               eyebrow="Safety"
               title="Recent reports"
-              description="Recent gym reports, with severity and current status."
               badge={
-                <Pill tone={openFlags.length ? "amber" : "lime"}>{openFlags.length} open</Pill>
+                <Pill tone={openFlags.length ? "amber" : "neutral"}>{openFlags.length} open</Pill>
               }
             />
             <div className="mt-5 grid gap-3">
@@ -1993,10 +2004,7 @@ export function PlatformOperationsPanel({
                   </div>
                 ))
               ) : (
-                <EmptyState
-                  title="No recent reports"
-                  description="Nothing needs platform review right now."
-                />
+                <EmptyState title="No reports" />
               )}
             </div>
           </GlassCard>
@@ -2063,21 +2071,625 @@ type PlatformPlanCatalog = Record<
   {
     name: string;
     monthly: number;
+    semiannual?: number;
     yearly: number;
     entitlements: NonNullable<SubscriptionRow["entitlements"]>;
   }
 >;
 
-function limitLabel(limit?: number | null) {
-  return limit == null ? "unlimited" : formatCompactNumber(limit);
+type PlatformReferralPolicy = {
+  enabled: boolean;
+  referrerRewardType: "TRIAL_DAYS" | "CREDIT_PAISE" | "NONE";
+  referrerRewardValue: number;
+  referredRewardType: "TRIAL_DAYS" | "DISCOUNT_PERCENT_BPS" | "CREDIT_PAISE" | "NONE";
+  referredRewardValue: number;
+  nonOwnerSemiannualRewardPaise: number;
+  nonOwnerYearlyRewardPaise: number;
+  ownerRewardDays: number;
+  qualifyingCycles: Array<"SEMIANNUAL" | "YEARLY">;
+  clawbackWindowDays: number;
+  minWithdrawalPaise: number;
+  maxRewardsPerUserPerMonth: number;
+  maxRedemptionsPerOrg: number;
+  expiresInDays: number;
+};
+
+const REFERRER_REWARD_TYPES = [
+  { value: "TRIAL_DAYS", label: "Free trial days" },
+  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
+  { value: "NONE", label: "No reward" },
+] as const;
+
+const REFERRED_REWARD_TYPES = [
+  { value: "TRIAL_DAYS", label: "Free trial days" },
+  { value: "DISCOUNT_PERCENT_BPS", label: "Discount (%)" },
+  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
+  { value: "NONE", label: "No reward" },
+] as const;
+
+/** Converts a stored reward value to the unit shown in the input. */
+function rewardToDisplay(type: string, value: number) {
+  if (type === "CREDIT_PAISE") return Math.round(value / 100);
+  if (type === "DISCOUNT_PERCENT_BPS") return Math.round(value / 100);
+  return value;
+}
+/** Converts an edited input value back to the stored unit. */
+function rewardToStored(type: string, value: number) {
+  if (type === "CREDIT_PAISE") return value * 100;
+  if (type === "DISCOUNT_PERCENT_BPS") return value * 100;
+  return value;
+}
+function rewardCostPaise(type: string, value: number) {
+  return type === "CREDIT_PAISE" ? value : 0;
+}
+function rewardLabel(type: string, value: number) {
+  if (type === "NONE") return "No reward";
+  if (type === "CREDIT_PAISE") return formatInr(value);
+  if (type === "DISCOUNT_PERCENT_BPS") return `${Math.round(value / 100)}%`;
+  return `${value} days`;
+}
+function defaultRewardValueForType(type: string) {
+  if (type === "CREDIT_PAISE" || type === "NONE") return 0;
+  if (type === "DISCOUNT_PERCENT_BPS") return 1_000;
+  return 30;
 }
 
-function PlatformSubscriptionsSection() {
+const platformInputClass =
+  "min-h-10 w-full rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-white/25";
+
+/**
+ * Platform-owner control for how gyms referring *other gyms* to Zook are
+ * rewarded. Backend: GET/PATCH /api/platform/referral-policy. Self-contained
+ * (loads + saves its own data) so it can drop into the Subscriptions section.
+ */
+function PlatformReferralPolicyCard({ monthlyPayoutExposurePaise = 0 }: { monthlyPayoutExposurePaise?: number }) {
+  const [policy, setPolicy] = useState<PlatformReferralPolicy | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    webApiFetch<{ policy: PlatformReferralPolicy }>("/api/platform/referral-policy")
+      .then((payload) => {
+        if (mounted) setPolicy(payload.policy);
+      })
+      .catch((cause) => {
+        if (mounted)
+          setNotice({
+            message: cause instanceof Error ? cause.message : "Unable to load referral policy.",
+            tone: "red",
+          });
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  function patch(next: Partial<PlatformReferralPolicy>) {
+    setPolicy((current) => (current ? { ...current, ...next } : current));
+  }
+  function num(value: string) {
+    return Number.parseInt(value, 10) || 0;
+  }
+
+  async function save() {
+    if (!policy) return;
+    setSaving(true);
+    setNotice(null);
+    try {
+      await webApiFetch("/api/platform/referral-policy", { method: "PATCH", body: policy });
+      setNotice({ message: "Referral policy saved.", tone: "lime" });
+    } catch (cause) {
+      setNotice({
+        message: cause instanceof Error ? cause.message : "Unable to save referral policy.",
+        tone: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const costPerReferralPaise = policy
+    ? rewardCostPaise(policy.referrerRewardType, policy.referrerRewardValue) +
+      rewardCostPaise(policy.referredRewardType, policy.referredRewardValue)
+    : 0;
+
+  return (
+    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+            Gym-to-gym referrals
+          </p>
+          <p className="mt-1 text-sm font-semibold text-white">When a gym refers a new gym to Zook</p>
+          <p className="mt-1 max-w-xl text-xs leading-5 text-white/45">
+            Platform default that applies across all gyms. Sets what the referring gym earns and what
+            the new gym gets when they join.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => patch({ enabled: !policy?.enabled })}
+          disabled={!policy}
+          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+            policy?.enabled
+              ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
+              : "border-white/10 bg-white/5 text-white/55"
+          }`}
+        >
+          {policy?.enabled ? "Enabled" : "Disabled"}
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="mt-4 text-sm text-white/45">Loading referral policy...</p>
+      ) : policy ? (
+        <div className="mt-4 grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+                Cost / gym referral
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
+                {costPerReferralPaise ? formatInr(costPerReferralPaise) : "Non-cash"}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                {rewardLabel(policy.referrerRewardType, policy.referrerRewardValue)} referrer ·{" "}
+                {rewardLabel(policy.referredRewardType, policy.referredRewardValue)} new gym
+              </p>
+            </div>
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+                Monthly payout exposure
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
+                {formatInr(monthlyPayoutExposurePaise)}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Pending member/trainer withdrawal cash.
+              </p>
+            </div>
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+                Reward limits
+              </p>
+              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
+                {policy.maxRewardsPerUserPerMonth}/user
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                {policy.maxRedemptionsPerOrg} redemptions/gym · {policy.clawbackWindowDays}d clawback
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Referring gym earns</p>
+              <label className="mt-3 block text-xs text-white/55">Reward type</label>
+              <select
+                className={`${platformInputClass} mt-1`}
+                value={policy.referrerRewardType}
+                onChange={(event) => {
+                  const referrerRewardType = event.target.value as PlatformReferralPolicy["referrerRewardType"];
+                  patch({
+                    referrerRewardType,
+                    referrerRewardValue: defaultRewardValueForType(referrerRewardType),
+                  });
+                }}
+              >
+                {REFERRER_REWARD_TYPES.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-black">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {policy.referrerRewardType !== "NONE" ? (
+                <>
+                  <label className="mt-3 block text-xs text-white/55">
+                    {policy.referrerRewardType === "CREDIT_PAISE" ? "Credit (₹)" : "Days"}
+                  </label>
+                  <input
+                    className={`${platformInputClass} mt-1`}
+                    inputMode="numeric"
+                    value={String(rewardToDisplay(policy.referrerRewardType, policy.referrerRewardValue))}
+                    onChange={(event) =>
+                      patch({ referrerRewardValue: rewardToStored(policy.referrerRewardType, num(event.target.value)) })
+                    }
+                  />
+                </>
+              ) : null}
+            </div>
+
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">New gym gets</p>
+              <label className="mt-3 block text-xs text-white/55">Reward type</label>
+              <select
+                className={`${platformInputClass} mt-1`}
+                value={policy.referredRewardType}
+                onChange={(event) => {
+                  const referredRewardType = event.target.value as PlatformReferralPolicy["referredRewardType"];
+                  patch({
+                    referredRewardType,
+                    referredRewardValue: defaultRewardValueForType(referredRewardType),
+                  });
+                }}
+              >
+                {REFERRED_REWARD_TYPES.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-black">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {policy.referredRewardType !== "NONE" ? (
+                <>
+                  <label className="mt-3 block text-xs text-white/55">
+                    {policy.referredRewardType === "CREDIT_PAISE"
+                      ? "Credit (₹)"
+                      : policy.referredRewardType === "DISCOUNT_PERCENT_BPS"
+                        ? "Discount (%)"
+                        : "Days"}
+                  </label>
+                  <input
+                    className={`${platformInputClass} mt-1`}
+                    inputMode="numeric"
+                    value={String(rewardToDisplay(policy.referredRewardType, policy.referredRewardValue))}
+                    onChange={(event) =>
+                      patch({ referredRewardValue: rewardToStored(policy.referredRewardType, num(event.target.value)) })
+                    }
+                  />
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Member / trainer refers a gym</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Cash a non-owner earns when a gym they refer subscribes (paid out after the clawback
+                window).
+              </p>
+              <label className="mt-3 block text-xs text-white/55">6-month sub → cash (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.nonOwnerSemiannualRewardPaise / 100))}
+                onChange={(event) => patch({ nonOwnerSemiannualRewardPaise: num(event.target.value) * 100 })}
+              />
+              <label className="mt-3 block text-xs text-white/55">Yearly sub → cash (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.nonOwnerYearlyRewardPaise / 100))}
+                onChange={(event) => patch({ nonOwnerYearlyRewardPaise: num(event.target.value) * 100 })}
+              />
+            </div>
+
+            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+              <p className="text-sm font-semibold text-white">Gym owner refers a gym</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">
+                Free Zook subscription days the owner earns (no cash).
+              </p>
+              <label className="mt-3 block text-xs text-white/55">Free Zook days</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.ownerRewardDays)}
+                onChange={(event) => patch({ ownerRewardDays: num(event.target.value) })}
+              />
+              <label className="mt-3 block text-xs text-white/55">Qualifying commitments</label>
+              <div className="mt-1 flex gap-2">
+                {(["SEMIANNUAL", "YEARLY"] as const).map((cycle) => {
+                  const active = policy.qualifyingCycles.includes(cycle);
+                  return (
+                    <button
+                      key={cycle}
+                      type="button"
+                      onClick={() =>
+                        patch({
+                          qualifyingCycles: active
+                            ? policy.qualifyingCycles.filter((value) => value !== cycle)
+                            : [...policy.qualifyingCycles, cycle],
+                        })
+                      }
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        active
+                          ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
+                          : "border-white/10 bg-white/5 text-white/55"
+                      }`}
+                    >
+                      {cycle === "SEMIANNUAL" ? "6-month" : "Yearly"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-xs text-white/55">Clawback window (days)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.clawbackWindowDays)}
+                onChange={(event) => patch({ clawbackWindowDays: num(event.target.value) })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Min withdrawal (₹)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(Math.round(policy.minWithdrawalPaise / 100))}
+                onChange={(event) => patch({ minWithdrawalPaise: num(event.target.value) * 100 })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Max rewards / user / month</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.maxRewardsPerUserPerMonth)}
+                onChange={(event) => patch({ maxRewardsPerUserPerMonth: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Max referrals per gym</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.maxRedemptionsPerOrg)}
+                onChange={(event) => patch({ maxRedemptionsPerOrg: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/55">Reward expires in (days)</label>
+              <input
+                className={`${platformInputClass} mt-1`}
+                inputMode="numeric"
+                value={String(policy.expiresInDays)}
+                onChange={(event) => patch({ expiresInDays: Math.max(1, num(event.target.value)) })}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ZookButton size="sm" onClick={() => void save()} disabled={saving}>
+              {saving ? "Saving..." : "Save referral policy"}
+            </ZookButton>
+            {notice ? <Pill tone={notice.tone}>{notice.message}</Pill> : null}
+          </div>
+        </div>
+      ) : notice ? (
+        <p className="mt-4 rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
+          {notice.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+type RewardWithdrawalRow = {
+  id: string;
+  userId: string;
+  amountPaise: number;
+  status: string;
+  requestedAt: string;
+  paidAt?: string | null;
+  paidMethod?: string | null;
+  user: { id: string; name: string | null; email: string } | null;
+};
+
+/**
+ * Platform-owner review + payout of member/trainer reward-cash withdrawals
+ * (the manual-payout step of "accrue + manual"). Backend:
+ * GET /api/platform/rewards/withdrawals, POST .../:id/mark-paid.
+ */
+function PlatformWithdrawalsCard() {
+  const [rows, setRows] = useState<RewardWithdrawalRow[] | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
+
+  const load = useCallback(() => {
+    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
+      .then((payload) => setRows(payload.withdrawals))
+      .catch((cause) =>
+        setNotice({ message: cause instanceof Error ? cause.message : "Unable to load withdrawals.", tone: "red" }),
+      );
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function markPaid(id: string) {
+    setBusyId(id);
+    setNotice(null);
+    try {
+      await webApiFetch(`/api/platform/rewards/withdrawals/${id}/mark-paid`, {
+        method: "POST",
+        body: { method: "Manual payout" },
+      });
+      setNotice({ message: "Marked paid.", tone: "lime" });
+      load();
+    } catch (cause) {
+      setNotice({ message: cause instanceof Error ? cause.message : "Unable to mark paid.", tone: "red" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const pending = (rows ?? []).filter((row) => row.status === "REQUESTED");
+
+  return (
+    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Reward payouts</p>
+          <p className="mt-1 text-sm font-semibold text-white">Member / trainer withdrawal requests</p>
+        </div>
+        {pending.length ? <Pill tone="amber">{pending.length} to pay</Pill> : <Pill tone="neutral">Clear</Pill>}
+      </div>
+      {rows === null ? (
+        <p className="mt-4 text-sm text-white/45">Loading withdrawals…</p>
+      ) : rows.length === 0 ? (
+        <p className="mt-4 text-sm text-white/45">No withdrawal requests yet.</p>
+      ) : (
+        <div className="mt-4 grid gap-2">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-black/25 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{row.user?.name ?? row.user?.email ?? "Member"}</p>
+                <p className="truncate text-xs text-white/45">{formatDateTime(row.requestedAt)}</p>
+              </div>
+              <p className="text-sm font-semibold text-white">{formatInr(row.amountPaise)}</p>
+              {row.status === "REQUESTED" ? (
+                <ZookButton size="sm" onClick={() => void markPaid(row.id)} disabled={busyId === row.id}>
+                  {busyId === row.id ? "…" : "Mark paid"}
+                </ZookButton>
+              ) : (
+                <StatusPill value={row.status} tone={row.status === "PAID" ? "lime" : "neutral"} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {notice ? <div className="mt-3"><Pill tone={notice.tone}>{notice.message}</Pill></div> : null}
+    </div>
+  );
+}
+
+/**
+ * Owner-first business overview: the at-a-glance numbers + the money that
+ * needs the Zook owner to act (reward payouts to release), so viewing and
+ * acting live together at the top of the console.
+ */
+function PlatformBusinessOverview({
+  summary,
+  rows,
+  planCatalog,
+  withdrawals,
+  flags,
+  loading,
+}: {
+  summary: SubscriptionSummary | null;
+  rows: SubscriptionRow[];
+  planCatalog: PlatformPlanCatalog | null;
+  withdrawals: RewardWithdrawalRow[] | null;
+  flags: PlatformAbuseFlag[];
+  loading: boolean;
+}) {
+  const pending = (withdrawals ?? []).filter((w) => w.status === "REQUESTED");
+  const pendingPaise = pending.reduce((t, w) => t + w.amountPaise, 0);
+  const suspendedRows = rows.filter((row) => row.orgStatus === "SUSPENDED");
+  const openFlags = flags.filter((flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved");
+  const payingRows = rows.filter((row) => row.subscriptionStatus === "ACTIVE" || row.orgStatus === "ACTIVE");
+  const mrrPaise = payingRows.reduce((total, row) => {
+    const plan = planCatalog?.[row.tier ?? "FREE"];
+    const monthly = row.priceLockedPaise ?? plan?.monthly ?? 0;
+    if (row.billingCycle === "YEARLY") return total + Math.round((row.priceLockedPaise ?? plan?.yearly ?? 0) / 12);
+    if (row.billingCycle === "SEMIANNUAL") return total + Math.round((row.priceLockedPaise ?? plan?.semiannual ?? monthly * 6) / 6);
+    return total + monthly;
+  }, 0);
+  const trialToPaid =
+    summary && summary.active + summary.onTrial > 0
+      ? Math.round((summary.active / (summary.active + summary.onTrial)) * 100)
+      : 0;
+  const needsYou = [
+    {
+      label: "Reward payouts to release",
+      value: pending.length ? `${pending.length} · ${formatInr(pendingPaise)}` : "Clear",
+      href: "/platform/referrals",
+      tone: pending.length ? "amber" : "neutral",
+    },
+    {
+      label: "Refunds to reconcile",
+      value: "Open ledger",
+      href: "/platform/payments",
+      tone: "neutral",
+    },
+    {
+      label: "Suspended gyms",
+      value: suspendedRows.length ? String(suspendedRows.length) : "Clear",
+      href: "/platform/gyms",
+      tone: suspendedRows.length ? "amber" : "neutral",
+    },
+    {
+      label: "Open abuse flags",
+      value: openFlags.length ? String(openFlags.length) : "Clear",
+      href: "/platform/safety",
+      tone: openFlags.length ? "amber" : "neutral",
+    },
+  ] as const;
+
+  const kpis: Array<{ label: string; value: string; meta: string }> = summary
+    ? [
+        { label: "MRR estimate", value: formatInr(mrrPaise), meta: "Active subs × tier monthly" },
+        { label: "Paying gyms", value: formatCompactNumber(summary.active), meta: `${trialToPaid}% trial → paid` },
+        { label: "On trial", value: formatCompactNumber(summary.onTrial), meta: "Follow up before expiry" },
+        { label: "Gym referrals", value: formatCompactNumber(summary.totalReferrals), meta: "Partnerships created" },
+        { label: "Payout exposure", value: formatInr(pendingPaise), meta: "Requested withdrawals" },
+      ]
+    : [];
+
+  return (
+    <GlassCard className="rounded-[24px] p-5">
+      <SectionHeader eyebrow="Business" title="Command overview" />
+      {summary ? (
+        <ReadoutGrid className="mt-5" items={kpis} columns={4} />
+      ) : loading ? (
+        <p className="mt-4 text-sm text-white/45">Loading business overview...</p>
+      ) : (
+        <EmptyState title="No business data" />
+      )}
+      <div className="mt-5 rounded-[20px] border border-white/10 bg-black/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Needs you</p>
+            <p className="mt-1 text-sm text-white/55">One queue for owner decisions and money movement.</p>
+          </div>
+          <Pill tone={needsYou.some((item) => item.tone === "amber") ? "amber" : "neutral"}>
+            {needsYou.filter((item) => item.tone === "amber").length || "Clear"}
+          </Pill>
+        </div>
+        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {needsYou.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="zook-focus rounded-[16px] border border-white/10 bg-white/[0.03] p-3 transition hover:bg-white/[0.06]"
+            >
+              <StatusPill value={item.label} tone={item.tone} />
+              <p className="mt-3 text-lg font-semibold tabular-nums text-white">{item.value}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+function PlatformSubscriptionsSection({
+  mode,
+  initialFlags,
+}: {
+  mode: "overview" | "subscriptions" | "referrals";
+  initialFlags: PlatformAbuseFlag[];
+}) {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
   const [planCatalog, setPlanCatalog] = useState<PlatformPlanCatalog | null>(null);
+  const [withdrawals, setWithdrawals] = useState<RewardWithdrawalRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const limitFormatOptions = { compact: true, unlimitedLabel: "unlimited" };
 
   useEffect(() => {
     let mounted = true;
@@ -2097,18 +2709,35 @@ function PlatformSubscriptionsSection() {
       .finally(() => {
         if (mounted) setLoading(false);
       });
+    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
+      .then((payload) => {
+        if (mounted) setWithdrawals(payload.withdrawals);
+      })
+      .catch(() => undefined);
     return () => {
       mounted = false;
     };
   }, []);
 
+  const pendingWithdrawalExposurePaise = (withdrawals ?? [])
+    .filter((row) => row.status === "REQUESTED")
+    .reduce((total, row) => total + row.amountPaise, 0);
+
   return (
     <div id="subscriptions" className="scroll-mt-5">
-      <GlassCard>
+      <PlatformBusinessOverview
+        summary={summary}
+        rows={rows}
+        planCatalog={planCatalog}
+        withdrawals={withdrawals}
+        flags={initialFlags}
+        loading={loading}
+      />
+      {mode !== "overview" ? (
+      <GlassCard className="mt-5">
         <SectionHeader
-          eyebrow="Subscriptions"
-          title="Gym subscriptions"
-          description="SaaS billing status, autopay mandates, and platform referrals across every gym."
+          eyebrow={mode === "referrals" ? "Referral economics" : "Subscriptions"}
+          title={mode === "referrals" ? "Rewards, payouts, and policy" : "Gym subscriptions"}
         />
         {summary ? (
           <ReadoutGrid
@@ -2148,6 +2777,9 @@ function PlatformSubscriptionsSection() {
             columns={3}
           />
         ) : null}
+        <PlatformReferralPolicyCard monthlyPayoutExposurePaise={pendingWithdrawalExposurePaise} />
+        <PlatformWithdrawalsCard />
+        {mode === "referrals" ? null : (
         <div className="mt-5">
           {planCatalog ? (
             <div className="mb-5 grid gap-3 lg:grid-cols-3">
@@ -2166,14 +2798,14 @@ function PlatformSubscriptionsSection() {
                       <StatusPill value={tier} tone={tier === "PRO" ? "lime" : "blue"} />
                     </div>
                     <p className="mt-3 text-xs leading-5 text-white/52">
-                      {limitLabel(plan.entitlements.memberLimit)} members ·{" "}
-                      {limitLabel(plan.entitlements.branchLimit)} branches ·{" "}
-                      {limitLabel(plan.entitlements.staffLimit)} staff ·{" "}
-                      {limitLabel(plan.entitlements.productLimit)} products
+                      {formatUsageLimit(plan.entitlements.memberLimit, limitFormatOptions)} members ·{" "}
+                      {formatUsageLimit(plan.entitlements.branchLimit, limitFormatOptions)} branches ·{" "}
+                      {formatUsageLimit(plan.entitlements.staffLimit, limitFormatOptions)} staff ·{" "}
+                      {formatUsageLimit(plan.entitlements.productLimit, limitFormatOptions)} products
                     </p>
                     <p className="mt-2 text-xs leading-5 text-white/42">
-                      {limitLabel(plan.entitlements.notificationMonthlyLimit)} message recipients/mo ·{" "}
-                      {limitLabel(plan.entitlements.aiTextMonthlyLimit)} AI text/mo ·{" "}
+                      {formatUsageLimit(plan.entitlements.notificationMonthlyLimit, limitFormatOptions)} message recipients/mo ·{" "}
+                      {formatUsageLimit(plan.entitlements.aiTextMonthlyLimit, limitFormatOptions)} AI text/mo ·{" "}
                       {formatEnumLabel(plan.entitlements.support ?? "standard")} support
                     </p>
                   </div>
@@ -2211,9 +2843,9 @@ function PlatformSubscriptionsSection() {
                         {row.usage ? (
                           <p className="mt-1 text-xs text-white/45">
                             {formatCompactNumber(row.usage.activeMemberCount ?? 0)} /{" "}
-                            {limitLabel(row.entitlements?.memberLimit)} members ·{" "}
+                            {formatUsageLimit(row.entitlements?.memberLimit, limitFormatOptions)} members ·{" "}
                             {formatCompactNumber(row.usage.branchCount ?? 0)} /{" "}
-                            {limitLabel(row.entitlements?.branchLimit)} branches
+                            {formatUsageLimit(row.entitlements?.branchLimit, limitFormatOptions)} branches
                           </p>
                         ) : null}
                       </div>
@@ -2267,7 +2899,7 @@ function PlatformSubscriptionsSection() {
                   header: "Gyms referred",
                   render: (row: SubscriptionRow) =>
                     row.referredCount > 0 ? (
-                      <Pill tone="blue">{row.referredCount}</Pill>
+                      <Pill>{row.referredCount}</Pill>
                     ) : (
                       <span className="text-xs text-white/45">0</span>
                     ),
@@ -2275,16 +2907,15 @@ function PlatformSubscriptionsSection() {
               ]}
               rows={rows}
               rowKey={(row) => row.orgId}
-              empty="No gyms found."
+              empty={<EmptyState title="No subscriptions" />}
             />
           ) : (
-            <EmptyState
-              title="No subscriptions yet"
-              description="When gyms sign up they'll appear here with trial and billing state."
-            />
+            <EmptyState title="No subscriptions" />
           )}
         </div>
+        )}
       </GlassCard>
+      ) : null}
     </div>
   );
 }

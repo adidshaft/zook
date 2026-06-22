@@ -7,6 +7,7 @@ import { layout, spacing } from "@/lib/theme";
 const sections = [
   { href: "/settings/account", title: "Account", subtitle: "Name, phone, email, and biometric unlock", icon: "person-outline" },
   { href: "/settings/appearance", title: "Appearance", subtitle: "Theme and default role", icon: "contrast-outline" },
+  { href: "/settings/language", title: "Language", subtitle: "Choose app language", icon: "language-outline" },
   { href: "/settings/notifications", title: "Notifications", subtitle: "Push categories and reminders", icon: "notifications-outline" },
   { href: "/settings/privacy", title: "Privacy", subtitle: "Data export and account deletion", icon: "lock-closed-outline" },
   { href: "/settings/support", title: "Help & support", subtitle: "Contact, legal, and app version", icon: "help-circle-outline" },
@@ -17,7 +18,7 @@ export default function SettingsIndexScreen() {
     <>
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Settings" subtitle="Choose a section" showProfileShortcut={false} />
+          <AppHeader title="Settings" showProfileShortcut={false} showBack />
           <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
               <Pressable
@@ -43,7 +44,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   list: { gap: 4 },

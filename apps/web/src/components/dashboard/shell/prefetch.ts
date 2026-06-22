@@ -3,7 +3,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { webApiFetch } from "@/lib/api-client";
 
-export function withCursor(path: string, cursor: string | null) {
+function withCursor(path: string, cursor: string | null) {
   const [rawPathname, queryString = ""] = path.split("?");
   const pathname = rawPathname ?? path;
   const params = new URLSearchParams(queryString);
@@ -14,7 +14,7 @@ export function withCursor(path: string, cursor: string | null) {
   return query ? `${pathname}?${query}` : pathname;
 }
 
-export function resourcePathsForDashboardHref(
+function resourcePathsForDashboardHref(
   href: string,
   orgId?: string,
   branchId?: string,
@@ -66,6 +66,9 @@ export function resourcePathsForDashboardHref(
   }
   if (href.startsWith("/dashboard/plans")) {
     return [withBranch(`/api/orgs/${orgId}/membership-plans`), `/api/orgs/${orgId}/plans`];
+  }
+  if (href.startsWith("/dashboard/classes")) {
+    return [withBranch(`/api/orgs/${orgId}/classes`), `/api/orgs/${orgId}/staff`];
   }
   if (href.startsWith("/dashboard/notifications")) {
     return [`/api/orgs/${orgId}/notifications`];

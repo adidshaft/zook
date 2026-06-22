@@ -55,6 +55,49 @@ This lets AWS use a Redis sidecar now and an ElastiCache/Valkey endpoint later w
 9. Verify HTTPS via Caddy and rerun readiness.
 10. Only after AWS is healthy, disable old hosting crons/deployments and then close Render if it has active paid resources.
 
+## Universal/App Link Association Files
+
+The CloudFormation Caddyfile serves these directly at the proxy before `reverse_proxy web:3000`:
+
+- `/.well-known/apple-app-site-association`
+- `/.well-known/assetlinks.json`
+
+This keeps iOS universal links and Android app links working even if a stale web container is accidentally left running.
+
+For an already-running instance, a CloudFormation `UserData` edit alone will not rewrite `/opt/zook/Caddyfile`. If SSH to the live host is available, apply the same handlers, reload Caddy, and verify the public files with:
+
+```bash
+infra/aws/repair-association-files.sh ec2-user@13.204.196.160
+```
+
+The script requires `/opt/zook/Caddyfile` and `/opt/zook/docker-compose.yml` on the target host. It backs up the Caddyfile, installs the known-good Zook universal/app-link handlers before `reverse_proxy web:3000`, reloads Caddy through Docker Compose, and verifies `https://zookfit.in/.well-known/*`.
+
+If local SSH is not available but GitHub Actions has production SSH access, run the manual `Repair Association Files` workflow with:
+
+- `ssh_host`: `13.204.196.160`
+- `ssh_user`: the production host user, usually `ec2-user`
+- repository secret `ZOOK_PRODUCTION_SSH_KEY`: private SSH key with sudo access on the host
+
+The workflow uses `infra/aws/repair-association-files.sh`, then runs `pnpm mobile:release:check` with live association-file validation enabled.
+
+Manual equivalent:
+
+```bash
+sudo cp /opt/zook/Caddyfile /opt/zook/Caddyfile.bak.$(date +%Y%m%d%H%M%S)
+sudo vi /opt/zook/Caddyfile
+docker compose -f /opt/zook/docker-compose.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+After reload:
+
+```bash
+curl -sS -D- https://zookfit.in/.well-known/apple-app-site-association
+curl -sS -D- https://zookfit.in/.well-known/assetlinks.json
+ZOOK_CHECK_LIVE_ASSOCIATION_FILES=1 pnpm mobile:release:check
+```
+
+Expected results: both files return HTTP 200 without redirects, `Content-Type: application/json`, `JP4HU7X6G7.com.zook.app`, `/checkin` paths, package `com.zook.app`, and the Android release SHA-256 fingerprint.
+
 ## Render Shutdown
 
 The repo has no Render blueprint or deploy hook. Render shutdown is account-level:

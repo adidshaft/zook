@@ -32,8 +32,7 @@ export function PaymentHistoryCard({
       <SectionHeader
         eyebrow="Payments"
         title="Payment history"
-        description="Membership, shop, online, and desk payments are shown here."
-        badge={<Pill tone="blue">{payments.length} loaded</Pill>}
+        badge={<Pill>{payments.length} payment{payments.length === 1 ? "" : "s"}</Pill>}
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
       />
       <div className="mt-5">
@@ -45,7 +44,7 @@ export function PaymentHistoryCard({
         {paymentsState.error ? (
           <ErrorNotice message={paymentsState.error} />
         ) : paymentsState.loading && payments.length === 0 ? (
-          <EmptyState title="Loading payments" description="Pulling recent payment records." />
+          <EmptyState title="Loading payments" />
         ) : (
           <>
             <DataTable
@@ -137,8 +136,7 @@ export function PaymentHistoryCard({
               rowKey={(payment) => payment.id}
               empty={
                 <EmptyState
-                  title="No payments yet"
-                  description="Payments appear here when members buy memberships or shop pickups."
+                  title="No payments"
                 />
               }
             />

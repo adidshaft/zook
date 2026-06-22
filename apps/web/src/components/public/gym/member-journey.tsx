@@ -1,5 +1,5 @@
 import { CalendarCheck, Dumbbell, PackageCheck, ShieldCheck } from "lucide-react";
-import { GlassCard, Pill } from "@/components/glass-card";
+import { GlassCard } from "@/components/glass-card";
 import { priceSummary } from "@/lib/public-gym-profile";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGymPlan } from "./types";
@@ -20,8 +20,7 @@ export function MemberJourney({
   return (
     <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
       <GlassCard>
-        <Pill tone="lime">{t("afterJoining")}</Pill>
-        <h2 className="mt-4 text-2xl font-semibold text-[var(--text-primary)]">{t("afterJoining")}</h2>
+        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("afterJoining")}</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{t("afterJoiningCopy")}</p>
         <div className="mt-5 grid gap-3">
           {steps.map(({ icon: Icon, title, copy }) => (

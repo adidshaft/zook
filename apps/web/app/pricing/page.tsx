@@ -5,15 +5,16 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
+import { formatEnumLabel, formatInr, formatUsageLimit } from "@/lib/format";
 import {
   alternatePublicLocale,
   localizedPath,
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 import {
   defaultSaasPlanCatalog,
-  formatSaasLimit,
   type SaasPlanDefinition,
   type SaasTier,
 } from "@/server/domains/billing/saas-plans";
@@ -23,6 +24,20 @@ export const metadata: Metadata = {
   description:
     "Compare Zook pricing for gyms: two-month free trial, Starter, Growth, and Pro plans.",
   alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Zook pricing",
+    description:
+      "Compare Zook pricing for gyms: free trial, Starter, Growth, and Pro plans.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Zook pricing" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Zook pricing",
+    description:
+      "Compare Zook pricing for gyms: free trial, Starter, Growth, and Pro plans.",
+    images: [publicSocialImage()],
+  },
 };
 
 const tierOrder: SaasTier[] = ["FREE", "STARTER", "GROWTH", "PRO"];
@@ -40,19 +55,15 @@ const tierHighlights: Record<SaasTier, string[]> = {
   ],
   GROWTH: [
     "More members, branches, trainers, inventory, and campaign capacity",
-    "Advanced reports, referrals, notifications, and AI text usage",
+    "Expanded reports, referrals, notifications, and campaign tools",
     "Best for teams running daily front-desk and trainer workflows",
   ],
   PRO: [
     "Unlimited members, branches, staff, trainers, and products",
-    "Premium support, custom reports/referrals, API access, and higher AI limits",
+    "Premium support, custom reports/referrals, API access, and launch support",
     "Best for multi-branch operators and serious scale",
   ],
 };
-
-function formatInr(paise: number) {
-  return `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;
-}
 
 function planPrice(plan: SaasPlanDefinition) {
   if (plan.tier === "FREE") {
@@ -72,24 +83,33 @@ function yearlyLine(plan: SaasPlanDefinition) {
   return `${formatInr(plan.yearly)} / year`;
 }
 
+function yearlyMonthlyEquivalent(plan: SaasPlanDefinition) {
+  if (plan.tier === "FREE") {
+    return null;
+  }
+  return `Approx. ${formatInr(Math.round(plan.yearly / 12))} / month when billed yearly`;
+}
+
 function detailsForPlan(plan: SaasPlanDefinition) {
   const e = plan.entitlements;
-  return [
-    `Members: ${formatSaasLimit(e.memberLimit)}`,
-    `Branches: ${formatSaasLimit(e.branchLimit)}`,
-    `Staff users: ${formatSaasLimit(e.staffLimit)}`,
-    `Trainers: ${formatSaasLimit(e.trainerLimit)}`,
-    `Products: ${formatSaasLimit(e.productLimit)}`,
-    `Notifications/month: ${formatSaasLimit(e.notificationMonthlyLimit)}`,
-    `AI text/month: ${e.aiTextMonthlyLimit.toLocaleString("en-IN")}`,
-    `AI images/month: ${e.aiImageMonthlyLimit.toLocaleString("en-IN")}`,
-    `Reports: ${e.reports.replaceAll("_", " ")}`,
-    `Referrals: ${e.referrals.replaceAll("_", " ")}`,
-    `Support: ${e.support.replaceAll("_", " ")}`,
-    `Onboarding: ${e.onboarding.replaceAll("_", " ")}`,
+  const details = [
+    `Members: ${formatUsageLimit(e.memberLimit, { unlimitedLabel: "unlimited" })}`,
+    `Branches: ${formatUsageLimit(e.branchLimit, { unlimitedLabel: "unlimited" })}`,
+    `Staff users: ${formatUsageLimit(e.staffLimit, { unlimitedLabel: "unlimited" })}`,
+    `Trainers: ${formatUsageLimit(e.trainerLimit, { unlimitedLabel: "unlimited" })}`,
+    `Products: ${formatUsageLimit(e.productLimit, { unlimitedLabel: "unlimited" })}`,
+    `Notifications/month: ${formatUsageLimit(e.notificationMonthlyLimit, { unlimitedLabel: "unlimited" })}`,
+    `Reports: ${formatEnumLabel(e.reports)}`,
+    `Referrals: ${formatEnumLabel(e.referrals)}`,
+    `Support: ${formatEnumLabel(e.support)}`,
+    `Onboarding: ${formatEnumLabel(e.onboarding)}`,
     e.multiBranch ? "Multi-branch controls included" : "Single-branch focused",
     e.apiAccess ? "API access included" : "API access not included",
   ];
+  if (e.aiTextMonthlyLimit > 0 || e.aiImageMonthlyLimit > 0) {
+    details.push("AI tools roll out separately after launch.");
+  }
+  return details;
 }
 
 function startGymHrefForTier(tier: SaasTier, locale: ReturnType<typeof resolvePublicLocale>) {
@@ -121,13 +141,12 @@ export default async function PricingPage({
 
         <section className="grid gap-6 pt-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
           <div>
-            <Pill tone="lime">Pricing</Pill>
-            <h1 className="mt-5 max-w-3xl text-[clamp(2.75rem,6vw,5.8rem)] font-semibold leading-[0.96]">
+            <h1 className="max-w-3xl text-[clamp(2.75rem,6vw,5.8rem)] font-semibold leading-[0.96]">
               Clear plans before you start running the gym on Zook.
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-8 text-[var(--text-secondary)]">
               Start with a 2-month free trial, then move into the plan that fits your members,
-              branches, staff, trainers, inventory, messages, reports, and AI usage.
+              branches, staff, trainers, inventory, messages, and reporting needs.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ZookButtonLink href={localizedPath("/start-gym", locale)} trailingIcon={<ArrowRight size={18} />}>
@@ -145,7 +164,7 @@ export default async function PricingPage({
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
-                "Owner dashboard and live command board",
+                "Owner dashboard and command board",
                 "Member app workflows and QR check-ins",
                 "Desk payments, approvals, receipts, and invoices",
                 "Trainer plans, shop inventory, campaigns, reports, and audit logs",
@@ -167,9 +186,7 @@ export default async function PricingPage({
               className="flex flex-col p-5"
             >
               <div className="flex items-center justify-between gap-3">
-                <Pill tone={plan.tier === "FREE" ? "lime" : plan.tier === "PRO" ? "blue" : "neutral"}>
-                  {plan.name}
-                </Pill>
+                <Pill>{plan.name}</Pill>
                 {plan.tier === "GROWTH" ? (
                   <span className="rounded-full bg-[var(--accent-fill)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-on-accent)]">
                     Popular
@@ -182,7 +199,14 @@ export default async function PricingPage({
                 </span>
                 <span className="ml-2 text-sm text-[var(--text-tertiary)]">{planPeriod(plan)}</span>
               </div>
-              <p className="mt-2 text-xs text-[var(--text-tertiary)]">{yearlyLine(plan)}</p>
+              <div className="mt-2 grid gap-1">
+                <p className="text-xs text-[var(--text-tertiary)]">{yearlyLine(plan)}</p>
+                {yearlyMonthlyEquivalent(plan) ? (
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {yearlyMonthlyEquivalent(plan)}
+                  </p>
+                ) : null}
+              </div>
               <p className="mt-5 min-h-14 text-sm leading-6 text-[var(--text-secondary)]">
                 {plan.description}
               </p>

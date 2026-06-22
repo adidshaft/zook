@@ -1,6 +1,13 @@
 import type { MemberRow, ShopOrder } from "./types";
 
-export function memberLabel(member: MemberRow | null) {
+type MemberLike = Pick<MemberRow, "user"> | {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+  } | null;
+};
+
+export function memberLabel(member: MemberLike | null) {
   return member?.user?.name ?? member?.user?.email ?? "Member";
 }
 

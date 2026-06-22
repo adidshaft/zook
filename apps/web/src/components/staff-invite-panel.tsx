@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { ApiError } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
+import { formatDate, formatEnumLabel } from "@/lib/format";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton, ZookButtonLink } from "./zook-button";
 
@@ -20,10 +21,6 @@ type StaffInvitePayload = {
     state?: string | null;
   } | null;
 };
-
-function roleLabel(role: string) {
-  return role.replace(/_/g, " ").toLowerCase();
-}
 
 export function StaffInvitePanel({ token }: { token: string }) {
   const [payload, setPayload] = useState<StaffInvitePayload | null>(null);
@@ -59,7 +56,7 @@ export function StaffInvitePanel({ token }: { token: string }) {
     try {
       await webApiFetch(`/api/staff-invitations/${token}/accept`, { method: "POST", body: {} });
       setAccepted(true);
-      setMessage("Invite accepted. Your dashboard access is ready.");
+      setMessage("Invite accepted. Sign in to open your dashboard.");
     } catch (error) {
       const text = error instanceof ApiError ? error.message : "Unable to accept invite.";
       setMessage(text);
@@ -93,18 +90,14 @@ export function StaffInvitePanel({ token }: { token: string }) {
           </div>
           <div className="flex items-center justify-between gap-4">
             <span className="text-xs uppercase tracking-[0.18em] text-white/35">Role</span>
-            <span className="text-sm font-medium capitalize text-white">
-              {roleLabel(payload.invite.role)}
+            <span className="text-sm font-medium text-white">
+              {formatEnumLabel(payload.invite.role)}
             </span>
           </div>
           <div className="flex items-center justify-between gap-4">
             <span className="text-xs uppercase tracking-[0.18em] text-white/35">Expires</span>
             <span className="text-sm font-medium text-white">
-              {new Date(payload.invite.expiresAt).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              {formatDate(payload.invite.expiresAt)}
             </span>
           </div>
         </div>

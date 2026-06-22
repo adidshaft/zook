@@ -5,7 +5,7 @@ import { durations, useReduceMotion } from "@/lib/motion";
 
 /**
  * Lightweight on-mount entry animation: fade + slide up.
- * Uses the built-in RN Animated API (works alongside the reanimated-lite stub).
+ * Uses the built-in RN Animated API so it stays compatible with every native target.
  */
 export function AnimatedAppear({
   children,
@@ -53,42 +53,4 @@ export function AnimatedAppear({
       {children}
     </Animated.View>
   );
-}
-
-/**
- * Subtle continuous breathing pulse — useful on hero CTAs and badges.
- */
-export function PulseHalo({
-  children,
-  scaleTo = 1.04,
-  duration = 1800,
-  style,
-}: {
-  children: ReactNode;
-  scaleTo?: number;
-  duration?: number;
-  style?: ViewStyle;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scale, {
-          toValue: scaleTo,
-          duration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scale, {
-          toValue: 1,
-          duration,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [duration, scale, scaleTo]);
-
-  return <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>;
 }

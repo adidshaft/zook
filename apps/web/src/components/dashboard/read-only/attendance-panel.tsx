@@ -58,8 +58,8 @@ export function AttendancePanel({
             <SectionHeader
               eyebrow="Entry & attendance"
               title="QR code and entry codes"
-              description="Members scan the displayed gym QR, receive a unique entry code, and show it at the floor or desk."
-              badge={<StatusPill value="Self-approved QR" tone="lime" />}
+              description="Members scan the gym QR, receive a unique entry code, and present it at the floor or desk."
+              badge={<StatusPill value="Member QR" />}
               action={
                 <a
                   href={branchScope.selectedBranch?.id ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(branchScope.selectedBranch.id)}` : "/dashboard/attendance/qr-display"}
@@ -75,10 +75,10 @@ export function AttendancePanel({
               className="mt-5"
               items={[
                 {
-                  label: "Branch scope",
+                  label: "Branch",
                   value: selectedBranchName,
                   meta: branchScope.selectedBranch
-                    ? "QR and member attendance use this branch"
+                    ? "Branch for QR and member attendance"
                     : "Set up your branch to start accepting members",
                 },
                 {
@@ -106,18 +106,14 @@ export function AttendancePanel({
         <SectionHeader
           eyebrow="Attendance"
           title="Recent attendance scans"
-          description="Recent member check-ins for the selected gym."
-          badge={<Pill tone="blue">{attendanceRecords.length} loaded</Pill>}
+          badge={<Pill>{attendanceRecords.length} scan{attendanceRecords.length === 1 ? "" : "s"}</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
         />
         <div className="mt-5">
           {attendanceState.error ? (
             <ErrorNotice message={attendanceState.error} />
           ) : attendanceState.loading && attendanceRecords.length === 0 ? (
-            <EmptyState
-              title="Loading attendance"
-              description="Pulling the latest check-in ledger."
-            />
+            <EmptyState title="Loading attendance" />
           ) : (
             <>
               <DataTable
@@ -159,7 +155,7 @@ export function AttendancePanel({
                 ]}
                 rows={attendanceRecords}
                 rowKey={(record) => record.id}
-                empty="No attendance scans are available yet."
+                empty="No scans."
               />
               <LoadMoreButton
                 count={attendanceRecords.length}

@@ -10,6 +10,7 @@ import {
   publicT,
   resolvePublicLocale,
 } from "@/lib/public-i18n";
+import { publicSocialImage } from "@/lib/public-metadata";
 import {
   searchGyms,
   toPositivePage,
@@ -19,10 +20,22 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+const defaultMetadata: Metadata = {
   title: "Find a gym | Zook",
   description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
   alternates: { canonical: "/gyms" },
+  openGraph: {
+    title: "Find a gym | Zook",
+    description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
+    type: "website",
+    images: [{ url: publicSocialImage(), alt: "Find a gym | Zook" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Find a gym | Zook",
+    description: "Search public gyms using Zook for memberships, QR entry, and member workflows.",
+    images: [publicSocialImage()],
+  },
 };
 
 type GymSearchParams = Promise<{
@@ -33,6 +46,48 @@ type GymSearchParams = Promise<{
   page?: string;
   lang?: string;
 }>;
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: GymSearchParams;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  const city = query.city?.trim();
+  const q = query.q?.trim();
+  if (!city && !q) {
+    return defaultMetadata;
+  }
+  const title = city
+    ? `Find gyms in ${city} | Zook`
+    : q
+      ? `Search gyms for "${q}" | Zook`
+      : "Find a gym | Zook";
+  const description = city
+    ? `Search public Zook gyms in ${city} for memberships, QR entry, and member workflows.`
+    : q
+      ? `Search public Zook gyms matching "${q}" for memberships, QR entry, and member workflows.`
+      : defaultMetadata.description ?? "";
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: city ? `/gyms?city=${encodeURIComponent(city)}` : q ? `/gyms?q=${encodeURIComponent(q)}` : "/gyms",
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: [{ url: publicSocialImage(), alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [publicSocialImage()],
+    },
+  };
+}
 
 export default async function GymsPage({ searchParams }: { searchParams: GymSearchParams }) {
   const query = await searchParams;

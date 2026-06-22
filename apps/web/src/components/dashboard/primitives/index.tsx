@@ -5,22 +5,16 @@ import type { ReactNode } from "react";
 import {
   ConfirmDialog,
   DataTable,
-  DatePicker,
   EmptyState,
   ErrorState,
   MetricCard,
-  MoneyInput,
   ReadoutGrid,
   SectionHeader,
   SelectInput,
-  Skeleton,
   StatusPill,
-  TableLoader,
-  ToggleSwitch,
-  toneFromSeverity,
   toneFromStatus,
-  type DataTableColumn,
 } from "../../dashboard-primitives";
+import { ToggleSwitch } from "../../dashboard-primitives/forms";
 import { GlassCard } from "../../glass-card";
 
 type SelectOption = {
@@ -108,32 +102,6 @@ export function TextInput({
   );
 }
 
-export function TextArea({
-  label,
-  hint,
-  error,
-  className,
-  ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  label: string;
-  hint?: ReactNode;
-  error?: ReactNode;
-}) {
-  return (
-    <label className={clsx("grid gap-2 text-sm text-[var(--text-secondary)]", className)}>
-      {label}
-      <textarea
-        {...props}
-        className={clsx(
-          "zook-focus min-h-28 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] disabled:opacity-50",
-        )}
-      />
-      {error ? <span className="text-xs text-[var(--feedback-danger)]">{error}</span> : null}
-      {hint && !error ? <span className="text-xs text-[var(--text-tertiary)]">{hint}</span> : null}
-    </label>
-  );
-}
-
 export function Toggle({
   label,
   checked,
@@ -158,19 +126,12 @@ export function Toggle({
 export {
   ConfirmDialog,
   DataTable,
-  DatePicker,
   EmptyState,
   ErrorState,
   MetricCard,
-  MoneyInput,
   ReadoutGrid,
   SectionHeader,
   SelectInput,
-  Skeleton,
   StatusPill,
-  TableLoader,
-  ToggleSwitch,
-  toneFromSeverity,
   toneFromStatus,
-  type DataTableColumn,
 };

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Sparkles, Star, Smartphone, Dumbbell } from "lucide-react";
+import { Building2, Users, Smartphone, Dumbbell } from "lucide-react";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym, PublicGymPlan, PublicGymTrainer } from "./types";
 import { GymPlansGrid } from "./plans-grid";
@@ -10,9 +10,9 @@ import { MemberJourney } from "./member-journey";
 import { GymFacilities } from "./facilities";
 import { ShareInstall } from "./share-install";
 import { GymTrainers } from "./trainers";
-import { GymReviews } from "./reviews";
+import { ReviewsSection } from "./reviews-section";
 
-type TabId = "plans" | "trainers" | "facilities" | "app" | "reviews";
+type TabId = "plans" | "trainers" | "facilities" | "reviews" | "app";
 
 export function GymProfileTabs({
   org,
@@ -49,20 +49,20 @@ export function GymProfileTabs({
     {
       id: "facilities" as TabId,
       label: t("facilities"),
-      icon: Sparkles,
+      icon: Building2,
       content: <GymFacilities org={org} locale={locale} />,
+    },
+    {
+      id: "reviews" as TabId,
+      label: "Reviews",
+      icon: Users,
+      content: <ReviewsSection org={org} />,
     },
     {
       id: "app" as TabId,
       label: t("shareOrInstall"),
       icon: Smartphone,
       content: <ShareInstall org={org} locale={locale} />,
-    },
-    {
-      id: "reviews" as TabId,
-      label: t("reviews"),
-      icon: Star,
-      content: <GymReviews locale={locale} />,
     },
   ];
 

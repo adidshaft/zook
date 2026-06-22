@@ -1,5 +1,43 @@
 import { zookDemoFixtures } from "@zook/core/demo-fixtures";
 
+// Live check-in session (offline demo). Set when the member scans/enters a
+// code, cleared on checkout — so Home shows the active-session timer + checkout
+// and the check-in flow works end to end.
+type DemoActiveCheckIn = {
+  id: string;
+  orgId?: string;
+  branchId?: string;
+  branchName?: string | null;
+  checkedInAt: string;
+  status: string;
+  source?: string | null;
+};
+
+let demoActiveCheckIn: DemoActiveCheckIn | null = null;
+
+export function getDemoActiveCheckIn() {
+  return demoActiveCheckIn;
+}
+
+export function startDemoCheckIn(branchName?: string | null): DemoActiveCheckIn {
+  const org = activeOrg();
+  const branch = zookDemoFixtures.branches[0];
+  demoActiveCheckIn = {
+    id: `attendance-live-${Date.now()}`,
+    orgId: org?.id,
+    branchId: branch?.id,
+    branchName: branchName ?? branch?.name ?? org?.name ?? "Your gym",
+    checkedInAt: new Date().toISOString(),
+    status: "APPROVED",
+    source: "OFFLINE_DEMO",
+  };
+  return demoActiveCheckIn;
+}
+
+export function clearDemoCheckIn() {
+  demoActiveCheckIn = null;
+}
+
 function activeOrg() {
   return zookDemoFixtures.organizations[0];
 }
@@ -54,7 +92,7 @@ export function demoMemberHomePayload() {
           visitLimit: 12,
         }
       : null,
-    activeCheckIn: null,
+    activeCheckIn: demoActiveCheckIn,
     recentAttendance: zookDemoFixtures.attendanceAttempts.map((attempt) => ({
       id: attempt.id,
       checkedInAt: attempt.checkedInAt,

@@ -1,37 +1,9 @@
 import type {
   TrackingSummaryMetric,
-  TrackingWindow,
-  WorkoutHistorySeries,
   WorkoutLogEntry
 } from "@zook/core";
 
-function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
-
-function formatTimeLabel(value?: string | null) {
-  if (!value) {
-    return "--";
-  }
-  return new Date(value).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
-function formatDuration(minutes?: number | null) {
-  const totalMinutes = minutes ?? 0;
-  const hours = Math.floor(totalMinutes / 60);
-  const remainingMinutes = totalMinutes % 60;
-  if (!hours) {
-    return `${remainingMinutes}m`;
-  }
-  return `${hours}h ${remainingMinutes}m`;
-}
+import { formatCompactMinutes, formatLongDate, formatTime } from "@/lib/formatting";
 
 export function workoutToEntry(workout: {
   id: string;
@@ -53,14 +25,17 @@ export function workoutToEntry(workout: {
 }): WorkoutLogEntry {
   return {
     id: workout.id,
-    dateLabel: formatDateLabel(workout.startedAt),
+    dateLabel: formatLongDate(workout.startedAt),
     workoutName: workout.title,
-    startTimeLabel: formatTimeLabel(workout.startedAt),
-    endTimeLabel: formatTimeLabel(workout.endedAt),
-    durationLabel: formatDuration(workout.durationMinutes),
+    startTimeLabel: formatTime(workout.startedAt),
+    endTimeLabel: formatTime(workout.endedAt),
+    durationLabel: formatCompactMinutes(workout.durationMinutes, {
+      includeZeroMinutes: true,
+      separator: " ",
+    }),
     focusLabel: workout.workoutType,
     effortLabel: workout.intensity ?? "Logged",
-    notes: workout.notes ?? "No notes yet.",
+    notes: workout.notes ?? "No notes.",
     exercises:
       workout.exercises?.map((exercise) => ({
         id: exercise.id,
@@ -84,83 +59,29 @@ export function buildTrackingSummaryMetrics(input: {
     {
       id: "worked-out",
       label: "Active time",
-      value: formatDuration(input.totalDuration),
-      detail: input.totalDuration > 0 ? "This week" : "No sessions yet",
-      tone: "lime"
+      value: formatCompactMinutes(input.totalDuration, {
+        includeZeroMinutes: true,
+        separator: " ",
+      }),
+      detail: input.totalDuration > 0 ? "This week" : "No sessions"
     },
     {
       id: "recent",
       label: "Sessions",
       value: String(input.weeklyCount),
-      detail: "This week",
-      tone: "lime"
+      detail: "This week"
     },
     {
       id: "weight",
       label: "Weight",
       value: input.latestWeightKg ? `${input.latestWeightKg} kg` : "--",
-      detail: "Latest entry",
-      tone: "blue"
+      detail: "Logged entry"
     },
     {
       id: "habits",
       label: "Habits",
       value: String(input.habitsCount),
-      detail: input.habitsCount ? "Active habits" : "Add one",
-      tone: "violet"
+      detail: input.habitsCount ? "Active habits" : "Add one"
     }
   ];
-}
-
-export function buildHistorySeries(
-  workouts: Array<{
-    id: string;
-    title: string;
-    workoutType: string;
-    startedAt: string;
-    endedAt?: string | null;
-    durationMinutes?: number | null;
-    intensity?: string | null;
-    notes?: string | null;
-    exercises?: Array<{
-      id: string;
-      exerciseName: string;
-      setsCompleted?: number | null;
-      reps?: number | null;
-      weightKg?: string | number | null;
-      completed: boolean;
-    }>;
-  }>,
-  window: TrackingWindow = "WEEKLY"
-): WorkoutHistorySeries {
-  const now = Date.now();
-  const windowDays: Record<TrackingWindow, number> = {
-    TODAY: 1,
-    WEEKLY: 7,
-    MONTHLY: 30,
-    YEARLY: 365
-  };
-  const cutoffDays = windowDays[window] ?? 7;
-  const filteredWorkouts = workouts.filter((workout) => {
-    const startedAt = new Date(workout.startedAt).getTime();
-    if (!Number.isFinite(startedAt)) {
-      return false;
-    }
-    const ageDays = (now - startedAt) / 86_400_000;
-    return ageDays >= 0 && ageDays <= cutoffDays;
-  });
-  const entries = filteredWorkouts.map(workoutToEntry);
-  const totalDuration = filteredWorkouts.reduce(
-    (sum, workout) => sum + (workout.durationMinutes ?? 0),
-    0
-  );
-
-  return {
-    key: window,
-    label: window,
-    totalDurationLabel: formatDuration(totalDuration),
-    sessionCountLabel: `${filteredWorkouts.length} sessions`,
-    completionLabel: `${filteredWorkouts.reduce((sum, workout) => sum + (workout.exercises?.length ?? 0), 0)} exercises logged`,
-    entries
-  };
 }

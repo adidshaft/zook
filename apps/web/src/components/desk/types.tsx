@@ -14,6 +14,7 @@ export type AttendanceQueueRecord = {
     email?: string | null;
     phone?: string | null;
     dateOfBirth?: string | Date | null;
+    emergencyContact?: { name?: string | null; phone?: string | null } | null;
     profilePhotoUrl?: string | null;
   } | null;
   profile?: { profilePhotoUrl?: string | null } | null;
@@ -30,6 +31,7 @@ export type MemberRow = {
     email: string;
     phone?: string | null;
     dateOfBirth?: string | Date | null;
+    emergencyContact?: { name?: string | null; phone?: string | null } | null;
     profilePhotoUrl?: string | null;
   } | null;
   activeCheckIn?: {
@@ -73,6 +75,8 @@ export type ShopOrder = {
   totalPaise: number;
   paymentId?: string | null;
   pickupCode?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   user?: { id: string; name: string; email?: string | null; phone?: string | null } | null;
   items?: Array<{
     id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, ClipboardList, Settings2, Sparkles, Users } from "lucide-react";
+import { Bell, ClipboardList, IndianRupee, Palette, Settings2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/glass-card";
 
@@ -69,11 +69,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
   }
 
   return (
-    <GlassCard className="relative overflow-hidden p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] blur-3xl"
-      />
+    <GlassCard className="p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Settings2 size={16} className="text-[var(--accent-strong)]" />
@@ -97,7 +93,6 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SegmentRow
           icon={<ClipboardList size={14} className="text-[var(--accent-strong)]" />}
           label="Default landing tab"
-          description="Where coaching opens by default"
           value={prefs.defaultLanding}
           onChange={(value) => update("defaultLanding", value)}
           options={[
@@ -120,21 +115,18 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
         <SwitchRow
           icon={<Bell size={14} className="text-[var(--feedback-warning)]" />}
           label="Auto-notify on plan change"
-          description="Push the client when you update a plan"
           checked={prefs.autoNotifyOnPlanChange}
           onChange={(value) => update("autoNotifyOnPlanChange", value)}
         />
         <SwitchRow
-          icon={<Sparkles size={14} className="text-[var(--feedback-success)]" />}
+          icon={<IndianRupee size={14} className="text-[var(--feedback-success)]" />}
           label="Show revenue snippet"
-          description="Display your monthly trainer payout at a glance"
           checked={prefs.showRevenueCard}
           onChange={(value) => update("showRevenueCard", value)}
         />
         <SegmentRow
-          icon={<Sparkles size={14} className="text-[var(--accent-strong)]" />}
+          icon={<Palette size={14} className="text-[var(--accent-strong)]" />}
           label="Accent colour"
-          description="Used across charts and chips"
           value={prefs.preferredAccent}
           onChange={(value) => update("preferredAccent", value)}
           options={[
@@ -153,7 +145,7 @@ export function TrainerCustomisationPanel({ trainerName }: { trainerName: string
           animate={{ opacity: 1, y: 0 }}
           className="mt-4 text-xs text-[var(--accent-strong)]"
         >
-          {saved ? "Saved" : "Loaded preferences"}
+          {saved ? "Saved" : "Preferences"}
         </motion.p>
       ) : null}
     </GlassCard>
@@ -170,7 +162,7 @@ function SegmentRow<T extends string>({
 }: {
   icon: React.ReactNode;
   label: string;
-  description: string;
+  description?: string;
   value: T;
   options: ReadonlyArray<{ value: T; label: string }>;
   onChange: (next: T) => void;
@@ -181,7 +173,7 @@ function SegmentRow<T extends string>({
         {icon}
         <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
       </div>
-      <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p>
+      {description ? <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p> : null}
       <div className="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] p-1 text-[11px]">
         {options.map((opt) => (
           <button
@@ -212,7 +204,7 @@ function SwitchRow({
 }: {
   icon: React.ReactNode;
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
 }) {
@@ -223,7 +215,7 @@ function SwitchRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-[var(--text-primary)]">{label}</span>
-        <span className="block text-xs text-[var(--text-tertiary)]">{description}</span>
+        {description ? <span className="block text-xs text-[var(--text-tertiary)]">{description}</span> : null}
       </span>
       <button
         type="button"

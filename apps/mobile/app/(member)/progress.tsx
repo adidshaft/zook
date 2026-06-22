@@ -3,9 +3,11 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { AnimatedAppear, EmptyState, Card, IconBubble, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, EmptyState, Card, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
+import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
+import { HabitsPanel } from "@/features/member/progress/habits-panel";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
@@ -53,7 +55,7 @@ export default function ProgressScreen() {
           scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
+          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} trailing={<MemberHeaderActions showBell={false} />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <View style={styles.actions}>
               <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
@@ -75,6 +77,9 @@ export default function ProgressScreen() {
               ))}
             </View>
           </AnimatedAppear>
+          <AnimatedAppear delay={70}>
+            <HabitsPanel />
+          </AnimatedAppear>
           <AnimatedAppear delay={80}>
             <SectionHeader title="Recent workouts" />
             <View style={styles.stack}>
@@ -82,9 +87,8 @@ export default function ProgressScreen() {
                 <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
               ))}
               {!workouts.length && !workoutsQuery.isLoading ? (
-                <Card variant="compact" contentStyle={styles.emptyCard}>
-                  <IconBubble icon="barbell-outline" tone="lime" />
-                  <EmptyState title="No workouts logged" body="Log your first session after training." />
+                <Card variant="compact">
+                  <EmptyState icon="barbell-outline" title="No workouts logged" body="Log your first workout to start tracking your progress." />
                 </Card>
               ) : null}
             </View>
@@ -102,12 +106,18 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.lg, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.lg,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   actions: { flexDirection: "row", gap: spacing.sm },
   actionButton: { flex: 1 },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
   stack: { gap: spacing.sm },
-  emptyCard: { alignItems: "center", gap: spacing.sm },
   note: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   noteText: { flex: 1, ...typography.small },
 });

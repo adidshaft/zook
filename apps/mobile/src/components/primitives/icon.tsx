@@ -19,6 +19,7 @@ export type AppIconName =
   | "stock"
   | "billing"
   | "payouts"
+  | "shop"
   | "back";
 
 const iconMap: Record<
@@ -60,6 +61,7 @@ const iconMap: Record<
   stock: { ios: "cube.box", ionicon: "cube-outline", ioniconFocused: "cube" },
   billing: { ios: "creditcard", ionicon: "card-outline", ioniconFocused: "card" },
   payouts: { ios: "wallet.pass", ionicon: "wallet-outline", ioniconFocused: "wallet" },
+  shop: { ios: "bag", ionicon: "bag-outline", ioniconFocused: "bag" },
   back: { ios: "chevron.backward", ionicon: "chevron-back" },
 };
 
@@ -82,7 +84,7 @@ export function Icon({
   const accessibilityProps = decorative
     ? ({ accessibilityElementsHidden: true, importantForAccessibility: "no" as const } as const)
     : ({ accessibilityRole: "image" as const, accessibilityLabel: accessibilityLabel ?? name } as const);
-  if (Platform.OS === "ios" && !__DEV__) {
+  if (Platform.OS === "ios") {
     return <ExpoSymbols.SymbolView {...accessibilityProps} name={icon.ios} size={size} tintColor={color} />;
   }
   return (

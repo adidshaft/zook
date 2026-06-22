@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { EmptyState } from "./feedback";
 import { fadeUpVariants } from "./layout";
 
-export type DataTableColumn<Row> = {
+type DataTableColumn<Row> = {
   id: string;
   header: React.ReactNode;
   align?: "left" | "center" | "right";
@@ -13,44 +14,27 @@ export type DataTableColumn<Row> = {
   render: (row: Row) => React.ReactNode;
 };
 
-export function Skeleton({ className }: { className?: string | undefined }) {
-  return (
-    <div
-      className={clsx(
-        "relative overflow-hidden rounded-full bg-[var(--bg-sunken)] before:absolute before:inset-y-[-40%] before:left-[-30%] before:w-1/3 before:rotate-12 before:bg-[var(--border)] before:content-[''] before:animate-[zook-shimmer_1200ms_linear_infinite]",
-        className,
-      )}
-    />
-  );
-}
-
-export function TableLoader({ label = "Rows are loading" }: { label?: string }) {
-  return (
-    <div role="status" aria-label={label} className="grid gap-2">
-      {[0, 1, 2, 3, 4].map((item) => (
-        <div key={item} className="grid grid-cols-[1.2fr_0.9fr_0.8fr] gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)]/30 p-3">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3 justify-self-end" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function DataTable<Row>({
   columns,
   rows,
   rowKey,
   empty,
+  loading = false,
+  loadingLabel = "Loading rows",
+  caption,
   className,
 }: {
   columns: Array<DataTableColumn<Row>>;
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  loading?: boolean | undefined;
+  loadingLabel?: string | undefined;
+  caption?: string | undefined;
   className?: string | undefined;
 }) {
+  const emptyState = normalizeTableEmptyState(empty);
+
   return (
     <motion.div
       variants={fadeUpVariants}
@@ -58,9 +42,9 @@ export function DataTable<Row>({
         "relative overflow-x-auto rounded-[24px] border border-[var(--border)] bg-[var(--surface)]",
         className,
       )}
-      aria-label="Scrollable table"
     >
       <table className="min-w-[720px] w-full text-left text-sm border-collapse">
+        {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead className="sticky top-0 z-10 bg-[var(--bg-sunken)] text-[var(--text-tertiary)] shadow-[inset_0_-1px_0_var(--border)]">
           <tr>
             {columns.map((column) => (
@@ -83,7 +67,9 @@ export function DataTable<Row>({
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)]">
-          {rows.length ? (
+          {loading && !rows.length ? (
+            <TableLoadingRows columns={columns.length} label={loadingLabel} />
+          ) : rows.length ? (
             rows.map((row) => (
               <tr key={rowKey(row)} className="align-top transition-colors duration-200 hover:bg-[var(--bg-sunken)]">
                 {columns.map((column) => (
@@ -107,7 +93,7 @@ export function DataTable<Row>({
           ) : (
             <tr>
               <td className="px-4 py-5 text-[var(--text-tertiary)]" colSpan={columns.length}>
-                {empty}
+                {emptyState}
               </td>
             </tr>
           )}
@@ -122,6 +108,9 @@ export function VirtualizedDataTable<Row>({
   rows,
   rowKey,
   empty,
+  loading = false,
+  loadingLabel = "Loading rows",
+  caption,
   className,
   rowHeight = 88,
   maxHeight = 560,
@@ -133,6 +122,9 @@ export function VirtualizedDataTable<Row>({
   rows: Row[];
   rowKey: (row: Row) => string;
   empty: React.ReactNode;
+  loading?: boolean | undefined;
+  loadingLabel?: string | undefined;
+  caption?: string | undefined;
   className?: string | undefined;
   rowHeight?: number | undefined;
   maxHeight?: number | undefined;
@@ -157,6 +149,7 @@ export function VirtualizedDataTable<Row>({
     };
   }, [overscan, rowHeight, rows.length, viewport.height, viewport.top]);
   const visibleRows = rows.slice(visibleRange.start, visibleRange.end);
+  const emptyState = normalizeTableEmptyState(empty);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -197,35 +190,58 @@ export function VirtualizedDataTable<Row>({
         "relative overflow-x-auto rounded-[24px] border border-[var(--border)] bg-[var(--surface)]",
         className,
       )}
-      aria-label="Virtualized scrollable table"
-      role="grid"
+      role="table"
+      aria-colcount={columns.length}
+      aria-rowcount={rows.length + 1}
     >
+      {caption ? <div className="sr-only">{caption}</div> : null}
       <div style={{ minWidth: tableMinWidth }}>
-        <div
-          className="grid border-b border-[var(--border)] bg-[var(--bg-sunken)] text-sm text-[var(--text-tertiary)]"
-          style={{ gridTemplateColumns: template }}
-          role="row"
-        >
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              role="columnheader"
-              className={clsx(
-                "px-4 py-3 font-medium",
-                column.align === "right"
-                  ? "text-right"
-                  : column.align === "center"
-                    ? "text-center"
-                    : "text-left",
-                column.className,
-              )}
-            >
-              {column.header}
-            </div>
-          ))}
+        <div role="rowgroup">
+          <div
+            className="grid border-b border-[var(--border)] bg-[var(--bg-sunken)] text-sm text-[var(--text-tertiary)]"
+            style={{ gridTemplateColumns: template }}
+            role="row"
+          >
+            {columns.map((column) => (
+              <div
+                key={column.id}
+                role="columnheader"
+                className={clsx(
+                  "px-4 py-3 font-medium",
+                  column.align === "right"
+                    ? "text-right"
+                    : column.align === "center"
+                      ? "text-center"
+                      : "text-left",
+                  column.className,
+                )}
+              >
+                {column.header}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {rows.length ? (
+        {loading && !rows.length ? (
+          <div role="rowgroup">
+            <div role="row">
+              <div
+                role="cell"
+                className="px-4 py-5 text-sm text-[var(--text-tertiary)]"
+                aria-colspan={columns.length}
+              >
+                <div className="space-y-3" aria-label={loadingLabel}>
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-10 animate-pulse rounded-2xl bg-[var(--surface-raised)]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : rows.length ? (
           <div
             ref={scrollRef}
             className="relative overflow-y-auto"
@@ -269,9 +285,39 @@ export function VirtualizedDataTable<Row>({
             </div>
           </div>
         ) : (
-          <div className="px-4 py-5 text-sm text-[var(--text-tertiary)]">{empty}</div>
+          <div role="rowgroup">
+            <div role="row">
+              <div
+                role="cell"
+                className="px-4 py-5 text-sm text-[var(--text-tertiary)]"
+                aria-colspan={columns.length}
+              >
+                {emptyState}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </motion.div>
+  );
+}
+
+function normalizeTableEmptyState(empty: React.ReactNode) {
+  return typeof empty === "string" ? <EmptyState title={empty} className="border-0 bg-transparent p-1" /> : empty;
+}
+
+function TableLoadingRows({ columns, label }: { columns: number; label: string }) {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, rowIndex) => (
+        <tr key={rowIndex} aria-label={rowIndex === 0 ? label : undefined}>
+          {Array.from({ length: columns }).map((__, columnIndex) => (
+            <td key={columnIndex} className="px-4 py-3">
+              <div className="h-4 animate-pulse rounded-full bg-[var(--surface-raised)]" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
   );
 }

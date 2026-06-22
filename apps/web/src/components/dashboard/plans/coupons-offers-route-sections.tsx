@@ -15,14 +15,16 @@ const copy = {
 };
 
 export function CouponsRouteSection(props: GrowthRouteProps) {
+  const activeCouponCount = props.coupons.filter((coupon) => coupon.active).length;
+
   return (
     <Section
-      eyebrow="Coupons"
+      eyebrow="Discount codes"
       title="Coupons"
       description={copy.couponsDescription}
       badge={
-        <Pill tone={props.coupons.filter((coupon) => coupon.active).length ? "lime" : "amber"}>
-          {props.coupons.filter((coupon) => coupon.active).length} active
+        <Pill tone={activeCouponCount ? "blue" : "amber"}>
+          {activeCouponCount} active
         </Pill>
       }
     >
@@ -49,14 +51,16 @@ export function CouponsRouteSection(props: GrowthRouteProps) {
 }
 
 export function OffersRouteSection(props: GrowthRouteProps) {
+  const activeOfferCount = props.offers.filter((offer) => offer.active).length;
+
   return (
     <Section
       eyebrow="Offers"
       title="Public offers"
       description={copy.offersDescription}
       badge={
-        <Pill tone={props.offers.filter((offer) => offer.active).length ? "lime" : "amber"}>
-          {props.offers.filter((offer) => offer.active).length} live
+        <Pill tone={activeOfferCount ? "blue" : "amber"}>
+          {activeOfferCount} active
         </Pill>
       }
     >

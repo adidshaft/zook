@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   title: {
-    ...typography.h2,
+    ...typography.sectionTitle,
     textAlign: "center",
   },
   body: {

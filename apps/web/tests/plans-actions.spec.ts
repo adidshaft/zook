@@ -13,6 +13,39 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     requireDb();
   });
 
+  test("owner creates a membership plan from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const planName = `UI Created Plan ${Date.now().toString().slice(-6)}`;
+
+    await page.goto(`/dashboard/membership-plans?branchId=${branch.id}`);
+    await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByLabel("Plan name").fill(planName);
+    await page.getByLabel("Price").fill("2599");
+    await page.getByLabel("Duration days").fill("60");
+    await page.getByLabel("Visit limit").fill("20");
+    await page.getByRole("button", { name: "Create plan" }).click();
+
+    const planRow = page.getByRole("row", { name: new RegExp(planName) });
+    await expect(planRow).toBeVisible({ timeout: 15_000 });
+    await expect(planRow.getByText("₹2,599")).toBeVisible();
+    await expect(
+      prisma.membershipPlan.findFirst({
+        where: { orgId: org.id, branchId: branch.id, name: planName },
+      }),
+    ).resolves.toMatchObject({
+      pricePaise: 259900,
+      durationDays: 60,
+      visitLimit: 20,
+      publicVisible: true,
+    });
+  });
+
   test("owner edits, archives, and restores a membership plan", async ({ page }) => {
     test.setTimeout(150_000);
     await loginWithSessionCookie(page, "owner@zook.local");
@@ -164,16 +197,103 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     ).resolves.toMatchObject({ status: "paused" });
   });
 
-  test("plan duplicate and archived-filter UI controls are visible product gaps", async ({
-    page,
-  }) => {
-    test.fail(
-      true,
-      "The membership plan screen currently edits/restores rows but does not ship separate duplicate or archived-filter controls.",
-    );
+  test("owner creates a coupon from the dashboard form", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
-    await page.goto("/dashboard/membership-plans");
-    expect(await page.getByRole("button", { name: /duplicate plan/i }).count()).toBeGreaterThan(0);
-    expect(await page.getByRole("button", { name: /archived/i }).count()).toBeGreaterThan(0);
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const code = `UI${Date.now().toString().slice(-6)}`;
+
+    await page.goto("/dashboard/plans/coupons");
+    await expect(page.getByRole("heading", { name: "Coupons" })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByLabel("Coupon code").fill(code);
+    await page.getByLabel("Discount value").fill("12");
+    await page.getByLabel("Max uses").fill("9");
+    await page.getByRole("button", { name: "Create coupon" }).click();
+
+    await expect(page.getByText("Coupon created.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(code).first()).toBeVisible();
+    await expect(
+      prisma.coupon.findFirst({
+        where: { orgId: org.id, code },
+      }),
+    ).resolves.toMatchObject({
+      type: "PERCENTAGE",
+      valuePercentBps: 1200,
+      maxRedemptions: 9,
+      active: true,
+    });
+  });
+
+  test("owner duplicates a plan draft and filters archived plans", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const sourcePlan = await createMembershipPlan(page, org.id, {
+      name: `Duplicate Source ${Date.now().toString().slice(-6)}`,
+      pricePaise: 123400,
+      durationDays: 45,
+      branchId: branch.id,
+    });
+    const archivedPlan = await createMembershipPlan(page, org.id, {
+      name: `Archived Filter ${Date.now().toString().slice(-6)}`,
+      pricePaise: 98700,
+      branchId: branch.id,
+    });
+    await prisma.membershipPlan.update({
+      where: { id: archivedPlan.id },
+      data: { active: false },
+    });
+
+    await page.goto(`/dashboard/membership-plans?branchId=${branch.id}`);
+    await expect(page.getByRole("row", { name: new RegExp(sourcePlan.name) })).toBeVisible({
+      timeout: 30_000,
+    });
+    await page
+      .getByRole("row", { name: new RegExp(sourcePlan.name) })
+      .getByRole("button", { name: "Duplicate plan" })
+      .click();
+    await expect(page.getByLabel("Plan name").first()).toHaveValue(`${sourcePlan.name} copy`);
+    await expect(page.getByLabel("Price").first()).toHaveValue("1234");
+
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toBeVisible();
+    await page.getByRole("button", { name: /hide archived/i }).click();
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toHaveCount(0);
+    await page.getByRole("button", { name: /show archived/i }).click();
+    await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toBeVisible();
+  });
+
+  test("selected branch membership plans exclude legacy shared plans", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const sharedPlan = await prisma.membershipPlan.create({
+      data: {
+        orgId: org.id,
+        branchId: null,
+        createdById: owner.id,
+        name: `Shared Plan ${Date.now()}`,
+        type: "DURATION",
+        pricePaise: 111100,
+        durationDays: 30,
+        publicVisible: true,
+      },
+    });
+    const branchPlan = await createMembershipPlan(page, org.id, {
+      name: `Branch Plan ${Date.now()}`,
+      pricePaise: 222200,
+      branchId: branch.id,
+    });
+
+    const payload = await expectApiOk<{ plans: Array<{ id: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/membership-plans?branchId=${branch.id}`),
+    );
+    expect(payload.data.plans.some((plan) => plan.id === branchPlan.id)).toBe(true);
+    expect(payload.data.plans.some((plan) => plan.id === sharedPlan.id)).toBe(false);
   });
 });

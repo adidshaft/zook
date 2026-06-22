@@ -3,13 +3,17 @@ import { toErrorResponse } from "../errors";
 import { fail } from "../response";
 import { getErrorReporter } from "../error-reporter";
 import { logApiRequest } from "../request-logger";
-import { createRequestId, runWithRequestState } from "../request-state";
+import { createRequestId, getRequestState, runWithRequestState } from "../request-state";
 import { assertSafeMutationRequest } from "../security";
 import { assertSaasWriteAccess, assertServerRuntimeConfig, withIdempotency } from "./core";
-import { apiRouteHandlers } from "./registry";
+import { getApiRouteHandlersForPath } from "./registry";
 
 function apiLogMeta(path: string[]) {
-  return path[0] === "orgs" && path[1] ? { orgId: path[1] } : {};
+  const state = getRequestState();
+  return {
+    ...(state?.userId ? { userId: state.userId } : {}),
+    ...(state?.orgId ? { orgId: state.orgId } : path[0] === "orgs" && path[1] ? { orgId: path[1] } : {}),
+  };
 }
 
 export async function handleApi(request: NextRequest, rawPath: string[] = []) {
@@ -24,7 +28,7 @@ export async function handleApi(request: NextRequest, rawPath: string[] = []) {
       assertServerRuntimeConfig(path);
       await assertSaasWriteAccess(request, path);
       return await withIdempotency(request, path, async () => {
-        for (const handler of apiRouteHandlers) {
+        for (const handler of getApiRouteHandlersForPath(path)) {
           const response = await handler(request, path);
           if (response) {
             response.headers.set("x-request-id", requestId);

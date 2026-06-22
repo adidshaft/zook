@@ -80,4 +80,48 @@ test.describe("trainer payouts", () => {
     );
     expect(paid.data.payout).toMatchObject({ status: "paid", paidMethod: "UPI" });
   });
+
+  test("owner marks a trainer payout paid from the dashboard", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+
+    await expectApiOk(
+      await page.request.put(`/api/orgs/${org.id}/trainers/${trainer.id}/payout-config`, {
+        data: {
+          baseMonthlyPaise: 7_500_00,
+          ptCommissionPercent: 10,
+          perSessionFeePaise: 0,
+          payDay: 5,
+        },
+      }),
+    );
+    await expectApiOk<{ subscription: { id: string } }>(
+      await page.request.post(`/api/orgs/${org.id}/pt-subscriptions`, {
+        data: {
+          memberUserId: member.id,
+          trainerUserId: trainer.id,
+          amountPaise: 10_000_00,
+          paymentMode: "CASH",
+          totalSessions: 6,
+        },
+      }),
+    );
+    const payouts = await expectApiOk<{
+      payouts: Array<{ id: string; totalPaise: number; trainer?: { name?: string | null } | null }>;
+    }>(await page.request.get(`/api/orgs/${org.id}/payouts?month=${new Date().toISOString().slice(0, 7)}`));
+    const payout = payouts.data.payouts.find((item) => item.totalPaise === 8_500_00);
+    expect(payout?.id).toBeTruthy();
+
+    await page.goto("/dashboard/payouts");
+    await expect(page.getByText("₹8,500")).toBeVisible({ timeout: 30_000 });
+    const payoutCard = page.locator("div").filter({ hasText: "₹8,500" }).filter({ hasText: "Mark paid" }).first();
+    await payoutCard.getByRole("button", { name: "Mark paid" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Mark paid" }).click();
+    await expect(page.getByText("Payout marked paid.")).toBeVisible({ timeout: 15_000 });
+    await expect(
+      prisma.trainerPayout.findUnique({ where: { id: payout!.id } }),
+    ).resolves.toMatchObject({ status: "paid", paidMethod: "UPI" });
+  });
 });

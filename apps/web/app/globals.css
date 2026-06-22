@@ -126,10 +126,6 @@ label {
     var(--shadow-inset);
 }
 
-.zook-lime-glow {
-  box-shadow: var(--shadow-glow-accent);
-}
-
 .metric {
   font-variant-numeric: tabular-nums;
 }
@@ -140,15 +136,6 @@ label {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
-}
-
-@keyframes zook-shimmer {
-  from {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  to {
-    transform: translateX(420%) rotate(12deg);
-  }
 }
 
 @keyframes zook-dashboard-loading {
@@ -242,7 +229,7 @@ a.bg-\[var\(--accent\)\] *,
   color: inherit !important;
 }
 
-/* Custom premium overrides for hardcoded dark utility properties when in Light Mode */
+/* Light-mode overrides for hardcoded dark utility properties */
 [data-theme="light"] {
   /* Low-contrast green texts in Light Mode */
   .text-lime-100,
@@ -411,12 +398,6 @@ a.bg-\[var\(--accent\)\] *,
   color: var(--text-primary) !important;
 }
 
-/* Elegant borders instead of glowing elements */
-:root[data-accent="paper"] .zook-lime-glow {
-  box-shadow: none !important;
-  border: 2px solid var(--border-strong) !important;
-}
-
 /* Native CSS Transitions and Animations for Dashboard Performance */
 @keyframes fadeIn {
   from {
@@ -438,5 +419,3 @@ a.bg-\[var\(--accent\)\] *,
     animation: none !important;
   }
 }
-
-

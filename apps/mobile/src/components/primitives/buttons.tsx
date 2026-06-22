@@ -2,6 +2,7 @@ import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -13,8 +14,11 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { radii, typography } from "@/lib/theme";
+import { glow, gradients, radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
+
+// Deep-green primary-button fill for light mode (white label reads on it).
+const ACCENT_BUTTON_LIGHT = ["#2E5A36", "#1F3E24"] as const;
 import type { Palette } from "@/lib/theme/index";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
@@ -31,13 +35,12 @@ export type HapticWeight =
   | "error"
   | "none";
 
-type PressHandler = () => void | Promise<void>;
+export type PressHandler = () => void | Promise<void>;
 
 type ButtonPalette = {
   backgroundColor: string;
   borderColor: string;
   color: string;
-  glow?: ViewStyle;
 };
 
 function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPalette {
@@ -46,7 +49,6 @@ function paletteForVariant(palette: Palette, variant: ButtonVariant): ButtonPale
       backgroundColor: palette.accent.fill,
       borderColor: palette.accent.strong,
       color: palette.text.onAccent,
-      glow: { boxShadow: palette.shadow.sm } as ViewStyle,
     };
   }
   if (variant === "destructive") {
@@ -156,27 +158,50 @@ export function ZookButton({
   hapticWeight?: HapticWeight;
   testID?: string;
 }) {
-  const { palette } = useTheme();
+  const { mode, palette } = useTheme();
   const buttonPalette = paletteForVariant(palette, variant);
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
   const isDisabled = disabled || busy;
+  const isPrimary = variant === "primary" && !isDisabled;
   const resolvedBgColor = isDisabled ? palette.bg.sunken : buttonPalette.backgroundColor;
-  const resolvedBorderColor = isDisabled ? palette.border.subtle : buttonPalette.borderColor;
+  const resolvedBorderColor = isPrimary
+    ? "transparent"
+    : isDisabled
+      ? palette.border.subtle
+      : buttonPalette.borderColor;
   const resolvedTextColor = isDisabled ? palette.text.secondary : buttonPalette.color;
   const contentLabel = busy && busyLabel ? busyLabel : children;
+  const radius = (buttonSizeStyle.borderRadius as number) ?? radii.button;
   const staticButtonStyle = StyleSheet.flatten([
     styles.button,
     buttonSizeStyle,
-    buttonPalette.glow,
     {
       backgroundColor: resolvedBgColor,
       borderColor: resolvedBorderColor,
     },
+    isPrimary ? glow.accent : null,
     fullWidth ? styles.fullWidth : null,
     isDisabled ? styles.disabled : null,
     style,
   ]);
+
+  // Gradient fill for the primary CTA, clipped to the button radius and painted
+  // behind the label so the lime reads as a lit surface rather than a flat block.
+  // Light mode uses the deep-green accent fill (matching the palette's
+  // light accent + white onAccent text); dark mode uses the lime fill with
+  // black text. Keeping the lime fill in light mode left white-on-lime labels
+  // that were nearly invisible.
+  const primaryGradient = mode === "light" ? ACCENT_BUTTON_LIGHT : gradients.accentButton;
+  const gradientLayer = isPrimary ? (
+    <LinearGradient
+      colors={primaryGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[StyleSheet.absoluteFillObject, { borderRadius: radius }]}
+      pointerEvents="none"
+    />
+  ) : null;
 
   const label = (
     <Text
@@ -191,6 +216,13 @@ export function ZookButton({
   ) : icon ? (
     <Ionicons name={icon} size={size === "sm" ? 15 : 17} color={resolvedTextColor} />
   ) : null;
+  const inner = (
+    <>
+      {gradientLayer}
+      {leading}
+      {label}
+    </>
+  );
 
   if (href && !isDisabled) {
     return (
@@ -210,8 +242,7 @@ export function ZookButton({
           accessibilityState={{ disabled: isDisabled, busy }}
           style={staticButtonStyle}
         >
-          {leading}
-          {label}
+          {inner}
         </Pressable>
       </Link>
     );
@@ -233,19 +264,18 @@ export function ZookButton({
       style={({ pressed }) => [
         styles.button,
         buttonSizeStyle,
-        buttonPalette.glow,
         {
           backgroundColor: resolvedBgColor,
           borderColor: resolvedBorderColor,
         },
+        isPrimary ? glow.accent : null,
         pressed && !isDisabled ? styles.pressed : null,
         fullWidth ? styles.fullWidth : null,
         isDisabled ? styles.disabled : null,
         style,
       ]}
     >
-      {leading}
-      {label}
+      {inner}
     </Pressable>
   );
 }
@@ -256,46 +286,6 @@ export function PrimaryButton(props: Omit<Parameters<typeof ZookButton>[0], "var
 
 export function SecondaryButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
   return <ZookButton {...props} variant="secondary" />;
-}
-
-export function DangerButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
-  return <ZookButton {...props} variant="destructive" />;
-}
-
-export function GhostButton(props: Omit<Parameters<typeof ZookButton>[0], "variant">) {
-  return <ZookButton {...props} variant="ghost" />;
-}
-
-export function PrimaryLink({
-  href,
-  children,
-  variant = "primary",
-  style,
-  textStyle,
-  accessibilityLabel,
-}: {
-  href: Href;
-  children: ReactNode;
-  variant?: ButtonVariant;
-  style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<TextStyle>;
-  accessibilityLabel?: string;
-}) {
-  return (
-    <ZookButton
-      href={href}
-      variant={variant}
-      style={style}
-      textStyle={textStyle}
-      accessibilityLabel={accessibilityLabel}
-    >
-      {children}
-    </ZookButton>
-  );
-}
-
-export function SecondaryLink(props: Omit<Parameters<typeof PrimaryLink>[0], "variant">) {
-  return <PrimaryLink {...props} variant="secondary" />;
 }
 
 const styles = StyleSheet.create({
@@ -325,5 +315,3 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
-
-export const Button = ZookButton;

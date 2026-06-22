@@ -13,6 +13,51 @@ test.describe("payments actions", () => {
     requireDb();
   });
 
+  test("owner records an offline payment from the dashboard form", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const plan = await createMembershipPlan(page, org.id, {
+      name: `UI Payment Plan ${Date.now()}`,
+      pricePaise: 210000,
+    });
+    const receiptNumber = `UI-RCPT-${Date.now()}`;
+
+    await page.goto("/dashboard/payments");
+    await expect(page.getByRole("heading", { name: "Collected at the desk" })).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await page.getByLabel("Choose member").click();
+    await page.getByPlaceholder("Search members").fill(member.email!);
+    await page.getByRole("option", { name: new RegExp(member.email!, "i") }).click();
+
+    await page.getByLabel("Choose plan").click();
+    await page.getByPlaceholder("Search plans").fill(plan.name);
+    await page.getByRole("option", { name: new RegExp(plan.name, "i") }).click();
+
+    await page.getByPlaceholder("Reference number").fill(receiptNumber);
+    await page.getByPlaceholder("Notes").fill("Dashboard UI offline payment");
+    await page.getByRole("button", { name: "Record payment" }).click();
+
+    await expect(page.getByText("Payment recorded for ₹2,100.")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("Receipt generated")).toBeVisible();
+    await expect(
+      prisma.payment.findFirst({
+        where: {
+          orgId: org.id,
+          userId: member.id,
+          amountPaise: 210000,
+          receiptNumber,
+          mode: "CASH",
+          status: "SUCCEEDED",
+        },
+      }),
+    ).resolves.toBeTruthy();
+  });
+
   test("owner records an offline payment, generates documents, and sees DB persistence", async ({
     page,
   }) => {
@@ -133,23 +178,13 @@ test.describe("payments actions", () => {
     ).resolves.toBeTruthy();
 
     await page.goto("/dashboard/payments");
-    let dialogCount = 0;
-    page.on("dialog", async (dialog) => {
-      dialogCount += 1;
-      if (dialogCount === 1) {
-        expect(dialog.message()).toContain("Refund amount");
-        await dialog.accept("500");
-        return;
-      }
-      expect(dialog.message()).toContain("Reason");
-      await dialog.accept("Duplicate cash payment");
-    });
-    await page
-      .locator("tr")
-      .filter({ hasText: "₹3,333" })
-      .getByRole("button", { name: "Refund" })
-      .first()
-      .click();
+    const paymentRow = page.locator("tr").filter({ hasText: "₹3,333" }).first();
+    await paymentRow.getByRole("button", { name: "Refund" }).click();
+    await expect(page.getByText("Refund draft")).toBeVisible();
+    await page.getByLabel("Refund amount").fill("500");
+    await page.getByLabel("Refund reason").fill("Duplicate cash payment");
+    await page.getByRole("button", { name: "Submit refund" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Submit refund" }).click();
     await expect(page.locator("p", { hasText: "Refund submitted from payment history." }).first()).toBeVisible({
       timeout: 15_000,
     });
@@ -235,5 +270,44 @@ test.describe("payments actions", () => {
     await expect(prisma.payment.findUnique({ where: { id: payment.id } })).resolves.toMatchObject({
       status: "REFUNDED",
     });
+  });
+
+  test("selected branch payments exclude legacy shared payments", async ({ page }) => {
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const sharedPayment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: null,
+        userId: member.id,
+        purpose: "MEMBERSHIP",
+        amountPaise: 90900,
+        status: "SUCCEEDED",
+        mode: "CASH",
+        recordedAt: new Date(),
+      },
+    });
+    const branchPayment = await prisma.payment.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        userId: member.id,
+        purpose: "MEMBERSHIP",
+        amountPaise: 123400,
+        status: "SUCCEEDED",
+        mode: "CASH",
+        recordedAt: new Date(),
+      },
+    });
+
+    const payload = await expectApiOk<{ payments: Array<{ id: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/payments?branchId=${branch.id}&limit=20`),
+    );
+    expect(payload.data.payments.some((payment) => payment.id === branchPayment.id)).toBe(true);
+    expect(payload.data.payments.some((payment) => payment.id === sharedPayment.id)).toBe(false);
   });
 });

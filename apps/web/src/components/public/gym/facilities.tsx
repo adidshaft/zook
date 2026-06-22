@@ -2,24 +2,31 @@ import Image from "next/image";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
+import { AmenityGrid } from "./amenity-grid";
+import { LocationCard } from "./location-card";
 
 export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
-  const facilities = org.facilities.length ? org.facilities : org.amenities;
   const gallery = org.gallery.length
     ? org.gallery
     : [org.coverImageUrl].filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+  const galleryAlt = (index: number) =>
+    locale === "hi"
+      ? `${org.name} गैलरी तस्वीर ${index + 1}`
+      : `${org.name} gallery photo ${index + 1}`;
   return (
     <div className="space-y-6">
+      <AmenityGrid org={org} />
+      <LocationCard org={org} />
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={facilities} tone="blue" />
-        <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} tone="lime" />
+        <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} />
+        <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} />
       </section>
       
       {gallery.length ? (
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Photos & Gallery</h2>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">Explore our premium facilities, workout floor, and training space.</p>
+          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("galleryTitle")}</h2>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">{t("galleryCopy")}</p>
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-6">
             {gallery.slice(0, 15).map((imageUrl, index) => (
               <div 
@@ -28,7 +35,7 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
               >
                 <Image
                   src={imageUrl}
-                  alt={`${org.name} gallery photo ${index + 1}`}
+                  alt={galleryAlt(index)}
                   fill
                   sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -48,12 +55,10 @@ function TagCard({
   title,
   empty,
   items,
-  tone,
 }: {
   title: string;
   empty: string;
   items: string[];
-  tone: "blue" | "lime";
 }) {
   return (
     <GlassCard>
@@ -61,7 +66,7 @@ function TagCard({
       <div className="mt-5 flex flex-wrap gap-2">
         {items.length ? (
           items.map((item) => (
-            <Pill key={item} tone={tone} className="transition-transform duration-200 hover:scale-105">
+            <Pill key={item} className="transition-transform duration-200 hover:scale-105">
               {item}
             </Pill>
           ))

@@ -1,7 +1,7 @@
 import { Prisma, prisma } from "@zook/db";
 import { getProviderRegistryDiagnostics } from "@zook/core/providers";
 import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
-import type { DashboardBranchFilter } from "@/server/domains/shared/filters";
+import { withBranchScope, type DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
 import {
@@ -44,10 +44,6 @@ export async function getOrganizationDashboardData(
   );
 }
 
-export type OrganizationDashboardReadModel = Awaited<
-  ReturnType<typeof getOrganizationDashboardData>
->;
-
 export async function getOrganizationDashboardFastData(
   orgId: string,
   filters: DashboardBranchFilter = {},
@@ -70,6 +66,9 @@ async function getOrganizationDashboardFastDataUncached(
   monthStart.setHours(0, 0, 0, 0);
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
+  const branchScopeFilter = branchScope.selectedBranch
+    ? { branchId: branchScope.selectedBranch.id }
+    : {};
 
   const [
     organization,
@@ -96,7 +95,9 @@ async function getOrganizationDashboardFastDataUncached(
     prisma.attendanceRecord.count({
       where: { orgId, checkedInAt: { gte: today }, ...branchWhere },
     }),
-    prisma.attendanceRecord.count({ where: { orgId, status: "PENDING_APPROVAL", ...branchWhere } }),
+    prisma.attendanceRecord.count({
+      where: { orgId, status: "PENDING_APPROVAL", ...branchWhere },
+    }),
     prisma.payment.aggregate({
       where: {
         orgId,
@@ -115,7 +116,9 @@ async function getOrganizationDashboardFastDataUncached(
     prisma.organizationRoleAssignment.count({
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
     }),
-    prisma.membershipPlan.count({ where: { orgId } }),
+    prisma.membershipPlan.count({
+      where: withBranchScope<Prisma.MembershipPlanWhereInput>({ orgId }, branchScopeFilter),
+    }),
     prisma.memberSubscription.groupBy({
       by: ["planId"],
       where: { orgId, status: "ACTIVE", ...branchWhere },
@@ -225,7 +228,9 @@ async function getOrganizationDashboardDataUncached(
   monthStart.setHours(0, 0, 0, 0);
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
-  const productWhere: Prisma.ProductWhereInput = {};
+  const branchScopeFilter = branchScope.selectedBranch
+    ? { branchId: branchScope.selectedBranch.id }
+    : {};
 
   const [
     organization,
@@ -262,7 +267,9 @@ async function getOrganizationDashboardDataUncached(
     prisma.attendanceRecord.count({
       where: { orgId, checkedInAt: { gte: today }, ...branchWhere },
     }),
-    prisma.attendanceRecord.count({ where: { orgId, status: "PENDING_APPROVAL", ...branchWhere } }),
+    prisma.attendanceRecord.count({
+      where: { orgId, status: "PENDING_APPROVAL", ...branchWhere },
+    }),
     prisma.payment.aggregate({
       where: {
         orgId,
@@ -278,7 +285,7 @@ async function getOrganizationDashboardDataUncached(
       _sum: { amountPaise: true },
     }),
     prisma.product.findMany({
-      where: { orgId, active: true, ...productWhere },
+      where: withBranchScope<Prisma.ProductWhereInput>({ orgId, active: true }, branchScopeFilter),
       orderBy: { stock: "asc" },
       take: 20,
     }),
@@ -290,7 +297,9 @@ async function getOrganizationDashboardDataUncached(
     prisma.organizationRoleAssignment.count({
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },
     }),
-    prisma.membershipPlan.count({ where: { orgId } }),
+    prisma.membershipPlan.count({
+      where: withBranchScope<Prisma.MembershipPlanWhereInput>({ orgId }, branchScopeFilter),
+    }),
     prisma.payment.findMany({
       where: {
         orgId,
@@ -312,10 +321,7 @@ async function getOrganizationDashboardDataUncached(
       where: {
         orgId,
         status: "ACTIVE",
-        OR: [
-          { startsAt: null },
-          { startsAt: { lt: thirtyDayWindow.end } },
-        ],
+        OR: [{ startsAt: null }, { startsAt: { lt: thirtyDayWindow.end } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: thirtyDayWindow.start } }] }],
         ...branchWhere,
       },

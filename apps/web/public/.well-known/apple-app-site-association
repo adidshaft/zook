@@ -3,8 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appID": "com.zook.app",
-        "paths": ["/join/*", "/plans/*", "/shop/*", "/dashboard"]
+        "appID": "JP4HU7X6G7.com.zook.app",
+        "paths": ["/checkin", "/checkin/*", "/join/*", "/plans/*", "/shop/*", "/dashboard"]
       }
     ]
   }

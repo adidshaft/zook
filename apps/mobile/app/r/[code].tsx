@@ -24,31 +24,37 @@ export default function ReferralAliasScreen() {
 
   if (referralQuery.data?.org?.username) {
     return (
-      <Redirect
-        href={{
-          pathname: "/g/[username]",
-          params: { username: referralQuery.data.org.username, ref: code },
-        }}
-      />
+      <>
+        <Stack.Screen options={{ headerShown: false, animation: "none" }} />
+        <Redirect
+          href={{
+            pathname: "/gyms/[username]",
+            params: { username: referralQuery.data.org.username, ref: code },
+          }}
+        />
+      </>
     );
   }
 
   if (!code || referralQuery.isError) {
     return (
-      <Redirect
-        href={{
-          pathname: "/gyms",
-          params: {
-            ...(code ? { ref: code, focus: "referral" } : {}),
-          },
-        }}
-      />
+      <>
+        <Stack.Screen options={{ headerShown: false, animation: "none" }} />
+        <Redirect
+          href={{
+            pathname: "/gyms",
+            params: {
+              ...(code ? { ref: code, focus: "referral" } : {}),
+            },
+          }}
+        />
+      </>
     );
   }
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, animation: "none" }} />
       <ZookScreen>
         <View style={styles.center}>
           <ActivityIndicator color={palette.accent.fill} />

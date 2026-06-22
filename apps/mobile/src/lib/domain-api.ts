@@ -1,5 +1,6 @@
-import type { AuthSessionSummary, Role } from "@zook/core";
+import { isSeededDemoIdentifier, type AuthSessionSummary, type Role } from "@zook/core";
 import { mobileApiFetch } from "./api";
+import { getMobileAppEnv } from "./runtime-mode";
 
 type RequestOptions = {
   token?: string;
@@ -20,8 +21,6 @@ type VerifyOtpResult = {
   refreshExpiresAt?: string;
   session?: AuthSessionSummary;
 };
-
-type SsoCallbackResult = VerifyOtpResult;
 
 export type MobileUploadFile = {
   uri: string;
@@ -57,6 +56,13 @@ export type ProfilePhotoSaveResponse = {
 export const apiClient = {
   request: mobileApiFetch,
 };
+
+function localSimulatorAuthHeaders(identifier: string) {
+  if (getMobileAppEnv() !== "local" || !isSeededDemoIdentifier(identifier)) {
+    return undefined;
+  }
+  return { "x-zook-qa-auth": "simulator" };
+}
 
 export const filesApi = {
   uploadProfilePhoto(
@@ -134,25 +140,19 @@ export const authClient = {
   requestOtp(identifier: string) {
     return mobileApiFetch<OtpResult>("/auth/request-otp", {
       method: "POST",
+      ...(localSimulatorAuthHeaders(identifier)
+        ? { headers: localSimulatorAuthHeaders(identifier) }
+        : {}),
       body: { identifier },
     });
   },
   verifyOtp(identifier: string, code: string) {
     return mobileApiFetch<VerifyOtpResult>("/auth/verify-otp", {
       method: "POST",
+      ...(localSimulatorAuthHeaders(identifier)
+        ? { headers: localSimulatorAuthHeaders(identifier) }
+        : {}),
       body: { identifier, code },
-    });
-  },
-  signInWithApple(identityToken: string, fullName?: string) {
-    return mobileApiFetch<SsoCallbackResult>("/auth/apple/callback", {
-      method: "POST",
-      body: { identityToken, ...(fullName ? { fullName } : {}) },
-    });
-  },
-  signInWithGoogle(idToken: string) {
-    return mobileApiFetch<SsoCallbackResult>("/auth/google/callback", {
-      method: "POST",
-      body: { idToken },
     });
   },
   me(options: RequestOptions = {}) {
@@ -452,34 +452,6 @@ export const plansApi = {
   },
 };
 
-export const shopApi = {
-  createOrder(
-    options: RequestOptions & {
-      orgId: string;
-      items: Array<{ productId: string; quantity: number }>;
-    },
-  ) {
-    return mobileApiFetch("/shop/orders", {
-      method: "POST",
-      token: options.token,
-      orgId: options.orgId,
-      ...(options.branchId ? { branchId: options.branchId } : {}),
-      body: {
-        orgId: options.orgId,
-        items: options.items,
-        ...(options.branchId ? { branchId: options.branchId } : {}),
-      },
-    });
-  },
-  fulfillOrder(options: RequestOptions & { orderId: string }) {
-    return mobileApiFetch(`/orgs/${options.orgId}/shop/orders/${options.orderId}/fulfill`, {
-      method: "POST",
-      token: options.token,
-      orgId: options.orgId,
-    });
-  },
-};
-
 export const gymApi = {
   requestMembership(
     options: RequestOptions & {
@@ -525,6 +497,16 @@ export const gymApi = {
 };
 
 export const paymentsApi = {
+  refreshPaymentSession<T = { session: { id: string; status: string }; payment?: unknown | null }>(
+    options: RequestOptions & { sessionId: string },
+  ) {
+    return mobileApiFetch<T>(`/payments/session/${options.sessionId}/refresh`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+    });
+  },
   completeMockPayment(options: RequestOptions & { sessionId: string }) {
     return mobileApiFetch(`/payments/mock/${options.sessionId}/complete`, {
       method: "POST",

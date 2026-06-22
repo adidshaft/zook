@@ -1,22 +1,25 @@
-import { Tabs, useLocalSearchParams, useRouter } from "expo-router";
+import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 
-const viewRedirectTargets: Record<string, "/trainer/clients" | "/trainer/plans"> = {
+const viewRedirectTargets: Record<string, "/trainer" | "/trainer/clients" | "/trainer/plans" | "/trainer/payouts"> = {
+  home: "/trainer",
   clients: "/trainer/clients",
   plans: "/trainer/plans",
+  payouts: "/trainer/payouts",
 };
 
 export default function TrainerLayout() {
   const params = useLocalSearchParams<{ view?: string | string[] }>();
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     const view = Array.isArray(params.view) ? params.view[0] : params.view;
     const target = view ? viewRedirectTargets[view] : undefined;
-    if (target) router.replace(target as never);
-  }, [params.view, router]);
+    if (target && pathname !== target) router.replace(target as never);
+  }, [params.view, pathname, router]);
 
   return (
     <Tabs
@@ -63,7 +66,19 @@ export default function TrainerLayout() {
       />
       <Tabs.Screen
         name="clients/[id]"
-        options={{ href: null, tabBarItemStyle: { display: "none" } }}
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="pt"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="classes"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="class-roster"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
     </Tabs>
   );

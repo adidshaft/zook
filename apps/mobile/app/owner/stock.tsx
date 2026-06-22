@@ -1,19 +1,24 @@
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, IconBubble, ListRow, MetricTile, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
-import { titleCase } from "@/features/owner/helpers";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr } from "@/lib/formatting";
-import { layout, typography, useTheme } from "@/lib/theme";
+import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerStockScreen() {
   const { palette } = useTheme();
   const dashboardQuery = useOwnerDashboard();
   const ordersQuery = useOrgActiveShopOrders();
-  const lowStock = dashboardQuery.data?.products ?? [];
+  // Only items at or below their reorder threshold belong in the "Below
+  // threshold" list — guard client-side so the list and the count stay honest
+  // even if the payload includes well-stocked products.
+  const lowStock = (dashboardQuery.data?.products ?? []).filter(
+    (product) => (product.stock ?? 0) <= (product.lowStockThreshold ?? 0),
+  );
   const orders = ordersQuery.data?.orders ?? [];
 
   async function reorderProduct(product: LowStockProduct) {
@@ -42,19 +47,28 @@ export default function OwnerStockScreen() {
             ),
           }}
         >
+          <ScreenHeader
+            title="Stock"
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip />
+              </View>
+            }
+          />
           <View style={styles.metricGrid}>
             <MetricTile label="Low stock" value={String(lowStock.length)} detail="Under threshold" tone="amber" style={styles.metricHalf} />
-            <MetricTile label="Pickups" value={String(orders.length)} detail="Paid or ready" tone="lime" style={styles.metricHalf} />
+            <MetricTile label="Pickups" value={String(orders.length)} detail="Paid orders" tone="blue" style={styles.metricHalf} />
           </View>
-          <SectionHeader title="Products to reorder" subtitle="Below threshold" />
+          <SectionHeader title="Products to reorder" />
           <Card contentStyle={styles.stack}>
             {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
             {!dashboardQuery.isError && lowStock.length
               ? lowStock.map((product) => <StockRow key={product.id} product={product} onReorder={() => void reorderProduct(product)} />)
               : null}
-            {!dashboardQuery.isError && !lowStock.length ? <EmptyState title="All products in stock" body="No items below threshold." /> : null}
+            {!dashboardQuery.isError && !lowStock.length ? <EmptyState icon="cube-outline" title="All products in stock" body="Items running low on inventory will appear here." /> : null}
           </Card>
-          <SectionHeader title="Orders ready for pickup" />
+          <SectionHeader title="Pickup orders" />
           <Card contentStyle={styles.stack}>
             {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
             {!ordersQuery.isError && orders.length
@@ -62,8 +76,8 @@ export default function OwnerStockScreen() {
                   <ListRow
                     key={order.id}
                     title={order.user?.name ?? "Member pickup"}
-                    subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCase(order.status)}`}
-                    leading={<IconBubble icon="bag-check-outline" tone="lime" />}
+                    subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
+                    leading={<IconBubble icon="bag-check-outline" tone={toneForShopOrderStatus(order.status)} />}
                     trailing={
                       <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                         {formatInr(order.totalPaise)}
@@ -72,7 +86,7 @@ export default function OwnerStockScreen() {
                   />
                 ))
               : null}
-            {!ordersQuery.isError && !orders.length ? <EmptyState title="No pickups waiting" body="Paid shop orders will show up here until reception fulfills them." /> : null}
+            {!ordersQuery.isError && !orders.length ? <EmptyState icon="bag-handle-outline" title="No pickups waiting" body="Paid shop orders awaiting collection will appear here." /> : null}
           </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
@@ -81,9 +95,17 @@ export default function OwnerStockScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
-  stack: { gap: 12 },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  headerContext: { alignItems: "flex-start", gap: spacing.xs },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.lg,
+    paddingBottom: 96,
+  },
+  stack: { gap: spacing.md },
+  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   metricHalf: { flexBasis: "47%", flexGrow: 1 },
   rowAmount: typography.bodyStrong,
 });

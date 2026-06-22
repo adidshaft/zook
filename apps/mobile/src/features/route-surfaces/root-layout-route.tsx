@@ -4,20 +4,29 @@ import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, LogBox, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
   Inter_400Regular,
+  Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
   Inter_800ExtraBold,
   Inter_900Black,
 } from "@expo-google-fonts/inter";
+import {
+  Sora_500Medium,
+  Sora_600SemiBold,
+  Sora_700Bold,
+  Sora_800ExtraBold,
+} from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 
-import { AuthProvider, setAuthQueryClient, useAuth } from "@/lib/auth";
-import { DemoBanner } from "@/components/demo-banner";
+import { AuthProvider, isQaResetInFlight, setAuthQueryClient, useAuth } from "@/lib/auth";
+import { BrandMark } from "@/components/primitives";
+import { TestDataBanner } from "@/components/test-data-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
 import { ToastHost } from "@/components/toast-host";
@@ -32,12 +41,16 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { spacing, ThemeProvider, typography, useTheme } from "@/lib/theme/index";
+import { spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
 initMobileSentry();
 enableFreeze(true);
+
+if (__DEV__) {
+  LogBox.ignoreAllLogs(true);
+}
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
 const ONBOARDING_COMPLETED = "true";
@@ -85,6 +98,12 @@ function safeRedirectTarget(value?: string | string[]) {
 
 function isPublicUnauthenticatedRoute(pathname: string) {
   return (
+    pathname === "/qa" ||
+    pathname.startsWith("/qa") ||
+    pathname.startsWith("/__qa-role") ||
+    pathname.startsWith("/__qa-open") ||
+    pathname.startsWith("/__qa-reset") ||
+    pathname.startsWith("/__demo-role") ||
     pathname === "/gyms" ||
     pathname.startsWith("/gyms/") ||
     pathname.startsWith("/gym/") ||
@@ -161,14 +180,11 @@ function LayoutContent() {
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    if (status !== "loading" && onboardingFlag !== undefined) {
-      void SplashScreen.hideAsync().catch(() => {
-        // Ignore splash cleanup races during local development.
-      });
-    }
-  }, [status, onboardingFlag]);
+  const isQaHelperRoute =
+    pathname === "/__demo-role" ||
+    pathname === "/__qa-role" ||
+    pathname === "/__qa-reset" ||
+    pathname === "/__qa-open";
 
   useEffect(() => {
     return setAuthQueryClient(queryClient);
@@ -183,6 +199,9 @@ function LayoutContent() {
         }
         await clearExpiredSession();
         queryClient.clear();
+        if (isQaResetInFlight() || isQaHelperRoute) {
+          return;
+        }
         showToast({
           title: t("auth.sessionExpiredTitle"),
           message: t("auth.sessionExpiredBody"),
@@ -213,7 +232,7 @@ function LayoutContent() {
         }
       },
     });
-  }, [clearExpiredSession, queryClient, refresh, router, t]);
+  }, [clearExpiredSession, isQaHelperRoute, queryClient, refresh, router, t]);
 
   useEffect(() => {
     const handleUrl = (url: string | null) => {
@@ -366,6 +385,16 @@ function LayoutContent() {
       return;
     }
 
+    if (
+      pathname === "/qa" ||
+      pathname.startsWith("/qa") ||
+      pathname.startsWith("/__qa-open") ||
+      pathname.startsWith("/__demo-role") ||
+      pathname.startsWith("/__qa-reset")
+    ) {
+      return;
+    }
+
     const hasRequiredPermission = checkRouteAccess(
       pathname,
       activePermissions,
@@ -400,12 +429,7 @@ function LayoutContent() {
   }
 
   if (status === "loading") {
-    return (
-      <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
-        <ActivityIndicator color={palette.accent.base} />
-        <Text style={[styles.loadingText, { color: palette.text.secondary }]}>{t("app.loadingSession")}</Text>
-      </View>
-    );
+    return <LaunchSurface subtitle={t("app.loadingSession")} />;
   }
 
   return (
@@ -418,57 +442,57 @@ function LayoutContent() {
       {offlineBanner || isDemoMode ? (
         <RuntimeBannerHost>
           {offlineBanner ? <OfflineBanner>{offlineBanner}</OfflineBanner> : null}
-          <DemoBanner />
+          <TestDataBanner />
         </RuntimeBannerHost>
       ) : null}
       <Stack
         screenOptions={{
-          headerShown: true,
-          headerTransparent: Platform.OS === "ios",
-          headerBlurEffect: Platform.OS === "ios" ? (mode === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterial") : undefined,
-          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : palette.bg.app },
-          headerTintColor: palette.accent.base,
-          headerBackButtonDisplayMode: "minimal",
-          headerTitleStyle: typography.headerTitle,
+          // Screens render their own in-content header (AppHeader/ScreenHeader);
+          // no native nav-bar header anywhere. Keeps headers consistent and stops
+          // unregistered routes from leaking their raw route name as a title.
+          headerShown: false,
           contentStyle: { backgroundColor: palette.bg.app },
         }}
       >
         <Stack.Screen name="(member)" options={{ animation: "none", headerShown: false }} />
-        <Stack.Screen name="profile/index" options={{ animation: "none", title: "Profile" }} />
-        <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", title: "Edit profile" }} />
-        <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", title: "Profile photo" }} />
-        <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", title: "Profile details" }} />
-        <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right", title: "Notifications", headerLargeTitle: true }} />
-        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right", title: "Settings", headerLargeTitle: true }} />
-        <Stack.Screen name="settings/account" options={{ animation: "slide_from_right", title: "Account" }} />
-        <Stack.Screen name="settings/appearance" options={{ animation: "slide_from_right", title: "Appearance" }} />
-        <Stack.Screen name="settings/language" options={{ animation: "slide_from_right", title: "Language" }} />
-        <Stack.Screen name="settings/notifications" options={{ animation: "slide_from_right", title: "Notifications" }} />
-        <Stack.Screen name="settings/privacy" options={{ animation: "slide_from_right", title: "Privacy" }} />
-        <Stack.Screen name="settings/support" options={{ animation: "slide_from_right", title: "Help & support" }} />
-        <Stack.Screen name="membership/index" options={{ animation: "slide_from_right", title: "Membership", headerLargeTitle: true }} />
-        <Stack.Screen name="membership/buy" options={{ animation: "slide_from_right", title: "Buy membership" }} />
-        <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", title: "Membership history", headerLargeTitle: true }} />
-        <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", title: "Checkout" }} />
-        <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", title: "Receipt" }} />
-        <Stack.Screen name="shop" options={{ animation: "none", title: "Shop" }} />
-        <Stack.Screen name="assistant" options={{ animation: "slide_from_right", title: "AI assistant" }} />
+        <Stack.Screen name="profile/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="profile/edit" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="profile/photo" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="profile/extra-fields" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="notifications/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/account" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/appearance" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/language" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/notifications" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/privacy" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="settings/support" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/buy" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/history" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/checkout" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="membership/receipt/[paymentId]" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="shop" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="assistant" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="owner" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="platform" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="reception" options={{ animation: "none", headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade", headerShown: false }} />
         <Stack.Screen name="login" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="trainer" options={{ animation: "none", headerShown: false }} />
-        <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right", title: "Gym" }} />
-        <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", title: "Gyms", headerLargeTitle: true }} />
-        <Stack.Screen name="tracking" options={{ animation: "slide_from_right", title: "Progress" }} />
-        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", title: "Workout history", headerLargeTitle: true }} />
-        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", title: "Log progress" }} />
-        <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", title: "Plan" }} />
+        <Stack.Screen name="gym/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="gyms/[username]" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="gyms/index" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"
           options={{ presentation: "modal", animation: "slide_from_bottom", title: "Attendance" }}
         />
+        <Stack.Screen name="checkin" options={{ animation: "none", headerShown: false }} />
+        <Stack.Screen name="rewards" options={{ animation: "slide_from_right", headerShown: false }} />
       </Stack>
       <ToastHost />
     </>
@@ -482,7 +506,10 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
       pointerEvents="box-none"
       style={[
         styles.runtimeBannerHost,
-        { top: Math.max(spacing.xs, Math.max(insets.top, spacing.xs) - 76) },
+        // Sit just below the safe-area top (below the notch / dynamic island)
+        // so transient banners like the demo "Test data" badge aren't hidden
+        // behind the island. The previous -76 offset pulled them up into it.
+        { top: Math.max(insets.top, spacing.xs) + spacing.xs },
       ]}
     >
       {children}
@@ -494,7 +521,7 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
 function ThemedGestureRoot({ queryClient }: { queryClient: QueryClient }) {
   const { palette } = useTheme();
   return (
-    <View style={[styles.gestureRoot, { backgroundColor: palette.bg.app }]}>
+    <GestureHandlerRootView style={[styles.gestureRoot, { backgroundColor: palette.bg.app }]}>
       <Sentry.ErrorBoundary
         fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
       >
@@ -514,7 +541,7 @@ function ThemedGestureRoot({ queryClient }: { queryClient: QueryClient }) {
           </I18nProvider>
         </QueryClientProvider>
       </Sentry.ErrorBoundary>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -532,11 +559,18 @@ export default function Layout() {
   );
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
+    Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_800ExtraBold,
     Inter_900Black,
+    Sora_500Medium,
+    Sora_600SemiBold,
+    Sora_700Bold,
+    Sora_800ExtraBold,
   });
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
+  const appShellReady = fontsLoaded || fontLoadTimedOut;
 
   useEffect(() => {
     void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -544,18 +578,83 @@ export default function Layout() {
     });
   }, []);
 
-  // Splash hide is now deferred until both fonts are loaded and Auth hydration completes in LayoutContent.
+  useEffect(() => {
+    if (fontsLoaded) {
+      setFontLoadTimedOut(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setFontLoadTimedOut(true);
+    }, 4000);
+    return () => clearTimeout(timeout);
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  useEffect(() => {
+    if (!appShellReady) {
+      return;
+    }
+    void SplashScreen.hideAsync().catch(() => {
+      // Ignore splash cleanup races during local development.
+    });
+  }, [appShellReady]);
 
   return (
     <ThemeProvider>
       <SafeAreaProvider>
-        <ThemedGestureRoot queryClient={queryClient} />
+        {appShellReady ? <ThemedGestureRoot queryClient={queryClient} /> : <LaunchFallbackScreen />}
       </SafeAreaProvider>
     </ThemeProvider>
+  );
+}
+
+function LaunchFallbackScreen() {
+  return <LaunchSurface subtitle="Loading Zook…" />;
+}
+
+function LaunchSurface({ subtitle }: { subtitle: string }) {
+  const { mode, palette } = useTheme();
+  return (
+    <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
+      <View
+        style={[
+          styles.loadingCard,
+          {
+            backgroundColor: mode === "dark" ? palette.surface.default : palette.bg.elevated,
+            borderColor: palette.border.subtle,
+          },
+        ]}
+      >
+        <View
+          pointerEvents="none"
+          style={[
+            styles.loadingStageFrame,
+            {
+              backgroundColor: mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.56)",
+              borderColor: palette.border.subtle,
+            },
+          ]}
+        />
+        <View style={styles.loadingBrandLockup}>
+          <BrandMark size="lg" />
+          <Text
+            allowFontScaling={false}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+            style={[styles.loadingBrandText, { color: palette.text.primary }]}
+          >
+            ZOok
+          </Text>
+        </View>
+        <Text style={[styles.loadingSubtitle, { color: palette.text.secondary }]}>
+          Gym ops, without the clutter.
+        </Text>
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator color={palette.accent.base} />
+          <Text style={[styles.loadingText, { color: palette.text.secondary }]}>{subtitle}</Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -588,7 +687,49 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
+    overflow: "hidden",
+    padding: 24,
+    position: "relative",
+  },
+  loadingCard: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+  },
+  loadingStageFrame: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 28,
+    borderWidth: 1,
+  },
+  loadingBrandLockup: {
+    alignItems: "center",
+    gap: 10,
+    alignSelf: "stretch",
+    justifyContent: "center",
+  },
+  loadingBrandText: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 46,
+    lineHeight: 56,
+    letterSpacing: -1.2,
+    includeFontPadding: false,
+    minWidth: 176,
+    paddingHorizontal: 8,
+    textAlign: "center",
+  },
+  loadingSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: 240,
+  },
+  loadingFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   loadingText: {
     fontSize: 14,

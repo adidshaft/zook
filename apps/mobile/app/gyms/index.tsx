@@ -17,11 +17,12 @@ import {
 import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
-import { joinModeLabel, titleCaseFromCode } from "@/lib/formatting";
+import { joinModeLabel, joinModeTone, titleCaseFromCode } from "@/lib/formatting";
+import { resolveAmenities } from "@/lib/amenity-catalog";
 import { useI18n } from "@/lib/i18n";
 import { useGymSearch } from "@/lib/domains";
 import { useAuth } from "@/lib/auth";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 function normalizeMediaUrl(value?: string | null) {
   if (!value) {
@@ -107,7 +108,6 @@ export default function FindGyms() {
           <AppHeader
             eyebrow="Discovery"
             title="Find your gym"
-            subtitle="Browse public gyms and apply referral codes"
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -149,16 +149,13 @@ export default function FindGyms() {
           />
 
           {referralCode ? (
-            <Card variant="success" contentStyle={styles.referralContent}>
-              <IconBubble icon="gift-outline" tone="lime" size={36} />
-              <View style={styles.referralCopy}>
-                <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
-                  Referral code applied
-                </Text>
-                <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
-                  Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
-                </Text>
-              </View>
+            <Card variant="compact" contentStyle={styles.referralCopy}>
+              <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
+                Referral code applied
+              </Text>
+              <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
+                Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
+              </Text>
             </Card>
           ) : null}
 
@@ -198,10 +195,9 @@ export default function FindGyms() {
 
           {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
-              <IconBubble icon="search-outline" tone="neutral" size={42} />
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
-                  No gyms found
+                  No gyms
                 </Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                   Try widening the city or clearing the search.
@@ -250,7 +246,7 @@ export default function FindGyms() {
                             { backgroundColor: palette.surface.accentSoft },
                           ]}
                         >
-                          <IconBubble icon="business-outline" tone="lime" size={34} />
+                          <IconBubble icon="business-outline" tone="neutral" size={34} />
                         </View>
                       )}
                       <View style={styles.gymCopy}>
@@ -261,20 +257,35 @@ export default function FindGyms() {
                           {gym.city}, {gym.state}
                         </Text>
                       </View>
-                      <Pill tone={toneForJoinMode(gym.joinMode)}>
+                      <Pill tone={joinModeTone(gym.joinMode)}>
                         {joinModeLabel(gym.joinMode)}
                       </Pill>
                     </View>
 
-                    {(gym.amenities ?? []).length > 0 ? (
-                      <View style={styles.tags}>
-                        {(gym.amenities ?? []).slice(0, 4).map((amenity) => (
-                          <Text key={amenity} style={[styles.tagText, { color: palette.text.secondary }]}>
-                            {amenity}
-                          </Text>
-                        ))}
-                      </View>
-                    ) : null}
+                    {(() => {
+                      const available = resolveAmenities(gym.amenities ?? []).available;
+                      if (!available.length) return null;
+                      return (
+                        <View style={styles.amenityIcons}>
+                          {available.slice(0, 5).map((item) => (
+                            <View
+                              key={item.key}
+                              style={[styles.amenityChip, { backgroundColor: palette.surface.accentSoft }]}
+                            >
+                              <Ionicons name={item.icon} size={13} color={palette.accent.base} />
+                              <Text style={[styles.amenityChipText, { color: palette.text.secondary }]} numberOfLines={1}>
+                                {item.label}
+                              </Text>
+                            </View>
+                          ))}
+                          {available.length > 5 ? (
+                            <Text style={[styles.amenityMore, { color: palette.text.tertiary }]}>
+                              +{available.length - 5}
+                            </Text>
+                          ) : null}
+                        </View>
+                      );
+                    })()}
 
                     <View style={styles.gymFooter}>
                       <View style={styles.gymFooterLeft}>
@@ -299,13 +310,6 @@ export default function FindGyms() {
   );
 }
 
-function toneForJoinMode(joinMode?: string) {
-  if (joinMode === "OPEN_JOIN") return "lime" as const;
-  if (joinMode === "APPROVAL_REQUIRED") return "amber" as const;
-  if (joinMode === "INVITE_ONLY") return "violet" as const;
-  return "neutral" as const;
-}
-
 const styles = StyleSheet.create({
   content: {
     width: "100%",
@@ -323,13 +327,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  referralContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
   referralCopy: {
-    flex: 1,
     gap: 4,
   },
   referralTitle: {
@@ -412,6 +410,27 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tagText: {
+    ...typography.small,
+  },
+  amenityIcons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+  },
+  amenityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: radii.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    maxWidth: 150,
+  },
+  amenityChipText: {
+    ...typography.small,
+  },
+  amenityMore: {
     ...typography.small,
   },
   gymFooter: {

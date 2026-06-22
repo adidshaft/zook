@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Mail, Phone, ShieldCheck } from "lucide-react";
 import { webApiFetch } from "@/lib/api-client";
+import { sanitizeOtpValue } from "@/lib/otp";
 import { GlassCard, Pill } from "./glass-card";
 import { ZookButton } from "./zook-button";
 
@@ -71,13 +72,14 @@ export function MemberContactCompletionPanel({
   const copy = contactCopy(activeKind);
   const Icon = copy.icon;
   const completedCount = [contacts.email, contacts.phone].filter(Boolean).length;
+  const completionTone = completedCount === 2 ? "blue" : completedCount === 1 ? "amber" : "neutral";
   const activeValue = contacts[activeKind];
   const canRequest = Boolean(draft.trim()) && pending !== "request";
   const canVerify = Boolean(challenge && code.trim().length === 6) && pending !== "verify";
 
   const statusText = useMemo(() => {
-    if (completedCount === 2) return "Both contact methods are ready.";
-    if (completedCount === 1) return "One contact method is ready.";
+    if (completedCount === 2) return "Both contact methods are confirmed.";
+    if (completedCount === 1) return "One contact method is confirmed.";
     return "Add a contact method to complete sign-in recovery.";
   }, [completedCount]);
 
@@ -141,15 +143,22 @@ export function MemberContactCompletionPanel({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone={completedCount === 2 ? "lime" : "amber"}>
-              {completedCount}/2 contacts
-            </Pill>
-            <Pill tone="blue">OTP verified</Pill>
+            <Pill tone={completionTone}>{completedCount}/2 contacts</Pill>
           </div>
           <h2 className="mt-4 text-2xl font-semibold text-white">Account contact</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">{statusText}</p>
         </div>
-        <ShieldCheck className="text-lime-200" size={24} aria-hidden="true" />
+        <ShieldCheck
+          className={
+            completedCount === 2
+              ? "text-[var(--feedback-info)]"
+              : completedCount === 1
+                ? "text-amber-200"
+                : "text-white/35"
+          }
+          size={24}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -222,7 +231,7 @@ export function MemberContactCompletionPanel({
                 type="text"
                 inputMode="numeric"
                 value={code}
-                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(event) => setCode(sanitizeOtpValue(event.target.value))}
                 placeholder="000000"
                 className="zook-focus min-h-11 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/30"
               />
@@ -239,7 +248,7 @@ export function MemberContactCompletionPanel({
           </div>
         ) : null}
 
-        {message ? <p className="mt-3 text-sm text-lime-100/80">{message}</p> : null}
+        {message ? <p className="mt-3 text-sm text-white/55">{message}</p> : null}
       </div>
     </GlassCard>
   );

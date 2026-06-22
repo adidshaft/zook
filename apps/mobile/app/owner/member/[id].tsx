@@ -11,10 +11,11 @@ import {
   Skeleton,
   ZookScreen,
 } from "@/components/primitives";
+import { toneForStatus } from "@/components/membership/helpers";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
-import { formatLongDate } from "@/lib/formatting";
-import { getStoredValue, setStoredValue } from "@/lib/storage";
+import { formatInitials, formatLongDate, formatRedactedPhone, titleCaseFromCode } from "@/lib/formatting";
+import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -33,25 +34,6 @@ type OrgMemberDetailResponse = {
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function initialsFor(name?: string | null, email?: string | null) {
-  const source = name?.trim() || email?.trim() || "Member";
-  return source
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
-}
-
-function redactPhone(phone?: string | null) {
-  if (!phone) return "Not available";
-  return `****${phone.slice(-4)}`;
-}
-
-function phoneRevealStorageKey(orgId?: string | null) {
-  return `zook_revealed_owner_phones_${orgId ?? "none"}`;
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
@@ -88,7 +70,7 @@ function ContactRow({
   const { palette } = useTheme();
   return (
     <View style={styles.contactRow}>
-      <IconBubble icon={icon} tone="blue" size={40} />
+      <IconBubble icon={icon} tone="neutral" size={40} />
       <View style={styles.contactCopy}>
         <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>{label}</Text>
         <Text selectable style={[styles.rowValue, { color: palette.text.primary }]}>
@@ -124,11 +106,13 @@ export default function OwnerMemberDetail() {
   const phone = member?.user?.phone ?? "";
   const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? "Not set";
   const notes = member?.profile.notes;
+  const subscriptionStatus = member?.activeSubscription?.status ?? null;
+  const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : "No active plan";
 
   useEffect(() => {
     let mounted = true;
     setPhoneRevealed(false);
-    void getStoredValue(phoneRevealStorageKey(resolvedOrgId)).then((stored) => {
+    void getStoredValue(phoneRevealStorageKey("owner", resolvedOrgId)).then((stored) => {
       if (!mounted || !id || !stored) return;
       try {
         const parsed = JSON.parse(stored);
@@ -146,11 +130,11 @@ export default function OwnerMemberDetail() {
     if (!id) return;
     setPhoneRevealed(true);
     try {
-      const stored = await getStoredValue(phoneRevealStorageKey(resolvedOrgId));
+      const stored = await getStoredValue(phoneRevealStorageKey("owner", resolvedOrgId));
       const parsed = stored ? JSON.parse(stored) : [];
       const next = new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
       next.add(id);
-      await setStoredValue(phoneRevealStorageKey(resolvedOrgId), JSON.stringify(Array.from(next)));
+      await setStoredValue(phoneRevealStorageKey("owner", resolvedOrgId), JSON.stringify(Array.from(next)));
       if (token && resolvedOrgId) {
         await apiClient.request("/audit-logs", {
           method: "POST",
@@ -170,7 +154,7 @@ export default function OwnerMemberDetail() {
 
   return (
     <>
-      <ZookScreen>
+      <ZookScreen testID="owner-member-detail-screen">
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
@@ -178,7 +162,6 @@ export default function OwnerMemberDetail() {
         >
           <AppHeader
             title={name}
-            subtitle="Owner member profile"
             leading={
               <BackButton
                 onPress={() =>
@@ -199,15 +182,6 @@ export default function OwnerMemberDetail() {
             </Card>
           ) : null}
 
-          {!memberQuery.isLoading && !member ? (
-            <Card variant="compact" contentStyle={styles.stateContent}>
-              <IconBubble icon="people-outline" tone="neutral" size={44} />
-              <Text style={[styles.stateText, { color: palette.text.primary }]}>
-                Member not found
-              </Text>
-            </Card>
-          ) : null}
-
           {memberQuery.isError ? (
             <Card variant="compact">
               <QueryErrorState
@@ -218,12 +192,20 @@ export default function OwnerMemberDetail() {
             </Card>
           ) : null}
 
+          {!memberQuery.isLoading && !memberQuery.isError && !member ? (
+            <Card variant="compact" contentStyle={styles.stateContent}>
+              <Text style={[styles.stateText, { color: palette.text.primary }]}>
+                Member not found
+              </Text>
+            </Card>
+          ) : null}
+
           {member ? (
             <>
-              <Card variant="success" contentStyle={styles.profileContent}>
+              <Card variant="compact" contentStyle={styles.profileContent}>
                 <View style={[styles.largeAvatar, { backgroundColor: palette.accent.fill }]}>
                   <Text style={[styles.largeAvatarText, { color: palette.text.onAccent }]}>
-                    {initialsFor(name, email)}
+                    {formatInitials(name, email)}
                   </Text>
                 </View>
                 <View style={styles.profileCopy}>
@@ -233,13 +215,13 @@ export default function OwnerMemberDetail() {
                   <Text style={[styles.memberEmail, { color: palette.text.secondary }]}>
                     {formatLongDate(member.profile.createdAt)}
                   </Text>
-                  <Pill tone="lime">{member.activeSubscription?.status ?? "Profile"}</Pill>
+                  <Pill tone={toneForStatus(subscriptionStatus)}>{subscriptionStatusLabel}</Pill>
                 </View>
               </Card>
 
               <Card contentStyle={styles.sectionContent}>
                 <View style={styles.sectionRow}>
-                  <IconBubble icon="barbell-outline" tone="lime" size={42} />
+                  <IconBubble icon="barbell-outline" tone="neutral" size={42} />
                   <View style={styles.sectionCopy}>
                     <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
                       Fitness goal
@@ -263,7 +245,7 @@ export default function OwnerMemberDetail() {
                 <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
                 {phone ? (
                   <View style={styles.contactRow}>
-                    <IconBubble icon="call-outline" tone="blue" size={40} />
+                    <IconBubble icon="call-outline" tone="neutral" size={40} />
                     <View style={styles.contactCopy}>
                       <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
                         Phone
@@ -272,7 +254,7 @@ export default function OwnerMemberDetail() {
                         selectable={phoneRevealed}
                         style={[styles.rowValue, { color: palette.text.primary }]}
                       >
-                        {phoneRevealed ? phone : redactPhone(phone)}
+                        {phoneRevealed ? phone : formatRedactedPhone(phone, "Not available")}
                       </Text>
                     </View>
                     {!phoneRevealed ? (
@@ -304,7 +286,14 @@ export default function OwnerMemberDetail() {
 }
 
 const styles = StyleSheet.create({
-  content: { width: "100%", maxWidth: layout.contentWidth, alignSelf: "center", paddingTop: 14, gap: 14, paddingBottom: 96 },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    paddingTop: layout.screenContentTopPadding,
+    gap: spacing.md,
+    paddingBottom: 96,
+  },
   iconButton: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   iconButtonPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
   stateContent: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: spacing.md },
@@ -312,7 +301,7 @@ const styles = StyleSheet.create({
   stateText: typography.cardTitle,
   profileContent: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   largeAvatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
-  largeAvatarText: typography.h2,
+  largeAvatarText: typography.headerTitle,
   profileCopy: { flex: 1, gap: 5, alignItems: "flex-start" },
   memberName: typography.headerTitle,
   memberEmail: typography.small,

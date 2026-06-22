@@ -1,8 +1,8 @@
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
 import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
@@ -28,14 +28,12 @@ export function ReceptionOrdersScreenBody() {
                 {
                   label: "Ready",
                   value: readyOrders.length,
-                  hint: "Pickup queue",
-                  tone: "lime",
+                  tone: "blue",
                   icon: "bag-check-outline",
                 },
                 {
                   label: "Done",
                   value: fulfilledCount,
-                  hint: "Fulfilled",
                   tone: "blue",
                   icon: "checkmark-done-outline",
                 },
@@ -66,7 +64,7 @@ export function ReceptionOrdersScreenBody() {
                 {verifyingCode ? "Verifying..." : "Verify Pickup Code"}
               </PrimaryButton>
             </Card>
-            <SectionHeader title="Fulfillment Queue" subtitle="Paid orders ready at the desk." />
+            <SectionHeader title="Fulfillment Queue" />
             <View style={styles.stack}>
               {readyOrders.length ? (
                 readyOrders.map((order, index) => (
@@ -80,7 +78,7 @@ export function ReceptionOrdersScreenBody() {
                     contentStyle={styles.queueCard}
                   >
                     <View style={styles.queueHeader}>
-                      <IconBubble icon="bag-handle-outline" tone="lime" size={38} />
+                      <IconBubble icon="bag-handle-outline" tone={toneForShopOrderStatus(order.status)} size={38} />
                       <View style={styles.queueCopy}>
                         <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
                           {order.user?.name ?? "Member pickup"}
@@ -90,7 +88,9 @@ export function ReceptionOrdersScreenBody() {
                           {order.items.length} items
                         </Text>
                       </View>
-                      <Pill tone="lime">{order.status.replace(/_/g, " ")}</Pill>
+                      <Pill tone={toneForShopOrderStatus(order.status)}>
+                        {titleCaseFromCode(order.status)}
+                      </Pill>
                     </View>
                     <View style={styles.itemGrid}>
                       {order.items.map((item) => {
@@ -120,14 +120,26 @@ export function ReceptionOrdersScreenBody() {
                       testID={index === 0 ? "fulfill-button-first" : `fulfill-button-${order.id}`}
                       icon="bag-check-outline"
                       disabled={fulfillOrderMutation.isPending}
-                      onPress={() => fulfillOrder(order.id)}
+                      onPress={() => {
+                        Alert.alert(
+                          "Mark order picked up?",
+                          `${order.user?.name ?? "This member"} is marked as collected for ${formatInr(order.totalPaise)}.`,
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Mark picked up",
+                              onPress: () => fulfillOrder(order.id),
+                            },
+                          ],
+                        );
+                      }}
                     >
                       Mark Picked Up
                     </PrimaryButton>
                   </Card>
                 ))
               ) : (
-                <EmptyState title="No pickups waiting" body="Ready orders will appear after payment." />
+                <EmptyState icon="bag-handle-outline" title="No pickups waiting" body="Paid shop orders ready for collection will appear here." />
               )}
             </View>
             {paymentStatus ? (

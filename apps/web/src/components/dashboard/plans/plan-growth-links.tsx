@@ -18,7 +18,6 @@ export function PlanGrowthLinks({
       <SectionHeader
         eyebrow="Plan growth"
         title="Discounts, offers, and referrals"
-        description="Keep member acquisition tools next to the plans they affect."
       />
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {[
@@ -32,7 +31,7 @@ export function PlanGrowthLinks({
             label: "Offers",
             href: "/dashboard/plans/offers",
             detail: "Publish plan offers for a date window or campaign.",
-            badge: `${activeOfferCount} live`,
+            badge: `${activeOfferCount} active`,
           },
           {
             label: "Referrals",
@@ -51,7 +50,7 @@ export function PlanGrowthLinks({
                 <p className="font-medium text-white">{item.label}</p>
                 <p className="mt-2 text-sm leading-5 text-white/50">{item.detail}</p>
               </div>
-              <Pill tone="blue">{item.badge}</Pill>
+              <Pill>{item.badge}</Pill>
             </div>
           </Link>
         ))}

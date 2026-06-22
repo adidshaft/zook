@@ -59,6 +59,13 @@ function starterMessage(isTrainer: boolean): ChatMessage {
   };
 }
 
+function homeRouteForRole(role: string) {
+  if (role === "TRAINER") return "/trainer";
+  if (role === "OWNER" || role === "ADMIN") return "/owner";
+  if (role === "RECEPTIONIST") return "/reception";
+  return "/";
+}
+
 export default function AssistantScreen() {
   const router = useRouter();
   const { palette, mode } = useTheme();
@@ -75,11 +82,15 @@ export default function AssistantScreen() {
   const profileQuery = useMyProfile();
   const plansQuery = useMyPlans();
   const activeRole = roleContext?.role ?? "MEMBER";
-  const isTrainer = Boolean(roleContext?.availableRoles.includes("TRAINER"));
+  // Use the ACTIVE role, not merely available roles — a member who can also
+  // train shouldn't see trainer prompts/copy while acting as a member.
+  const isTrainer = activeRole === "TRAINER";
   const trainerClientsQuery = useTrainerClients(undefined, undefined, isTrainer);
   const canUseAi = Boolean(
     roleContext?.availableRoles.some((role) => role === "TRAINER" || role === "MEMBER"),
   );
+  const assistantEnabled = isMobileFeatureEnabled("AI_CHAT_ENABLED");
+  const fallbackRoute = homeRouteForRole(activeRole);
   const storageKey = `zook_assistant_messages_${activeOrgId ?? "global"}_${activeRole ?? "member"}`;
   const hydratedRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>([starterMessage(isTrainer)]);
@@ -116,6 +127,15 @@ export default function AssistantScreen() {
         .join("\n");
 
   useEffect(() => {
+    if (!assistantEnabled) {
+      router.replace(fallbackRoute as never);
+    }
+  }, [assistantEnabled, fallbackRoute, router]);
+
+  useEffect(() => {
+    if (!assistantEnabled) {
+      return;
+    }
     hydratedRef.current = false;
     void getStoredValue(storageKey).then((stored) => {
       if (stored) {
@@ -141,10 +161,10 @@ export default function AssistantScreen() {
       }
       hydratedRef.current = true;
     });
-  }, [isTrainer, storageKey]);
+  }, [assistantEnabled, isTrainer, storageKey]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !messages.length) {
+    if (!assistantEnabled || !hydratedRef.current || !messages.length) {
       return;
     }
     void setStoredValue(storageKey, JSON.stringify(messages.slice(-50))).catch(() => {
@@ -155,9 +175,12 @@ export default function AssistantScreen() {
         haptic: "warning",
       });
     });
-  }, [messages, storageKey]);
+  }, [assistantEnabled, messages, storageKey]);
 
   useEffect(() => {
+    if (!assistantEnabled) {
+      return undefined;
+    }
     const keyboardShowEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const keyboardHideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
     const showSubscription = Keyboard.addListener(keyboardShowEvent, (event) => {
@@ -179,7 +202,7 @@ export default function AssistantScreen() {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, [composerTranslateY, insets.bottom]);
+  }, [assistantEnabled, composerTranslateY, insets.bottom]);
 
   async function copyMessage(message: ChatMessage) {
     if (message.role !== "assistant") {
@@ -252,14 +275,16 @@ export default function AssistantScreen() {
 
   const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
   const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
-  const assistantEnabled = isMobileFeatureEnabled("AI_CHAT_ENABLED");
+  if (!assistantEnabled) {
+    return null;
+  }
 
   if (!canUseAi) {
     return (
       <ZookScreen testID="assistant-unavailable-screen">
         <View style={styles.content}>
           <Card variant="compact" contentStyle={styles.emptyContent}>
-            <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
+            <IconBubble icon="chatbubble-ellipses-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Plan assistant</Text>
               <Text style={styles.emptyBody}>
@@ -268,91 +293,6 @@ export default function AssistantScreen() {
             </View>
           </Card>
         </View>
-      </ZookScreen>
-    );
-  }
-
-  if (!assistantEnabled) {
-    return (
-      <ZookScreen testID="assistant-coming-soon-screen">
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={palette.accent.base}
-              colors={[palette.accent.base]}
-            />
-          }
-        >
-          <AppHeader
-            eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
-            title="AI Chat"
-            subtitle="Training chat is being polished before it opens in the app."
-            leading={
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-              style={({ pressed }) => [
-                styles.iconButton,
-                {
-                  borderColor: palette.border.subtle,
-                  backgroundColor: quietSurface,
-                },
-                pressed ? styles.controlPressed : null,
-              ]}
-            >
-                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
-              </Pressable>
-            }
-            chip={
-              <View
-                style={[
-                  styles.comingSoonBadge,
-                  { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
-                ]}
-              >
-                <Text style={[styles.comingSoonBadgeText, { color: palette.accent.base }]}>
-                  Coming Soon!
-                </Text>
-              </View>
-            }
-            showProfileShortcut={false}
-          />
-          <Card variant="compact" contentStyle={styles.emptyContent}>
-            <IconBubble icon="sparkles-outline" tone="neutral" size={42} />
-            <View style={styles.emptyCopy}>
-              <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
-                AI Chat is coming soon
-              </Text>
-              <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                Workouts, plans, and profile data stay available while we finish the assistant.
-              </Text>
-            </View>
-          </Card>
-          <View style={styles.suggestionRow}>
-            {suggestedPrompts.map((prompt) => (
-              <View
-                key={prompt}
-                style={[
-                  styles.suggestionChipDisabled,
-                  {
-                    borderColor: palette.border.subtle,
-                    backgroundColor: chipSurface,
-                  },
-                ]}
-              >
-                <Text style={[styles.suggestionText, { color: palette.text.primary }]}>
-                  {prompt}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
       </ZookScreen>
     );
   }
@@ -400,7 +340,7 @@ export default function AssistantScreen() {
           }
           chip={
             <View style={[styles.aiMark, { backgroundColor: palette.accent.fill }]}>
-              <Ionicons name="sparkles" size={18} color={palette.text.onAccent} />
+              <Ionicons name="chatbubble-ellipses" size={18} color={palette.text.onAccent} />
             </View>
           }
           showProfileShortcut={false}
@@ -484,8 +424,8 @@ export default function AssistantScreen() {
         {attachSummary && contextSummary ? (
           <Card variant="compact" contentStyle={styles.contextContent}>
             <View style={styles.contextHeader}>
-              <IconBubble icon="person-outline" tone="blue" size={32} />
-              <Text style={[styles.contextLabel, { color: palette.feedback.info }]}>
+              <IconBubble icon="person-outline" tone="neutral" size={32} />
+              <Text style={[styles.contextLabel, { color: palette.text.secondary }]}>
                 {isTrainer ? "Attached client data" : "Attached profile"}
               </Text>
             </View>
@@ -530,7 +470,7 @@ export default function AssistantScreen() {
                     { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
                   ]}
                 >
-                  <Ionicons name="sparkles" size={14} color={palette.accent.base} />
+                  <Ionicons name="chatbubble-ellipses" size={14} color={palette.accent.base} />
                 </View>
               ) : null}
               <Text
@@ -561,7 +501,7 @@ export default function AssistantScreen() {
                   { borderColor: palette.accent.base, backgroundColor: palette.surface.accentSoft },
                 ]}
               >
-                <Ionicons name="sparkles" size={14} color={palette.accent.base} />
+                <Ionicons name="chatbubble-ellipses" size={14} color={palette.accent.base} />
               </View>
               <Text style={[styles.typingText, { color: palette.text.secondary }]}>Thinking...</Text>
             </View>
@@ -637,7 +577,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     gap: 14,
     paddingBottom: layout.bottomNavContentPadding + 92,
   },
@@ -647,17 +587,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-  },
-  comingSoonBadge: {
-    minHeight: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  comingSoonBadgeText: {
-    ...typography.caption,
   },
   iconButton: {
     width: 44,
@@ -687,11 +616,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     alignSelf: "flex-start",
   },
-  controlChipActive: {},
   controlChipText: {
     ...typography.caption,
   },
-  controlChipTextActive: {},
   copyStatus: {
     ...typography.small,
   },
@@ -705,15 +632,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  suggestionChipDisabled: {
-    minHeight: 40,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: "center",
-    opacity: 0.7,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -826,17 +744,5 @@ const styles = StyleSheet.create({
   emptyBody: {
     ...typography.body,
     textAlign: "center",
-  },
-  comingSoonCta: {
-    minHeight: 44,
-    borderRadius: 14,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  comingSoonCtaText: {
-    ...typography.bodyStrong,
   },
 });

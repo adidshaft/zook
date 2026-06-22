@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { formatInr } from "@/lib/format";
-import { joinModeLabelForLocale, localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
+import { joinModeLabelForLocale, joinModeTone, localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { GymResult } from "@/lib/public-gym-discovery";
 
 export function GymDiscoveryGrid({
@@ -14,10 +15,12 @@ export function GymDiscoveryGrid({
   locale: PublicLocale;
 }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
+  const coverAlt = (name: string) => (locale === "hi" ? `${name} की cover photo` : `${name} cover`);
+  const logoAlt = (name: string) => (locale === "hi" ? `${name} लोगो` : `${name} logo`);
   if (!gyms.length) {
     return (
       <GlassCard className="text-center">
-        <Pill tone="amber">{t("noResults")}</Pill>
+        <Pill>{t("noResults")}</Pill>
         <h2 className="mt-4 text-2xl font-semibold text-white">{t("noGyms")}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">{t("noGymsCopy")}</p>
         <ZookButtonLink href={localizedPath("/start-gym", locale)} className="mt-6">
@@ -35,7 +38,7 @@ export function GymDiscoveryGrid({
               {gym.coverImageUrl ? (
                 <img
                   src={gym.coverImageUrl}
-                  alt={`${gym.name} cover`}
+                  alt={coverAlt(gym.name)}
                   loading="lazy"
                   decoding="async"
                   className="h-full w-full object-cover"
@@ -49,11 +52,12 @@ export function GymDiscoveryGrid({
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 {gym.logoUrl ? (
-                  <img src={gym.logoUrl} alt={`${gym.name} logo`} loading="lazy" decoding="async" className="h-12 w-12 rounded-2xl border border-white/10 object-cover" />
+                  <img src={gym.logoUrl} alt={logoAlt(gym.name)} loading="lazy" decoding="async" className="h-12 w-12 rounded-2xl border border-white/10 object-cover" />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-lime-300/12 text-sm font-semibold text-lime-100">
-                    {gym.name.slice(0, 1)}
-                  </div>
+                  <AvatarInitials
+                    name={gym.name}
+                    className="h-12 w-12 rounded-2xl border-white/10 bg-lime-300/12 text-sm text-lime-100"
+                  />
                 )}
                 <div>
                   <h2 className="font-semibold text-white">{gym.name}</h2>
@@ -63,7 +67,7 @@ export function GymDiscoveryGrid({
                   </p>
                 </div>
               </div>
-              <Pill tone="blue">{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
+              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {(gym.amenities ?? []).slice(0, 4).map((amenity) => <Pill key={amenity}>{amenity}</Pill>)}

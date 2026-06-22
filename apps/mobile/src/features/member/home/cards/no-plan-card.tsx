@@ -9,11 +9,11 @@ export default function NoPlanCard({ daysLeft, gymName }: { daysLeft: number; gy
     <HomeCardShell
       testID="home-state-no-plan"
       icon="chatbubble-ellipses-outline"
-      title="No plan assigned yet"
-      body={`You are active at ${gymName}. Ask your trainer for a workout plan when you are ready.`}
+      title="No plan assigned"
+      body={`You are active at ${gymName}. Ask your trainer for a workout plan.`}
       ctaHref="/plan"
       ctaLabel="Open Plan"
-      tone="amber"
+      tone="blue"
     >
       <Text style={{ color: palette.text.secondary, ...typography.small }}>
         {daysLeft > 0 ? `${daysLeft} membership days left.` : "Membership status is active."}

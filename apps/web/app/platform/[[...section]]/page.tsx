@@ -7,7 +7,7 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { requirePlatformSession } from "@/lib/server-auth";
 import { ZookLogo } from "@/components/zook-logo";
 import { getPlatformDashboardShellData } from "@/lib/data";
-import { getPlatformProviderDiagnostics } from "@/server/domains/overview";
+import { getPlatformProviderDiagnostics } from "@/server/domains/overview/read-models";
 import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +63,7 @@ function serializePlatformAbuseFlag(flag: {
 }
 
 const platformSectionAnchors: Record<string, string> = {
+  overview: "business-overview",
   status: "readiness",
   users: "users",
   payments: "payments",
@@ -74,45 +75,54 @@ const platformSectionAnchors: Record<string, string> = {
   impersonations: "impersonations",
   gyms: "organizations",
   subscriptions: "subscriptions",
+  referrals: "referrals",
   assistant: "ai-traffic",
   safety: "abuse-flags",
   incidents: "incident-checklist",
 };
 
 const platformNavItems: Array<[string, string, string]> = [
-  ["Status", "/platform/status", "status"],
-  ["Users", "/platform/users", "users"],
-  ["Payments", "/platform/payments", "payments"],
-  ["Broadcasts", "/platform/broadcasts", "broadcasts"],
-  ["Moderation", "/platform/moderation", "moderation"],
-  ["Impersonations", "/platform/impersonations", "impersonations"],
-  ["Webhooks", "/platform/webhooks", "webhooks"],
-  ["Audit", "/platform/audit", "audit"],
-  ["Flags", "/platform/flags", "flags"],
-  ["Gyms", "/platform/gyms", "gyms"],
+  ["Overview", "/platform", "overview"],
   ["Subscriptions", "/platform/subscriptions", "subscriptions"],
-  ["Assistant", "/platform/assistant", "assistant"],
+  ["Payments", "/platform/payments", "payments"],
+  ["Referrals & payouts", "/platform/referrals", "referrals"],
+  ["Gyms", "/platform/gyms", "gyms"],
+  ["Users", "/platform/users", "users"],
+  ["Impersonations", "/platform/impersonations", "impersonations"],
+  ["Moderation", "/platform/moderation", "moderation"],
   ["Safety", "/platform/safety", "safety"],
+  ["Audit", "/platform/audit", "audit"],
+  ["Status", "/platform/status", "status"],
   ["Incidents", "/platform/incidents", "incidents"],
+  ["Webhooks", "/platform/webhooks", "webhooks"],
+  ["Flags", "/platform/flags", "flags"],
+  ["Broadcasts", "/platform/broadcasts", "broadcasts"],
+  ["Assistant", "/platform/assistant", "assistant"],
 ];
 
 const platformNavGroups = [
   {
-    label: "Health",
+    label: "Business",
     items: platformNavItems.filter(([, , key]) =>
-      ["status", "incidents", "webhooks", "audit"].includes(key),
+      ["overview", "subscriptions", "payments", "referrals"].includes(key),
     ),
   },
   {
-    label: "Support",
+    label: "Gyms & users",
     items: platformNavItems.filter(([, , key]) =>
-      ["users", "payments", "gyms", "subscriptions"].includes(key),
+      ["gyms", "users", "impersonations"].includes(key),
     ),
   },
   {
-    label: "Controls",
+    label: "Trust & safety",
     items: platformNavItems.filter(([, , key]) =>
-      ["broadcasts", "moderation", "impersonations", "flags", "assistant", "safety"].includes(key),
+      ["moderation", "safety", "audit"].includes(key),
+    ),
+  },
+  {
+    label: "System",
+    items: platformNavItems.filter(([, , key]) =>
+      ["status", "incidents", "webhooks", "flags", "broadcasts", "assistant"].includes(key),
     ),
   },
 ];
@@ -169,10 +179,10 @@ export default async function PlatformPage({
 }) {
   await requirePlatformSession();
   const { section } = await params;
-  const sectionKey = section?.[0] ?? "status";
-  const activeAnchor = platformSectionAnchors[sectionKey] ?? "readiness";
+  const sectionKey = section?.[0] ?? "overview";
+  const activeAnchor = platformSectionAnchors[sectionKey] ?? "business-overview";
   const activeNavLabel =
-    platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Status";
+    platformNavItems.find(([, , key]) => key === sectionKey)?.[0] ?? "Overview";
 
   return (
     <main className="min-h-screen px-3 py-3 md:px-5">
@@ -185,8 +195,7 @@ export default async function PlatformPage({
                 <DashboardSignOutButton compact />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Pill tone="lime">Production</Pill>
-                <Pill tone="blue">{activeNavLabel}</Pill>
+                <Pill>{activeNavLabel}</Pill>
               </div>
             </GlassCard>
             <PlatformNavigation sectionKey={sectionKey} />
@@ -198,16 +207,14 @@ export default async function PlatformPage({
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 lg:hidden">
-                  <Pill tone="lime">Production</Pill>
-                  <Pill tone="amber">Platform team</Pill>
-                  <Pill tone="blue">{activeNavLabel}</Pill>
+                  <Pill>{activeNavLabel}</Pill>
                 </div>
                 <div className="mt-3 min-w-0 lg:mt-0">
                   <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-                    Platform operations
+                    Business command center
                   </h1>
                   <p className="mt-1 max-w-3xl text-sm leading-5 text-white/55">
-                    Production health, support lookup, gym accounts, billing, and risk queues.
+                    Revenue, gym growth, referral economics, and the queues that need the Zook owner.
                   </p>
                 </div>
               </div>
@@ -220,22 +227,36 @@ export default async function PlatformPage({
 
           <nav
             aria-label="Platform sections"
-            className="no-scrollbar sticky top-3 z-20 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden"
+            className="no-scrollbar sticky top-3 z-20 overflow-x-auto rounded-2xl border border-white/10 bg-black/82 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl lg:hidden"
           >
-            {platformNavItems.map(([item, href, key]) => (
-              <Link
-                key={item}
-                href={href}
-                prefetch={false}
-                className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
-                  key === sectionKey
-                    ? "bg-lime-300 text-black"
-                    : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
-                }`}
-              >
-                {item}
-              </Link>
-            ))}
+            <div className="flex gap-3">
+              {platformNavGroups.map((group) => (
+                <div
+                  key={group.label}
+                  className="min-w-[220px] shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2"
+                >
+                  <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.items.map(([item, href, key]) => (
+                      <Link
+                        key={item}
+                        href={href}
+                        prefetch={false}
+                        className={`zook-focus shrink-0 rounded-xl px-3 py-2 text-center text-sm font-medium transition ${
+                          key === sectionKey
+                            ? "bg-lime-300 text-black"
+                            : "border border-white/10 text-white/68 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        {item}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </nav>
 
           <Suspense fallback={<PlatformContentSkeleton />}>
@@ -313,7 +334,7 @@ async function PlatformDashboardContent({
   const runtimeLabel = data.connected
     ? "System online"
     : data.fallbackMode === "demo"
-      ? "Demo data — production data unavailable"
+      ? "Test data mode"
       : "Data unavailable";
   const suspendedCount = data.orgs.filter((org) => org.status === "SUSPENDED").length;
   const safetyReviewCount = data.platform.abuseFlags.filter(
@@ -325,7 +346,7 @@ async function PlatformDashboardContent({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone={data.connected ? "lime" : "amber"}>{runtimeLabel}</Pill>
+        <Pill tone={data.connected ? "blue" : "amber"}>{runtimeLabel}</Pill>
         {hasAlerts ? (
           <Pill tone="amber">
             <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -399,16 +420,16 @@ function PlatformStatusFirstFold({
   const rows = [
     {
       label: "Provider setup",
-      value: providerGapCount ? `${providerGapCount} gap${providerGapCount === 1 ? "" : "s"}` : "Ready",
+      value: providerGapCount ? `${providerGapCount} gap${providerGapCount === 1 ? "" : "s"}` : "Configured",
       meta: providerGapCount
         ? "Open Incidents or Webhooks for exact provider checks."
         : `${readyProviderCount} providers are reporting usable defaults.`,
-      tone: providerGapCount ? "amber" : "lime",
+      tone: providerGapCount ? "amber" : "neutral",
     },
     {
       label: "Gym accounts",
       value: `${activeGyms} active`,
-      meta: `${data.orgs.length} recently loaded accounts in the platform queue.`,
+      meta: `${data.orgs.length} recent accounts in the platform queue.`,
       tone: suspendedCount ? "amber" : "blue",
     },
     {
@@ -416,8 +437,8 @@ function PlatformStatusFirstFold({
       value: safetyReviewCount ? `${safetyReviewCount} open` : "Clear",
       meta: safetyReviewCount
         ? "Review unresolved safety reports before expanding traffic."
-        : "No unresolved safety reports in the loaded queue.",
-      tone: safetyReviewCount ? "amber" : "lime",
+        : "No unresolved safety reports.",
+      tone: safetyReviewCount ? "amber" : "neutral",
     },
   ] as const;
 
@@ -438,7 +459,7 @@ function PlatformStatusFirstFold({
                 from the left nav for deeper actions.
               </p>
             </div>
-            <Pill tone={providerGapCount || safetyReviewCount || suspendedCount ? "amber" : "lime"}>
+            <Pill tone={providerGapCount || safetyReviewCount || suspendedCount ? "amber" : "neutral"}>
               {providerGapCount || safetyReviewCount || suspendedCount ? "Review needed" : "Healthy"}
             </Pill>
           </div>

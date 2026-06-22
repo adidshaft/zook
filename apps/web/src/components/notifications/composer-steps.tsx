@@ -10,6 +10,7 @@ import {
   memberLabel,
   memberUserId,
   messageTypes,
+  toneForNotificationStatus,
   type Audience,
   type BranchRow,
   type MemberRow,
@@ -143,7 +144,7 @@ export function AudienceStep({
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-white/70">Selected recipients</p>
-            <Pill tone={selectedUserIds.length ? "lime" : "neutral"}>
+            <Pill>
               {selectedUserIds.length} selected
             </Pill>
           </div>
@@ -168,7 +169,7 @@ export function AudienceStep({
                       selectedUserIds.filter((id) => id !== memberUserId(member)),
                     )
                   }
-                  className="zook-focus rounded-full border border-lime-300/25 bg-lime-300/8 px-3 py-2 text-xs text-lime-100"
+                  className="zook-focus rounded-full border border-white/12 bg-white/6 px-3 py-2 text-xs text-white/65"
                 >
                   {memberLabel(member)} · Remove
                 </button>
@@ -268,7 +269,7 @@ export function MessageDraftStep({
       {pendingTemplate ? (
         <ConfirmDialog
           title="Apply saved template?"
-          description="This replaces the current title and message draft."
+          description="This replaces the title and message draft."
           confirmLabel="Apply template"
           onCancel={() => setPendingTemplate(null)}
           onConfirm={() => {
@@ -353,9 +354,9 @@ export function ReviewStep({
         <p className="mt-2 text-sm text-white/65">{body || "Message"}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-4">
-        <Pill tone="blue">{preview?.resolvedRecipients ?? 0} matched</Pill>
-        <Pill tone="lime">{preview?.willDeliver ?? 0} will receive</Pill>
-        <Pill tone="amber">{preview?.blockedByOptOut ?? 0} opted out</Pill>
+        <Pill>{preview?.resolvedRecipients ?? 0} matched</Pill>
+        <Pill>{preview?.willDeliver ?? 0} will receive</Pill>
+        <Pill>{preview?.blockedByOptOut ?? 0} opted out</Pill>
       </div>
       {preview?.blockedByOptOut ? (
         <p className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
@@ -364,10 +365,10 @@ export function ReviewStep({
         </p>
       ) : null}
       <div className="grid gap-3 md:grid-cols-4">
-        <Pill tone="blue">{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
-        <Pill tone="lime">{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
-        <Pill tone="amber">{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
-        <Pill tone="neutral">{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
+        <Pill>{preview?.budget?.senderRemaining ?? 0} sender left</Pill>
+        <Pill>{preview?.budget?.orgAllRemaining ?? 0} gym left</Pill>
+        <Pill>{preview?.budget?.orgPromoRemaining ?? 0} announcements left</Pill>
+        <Pill>{preview?.budget?.orgOperationalRemaining ?? 0} updates left</Pill>
       </div>
     </div>
   );
@@ -390,7 +391,7 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
           >
             <div className="flex items-center justify-between gap-3">
               <p className="font-medium text-white">{notification.title}</p>
-              <Pill tone={notification.status === "SENT" ? "lime" : "amber"}>
+              <Pill tone={toneForNotificationStatus(notification.status)}>
                 {formatEnumLabel(notification.status)}
               </Pill>
             </div>
@@ -413,7 +414,7 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
         ))
       ) : (
         <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
-          Messages you send will appear here.
+          No sent messages.
         </p>
       )}
     </div>

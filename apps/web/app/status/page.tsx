@@ -121,7 +121,7 @@ export default async function StatusPage({
   const uptimeLabel =
     publicStatus === "operational"
       ? "All systems operational"
-      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in mock mode or degraded`;
+      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in test-provider mode or degraded`;
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
@@ -137,7 +137,7 @@ export default async function StatusPage({
         <GlassCard variant="strong">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Pill tone={statusTone(publicStatus)}>Zook · live status</Pill>
+              <Pill tone={statusTone(publicStatus)}>Zook status</Pill>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-6xl">
                 {statusHeadline}
               </h1>
@@ -184,7 +184,7 @@ export default async function StatusPage({
             <Pill tone={statusTone(publicStatus)}>{formatEnumLabel(publicStatus)}</Pill>
           </div>
           <p className="mt-5 text-sm text-white/50">
-            Incident history will appear here once monitoring is active.
+            No incident history is recorded yet.
           </p>
           <p className="mt-5 text-sm text-white/50">
             Looking for engineering detail?{" "}

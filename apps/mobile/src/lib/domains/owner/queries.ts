@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { useActivePermissions, useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { queryString } from "@/lib/domains/shared/request";
@@ -9,6 +9,7 @@ import type {
   OrgMemberRecord,
   OwnerBillingSubscriptionData,
   OwnerDashboardData,
+  TrainerPayoutRecord,
 } from "@/lib/domains/shared/types";
 
 type OwnerSetupStatusData = {
@@ -21,13 +22,15 @@ type OwnerSetupStatusData = {
 
 export function useOwnerDashboard(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.dashboard(resolvedOrgId),
+    queryKey: queryKeys.owner.dashboard(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/dashboard`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
@@ -39,18 +42,26 @@ export function useOwnerDashboard(orgId?: string) {
 
 export function useOwnerBillingSubscription(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
   return useQuery({
-    queryKey: queryKeys.owner.billing(resolvedOrgId),
+    queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerBillingSubscriptionData>(
         `/orgs/${resolvedOrgId}/billing/subscription`,
         {
           token,
           orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         },
       ),
-    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(resolvedOrgId) &&
+      canManageBilling,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -58,15 +69,23 @@ export function useOwnerBillingSubscription(orgId?: string) {
 
 export function useOwnerSetupStatus(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
   return useQuery({
-    queryKey: queryKeys.owner.setupStatus(resolvedOrgId),
+    queryKey: queryKeys.owner.setupStatus(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OwnerSetupStatusData>(`/orgs/${resolvedOrgId}/setup-status`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
-    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(resolvedOrgId) &&
+      canManageBilling,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
@@ -79,15 +98,17 @@ export function useOrgJoinRequests<TData = OrgJoinRequestsData>(
   options?: { select?: (data: OrgJoinRequestsData) => TData },
 ) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.approvals(resolvedOrgId),
+    queryKey: queryKeys.owner.approvals(resolvedOrgId, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<OrgJoinRequestsData>(
         `/orgs/${resolvedOrgId}/join-requests`,
         {
           token,
           orgId: resolvedOrgId,
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
@@ -99,13 +120,15 @@ export function useOrgJoinRequests<TData = OrgJoinRequestsData>(
 
 export function useOrgMembers(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
   return useQuery({
-    queryKey: queryKeys.owner.members(resolvedOrgId),
+    queryKey: queryKeys.owner.members(resolvedOrgId, null, selectedBranchId),
     queryFn: () =>
       mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, {
         token,
         orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
       }),
     enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
     placeholderData: keepPreviousData,
@@ -116,33 +139,37 @@ export function useOrgMembers(orgId?: string) {
 export function usePrefetchOwnerWorkspace(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, status, token } = useAuth();
+  const permissions = useActivePermissions();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const canManageBilling = permissions.has("ORG_MANAGE_BILLING");
 
   return () => {
     if (status !== "authenticated" || !token || !resolvedOrgId) return;
     const request = { token, orgId: resolvedOrgId, ...(selectedBranchId ? { branchId: selectedBranchId } : {}) };
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.dashboard(resolvedOrgId),
+      queryKey: queryKeys.owner.dashboard(resolvedOrgId, selectedBranchId),
       queryFn: () => mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/dashboard`, request),
       staleTime: 60_000,
     });
+    if (canManageBilling) {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.owner.billing(resolvedOrgId, selectedBranchId),
+        queryFn: () =>
+          mobileApiFetch<OwnerBillingSubscriptionData>(
+            `/orgs/${resolvedOrgId}/billing/subscription`,
+            request,
+          ),
+        staleTime: 60_000,
+      });
+    }
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.billing(resolvedOrgId),
-      queryFn: () =>
-        mobileApiFetch<OwnerBillingSubscriptionData>(
-          `/orgs/${resolvedOrgId}/billing/subscription`,
-          request,
-        ),
-      staleTime: 60_000,
-    });
-    void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.members(resolvedOrgId),
+      queryKey: queryKeys.owner.members(resolvedOrgId, null, selectedBranchId),
       queryFn: () => mobileApiFetch<{ members: OrgMemberRecord[] }>(`/orgs/${resolvedOrgId}/members`, request),
       staleTime: 60_000,
     });
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.owner.approvals(resolvedOrgId),
+      queryKey: queryKeys.owner.approvals(resolvedOrgId, selectedBranchId),
       queryFn: () =>
         mobileApiFetch<{ joinRequests: OrgJoinRequestRecord[] }>(
           `/orgs/${resolvedOrgId}/join-requests`,
@@ -178,4 +205,166 @@ export function usePrefetchOwnerWorkspace(orgId?: string) {
       staleTime: 60_000,
     });
   };
+}
+
+export function useOrgPayouts(month?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.owner.payouts(activeOrgId, month),
+    queryFn: () =>
+      mobileApiFetch<{ payouts: TrainerPayoutRecord[] }>(
+        `/orgs/${activeOrgId}/payouts${queryString({ month: month ?? undefined })}`,
+        { token, orgId: activeOrgId ?? undefined },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    staleTime: 60_000,
+  });
+}
+
+export type PayoutConfig = {
+  baseMonthlyPaise: number;
+  ptCommissionPercent: number;
+  perSessionFeePaise: number;
+  payDay: number;
+};
+
+export function useTrainerPayoutConfig(trainerUserId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "trainer", trainerUserId, "payout-config"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ config: PayoutConfig | null }>(
+        `/orgs/${activeOrgId}/trainers/${trainerUserId}/payout-config`,
+        { token, orgId: activeOrgId ?? undefined },
+      ),
+    enabled:
+      status === "authenticated" && Boolean(token) && Boolean(activeOrgId) && Boolean(trainerUserId),
+  });
+}
+
+export type ReferralPolicy = {
+  enabled: boolean;
+  referrerRewardType: "DAYS" | "VISITS" | "NONE";
+  referrerRewardValue: number;
+  referredDiscountType: "PERCENTAGE" | "FIXED" | "NONE";
+  referredDiscountValue: number;
+  maxDiscountCapBps: number;
+  maxReferralsPerMonth: number;
+  referralCodeExpiryDays: number;
+  trainerReferralEnabled: boolean;
+  staffReferralEnabled: boolean;
+  trainerRewardType: "DAYS" | "VISITS" | "NONE";
+  trainerRewardValue: number;
+  memberGymReferralRewardPaise: number;
+};
+
+export function useOrgReferralPolicy() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "referral-policy"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ policy: ReferralPolicy }>(`/orgs/${activeOrgId}/referral-policy`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}
+
+export type MembershipPlanRecord = {
+  id: string;
+  name: string;
+  description?: string | null;
+  type: string;
+  pricePaise: number;
+  durationDays?: number | null;
+  visitLimit?: number | null;
+  validityDays?: number | null;
+  publicVisible: boolean;
+};
+
+export function useOrgMembershipPlans() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "membership-plans"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ plans: MembershipPlanRecord[] }>(`/orgs/${activeOrgId}/membership-plans`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}
+
+export type CouponRecord = {
+  id: string;
+  code: string;
+  type: "FIXED_AMOUNT" | "PERCENTAGE";
+  valuePaise?: number | null;
+  valuePercentBps?: number | null;
+  active: boolean;
+  maxRedemptions?: number | null;
+  redemptionCount: number;
+  perUserLimit?: number | null;
+  applicablePlanId?: string | null;
+};
+
+export function useOrgCoupons() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "coupons"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ coupons: CouponRecord[] }>(`/orgs/${activeOrgId}/coupons`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}
+
+export type StaffAssignment = {
+  id: string;
+  userId: string;
+  role: string;
+  branchId?: string | null;
+  pending?: boolean;
+};
+
+export type StaffUser = { id: string; name: string | null; email: string };
+
+export function useOrgStaff() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "staff"] as const,
+    queryFn: () =>
+      mobileApiFetch<{ staff: StaffAssignment[]; users: StaffUser[] }>(`/orgs/${activeOrgId}/staff`, {
+        token,
+        orgId: activeOrgId ?? undefined,
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+  });
+}
+
+export type AttendanceQrToken = {
+  qrPayload: string;
+  checkInCode?: string | null;
+  expiresAt: string;
+};
+
+export function useAttendanceQrToken(branchId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: ["org", activeOrgId, "attendance-qr-token", branchId ?? null] as const,
+    queryFn: () =>
+      mobileApiFetch<AttendanceQrToken>(
+        `/orgs/${activeOrgId}/attendance/qr-token${branchId ? `?branchId=${encodeURIComponent(branchId)}` : ""}`,
+        { method: "POST", token, orgId: activeOrgId ?? undefined, body: {} },
+      ),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    // Rolling signed token: refresh every 30s like the web console.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
 }

@@ -145,7 +145,7 @@ export interface DemoPaymentRecord {
   id: string;
   orgId: string;
   memberUserId: string;
-  purpose: "MEMBERSHIP" | "SHOP_ORDER" | "PERSONAL_TRAINING";
+  purpose: "MEMBERSHIP" | "SHOP_ORDER" | "CLASS_BOOKING" | "PERSONAL_TRAINING";
   summary: string;
   amountPaise: number;
   mode: PaymentMode;
@@ -291,7 +291,7 @@ export interface DemoProviderDiagnostic {
 
 export interface DemoCheckoutSession {
   id: string;
-  purpose: "MEMBERSHIP" | "SHOP_ORDER";
+  purpose: "MEMBERSHIP" | "SHOP_ORDER" | "CLASS_BOOKING";
   targetId: string;
   amountPaise: number;
   status: "CREATED" | "PENDING" | "SUCCEEDED" | "FAILED";

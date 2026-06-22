@@ -11,7 +11,6 @@ export type AppLocale = "en" | "hi";
 export type LocalePreference = "system" | AppLocale;
 
 export type TranslationKey =
-  | "app.demoMode"
   | "app.loadingSession"
   | "app.configErrorTitle"
   | "app.configErrorBody"
@@ -28,7 +27,6 @@ export type TranslationKey =
   | "nav.more"
   | "nav.shop"
   | "nav.inbox"
-  | "nav.assistant"
   | "nav.trainer"
   | "nav.clients"
   | "nav.drafts"
@@ -81,12 +79,6 @@ export type TranslationKey =
   | "auth.sessionExpiredTitle"
   | "auth.sessionExpiredBody"
   | "auth.verifyToContinue"
-  | "auth.appleUnavailable"
-  | "auth.appleNoToken"
-  | "auth.appleComingSoon"
-  | "auth.googleUnavailable"
-  | "auth.googleNoToken"
-  | "auth.googleComingSoon"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -140,8 +132,6 @@ export type TranslationKey =
   | "settings.delete"
   | "settings.exportRequested"
   | "settings.deletionRequested"
-  | "settings.latestExport"
-  | "settings.latestDeletion"
   | "settings.noExport"
   | "settings.noDeletion"
   | "settings.system"
@@ -186,7 +176,6 @@ export type TranslationKey =
   | "shop.back"
   | "shop.creating"
   | "shop.yourCartEmpty"
-  | "shop.cartEmptyBody"
   | "shop.subtotal"
   | "shop.openMiniCart"
   | "shop.openCart"
@@ -200,7 +189,6 @@ export type TranslationKey =
   | "shop.shopCouldNotLoadBody"
   | "shop.tryAgain"
   | "shop.noProductsFound"
-  | "shop.noProductsFoundBody"
   | "findGyms.searchPlaceholder"
   | "findGyms.cityPlaceholder"
   | "findGyms.deviceLocation"
@@ -235,8 +223,6 @@ export type TranslationKey =
   | "more.shop.subtitle"
   | "more.inbox.title"
   | "more.inbox.subtitle"
-  | "more.assistant.title"
-  | "more.assistant.subtitle"
   | "more.profile.title"
   | "more.profile.subtitle"
   | "more.settings.title"
@@ -247,7 +233,6 @@ type TranslationValues = Record<string, string | number>;
 
 const translations: Record<AppLocale, Record<TranslationKey, string>> = {
   en: {
-    "app.demoMode": "DEMO MODE",
     "app.loadingSession": "Restoring your Zook session...",
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
@@ -264,7 +249,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.more": "More",
     "nav.shop": "Shop",
     "nav.inbox": "Inbox",
-    "nav.assistant": "AI",
     "nav.trainer": "Trainer",
     "nav.clients": "Clients",
     "nav.drafts": "Drafts",
@@ -308,7 +292,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.testCode": "TEST CODE",
     "auth.enterIdentifier": "Enter your email or mobile number.",
     "auth.codeSent": "Code sent to {{identifier}}.",
-    "auth.freshCodeSent": "Fresh code sent to {{identifier}}.",
+    "auth.freshCodeSent": "New code sent to {{identifier}}.",
     "auth.signedIn": "Signed in.",
     "auth.invalidEmail": "Enter a valid email or mobile number.",
     "auth.invalidEmailOnly": "Enter a valid email address.",
@@ -317,12 +301,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expired",
     "auth.sessionExpiredBody": "Sign in again to continue.",
     "auth.verifyToContinue": "Verify it's you to continue.",
-    "auth.appleUnavailable": "Apple sign-in is not available on this device.",
-    "auth.appleNoToken": "Apple did not return an identity token. Try again.",
-    "auth.appleComingSoon": "Apple sign-in coming soon.",
-    "auth.googleUnavailable": "Google sign-in is not available in Expo Go.",
-    "auth.googleNoToken": "Google did not return an ID token. Try again.",
-    "auth.googleComingSoon": "Google sign-in coming soon.",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -375,12 +353,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.privacyWarning": "These requests are saved and reviewed before anything changes.",
     "settings.export": "Export",
     "settings.delete": "Delete",
-    "settings.exportRequested": "Export requested. You'll receive an email when it's ready.",
+    "settings.exportRequested": "Export requested. You'll receive an email when the file is available.",
     "settings.deletionRequested": "Deletion requested. This is being reviewed before execution.",
-    "settings.latestExport": "Latest export",
-    "settings.latestDeletion": "Latest deletion",
-    "settings.noExport": "No export request yet",
-    "settings.noDeletion": "No deletion request yet",
+    "settings.noExport": "No export request",
+    "settings.noDeletion": "No deletion request",
     "settings.system": "System",
     "settings.systemSubtitle": "Help, policies, and app info",
     "settings.contactSupport": "Contact support",
@@ -409,7 +385,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.confirming": "Confirming...",
     "shop.backToShop": "Back to Shop",
     "shop.payment": "Payment",
-    "shop.paymentSubtitle": "Your item will be ready at the desk.",
+    "shop.paymentSubtitle": "Your item is ready at the desk after payment.",
     "shop.paySecurely": "Pay securely",
     "shop.confirmOrder": "Confirm the order",
     "shop.getPickupCode": "Get pickup code",
@@ -423,7 +399,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.back": "Back",
     "shop.creating": "Creating...",
     "shop.yourCartEmpty": "Your cart is empty",
-    "shop.cartEmptyBody": "Add desk pickup items from the shop.",
     "shop.subtotal": "Subtotal",
     "shop.openMiniCart": "Open mini cart",
     "shop.openCart": "Open cart",
@@ -437,20 +412,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.shopCouldNotLoadBody":
       "We could not refresh stock or prices. Try again before placing an order.",
     "shop.tryAgain": "Try again",
-    "shop.noProductsFound": "No products found",
-    "shop.noProductsFoundBody": "Try a different item or ask the desk for availability.",
+    "shop.noProductsFound": "No products",
     "findGyms.searchPlaceholder": "Search by gym, area, or pin code",
     "findGyms.cityPlaceholder": "Area, city, or pin code",
     "findGyms.deviceLocation": "Use device location",
     "findGyms.recentSearches": "Recent searches",
     "empty.loading": "Loading",
-    "empty.loadingBody": "Pulling the latest details from your gym.",
+    "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
     "tracking.bodyTimelineSubtitle": "{{count}} body composition entries",
     "tracking.photoLogged": "Photo logged",
     "tracking.noPhoto": "No photo",
     "tracking.bodyComposition": "Body composition",
-    "tracking.latestEntry": "Latest entry",
+    "tracking.latestEntry": "Logged entry",
     "tracking.weight": "Weight",
     "tracking.bodyFat": "Body fat",
     "tracking.start": "Start",
@@ -473,8 +447,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.shop.subtitle": "Order gym essentials for desk pickup.",
     "more.inbox.title": "Inbox",
     "more.inbox.subtitle": "Payments, plans, and gym updates.",
-    "more.assistant.title": "Plan assistant",
-    "more.assistant.subtitle": "Ask questions about your training and plans.",
     "more.profile.title": "Profile",
     "more.profile.subtitle": "Membership details and personal info.",
     "more.settings.title": "Settings",
@@ -482,7 +454,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.fallbackName": "Member",
   },
   hi: {
-    "app.demoMode": "डेमो मोड",
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
@@ -499,7 +470,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.more": "और",
     "nav.shop": "शॉप",
     "nav.inbox": "इनबॉक्स",
-    "nav.assistant": "AI",
     "nav.trainer": "ट्रेनर",
     "nav.clients": "क्लाइंट",
     "nav.drafts": "ड्राफ्ट",
@@ -552,12 +522,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expire हो गया",
     "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
     "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
-    "auth.appleUnavailable": "इस device पर Apple sign-in उपलब्ध नहीं है.",
-    "auth.appleNoToken": "Apple ने identity token नहीं दिया. फिर से प्रयास करें.",
-    "auth.appleComingSoon": "Apple sign-in जल्द आ रहा है.",
-    "auth.googleUnavailable": "Expo Go में Google sign-in उपलब्ध नहीं है.",
-    "auth.googleNoToken": "Google ने ID token नहीं दिया. फिर से प्रयास करें.",
-    "auth.googleComingSoon": "Google sign-in जल्द आ रहा है.",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",
@@ -610,11 +574,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "इन अनुरोधों को सेव किया जाता है और बदलाव से पहले रिव्यू किया जाता है.",
     "settings.export": "एक्सपोर्ट",
     "settings.delete": "डिलीट",
-    "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. तैयार होने पर आपको ईमेल मिलेगा.",
+    "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. फ़ाइल उपलब्ध होने पर आपको ईमेल मिलेगा.",
     "settings.deletionRequested":
       "डिलीशन अनुरोध भेजा गया. इसे लागू करने से पहले रिव्यू किया जाएगा.",
-    "settings.latestExport": "नया एक्सपोर्ट",
-    "settings.latestDeletion": "नया डिलीशन",
     "settings.noExport": "अभी कोई एक्सपोर्ट अनुरोध नहीं",
     "settings.noDeletion": "अभी कोई डिलीशन अनुरोध नहीं",
     "settings.system": "सिस्टम",
@@ -646,7 +608,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.confirming": "कन्फर्म हो रहा है...",
     "shop.backToShop": "शॉप पर वापस",
     "shop.payment": "पेमेंट",
-    "shop.paymentSubtitle": "आपका आइटम डेस्क पर तैयार रहेगा.",
+    "shop.paymentSubtitle": "भुगतान के बाद आपका आइटम डेस्क पर मिलेगा.",
     "shop.paySecurely": "सुरक्षित भुगतान",
     "shop.confirmOrder": "ऑर्डर कन्फर्म करें",
     "shop.getPickupCode": "पिकअप कोड पाएं",
@@ -660,7 +622,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.back": "वापस",
     "shop.creating": "बन रहा है...",
     "shop.yourCartEmpty": "आपका कार्ट खाली है",
-    "shop.cartEmptyBody": "शॉप से डेस्क पिकअप आइटम जोड़ें.",
     "shop.subtotal": "सबटोटल",
     "shop.openMiniCart": "मिनी कार्ट खोलें",
     "shop.openCart": "कार्ट खोलें",
@@ -675,19 +636,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "स्टॉक या कीमतें रिफ्रेश नहीं हो पाईं. ऑर्डर से पहले फिर कोशिश करें.",
     "shop.tryAgain": "फिर कोशिश करें",
     "shop.noProductsFound": "कोई प्रोडक्ट नहीं मिला",
-    "shop.noProductsFoundBody": "दूसरा आइटम खोजें या डेस्क से उपलब्धता पूछें.",
     "findGyms.searchPlaceholder": "जिम, क्षेत्र या पिन कोड से खोजें",
     "findGyms.cityPlaceholder": "क्षेत्र, शहर या पिन कोड",
     "findGyms.deviceLocation": "डिवाइस लोकेशन इस्तेमाल करें",
     "findGyms.recentSearches": "हाल की खोजें",
     "empty.loading": "लोड हो रहा है",
-    "empty.loadingBody": "आपके जिम की ताजा जानकारी लाई जा रही है.",
+    "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",
     "tracking.bodyTimelineSubtitle": "{{count}} बॉडी कंपोजिशन एंट्री",
     "tracking.photoLogged": "फोटो लॉग हुई",
     "tracking.noPhoto": "फोटो नहीं",
     "tracking.bodyComposition": "बॉडी कंपोजिशन",
-    "tracking.latestEntry": "नयी एंट्री",
+    "tracking.latestEntry": "लॉग एंट्री",
     "tracking.weight": "वजन",
     "tracking.bodyFat": "बॉडी फैट",
     "tracking.start": "शुरू",
@@ -710,8 +670,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.shop.subtitle": "जिम के सामान का ऑर्डर डेस्क पर लें.",
     "more.inbox.title": "इनबॉक्स",
     "more.inbox.subtitle": "पेमेंट, प्लान और जिम अपडेट.",
-    "more.assistant.title": "प्लान असिस्टेंट",
-    "more.assistant.subtitle": "अपनी ट्रेनिंग और प्लान के बारे में पूछें.",
     "more.profile.title": "प्रोफाइल",
     "more.profile.subtitle": "मेम्बरशिप और व्यक्तिगत जानकारी.",
     "more.settings.title": "सेटिंग्स",

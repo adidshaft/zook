@@ -3,7 +3,7 @@
 import { Camera } from "lucide-react";
 import { EmptyState, SectionHeader, StatusPill } from "../dashboard-primitives";
 import { Pill } from "../glass-card";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatNumber } from "@/lib/format";
 import type { BodyProgressEntryRow } from "@/components/dashboard/types";
 
 function numericLabel(value: string | number | null | undefined, suffix: string) {
@@ -14,7 +14,7 @@ function numericLabel(value: string | number | null | undefined, suffix: string)
   if (!Number.isFinite(numericValue)) {
     return "--";
   }
-  return `${numericValue.toLocaleString("en-IN", { maximumFractionDigits: 1 })}${suffix}`;
+  return `${formatNumber(numericValue, { maximumFractionDigits: 1 })}${suffix}`;
 }
 
 export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntryRow[] }) {
@@ -26,9 +26,8 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       <SectionHeader
         eyebrow="Body composition"
         title="Photo timeline"
-        description="Trainer-visible body progress entries from member tracking, including private progress photos when the member has attached them."
         badge={
-          <Pill tone={entriesWithPhotos ? "lime" : "neutral"}>
+          <Pill>
             {entriesWithPhotos} photo{entriesWithPhotos === 1 ? "" : "s"}
           </Pill>
         }
@@ -56,15 +55,15 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 )}
                 {index === 0 ? (
                   <div className="absolute left-3 top-3">
-                    <StatusPill value="Latest" tone="lime" />
+                    <StatusPill value="Recent" />
                   </div>
                 ) : null}
               </div>
               <div className="grid gap-3 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(entry.measuredAt)}</p>
-                  <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "blue"}>
-                    {entry.visibility ? entry.visibility.replaceAll("_", " ") : "Visible"}
+                  <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "neutral"}>
+                    {entry.visibility ? formatEnumLabel(entry.visibility) : "Visible"}
                   </Pill>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-xs">
@@ -97,8 +96,8 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       ) : (
         <EmptyState
           className="mt-5"
-          title="No body composition entries yet"
-          description="When members log trainer-visible body progress or attach progress photos, the timeline will appear here."
+          title="No body composition entries"
+          description="Add body progress and progress photos from the member app."
         />
       )}
     </div>

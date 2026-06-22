@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Card, IconBubble, ListRow, StatusChip, ZookButton } from "@/components/primitives";
+import { Card, ListRow, ZookButton } from "@/components/primitives";
 import type { TrainerClientRecord } from "@/lib/domains";
 import { fitnessGoalFor } from "../helpers";
 
@@ -12,8 +12,6 @@ export function PlanRow({ client }: { client: TrainerClientRecord }) {
       <ListRow
         title={client.user?.name ?? "Client"}
         subtitle={`${activePlans} active ${activePlans === 1 ? "plan" : "plans"} · ${fitnessGoalFor(client)}`}
-        leading={<IconBubble icon="reader-outline" tone="amber" />}
-        trailing={<StatusChip status="Open" tone="amber" />}
       />
       <ZookButton
         testID={`trainer-client-detail-${client.memberUserId}`}

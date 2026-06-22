@@ -11,15 +11,16 @@ export function CoachingLibrarySection({
   coachPlans,
   coachPlansState,
 }: CoachingLibrarySectionProps) {
+  const pendingReviewCount = coachPlans.filter((plan) => plan.reviewed === false).length;
+
   return (
     <GlassCard>
       <SectionHeader
         eyebrow="Coaching Library"
         title="Workout and advisory plans"
-        description="These are the plans trainers are creating and reviewing for members."
         badge={
-          <Pill tone="amber">
-            {coachPlans.filter((plan) => plan.reviewed === false).length} pending review
+          <Pill tone={pendingReviewCount > 0 ? "amber" : "neutral"}>
+            {pendingReviewCount} pending review
           </Pill>
         }
       />
@@ -30,10 +31,7 @@ export function CoachingLibrarySection({
         {coachPlansState.error ? (
           <ErrorNotice message={coachPlansState.error} />
         ) : coachPlansState.loading && coachPlans.length === 0 ? (
-          <EmptyState
-            title="Loading coaching library"
-            description="Pulling draft and published plan content."
-          />
+          <EmptyState title="Loading coaching library" />
         ) : (
           <DataTable
             columns={[
@@ -54,9 +52,9 @@ export function CoachingLibrarySection({
                   <div className="flex flex-wrap gap-2">
                     <StatusPill
                       value={plan.reviewed ? "Reviewed" : "Needs review"}
-                      tone={plan.reviewed ? "lime" : "amber"}
+                      tone={plan.reviewed ? "blue" : "amber"}
                     />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" tone="amber" /> : null}
+                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
                   </div>
                 ),
               },
@@ -74,7 +72,7 @@ export function CoachingLibrarySection({
             ]}
             rows={coachPlans}
             rowKey={(plan) => plan.id}
-            empty="No workout or advisory plans are available yet."
+            empty="No coaching plans."
           />
         )}
       </div>

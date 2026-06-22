@@ -1,10 +1,9 @@
 import { ArrowRight, ArrowUpRight, CheckCircle2, QrCode, Store, Zap } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
-import { HeroRingOrnament, MiniSparkline } from "@/components/hero-ornaments";
+import { MiniSparkline } from "@/components/hero-ornaments";
 import {
   Counter,
   MotionSurface,
-  PointerSpotlight,
   Reveal,
   Stagger,
   StaggerItem,
@@ -13,8 +12,12 @@ import { ZookButtonLink } from "@/components/zook-button";
 import { localizedPath, type PublicLocale } from "@/lib/public-i18n";
 import { homeData } from "./home-data";
 
+function pillarIconClass(tone: "neutral" | "info") {
+  return tone === "info" ? "text-[var(--feedback-info)]" : "text-[var(--text-secondary)]";
+}
+
 export function HomeHero({ locale }: { locale: PublicLocale }) {
-  const { t, pillars } = homeData(locale);
+  const { t, pillars, statStrip } = homeData(locale);
   return (
     <section className="relative grid gap-10 pt-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
       <Reveal y={32}>
@@ -54,7 +57,7 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
           delay={0.25}
           gap={0.1}
         >
-          {["roles", "record", "uptime"].map((label, index) => (
+          {statStrip.map((label, index) => (
             <StaggerItem key={label} className="px-4 py-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</p>
               <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
@@ -66,9 +69,7 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
       </Reveal>
       <Reveal y={32} delay={0.15} className="relative">
         <div aria-hidden className="absolute -inset-6 -z-10 rounded-[40px] border border-[var(--border-subtle)]" />
-        <HeroRingOrnament className="absolute -right-6 -top-12 z-0 hidden lg:block" />
         <GlassCard variant="strong" className="group relative overflow-hidden p-6 text-[var(--text-primary)]">
-          <PointerSpotlight className="hidden lg:block" />
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--text-tertiary)]">{t("ownerDashboard")}</p>
@@ -79,10 +80,10 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
             </div>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {[{ icon: Store, copy: t("sellMemberships"), tone: "amber" }, { icon: QrCode, copy: t("publishJoin"), tone: "lime" }].map(({ icon: Icon, copy, tone }) => (
-              <MotionSurface key={copy} className={`group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--bg-sunken)] ${tone === "amber" ? "hover:border-[color-mix(in_srgb,var(--feedback-warning)_50%,transparent)]" : "hover:border-[var(--border-focus)]"}`}>
+            {[{ icon: Store, copy: t("sellMemberships") }, { icon: QrCode, copy: t("publishJoin") }].map(({ icon: Icon, copy }) => (
+              <MotionSurface key={copy} className="group rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--border-focus)] hover:bg-[var(--bg-sunken)]">
                 <div className="flex items-center justify-between">
-                  <Icon size={18} className={tone === "amber" ? "text-[var(--feedback-warning)]" : "text-[var(--accent-strong)]"} />
+                  <Icon size={18} className="text-[var(--text-secondary)]" />
                   <ArrowUpRight size={14} className="text-[var(--text-tertiary)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </div>
                 <p className="mt-6 text-[13px] leading-5 text-[var(--text-secondary)]">{copy}</p>
@@ -104,7 +105,7 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
             <StaggerItem key={label}>
               <MotionSurface>
                 <GlassCard className="p-4 text-[var(--text-primary)]">
-                  <Icon size={18} className={tone === "lime" ? "text-[var(--accent-strong)]" : tone === "amber" ? "text-[var(--feedback-warning)]" : "text-[var(--feedback-info)]"} />
+                  <Icon size={18} className={pillarIconClass(tone)} />
                   <p className="mt-4 text-[11px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{label}</p>
                   <p className="mt-1 text-[13px] font-medium leading-5 text-[var(--text-secondary)]">{value}</p>
                 </GlassCard>

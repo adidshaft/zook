@@ -8,9 +8,6 @@ name: login-as
 - tapOn:
     text: "Open"
     optional: true
-- tapOn:
-    point: "67%,54%"
-    optional: true
 - runFlow:
     file: complete-language-if-needed.yaml
 - openLink: zook:///login
@@ -20,30 +17,60 @@ name: login-as
     text: "Open"
     optional: true
 - tapOn:
-    point: "67%,54%"
+    text: "Cancel"
     optional: true
-- extendedWaitUntil:
-    visible:
-      id: "login-method-email"
-    timeout: 15000
 - tapOn:
     id: "login-method-email"
+    optional: true
+- tapOn:
+    text: "Email"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "login-email"
     timeout: 15000
 - tapOn:
     id: "login-email"
+    optional: true
+- tapOn:
+    id: "login-phone"
+    optional: true
+- eraseText:
+    optional: true
 - inputText: ${email}
+- hideKeyboard:
+    optional: true
 - tapOn:
     id: "login-send-code"
+    optional: true
+- tapOn:
+    text: "Send Code"
+    optional: true
 - extendedWaitUntil:
     visible:
-      id: "login-otp-cells"
+      id: "login-verify-code"
     timeout: 15000
 - tapOn:
+    id: "login-otp"
+    optional: true
+- tapOn:
     id: "login-otp-cells"
+    optional: true
 - inputText: "000000"
+- tapOn:
+    id: "login-verify-code"
+    optional: true
+- tapOn:
+    text: "Verify & Sign In"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: ${home_id}
+    timeout: 10000
+    optional: true
+- openLink:
+    link: ${home_path}
+    optional: true
 - extendedWaitUntil:
     visible:
       id: ${home_id}

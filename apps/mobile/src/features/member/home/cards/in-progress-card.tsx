@@ -6,10 +6,10 @@ export default function InProgressCard({ assignmentId }: { assignmentId: string 
       testID="home-state-in-progress"
       icon="play-circle-outline"
       title="Workout in progress"
-      body="Resume the session you already started and finish logging your work."
+      body="Finish logging your work."
       ctaHref={`/plan/${assignmentId}`}
       ctaLabel="Resume"
-      tone="lime"
+      tone="blue"
     />
   );
 }

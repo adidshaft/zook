@@ -36,7 +36,7 @@ export function ShopProductsSection({
 }: ShopProductsSectionProps) {
   const scopeLabel = branchScope.selectedBranch
     ? `${selectedBranchName} has its own stock`
-    : "Showing all products. Choose a branch to update branch stock.";
+    : "All products are listed. Choose a branch to update branch stock.";
 
   return (
     <div className="grid gap-4">
@@ -44,9 +44,8 @@ export function ShopProductsSection({
         <SectionHeader
           eyebrow="Inventory"
           title="Low-stock watch"
-          description="Inventory is sorted by stock so the team can spot refill needs."
           badge={
-            <Pill tone={summary.lowStockProducts > 0 ? "amber" : "lime"}>
+            <Pill tone={summary.lowStockProducts > 0 ? "amber" : "neutral"}>
               {summary.lowStockProducts} low
             </Pill>
           }

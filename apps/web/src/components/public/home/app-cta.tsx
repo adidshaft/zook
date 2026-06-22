@@ -1,5 +1,4 @@
-import { ArrowUpRight, Smartphone } from "lucide-react";
-import { Pill } from "@/components/glass-card";
+import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/motion-primitives";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 
@@ -19,10 +18,6 @@ export function AppCta({
       className="relative grid gap-5 overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--bg-sunken)] px-8 py-9 md:grid-cols-[1.05fr_0.95fr] md:items-center"
     >
       <div>
-        <Pill tone="amber" className="mb-4">
-          <Smartphone size={11} />
-          {t("memberApps")}
-        </Pill>
         <h2 className="text-3xl font-semibold text-[var(--text-primary)] md:text-4xl">{t("memberApps")}</h2>
         <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-secondary)]">{t("memberAppsCopy")}</p>
       </div>

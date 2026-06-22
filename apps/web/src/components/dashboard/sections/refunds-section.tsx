@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
 import { GlassCard, Pill } from "../../glass-card";
@@ -13,7 +14,7 @@ const copy = {
   refundsEyebrow: "Refunds",
   refundsTitle: "Refund tracker",
   refundsDescription:
-    "Start refunds for recent successful payments and track payments already marked refunded.",
+    "Start refunds for recent successful payments and track refunded payments.",
 };
 
 function refundAmountFor(payment: PaymentRow) {
@@ -64,10 +65,10 @@ export function RefundsSection({
         {
           payment,
           refund: {
-            id: `legacy-${payment.id}`,
+            id: `tracked-${payment.id}`,
             amountPaise: refundAmountFor(payment) || payment.amountPaise,
             status: payment.status,
-            reason: "Recorded before refund tracker",
+            reason: "Recorded before detailed refund tracking",
             createdAt: payment.createdAt,
             processedAt: payment.recordedAt ?? payment.createdAt,
           },
@@ -81,7 +82,7 @@ export function RefundsSection({
     if (!refundDraft?.reason.trim()) return;
     const { payment, reason, amountRupees } = refundDraft;
     if (!payment.orgId) {
-      setError("This payment is missing its organization link.");
+      setError("This payment is missing its gym link.");
       return;
     }
     const amountPaise = Math.round(Number(amountRupees || 0) * 100);
@@ -124,10 +125,8 @@ export function RefundsSection({
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{copy.refundsDescription}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Pill tone="amber">{refundable.length} available</Pill>
-          <Pill tone={trackedRefunds.length ? "blue" : "neutral"}>
-            {trackedRefunds.length} tracked
-          </Pill>
+          <Pill>{refundable.length} available</Pill>
+          <Pill>{trackedRefunds.length} tracked</Pill>
         </div>
       </div>
       {error ? (
@@ -190,18 +189,21 @@ export function RefundsSection({
             >
               Cancel
             </ZookButton>
-            <ZookButton
-              type="submit"
-              size="sm"
+            <ConfirmActionButton
+              className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              title={`Refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "this payment"}?`}
+              description={`This will refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "the entered amount"} to ${refundDraft.payment.user?.name ?? formatEnumLabel(refundDraft.payment.purpose)}. Razorpay refunds are irreversible.`}
+              confirmLabel="Submit refund"
+              confirmTone="danger"
+              onConfirm={() => refundPayment()}
               disabled={
                 !refundDraft.reason.trim() ||
                 !refundDraft.amountRupees.trim() ||
                 busyPaymentId === refundDraft.payment.id
               }
-              state={busyPaymentId === refundDraft.payment.id ? "loading" : "idle"}
             >
               {busyPaymentId === refundDraft.payment.id ? "Submitting..." : "Submit refund"}
-            </ZookButton>
+            </ConfirmActionButton>
           </div>
         </form>
       ) : null}
@@ -230,7 +232,7 @@ export function RefundsSection({
                   setRefundDraft({
                     payment,
                     reason: "Owner requested refund",
-                    amountRupees: (remainingRefundAmount(payment) / 100).toFixed(2),
+                    amountRupees: "",
                   });
                 }}
                 disabled={busyPaymentId === payment.id}

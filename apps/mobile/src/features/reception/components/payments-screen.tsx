@@ -2,8 +2,9 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MetricGrid } from "@/components/domain/metric-grid";
+import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
-import { formatInr } from "@/lib/formatting";
+import { formatInr, normalizeRupeeInput, titleCaseFromCode } from "@/lib/formatting";
 import { useTheme } from "@/lib/theme";
 import { paymentModes } from "../constants";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
@@ -45,14 +46,12 @@ export function ReceptionPaymentsScreenBody() {
                 {
                   label: "Amount",
                   value: formatInr(dueAmount),
-                  hint: "Manual entry",
-                  tone: "amber",
+                  tone: "neutral",
                   icon: "receipt-outline",
                 },
                 {
                   label: "Mode",
                   value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
-                  hint: "Offline record",
                   tone: "blue",
                   icon: "reader-outline",
                 },
@@ -63,9 +62,10 @@ export function ReceptionPaymentsScreenBody() {
                 testID="reception-payment-amount"
                 label="Amount received"
                 value={amount}
-                onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
-                keyboardType="decimal-pad"
+                onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
+                keyboardType="numeric"
                 placeholder="₹0"
+                leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                 returnKeyType="next"
                 required
                 error={amountInvalid ? "Enter an amount greater than 0." : undefined}
@@ -87,10 +87,7 @@ export function ReceptionPaymentsScreenBody() {
             />
             {!memberRecord ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
-                <SectionHeader
-                  title="Find a member"
-                  subtitle="Search to attach this payment to a member."
-                />
+                <SectionHeader title="Find a member" />
                 <SearchField
                   testID="reception-payment-member-search"
                   value={paymentMemberSearch}
@@ -142,9 +139,15 @@ export function ReceptionPaymentsScreenBody() {
                             </Text>
                           </View>
                           <Pill
-                            tone={record.activeSubscription?.status === "ACTIVE" ? "lime" : "amber"}
+                            tone={
+                              record.activeSubscription
+                                ? toneForStatus(record.activeSubscription.status)
+                                : "amber"
+                            }
                           >
-                            {record.activeSubscription?.status ?? "No plan"}
+                            {record.activeSubscription
+                              ? titleCaseFromCode(record.activeSubscription.status)
+                              : "No plan"}
                           </Pill>
                         </Pressable>
                       ))}
@@ -153,14 +156,11 @@ export function ReceptionPaymentsScreenBody() {
               </Card>
             ) : null}
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader
-                title="Payment collection"
-                subtitle="Record only money received at the desk."
-              />
+              <SectionHeader title="Payment collection" />
               <ListRow
                 title="Member"
                 subtitle={member?.name ?? "Select a member"}
-                leading={<IconBubble icon="person-outline" tone="lime" size={38} />}
+                leading={<IconBubble icon="person-outline" tone="neutral" size={38} />}
                 trailing={
                   <Pill tone={member ? "lime" : "amber"}>{member ? "Verified" : "Missing"}</Pill>
                 }
@@ -169,10 +169,10 @@ export function ReceptionPaymentsScreenBody() {
                 title="Invoice"
                 subtitle={
                   membership?.status
-                    ? `${membership.status.replace(/_/g, " ")} membership selected`
+                    ? `${titleCaseFromCode(membership.status)} membership selected`
                     : "No membership selected"
                 }
-                leading={<IconBubble icon="document-text-outline" tone="amber" size={38} />}
+                leading={<IconBubble icon="document-text-outline" tone="neutral" size={38} />}
                 trailing={
                   <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
                     {formatInr(dueAmount)} due
@@ -236,9 +236,10 @@ export function ReceptionPaymentsScreenBody() {
                 <FormField
                   label="Amount received"
                   value={amount}
-                  onChangeText={(value) => setAmount(value.replace(/[^\d.]/g, ""))}
-                  keyboardType="decimal-pad"
+                  onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
+                  keyboardType="numeric"
                   placeholder="₹0"
+                  leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                   returnKeyType="next"
                   required
                   error={amountInvalid ? "Enter an amount greater than 0." : undefined}

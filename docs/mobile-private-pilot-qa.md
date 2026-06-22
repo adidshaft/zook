@@ -23,7 +23,8 @@ Last updated: 24 April 2026
   - `cd apps/mobile`
   - `npx eas-cli@latest build --profile preview -p ios`
   - `npx eas-cli@latest build --profile preview -p android`
-  - preview defaults to `https://staging.zookfit.in/api`
+  - preview defaults to `https://zookfit.in/api`
+  - only override to a staging host after its DNS and `/api/auth/request-otp` path are live
 - Production candidate:
   - `cd apps/mobile`
   - `npx eas-cli@latest build --profile production -p ios`
@@ -41,7 +42,7 @@ Last updated: 24 April 2026
   - `trainer@zook.local`
   - `member@zook.local`
   - `minor@zook.local`
-- Preview and production should use pilot-issued accounts and real OTP delivery. Do not expect the fixed dev code outside local.
+- Preview and production pilot builds support the seeded QA identities listed in the QA handbook. Use `000000` only for those seeded identities; normal users should use real OTP delivery.
 
 ## Push Device Setup
 

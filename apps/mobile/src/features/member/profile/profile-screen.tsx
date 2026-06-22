@@ -1,9 +1,10 @@
 import type { Role } from "@zook/core/types";
 import { resolvePlanName } from "@zook/ui";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  LayoutChangeEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,7 +15,7 @@ import {
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
-import { ReferralCard } from "@/components/home";
+import { ReferralCard } from "@/features/member/profile/referral-card";
 import { ProfileExtraFields } from "@/components/profile/profile-extra-fields";
 import { ProfilePhotoControl } from "@/components/profile/profile-photo-control";
 import {
@@ -28,8 +29,18 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
+import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useRoleContext } from "@/lib/role-context";
+import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import {
+  formatActivityDate,
+  formatInr,
+  formatLongDate,
+  formatOrgLocationLine,
+  formatRoleLabel,
+  formatVisitLimit,
+} from "@/lib/formatting";
 import {
   useActiveMembership,
   useMemberHome,
@@ -48,40 +59,6 @@ type ActivityItem = {
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-/**
- * Compose "org · branch, city" without duplicating the org name when the
- * branch already starts with it (common in single-location gyms where the
- * branch label is e.g. "Aarogya Strength Koregaon Park").
- */
-function formatOrgLocationLine(
-  orgName: string | null | undefined,
-  branchName: string | null | undefined,
-  city: string | null | undefined,
-): string {
-  const org = orgName?.trim();
-  const branch = branchName?.trim();
-  if (!org && !branch) return "No active gym";
-  let location: string;
-  if (org && branch) {
-    const branchWithoutOrgPrefix = branch.startsWith(org)
-      ? branch.slice(org.length).replace(/^[\s\-·,]+/, "").trim()
-      : branch;
-    location = branchWithoutOrgPrefix ? `${org} · ${branchWithoutOrgPrefix}` : org;
-  } else {
-    location = org || branch || "";
-  }
-  return city ? `${location}, ${city}` : location;
-}
-
-function titleCaseRole(role: Role | string) {
-  if (role === "RECEPTIONIST") return "Reception";
-  if (role === "PLATFORM_ADMIN") return "Platform operator";
-  return String(role)
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
 function routeForRole(role?: Role) {
   if (role === "PLATFORM_ADMIN") return "/platform";
   if (role === "TRAINER") return "/trainer";
@@ -90,31 +67,8 @@ function routeForRole(role?: Role) {
   return "/";
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "Syncing";
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatActivityDate(value?: string | null) {
-  if (!value) return "Recently";
-  const date = new Date(value);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
-  const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-  if (sameDay(date, today)) return `Today, ${time}`;
-  if (sameDay(date, yesterday)) return `Yesterday, ${time}`;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
-
-function normalizeRemoteUrl(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed && /^https?:\/\//.test(trimmed) ? trimmed : undefined;
+function firstParam(value?: string | string[] | null) {
+  return Array.isArray(value) ? value[0] : value ?? undefined;
 }
 
 function percentFromMembership(input: {
@@ -139,7 +93,7 @@ function membershipProgressLabel(input: {
   visitLimit?: number | null;
 }) {
   if (typeof input.remainingVisits === "number" && input.visitLimit) {
-    return `${input.remainingVisits} of ${input.visitLimit} visits remaining`;
+    return `${input.remainingVisits} of ${formatVisitLimit(input.visitLimit)} remaining`;
   }
   if (typeof input.daysLeft === "number" && input.durationDays) {
     return `${input.daysLeft} of ${input.durationDays} days remaining`;
@@ -147,11 +101,13 @@ function membershipProgressLabel(input: {
   if (typeof input.daysLeft === "number") {
     return `${input.daysLeft} days remaining`;
   }
-  return "Membership syncing";
+  return "Membership details unavailable";
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
+  const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const { mode, palette } = useTheme();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const {
@@ -172,6 +128,8 @@ export default function ProfileScreen() {
   const attendanceQuery = useMyAttendance();
   const plansQuery = useMyPlans();
   const { selectedBranch } = useBranchSelection();
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsetsRef = useRef<Partial<Record<"identity" | "details" | "membership" | "referral", number>>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [roleBusy, setRoleBusy] = useState<Role | null>(null);
 
@@ -182,12 +140,13 @@ export default function ProfileScreen() {
   const profile = profileQuery.data;
   const userName = profile?.user.name || session?.user.name || "Zook member";
   const userEmail = profile?.user.email || session?.user.email || "";
-  const photoUrl = normalizeRemoteUrl(
+  const photoUrl = normalizeWebUrl(
     profile?.user.profilePhotoUrl ??
       profile?.profile?.profilePhotoUrl ??
       session?.user.profilePhotoUrl,
+    { resolveRelative: false },
   );
-  const roles = activeOrganization?.roles ?? [];
+  const roles = useMemo(() => activeOrganization?.roles ?? [], [activeOrganization?.roles]);
   const activeRole = roleContext?.role ?? "MEMBER";
   const rolesInOtherGyms = useMemo(() => {
     const activeRoles = new Set(roles);
@@ -240,8 +199,17 @@ export default function ProfileScreen() {
     referralCode?.maxUses != null
       ? Math.max(0, referralCode.maxUses - (referralCode.redemptionCount ?? 0))
       : 0;
+  const referralRewards = referralQuery.data?.rewards ?? [];
+  const earnedCreditPaise = referralRewards
+    .filter((reward) => reward.status === "applied")
+    .reduce((total, reward) => total + (reward.rewardValue ?? 0), 0);
+  const pendingCreditPaise = referralRewards
+    .filter((reward) => reward.status === "pending")
+    .reduce((total, reward) => total + (reward.rewardValue ?? 0), 0);
   const referralBenefit =
-    referralPolicy?.referrerRewardType === "DAYS"
+    activeRole === "TRAINER"
+      ? "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link."
+      : referralPolicy?.referrerRewardType === "DAYS"
       ? `You'll get ${referralPolicy.referrerRewardValue ?? 7} free days for every friend who joins.`
       : referralPolicy?.referrerRewardType === "VISITS"
         ? `You'll get ${referralPolicy.referrerRewardValue ?? 1} visits for every friend who joins.`
@@ -277,6 +245,38 @@ export default function ProfileScreen() {
       })) ?? [];
     return [...attendanceItems, ...workoutItems].slice(0, 3);
   }, [attendanceQuery.data?.attendance, plansQuery.data?.plans]);
+  const focusTarget = firstParam(params.focus);
+
+  function rememberSection(
+    key: "identity" | "details" | "membership" | "referral",
+    event: LayoutChangeEvent,
+  ) {
+    sectionOffsetsRef.current[key] = event.nativeEvent.layout.y;
+  }
+
+  useEffect(() => {
+    const sectionKey =
+      focusTarget === "photo"
+        ? "identity"
+        : focusTarget === "edit" || focusTarget === "details"
+          ? "details"
+          : focusTarget === "buy" || focusTarget === "history"
+            ? "membership"
+            : focusTarget === "referral"
+              ? "referral"
+              : null;
+    if (!sectionKey) {
+      return;
+    }
+    const offset = sectionOffsetsRef.current[sectionKey];
+    if (typeof offset !== "number") {
+      return;
+    }
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, offset - spacing.lg), animated: true });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [focusTarget]);
 
   async function refreshProfile() {
     setRefreshing(true);
@@ -293,7 +293,7 @@ export default function ProfileScreen() {
 
   function confirmRoleSwitch(role: Role) {
     if (role === activeRole) return;
-    Alert.alert(`Switch to ${titleCaseRole(role)}?`, "Zook will move you to that role's tools.", [
+    Alert.alert(`Switch to ${formatRoleLabel(role)}?`, "Zook opens that role's tools.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",
@@ -315,12 +315,12 @@ export default function ProfileScreen() {
 
   function confirmOtherGymRoleSwitch(input: { orgId: string; orgName: string; role: Role }) {
     Alert.alert(
-      `${titleCaseRole(input.role)} is in another gym`,
-      `Switch gyms before opening ${titleCaseRole(input.role)} tools.`,
+      `${formatRoleLabel(input.role)} is in another gym`,
+      `Switch gyms before opening ${formatRoleLabel(input.role)} tools.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: `Switch to ${input.orgName} to access ${titleCaseRole(input.role)} tools`,
+          text: `Switch to ${input.orgName} to access ${formatRoleLabel(input.role)} tools`,
           onPress: () => {
             void switchOrg(input.orgId)
               .then(() => switchRole(input.role))
@@ -339,7 +339,7 @@ export default function ProfileScreen() {
 
   function showRoleSwitcher() {
     if (!roles.length && !rolesInOtherGyms.length) {
-      Alert.alert("No roles yet", "This account does not have another role in the active gym.");
+      Alert.alert("No roles", "This account does not have another role in the active gym.");
       return;
     }
     Alert.alert(
@@ -347,11 +347,11 @@ export default function ProfileScreen() {
       "Choose the role to use in this gym.",
       [
         ...roles.map((role) => ({
-          text: role === activeRole ? `${titleCaseRole(role)} (active)` : titleCaseRole(role),
+          text: role === activeRole ? `${formatRoleLabel(role)} (active)` : formatRoleLabel(role),
           onPress: () => confirmRoleSwitch(role),
         })),
         ...rolesInOtherGyms.map((option) => ({
-          text: `${titleCaseRole(option.role)} at ${option.orgName}`,
+          text: `${formatRoleLabel(option.role)} at ${option.orgName}`,
           onPress: () => confirmOtherGymRoleSwitch(option),
         })),
         { text: "Cancel", style: "cancel" as const },
@@ -361,7 +361,7 @@ export default function ProfileScreen() {
 
   function confirmGymSwitch(orgId: string, orgName: string) {
     if (orgId === activeOrgId) return;
-    Alert.alert(`Switch to ${orgName}?`, "Your profile will refresh for that gym.", [
+    Alert.alert(`Switch to ${orgName}?`, "Your profile refreshes for that gym.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Switch",
@@ -375,7 +375,7 @@ export default function ProfileScreen() {
   function showGymSwitcher() {
     const gyms = session?.organizations ?? [];
     if (!gyms.length) {
-      Alert.alert("No gyms yet", "Join or request access to a gym first.");
+      Alert.alert("No gyms", "Join or request access to a gym first.");
       return;
     }
     Alert.alert(
@@ -414,22 +414,36 @@ export default function ProfileScreen() {
 
   async function shareReferral() {
     if (!referralCode) return;
-    const link = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const rawLink = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const link = rawLink
+      ? /^https?:\/\//i.test(rawLink)
+        ? rawLink
+        : toWebUrl(rawLink)
+      : "";
     await Share.share({
-      message: link ? `${referralCode.code} ${link}` : referralCode.code,
+      message: link
+        ? `Join ${activeOrganization?.name ?? "my gym"} with my referral code ${referralCode.code}: ${link}`
+        : `Use my referral code ${referralCode.code} at ${activeOrganization?.name ?? "my gym"}.`,
     });
   }
 
   async function copyReferral() {
     if (!referralCode) return;
-    await Clipboard.setStringAsync(referralCode.code);
-    Alert.alert("Referral copied", "Your referral code is ready to share.");
+    const rawLink = referralQuery.data?.links?.web ?? referralQuery.data?.links?.short ?? "";
+    const link = rawLink
+      ? /^https?:\/\//i.test(rawLink)
+        ? rawLink
+        : toWebUrl(rawLink)
+      : referralCode.code;
+    await Clipboard.setStringAsync(link);
+    Alert.alert("Referral copied", link === referralCode.code ? "Your referral code is copied." : "Your referral link is copied.");
   }
 
   return (
     <>
       <ZookScreen testID="profile-screen">
         <ScrollView
+          ref={scrollRef}
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
@@ -472,7 +486,7 @@ export default function ProfileScreen() {
           />
 
           {referralCode ? (
-            <View style={styles.section}>
+            <View style={styles.section} onLayout={(event) => rememberSection("referral", event)}>
               <ReferralCard
                 code={referralCode.code}
                 maxUses={referralCode.maxUses}
@@ -484,66 +498,94 @@ export default function ProfileScreen() {
               <Text style={[styles.referralStat, { color: palette.text.primary }]}>
                 Your friends: {referralCode.redemptionCount ?? 0} joined, {pendingFriends} pending
               </Text>
+              {earnedCreditPaise > 0 || pendingCreditPaise > 0 ? (
+                <Text style={[styles.referralStat, { color: palette.accent.base }]}>
+                  {formatInr(earnedCreditPaise)} earned
+                  {pendingCreditPaise > 0 ? ` · ${formatInr(pendingCreditPaise)} pending` : ""}
+                </Text>
+              ) : null}
               <Text style={[styles.referralBenefit, { color: palette.text.secondary }]}>{referralBenefit}</Text>
             </View>
           ) : null}
 
-          <Card contentStyle={styles.identityCard}>
-            <ProfilePhotoControl
-              token={token}
-              orgId={activeOrgId}
-              name={userName}
-              profilePhotoUrl={photoUrl}
-              size={72}
-              onSaved={() => void refreshProfile()}
-            />
-            <View style={styles.identityCopy}>
-              <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
-                {userName}
-              </Text>
-              {userEmail ? (
-                <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
-                  {userEmail}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Refer a gym to Zook and earn"
+            onPress={() => router.push("/rewards" as never)}
+            style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}
+          >
+            <Card variant="compact" contentStyle={styles.referGymRow}>
+              <IconBubble icon="gift" tone="lime" size={42} />
+              <View style={styles.referGymCopy}>
+                <Text style={[styles.referGymTitle, { color: palette.text.primary }]}>Refer a gym & earn cash</Text>
+                <Text style={[styles.referGymBody, { color: palette.text.secondary }]} numberOfLines={2}>
+                  Earn when a gym you refer subscribes to Zook on a 6-month or yearly plan.
                 </Text>
-              ) : null}
-              <Text numberOfLines={2} style={[styles.gymLine, { color: palette.text.primary }]}>
-                {formatOrgLocationLine(
-                  activeOrganization?.name,
-                  selectedBranch?.name,
-                  activeOrganization?.city,
-                )}
-              </Text>
-              <View style={styles.roleRow}>
-                {roles.length ? (
-                  roles.map((role) => (
-                    <Pressable
-                      key={role}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Use Zook as ${titleCaseRole(role)}`}
-                      accessibilityState={{
-                        selected: role === activeRole,
-                        disabled: Boolean(roleBusy),
-                        busy: roleBusy === role,
-                      }}
-                      disabled={Boolean(roleBusy)}
-                      onPress={() => confirmRoleSwitch(role)}
-                    >
-                      <Pill tone={role === activeRole ? "lime" : "neutral"}>
-                        {roleBusy === role ? "Switching..." : titleCaseRole(role)}
-                      </Pill>
-                    </Pressable>
-                  ))
-                ) : (
-                  <Pill>No role assigned</Pill>
-                )}
               </View>
-            </View>
-          </Card>
+              <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />
+            </Card>
+          </Pressable>
 
-          <ProfileExtraFields />
+          <View onLayout={(event) => rememberSection("identity", event)}>
+            <Card contentStyle={styles.identityCard}>
+              <ProfilePhotoControl
+                token={token}
+                orgId={activeOrgId}
+                name={userName}
+                profilePhotoUrl={photoUrl}
+                size={72}
+                onSaved={() => void refreshProfile()}
+              />
+              <View style={styles.identityCopy}>
+                <Text numberOfLines={1} style={[styles.name, { color: palette.text.primary }]}>
+                  {userName}
+                </Text>
+                {userEmail ? (
+                  <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
+                    {userEmail}
+                  </Text>
+                ) : null}
+                <Text numberOfLines={2} style={[styles.gymLine, { color: palette.text.primary }]}>
+                  {formatOrgLocationLine(
+                    activeOrganization?.name,
+                    selectedBranch?.name,
+                    activeOrganization?.city,
+                  )}
+                </Text>
+                <View style={styles.roleRow}>
+                  {roles.length ? (
+                    roles.map((role) => (
+                      <Pressable
+                        key={role}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Use Zook as ${formatRoleLabel(role)}`}
+                        accessibilityState={{
+                          selected: role === activeRole,
+                          disabled: Boolean(roleBusy),
+                          busy: roleBusy === role,
+                        }}
+                        disabled={Boolean(roleBusy)}
+                        onPress={() => confirmRoleSwitch(role)}
+                      >
+                        <Pill tone={role === activeRole ? "blue" : "neutral"}>
+                          {roleBusy === role ? "Switching..." : formatRoleLabel(role)}
+                        </Pill>
+                      </Pressable>
+                    ))
+                  ) : (
+                    <Pill>No role assigned</Pill>
+                  )}
+                </View>
+              </View>
+            </Card>
+          </View>
+
+          <View onLayout={(event) => rememberSection("details", event)}>
+            <ProfileExtraFields />
+          </View>
 
           {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
-          <View style={styles.section}>
+          <View style={styles.section} onLayout={(event) => rememberSection("membership", event)}>
             <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Membership</Text>
             <Card variant="compact" contentStyle={styles.membershipCard}>
               {membership ? (
@@ -554,7 +596,7 @@ export default function ProfileScreen() {
                         {planName}
                       </Text>
                       <Text style={[styles.cardSubtitle, { color: palette.text.secondary }]}>
-                        Expires {formatDate(membership.endsAt)}
+                        Expires {formatLongDate(membership.endsAt, "Updating")}
                       </Text>
                     </View>
                     <Pill
@@ -595,7 +637,6 @@ export default function ProfileScreen() {
                 <EmptyState
                   icon="card-outline"
                   title="No active membership"
-                  body="Your latest membership will appear here after a gym activates one."
                   action={
                     <ZookButton href="/gyms" variant="secondary" icon="search-outline" size="sm">
                       Find gyms
@@ -613,7 +654,7 @@ export default function ProfileScreen() {
               {recentActivity.length ? (
                 recentActivity.map((item) => (
                   <View key={item.id} style={styles.activityRow}>
-                    <IconBubble icon={item.icon} tone="lime" size={36} />
+                    <IconBubble icon={item.icon} tone="neutral" size={36} />
                     <View style={styles.activityCopy}>
                       <Text numberOfLines={1} style={[styles.activityTitle, { color: palette.text.primary }]}>
                         {item.title}
@@ -626,9 +667,8 @@ export default function ProfileScreen() {
                 ))
               ) : (
                 <EmptyState
-                  icon="pulse-outline"
-                  title="No activity yet"
-                  body="Your last three check-ins and workouts will show here."
+                  icon="time-outline"
+                  title="No activity"
                 />
               )}
             </Card>
@@ -656,6 +696,14 @@ export default function ProfileScreen() {
                 Switch gym
               </ZookButton>
               <ZookButton
+                variant="secondary"
+                icon="calendar-outline"
+                onPress={() => router.push("/classes" as never)}
+                style={styles.quickButton}
+              >
+                Classes
+              </ZookButton>
+              <ZookButton
                 testID="profile-biometric-toggle"
                 variant="secondary"
                 icon={biometricEnabled ? "lock-closed-outline" : "lock-open-outline"}
@@ -672,6 +720,17 @@ export default function ProfileScreen() {
               >
                 Settings
               </ZookButton>
+              {showQaShortcuts ? (
+                <ZookButton
+                  testID="profile-qa-shortcuts"
+                  variant="secondary"
+                  icon="flask-outline"
+                  onPress={() => router.push("/qa" as never)}
+                  style={styles.quickButton}
+                >
+                  QA shortcuts
+                </ZookButton>
+              ) : null}
               <ZookButton
                 testID="profile-sign-out"
                 variant="destructive"
@@ -720,7 +779,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   name: {
-    ...typography.h1,
+    ...typography.screenTitle,
     textAlign: "left",
   },
   email: {
@@ -751,6 +810,22 @@ const styles = StyleSheet.create({
   referralBenefit: {
     ...typography.body,
   },
+  referGymRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  referGymCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  referGymTitle: {
+    ...typography.cardTitle,
+  },
+  referGymBody: {
+    ...typography.small,
+  },
   membershipCard: {
     gap: spacing.md,
   },
@@ -765,7 +840,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   cardTitle: {
-    ...typography.h3,
+    ...typography.cardTitle,
   },
   cardSubtitle: {
     ...typography.body,

@@ -1,19 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import {
   Activity,
-  BarChart3,
-  Bell,
   Calendar,
   ClipboardList,
   Dumbbell,
   PinIcon,
-  Smartphone,
   Users,
 } from "lucide-react";
-import { ActivityRow, KPITile, PulseDot, SectionHero } from "@/components/dashboard/charts";
-import { GlassCard, Pill } from "@/components/glass-card";
+import { AppHandoffCard } from "@/components/app-handoff-card";
+import { ActivityRow, KPITile, SectionHero } from "@/components/dashboard/charts";
+import { GlassCard } from "@/components/glass-card";
 import { TrainerCustomisationPanel } from "@/components/trainer-customisation-panel";
 
 type CoachStats = {
@@ -48,18 +45,9 @@ export function CoachPage({
       <SectionHero
         eyebrow={`Good day, ${firstName}`}
         title="Trainer command"
-        description="Your assigned clients, week schedule, and progress notes live in the Zook app. The web view gives you a quick read on what's active right now."
+        description="Your assigned clients, week schedule, and progress notes are in the Zook app. This web view highlights active work."
         icon={Dumbbell}
-        tone="lime"
-        meta={
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-              <PulseDot tone="lime" size={6} />
-              Live signal
-            </span>
-            <Pill tone="lime">Trainer</Pill>
-          </div>
-        }
+        tone="sky"
       />
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -67,29 +55,25 @@ export function CoachPage({
           label="Assigned clients"
           value={stats.assignedClients}
           icon={Users}
-          tone="lime"
-          caption="Active on your roster"
+          tone="sky"
         />
         <KPITile
           label="Plans assigned"
           value={stats.plansAssigned}
           icon={ClipboardList}
           tone="sky"
-          caption="Live programs"
         />
         <KPITile
           label="Sessions this week"
           value={stats.sessionsThisWeek}
           icon={Calendar}
-          tone="amber"
-          caption="Logged on the app"
+          tone="sky"
         />
         <KPITile
           label="Progress notes"
           value={stats.progressNotes}
           icon={Activity}
           tone="violet"
-          caption="Last 30 days"
         />
       </section>
 
@@ -97,21 +81,13 @@ export function CoachPage({
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-[var(--text-primary)]">Pinned for today</h2>
-            <Link href="/me" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              Open my profile {"->"}
-            </Link>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Use the Zook mobile app to pin a client here and pull up their plan with one tap from
-            the dashboard.
-          </p>
           <div className="mt-4 grid gap-2">
             {clients.length === 0 ? (
               <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-4 text-sm text-[var(--text-secondary)]">
                 <PinIcon size={16} className="mt-0.5 shrink-0 text-[var(--text-tertiary)]" />
                 <span>
-                  No clients pinned yet. Pin from the mobile app and they appear here
-                  automatically.
+                  No pinned clients. Pin clients in the mobile app.
                 </span>
               </div>
             ) : (
@@ -131,39 +107,19 @@ export function CoachPage({
         </GlassCard>
 
         <GlassCard className="p-5">
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">Today's quick actions</h2>
-          <div className="mt-4 grid gap-2">
-            <ActivityRow
-              icon={ClipboardList}
-              iconTone="lime"
-              title="Assign a new plan"
-              subtitle="Create a trainer draft for an assigned client"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
-              index={0}
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">Today</h2>
+          <div className="mt-4 grid gap-3">
+            <AppHandoffCard
+              compact
+              title="Assign plans in the app"
+              description="Create, edit, and assign workout plans from the trainer mobile workspace."
+              deepLink={clients[0] ? `zook://trainer/clients/${clients[0].id}/plan` : "zook://trainer/plans"}
             />
-            <ActivityRow
-              icon={Bell}
-              iconTone="sky"
-              title="Notify a member"
-              subtitle="Send a quick check-in nudge"
-              href="/me"
-              index={1}
-            />
-            <ActivityRow
-              icon={BarChart3}
-              iconTone="amber"
-              title="Log this week's progress"
-              subtitle="Capture weights, reps, body comp"
-              href={clients[0] ? `/coach/clients/${clients[0].id}` : "/me"}
-              index={2}
-            />
-            <ActivityRow
-              icon={Smartphone}
-              iconTone="violet"
-              title="Open in the Zook app"
-              subtitle="Full coaching surface lives on mobile"
-              href="/me"
-              index={3}
+            <AppHandoffCard
+              compact
+              title="Log progress in the app"
+              description="Capture weekly progress, PT notes, body comp, and reps in Zook mobile."
+              deepLink={clients[0] ? `zook://trainer/clients/${clients[0].id}/sessions` : "zook://trainer/pt"}
             />
           </div>
         </GlassCard>

@@ -11,7 +11,7 @@ export async function getOrganizationPaymentsPage(input: {
   const payments = await prisma.payment.findMany({
     where: {
       orgId: input.orgId,
-      ...(input.branchId ? { OR: [{ branchId: input.branchId }, { branchId: null }] } : {}),
+      ...(input.branchId ? { branchId: input.branchId } : {}),
     },
     orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
     take: limit + 1,

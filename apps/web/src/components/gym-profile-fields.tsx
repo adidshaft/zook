@@ -2,7 +2,7 @@ import { formatEnumLabel } from "@/lib/format";
 
 export const gymTypes = [
   "Strength gym",
-  "Premium fitness club",
+  "Fitness club",
   "Cross-training box",
   "Yoga and wellness studio",
   "Personal training studio",

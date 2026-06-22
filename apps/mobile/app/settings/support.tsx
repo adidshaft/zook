@@ -80,6 +80,7 @@ export default function SupportSettingsScreen() {
             title="Help & support"
             subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`}
             showProfileShortcut={false}
+            showBack
           />
           <Card variant="compact" contentStyle={styles.list}>
             <Pressable
@@ -90,7 +91,6 @@ export default function SupportSettingsScreen() {
             >
               <ListRow
                 title="Report a problem"
-                subtitle="Send app details to Zook support"
                 icon="bug-outline"
                 style={styles.row}
               />
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: layout.contentWidth,
     paddingBottom: layout.bottomNavContentPadding,
-    paddingTop: 14,
+    paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
   body: typography.body,

@@ -46,17 +46,14 @@ export default function NotificationSettingsScreen() {
     <>
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Notifications" subtitle="Choose what Zook can send" showProfileShortcut={false} />
+          <AppHeader title="Notifications" showProfileShortcut={false} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
             <PreferenceRow title="Push notifications" value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
             {rows.map((row) => (
               <PreferenceRow key={row.key} title={row.title} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
             ))}
           </Card>
-          <Card variant="compact" contentStyle={styles.stack}>
-            <ComingSoonRow title="WhatsApp updates" />
-          </Card>
-          <Text style={[styles.note, { color: palette.text.secondary }]}>Changes sync to your active gym when available.</Text>
+          <Text style={[styles.note, { color: palette.text.secondary }]}>Changes apply to your active gym when available.</Text>
         </ScrollView>
       </ZookScreen>
     </>
@@ -73,24 +70,17 @@ function PreferenceRow({ disabled, onChange, title, value }: { disabled?: boolea
   );
 }
 
-function ComingSoonRow({ title }: { title: string }) {
-  const { palette } = useTheme();
-  return (
-    <View style={styles.row}>
-      <Text style={[styles.title, { color: palette.text.secondary }]}>{title}</Text>
-      <View style={[styles.comingSoonBadge, { backgroundColor: palette.surface.accentSoft, borderColor: palette.accent.base }]}>
-        <Text style={[styles.comingSoonText, { color: palette.accent.base }]}>Coming Soon!</Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: 14, width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: spacing.md,
+    maxWidth: layout.contentWidth,
+    paddingBottom: layout.bottomNavContentPadding,
+    paddingTop: layout.screenContentTopPadding,
+    width: "100%",
+  },
   stack: { gap: spacing.md },
   row: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
   title: typography.cardTitle,
   note: typography.small,
-  comingSoonBadge: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
-  comingSoonText: { ...typography.caption },
 });

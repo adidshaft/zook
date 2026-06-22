@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import { BlurView } from "expo-blur";
 import {
   Modal,
@@ -8,12 +8,12 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  type ScrollViewProps,
   type ViewProps,
   type DimensionValue,
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/lib/theme";
+import { elevation } from "@/lib/theme";
 
 export type BottomSheetBackdropProps = ViewProps & {
   appearsOnIndex?: number;
@@ -64,8 +64,14 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
   ) {
     const { palette, mode } = useTheme();
     const [visible, setVisible] = useState(false);
+    const [snapIndex, setSnapIndex] = useState(0);
     const dismissNotifiedRef = useRef(false);
-    const sheetHeight = resolveSnapPoint(snapPoints?.[0]);
+    const resolvedSnapPoints = useMemo(
+      () => (snapPoints?.length ? snapPoints.map(resolveSnapPoint) : [undefined]),
+      [snapPoints],
+    );
+    const maxSnapIndex = Math.max(0, resolvedSnapPoints.length - 1);
+    const sheetHeight = resolvedSnapPoints[Math.min(snapIndex, maxSnapIndex)];
     const safePaddingBottom = Math.max(bottomInset, 0);
     const isDark = mode === "dark";
     const sheetBackground =
@@ -79,17 +85,11 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
           ? "rgba(18,20,19,0.58)"
           : "rgba(255,255,255,0.54)"
         : palette.bg.elevated;
-    const sheetChrome =
-      Platform.OS === "ios"
-        ? {
-            shadowColor: isDark ? palette.bg.sunken : palette.text.primary,
-            shadowOpacity: isDark ? 0.18 : 0.08,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: -8 },
-          }
-        : {
-            elevation: 1,
-          };
+    const sheetChrome = elevation(1, isDark ? palette.bg.sunken : palette.text.primary, {
+      shadowOpacity: isDark ? 0.18 : 0.08,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: -8 },
+    });
 
     const notifyDismiss = useCallback(() => {
       if (dismissNotifiedRef.current) return;
@@ -100,12 +100,14 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
     const close = useCallback(() => {
       if (!visible) return;
       setVisible(false);
+      setSnapIndex(0);
       notifyDismiss();
     }, [notifyDismiss, visible]);
 
     useImperativeHandle(ref, () => ({
       present: () => {
         dismissNotifiedRef.current = false;
+        setSnapIndex(0);
         setVisible(true);
       },
       dismiss: close,
@@ -113,8 +115,16 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
 
     const panResponder = PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) =>
-        enablePanDownToClose && Math.abs(gesture.dy) > 12 && gesture.dy > Math.abs(gesture.dx),
+        Math.abs(gesture.dy) > 12 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
       onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy < -72 && snapIndex < maxSnapIndex) {
+          setSnapIndex((current) => Math.min(current + 1, maxSnapIndex));
+          return;
+        }
+        if (gesture.dy > 72 && snapIndex > 0) {
+          setSnapIndex((current) => Math.max(current - 1, 0));
+          return;
+        }
         if (enablePanDownToClose && gesture.dy > 72) {
           close();
         }
@@ -208,10 +218,6 @@ function resolveSnapPoint(snapPoint?: number | string): DimensionValue | undefin
     return snapPoint as DimensionValue;
   }
   return undefined;
-}
-
-export function createBottomSheetScrollProps(props: ScrollViewProps) {
-  return props;
 }
 
 const styles = StyleSheet.create({

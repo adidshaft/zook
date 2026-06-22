@@ -6,6 +6,7 @@ import {
   getAllowedFixedOtp,
   getApiMode,
   getAppEnv,
+  getCronSecret,
   getQrSigningSecret,
   isMockPaymentCompletionAllowed,
   validateRuntimeConfig,
@@ -66,6 +67,35 @@ describe("runtime env guardrails", () => {
         ZOOK_QR_SECRET: "dev-secret",
       } as NodeJS.ProcessEnv),
     ).toBe("dev-secret");
+  });
+
+  it("allows missing CRON_SECRET only in local", () => {
+    expect(getCronSecret({ APP_ENV: "local" } as NodeJS.ProcessEnv)).toBeUndefined();
+  });
+
+  it("requires CRON_SECRET outside local", () => {
+    expect(() => getCronSecret({ APP_ENV: "staging" } as NodeJS.ProcessEnv)).toThrow(
+      RuntimeConfigError,
+    );
+    expect(() => getCronSecret({ APP_ENV: "production" } as NodeJS.ProcessEnv)).toThrow(
+      RuntimeConfigError,
+    );
+    expect(
+      validateRuntimeConfig({
+        APP_ENV: "staging",
+        API_MODE: "backend",
+        ZOOK_QR_SECRET: "qr_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA",
+      } as NodeJS.ProcessEnv).issues,
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CRON_SECRET_REQUIRED" })]));
+  });
+
+  it("accepts a configured CRON_SECRET outside local", () => {
+    expect(
+      getCronSecret({
+        APP_ENV: "production",
+        CRON_SECRET: "cron_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA",
+      } as NodeJS.ProcessEnv),
+    ).toBe("cron_9vMLuR4hYb83dX2Wz7PaNk6TsFqC1EeA");
   });
 
   it("rejects missing or weak QR secrets outside local", () => {

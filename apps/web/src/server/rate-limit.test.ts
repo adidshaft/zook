@@ -59,6 +59,20 @@ describe("rate limits", () => {
     );
   });
 
+  it("allows a desk-appropriate volume of manual payments per actor per day", async () => {
+    expect(defaultRateLimitRules.manualPaymentByActorOrg).toMatchObject({
+      limit: 50,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+    for (let attempt = 0; attempt < defaultRateLimitRules.manualPaymentByActorOrg.limit; attempt += 1) {
+      await expect(assertRateLimit("manualPaymentByActorOrg", "org_1:user_1")).resolves.toBeTruthy();
+    }
+
+    await expect(assertRateLimit("manualPaymentByActorOrg", "org_1:user_1")).rejects.toThrow(
+      /Too many requests/i,
+    );
+  });
+
 
   it("resets the bucket after the window passes", async () => {
     for (let attempt = 0; attempt < defaultRateLimitRules.aiRequestByUser.limit; attempt += 1) {
@@ -173,5 +187,22 @@ describe("rate limits", () => {
       status: "misconfigured",
       configured: false,
     });
+  });
+
+  it("fails closed when the active rate-limit provider errors", async () => {
+    const globalState = globalThis as unknown as {
+      zookRateLimitStore?: { consume: (key: string, rule: { limit: number; windowMs: number }) => Promise<never> };
+      zookRateLimitProvider?: string;
+    };
+    globalState.zookRateLimitStore = {
+      async consume() {
+        throw new Error("provider offline");
+      },
+    };
+    globalState.zookRateLimitProvider = "memory";
+
+    await expect(assertRateLimit("paymentSessionByActor", "owner_1")).rejects.toThrow(
+      /Too many requests\. Please try again shortly\./i,
+    );
   });
 });
