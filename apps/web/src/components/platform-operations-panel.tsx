@@ -2500,6 +2500,73 @@ function PlatformWithdrawalsCard() {
   );
 }
 
+/**
+ * Owner-first business overview: the at-a-glance numbers + the money that
+ * needs the Zook owner to act (reward payouts to release), so viewing and
+ * acting live together at the top of the console.
+ */
+function PlatformBusinessOverview() {
+  const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
+  const [withdrawals, setWithdrawals] = useState<RewardWithdrawalRow[] | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void webApiFetch<{ summary: SubscriptionSummary }>("/api/platform/subscriptions")
+      .then((p) => mounted && setSummary(p.summary))
+      .catch(() => undefined);
+    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
+      .then((p) => mounted && setWithdrawals(p.withdrawals))
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const pending = (withdrawals ?? []).filter((w) => w.status === "REQUESTED");
+  const pendingPaise = pending.reduce((t, w) => t + w.amountPaise, 0);
+
+  const kpis: Array<{ label: string; value: string; meta: string }> = summary
+    ? [
+        { label: "Gyms", value: formatCompactNumber(summary.totalOrgs), meta: "All accounts" },
+        { label: "Paying", value: formatCompactNumber(summary.active), meta: "Active subscriptions" },
+        { label: "On trial", value: formatCompactNumber(summary.onTrial), meta: "Not yet paying" },
+        { label: "Suspended", value: formatCompactNumber(summary.suspended), meta: "Needs review" },
+        { label: "Gym referrals", value: formatCompactNumber(summary.totalReferrals), meta: "Gym-to-gym" },
+      ]
+    : [];
+
+  return (
+    <div className="mb-5 rounded-[24px] border border-white/10 bg-black/20 p-5">
+      <SectionHeader eyebrow="Your business" title="Overview" />
+      {summary ? <ReadoutGrid className="mt-4" items={kpis} columns={3} /> : (
+        <p className="mt-4 text-sm text-white/45">Loading overview…</p>
+      )}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div
+          className={`rounded-[18px] border p-4 ${
+            pending.length
+              ? "border-amber-300/30 bg-amber-300/10"
+              : "border-white/10 bg-black/25"
+          }`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Needs you</p>
+          <p className="mt-1 text-sm font-semibold text-white">
+            {pending.length
+              ? `${pending.length} reward payout${pending.length === 1 ? "" : "s"} to release · ${formatInr(pendingPaise)}`
+              : "No reward payouts waiting"}
+          </p>
+          <p className="mt-1 text-xs text-white/45">Review and mark paid in the payouts card below.</p>
+        </div>
+        <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Adjust</p>
+          <p className="mt-1 text-sm font-semibold text-white">Referral rewards &amp; pricing</p>
+          <p className="mt-1 text-xs text-white/45">Set what referrers earn in the editor below.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PlatformSubscriptionsSection() {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
@@ -2533,6 +2600,7 @@ function PlatformSubscriptionsSection() {
 
   return (
     <div id="subscriptions" className="scroll-mt-5">
+      <PlatformBusinessOverview />
       <GlassCard>
         <SectionHeader
           eyebrow="Subscriptions"
