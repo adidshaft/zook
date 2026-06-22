@@ -243,14 +243,19 @@ export const platformReferralPolicySchema = z.object({
   referrerRewardType: z.enum(["TRIAL_DAYS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
   referrerRewardValue: z.number().int().min(0).max(10_000_000).default(30),
   referredRewardType: z.enum(["TRIAL_DAYS", "DISCOUNT_PERCENT_BPS", "CREDIT_PAISE", "NONE"]).default("TRIAL_DAYS"),
-  referredRewardValue: z.number().int().min(0).max(10_000_000).default(30),
-  nonOwnerSemiannualRewardPaise: z.number().int().min(0).max(10_000_000).default(250_000),
-  nonOwnerYearlyRewardPaise: z.number().int().min(0).max(10_000_000).default(500_000),
+  referredRewardValue: z.number().int().min(0).max(10_000_000).default(14),
+  // Cash a non-owner earns for referring a gym, kept conservative (~12-13% of
+  // even the cheapest STARTER plan's first-period revenue) so the program is
+  // never a net loss after payment fees + the new gym's free trial days. The
+  // Zook owner can raise these in the platform referral editor.
+  nonOwnerSemiannualRewardPaise: z.number().int().min(0).max(10_000_000).default(100_000),
+  nonOwnerYearlyRewardPaise: z.number().int().min(0).max(10_000_000).default(200_000),
   ownerRewardDays: z.number().int().min(0).max(365).default(30),
   qualifyingCycles: z.array(z.enum(["SEMIANNUAL", "YEARLY"])).default(["SEMIANNUAL", "YEARLY"]),
   clawbackWindowDays: z.number().int().min(0).max(90).default(14),
   minWithdrawalPaise: z.number().int().min(0).max(10_000_000).default(100_000),
-  maxRewardsPerUserPerMonth: z.number().int().min(1).max(100).default(10),
+  // Caps monthly cash exposure per referrer (5 × yearly = ₹10,000/user/month max).
+  maxRewardsPerUserPerMonth: z.number().int().min(1).max(100).default(5),
   maxRedemptionsPerOrg: z.number().int().min(1).max(1000).default(25),
   expiresInDays: z.number().int().min(1).max(730).default(180),
 });
