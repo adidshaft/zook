@@ -465,7 +465,7 @@ export function BillingSection({
             </p>
             <button
               type="button"
-              aria-label="Connect mock provider"
+              aria-label="Upgrade plan"
               disabled={mandateBusy}
               onClick={() => void setupBillingMandate()}
               className="zook-focus rounded-full bg-[var(--text-primary)] px-5 py-3 text-sm font-semibold text-[var(--bg)] disabled:cursor-wait disabled:opacity-60"
