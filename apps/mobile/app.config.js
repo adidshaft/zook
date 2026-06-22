@@ -48,7 +48,7 @@ const baseConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
-    buildNumber: "5",
+    buildNumber: "6",
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -75,7 +75,7 @@ const baseConfig = {
   },
   android: {
     package: "com.zook.app",
-    versionCode: 4,
+    versionCode: 5,
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: true,
     intentFilters: [
