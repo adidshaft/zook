@@ -16,6 +16,9 @@ import {
 
 import { glow, gradients, radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
+
+// Deep-green primary-button fill for light mode (white label reads on it).
+const ACCENT_BUTTON_LIGHT = ["#2E5A36", "#1F3E24"] as const;
 import type { Palette } from "@/lib/theme/index";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
@@ -155,7 +158,7 @@ export function ZookButton({
   hapticWeight?: HapticWeight;
   testID?: string;
 }) {
-  const { palette } = useTheme();
+  const { mode, palette } = useTheme();
   const buttonPalette = paletteForVariant(palette, variant);
   const buttonSizeStyle = buttonSizeStyles[size];
   const buttonTextSizeStyle = buttonTextSizeStyles[size];
@@ -185,9 +188,14 @@ export function ZookButton({
 
   // Gradient fill for the primary CTA, clipped to the button radius and painted
   // behind the label so the lime reads as a lit surface rather than a flat block.
+  // Light mode uses the deep-green accent fill (matching the palette's
+  // light accent + white onAccent text); dark mode uses the lime fill with
+  // black text. Keeping the lime fill in light mode left white-on-lime labels
+  // that were nearly invisible.
+  const primaryGradient = mode === "light" ? ACCENT_BUTTON_LIGHT : gradients.accentButton;
   const gradientLayer = isPrimary ? (
     <LinearGradient
-      colors={gradients.accentButton}
+      colors={primaryGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[StyleSheet.absoluteFillObject, { borderRadius: radius }]}
