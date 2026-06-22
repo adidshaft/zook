@@ -33,6 +33,7 @@ export * from "./empty-state";
 export * from "./stat-strip";
 export * from "./setup-checklist";
 export * from "./permission-sheet";
+export * from "./confirm-sheet";
 export * from "./icon";
 export * from "./offline-banner";
 export * from "./network-banner";

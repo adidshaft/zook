@@ -6,6 +6,8 @@ import { requireDb } from "./helpers/db";
 
 test.setTimeout(60_000);
 
+test.setTimeout(60_000);
+
 async function expectA11yClean(page: import("@playwright/test").Page) {
   // Wait for any entry transitions or fade-in animations to fully complete
   await page.waitForTimeout(500);

@@ -68,6 +68,9 @@ export const queryKeys = {
     list: () => ["me", "notifications"] as const,
     preferences: () => ["me", "notification-preferences"] as const,
   },
+  privacy: {
+    consents: () => ["me", "consents"] as const,
+  },
   payments: {
     invoices: () => ["me", "invoices"] as const,
     list: (orgId?: string | null, branchId?: string | null) =>

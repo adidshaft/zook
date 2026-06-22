@@ -221,6 +221,8 @@ export const publicMessages = {
     visibleTrainers: "Visible trainers",
     trainersPending: "Trainer profiles not published.",
     bioComingSoon: "Bio not published.",
+    reviews: "Reviews",
+    reviewsPending: "Member reviews not published yet.",
     referral: "Referral",
     referralCopy:
       "Have a referral or invite code? Apply it during payment so the gym can track the source and any eligible discount.",
@@ -469,6 +471,8 @@ export const publicMessages = {
     visibleTrainers: "दिखने वाले ट्रेनर",
     trainersPending: "जिम प्रकाशित करेगा तो ट्रेनर प्रोफाइल यहां दिखेंगी.",
     bioComingSoon: "बायो प्रकाशित नहीं है.",
+    reviews: "समीक्षाएं",
+    reviewsPending: "सदस्य समीक्षाएं अभी प्रकाशित नहीं हैं.",
     referral: "रेफरल",
     referralCopy:
       "रेफरल या आमंत्रण कोड है? भुगतान के दौरान लगाएं ताकि जिम स्रोत और छूट ट्रैक कर सके.",

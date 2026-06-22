@@ -49,3 +49,8 @@ export function useRoleContext(): RoleContext | null {
     };
   }, [activeOrgId, activeRole, session]);
 }
+
+export function useCanSwitchRole() {
+  const context = useRoleContext();
+  return Boolean(context && context.availableRoles.length > 1);
+}
