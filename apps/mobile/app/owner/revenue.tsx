@@ -7,6 +7,7 @@ import {
   Card,
   IconBubble,
   ListRow,
+  ProfileShortcut,
   Skeleton,
   QueryErrorState,
   ScreenHeader,
@@ -77,6 +78,7 @@ export default function OwnerRevenueScreen() {
                 <BranchSelectorChip />
               </View>
             }
+            trailing={<ProfileShortcut />}
           />
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>

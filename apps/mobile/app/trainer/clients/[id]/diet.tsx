@@ -80,7 +80,7 @@ export default function TrainerClientDiet() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader title="Diet plan" subtitle="Build and publish a plan for your client." showProfileShortcut={false} showBack />
+          <AppHeader title="Diet plan" subtitle="Build and publish a plan for your client." showBack />
 
           <Card contentStyle={styles.formCard}>
             <FormField label="Plan title" value={title} onChangeText={setTitle} placeholder="Muscle gain · Vegetarian" />

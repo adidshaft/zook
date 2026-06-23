@@ -90,7 +90,7 @@ export default function RewardsRoute() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Refer & earn" subtitle="Bring new gyms to Zook and get rewarded." showProfileShortcut={false} showBack />
+          <AppHeader title="Refer & earn" subtitle="Bring new gyms to Zook and get rewarded." showBack />
 
           {referralQuery.isError ? (
             <QueryErrorState error={referralQuery.error} onRetry={() => void referralQuery.refetch()} />

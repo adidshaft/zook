@@ -119,7 +119,7 @@ export default function OwnerPlans() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Membership plans" subtitle="The plans members can buy at your gym." showProfileShortcut={false} showBack />
+          <AppHeader title="Membership plans" subtitle="The plans members can buy at your gym." showBack />
 
           <SectionHeader
             title="Plans"

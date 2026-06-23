@@ -58,7 +58,6 @@ export default function EntryQrRoute() {
           <AppHeader
             title="Entry QR"
             subtitle="Display this at your entrance. Members scan it to check in."
-            showProfileShortcut={false}
             showBack
           />
 

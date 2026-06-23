@@ -96,7 +96,7 @@ export default function TrainerClasses() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title="Classes" subtitle="Schedule group sessions members can book." showProfileShortcut={false} showBack />
+          <AppHeader title="Classes" subtitle="Schedule group sessions members can book." showBack />
 
           <SectionHeader
             title="Schedule"

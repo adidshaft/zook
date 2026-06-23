@@ -210,7 +210,7 @@ export default function TrainerPersonalTraining() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title="Personal Training" subtitle="Your own coaching packages and clients." showProfileShortcut={false} showBack />
+          <AppHeader title="Personal Training" subtitle="Your own coaching packages and clients." showBack />
 
           <View style={styles.statRow}>
             <Card variant="compact" contentStyle={styles.statCard}>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
-import { BranchSelectorChip, ScreenHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, ProfileShortcut, ScreenHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
@@ -153,6 +153,7 @@ export default function OwnerMembersScreen() {
                     <BranchSelectorChip />
                   </>
                 }
+                trailing={<ProfileShortcut />}
               />
             }
             items={memberItems}

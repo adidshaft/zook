@@ -15,7 +15,7 @@ export default function LanguageSettingsScreen() {
     <>
       <ZookScreen testID="settings-language-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Language" showProfileShortcut={false} showBack />
+          <AppHeader title="Language" showBack />
           <SegmentedControl
             options={options}
             value={preference}

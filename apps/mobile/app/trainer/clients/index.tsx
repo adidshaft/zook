@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import {
-  AppHeader,
+  ProfileShortcut,
+  ScreenHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
@@ -79,9 +80,10 @@ export default function TrainerClientsScreen() {
             onRefresh={onRefresh}
             header={
               <>
-                <AppHeader
+                <ScreenHeader
                   title="Clients"
                   subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
+                  trailing={<ProfileShortcut />}
                 />
               </>
             }

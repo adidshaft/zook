@@ -57,7 +57,7 @@ export default function PrivacySettingsScreen() {
     <>
       <ZookScreen testID="settings-privacy-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Privacy" showProfileShortcut={false} showBack />
+          <AppHeader title="Privacy" showBack />
           <Card variant="compact" contentStyle={styles.stack}>
             <Text style={[styles.body, { color: palette.text.secondary }]}>Request a copy of your Zook data or start an account deletion request.</Text>
             <ZookButton onPress={() => void requestExport()} variant="secondary" disabled={exportBusy}>Request data export</ZookButton>

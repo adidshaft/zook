@@ -47,7 +47,7 @@ export default function MemberCoaching() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Your coaching" subtitle="Personal training with your coach." showProfileShortcut={false} showBack />
+          <AppHeader title="Your coaching" subtitle="Personal training with your coach." showBack />
 
           {coachingQuery.isError ? (
             <QueryErrorState error={coachingQuery.error} onRetry={() => void coachingQuery.refetch()} />

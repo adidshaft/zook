@@ -6,7 +6,7 @@ import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { BranchSelectorChip, EmptyState, Card, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, PrimaryButton, ProfileShortcut, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useHasPermission, useAuth } from "@/lib/auth";
@@ -144,6 +144,7 @@ export default function OwnerApprovalsScreen() {
                 <BranchSelectorChip />
               </View>
             }
+            trailing={<ProfileShortcut />}
           />
           <MetricGrid
             items={[

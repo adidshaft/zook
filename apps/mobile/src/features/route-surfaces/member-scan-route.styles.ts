@@ -7,7 +7,7 @@ export const scanStyles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 20,
+    paddingTop: layout.screenContentTopPadding,
     paddingBottom: layout.bottomNavContentPadding,
     gap: 12,
   },

@@ -72,7 +72,6 @@ export default function ClassRosterRoute() {
                 ? `${formatTime(data.class.startTime)} · ${confirmed.length}/${data.class.maxCapacity} booked`
                 : "Who's coming to this class"
             }
-            showProfileShortcut={false}
             showBack
           />
 

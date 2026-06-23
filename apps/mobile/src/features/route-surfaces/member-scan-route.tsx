@@ -21,7 +21,7 @@ import {
   Card,
   EmptyState,
   IconBubble,
-  AppHeader,
+  ScreenHeader,
   type PillTone,
   ProfileShortcut,
   ScannerFrame,
@@ -775,14 +775,11 @@ export default function Scan() {
             ),
           }}
         >
-          <AppHeader
+          <ScreenHeader
             title="Scan to check in"
             contextSlot={<RoleSwitcherChip />}
             subtitle="Point your camera at the QR code at your gym"
-            showBack
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             trailing={<ProfileShortcut />}
-            showProfileShortcut={false}
           />
 
           {cameraBlocked ? (

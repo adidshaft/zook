@@ -91,7 +91,7 @@ export default function OwnerStaff() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Staff" subtitle="Admins, trainers and reception at your gym." showProfileShortcut={false} showBack />
+          <AppHeader title="Staff" subtitle="Admins, trainers and reception at your gym." showBack />
 
           <SectionHeader
             title="Team"

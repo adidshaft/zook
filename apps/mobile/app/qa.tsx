@@ -93,7 +93,6 @@ export default function QaLauncherScreen() {
       >
         <AppHeader
           title="QA shortcuts"
-          showProfileShortcut={false}
           showBack
         />
 

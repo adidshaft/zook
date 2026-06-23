@@ -166,7 +166,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" leading={dismissButton} />
+            <AppHeader title="Attendance" leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -187,7 +187,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" leading={dismissButton} />
+            <AppHeader title="Attendance" leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
@@ -233,6 +233,7 @@ export default function AttendanceResultScreen() {
             title="Attendance"
             subtitle={pending ? branchName : undefined}
             leading={dismissButton}
+            showProfileShortcut={false}
           />
 
           <View style={styles.hero}>

@@ -418,6 +418,7 @@ export default function NotificationsScreen() {
                     </Pressable>
                   ) : null
                 }
+                showProfileShortcut={false}
               />
 
               {routeParams.notificationId ? (

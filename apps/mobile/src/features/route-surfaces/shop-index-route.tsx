@@ -684,7 +684,6 @@ export default function Shop() {
           title={t("shop.readyForPickup")}
           subtitle={t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
-          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -783,7 +782,6 @@ export default function Shop() {
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
-          trailing={<ProfileShortcut />}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
         />
@@ -849,7 +847,6 @@ export default function Shop() {
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
           leading={headerBackButton}
-          trailing={<ProfileShortcut />}
           chip={
             <View style={styles.headerChipStack}>
               <BranchSelectorChip />
@@ -999,7 +996,6 @@ export default function Shop() {
               title="Shop"
               subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
               chip={<BranchSelectorChip />}
-              leading={router.canGoBack() ? headerBackButton : undefined}
               showProfileShortcut={false}
               trailing={
                 <View style={styles.headerActions}>
