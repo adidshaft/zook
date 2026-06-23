@@ -82,6 +82,15 @@ pnpm mobile:release:check
 - Google Play Console internal testing shows release `4 (0.1.0)` available to internal testers, released Jun 12 11:37 PM, not reviewed yet.
 - `pnpm mobile:release:check` passes against production config with warnings for physical-device push evidence, low-light QR evidence, and checkout/webhook evidence.
 
+## 2026-06-24 Build And Submission Evidence
+
+- Added `device-preview` EAS profile for side-by-side physical iPhone installs. It resolves to app name `Zook Preview`, bundle ID `com.zook.app.preview`, scheme `zook-preview`, production API mode, and production backend URL.
+- iOS side-by-side EAS build `88c64b35-968f-4df2-8b43-c3d96653dd43` finished at version `0.1.0 (8)`, commit `cd70f060`, with ad hoc provisioning for Aman's cabled iPhone (`00008130-000C74820130001C`). The extracted `ZookPreview.app` was installed and launched with bundle ID `com.zook.app.preview`.
+- iOS production EAS build `00b9080e-f36f-4e99-a650-3b77dccc642f` finished for TestFlight/App Store Connect at version `0.1.0 (8)`, commit `cd70f060`. EAS submission `6df0e289-1e2f-482c-a0f9-1f96609676ef` was scheduled for App Store Connect with internal group `Zook Internal QA`.
+- EAS rejected inline TestFlight `what-to-test` notes because changelog submission is restricted to the Enterprise plan. Demo login notes to carry into TestFlight/Play review are: `owner@zook.local`, `admin@zook.local`, `reception@zook.local`, `trainer@zook.local`, `member@zook.local` / `+91 98765 43210`, and `platform@zook.local`; OTP `000000` is for seeded QA environments only.
+- Android production EAS build `269d66d8-591d-4e46-85de-b43b0cead5e8` finished for Google Play at version `0.1.0`, versionCode `7`, commit `cd70f060`.
+- Google Play EAS submission is blocked because no Google Service Account JSON key is configured in EAS and no matching key file was found locally. `eas submit -p android --profile production --id 269d66d8-591d-4e46-85de-b43b0cead5e8 --wait --non-interactive` failed with `Google Service Account Keys cannot be set up in --non-interactive mode`; the interactive path asks for a service-account JSON path.
+
 ## Pilot Release Rule
 
 Do not submit broadly until real-device QA, provider certification, and production read-only smoke are attached to the release notes.
