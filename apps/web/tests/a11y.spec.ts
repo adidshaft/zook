@@ -109,7 +109,7 @@ test("shop product delete confirm dialog traps focus, closes on Escape, and pass
   });
 
   await page.goto("/dashboard/shop");
-  const productCard = page.locator("div.rounded-\\[24px\\]", { hasText: productName }).first();
+  const productCard = page.locator("div.rounded-\\[22px\\]", { hasText: productName }).first();
   await expect(productCard).toBeVisible();
   await productCard.getByRole("button", { name: "Delete" }).click();
 
