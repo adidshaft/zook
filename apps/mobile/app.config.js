@@ -48,7 +48,7 @@ const baseConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.zook.app",
-    buildNumber: "7",
+    buildNumber: "8",
     usesAppleSignIn: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -75,7 +75,7 @@ const baseConfig = {
   },
   android: {
     package: "com.zook.app",
-    versionCode: 6,
+    versionCode: 7,
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: true,
     intentFilters: [
@@ -276,6 +276,10 @@ function resolvePushEnvironment(profile) {
   return "development";
 }
 
+function resolveOptionalOverride(key, fallback) {
+  return process.env[key]?.trim() || fallback;
+}
+
 module.exports = () => {
   const releaseProfile = resolveReleaseProfile();
   const apiMode = resolveApiMode();
@@ -288,9 +292,29 @@ module.exports = () => {
   const expoProjectId =
     process.env.EXPO_PROJECT_ID ?? process.env.EAS_PROJECT_ID ?? baseConfig.extra?.eas?.projectId;
   const plugins = [...(baseConfig.plugins ?? []), ...resolveAppleSignInPlugins()];
+  const appName = resolveOptionalOverride("MOBILE_APP_NAME", baseConfig.name);
+  const appScheme = resolveOptionalOverride("MOBILE_APP_SCHEME", "zook");
+  const iosBundleIdentifier = resolveOptionalOverride(
+    "MOBILE_IOS_BUNDLE_IDENTIFIER",
+    baseConfig.ios.bundleIdentifier,
+  );
+  const androidPackage = resolveOptionalOverride("MOBILE_ANDROID_PACKAGE", baseConfig.android.package);
+  const iosInfoPlist = {
+    ...baseConfig.ios.infoPlist,
+    ...(googleIosUrlScheme
+      ? {
+          CFBundleURLTypes: [
+            {
+              CFBundleURLSchemes: [appScheme, iosBundleIdentifier, googleIosUrlScheme],
+            },
+          ],
+        }
+      : {}),
+  };
 
   return {
     ...baseConfig,
+    name: appName,
     plugins: shouldConfigureNativeSentry
       ? [
           ...plugins,
@@ -304,20 +328,21 @@ module.exports = () => {
           ],
         ]
       : plugins,
-    scheme: "zook",
+    scheme: appScheme,
     version: appVersion,
     runtimeVersion: {
       policy: "appVersion",
     },
     ios: {
       ...baseConfig.ios,
-      bundleIdentifier: "com.zook.app",
+      bundleIdentifier: iosBundleIdentifier,
       usesAppleSignIn: true,
+      infoPlist: iosInfoPlist,
       icon: "./assets/icons/AppIcon-1024.png",
     },
     android: {
       ...baseConfig.android,
-      package: "com.zook.app",
+      package: androidPackage,
     },
     extra: {
       ...(baseConfig.extra ?? {}),
@@ -325,7 +350,7 @@ module.exports = () => {
       apiMode,
       releaseProfile,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "",
-      appScheme: "zook",
+      appScheme,
       appVersion,
       runtimeVersion,
       googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || "",

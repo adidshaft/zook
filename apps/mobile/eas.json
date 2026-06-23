@@ -20,6 +20,19 @@
         "EXPO_PUBLIC_API_MODE": "backend"
       }
     },
+    "device-preview": {
+      "distribution": "internal",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV_PROFILE": "production",
+        "EXPO_PUBLIC_API_MODE": "backend",
+        "EXPO_PUBLIC_INCLUDE_DEMO": "false",
+        "MOBILE_APP_NAME": "Zook Preview",
+        "MOBILE_APP_SCHEME": "zook-preview",
+        "MOBILE_IOS_BUNDLE_IDENTIFIER": "com.zook.app.preview",
+        "MOBILE_ANDROID_PACKAGE": "com.zook.app.preview"
+      }
+    },
     "production": {
       "channel": "production",
       "env": {
