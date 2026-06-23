@@ -1,3 +1,5 @@
+const INDIA_TIME_ZONE = "Asia/Kolkata";
+
 export function formatInr(paise: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -83,6 +85,7 @@ export function formatDate(value: Date | string | null | undefined): string {
     return "Unavailable";
   }
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -95,6 +98,7 @@ export function formatWeekdayDate(value: Date | string | null | undefined): stri
     return "Unavailable";
   }
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "short",
@@ -107,6 +111,7 @@ export function formatDateTime(value: Date | string | null | undefined): string 
     return "Unavailable";
   }
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -121,6 +126,7 @@ export function formatTime(value: Date | string | null | undefined): string {
     return "Unavailable";
   }
   return new Intl.DateTimeFormat("en-IN", {
+    timeZone: INDIA_TIME_ZONE,
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
