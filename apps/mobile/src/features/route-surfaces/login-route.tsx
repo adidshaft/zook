@@ -431,7 +431,9 @@ export default function Login() {
               <>
                 <View style={styles.socialDivider}>
                   <View style={[styles.socialDividerLine, { backgroundColor: palette.border.subtle }]} />
-                  <Text style={[styles.socialDividerText, { color: palette.text.tertiary }]}>or</Text>
+                  <Text style={[styles.socialDividerText, { color: palette.text.tertiary }]}>
+                    {t("common.or")}
+                  </Text>
                   <View style={[styles.socialDividerLine, { backgroundColor: palette.border.subtle }]} />
                 </View>
                 {appleSignInSupported() ? (
@@ -447,7 +449,7 @@ export default function Login() {
                     busyLabel={t("auth.working")}
                     style={styles.socialButton}
                   >
-                    Continue with Apple
+                    {t("auth.continueWithApple")}
                   </ZookButton>
                 ) : null}
                 <ZookButton
@@ -462,7 +464,7 @@ export default function Login() {
                   busyLabel={t("auth.working")}
                   style={styles.socialButton}
                 >
-                  Continue with Google
+                  {t("auth.continueWithGoogle")}
                 </ZookButton>
               </>
             ) : null}
@@ -499,23 +501,23 @@ export default function Login() {
             ) : (
               <>
                 <Text style={[styles.legalText, { color: palette.text.tertiary }]}>
-                  By continuing you agree to our{" "}
+                  {t("auth.legalPrefix")}{" "}
                   <Text
                     accessibilityRole="link"
-                    accessibilityLabel="Open Zook terms"
+                    accessibilityLabel={t("auth.openTerms")}
                     style={[styles.legalLink, { color: palette.accent.base }]}
                     onPress={() => void Linking.openURL(TERMS_URL)}
                   >
-                    Terms
+                    {t("auth.legalTerms")}
                   </Text>{" "}
-                  and{" "}
+                  {t("auth.legalJoiner")}{" "}
                   <Text
                     accessibilityRole="link"
-                    accessibilityLabel="Open Zook privacy policy"
+                    accessibilityLabel={t("auth.openPrivacy")}
                     style={[styles.legalLink, { color: palette.accent.base }]}
                     onPress={() => void Linking.openURL(PRIVACY_URL)}
                   >
-                    Privacy Policy
+                    {t("auth.legalPrivacy")}
                   </Text>
                   .
                 </Text>

@@ -18,6 +18,7 @@ export type TranslationKey =
   | "common.datePicker"
   | "common.dismiss"
   | "common.done"
+  | "common.or"
   | "network.offline"
   | "nav.home"
   | "nav.plans"
@@ -64,6 +65,14 @@ export type TranslationKey =
   | "auth.sendCode"
   | "auth.verifyAndSignIn"
   | "auth.working"
+  | "auth.continueWithApple"
+  | "auth.continueWithGoogle"
+  | "auth.legalPrefix"
+  | "auth.legalTerms"
+  | "auth.legalJoiner"
+  | "auth.legalPrivacy"
+  | "auth.openTerms"
+  | "auth.openPrivacy"
   | "auth.resendCode"
   | "auth.resendIn"
   | "auth.changeSignIn"
@@ -240,6 +249,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.datePicker": "Date picker",
     "common.dismiss": "Dismiss",
     "common.done": "Done",
+    "common.or": "or",
     "network.offline": "Working offline. Data may be stale.",
     "nav.home": "Home",
     "nav.plans": "Plans",
@@ -286,6 +296,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sendCode": "Send Code",
     "auth.verifyAndSignIn": "Verify & Sign In",
     "auth.working": "Working...",
+    "auth.continueWithApple": "Continue with Apple",
+    "auth.continueWithGoogle": "Continue with Google",
+    "auth.legalPrefix": "By continuing you agree to our",
+    "auth.legalTerms": "Terms",
+    "auth.legalJoiner": "and",
+    "auth.legalPrivacy": "Privacy Policy",
+    "auth.openTerms": "Open Zook terms",
+    "auth.openPrivacy": "Open Zook privacy policy",
     "auth.resendCode": "Resend code",
     "auth.resendIn": "Resend in {{seconds}}s",
     "auth.changeSignIn": "Change sign-in",
@@ -461,6 +479,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.datePicker": "तारीख चुनें",
     "common.dismiss": "बंद करें",
     "common.done": "हो गया",
+    "common.or": "या",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "nav.home": "होम",
     "nav.plans": "प्लान",
@@ -507,6 +526,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sendCode": "कोड भेजें",
     "auth.verifyAndSignIn": "वेरिफाई करके साइन इन करें",
     "auth.working": "काम हो रहा है...",
+    "auth.continueWithApple": "Apple के साथ जारी रखें",
+    "auth.continueWithGoogle": "Google के साथ जारी रखें",
+    "auth.legalPrefix": "जारी रखकर आप हमारी",
+    "auth.legalTerms": "Terms",
+    "auth.legalJoiner": "और",
+    "auth.legalPrivacy": "Privacy Policy",
+    "auth.openTerms": "Zook terms खोलें",
+    "auth.openPrivacy": "Zook privacy policy खोलें",
     "auth.resendCode": "कोड फिर भेजें",
     "auth.resendIn": "{{seconds}}s में फिर भेजें",
     "auth.changeSignIn": "साइन-इन बदलें",
