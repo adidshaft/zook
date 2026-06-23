@@ -14,7 +14,8 @@ import {
 } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Alert, AppState, StyleSheet, Text, View } from "react-native";
-import { authClient } from "./domain-api";
+import { authClient, type VerifyOtpResult } from "./domain-api";
+import { signInWithAppleNative, signInWithGoogleNative } from "./social-auth";
 import {
   DEMO_AUTH_TOKEN,
   getOfflineDemoInitialRoute,
@@ -76,6 +77,8 @@ interface AuthContextValue {
   biometricEnabled: boolean;
   requestOtp: (identifier: string) => Promise<RequestOtpResult>;
   verifyOtp: (identifier: string, code: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<string | void>;
   clearExpiredSession: () => Promise<void>;
@@ -580,10 +583,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result;
   }, []);
 
-  const verifyOtp = useCallback(
-    async (identifier: string, code: string) => {
-      const normalizedCode = sanitizeOtpValue(code);
-      const result = await authClient.verifyOtp(identifier, normalizedCode);
+  const establishSessionFromResult = useCallback(
+    async (result: VerifyOtpResult) => {
       const expiresAt = normalizeSessionExpiresAt(result.expiresAt);
       const refreshTokenValue = result.refreshToken;
       await deleteStoredValue(OFFLINE_DEMO_LOGGED_OUT_STORAGE_KEY);
@@ -604,6 +605,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [hydrate, maybePromptForBiometric],
   );
+
+  const verifyOtp = useCallback(
+    async (identifier: string, code: string) => {
+      const normalizedCode = sanitizeOtpValue(code);
+      const result = await authClient.verifyOtp(identifier, normalizedCode);
+      await establishSessionFromResult(result);
+    },
+    [establishSessionFromResult],
+  );
+
+  const signInWithGoogle = useCallback(async () => {
+    const idToken = await signInWithGoogleNative();
+    const result = await authClient.googleCallback(idToken);
+    await establishSessionFromResult(result);
+  }, [establishSessionFromResult]);
+
+  const signInWithApple = useCallback(async () => {
+    const identity = await signInWithAppleNative();
+    const result = await authClient.appleCallback(identity);
+    await establishSessionFromResult(result);
+  }, [establishSessionFromResult]);
 
   const registerLogoutCleanup = useCallback((cleanup: LogoutCleanup) => {
     logoutCleanupsRef.current.add(cleanup);
@@ -760,6 +782,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       biometricEnabled,
       requestOtp,
       verifyOtp,
+      signInWithGoogle,
+      signInWithApple,
       logout,
       refresh,
       clearExpiredSession,
@@ -793,6 +817,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       setDefaultRole,
       setBiometricEnabled,
+      signInWithApple,
+      signInWithGoogle,
       status,
       switchOrg,
       switchRole,

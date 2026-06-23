@@ -50,7 +50,7 @@ export default function TrackingHistoryScreen() {
             />
           }
         >
-          <AppHeader title="Workout history" showProfileShortcut={false} showBack />
+          <AppHeader title="Workout history" showBack />
           {workoutsQuery.isError ? <QueryErrorState error={workoutsQuery.error} onRetry={() => void workoutsQuery.refetch()} /> : null}
           {bodyProgressQuery.isError ? <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} /> : null}
           <View style={styles.stack}>

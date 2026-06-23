@@ -109,7 +109,7 @@ export default function OwnerReferralSettings() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Referral program" subtitle="Set how much everyone earns for referrals." showProfileShortcut={false} showBack />
+          <AppHeader title="Referral program" subtitle="Set how much everyone earns for referrals." showBack />
 
           {policyQuery.isError ? (
             <QueryErrorState error={policyQuery.error} onRetry={() => void policyQuery.refetch()} />

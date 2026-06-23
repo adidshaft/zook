@@ -4,9 +4,10 @@ import {
   EmptyState,
   Card,
   ListRow,
+  ProfileShortcut,
   Skeleton,
-  AppHeader,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -42,7 +43,7 @@ export default function TrainerPayoutsScreen() {
             />
           }
         >
-          <AppHeader title="Payouts" />
+          <ScreenHeader title="Payouts" trailing={<ProfileShortcut />} />
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>

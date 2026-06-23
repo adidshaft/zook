@@ -7,6 +7,7 @@ import {
   EmptyState,
   Card,
   ListRow,
+  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   StatusChip,
@@ -178,6 +179,7 @@ export default function OwnerBillingScreen() {
                 <BranchSelectorChip />
               </View>
             }
+            trailing={<ProfileShortcut />}
           />
 
           {billingQuery.isError ? (

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   EmptyState,
-  AppHeader,
   Card,
+  ProfileShortcut,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
@@ -54,7 +55,7 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <AppHeader title="Plan work" />
+          <ScreenHeader title="Plan work" trailing={<ProfileShortcut />} />
           <SectionHeader title="Active plan work" />
           <Card variant="compact">
             <SectionHeader

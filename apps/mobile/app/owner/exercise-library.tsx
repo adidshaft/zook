@@ -165,7 +165,7 @@ export default function OwnerExerciseLibraryScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Exercise library" subtitle="Shared workout templates your trainers can reuse." showProfileShortcut={false} showBack />
+          <AppHeader title="Exercise library" subtitle="Shared workout templates your trainers can reuse." showBack />
           <SectionHeader
             title="Shared library"
             action={

@@ -194,7 +194,6 @@ export default function ClassesRoute() {
                 : "Reserve your spot in upcoming group sessions."
             }
             contextSlot={<BranchSelectorChip />}
-            showProfileShortcut={false}
             showBack
           />
 

@@ -338,12 +338,12 @@ export default function AssistantScreen() {
               <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
             </Pressable>
           }
+          showProfileShortcut={false}
           chip={
             <View style={[styles.aiMark, { backgroundColor: palette.accent.fill }]}>
               <Ionicons name="chatbubble-ellipses" size={18} color={palette.text.onAccent} />
             </View>
           }
-          showProfileShortcut={false}
         />
 
         <View style={styles.controlsRow}>

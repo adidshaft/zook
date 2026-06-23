@@ -146,7 +146,7 @@ export default function TrackingEntryScreen() {
     <>
       <ZookScreen testID="tracking-entry-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}>
-          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} showProfileShortcut={false} showBack />
+          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} showBack />
           <SegmentedControl
             options={[
               { value: "workout", label: "Workout" },

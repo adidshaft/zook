@@ -53,7 +53,6 @@ export default function MembershipReceiptScreen() {
           eyebrow="Membership"
           title="Receipt"
           subtitle={payment?.receiptNumber ? `Receipt ${payment.receiptNumber}` : "Payment details"}
-          showProfileShortcut={false}
           showBack
         />
 

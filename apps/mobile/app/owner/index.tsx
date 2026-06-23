@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, ProfileShortcut, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
@@ -217,6 +217,7 @@ export default function OwnerCommandScreen() {
             title="Today"
             subtitle={orgName}
             titleAccessory={<BranchSelectorChip />}
+            trailing={<ProfileShortcut />}
             scrollY={scrollY}
           />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}

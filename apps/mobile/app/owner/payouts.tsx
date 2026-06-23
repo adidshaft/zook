@@ -192,7 +192,6 @@ export default function OwnerPayouts() {
           <AppHeader
             title="Trainer payouts"
             subtitle="Review and pay your coaches."
-            showProfileShortcut={false}
             showBack
           />
 

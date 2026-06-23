@@ -85,7 +85,7 @@ export default function PlatformMobile() {
             title="Platform billing"
             subtitle={`${session?.user.name ?? "Platform team"} · SaaS health and mandate state`}
             centered
-            showProfileShortcut={false}
+            showBack
           />
 
           <ZookButton

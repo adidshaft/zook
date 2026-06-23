@@ -1,19 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link, Stack, useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Link, Stack } from "expo-router";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 
 import {
-  BranchSelectorChip,
   Card,
   ListRow,
-  AppHeader,
+  ProfileShortcut,
+  ScreenHeader,
   SectionHeader,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherChip } from "@/components/role-switcher";
 import { WebHandoffRow } from "@/components/web-handoff-row";
-import { useAuth, useHasPermission } from "@/lib/auth";
+import { useHasPermission } from "@/lib/auth";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing } from "@/lib/theme";
 
@@ -34,7 +32,6 @@ const webRows: MoreRow[] = [
 ];
 
 export default function OwnerMoreScreen() {
-  const router = useRouter();
   const bottomPadding = useBottomScrollPadding();
   const canViewStock = useHasPermission("SHOP_MANAGE_PRODUCTS");
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
@@ -44,7 +41,6 @@ export default function OwnerMoreScreen() {
   const canManageCoupons = useHasPermission("COUPONS_MANAGE");
   const canManageStaff = useHasPermission("ORG_MANAGE_STAFF");
   const canDisplayQr = useHasPermission("ATTENDANCE_QR_DISPLAY");
-  const { logout } = useAuth();
   const nativeRows: MoreRow[] = [
     {
       title: "Entry QR",
@@ -127,19 +123,6 @@ export default function OwnerMoreScreen() {
     },
   ];
 
-  function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          void logout().then(() => router.replace("/login"));
-        },
-      },
-    ]);
-  }
-
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -149,24 +132,10 @@ export default function OwnerMoreScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
         >
-          <AppHeader
+          <ScreenHeader
             title="More"
-            showProfileShortcut={false}
+            trailing={<ProfileShortcut />}
           />
-
-          <SectionHeader title="Account & access" />
-          <Card variant="compact" contentStyle={styles.accountCard}>
-            <RoleSwitcherChip />
-            <BranchSelectorChip />
-            <ZookButton
-              testID="owner-more-sign-out"
-              variant="destructive"
-              icon="log-out-outline"
-              onPress={confirmSignOut}
-            >
-              Sign out
-            </ZookButton>
-          </Card>
 
           <SectionHeader title="Owner tools" />
           <Card variant="compact" contentStyle={styles.list}>
@@ -205,8 +174,5 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: spacing.xs,
-  },
-  accountCard: {
-    gap: spacing.sm,
   },
 });

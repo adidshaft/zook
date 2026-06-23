@@ -124,7 +124,7 @@ export default function OwnerCoupons() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Coupons & offers" subtitle="Discount codes members can apply at checkout." showProfileShortcut={false} showBack />
+          <AppHeader title="Coupons & offers" subtitle="Discount codes members can apply at checkout." showBack />
 
           <SectionHeader
             title="Coupons"
