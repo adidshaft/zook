@@ -36,8 +36,16 @@ export function AppHeader({
   const { palette } = useTheme();
   const router = useRouter();
 
+  // Leading-slot rule (keeps the back/profile control consistent across every
+  // screen): an explicit `leading` always wins. Otherwise show a Back control
+  // whenever this screen was pushed onto a stack — either because the caller
+  // opted in via `showBack`, or because there is genuinely somewhere to go
+  // back to. Only a true root (no back stack, not centered) falls through to
+  // the profile shortcut, so pushed detail screens never render a profile
+  // avatar where a back button belongs.
   let resolvedLeading = leading;
-  if (!resolvedLeading && showBack) {
+  const wantsBack = !resolvedLeading && (showBack || (!centered && router.canGoBack()));
+  if (wantsBack) {
     resolvedLeading = (
       <Pressable
         onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
