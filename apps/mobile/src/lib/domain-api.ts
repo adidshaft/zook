@@ -14,7 +14,7 @@ type OtpResult = {
   devOtp?: string;
 };
 
-type VerifyOtpResult = {
+export type VerifyOtpResult = {
   token: string;
   refreshToken?: string;
   expiresAt: string;
@@ -153,6 +153,18 @@ export const authClient = {
         ? { headers: localSimulatorAuthHeaders(identifier) }
         : {}),
       body: { identifier, code },
+    });
+  },
+  googleCallback(idToken: string) {
+    return mobileApiFetch<VerifyOtpResult>("/auth/google/callback", {
+      method: "POST",
+      body: { idToken },
+    });
+  },
+  appleCallback(input: { identityToken: string; fullName?: string }) {
+    return mobileApiFetch<VerifyOtpResult>("/auth/apple/callback", {
+      method: "POST",
+      body: { identityToken: input.identityToken, ...(input.fullName ? { fullName: input.fullName } : {}) },
     });
   },
   me(options: RequestOptions = {}) {

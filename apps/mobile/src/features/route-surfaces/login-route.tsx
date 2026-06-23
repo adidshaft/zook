@@ -25,6 +25,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { sanitizeOtpValue } from "@/lib/otp";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import { appleSignInSupported } from "@/lib/social-auth";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 type BusyAction = "otp" | null;
@@ -78,7 +79,7 @@ function isValidEmailIdentifier(value: string) {
 }
 
 export default function Login() {
-  const { requestOtp, verifyOtp } = useAuth();
+  const { requestOtp, verifyOtp, signInWithGoogle, signInWithApple } = useAuth();
   const { t } = useI18n();
   const { palette } = useTheme();
   const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
@@ -94,6 +95,7 @@ export default function Login() {
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<MessageTone>("neutral");
+  const [socialBusy, setSocialBusy] = useState<"google" | "apple" | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
   const [accountLocked, setAccountLocked] = useState(false);
@@ -107,6 +109,23 @@ export default function Login() {
   function clearMessage() {
     setMessage("");
     setMessageTone("neutral");
+  }
+
+  async function handleSocialSignIn(provider: "google" | "apple") {
+    if (socialBusy || busyAction) return;
+    setSocialBusy(provider);
+    clearMessage();
+    try {
+      if (provider === "google") {
+        await signInWithGoogle();
+      } else {
+        await signInWithApple();
+      }
+    } catch (error) {
+      showMessage(getApiErrorMessage(error), "danger");
+    } finally {
+      setSocialBusy(null);
+    }
   }
 
   useEffect(() => {
@@ -408,6 +427,46 @@ export default function Login() {
               {stage === "identifier" ? t("auth.sendCode") : t("auth.verifyAndSignIn")}
             </ZookButton>
 
+            {stage === "identifier" ? (
+              <>
+                <View style={styles.socialDivider}>
+                  <View style={[styles.socialDividerLine, { backgroundColor: palette.border.subtle }]} />
+                  <Text style={[styles.socialDividerText, { color: palette.text.tertiary }]}>or</Text>
+                  <View style={[styles.socialDividerLine, { backgroundColor: palette.border.subtle }]} />
+                </View>
+                {appleSignInSupported() ? (
+                  <ZookButton
+                    testID="login-apple"
+                    onPress={() => void handleSocialSignIn("apple")}
+                    variant="secondary"
+                    size="lg"
+                    fullWidth
+                    icon="logo-apple"
+                    disabled={busy || socialBusy !== null}
+                    busy={socialBusy === "apple"}
+                    busyLabel={t("auth.working")}
+                    style={styles.socialButton}
+                  >
+                    Continue with Apple
+                  </ZookButton>
+                ) : null}
+                <ZookButton
+                  testID="login-google"
+                  onPress={() => void handleSocialSignIn("google")}
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  icon="logo-google"
+                  disabled={busy || socialBusy !== null}
+                  busy={socialBusy === "google"}
+                  busyLabel={t("auth.working")}
+                  style={styles.socialButton}
+                >
+                  Continue with Google
+                </ZookButton>
+              </>
+            ) : null}
+
             {stage === "otp" ? (
               <View style={styles.otpActions}>
                 <ZookButton
@@ -571,6 +630,22 @@ const styles = StyleSheet.create({
   },
   methodTabText: {
     ...typography.button,
+  },
+  socialDivider: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  socialDividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  socialDividerText: {
+    ...typography.caption,
+  },
+  socialButton: {
+    marginTop: spacing.xs,
   },
   otpActions: {
     flexDirection: "row",
