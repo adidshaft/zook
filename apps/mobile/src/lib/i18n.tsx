@@ -290,37 +290,76 @@ export type TranslationKey =
   | "branch.allBranches"
   | "shop.readyForPickup"
   | "shop.readyForPickupSubtitle"
+  | "shop.addProductAccessibility"
+  | "shop.availableAtGymDesk"
   | "shop.pickupCode"
   | "shop.pickupCodeCopied"
   | "shop.pickupCodeCopyFailed"
+  | "shop.pickupCodePending"
   | "shop.pending"
   | "shop.paid"
   | "shop.signedPickupQrCode"
+  | "shop.branchLabel"
+  | "shop.browserReturnBody"
+  | "shop.cartReset"
+  | "shop.cartResetBody"
+  | "shop.categoryAll"
+  | "shop.categoryCups"
+  | "shop.categoryShake"
+  | "shop.categorySupplements"
+  | "shop.categoryTowel"
+  | "shop.categoryWater"
+  | "shop.checkStatus"
+  | "shop.checking"
+  | "shop.checkoutConsequence"
+  | "shop.checkoutCreated"
+  | "shop.codeWithValue"
   | "shop.continuePayment"
+  | "shop.continueInBrowser"
   | "shop.confirming"
+  | "shop.copyPickupCodeAccessibility"
+  | "shop.couldNotCreateCheckout"
   | "shop.backToShop"
   | "shop.payment"
   | "shop.paymentSubtitle"
+  | "shop.paymentConfirmed"
+  | "shop.paymentCouldNotComplete"
+  | "shop.paymentStillPending"
   | "shop.paySecurely"
   | "shop.confirmOrder"
   | "shop.getPickupCode"
   | "shop.makeDeskCode"
   | "shop.collectAtDesk"
   | "shop.showPickupCode"
+  | "shop.showThisToCollect"
   | "shop.orderTotal"
+  | "shop.pickupCheckout"
+  | "shop.itemsLabel"
+  | "shop.itemCount"
+  | "shop.itemsCount"
+  | "shop.pickupLabel"
+  | "shop.selectedGym"
   | "shop.cart"
   | "shop.reviewOrder"
   | "shop.reviewOrderSubtitle"
   | "shop.back"
   | "shop.creating"
+  | "shop.inStockCount"
+  | "shop.mockPaymentUnavailable"
+  | "shop.onlyLeft"
+  | "shop.orderHistory"
+  | "shop.outOfStock"
   | "shop.yourCartEmpty"
   | "shop.subtotal"
   | "shop.openMiniCart"
   | "shop.openCart"
   | "shop.deskPickup"
   | "shop.activeGym"
+  | "shop.recently"
+  | "shop.removeProductAccessibility"
   | "shop.searchEssentials"
   | "shop.availableNow"
+  | "shop.title"
   | "shop.item"
   | "shop.items"
   | "shop.shopCouldNotLoad"
@@ -1173,37 +1212,76 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "branch.allBranches": "All branches",
     "shop.readyForPickup": "Ready for pickup",
     "shop.readyForPickupSubtitle": "Show this code at the front desk.",
+    "shop.addProductAccessibility": "Add {{name}}",
+    "shop.availableAtGymDesk": "Available at gym desk after payment",
     "shop.pickupCode": "Pickup code",
     "shop.pickupCodeCopied": "Pickup code copied.",
     "shop.pickupCodeCopyFailed": "Could not copy pickup code.",
+    "shop.pickupCodePending": "Pickup code pending",
     "shop.pending": "Pending",
     "shop.paid": "Paid",
     "shop.signedPickupQrCode": "Signed pickup QR code",
+    "shop.branchLabel": "Branch",
+    "shop.browserReturnBody": "Come back after payment. Zook refreshes your order status automatically.",
+    "shop.cartReset": "Cart reset",
+    "shop.cartResetBody": "We could not restore your saved cart.",
+    "shop.categoryAll": "All",
+    "shop.categoryCups": "Cups",
+    "shop.categoryShake": "Shake",
+    "shop.categorySupplements": "Supplements",
+    "shop.categoryTowel": "Towel",
+    "shop.categoryWater": "Water",
+    "shop.checkStatus": "Check status",
+    "shop.checking": "Checking...",
+    "shop.checkoutConsequence": "After payment, Zook creates a pickup code for desk verification. Do not collect without the code.",
+    "shop.checkoutCreated": "Checkout created.",
+    "shop.codeWithValue": "Code: {{code}}",
     "shop.continuePayment": "Continue to payment",
+    "shop.continueInBrowser": "Continue in browser",
     "shop.confirming": "Confirming...",
+    "shop.copyPickupCodeAccessibility": "Copy pickup code {{code}}",
+    "shop.couldNotCreateCheckout": "Could not create checkout.",
     "shop.backToShop": "Back to Shop",
     "shop.payment": "Payment",
     "shop.paymentSubtitle": "Your item is ready at the desk after payment.",
+    "shop.paymentConfirmed": "Payment confirmed.",
+    "shop.paymentCouldNotComplete": "Payment could not be completed.",
+    "shop.paymentStillPending": "Payment is still pending. Try again in a moment.",
     "shop.paySecurely": "Pay securely",
     "shop.confirmOrder": "Confirm the order",
     "shop.getPickupCode": "Get pickup code",
     "shop.makeDeskCode": "We will make a code for the desk",
     "shop.collectAtDesk": "Collect at desk",
     "shop.showPickupCode": "Show the code to pick it up",
+    "shop.showThisToCollect": "Show this to collect your order",
     "shop.orderTotal": "Order total",
+    "shop.pickupCheckout": "Pickup checkout",
+    "shop.itemsLabel": "Items",
+    "shop.itemCount": "{{count}} item",
+    "shop.itemsCount": "{{count}} items",
+    "shop.pickupLabel": "Pickup",
+    "shop.selectedGym": "Selected gym",
     "shop.cart": "Cart",
     "shop.reviewOrder": "Review order",
     "shop.reviewOrderSubtitle": "Pick it up at the front desk after payment.",
     "shop.back": "Back",
     "shop.creating": "Creating...",
+    "shop.inStockCount": "{{count}} in stock",
+    "shop.mockPaymentUnavailable": "Mock payment completion is not available in backend builds.",
+    "shop.onlyLeft": "Only {{count}} left",
+    "shop.orderHistory": "Order history",
+    "shop.outOfStock": "Out of stock",
     "shop.yourCartEmpty": "Your cart is empty",
     "shop.subtotal": "Subtotal",
     "shop.openMiniCart": "Open mini cart",
     "shop.openCart": "Open cart",
     "shop.deskPickup": "Desk pickup",
     "shop.activeGym": "Active gym",
+    "shop.recently": "Recently",
+    "shop.removeProductAccessibility": "Remove {{name}}",
     "shop.searchEssentials": "Search essentials",
     "shop.availableNow": "Available now",
+    "shop.title": "Shop",
     "shop.item": "item",
     "shop.items": "items",
     "shop.shopCouldNotLoad": "Shop could not load",
@@ -2064,37 +2142,76 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "branch.allBranches": "सभी ब्रांच",
     "shop.readyForPickup": "पिकअप के लिए तैयार",
     "shop.readyForPickupSubtitle": "यह कोड फ्रंट डेस्क पर दिखाएं.",
+    "shop.addProductAccessibility": "{{name}} जोड़ें",
+    "shop.availableAtGymDesk": "पेमेंट के बाद gym desk पर उपलब्ध",
     "shop.pickupCode": "पिकअप कोड",
     "shop.pickupCodeCopied": "पिकअप कोड कॉपी हुआ।",
     "shop.pickupCodeCopyFailed": "पिकअप कोड कॉपी नहीं हो सका।",
+    "shop.pickupCodePending": "पिकअप कोड पेंडिंग",
     "shop.pending": "पेंडिंग",
     "shop.paid": "पेड",
     "shop.signedPickupQrCode": "साइन किया हुआ पिकअप QR कोड",
+    "shop.branchLabel": "ब्रांच",
+    "shop.browserReturnBody": "पेमेंट के बाद वापस आएं. Zook आपका order status automatically refresh करेगा.",
+    "shop.cartReset": "Cart reset हुआ",
+    "shop.cartResetBody": "आपका saved cart restore नहीं हो सका.",
+    "shop.categoryAll": "सभी",
+    "shop.categoryCups": "कप",
+    "shop.categoryShake": "शेक",
+    "shop.categorySupplements": "Supplements",
+    "shop.categoryTowel": "टॉवल",
+    "shop.categoryWater": "पानी",
+    "shop.checkStatus": "Status check करें",
+    "shop.checking": "Check हो रहा है...",
+    "shop.checkoutConsequence": "पेमेंट के बाद Zook desk verification के लिए pickup code बनाता है. Code के बिना collect न करें.",
+    "shop.checkoutCreated": "Checkout बन गया.",
+    "shop.codeWithValue": "Code: {{code}}",
     "shop.continuePayment": "पेमेंट जारी रखें",
+    "shop.continueInBrowser": "Browser में जारी रखें",
     "shop.confirming": "कन्फर्म हो रहा है...",
+    "shop.copyPickupCodeAccessibility": "Pickup code {{code}} copy करें",
+    "shop.couldNotCreateCheckout": "Checkout नहीं बन सका.",
     "shop.backToShop": "शॉप पर वापस",
     "shop.payment": "पेमेंट",
     "shop.paymentSubtitle": "भुगतान के बाद आपका आइटम डेस्क पर मिलेगा.",
+    "shop.paymentConfirmed": "Payment confirmed.",
+    "shop.paymentCouldNotComplete": "Payment पूरा नहीं हो सका.",
+    "shop.paymentStillPending": "Payment अभी pending है. थोड़ी देर में फिर कोशिश करें.",
     "shop.paySecurely": "सुरक्षित भुगतान",
     "shop.confirmOrder": "ऑर्डर कन्फर्म करें",
     "shop.getPickupCode": "पिकअप कोड पाएं",
     "shop.makeDeskCode": "हम डेस्क के लिए कोड बनाएंगे",
     "shop.collectAtDesk": "डेस्क से लें",
     "shop.showPickupCode": "लेने के लिए कोड दिखाएं",
+    "shop.showThisToCollect": "Order collect करने के लिए यह दिखाएं",
     "shop.orderTotal": "ऑर्डर कुल",
+    "shop.pickupCheckout": "Pickup checkout",
+    "shop.itemsLabel": "Items",
+    "shop.itemCount": "{{count}} item",
+    "shop.itemsCount": "{{count}} items",
+    "shop.pickupLabel": "Pickup",
+    "shop.selectedGym": "चुना हुआ gym",
     "shop.cart": "कार्ट",
     "shop.reviewOrder": "ऑर्डर देखें",
     "shop.reviewOrderSubtitle": "पेमेंट के बाद फ्रंट डेस्क से पिकअप करें.",
     "shop.back": "वापस",
     "shop.creating": "बन रहा है...",
+    "shop.inStockCount": "{{count}} stock में",
+    "shop.mockPaymentUnavailable": "Backend builds में mock payment completion available नहीं है.",
+    "shop.onlyLeft": "सिर्फ {{count}} बचे हैं",
+    "shop.orderHistory": "Order history",
+    "shop.outOfStock": "Out of stock",
     "shop.yourCartEmpty": "आपका कार्ट खाली है",
     "shop.subtotal": "सबटोटल",
     "shop.openMiniCart": "मिनी कार्ट खोलें",
     "shop.openCart": "कार्ट खोलें",
     "shop.deskPickup": "डेस्क पिकअप",
     "shop.activeGym": "सक्रिय जिम",
+    "shop.recently": "हाल ही में",
+    "shop.removeProductAccessibility": "{{name}} हटाएं",
     "shop.searchEssentials": "जरूरी सामान खोजें",
     "shop.availableNow": "अभी उपलब्ध",
+    "shop.title": "शॉप",
     "shop.item": "आइटम",
     "shop.items": "आइटम",
     "shop.shopCouldNotLoad": "शॉप लोड नहीं हुई",

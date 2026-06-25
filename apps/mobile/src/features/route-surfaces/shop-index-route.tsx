@@ -26,9 +26,9 @@ import {
   Card,
   ListRow,
   AppHeader,
+  HeaderActions,
   MoneySummaryCard,
   ProductCard,
-  ProfileShortcut,
   SearchBar,
   SectionHeader,
   Skeleton,
@@ -51,7 +51,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { paymentsApi } from "@/lib/domain-api";
 import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { layout, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -80,13 +80,13 @@ type CartItemDraft = Array<{
   quantity: number;
 }>;
 
-const categories: Array<{ label: string; value: Category }> = [
-  { label: "All", value: "ALL" },
-  { label: "Water", value: "WATER" },
-  { label: "Shake", value: "PROTEIN_SHAKE" },
-  { label: "Cups", value: "SHAKER" },
-  { label: "Towel", value: "TOWEL" },
-  { label: "Supplements", value: "SUPPLEMENT" },
+const categories: Array<{ labelKey: TranslationKey; value: Category }> = [
+  { labelKey: "shop.categoryAll", value: "ALL" },
+  { labelKey: "shop.categoryWater", value: "WATER" },
+  { labelKey: "shop.categoryShake", value: "PROTEIN_SHAKE" },
+  { labelKey: "shop.categoryCups", value: "SHAKER" },
+  { labelKey: "shop.categoryTowel", value: "TOWEL" },
+  { labelKey: "shop.categorySupplements", value: "SUPPLEMENT" },
 ];
 
 function firstParam(value?: string | string[]) {
@@ -332,8 +332,8 @@ export default function Shop() {
         setCart({});
         setCartHydrated(true);
         showToast({
-          title: "Cart reset",
-          message: "We could not restore your saved cart.",
+          title: t("shop.cartReset"),
+          message: t("shop.cartResetBody"),
           tone: "amber",
           haptic: "warning",
         });
@@ -344,7 +344,7 @@ export default function Shop() {
     return () => {
       cancelled = true;
     };
-  }, [cartStorageKey]);
+  }, [cartStorageKey, t]);
 
   useEffect(() => {
     if (!cartHydrated) return;
@@ -486,7 +486,7 @@ export default function Shop() {
       showToast({
         tone: "amber",
         haptic: "warning",
-        message: "Payment is still pending. Try again in a moment.",
+        message: t("shop.paymentStillPending"),
       });
     } finally {
       setCheckingCheckoutStatus(false);
@@ -501,6 +501,7 @@ export default function Shop() {
     queryClient,
     router,
     selectedBranchId,
+    t,
     token,
   ]);
 
@@ -558,7 +559,7 @@ export default function Shop() {
         provider: result.session.provider,
         ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
       });
-      showToast({ tone: "success", haptic: "success", message: "Checkout created." });
+      showToast({ tone: "success", haptic: "success", message: t("shop.checkoutCreated") });
       router.push({
         pathname: "/shop/checkout",
         params: {
@@ -571,8 +572,8 @@ export default function Shop() {
       } as never);
     } catch (error) {
       showToast({
-        title: "Action failed",
-        message: getApiErrorMessage(error) || "Could not create checkout.",
+        title: t("common.actionFailed"),
+        message: getApiErrorMessage(error) || t("shop.couldNotCreateCheckout"),
         tone: "danger",
         haptic: "error",
       });
@@ -594,7 +595,7 @@ export default function Shop() {
       return;
     }
     if (!mockPaymentCompletionAvailable && checkoutSession.provider !== "mock") {
-      throw new Error("Mock payment completion is not available in backend builds.");
+      throw new Error(t("shop.mockPaymentUnavailable"));
     }
     try {
       await completeMockPayment.mutateAsync({
@@ -610,12 +611,12 @@ export default function Shop() {
       if (checkoutContextStorageKey) {
         void deleteStoredValue(checkoutContextStorageKey);
       }
-      showToast({ tone: "success", haptic: "success", message: "Payment confirmed." });
+      showToast({ tone: "success", haptic: "success", message: t("shop.paymentConfirmed") });
       router.replace(`/shop/pickup/${(paidOrder ?? order).id}` as never);
     } catch (error) {
       showToast({
-        title: "Action failed",
-        message: getApiErrorMessage(error) || "Payment could not be completed.",
+        title: t("common.actionFailed"),
+        message: getApiErrorMessage(error) || t("shop.paymentCouldNotComplete"),
         tone: "danger",
         haptic: "error",
       });
@@ -647,7 +648,7 @@ export default function Shop() {
     <Pressable
       onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={t("shop.back")}
       style={[
         styles.iconButton,
         {
@@ -708,8 +709,8 @@ export default function Shop() {
             accessibilityRole="button"
             accessibilityLabel={
               order.pickupCode
-                ? `Copy pickup code ${order.pickupCode}`
-                : "Pickup code pending"
+                ? t("shop.copyPickupCodeAccessibility", { code: order.pickupCode })
+                : t("shop.pickupCodePending")
             }
             accessibilityState={{ disabled: !order.pickupCode }}
             disabled={!order.pickupCode}
@@ -721,9 +722,9 @@ export default function Shop() {
         </Card>
         {canShowPickupQr ? (
           <Card variant="compact" contentStyle={styles.pickupQrContent}>
-            <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>Show this to collect your order</Text>
+            <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>{t("shop.showThisToCollect")}</Text>
             <PickupQrCode value={pickupQrPayload(order)} />
-            <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>Code: {order.pickupCode ?? t("shop.pending")}</Text>
+            <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>{t("shop.codeWithValue", { code: order.pickupCode ?? t("shop.pending") })}</Text>
           </Card>
         ) : null}
         <Card variant="compact" contentStyle={styles.stack}>
@@ -792,14 +793,14 @@ export default function Shop() {
           />
         ) : null}
         <MoneySummaryCard
-          title="Pickup checkout"
+          title={t("shop.pickupCheckout")}
           amount={formatInr(order.totalPaise)}
           rows={[
-            { label: "Items", value: `${order.items.length} item${order.items.length === 1 ? "" : "s"}` },
-            { label: "Pickup", value: "Available at gym desk after payment" },
-            { label: "Branch", value: activeOrganization?.name ?? "Selected gym" },
+            { label: t("shop.itemsLabel"), value: t(order.items.length === 1 ? "shop.itemCount" : "shop.itemsCount", { count: order.items.length }) },
+            { label: t("shop.pickupLabel"), value: t("shop.availableAtGymDesk") },
+            { label: t("shop.branchLabel"), value: activeOrganization?.name ?? t("shop.selectedGym") },
           ]}
-          consequence="After payment, Zook creates a pickup code for desk verification. Do not collect without the code."
+          consequence={t("shop.checkoutConsequence")}
         />
         <Card contentStyle={styles.checkoutContent}>
           <ListRow
@@ -864,7 +865,7 @@ export default function Shop() {
               <ListRow
                 key={item.product.id}
                 title={item.product.name}
-                subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${item.product.stock} in stock`}
+                subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${t("shop.inStockCount", { count: item.product.stock })}`}
                 trailing={
                   <View style={styles.cartLineTrailing}>
                     <Text style={[styles.cartLinePrice, { color: palette.text.primary }]}>
@@ -875,7 +876,7 @@ export default function Shop() {
                         testID={`shop-cart-remove-${item.product.id}`}
                         onPress={() => removeFromCart(item.product.id)}
                         accessibilityRole="button"
-                        accessibilityLabel={`Remove ${item.product.name}`}
+                        accessibilityLabel={t("shop.removeProductAccessibility", { name: item.product.name })}
                         style={({ pressed }) => [
                           styles.cartStepperButton,
                           pressed ? styles.cartStepperButtonPressed : null,
@@ -888,7 +889,7 @@ export default function Shop() {
                         testID={`shop-cart-add-${item.product.id}`}
                         onPress={() => addToCart(item.product.id)}
                         accessibilityRole="button"
-                        accessibilityLabel={`Add ${item.product.name}`}
+                        accessibilityLabel={t("shop.addProductAccessibility", { name: item.product.name })}
                         disabled={item.quantity >= item.product.stock}
                         style={({ pressed }) => [
                           styles.cartStepperButton,
@@ -960,9 +961,9 @@ export default function Shop() {
           const fulfillmentLabel =
             item.stock > 0
               ? lowStock
-                ? `Only ${item.stock} left`
-                : `${item.stock} in stock`
-              : "Out of stock";
+                ? t("shop.onlyLeft", { count: item.stock })
+                : t("shop.inStockCount", { count: item.stock })
+              : t("shop.outOfStock");
           const productImageUrl = item.imageUrl ?? item.imageUrls?.[0] ?? null;
           return (
             <ProductCard
@@ -993,13 +994,13 @@ export default function Shop() {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 12 }}>
             <AppHeader
-              title="Shop"
+              title={t("shop.title")}
               subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
               chip={<BranchSelectorChip />}
               showProfileShortcut={false}
               trailing={
                 <View style={styles.headerActions}>
-                  <ProfileShortcut />
+                  <HeaderActions showBell />
                   <Pressable
                     testID="shop-open-cart"
                     onPress={() => router.push("/shop/cart" as never)}
@@ -1030,14 +1031,12 @@ export default function Shop() {
 
             {recentOrders.length ? (
               <Card variant="compact" contentStyle={styles.orderHistoryContent}>
-                <SectionHeader title="Order history" />
+                <SectionHeader title={t("shop.orderHistory")} />
                 {recentOrders.map((historyOrder) => (
                   <ListRow
                     key={historyOrder.id}
-                    title={`${formatInr(historyOrder.totalPaise)} · ${historyOrder.items.length} ${
-                      historyOrder.items.length === 1 ? "item" : "items"
-                    }`}
-                    subtitle={formatDateTime(historyOrder.createdAt, "Recently", "en-IN")}
+                    title={`${formatInr(historyOrder.totalPaise)} · ${t(historyOrder.items.length === 1 ? "shop.itemCount" : "shop.itemsCount", { count: historyOrder.items.length })}`}
+                    subtitle={formatDateTime(historyOrder.createdAt, t("shop.recently"), "en-IN")}
                     onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
                     trailing={
                       <StatusChip
@@ -1089,7 +1088,7 @@ export default function Shop() {
                         },
                       ]}
                     >
-                      {option.label}
+                      {t(option.labelKey)}
                     </Text>
                     <View
                       style={[
@@ -1164,15 +1163,16 @@ function BrowserReturnCard({
   onCheckStatus: () => void;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   return (
     <Card variant="compact" contentStyle={styles.browserReturnContent}>
       <Ionicons name="open-outline" size={22} color={palette.feedback.warning} />
       <View style={styles.browserReturnCopy}>
         <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>
-          Continue in browser
+          {t("shop.continueInBrowser")}
         </Text>
         <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-          Come back after payment. Zook refreshes your order status automatically.
+          {t("shop.browserReturnBody")}
         </Text>
       </View>
       <ZookButton
@@ -1181,7 +1181,7 @@ function BrowserReturnCard({
         onPress={onCheckStatus}
         icon="refresh-outline"
       >
-        {checking ? "Checking..." : "Check status"}
+        {checking ? t("shop.checking") : t("shop.checkStatus")}
       </ZookButton>
     </Card>
   );
