@@ -81,6 +81,26 @@ export type TranslationKey =
   | "notifications.showOlderCount"
   | "notifications.unreadCount"
   | "notifications.unreadRecent"
+  | "platform.billing"
+  | "platform.gymSubtitle"
+  | "platform.gyms"
+  | "platform.loadingSubscriptionHealth"
+  | "platform.mandateMeta"
+  | "platform.missing"
+  | "platform.mobileVisibilityBody"
+  | "platform.mobileVisibilityTitle"
+  | "platform.notScheduled"
+  | "platform.openWebDashboard"
+  | "platform.operator"
+  | "platform.paying"
+  | "platform.recentGyms"
+  | "platform.referrals"
+  | "platform.saasHealth"
+  | "platform.signOut"
+  | "platform.subtitle"
+  | "platform.team"
+  | "platform.trial"
+  | "platform.updating"
   | "auth.heroEyebrow"
   | "auth.heroBody"
   | "auth.signIn"
@@ -2112,6 +2132,26 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.showOlderCount": "Show {{count}} older",
     "notifications.unreadCount": "{{count}} unread",
     "notifications.unreadRecent": "{{count}} unread · recent {{date}}",
+    "platform.billing": "Platform billing",
+    "platform.gymSubtitle": "{{tier}} {{cycle}} · {{amount}} · next {{next}} · {{referrals}} referrals",
+    "platform.gyms": "gyms",
+    "platform.loadingSubscriptionHealth": "Loading subscription health...",
+    "platform.mandateMeta": "Mandate {{status}} · {{count}} paid",
+    "platform.missing": "missing",
+    "platform.mobileVisibilityBody": "Pricing edits, trial extensions, credits, notes, and policy changes still open in the web console for full review.",
+    "platform.mobileVisibilityTitle": "SaaS subscriptions are visible on mobile.",
+    "platform.notScheduled": "Not scheduled",
+    "platform.openWebDashboard": "Open Web Dashboard",
+    "platform.operator": "Platform operator",
+    "platform.paying": "paying",
+    "platform.recentGyms": "Recent gyms",
+    "platform.referrals": "referrals",
+    "platform.saasHealth": "SaaS health",
+    "platform.signOut": "Sign out",
+    "platform.subtitle": "{{name}} · SaaS health and mandate state",
+    "platform.team": "Platform team",
+    "platform.trial": "trial",
+    "platform.updating": "Updating",
     "auth.heroEyebrow": "Fitness Operating System",
     "auth.heroBody": "Your gym, your membership, your rhythm. Sign in to get started.",
     "auth.signIn": "Sign in",
@@ -4151,6 +4191,26 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.showOlderCount": "{{count}} पुराने दिखाएं",
     "notifications.unreadCount": "{{count}} unread",
     "notifications.unreadRecent": "{{count}} unread · हाल का {{date}}",
+    "platform.billing": "Platform billing",
+    "platform.gymSubtitle": "{{tier}} {{cycle}} · {{amount}} · next {{next}} · {{referrals}} referrals",
+    "platform.gyms": "gyms",
+    "platform.loadingSubscriptionHealth": "Subscription health load हो रही है...",
+    "platform.mandateMeta": "Mandate {{status}} · {{count}} paid",
+    "platform.missing": "missing",
+    "platform.mobileVisibilityBody": "Pricing edits, trial extensions, credits, notes और policy changes full review के लिए web console में खुलते हैं.",
+    "platform.mobileVisibilityTitle": "SaaS subscriptions mobile पर visible हैं.",
+    "platform.notScheduled": "Scheduled नहीं",
+    "platform.openWebDashboard": "Web Dashboard खोलें",
+    "platform.operator": "Platform operator",
+    "platform.paying": "paying",
+    "platform.recentGyms": "Recent gyms",
+    "platform.referrals": "referrals",
+    "platform.saasHealth": "SaaS health",
+    "platform.signOut": "Sign out",
+    "platform.subtitle": "{{name}} · SaaS health और mandate state",
+    "platform.team": "Platform team",
+    "platform.trial": "trial",
+    "platform.updating": "Updating",
     "auth.heroEyebrow": "फिटनेस ऑपरेटिंग सिस्टम",
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",
