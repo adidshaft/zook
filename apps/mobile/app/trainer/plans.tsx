@@ -5,7 +5,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   EmptyState,
   Card,
-  ProfileShortcut,
+  HeaderActions,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
@@ -15,12 +15,14 @@ import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
+import { useI18n } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerPlansScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
+  const { t } = useI18n();
   const { palette } = useTheme();
   const bottomPadding = useBottomScrollPadding();
   const [refreshing, setRefreshing] = useState(false);
@@ -55,15 +57,15 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <ScreenHeader title="Plan work" trailing={<ProfileShortcut />} />
-          <SectionHeader title="Active plan work" />
+          <ScreenHeader title={t("trainer.plans.title")} trailing={<HeaderActions showBell />} />
+          <SectionHeader title={t("trainer.plans.activePlanWork")} />
           <Card variant="compact">
             <SectionHeader
-              title={plannedClients.length ? "Review active plans" : "Planning queue clear"}
+              title={plannedClients.length ? t("trainer.plans.reviewActivePlans") : t("trainer.plans.queueClear")}
               subtitle={
                 plannedClients.length
-                  ? "Open each client to adjust workouts, diet notes, and feedback before publishing changes."
-                  : "No client plans need assignment."
+                  ? t("trainer.plans.reviewActivePlansBody")
+                  : t("trainer.plans.queueClearBody")
               }
             />
           </Card>
@@ -75,7 +77,7 @@ export default function TrainerPlansScreen() {
             ) : plannedClients.length ? (
               plannedClients.map((client) => <PlanRow key={client.id ?? client.memberUserId} client={client} />)
             ) : (
-              <EmptyState icon="clipboard-outline" title="No active plan work" body="Clients who need a plan or an update will appear here." />
+              <EmptyState icon="clipboard-outline" title={t("trainer.plans.emptyTitle")} body={t("trainer.plans.emptyBody")} />
             )}
           </View>
         </ScrollView>

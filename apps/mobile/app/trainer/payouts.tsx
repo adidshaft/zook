@@ -1,10 +1,10 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, Text } from "react-native";
 import {
   EmptyState,
   Card,
+  HeaderActions,
   ListRow,
-  ProfileShortcut,
   Skeleton,
   QueryErrorState,
   ScreenHeader,
@@ -12,6 +12,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useTrainerPayouts } from "@/lib/domains";
+import { useI18n } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -21,6 +22,8 @@ function rupees(paise: number) {
 
 export default function TrainerPayoutsScreen() {
   const { palette } = useTheme();
+  const { t } = useI18n();
+  const router = useRouter();
   const bottomPadding = useBottomScrollPadding();
   const payoutsQuery = useTrainerPayouts();
   const isLoading = payoutsQuery.isLoading;
@@ -43,7 +46,18 @@ export default function TrainerPayoutsScreen() {
             />
           }
         >
-          <ScreenHeader title="Payouts" trailing={<ProfileShortcut />} />
+          <ScreenHeader title={t("trainer.payouts.title")} trailing={<HeaderActions showBell />} />
+
+          <Card variant="compact" contentStyle={styles.stack}>
+            <ListRow
+              title={t("trainer.payouts.settings")}
+              subtitle={t("trainer.payouts.settingsSubtitle")}
+              icon="settings-outline"
+              tone="violet"
+              onPress={() => router.push("/trainer/payout-settings" as never)}
+            />
+          </Card>
+
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
@@ -55,18 +69,22 @@ export default function TrainerPayoutsScreen() {
           {!isLoading ? (
             <>
               <Card variant="compact" contentStyle={styles.hero}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>This month accrued</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>
+                  {t("trainer.payouts.thisMonthAccrued")}
+                </Text>
                 <Text style={[styles.total, { color: palette.text.primary }]}>{rupees(current?.totalPaise ?? 0)}</Text>
-                <Text style={[styles.meta, { color: palette.text.secondary }]}>{current?.status ?? "draft"} · {current?.lines?.length ?? 0} earning lines</Text>
+                <Text style={[styles.meta, { color: palette.text.secondary }]}>
+                  {current?.status ?? t("trainer.payouts.draft")} · {t("trainer.payouts.earningLines", { count: current?.lines?.length ?? 0 })}
+                </Text>
               </Card>
-              <SectionHeader title="Breakdown" />
+              <SectionHeader title={t("trainer.payouts.breakdown")} />
               <Card variant="compact" contentStyle={styles.stack}>
                 {current?.lines?.length ? (
                   current.lines.map((line) => (
                     <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
                   ))
                 ) : (
-                  <EmptyState icon="cash-outline" title="No earnings yet" body="Your PT commissions and class payouts will show up here." />
+                  <EmptyState icon="cash-outline" title={t("trainer.payouts.emptyTitle")} body={t("trainer.payouts.emptyBody")} />
                 )}
               </Card>
             </>

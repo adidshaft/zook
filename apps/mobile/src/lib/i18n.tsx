@@ -1336,7 +1336,41 @@ export type TranslationKey =
   | "trainer.pt.title"
   | "trainer.pt.validDays"
   | "trainer.pt.yourPackages"
-  | "trainer.pt.yourPtClients";
+  | "trainer.pt.yourPtClients"
+  | "trainer.payouts.breakdown"
+  | "trainer.payouts.draft"
+  | "trainer.payouts.earningLines"
+  | "trainer.payouts.emptyBody"
+  | "trainer.payouts.emptyTitle"
+  | "trainer.payouts.settings"
+  | "trainer.payouts.settingsSubtitle"
+  | "trainer.payouts.thisMonthAccrued"
+  | "trainer.payouts.title"
+  | "trainer.payoutSettings.baseMonthly"
+  | "trainer.payoutSettings.bio"
+  | "trainer.payoutSettings.bioPlaceholder"
+  | "trainer.payoutSettings.compensation"
+  | "trainer.payoutSettings.footnote"
+  | "trainer.payoutSettings.payDay"
+  | "trainer.payoutSettings.payDayHint"
+  | "trainer.payoutSettings.perSessionFee"
+  | "trainer.payoutSettings.perSessionFeeHint"
+  | "trainer.payoutSettings.profileUpi"
+  | "trainer.payoutSettings.ptCommission"
+  | "trainer.payoutSettings.ptCommissionHint"
+  | "trainer.payoutSettings.saveChanges"
+  | "trainer.payoutSettings.subtitle"
+  | "trainer.payoutSettings.title"
+  | "trainer.payoutSettings.upiHint"
+  | "trainer.payoutSettings.upiId"
+  | "trainer.plans.activePlanWork"
+  | "trainer.plans.emptyBody"
+  | "trainer.plans.emptyTitle"
+  | "trainer.plans.queueClear"
+  | "trainer.plans.queueClearBody"
+  | "trainer.plans.reviewActivePlans"
+  | "trainer.plans.reviewActivePlansBody"
+  | "trainer.plans.title";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -2679,6 +2713,40 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.pt.validDays": "Valid days",
     "trainer.pt.yourPackages": "Your packages",
     "trainer.pt.yourPtClients": "Your PT clients",
+    "trainer.payouts.breakdown": "Breakdown",
+    "trainer.payouts.draft": "draft",
+    "trainer.payouts.earningLines": "{{count}} earning lines",
+    "trainer.payouts.emptyBody": "Your PT commissions and class payouts will show up here.",
+    "trainer.payouts.emptyTitle": "No earnings yet",
+    "trainer.payouts.settings": "Payout settings",
+    "trainer.payouts.settingsSubtitle": "Compensation, pay day & UPI details",
+    "trainer.payouts.thisMonthAccrued": "This month accrued",
+    "trainer.payouts.title": "Payouts",
+    "trainer.payoutSettings.baseMonthly": "Base / month (₹)",
+    "trainer.payoutSettings.bio": "Bio",
+    "trainer.payoutSettings.bioPlaceholder": "Tell members a bit about your coaching style.",
+    "trainer.payoutSettings.compensation": "Compensation",
+    "trainer.payoutSettings.footnote": "Changes apply from your next payout cycle.",
+    "trainer.payoutSettings.payDay": "Pay day of month",
+    "trainer.payoutSettings.payDayHint": "Day of the month your payout is processed (1-28).",
+    "trainer.payoutSettings.perSessionFee": "Per-session fee (₹)",
+    "trainer.payoutSettings.perSessionFeeHint": "Flat amount credited for every session you log.",
+    "trainer.payoutSettings.profileUpi": "Profile & UPI",
+    "trainer.payoutSettings.ptCommission": "PT commission (%)",
+    "trainer.payoutSettings.ptCommissionHint": "Share of personal training revenue you earn.",
+    "trainer.payoutSettings.saveChanges": "Save changes",
+    "trainer.payoutSettings.subtitle": "Set how you get paid and your UPI details.",
+    "trainer.payoutSettings.title": "Payout settings",
+    "trainer.payoutSettings.upiHint": "Used by the gym to pay you directly when needed.",
+    "trainer.payoutSettings.upiId": "UPI ID",
+    "trainer.plans.activePlanWork": "Active plan work",
+    "trainer.plans.emptyBody": "Clients who need a plan or an update will appear here.",
+    "trainer.plans.emptyTitle": "No active plan work",
+    "trainer.plans.queueClear": "Planning queue clear",
+    "trainer.plans.queueClearBody": "No client plans need assignment.",
+    "trainer.plans.reviewActivePlans": "Review active plans",
+    "trainer.plans.reviewActivePlansBody": "Open each client to adjust workouts, diet notes, and feedback before publishing changes.",
+    "trainer.plans.title": "Plan work",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -4020,6 +4088,40 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.pt.validDays": "मान्य दिन",
     "trainer.pt.yourPackages": "आपके पैकेज",
     "trainer.pt.yourPtClients": "आपके PT क्लाइंट",
+    "trainer.payouts.breakdown": "Breakdown",
+    "trainer.payouts.draft": "draft",
+    "trainer.payouts.earningLines": "{{count}} earning lines",
+    "trainer.payouts.emptyBody": "आपके PT commissions और class payouts यहां दिखेंगे.",
+    "trainer.payouts.emptyTitle": "अभी कोई earning नहीं",
+    "trainer.payouts.settings": "Payout settings",
+    "trainer.payouts.settingsSubtitle": "Compensation, pay day और UPI details",
+    "trainer.payouts.thisMonthAccrued": "इस महीने accrued",
+    "trainer.payouts.title": "Payouts",
+    "trainer.payoutSettings.baseMonthly": "Base / month (₹)",
+    "trainer.payoutSettings.bio": "Bio",
+    "trainer.payoutSettings.bioPlaceholder": "Members को अपने coaching style के बारे में थोड़ा बताएं.",
+    "trainer.payoutSettings.compensation": "Compensation",
+    "trainer.payoutSettings.footnote": "Changes आपके next payout cycle से apply होंगे.",
+    "trainer.payoutSettings.payDay": "Pay day of month",
+    "trainer.payoutSettings.payDayHint": "महीने का दिन जब आपका payout process होता है (1-28).",
+    "trainer.payoutSettings.perSessionFee": "Per-session fee (₹)",
+    "trainer.payoutSettings.perSessionFeeHint": "हर logged session के लिए credited flat amount.",
+    "trainer.payoutSettings.profileUpi": "Profile & UPI",
+    "trainer.payoutSettings.ptCommission": "PT commission (%)",
+    "trainer.payoutSettings.ptCommissionHint": "Personal training revenue में आपका share.",
+    "trainer.payoutSettings.saveChanges": "Changes save करें",
+    "trainer.payoutSettings.subtitle": "आपको payment कैसे मिले और आपकी UPI details set करें.",
+    "trainer.payoutSettings.title": "Payout settings",
+    "trainer.payoutSettings.upiHint": "Gym जरूरत पड़ने पर आपको directly pay करने के लिए इस्तेमाल करता है.",
+    "trainer.payoutSettings.upiId": "UPI ID",
+    "trainer.plans.activePlanWork": "Active plan work",
+    "trainer.plans.emptyBody": "जिन clients को plan या update चाहिए वे यहां दिखेंगे.",
+    "trainer.plans.emptyTitle": "कोई active plan work नहीं",
+    "trainer.plans.queueClear": "Planning queue clear",
+    "trainer.plans.queueClearBody": "किसी client plan को assignment नहीं चाहिए.",
+    "trainer.plans.reviewActivePlans": "Active plans review करें",
+    "trainer.plans.reviewActivePlansBody": "Changes publish करने से पहले workouts, diet notes और feedback adjust करने के लिए हर client खोलें.",
+    "trainer.plans.title": "Plan work",
   },
 };
 
