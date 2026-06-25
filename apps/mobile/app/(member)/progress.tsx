@@ -3,9 +3,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { AnimatedAppear, EmptyState, Card, QueryErrorState, ScreenHeader, SectionHeader, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, Skeleton, ZookButton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
-import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HabitsPanel } from "@/features/member/progress/habits-panel";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
@@ -32,6 +31,7 @@ export default function ProgressScreen() {
     latestWeightKg: latestBodyProgress?.weightKg,
     habitsCount: summaryQuery.data?.habits?.length ?? 0,
   });
+  const isLoading = summaryQuery.isLoading || workoutsQuery.isLoading;
 
   async function onRefresh() {
     setRefreshing(true);
@@ -55,7 +55,7 @@ export default function ProgressScreen() {
           scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} trailing={<MemberHeaderActions showBell={false} />} scrollY={scrollY} />
+          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <View style={styles.actions}>
               <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
@@ -71,11 +71,19 @@ export default function ProgressScreen() {
           ) : null}
           <AnimatedAppear delay={40}>
             <SectionHeader title="This week" />
-            <View style={styles.metrics}>
-              {metrics.map((metric) => (
-                <TrackingSummaryTile key={metric.id} metric={metric} />
-              ))}
-            </View>
+            {isLoading ? (
+              <Card variant="compact" contentStyle={styles.loadingCard}>
+                <Skeleton width="60%" height={18} borderRadius={9} />
+                <Skeleton width="40%" height={14} borderRadius={7} />
+                <Skeleton width="80%" height={14} borderRadius={7} />
+              </Card>
+            ) : (
+              <View style={styles.metrics}>
+                {metrics.map((metric) => (
+                  <TrackingSummaryTile key={metric.id} metric={metric} />
+                ))}
+              </View>
+            )}
           </AnimatedAppear>
           <AnimatedAppear delay={70}>
             <HabitsPanel />
@@ -117,6 +125,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: spacing.sm },
   actionButton: { flex: 1 },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
+  loadingCard: { gap: spacing.sm },
   stack: { gap: spacing.sm },
   note: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   noteText: { flex: 1, ...typography.small },

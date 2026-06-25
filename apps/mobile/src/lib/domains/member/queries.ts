@@ -12,6 +12,7 @@ import type {
   MemberHomeData,
   MyProfileData,
   OrgPaymentRecord,
+  PtPlanRecord,
   ReferralCodeRecord,
   ReferralRewardRecord,
 } from "@/lib/domains/shared/types";
@@ -204,7 +205,7 @@ export type MemberCoachingData = {
 export function useMyCoaching() {
   const { activeOrgId, status, token } = useAuth();
   return useQuery({
-    queryKey: ["me", "coaching", activeOrgId] as const,
+    queryKey: queryKeys.member.coaching(activeOrgId),
     queryFn: () =>
       mobileApiFetch<MemberCoachingData>(
         `/me/coaching${queryString({ orgId: activeOrgId ?? undefined })}`,
@@ -212,6 +213,19 @@ export function useMyCoaching() {
       ),
     enabled: status === "authenticated" && Boolean(token),
     staleTime: 30_000,
+  });
+}
+
+export function useBrowsePtPlans() {
+  const { activeOrgId, status, token } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.member.ptPlans(activeOrgId),
+    queryFn: () =>
+      mobileApiFetch<{ plans: PtPlanRecord[] }>(`/orgs/${activeOrgId}/pt-plans`, {
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
   });
 }
 
@@ -230,6 +244,31 @@ export function useMyClasses() {
         },
       ),
     enabled: status === "authenticated" && Boolean(token) && Boolean(activeOrgId),
+    staleTime: 30_000,
+  });
+}
+
+export function useClassDetail(classId?: string | null) {
+  const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
+  return useQuery({
+    queryKey: queryKeys.member.classDetail(activeOrgId, selectedBranchId, classId),
+    queryFn: () =>
+      mobileApiFetch<{ class: MemberClassRecord }>(
+        `/orgs/${activeOrgId}/classes/${classId}${queryString({
+          branchId: selectedBranchId ?? undefined,
+        })}`,
+        {
+          token,
+          ...(activeOrgId ? { orgId: activeOrgId } : {}),
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        },
+      ),
+    enabled:
+      status === "authenticated" &&
+      Boolean(token) &&
+      Boolean(activeOrgId) &&
+      Boolean(classId),
     staleTime: 30_000,
   });
 }

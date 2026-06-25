@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -8,12 +8,15 @@ import {
   AppHeader,
   Pill,
   QueryErrorState,
+  SectionHeader,
   Skeleton,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { toneForStatus } from "@/components/membership/helpers";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
+import { toWebUrl } from "@/lib/api";
 import { formatInitials, formatLongDate, formatRedactedPhone, titleCaseFromCode } from "@/lib/formatting";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
@@ -88,6 +91,7 @@ export default function OwnerMemberDetail() {
   const { activeOrgId: resolvedOrgId, token } = useAuth();
   const { palette } = useTheme();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
@@ -108,6 +112,7 @@ export default function OwnerMemberDetail() {
   const notes = member?.profile.notes;
   const subscriptionStatus = member?.activeSubscription?.status ?? null;
   const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : "No active plan";
+  const subscriptions = member?.subscriptions ?? [];
 
   useEffect(() => {
     let mounted = true;
@@ -152,6 +157,31 @@ export default function OwnerMemberDetail() {
     }
   }
 
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      await memberQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  function sendReminder() {
+    showToast({ tone: "neutral", message: "Reminder feature coming soon." });
+  }
+
+  function recordPayment() {
+    showToast({ tone: "neutral", message: "Opening payment tools." });
+    if (id) {
+      void Linking.openURL(toWebUrl(`/dashboard/payments/new?memberId=${encodeURIComponent(id)}`));
+    }
+  }
+
+  function openWebProfile() {
+    if (!id) return;
+    void Linking.openURL(toWebUrl(`/dashboard/members/${encodeURIComponent(id)}`));
+  }
+
   return (
     <>
       <ZookScreen testID="owner-member-detail-screen">
@@ -159,6 +189,14 @@ export default function OwnerMemberDetail() {
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void refresh()}
+              tintColor={palette.accent.base}
+              colors={[palette.accent.base]}
+            />
+          }
         >
           <AppHeader
             title={name}
@@ -277,6 +315,43 @@ export default function OwnerMemberDetail() {
                   </View>
                 ) : null}
               </Card>
+
+              <Card contentStyle={styles.actionCard}>
+                <ZookButton variant="secondary" icon="notifications-outline" onPress={sendReminder}>
+                  Send reminder
+                </ZookButton>
+                <ZookButton variant="secondary" icon="card-outline" onPress={recordPayment}>
+                  Record payment
+                </ZookButton>
+                <ZookButton variant="secondary" icon="open-outline" onPress={openWebProfile}>
+                  View full profile
+                </ZookButton>
+              </Card>
+
+              {subscriptions.length > 1 ? (
+                <>
+                  <SectionHeader title="Subscription history" />
+                  <Card contentStyle={styles.sectionContent}>
+                    {subscriptions.map((subscription, index) => (
+                      <View key={subscription.id ?? index} style={styles.subRow}>
+                        <Pill tone={toneForStatus(subscription.status ?? null)}>
+                          {titleCaseFromCode(subscription.status ?? "")}
+                        </Pill>
+                        {subscription.endsAt ? (
+                          <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
+                            Until {formatLongDate(subscription.endsAt)}
+                          </Text>
+                        ) : null}
+                        {subscription.remainingVisits != null ? (
+                          <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
+                            {subscription.remainingVisits} visits left
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </Card>
+                </>
+              ) : null}
             </>
           ) : null}
         </ScrollView>
@@ -306,6 +381,7 @@ const styles = StyleSheet.create({
   memberName: typography.headerTitle,
   memberEmail: typography.small,
   sectionContent: { gap: spacing.md },
+  actionCard: { gap: spacing.sm },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   sectionCopy: { flex: 1, gap: 3 },
   sectionLabel: typography.caption,
@@ -331,4 +407,5 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   revealPhoneText: typography.caption,
+  subRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

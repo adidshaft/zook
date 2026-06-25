@@ -14,7 +14,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { gradients, gradientsLight, radii, spacing, typography, useTheme } from "@/lib/theme";
 import { pressWithHaptics } from "./buttons";
 import { Card } from "./foundation";
 import { IconBubble } from "./icon-bubble";
@@ -29,6 +29,15 @@ const PRODUCT_TONE_GRADIENT: Record<PillTone, readonly [string, string]> = {
   violet: gradients.classViolet,
   lime: gradients.heroCardAccent,
   neutral: gradients.cardSheen,
+};
+
+const PRODUCT_TONE_GRADIENT_LIGHT: Record<PillTone, readonly [string, string]> = {
+  red: gradientsLight.classRed,
+  amber: gradientsLight.classAmber,
+  blue: gradientsLight.classBlue,
+  violet: gradientsLight.classViolet,
+  lime: gradientsLight.heroCardAccent,
+  neutral: gradientsLight.cardSheen,
 };
 
 const iconOnlyHitSlop = { top: 8, right: 8, bottom: 8, left: 8 };
@@ -288,6 +297,7 @@ export function ProductCard({
 }) {
   const { palette: themePalette, mode } = useTheme();
   const palette = useTonePalette(tone);
+  const productGradient = mode === "light" ? PRODUCT_TONE_GRADIENT_LIGHT[tone] : PRODUCT_TONE_GRADIENT[tone];
   const increment = onIncrement ?? onPress;
   const canIncrement = !disabled && !incrementDisabled && Boolean(increment);
   const canDecrement = !disabled && Boolean(onDecrement);
@@ -315,7 +325,7 @@ export function ProductCard({
         ) : (
           <>
             <LinearGradient
-              colors={PRODUCT_TONE_GRADIENT[tone]}
+              colors={productGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFillObject}

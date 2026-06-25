@@ -8,6 +8,7 @@ import {
   EmptyState,
   AnimatedAppear,
   Card,
+  HeaderActions,
   IconBubble,
   ListRow,
   ProgressBar,
@@ -15,10 +16,10 @@ import {
   ScreenHeader,
   SectionHeader,
   SegmentedControl,
+  Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { MemberHeaderActions } from "@/components/member-header-actions";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { PlansSkeleton } from "@/components/skeletons";
 import { DietPanel } from "@/features/member/plan/diet-panel";
@@ -85,7 +86,7 @@ export default function MemberPlanScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} trailing={<MemberHeaderActions showBell={false} />} scrollY={scrollY} />
+          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <SegmentedControl
               options={[
@@ -157,14 +158,17 @@ export default function MemberPlanScreen() {
                 <AnimatedAppear delay={80}>
                   <SectionHeader title="Inside this plan" />
                   <Card variant="compact" contentStyle={styles.previewCard}>
-                    {exercisePreviewQuery.isLoading ? (
-                      <View style={styles.previewCopy}>
-                        <Text style={[styles.previewTitle, { color: palette.text.primary }]}>
-                          Loading exercises
-                        </Text>
-                        <Text style={[styles.previewMeta, { color: palette.text.secondary }]}>
-                          Checking plan details...
-                        </Text>
+                    {exercisePreviewQuery.isError ? (
+                      <QueryErrorState
+                        error={exercisePreviewQuery.error}
+                        onRetry={() => void exercisePreviewQuery.refetch()}
+                        title="Could not load exercises"
+                      />
+                    ) : exercisePreviewQuery.isLoading ? (
+                      <View style={styles.previewSkeleton}>
+                        {[0, 1, 2].map((item) => (
+                          <Skeleton key={item} width="90%" height={14} borderRadius={7} />
+                        ))}
                       </View>
                     ) : exercisePreview.length ? (
                       <>
@@ -213,6 +217,7 @@ const styles = StyleSheet.create({
   },
   stack: { gap: spacing.sm },
   previewCard: { gap: spacing.sm },
+  previewSkeleton: { gap: spacing.sm },
   previewCopy: { flex: 1, gap: 4 },
   previewTitle: typography.cardTitle,
   previewMeta: typography.small,

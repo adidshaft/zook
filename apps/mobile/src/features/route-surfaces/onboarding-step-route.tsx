@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { IconBubble, ZookButton } from "@/components/primitives";
 import { setStoredValue } from "@/lib/storage";
-import { gradients, layout, spacing, typography, useTheme } from "@/lib/theme";
+import { gradients, gradientsLight, layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 const ONBOARDING_STORAGE_KEY = "zook_onboarding_completed";
@@ -23,28 +23,28 @@ const INTRO_COMPLETE = "intro";
 const valueProps: Array<{
   icon: keyof typeof Ionicons.glyphMap;
   tone: "lime" | "blue" | "violet";
-  gradient: readonly [string, string];
+  gradient: (mode: "light" | "dark") => readonly [string, string];
   eyebrow: string;
   copy: string;
 }> = [
   {
     icon: "location-outline",
     tone: "lime",
-    gradient: gradients.heroCardAccent,
+    gradient: (mode) => (mode === "light" ? gradientsLight.heroCardAccent : gradients.heroCardAccent),
     eyebrow: "Find your gym",
     copy: "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
   },
   {
     icon: "barbell-outline",
     tone: "blue",
-    gradient: gradients.classBlue,
+    gradient: (mode) => (mode === "light" ? gradientsLight.classBlue : gradients.classBlue),
     eyebrow: "Train & track",
     copy: "Scan in seconds, follow your plan, and watch every workout add up.",
   },
   {
     icon: "sparkles-outline",
     tone: "violet",
-    gradient: gradients.classViolet,
+    gradient: (mode) => (mode === "light" ? gradientsLight.classViolet : gradients.classViolet),
     eyebrow: "All in one",
     copy: "Memberships, classes, payments and store pickup — all in one place.",
   },
@@ -64,7 +64,7 @@ export function ValuePropsStep() {
   const [userScrolled, setUserScrolled] = useState(false);
   const [busy, setBusy] = useState(false);
   const cardWidth = width;
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
 
   function clearAutoScrollTimer() {
     if (timerRef.current) {
@@ -165,7 +165,7 @@ export function ValuePropsStep() {
             <View key={item.eyebrow} style={[styles.valueCard, { width: cardWidth }]}>
               <View style={[styles.valuePanel, { borderColor: palette.border.subtle }]}>
                 <LinearGradient
-                  colors={item.gradient}
+                  colors={item.gradient(mode)}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 0.8, y: 1 }}
                   style={StyleSheet.absoluteFillObject}

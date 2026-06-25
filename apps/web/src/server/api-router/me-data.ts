@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { normalizePhoneNumber, publicUserEmail, requestOtpSchema, verifyOtpSchema } from "@zook/core";
 import { AuthService } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
@@ -147,6 +148,55 @@ export async function handleMeData(request: NextRequest, path: string[]) {
         : null,
       sessions,
     });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "pt-subscriptions", "request"])) {
+    const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;
+    const ctx = await getRequestContext(request, requestedOrgId ? { orgId: requestedOrgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, requestedOrgId);
+    const orgId = requestedOrgId ?? ctx.orgId;
+    if (!orgId) {
+      throw validationError("An active gym context is required.");
+    }
+    const body = z
+      .object({
+        ptPlanId: z.string(),
+        trainerUserId: z.string().optional(),
+        amountPaise: z.number().int().positive().optional(),
+        totalSessions: z.number().int().positive().optional(),
+      })
+      .parse(await readJson(request));
+    const plan = await prisma.personalTrainingPlan.findFirst({
+      where: { id: body.ptPlanId, orgId, active: true },
+    });
+    if (!plan) {
+      throw notFoundError("PT plan not found.");
+    }
+    const trainerUserId = body.trainerUserId ?? plan.trainerUserId;
+    if (trainerUserId !== plan.trainerUserId) {
+      throw validationError("Trainer does not own this PT plan.");
+    }
+    await assertRateLimit(
+      "subscriptionChangeByActor",
+      `pt-request:${userId}:${orgId}`,
+      "Too many PT subscription requests.",
+    );
+    const sessions = body.totalSessions ?? plan.sessionCount ?? undefined;
+    const subscription = await prisma.personalTrainingSubscription.create({
+      data: clean({
+        orgId,
+        memberUserId: userId,
+        trainerUserId,
+        ptPlanId: plan.id,
+        status: "PENDING_APPROVAL",
+        amountPaise: body.amountPaise ?? plan.pricePaise,
+        totalSessions: sessions,
+        remainingSessions: sessions,
+        paymentMode: "OTHER",
+        recordedById: userId,
+      }),
+    });
+    return ok({ subscription });
   }
   if (request.method === "GET" && pathMatches(path, ["me", "engagement"])) {
     const requestedOrgId = request.nextUrl.searchParams.get("orgId") ?? undefined;

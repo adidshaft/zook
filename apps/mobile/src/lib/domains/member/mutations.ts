@@ -9,6 +9,7 @@ import {
   notifyMutationSuccess,
   notifyMutationWarning,
 } from "@/lib/domains/shared/request";
+import type { PtSubscriptionRecord } from "@/lib/domains/shared/types";
 
 export function useEnrollInClass() {
   const queryClient = useQueryClient();
@@ -94,6 +95,65 @@ export function useCancelEnrollment() {
     },
     onError: (error) => {
       notifyMutationError(error, "Could not cancel your booking.");
+    },
+  });
+}
+
+export type RequestPtSubscriptionInput = {
+  ptPlanId: string;
+  trainerUserId?: string;
+  amountPaise?: number;
+  totalSessions?: number;
+};
+
+export function useRequestPtSubscription() {
+  const queryClient = useQueryClient();
+  const { activeOrgId, token } = useAuth();
+  return useMutation({
+    mutationFn: async (input: RequestPtSubscriptionInput) => {
+      if (!activeOrgId || !token) {
+        throw new Error("Sign in again to request personal training.");
+      }
+      return mobileApiFetch<{ subscription: PtSubscriptionRecord }>(
+        "/me/pt-subscriptions/request",
+        {
+          method: "POST",
+          token,
+          orgId: activeOrgId,
+          body: input,
+        },
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.member.coaching(activeOrgId),
+      });
+      notifyMutationSuccess("Request sent — a trainer will confirm.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Could not send your PT request.");
+    },
+  });
+}
+
+export function useCancelMembership() {
+  const queryClient = useQueryClient();
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: ({ subscriptionId }: { subscriptionId: string }) =>
+      mobileApiFetch<{ subscription: Record<string, unknown> }>(
+        `/me/memberships/${subscriptionId}/cancel`,
+        { method: "POST", token },
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.member.membership() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.member.activeMembership() }),
+      ]);
+      notifyMutationWarning("Membership cancelled.");
+    },
+    onError: (error) => {
+      notifyMutationError(error, "Could not cancel membership.");
     },
   });
 }

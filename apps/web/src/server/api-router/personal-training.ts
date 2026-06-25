@@ -2,13 +2,13 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@zook/db";
 
-import { getRequestContext, requireOrgPermission } from "../access";
+import { getRequestContext, requireAuth, requireOrgPermission } from "../access";
 import {
   accruePtClawback,
   accruePtSessionFee,
   accruePtSubscriptionCommission,
 } from "../domains/payouts";
-import { forbiddenError, notFoundError } from "../errors";
+import { forbiddenError, notFoundError, validationError } from "../errors";
 import { assertMinorConsentGranted } from "../minor-gates";
 import { ok, readJson } from "../response";
 import {
@@ -37,6 +37,31 @@ const ptSessionLogSchema = z.object({
 });
 
 export async function handlePersonalTraining(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "pt-plans"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    requireAuth(ctx);
+    await assertOrgUser({ orgId, userId: ctx.userId!, role: "MEMBER" });
+    const plans = await prisma.personalTrainingPlan.findMany({
+      where: { orgId, active: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const trainerIds = Array.from(new Set(plans.map((plan) => plan.trainerUserId)));
+    const trainers = trainerIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: trainerIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const trainerById = new Map(trainers.map((trainer) => [trainer.id, trainer.name]));
+    return ok({
+      plans: plans.map((plan) => ({
+        ...plan,
+        trainerName: trainerById.get(plan.trainerUserId) ?? null,
+      })),
+    });
+  }
+
   if (
     request.method === "GET" &&
     pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans"])
@@ -81,6 +106,57 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
         planName: plans.find((plan) => plan.id === sub.ptPlanId)?.name ?? null,
       })),
     });
+  }
+
+  if (
+    (request.method === "PATCH" || request.method === "DELETE") &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "pt-plans", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const trainerUserId = path[3]!;
+    const planId = path[5]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    await assertOrgUser({ orgId, userId: trainerUserId, role: "TRAINER" });
+    if (ctx.roles.includes("TRAINER") && trainerUserId !== userId) {
+      throw forbiddenError("You can only manage your own PT packages.");
+    }
+    const plan = await prisma.personalTrainingPlan.findFirst({
+      where: { id: planId, orgId, trainerUserId },
+    });
+    if (!plan) {
+      throw notFoundError("Personal training plan not found.");
+    }
+
+    if (request.method === "DELETE") {
+      await prisma.personalTrainingPlan.update({
+        where: { id: plan.id },
+        data: { active: false },
+      });
+      return ok({ ok: true });
+    }
+
+    const body = z
+      .object({
+        name: z.string().trim().min(1).optional(),
+        description: z.string().max(500).optional().nullable(),
+        sessionCount: z.number().int().positive().optional().nullable(),
+        durationDays: z.number().int().positive().optional().nullable(),
+        pricePaise: z.number().int().positive().optional(),
+      })
+      .parse(await readJson(request));
+    const updated = await prisma.personalTrainingPlan.update({
+      where: { id: plan.id },
+      data: clean({
+        name: body.name,
+        description:
+          body.description === null ? null : sanitizeRichText(body.description),
+        sessionCount: body.sessionCount,
+        durationDays: body.durationDays,
+        pricePaise: body.pricePaise,
+      }),
+    });
+    return ok({ plan: updated });
   }
 
   if (
@@ -164,6 +240,40 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
       createdById: userId,
     });
     return ok({ subscription: sub });
+  }
+
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "pt-subscriptions", /.+/, "approve"])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const sub = await prisma.personalTrainingSubscription.findFirst({
+      where: { id: subscriptionId, orgId, status: "PENDING_APPROVAL" },
+    });
+    if (!sub) {
+      throw notFoundError("Pending PT subscription not found.");
+    }
+    if (ctx.roles.includes("TRAINER") && sub.trainerUserId !== userId) {
+      throw forbiddenError("You can only approve your own PT requests.");
+    }
+    if (sub.totalSessions !== null && sub.totalSessions !== undefined && sub.totalSessions <= 0) {
+      throw validationError("PT request has no sessions to approve.");
+    }
+    const updated = await prisma.personalTrainingSubscription.update({
+      where: { id: sub.id },
+      data: { status: "ACTIVE", startsAt: new Date() },
+    });
+    await accruePtSubscriptionCommission({
+      orgId,
+      trainerId: sub.trainerUserId,
+      subscriptionId: sub.id,
+      amountPaise: sub.amountPaise,
+      createdById: userId,
+    });
+    return ok({ subscription: updated });
   }
 
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "pt-sessions"])) {

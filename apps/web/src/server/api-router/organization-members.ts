@@ -43,7 +43,8 @@ function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
 }
 
 async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
-  const { limit, cursor } = parseCursorPagination(request, 50, 100);
+  const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const { limit, cursor } = parseCursorPagination(request, q ? 20 : 50, 100);
   const scopedUserIds = branchId
     ? await (async () => {
         const [branchSubscriptions, orgSubscriptions] = await Promise.all([
@@ -79,7 +80,21 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
       })()
     : undefined;
   const profiles = await prisma.memberProfile.findMany({
-    where: { orgId, ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}) },
+    where: {
+      orgId,
+      ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}),
+      ...(q
+        ? {
+            user: {
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { email: { startsWith: q, mode: "insensitive" } },
+                { phone: { startsWith: normalizePhoneNumber(q) ?? q } },
+              ],
+            },
+          }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: limit + 1,
     select: {

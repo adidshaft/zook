@@ -7,6 +7,7 @@ export {
   elevation,
   glow,
   gradients,
+  gradientsLight,
   layout,
   materials,
   opacity,

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getRequestContext, requireAuth, requireOrgAnyPermission } from "../access";
 import { writeAuditLog } from "../audit";
 import { conflictError, forbiddenError, notFoundError } from "../errors";
+import { createDirectNotification } from "./core";
 import { ok, readJson } from "../response";
 import {
   assertActiveContextOrg,
@@ -31,6 +32,16 @@ const classInputSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   recurrenceRule: z.string().trim().max(240).optional(),
+});
+
+const classUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  description: z.string().trim().max(500).optional().nullable(),
+  classType: z.string().trim().min(2).max(80).optional(),
+  maxCapacity: z.number().int().positive().max(500).optional(),
+  pricePaise: z.number().int().min(0).max(1_000_000).optional(),
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional(),
 });
 
 const CLASS_REFUND_CUTOFF_HOURS = 6;
@@ -140,6 +151,51 @@ export async function handleClasses(request: NextRequest, path: string[]) {
       })),
     });
   }
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "classes", /.+/])) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, orgId);
+    const branchId = queryBranchId(request);
+    const classRecord = await prisma.class.findFirst({
+      where: clean({ id: classId, orgId, ...(branchId ? { branchId } : {}) }),
+    });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    const [enrollments, trainer, branch] = await Promise.all([
+      prisma.classEnrollment.findMany({ where: { classId: classRecord.id } }),
+      prisma.user.findUnique({
+        where: { id: classRecord.trainerId },
+        select: { id: true, name: true },
+      }),
+      prisma.branch.findUnique({
+        where: { id: classRecord.branchId },
+        select: { id: true, name: true },
+      }),
+    ]);
+    return ok({
+      class: {
+        ...classRecord,
+        enrollmentCount: enrollments.filter((enrollment) => enrollment.status === "confirmed")
+          .length,
+        remainingCapacity: Math.max(
+          0,
+          classRecord.maxCapacity -
+            enrollments.filter((enrollment) =>
+              classRecord.pricePaise > 0
+                ? ["confirmed", "pending_payment"].includes(enrollment.status)
+                : enrollment.status === "confirmed",
+            ).length,
+        ),
+        myEnrollmentStatus:
+          enrollments.find((enrollment) => enrollment.memberId === userId)?.status ?? null,
+        trainerName: trainer?.name ?? null,
+        branchName: branch?.name ?? null,
+      },
+    });
+  }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "classes"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
@@ -181,6 +237,98 @@ export async function handleClasses(request: NextRequest, path: string[]) {
       metadata: { trainerId: classRecord.trainerId, branchId: classRecord.branchId },
     });
     return ok({ class: classRecord });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "classes", /.+/])) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, ["TRAINERS_MANAGE", "PLANS_CREATE"]);
+    const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    if (!ctx.permissions.includes("TRAINERS_MANAGE") && classRecord.trainerId !== userId) {
+      throw forbiddenError("Trainers can only edit their own classes.");
+    }
+    if (classRecord.status === "cancelled") {
+      throw conflictError("Cancelled classes cannot be edited.");
+    }
+    const body = classUpdateSchema.parse(await readJson(request));
+    const startTime = body.startTime ? new Date(body.startTime) : classRecord.startTime;
+    const endTime = body.endTime ? new Date(body.endTime) : classRecord.endTime;
+    const maxCapacity = body.maxCapacity ?? classRecord.maxCapacity;
+    validateClassSchedule({ startTime, endTime, maxCapacity });
+    const updated = await prisma.class.update({
+      where: { id: classId },
+      data: clean({
+        name: body.name,
+        description: body.description,
+        classType: body.classType,
+        maxCapacity: body.maxCapacity,
+        pricePaise: body.pricePaise,
+        startTime: body.startTime ? startTime : undefined,
+        endTime: body.endTime || body.startTime ? endTime : undefined,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "class.updated",
+      entityType: "class",
+      entityId: classId,
+      metadata: { changes: body },
+    });
+    return ok({ class: updated });
+  }
+  if (
+    (request.method === "DELETE" || request.method === "POST") &&
+    pathMatches(path, ["orgs", /.+/, "classes", /.+/, "cancel"])
+  ) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, ["TRAINERS_MANAGE", "PLANS_CREATE"]);
+    const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    if (!ctx.permissions.includes("TRAINERS_MANAGE") && classRecord.trainerId !== userId) {
+      throw forbiddenError("Trainers can only cancel their own classes.");
+    }
+    if (classRecord.status === "cancelled") {
+      return ok({ class: classRecord });
+    }
+    const updated = await prisma.class.update({
+      where: { id: classId },
+      data: { status: "cancelled" },
+    });
+    const enrolledMembers = await prisma.classEnrollment.findMany({
+      where: { classId, status: { in: ["confirmed", "waitlisted", "pending_payment"] } },
+      select: { memberId: true },
+    });
+    if (enrolledMembers.length) {
+      await createDirectNotification({
+        orgId,
+        createdById: userId,
+        type: "OPERATIONAL",
+        title: "Class cancelled",
+        body: `${classRecord.name} on ${classRecord.startTime.toLocaleString()} has been cancelled.`,
+        audience: "selected_members",
+        userIds: enrolledMembers.map((entry) => entry.memberId),
+        metadata: { classId } as Prisma.InputJsonValue,
+      });
+    }
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "class.cancelled",
+      entityType: "class",
+      entityId: classId,
+      metadata: { notifiedMembers: enrolledMembers.length },
+    });
+    return ok({ class: updated });
   }
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"])) {
     const orgId = path[1]!;

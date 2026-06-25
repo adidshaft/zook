@@ -101,13 +101,27 @@ export const gradients = {
   heroCardAccent: ["rgba(185,244,85,0.16)", "rgba(185,244,85,0.02)"] as const,
   // Neutral raised card sheen — subtle top highlight.
   cardSheen: ["rgba(255,255,255,0.07)", "rgba(255,255,255,0.015)"] as const,
-  // Screen backdrop: faint lift at the top fading to pure app bg.
+  // Screen backdrop is always-dark; do not render palette.text.* over it unless
+  // the consuming component branches on theme mode.
   screenBackdrop: ["#0B0D0A", "#000000"] as const,
   // Class-type tints (paired with the lime accent system).
   classRed: ["rgba(255,90,61,0.18)", "rgba(255,90,61,0.02)"] as const,
   classBlue: ["rgba(125,211,252,0.18)", "rgba(125,211,252,0.02)"] as const,
   classViolet: ["rgba(177,148,255,0.18)", "rgba(177,148,255,0.02)"] as const,
   classAmber: ["rgba(242,201,76,0.18)", "rgba(242,201,76,0.02)"] as const,
+};
+
+export const gradientsLight = {
+  accentButton: ["#A9EA3C", "#82D116"] as const,
+  accentGlow: ["rgba(34,197,94,0.14)", "rgba(34,197,94,0.0)"] as const,
+  heroCard: ["#F0FBE8", "#FFFFFF"] as const,
+  heroCardAccent: ["rgba(22,163,74,0.10)", "rgba(22,163,74,0.01)"] as const,
+  cardSheen: ["rgba(0,0,0,0.04)", "rgba(0,0,0,0.01)"] as const,
+  screenBackdrop: ["#F7F9F5", "#FFFFFF"] as const,
+  classRed: ["rgba(220,38,38,0.12)", "rgba(220,38,38,0.01)"] as const,
+  classBlue: ["rgba(2,132,199,0.12)", "rgba(2,132,199,0.01)"] as const,
+  classViolet: ["rgba(109,40,217,0.12)", "rgba(109,40,217,0.01)"] as const,
+  classAmber: ["rgba(217,119,6,0.12)", "rgba(217,119,6,0.01)"] as const,
 };
 
 export const glow = {

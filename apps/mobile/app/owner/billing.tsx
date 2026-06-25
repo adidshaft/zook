@@ -4,12 +4,12 @@ import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-na
 
 import {
   BranchSelectorChip,
-  EmptyState,
   Card,
   ListRow,
   ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
+  Skeleton,
   StatusChip,
   ZookButton,
   ZookScreen,
@@ -186,8 +186,12 @@ export default function OwnerBillingScreen() {
             <QueryErrorState error={billingQuery.error} onRetry={() => void billingQuery.refetch()} />
           ) : null}
 
-          {!billingQuery.isError && !data ? (
-            <EmptyState title="Loading billing" />
+          {billingQuery.isLoading && !data ? (
+            <Card variant="compact" contentStyle={styles.loadingCard}>
+              <Skeleton width="65%" height={18} borderRadius={9} />
+              <Skeleton width="45%" height={14} borderRadius={7} />
+              <Skeleton width="80%" height={14} borderRadius={7} />
+            </Card>
           ) : null}
 
           {data ? (
@@ -385,6 +389,9 @@ const styles = StyleSheet.create({
     paddingBottom: 96,
   },
   stack: {
+    gap: spacing.md,
+  },
+  loadingCard: {
     gap: spacing.md,
   },
   rowHeader: {

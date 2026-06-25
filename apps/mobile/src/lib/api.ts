@@ -177,6 +177,13 @@ function createHttpTransport(): MobileApiTransport {
       headers.set("content-type", "application/json");
       body = JSON.stringify(body);
     }
+    if (
+      !headers.has("x-zook-intent") &&
+      requestInit.method &&
+      !["GET", "HEAD"].includes(requestInit.method.toUpperCase())
+    ) {
+      headers.set("x-zook-intent", "mutate");
+    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);

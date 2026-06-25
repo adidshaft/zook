@@ -24,7 +24,7 @@ function spotPill(entry: MemberClassRecord) {
 }
 
 function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () => void }) {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
   const visual = classTypeVisual(entry.classType);
   const pill = spotPill(entry);
 
@@ -40,7 +40,7 @@ function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () =
       ]}
     >
       <LinearGradient
-        colors={classTypeGradient(entry.classType)}
+        colors={classTypeGradient(entry.classType, mode)}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.7, y: 1 }}
         style={StyleSheet.absoluteFillObject}
@@ -70,7 +70,7 @@ export function ClassesStrip() {
   const router = useRouter();
   const { palette } = useTheme();
   const classesQuery = useMyClasses();
-  const classes = classesQuery.data?.classes ?? [];
+  const classes = (classesQuery.data?.classes ?? []).filter((entry) => entry.status !== "CANCELLED");
 
   // Don't draw the section until there is something to book.
   if (!classes.length) return null;
@@ -103,7 +103,7 @@ export function ClassesStrip() {
           <ClassChip
             key={entry.id}
             entry={entry}
-            onPress={() => router.push("/classes" as never)}
+            onPress={() => router.push(`/classes/${entry.id}` as never)}
           />
         ))}
       </ScrollView>

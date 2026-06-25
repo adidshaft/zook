@@ -108,6 +108,7 @@ enum MembershipPlanType {
 
 enum SubscriptionStatus {
   PENDING_PAYMENT
+  PENDING_APPROVAL
   ACTIVE
   PAUSED
   EXPIRED

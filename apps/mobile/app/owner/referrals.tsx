@@ -8,6 +8,7 @@ import {
   FormField,
   QueryErrorState,
   SectionHeader,
+  Skeleton,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
@@ -115,6 +116,14 @@ export default function OwnerReferralSettings() {
             <QueryErrorState error={policyQuery.error} onRetry={() => void policyQuery.refetch()} />
           ) : null}
 
+          {policyQuery.isLoading && !form ? (
+            <Card variant="compact" contentStyle={styles.loadingCard}>
+              <Skeleton width="65%" height={18} borderRadius={9} />
+              <Skeleton width="45%" height={14} borderRadius={7} />
+              <Skeleton width="80%" height={14} borderRadius={7} />
+            </Card>
+          ) : null}
+
           {form ? (
             <>
               <Card variant="compact" contentStyle={styles.switchRow}>
@@ -202,6 +211,7 @@ const styles = StyleSheet.create({
   switchTitle: { ...typography.cardTitle },
   switchSub: { ...typography.small },
   formCard: { gap: spacing.md },
+  loadingCard: { gap: spacing.md },
   formRow: { flexDirection: "row", gap: spacing.sm },
   formField: { flex: 1 },
   label: { ...typography.caption },

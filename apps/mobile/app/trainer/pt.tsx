@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   AppHeader,
@@ -15,12 +15,15 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import {
+  useApprovePtSubscription,
   useCreatePtPlan,
+  useDeletePtPlan,
   useLogPtSession,
   useRecordPtSubscription,
   useTrainerClients,
   useTrainerPtPlans,
   useTrainerPtSubscriptions,
+  useUpdatePtPlan,
 } from "@/lib/domains/trainer/queries";
 import type { PtPlanRecord, PtSubscriptionRecord } from "@/lib/domains/shared/types";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
@@ -113,16 +116,52 @@ function ClientRow({
   );
 }
 
+function PendingRequestRow({
+  sub,
+  approving,
+  onApprove,
+}: {
+  sub: PtSubscriptionRecord;
+  approving: boolean;
+  onApprove: () => void;
+}) {
+  const { palette } = useTheme();
+  return (
+    <View style={styles.clientRow}>
+      <View style={styles.clientTop}>
+        <IconBubble icon="person-outline" tone="amber" size={40} />
+        <View style={styles.clientCopy}>
+          <Text style={[styles.clientName, { color: palette.text.primary }]} numberOfLines={1}>
+            {sub.memberName ?? "Member"}
+          </Text>
+          <Text style={[styles.clientMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+            {sub.planName ?? "PT package"}
+            {sub.amountPaise ? ` · ${formatInr(sub.amountPaise)}` : ""}
+          </Text>
+        </View>
+        <Pill tone="amber">Pending</Pill>
+      </View>
+      <ZookButton size="sm" variant="primary" icon="checkmark-outline" busy={approving} busyLabel="Approving..." onPress={onApprove}>
+        Approve
+      </ZookButton>
+    </View>
+  );
+}
+
 export default function TrainerPersonalTraining() {
   const { palette } = useTheme();
   const plansQuery = useTrainerPtPlans();
   const subscriptionsQuery = useTrainerPtSubscriptions();
   const clientsQuery = useTrainerClients();
   const createPlan = useCreatePtPlan();
+  const updatePlan = useUpdatePtPlan();
+  const deletePlan = useDeletePtPlan();
   const recordClient = useRecordPtSubscription();
   const logSession = useLogPtSession();
+  const approveSubscription = useApprovePtSubscription();
   const [refreshing, setRefreshing] = useState(false);
   const [showPackageForm, setShowPackageForm] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [showClientForm, setShowClientForm] = useState(false);
   // package form
   const [name, setName] = useState("");
@@ -145,9 +184,11 @@ export default function TrainerPersonalTraining() {
     [clientsQuery.data],
   );
   const activeClients = subscriptions.filter((sub) => sub.status.toUpperCase().includes("ACTIVE")).length;
+  const pendingRequests = subscriptions.filter((sub) => sub.status === "PENDING_APPROVAL");
+  const confirmedSubscriptions = subscriptions.filter((sub) => sub.status !== "PENDING_APPROVAL");
   const selectedPlan: PtPlanRecord | undefined = plans.find((plan) => plan.id === planId);
   const priceValid = (Number.parseInt(price, 10) || 0) > 0;
-  const canSubmitPackage = name.trim().length >= 2 && priceValid && !createPlan.isPending;
+  const canSubmitPackage = name.trim().length >= 2 && priceValid && !createPlan.isPending && !updatePlan.isPending;
   const canSubmitClient = Boolean(memberId) && Boolean(planId) && !recordClient.isPending;
 
   async function refresh() {
@@ -158,23 +199,56 @@ export default function TrainerPersonalTraining() {
 
   function submitPackage() {
     if (!canSubmitPackage) return;
-    createPlan.mutate(
-      {
-        name: name.trim(),
-        pricePaise: (Number.parseInt(price, 10) || 0) * 100,
-        ...(Number.parseInt(sessions, 10) ? { sessionCount: Number.parseInt(sessions, 10) } : {}),
-        ...(Number.parseInt(days, 10) ? { durationDays: Number.parseInt(days, 10) } : {}),
-      },
-      {
-        onSuccess: () => {
-          setName("");
-          setSessions("");
-          setDays("");
-          setPrice("");
-          setShowPackageForm(false);
+    const input = {
+      name: name.trim(),
+      pricePaise: (Number.parseInt(price, 10) || 0) * 100,
+      ...(Number.parseInt(sessions, 10) ? { sessionCount: Number.parseInt(sessions, 10) } : {}),
+      ...(Number.parseInt(days, 10) ? { durationDays: Number.parseInt(days, 10) } : {}),
+    };
+    if (editingPlanId) {
+      updatePlan.mutate(
+        { planId: editingPlanId, ...input },
+        {
+          onSuccess: () => resetPackageForm(),
         },
+      );
+      return;
+    }
+    createPlan.mutate(
+      input,
+      {
+        onSuccess: () => resetPackageForm(),
       },
     );
+  }
+
+  function resetPackageForm() {
+    setName("");
+    setSessions("");
+    setDays("");
+    setPrice("");
+    setEditingPlanId(null);
+    setShowPackageForm(false);
+  }
+
+  function openEditPlan(plan: PtPlanRecord) {
+    setEditingPlanId(plan.id);
+    setName(plan.name);
+    setSessions(plan.sessionCount ? String(plan.sessionCount) : "");
+    setDays(plan.durationDays ? String(plan.durationDays) : "");
+    setPrice(String(Math.round(plan.pricePaise / 100)));
+    setShowPackageForm(true);
+  }
+
+  function confirmDeletePlan(plan: PtPlanRecord) {
+    Alert.alert("Remove package?", `${plan.name} will no longer be available to members.`, [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => deletePlan.mutate(plan.id),
+      },
+    ]);
   }
 
   function submitClient() {
@@ -223,6 +297,24 @@ export default function TrainerPersonalTraining() {
             </Card>
           </View>
 
+          {pendingRequests.length > 0 ? (
+            <>
+              <SectionHeader title="Pending requests" />
+              <Card variant="compact" contentStyle={styles.clientsCard}>
+                {pendingRequests.map((sub, index) => (
+                  <View key={sub.id}>
+                    {index > 0 ? <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} /> : null}
+                    <PendingRequestRow
+                      sub={sub}
+                      approving={approveSubscription.isPending && approveSubscription.variables?.subscriptionId === sub.id}
+                      onApprove={() => approveSubscription.mutate({ subscriptionId: sub.id })}
+                    />
+                  </View>
+                ))}
+              </Card>
+            </>
+          ) : null}
+
           <SectionHeader
             title="Your PT clients"
             action={
@@ -242,7 +334,13 @@ export default function TrainerPersonalTraining() {
             <Card contentStyle={styles.formCard}>
               <Text style={[styles.formLabel, { color: palette.text.secondary }]}>Member</Text>
               <View style={styles.chipWrap}>
-                {members.length ? (
+                {clientsQuery.isError ? (
+                  <QueryErrorState
+                    error={clientsQuery.error}
+                    onRetry={() => void clientsQuery.refetch()}
+                    title="Could not load members"
+                  />
+                ) : members.length ? (
                   members.map((member) => (
                     <Chip key={member.id} label={member.name} selected={memberId === member.id} onPress={() => setMemberId(member.id)} />
                   ))
@@ -273,10 +371,10 @@ export default function TrainerPersonalTraining() {
           ) : null}
 
           <Card variant="compact" contentStyle={styles.clientsCard}>
-            {subscriptions.length === 0 && !subscriptionsQuery.isLoading ? (
+            {confirmedSubscriptions.length === 0 && !subscriptionsQuery.isLoading ? (
               <EmptyState icon="people-outline" title="No PT clients yet" body="Add a client to start coaching them one-on-one." />
             ) : (
-              subscriptions.map((sub, index) => (
+              confirmedSubscriptions.map((sub, index) => (
                 <View key={sub.id}>
                   {index > 0 ? <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} /> : null}
                   <ClientRow sub={sub} logging={logSession.isPending && logSession.variables?.subscriptionId === sub.id} onLogSession={() => logSession.mutate({ subscriptionId: sub.id })} />
@@ -288,7 +386,7 @@ export default function TrainerPersonalTraining() {
           <SectionHeader
             title="Your packages"
             action={
-              <ZookButton size="sm" variant={showPackageForm ? "secondary" : "primary"} icon={showPackageForm ? "close" : "add"} onPress={() => setShowPackageForm((current) => !current)}>
+              <ZookButton size="sm" variant={showPackageForm ? "secondary" : "primary"} icon={showPackageForm ? "close" : "add"} onPress={() => showPackageForm ? resetPackageForm() : setShowPackageForm(true)}>
                 {showPackageForm ? "Cancel" : "New"}
               </ZookButton>
             }
@@ -302,8 +400,14 @@ export default function TrainerPersonalTraining() {
                 <FormField label="Valid days" value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="45" style={styles.formField} />
               </View>
               <FormField label="Price (₹)" value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="12000" />
-              <ZookButton onPress={submitPackage} disabled={!canSubmitPackage} busy={createPlan.isPending} busyLabel="Creating..." icon="pricetag-outline">
-                Create package
+              <ZookButton
+                onPress={submitPackage}
+                disabled={!canSubmitPackage}
+                busy={createPlan.isPending || updatePlan.isPending}
+                busyLabel={editingPlanId ? "Saving..." : "Creating..."}
+                icon="pricetag-outline"
+              >
+                {editingPlanId ? "Save package" : "Create package"}
               </ZookButton>
             </Card>
           ) : null}
@@ -334,6 +438,21 @@ export default function TrainerPersonalTraining() {
                 {plan.description ? (
                   <Text style={[styles.planDesc, { color: palette.text.secondary }]} numberOfLines={2}>{plan.description}</Text>
                 ) : null}
+                <View style={styles.planActions}>
+                  <ZookButton size="sm" variant="secondary" icon="pencil-outline" onPress={() => openEditPlan(plan)}>
+                    Edit
+                  </ZookButton>
+                  <ZookButton
+                    size="sm"
+                    variant="secondary"
+                    icon="trash-outline"
+                    busy={deletePlan.isPending && deletePlan.variables === plan.id}
+                    busyLabel="Removing..."
+                    onPress={() => confirmDeletePlan(plan)}
+                  >
+                    Remove
+                  </ZookButton>
+                </View>
               </Card>
             ))}
           </View>
@@ -371,6 +490,7 @@ const styles = StyleSheet.create({
   planMeta: { ...typography.small },
   planPrice: { ...typography.cardTitle },
   planDesc: { ...typography.body },
+  planActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
   clientsCard: { gap: spacing.sm, paddingVertical: spacing.sm },
   clientRow: { gap: spacing.sm },
   clientTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },

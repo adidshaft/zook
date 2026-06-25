@@ -4284,7 +4284,14 @@ export async function applyAttendanceUsage(input: {
     branchId: string;
     memberUserId: string;
     planId: string;
-    status: "PENDING_PAYMENT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "CANCELLED" | "REFUNDED";
+    status:
+      | "PENDING_PAYMENT"
+      | "PENDING_APPROVAL"
+      | "ACTIVE"
+      | "PAUSED"
+      | "EXPIRED"
+      | "CANCELLED"
+      | "REFUNDED";
     startsAt: Date | null;
     endsAt: Date | null;
     remainingVisits: number | null;

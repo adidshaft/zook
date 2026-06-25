@@ -4,12 +4,16 @@ export const queryKeys = {
     home: (orgId?: string | null) => ["me", "home", orgId] as const,
     classes: (orgId?: string | null, branchId?: string | null) =>
       ["me", "classes", orgId, branchId] as const,
+    classDetail: (orgId?: string | null, branchId?: string | null, classId?: string | null) =>
+      ["me", "classes", orgId, branchId, classId] as const,
     membership: () => ["me", "memberships"] as const,
     activeMembership: (orgId?: string | null) => ["me", "membership", "active", orgId] as const,
     attendance: () => ["me", "attendance"] as const,
     profile: (orgId?: string | null) => ["me", "profile", orgId] as const,
     referralCodes: (orgId?: string | null) => ["me", "referral-codes", orgId] as const,
     diet: () => ["me", "diet"] as const,
+    ptPlans: (orgId?: string | null) => ["org", orgId, "pt-plans"] as const,
+    coaching: (orgId?: string | null) => ["me", "coaching", orgId] as const,
   },
   trainer: {
     clients: (orgId?: string | null, trainerUserId?: string | null) =>
@@ -20,6 +24,14 @@ export const queryKeys = {
       ["org", orgId, "trainer", trainerUserId, "pt-plans"] as const,
     ptSubscriptions: (orgId?: string | null, trainerUserId?: string | null) =>
       ["org", orgId, "trainer", trainerUserId, "pt-subscriptions"] as const,
+    payoutConfig: (orgId?: string | null, trainerUserId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "payout-config"] as const,
+    profile: (orgId?: string | null, trainerUserId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "profile"] as const,
+    clientDietPlans: (orgId?: string | null, trainerUserId?: string | null, clientId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "clients", clientId, "diet-plans"] as const,
+    clientBodyProgress: (orgId?: string | null, trainerUserId?: string | null, clientId?: string | null) =>
+      ["org", orgId, "trainer", trainerUserId, "clients", clientId, "body-progress"] as const,
   },
   owner: {
     all: () => ["org"] as const,

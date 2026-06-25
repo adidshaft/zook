@@ -199,6 +199,44 @@ async function resumeSubscription(input: {
 export async function handleMembershipSubscriptionActions(request: NextRequest, path: string[]) {
   if (
     request.method === "POST" &&
+    pathMatches(path, ["me", "memberships", /.+/, "cancel"])
+  ) {
+    const subscriptionId = path[2]!;
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    await assertRateLimit(
+      "subscriptionChangeByActor",
+      `cancel:${subscriptionId}:${userId}`,
+      "Too many cancellation attempts.",
+    );
+    const subscription = await prisma.memberSubscription.findFirst({
+      where: { id: subscriptionId, memberUserId: userId },
+    });
+    if (!subscription) {
+      throw notFoundError("Membership not found");
+    }
+    if (!["ACTIVE", "PAUSED"].includes(subscription.status)) {
+      throw validationError("Only active or paused memberships can be cancelled.");
+    }
+    assertActiveContextOrg(ctx, subscription.orgId);
+    const updated = await prisma.memberSubscription.update({
+      where: { id: subscription.id },
+      data: { status: "CANCELLED" },
+    });
+    await writeAuditLog({
+      request,
+      orgId: subscription.orgId,
+      actorUserId: userId,
+      action: "membership.cancelled_by_member",
+      entityType: "member_subscription",
+      entityId: subscription.id,
+      metadata: { previousStatus: subscription.status },
+    });
+    return ok({ subscription: updated });
+  }
+
+  if (
+    request.method === "POST" &&
     (pathMatches(path, ["me", "subscriptions", /.+/, "switch"]) ||
       pathMatches(path, ["me", "memberships", /.+/, "switch"]))
   ) {
