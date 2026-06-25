@@ -92,7 +92,7 @@ export default function TrainerClientPlanScreen() {
   const saveExerciseTemplate = useSaveExerciseTemplate();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? t("trainer.pt.clientFallback");
-  const fitnessGoal = fitnessGoalFor(client);
+  const fitnessGoal = fitnessGoalFor(client, t("trainer.clients.generalFitness"));
   const [status, setStatus] = useState<InlineNotice | null>(null);
   const [planTitle, setPlanTitle] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");

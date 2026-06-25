@@ -20,6 +20,7 @@ import { toWebUrl } from "@/lib/api";
 import { formatInitials, formatLongDate, formatRedactedPhone, titleCaseFromCode } from "@/lib/formatting";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
@@ -39,14 +40,14 @@ function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function BackButton({ onPress }: { onPress: () => void }) {
+function BackButton({ accessibilityLabel, onPress }: { accessibilityLabel: string; onPress: () => void }) {
   const { palette, mode } = useTheme();
   const chromeSurface = mode === "dark" ? palette.surface.default : palette.bg.elevated;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.iconButton,
         {
@@ -90,6 +91,7 @@ export default function OwnerMemberDetail() {
   const id = firstParam(params.id);
   const { activeOrgId: resolvedOrgId, token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const memberQuery = useQuery({
@@ -105,13 +107,13 @@ export default function OwnerMemberDetail() {
     retry: false,
   });
   const member = memberQuery.data;
-  const name = member?.user?.name ?? "Member";
+  const name = member?.user?.name ?? t("owner.member.memberFallback");
   const email = member?.user?.email ?? "";
   const phone = member?.user?.phone ?? "";
-  const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? "Not set";
+  const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? t("owner.member.notSet");
   const notes = member?.profile.notes;
   const subscriptionStatus = member?.activeSubscription?.status ?? null;
-  const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : "No active plan";
+  const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : t("owner.member.noActivePlan");
   const subscriptions = member?.subscriptions ?? [];
 
   useEffect(() => {
@@ -150,8 +152,8 @@ export default function OwnerMemberDetail() {
       }
     } catch {
       showToast({
-        title: "Reveal not logged",
-        message: "The phone was shown, but the audit log could not be saved.",
+        title: t("owner.member.revealNotLogged"),
+        message: t("owner.member.revealNotLoggedBody"),
         tone: "amber",
       });
     }
@@ -167,11 +169,11 @@ export default function OwnerMemberDetail() {
   }
 
   function sendReminder() {
-    showToast({ tone: "neutral", message: "Reminder feature coming soon." });
+    showToast({ tone: "neutral", message: t("owner.member.reminderComingSoon") });
   }
 
   function recordPayment() {
-    showToast({ tone: "neutral", message: "Opening payment tools." });
+    showToast({ tone: "neutral", message: t("owner.member.openingPaymentTools") });
     if (id) {
       void Linking.openURL(toWebUrl(`/dashboard/payments/new?memberId=${encodeURIComponent(id)}`));
     }
@@ -202,6 +204,7 @@ export default function OwnerMemberDetail() {
             title={name}
             leading={
               <BackButton
+                accessibilityLabel={t("common.back")}
                 onPress={() =>
                   router.canGoBack() ? router.back() : router.replace("/owner/members")
                 }
@@ -225,7 +228,7 @@ export default function OwnerMemberDetail() {
               <QueryErrorState
                 error={memberQuery.error}
                 onRetry={() => void memberQuery.refetch()}
-                title="Could not load member"
+                title={t("owner.member.couldNotLoadMember")}
               />
             </Card>
           ) : null}
@@ -233,7 +236,7 @@ export default function OwnerMemberDetail() {
           {!memberQuery.isLoading && !memberQuery.isError && !member ? (
             <Card variant="compact" contentStyle={styles.stateContent}>
               <Text style={[styles.stateText, { color: palette.text.primary }]}>
-                Member not found
+                {t("owner.member.notFound")}
               </Text>
             </Card>
           ) : null}
@@ -248,7 +251,7 @@ export default function OwnerMemberDetail() {
                 </View>
                 <View style={styles.profileCopy}>
                   <Text style={[styles.memberName, { color: palette.text.primary }]}>
-                    Member since
+                    {t("owner.member.memberSince")}
                   </Text>
                   <Text style={[styles.memberEmail, { color: palette.text.secondary }]}>
                     {formatLongDate(member.profile.createdAt)}
@@ -262,7 +265,7 @@ export default function OwnerMemberDetail() {
                   <IconBubble icon="barbell-outline" tone="neutral" size={42} />
                   <View style={styles.sectionCopy}>
                     <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
-                      Fitness goal
+                      {t("owner.member.fitnessGoal")}
                     </Text>
                     <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
                       {goal}
@@ -271,7 +274,7 @@ export default function OwnerMemberDetail() {
                 </View>
                 {notes ? (
                   <View style={[styles.notesBox, { borderTopColor: palette.border.subtle }]}>
-                    <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>Notes</Text>
+                    <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>{t("owner.member.notes")}</Text>
                     <Text selectable style={[styles.notesText, { color: palette.text.primary }]}>
                       {notes}
                     </Text>
@@ -280,26 +283,26 @@ export default function OwnerMemberDetail() {
               </Card>
 
               <Card contentStyle={styles.sectionContent}>
-                <ContactRow icon="mail-outline" label="Email" value={email || "Not available"} />
+                <ContactRow icon="mail-outline" label={t("owner.member.email")} value={email || t("owner.member.notAvailable")} />
                 {phone ? (
                   <View style={styles.contactRow}>
                     <IconBubble icon="call-outline" tone="neutral" size={40} />
                     <View style={styles.contactCopy}>
                       <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
-                        Phone
+                        {t("owner.member.phone")}
                       </Text>
                       <Text
                         selectable={phoneRevealed}
                         style={[styles.rowValue, { color: palette.text.primary }]}
                       >
-                        {phoneRevealed ? phone : formatRedactedPhone(phone, "Not available")}
+                        {phoneRevealed ? phone : formatRedactedPhone(phone, t("owner.member.notAvailable"))}
                       </Text>
                     </View>
                     {!phoneRevealed ? (
                       <Pressable
                         onPress={() => void revealPhone()}
                         accessibilityRole="button"
-                        accessibilityLabel={`Reveal phone for ${name}`}
+                        accessibilityLabel={t("owner.member.revealPhoneFor", { name })}
                         style={({ pressed }) => [
                           styles.revealPhoneButton,
                           { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
@@ -308,7 +311,7 @@ export default function OwnerMemberDetail() {
                       >
                         <Ionicons name="eye-outline" size={15} color={palette.accent.base} />
                         <Text style={[styles.revealPhoneText, { color: palette.accent.base }]}>
-                          Reveal
+                          {t("owner.member.reveal")}
                         </Text>
                       </Pressable>
                     ) : null}
@@ -318,19 +321,19 @@ export default function OwnerMemberDetail() {
 
               <Card contentStyle={styles.actionCard}>
                 <ZookButton variant="secondary" icon="notifications-outline" onPress={sendReminder}>
-                  Send reminder
+                  {t("owner.member.sendReminder")}
                 </ZookButton>
                 <ZookButton variant="secondary" icon="card-outline" onPress={recordPayment}>
-                  Record payment
+                  {t("owner.member.recordPayment")}
                 </ZookButton>
                 <ZookButton variant="secondary" icon="open-outline" onPress={openWebProfile}>
-                  View full profile
+                  {t("owner.member.viewFullProfile")}
                 </ZookButton>
               </Card>
 
               {subscriptions.length > 1 ? (
                 <>
-                  <SectionHeader title="Subscription history" />
+                  <SectionHeader title={t("owner.member.subscriptionHistory")} />
                   <Card contentStyle={styles.sectionContent}>
                     {subscriptions.map((subscription, index) => (
                       <View key={subscription.id ?? index} style={styles.subRow}>
@@ -339,12 +342,12 @@ export default function OwnerMemberDetail() {
                         </Pill>
                         {subscription.endsAt ? (
                           <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
-                            Until {formatLongDate(subscription.endsAt)}
+                            {t("owner.member.untilDate", { date: formatLongDate(subscription.endsAt) })}
                           </Text>
                         ) : null}
                         {subscription.remainingVisits != null ? (
                           <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
-                            {subscription.remainingVisits} visits left
+                            {t("owner.member.visitsLeft", { count: subscription.remainingVisits })}
                           </Text>
                         ) : null}
                       </View>

@@ -1099,6 +1099,29 @@ export type TranslationKey =
   | "owner.members.title"
   | "owner.members.total"
   | "owner.members.tryAgain"
+  | "owner.member.couldNotLoadMember"
+  | "owner.member.email"
+  | "owner.member.fitnessGoal"
+  | "owner.member.memberFallback"
+  | "owner.member.memberSince"
+  | "owner.member.noActivePlan"
+  | "owner.member.notes"
+  | "owner.member.notAvailable"
+  | "owner.member.notFound"
+  | "owner.member.notSet"
+  | "owner.member.openingPaymentTools"
+  | "owner.member.phone"
+  | "owner.member.recordPayment"
+  | "owner.member.reminderComingSoon"
+  | "owner.member.reveal"
+  | "owner.member.revealNotLogged"
+  | "owner.member.revealNotLoggedBody"
+  | "owner.member.revealPhoneFor"
+  | "owner.member.sendReminder"
+  | "owner.member.subscriptionHistory"
+  | "owner.member.untilDate"
+  | "owner.member.viewFullProfile"
+  | "owner.member.visitsLeft"
   | "owner.approvals.allCaughtUp"
   | "owner.approvals.allCaughtUpBody"
   | "owner.approvals.approveAll"
@@ -1407,9 +1430,13 @@ export type TranslationKey =
   | "trainer.clientSessions.adherence"
   | "trainer.clientSessions.averageCompletion"
   | "trainer.clientSessions.backToClients"
+  | "trainer.clientSessions.completePercent"
+  | "trainer.clientSessions.durationMinutes"
+  | "trainer.clientSessions.logged"
   | "trainer.clientSessions.noDetails"
   | "trainer.clientSessions.noPlans"
   | "trainer.clientSessions.planFeedback"
+  | "trainer.clientSessions.planProgress"
   | "trainer.clientSessions.title"
   | "trainer.clientSessions.waitingForFeedback"
   | "trainer.clientDiet.addMeal"
@@ -1592,6 +1619,7 @@ export type TranslationKey =
   | "trainer.plans.emptyTitle"
   | "trainer.plans.queueClear"
   | "trainer.plans.queueClearBody"
+  | "trainer.plans.clientDetail"
   | "trainer.plans.reviewActivePlans"
   | "trainer.plans.reviewActivePlansBody"
   | "trainer.plans.title";
@@ -2699,6 +2727,29 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "Members",
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
+    "owner.member.couldNotLoadMember": "Could not load member",
+    "owner.member.email": "Email",
+    "owner.member.fitnessGoal": "Fitness goal",
+    "owner.member.memberFallback": "Member",
+    "owner.member.memberSince": "Member since",
+    "owner.member.noActivePlan": "No active plan",
+    "owner.member.notes": "Notes",
+    "owner.member.notAvailable": "Not available",
+    "owner.member.notFound": "Member not found",
+    "owner.member.notSet": "Not set",
+    "owner.member.openingPaymentTools": "Opening payment tools.",
+    "owner.member.phone": "Phone",
+    "owner.member.recordPayment": "Record payment",
+    "owner.member.reminderComingSoon": "Reminder feature coming soon.",
+    "owner.member.reveal": "Reveal",
+    "owner.member.revealNotLogged": "Reveal not logged",
+    "owner.member.revealNotLoggedBody": "The phone was shown, but the audit log could not be saved.",
+    "owner.member.revealPhoneFor": "Reveal phone for {{name}}",
+    "owner.member.sendReminder": "Send reminder",
+    "owner.member.subscriptionHistory": "Subscription history",
+    "owner.member.untilDate": "Until {{date}}",
+    "owner.member.viewFullProfile": "View full profile",
+    "owner.member.visitsLeft": "{{count}} visits left",
     "owner.approvals.allCaughtUp": "All caught up",
     "owner.approvals.allCaughtUpBody": "No join requests or flagged check-ins need your review.",
     "owner.approvals.approveAll": "Approve all",
@@ -3007,9 +3058,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "{{percent}}% average completion across recent plan feedback.",
     "trainer.clientSessions.backToClients": "Back to clients",
+    "trainer.clientSessions.completePercent": "{{percent}}% complete",
+    "trainer.clientSessions.durationMinutes": "{{minutes}} min",
+    "trainer.clientSessions.logged": "Logged",
     "trainer.clientSessions.noDetails": "No details added.",
     "trainer.clientSessions.noPlans": "No plans",
     "trainer.clientSessions.planFeedback": "Plan feedback",
+    "trainer.clientSessions.planProgress": "Plan progress",
     "trainer.clientSessions.title": "Client Detail",
     "trainer.clientSessions.waitingForFeedback": "Waiting for member feedback and workout logs.",
     "trainer.clientDiet.addMeal": "Add meal",
@@ -3192,6 +3247,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.plans.emptyTitle": "No active plan work",
     "trainer.plans.queueClear": "Planning queue clear",
     "trainer.plans.queueClearBody": "No client plans need assignment.",
+    "trainer.plans.clientDetail": "Client Detail",
     "trainer.plans.reviewActivePlans": "Review active plans",
     "trainer.plans.reviewActivePlansBody": "Open each client to adjust workouts, diet notes, and feedback before publishing changes.",
     "trainer.plans.title": "Plan work",
@@ -4298,6 +4354,29 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "मेंबर",
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
+    "owner.member.couldNotLoadMember": "मेंबर load नहीं हो सका",
+    "owner.member.email": "ईमेल",
+    "owner.member.fitnessGoal": "फिटनेस लक्ष्य",
+    "owner.member.memberFallback": "मेंबर",
+    "owner.member.memberSince": "मेंबर since",
+    "owner.member.noActivePlan": "कोई active plan नहीं",
+    "owner.member.notes": "नोट्स",
+    "owner.member.notAvailable": "उपलब्ध नहीं",
+    "owner.member.notFound": "मेंबर नहीं मिला",
+    "owner.member.notSet": "सेट नहीं",
+    "owner.member.openingPaymentTools": "पेमेंट tools खुल रहे हैं.",
+    "owner.member.phone": "फोन",
+    "owner.member.recordPayment": "पेमेंट record करें",
+    "owner.member.reminderComingSoon": "Reminder feature जल्द आ रहा है.",
+    "owner.member.reveal": "दिखाएं",
+    "owner.member.revealNotLogged": "Reveal log नहीं हुआ",
+    "owner.member.revealNotLoggedBody": "फोन दिखा दिया गया, लेकिन audit log save नहीं हो सका.",
+    "owner.member.revealPhoneFor": "{{name}} का फोन दिखाएं",
+    "owner.member.sendReminder": "रिमाइंडर भेजें",
+    "owner.member.subscriptionHistory": "Subscription history",
+    "owner.member.untilDate": "{{date}} तक",
+    "owner.member.viewFullProfile": "पूरा profile देखें",
+    "owner.member.visitsLeft": "{{count}} visits बाकी",
     "owner.approvals.allCaughtUp": "सब caught up",
     "owner.approvals.allCaughtUpBody": "कोई join request या flagged check-in review नहीं चाहता.",
     "owner.approvals.approveAll": "सभी approve करें",
@@ -4606,9 +4685,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "Recent plan feedback में {{percent}}% average completion.",
     "trainer.clientSessions.backToClients": "Clients पर वापस",
+    "trainer.clientSessions.completePercent": "{{percent}}% पूरा",
+    "trainer.clientSessions.durationMinutes": "{{minutes}} मिनट",
+    "trainer.clientSessions.logged": "लॉग किया गया",
     "trainer.clientSessions.noDetails": "कोई details नहीं जोड़ी गई.",
     "trainer.clientSessions.noPlans": "कोई plan नहीं",
     "trainer.clientSessions.planFeedback": "Plan feedback",
+    "trainer.clientSessions.planProgress": "Plan progress",
     "trainer.clientSessions.title": "Client Detail",
     "trainer.clientSessions.waitingForFeedback": "Member feedback और workout logs का इंतजार है.",
     "trainer.clientDiet.addMeal": "Meal जोड़ें",
@@ -4791,6 +4874,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.plans.emptyTitle": "कोई active plan work नहीं",
     "trainer.plans.queueClear": "Planning queue clear",
     "trainer.plans.queueClearBody": "किसी client plan को assignment नहीं चाहिए.",
+    "trainer.plans.clientDetail": "Client Detail",
     "trainer.plans.reviewActivePlans": "Active plans review करें",
     "trainer.plans.reviewActivePlansBody": "Changes publish करने से पहले workouts, diet notes और feedback adjust करने के लिए हर client खोलें.",
     "trainer.plans.title": "Plan work",

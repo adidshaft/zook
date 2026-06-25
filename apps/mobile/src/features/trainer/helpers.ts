@@ -1,5 +1,6 @@
 import type { Ionicons } from "@expo/vector-icons";
 import type { TrainerClientRecord } from "@/lib/domains";
+import type { TranslationKey } from "@/lib/i18n";
 
 export type PlanTemplateId = "workout" | "diet" | "routine" | "machine" | "recovery";
 
@@ -55,6 +56,12 @@ export const clientDetailTabs: Array<{ label: string; value: ClientDetailTab }> 
 
 export type ClientDetailTab = "overview" | "plan" | "sessions";
 
+export const clientDetailTabLabelKeys: Record<ClientDetailTab, TranslationKey> = {
+  overview: "trainer.clientDetail.overviewTab",
+  plan: "trainer.clientDetail.planTab",
+  sessions: "trainer.clientDetail.sessionsTab",
+};
+
 export function trainerClientDetailPath(clientId: string, tab: ClientDetailTab) {
   return `/trainer/clients/${clientId}${tab === "overview" ? "" : `/${tab}`}`;
 }
@@ -70,12 +77,8 @@ export function selectedTrainerClient(
   );
 }
 
-export function planCountLabel(count: number) {
-  return `${count} active ${count === 1 ? "plan" : "plans"}`;
-}
-
-export function fitnessGoalFor(client?: TrainerClientRecord | null) {
-  return client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? "General fitness";
+export function fitnessGoalFor(client: TrainerClientRecord | null | undefined, fallback: string) {
+  return client?.summary?.fitnessGoal ?? client?.profile?.fitnessGoal ?? fallback;
 }
 
 export function averageCompletionFor(client?: TrainerClientRecord | null) {
@@ -86,13 +89,22 @@ export function averageCompletionFor(client?: TrainerClientRecord | null) {
   );
 }
 
-export function progressTimelineFor(client?: TrainerClientRecord | null) {
+export function progressTimelineFor(
+  client: TrainerClientRecord | null | undefined,
+  copy: {
+    logged: string;
+    planFeedback: string;
+    planProgress: string;
+    complete: (percent: number) => string;
+    durationMinutes: (minutes: number) => string;
+  },
+) {
   return [
     ...(client?.summary?.recentFeedback ?? []).map((entry) => ({
       id: `feedback-${entry.assignmentId}-${entry.updatedAt ?? "latest"}`,
       at: entry.updatedAt ?? "",
-      title: entry.feedback ? "Plan feedback" : "Plan progress",
-      body: entry.feedback ?? `${entry.completionPct}% complete`,
+      title: entry.feedback ? copy.planFeedback : copy.planProgress,
+      body: entry.feedback ?? copy.complete(entry.completionPct ?? 0),
       status: `${entry.completionPct}%`,
       tone: "blue" as const,
     })),
@@ -102,12 +114,12 @@ export function progressTimelineFor(client?: TrainerClientRecord | null) {
       title: workout.title,
       body: [
         workout.workoutType,
-        workout.durationMinutes ? `${workout.durationMinutes} min` : null,
+        workout.durationMinutes ? copy.durationMinutes(workout.durationMinutes) : null,
         workout.notes,
       ]
         .filter(Boolean)
         .join(" · "),
-      status: "Logged",
+      status: copy.logged,
       tone: "blue" as const,
     })),
   ].sort((left, right) => new Date(right.at || 0).getTime() - new Date(left.at || 0).getTime());

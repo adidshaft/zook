@@ -11,7 +11,7 @@ import {
 import {
   averageCompletionFor,
   clientDetailTabs,
-  planCountLabel,
+  clientDetailTabLabelKeys,
   progressTimelineFor,
   selectedTrainerClient,
   trainerClientDetailPath,
@@ -32,7 +32,17 @@ export default function TrainerClientSessionsScreen() {
   const activePlans = client?.summary?.activePlans ?? 0;
   const hasActivePlans = activePlans > 0;
   const averageCompletion = averageCompletionFor(client);
-  const progressTimeline = progressTimelineFor(client);
+  const progressTimeline = progressTimelineFor(client, {
+    logged: t("trainer.clientSessions.logged"),
+    planFeedback: t("trainer.clientSessions.planFeedback"),
+    planProgress: t("trainer.clientSessions.planProgress"),
+    complete: (percent) => t("trainer.clientSessions.completePercent", { percent }),
+    durationMinutes: (minutes) => t("trainer.clientSessions.durationMinutes", { minutes }),
+  });
+  const translatedClientDetailTabs = clientDetailTabs.map((tab) => ({
+    ...tab,
+    label: t(clientDetailTabLabelKeys[tab.value]),
+  }));
 
   function selectTab(tab: ClientDetailTab) {
     router.replace(trainerClientDetailPath(id, tab) as never);
@@ -56,7 +66,7 @@ export default function TrainerClientSessionsScreen() {
               </Pressable>
             }
           />
-          <SegmentedControl options={clientDetailTabs} value="sessions" onChange={selectTab} />
+          <SegmentedControl options={translatedClientDetailTabs} value="sessions" onChange={selectTab} />
           <Card variant="compact" contentStyle={styles.stack}>
             <ListRow
               title={t("trainer.clientSessions.adherence")}
@@ -72,7 +82,10 @@ export default function TrainerClientSessionsScreen() {
             )}
             <ListRow
               title={t("nav.plans")}
-              subtitle={planCountLabel(activePlans)}
+              subtitle={t("trainer.clients.activePlanCount", {
+                count: activePlans,
+                label: activePlans === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
+              })}
               trailing={
                 <StatusChip
                   status={hasActivePlans ? t("member.home.active") : t("trainer.clientSessions.noPlans")}

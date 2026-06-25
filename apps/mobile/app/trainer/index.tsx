@@ -120,7 +120,7 @@ export default function TrainerHomeScreen() {
                     subtitle={t("trainer.home.clientPlanSubtitle", {
                       count: priorityClient.summary?.activePlans ?? 0,
                       label: (priorityClient.summary?.activePlans ?? 0) === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
-                      goal: fitnessGoalFor(priorityClient),
+                      goal: fitnessGoalFor(priorityClient, t("trainer.clients.generalFitness")),
                     })}
                   />
                 </Pressable>
@@ -277,7 +277,7 @@ export default function TrainerHomeScreen() {
                 >
                   <ListRow
                     title={feedback.clientName}
-                    subtitle={feedback.feedback ?? `${feedback.completionPct}% complete`}
+                    subtitle={feedback.feedback ?? t("trainer.clientSessions.completePercent", { percent: feedback.completionPct })}
                     trailing={<StatusChip status={`${feedback.completionPct}%`} tone="blue" />}
                   />
                 </Pressable>

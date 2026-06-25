@@ -52,7 +52,7 @@ export default function TrainerClientOverviewScreen() {
   const clientsQuery = useTrainerClients();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
   const clientName = client?.user?.name ?? (clientsQuery.isLoading ? t("trainer.pt.clientFallback") : t("trainer.clients.noMatchingClients"));
-  const fitnessGoal = fitnessGoalFor(client);
+  const fitnessGoal = fitnessGoalFor(client, t("trainer.clients.generalFitness"));
   const averageCompletion = averageCompletionFor(client);
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
   const lastWorkoutStartedAt = recentWorkouts[0]?.startedAt;
