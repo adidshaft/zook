@@ -9,10 +9,10 @@ import {
   AnimatedAppear,
   EmptyState,
   Card,
+  HeaderActions,
   HeaderMeta,
   ListRow,
   OperationalQueueCard,
-  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
@@ -25,6 +25,7 @@ import { useAuth } from "@/lib/auth";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useTrainerClients } from "@/lib/domains";
 import { formatBranchName } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useSharedValue } from "@/lib/reanimated-lite";
@@ -32,6 +33,7 @@ import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const queryClient = useQueryClient();
   const bottomPadding = useBottomScrollPadding();
@@ -49,13 +51,13 @@ export default function TrainerHomeScreen() {
       (client.summary?.recentFeedback ?? []).map((feedback) => ({
         ...feedback,
         clientId: client.memberUserId,
-        clientName: client.user?.name ?? "Client",
+        clientName: client.user?.name ?? t("trainer.home.clientFallback"),
       })),
     )
     .sort((a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime())
     .slice(0, 3);
   const priorityClient = plannedClients[0] ?? clients[0];
-  const orgName = roleContext?.org?.name ?? session?.user.name ?? "Trainer";
+  const orgName = roleContext?.org?.name ?? session?.user.name ?? t("trainer.home.trainerFallback");
   const branchLabel = formatBranchName(orgName, selectedBranch?.name ?? null, {
     collapseOrgMatch: true,
   });
@@ -85,7 +87,7 @@ export default function TrainerHomeScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <ScreenHeader
-            title="Today"
+            title={t("trainer.home.today")}
             subtitle={headerSubtitle}
             meta={
               <View style={styles.headerMetaRow}>
@@ -98,7 +100,7 @@ export default function TrainerHomeScreen() {
               </View>
             }
             scrollY={scrollY}
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
           />
 
           {clientsQuery.isLoading ? <TrainerClientsSkeleton /> : null}
@@ -114,12 +116,20 @@ export default function TrainerHomeScreen() {
                   style={({ pressed }) => (pressed ? styles.rowPressed : null)}
                 >
                   <ListRow
-                    title={priorityClient.user?.name ?? "Client"}
-                    subtitle={`${priorityClient.summary?.activePlans ?? 0} active ${(priorityClient.summary?.activePlans ?? 0) === 1 ? "plan" : "plans"} · ${fitnessGoalFor(priorityClient)}`}
+                    title={priorityClient.user?.name ?? t("trainer.home.clientFallback")}
+                    subtitle={t("trainer.home.clientPlanSubtitle", {
+                      count: priorityClient.summary?.activePlans ?? 0,
+                      label: (priorityClient.summary?.activePlans ?? 0) === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
+                      goal: fitnessGoalFor(priorityClient),
+                    })}
                   />
                 </Pressable>
               ) : (
-                <EmptyState icon="checkmark-done-outline" title="No coaching actions today" body="You're on top of your clients. New tasks will show up here." />
+                <EmptyState
+                  icon="checkmark-done-outline"
+                  title={t("trainer.home.noCoachingActions")}
+                  body={t("trainer.home.noCoachingActionsBody")}
+                />
               )}
             </Card>
           </AnimatedAppear>
@@ -127,14 +137,14 @@ export default function TrainerHomeScreen() {
           <AnimatedAppear delay={30}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open personal training"
+              accessibilityLabel={t("trainer.home.openPersonalTraining")}
               onPress={() => router.push("/trainer/pt" as never)}
               style={({ pressed }) => (pressed ? styles.rowPressed : null)}
             >
               <Card variant="compact" contentStyle={styles.stack}>
                 <ListRow
-                  title="Personal Training"
-                  subtitle="Your own packages and PT clients"
+                  title={t("trainer.home.personalTraining")}
+                  subtitle={t("trainer.home.personalTrainingSubtitle")}
                   icon="barbell-outline"
                   trailing={
                     <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
@@ -147,14 +157,14 @@ export default function TrainerHomeScreen() {
           <AnimatedAppear delay={35}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open classes"
+              accessibilityLabel={t("trainer.home.openClasses")}
               onPress={() => router.push("/trainer/classes" as never)}
               style={({ pressed }) => (pressed ? styles.rowPressed : null)}
             >
               <Card variant="compact" contentStyle={styles.stack}>
                 <ListRow
-                  title="Classes"
-                  subtitle="Schedule group sessions members can book"
+                  title={t("trainer.home.classes")}
+                  subtitle={t("trainer.home.classesSubtitle")}
                   icon="calendar-outline"
                   trailing={
                     <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
@@ -167,14 +177,14 @@ export default function TrainerHomeScreen() {
           <AnimatedAppear delay={38}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Refer a gym to Zook and earn"
+              accessibilityLabel={t("trainer.home.referGymAccessibility")}
               onPress={() => router.push("/rewards" as never)}
               style={({ pressed }) => (pressed ? styles.rowPressed : null)}
             >
               <Card variant="compact" contentStyle={styles.stack}>
                 <ListRow
-                  title="Refer a gym & earn"
-                  subtitle="Earn cash when a gym you refer subscribes to Zook"
+                  title={t("trainer.home.referGym")}
+                  subtitle={t("trainer.home.referGymSubtitle")}
                   icon="gift-outline"
                   trailing={
                     <Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />
@@ -185,20 +195,27 @@ export default function TrainerHomeScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={40}>
-            <SectionHeader title="Needs plan" />
+            <SectionHeader title={t("trainer.home.needsPlan")} />
             {clientsNeedingPlans ? (
               <OperationalQueueCard
-                title={`${clientsNeedingPlans} client${clientsNeedingPlans === 1 ? "" : "s"} need a plan`}
-                meta="Trainer planning queue"
-                status="Create plan next"
+                title={t("trainer.home.clientsNeedPlan", {
+                  count: clientsNeedingPlans,
+                  label: clientsNeedingPlans === 1 ? t("trainer.home.client") : t("trainer.home.clients"),
+                })}
+                meta={t("trainer.home.trainerPlanningQueue")}
+                status={t("trainer.home.createPlanNext")}
                 tone="amber"
                 icon="reader-outline"
-                actionLabel="Open clients"
+                actionLabel={t("trainer.home.openClients")}
                 onPress={() => router.push("/trainer/clients" as never)}
               />
             ) : (
               <Card variant="compact" contentStyle={styles.stack}>
-                <EmptyState icon="clipboard-outline" title="Plan queue clear" body="Every client has an active plan. Nice work." />
+                <EmptyState
+                  icon="clipboard-outline"
+                  title={t("trainer.home.planQueueClear")}
+                  body={t("trainer.home.planQueueClearBody")}
+                />
               </Card>
             )}
           </AnimatedAppear>
@@ -208,17 +225,17 @@ export default function TrainerHomeScreen() {
               testID="trainer-view-home"
               items={[
               {
-                label: "Clients",
+                label: t("trainer.home.clients"),
                 value: clients.length,
                 tone: "blue",
               },
               {
-                label: "Active plans",
+                label: t("trainer.home.activePlans"),
                 value: plannedClients.length,
                 tone: "blue",
               },
               {
-                label: "Needs plan",
+                label: t("trainer.home.needsPlan"),
                 value: clientsNeedingPlans,
                 tone: "amber",
               },
@@ -229,15 +246,18 @@ export default function TrainerHomeScreen() {
           {plannedClients.length ? (
             <AnimatedAppear delay={120}>
               <AttentionCard
-                title="Active plan work"
+                title={t("trainer.home.activePlanWork")}
                 items={[
                   {
                     id: "active-plan-work",
                     icon: "document-text-outline",
                     tone: "amber",
-                    title: `${plannedClients.length} ${plannedClients.length === 1 ? "client has" : "clients have"} active plan work`,
-                    subtitle: "Open Plan work to review what is in motion.",
-                    cta: { label: "Open", onPress: () => router.push("/trainer/plans" as never) },
+                    title: t("trainer.home.activePlanWorkTitle", {
+                      count: plannedClients.length,
+                      label: plannedClients.length === 1 ? t("trainer.home.clientHas") : t("trainer.home.clientsHave"),
+                    }),
+                    subtitle: t("trainer.home.activePlanWorkSubtitle"),
+                    cta: { label: t("owner.home.open"), onPress: () => router.push("/trainer/plans" as never) },
                   },
                 ]}
               />
@@ -245,7 +265,7 @@ export default function TrainerHomeScreen() {
           ) : null}
 
           <AnimatedAppear delay={160}>
-            <SectionHeader title="Recent feedback" />
+            <SectionHeader title={t("trainer.home.recentFeedback")} />
             <Card variant="compact" contentStyle={styles.stack}>
             {recentFeedback.length ? (
               recentFeedback.map((feedback) => (
@@ -263,13 +283,17 @@ export default function TrainerHomeScreen() {
                 </Pressable>
               ))
             ) : (
-              <EmptyState icon="chatbubble-ellipses-outline" title="No recent feedback" body="Client workout feedback will appear here." />
+              <EmptyState
+                icon="chatbubble-ellipses-outline"
+                title={t("trainer.home.noRecentFeedback")}
+                body={t("trainer.home.noRecentFeedbackBody")}
+              />
             )}
             </Card>
           </AnimatedAppear>
 
           <AnimatedAppear delay={200}>
-            <SectionHeader title="Plan builder" />
+            <SectionHeader title={t("trainer.home.planBuilder")} />
             <Card
               variant="compact"
               pressable
@@ -279,7 +303,7 @@ export default function TrainerHomeScreen() {
                   : router.push("/trainer/clients" as never)
               }
             >
-              <ListRow title="Create plans manually" />
+              <ListRow title={t("trainer.home.createPlansManually")} />
             </Card>
           </AnimatedAppear>
         </ScrollView>

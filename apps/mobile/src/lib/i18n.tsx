@@ -378,7 +378,44 @@ export type TranslationKey =
   | "owner.revenue.shopPickupOrder"
   | "owner.revenue.tapToRefund"
   | "owner.revenue.thisMember"
-  | "owner.revenue.title";
+  | "owner.revenue.title"
+  | "trainer.home.activePlanWork"
+  | "trainer.home.activePlanWorkSubtitle"
+  | "trainer.home.activePlanWorkTitle"
+  | "trainer.home.activePlans"
+  | "trainer.home.classes"
+  | "trainer.home.classesSubtitle"
+  | "trainer.home.client"
+  | "trainer.home.clientFallback"
+  | "trainer.home.clientHas"
+  | "trainer.home.clientPlanSubtitle"
+  | "trainer.home.clients"
+  | "trainer.home.clientsHave"
+  | "trainer.home.clientsNeedPlan"
+  | "trainer.home.createPlanNext"
+  | "trainer.home.createPlansManually"
+  | "trainer.home.noCoachingActions"
+  | "trainer.home.noCoachingActionsBody"
+  | "trainer.home.noRecentFeedback"
+  | "trainer.home.noRecentFeedbackBody"
+  | "trainer.home.needsPlan"
+  | "trainer.home.openClasses"
+  | "trainer.home.openClients"
+  | "trainer.home.openPersonalTraining"
+  | "trainer.home.personalTraining"
+  | "trainer.home.personalTrainingSubtitle"
+  | "trainer.home.plan"
+  | "trainer.home.planBuilder"
+  | "trainer.home.planQueueClear"
+  | "trainer.home.planQueueClearBody"
+  | "trainer.home.plans"
+  | "trainer.home.recentFeedback"
+  | "trainer.home.referGym"
+  | "trainer.home.referGymAccessibility"
+  | "trainer.home.referGymSubtitle"
+  | "trainer.home.today"
+  | "trainer.home.trainerFallback"
+  | "trainer.home.trainerPlanningQueue";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -757,6 +794,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.revenue.tapToRefund": "Tap to refund",
     "owner.revenue.thisMember": "this member",
     "owner.revenue.title": "Revenue",
+    "trainer.home.activePlanWork": "Active plan work",
+    "trainer.home.activePlanWorkSubtitle": "Open Plan work to review what is in motion.",
+    "trainer.home.activePlanWorkTitle": "{{count}} {{label}} active plan work",
+    "trainer.home.activePlans": "Active plans",
+    "trainer.home.classes": "Classes",
+    "trainer.home.classesSubtitle": "Schedule group sessions members can book",
+    "trainer.home.client": "client",
+    "trainer.home.clientFallback": "Client",
+    "trainer.home.clientHas": "client has",
+    "trainer.home.clientPlanSubtitle": "{{count}} active {{label}} · {{goal}}",
+    "trainer.home.clients": "Clients",
+    "trainer.home.clientsHave": "clients have",
+    "trainer.home.clientsNeedPlan": "{{count}} {{label}} need a plan",
+    "trainer.home.createPlanNext": "Create plan next",
+    "trainer.home.createPlansManually": "Create plans manually",
+    "trainer.home.noCoachingActions": "No coaching actions today",
+    "trainer.home.noCoachingActionsBody": "You're on top of your clients. New tasks will show up here.",
+    "trainer.home.noRecentFeedback": "No recent feedback",
+    "trainer.home.noRecentFeedbackBody": "Client workout feedback will appear here.",
+    "trainer.home.needsPlan": "Needs plan",
+    "trainer.home.openClasses": "Open classes",
+    "trainer.home.openClients": "Open clients",
+    "trainer.home.openPersonalTraining": "Open personal training",
+    "trainer.home.personalTraining": "Personal Training",
+    "trainer.home.personalTrainingSubtitle": "Your own packages and PT clients",
+    "trainer.home.plan": "plan",
+    "trainer.home.planBuilder": "Plan builder",
+    "trainer.home.planQueueClear": "Plan queue clear",
+    "trainer.home.planQueueClearBody": "Every client has an active plan. Nice work.",
+    "trainer.home.plans": "plans",
+    "trainer.home.recentFeedback": "Recent feedback",
+    "trainer.home.referGym": "Refer a gym & earn",
+    "trainer.home.referGymAccessibility": "Refer a gym to Zook and earn",
+    "trainer.home.referGymSubtitle": "Earn cash when a gym you refer subscribes to Zook",
+    "trainer.home.today": "Today",
+    "trainer.home.trainerFallback": "Trainer",
+    "trainer.home.trainerPlanningQueue": "Trainer planning queue",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -1134,6 +1208,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.revenue.tapToRefund": "रिफंड के लिए टैप करें",
     "owner.revenue.thisMember": "इस मेंबर",
     "owner.revenue.title": "रेवेन्यू",
+    "trainer.home.activePlanWork": "सक्रिय प्लान काम",
+    "trainer.home.activePlanWorkSubtitle": "जो चल रहा है उसे देखने के लिए Plan work खोलें.",
+    "trainer.home.activePlanWorkTitle": "{{count}} {{label}} सक्रिय प्लान काम",
+    "trainer.home.activePlans": "सक्रिय प्लान",
+    "trainer.home.classes": "क्लासेस",
+    "trainer.home.classesSubtitle": "ग्रुप सेशन शेड्यूल करें जिन्हें मेंबर बुक कर सकें",
+    "trainer.home.client": "क्लाइंट",
+    "trainer.home.clientFallback": "क्लाइंट",
+    "trainer.home.clientHas": "क्लाइंट के पास",
+    "trainer.home.clientPlanSubtitle": "{{count}} सक्रिय {{label}} · {{goal}}",
+    "trainer.home.clients": "क्लाइंट",
+    "trainer.home.clientsHave": "क्लाइंट्स के पास",
+    "trainer.home.clientsNeedPlan": "{{count}} {{label}} को प्लान चाहिए",
+    "trainer.home.createPlanNext": "अगला प्लान बनाएं",
+    "trainer.home.createPlansManually": "प्लान मैन्युअली बनाएं",
+    "trainer.home.noCoachingActions": "आज कोई कोचिंग एक्शन नहीं",
+    "trainer.home.noCoachingActionsBody": "आपके क्लाइंट संभले हुए हैं. नए काम यहां दिखेंगे.",
+    "trainer.home.noRecentFeedback": "हाल की कोई फीडबैक नहीं",
+    "trainer.home.noRecentFeedbackBody": "क्लाइंट वर्कआउट फीडबैक यहां दिखेगी.",
+    "trainer.home.needsPlan": "प्लान चाहिए",
+    "trainer.home.openClasses": "क्लासेस खोलें",
+    "trainer.home.openClients": "क्लाइंट खोलें",
+    "trainer.home.openPersonalTraining": "पर्सनल ट्रेनिंग खोलें",
+    "trainer.home.personalTraining": "पर्सनल ट्रेनिंग",
+    "trainer.home.personalTrainingSubtitle": "आपके पैकेज और PT क्लाइंट",
+    "trainer.home.plan": "प्लान",
+    "trainer.home.planBuilder": "प्लान बिल्डर",
+    "trainer.home.planQueueClear": "प्लान क्यू साफ",
+    "trainer.home.planQueueClearBody": "हर क्लाइंट के पास सक्रिय प्लान है. अच्छा काम.",
+    "trainer.home.plans": "प्लान",
+    "trainer.home.recentFeedback": "हाल की फीडबैक",
+    "trainer.home.referGym": "जिम रेफर करें और कमाएं",
+    "trainer.home.referGymAccessibility": "Zook को जिम रेफर करें और कमाएं",
+    "trainer.home.referGymSubtitle": "आपके रेफर किए जिम के Zook subscribe करने पर cash कमाएं",
+    "trainer.home.today": "आज",
+    "trainer.home.trainerFallback": "ट्रेनर",
+    "trainer.home.trainerPlanningQueue": "ट्रेनर प्लानिंग क्यू",
   },
 };
 
