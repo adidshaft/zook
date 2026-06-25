@@ -120,6 +120,22 @@ describe("mutation safety", () => {
     ).not.toThrow();
   });
 
+  it("allows intent-marked same-site writes when the proxy origin is internal", () => {
+    expect(() =>
+      assertSafeMutationRequest(
+        createMutationRequest({
+          origin: "https://app.zookfit.in",
+          fetchSite: "same-origin",
+          hasCookieSession: true,
+          nextOrigin: "http://10.0.4.12:3000",
+          forwardedHost: "internal-zook-web.ap-south-1.elb.amazonaws.com",
+          forwardedProto: "http",
+          intent: "mutate",
+        }) as never,
+      ),
+    ).not.toThrow();
+  });
+
   it("requires the intent header when browser origin hints are absent", () => {
     expect(() =>
       assertSafeMutationRequest(

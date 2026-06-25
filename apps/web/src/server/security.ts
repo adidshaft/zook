@@ -119,9 +119,7 @@ export function assertSafeMutationRequest(
   const trustedSameSiteIntent =
     Boolean(intent) &&
     sameSiteFetch &&
-    isTrustedConfiguredOrigin(originCandidate) &&
-    (isTrustedConfiguredOrigin(requestOrigin) ||
-      isLoopbackHost(parseUrl(requestOrigin)?.hostname ?? ""));
+    isTrustedConfiguredOrigin(originCandidate);
 
   if ((!originMatches || !sameSiteFetch) && !trustedSameSiteIntent) {
     throw forbiddenError(

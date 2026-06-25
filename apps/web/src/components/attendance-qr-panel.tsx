@@ -18,6 +18,18 @@ type PendingAttendanceRecord = {
   plan?: { name?: string | null } | null;
 };
 
+function publicCheckInOrigin() {
+  const configured = process.env.NEXT_PUBLIC_WEB_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      // Fall back to production below if the env value is malformed.
+    }
+  }
+  return "https://zookfit.in";
+}
+
 export function AttendanceQrPanel({
   orgId,
   branchId,
@@ -107,15 +119,11 @@ export function AttendanceQrPanel({
     // check-in). The in-app scanner also understands this URL form, and users
     // without the app land on the /checkin web fallback. Param names are the
     // ones both the deep-link route and the in-app scanner parse.
-    const origin =
-      typeof window !== "undefined" && window.location?.origin
-        ? window.location.origin
-        : "https://zookfit.in";
     const linkParams = new URLSearchParams({ qrPayload });
     if (checkInCode) {
       linkParams.set("checkInCode", checkInCode);
     }
-    const qrContent = `${origin}/checkin?${linkParams.toString()}`;
+    const qrContent = `${publicCheckInOrigin()}/checkin?${linkParams.toString()}`;
 
     let active = true;
     setQrRenderError("");
