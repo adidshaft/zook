@@ -5,6 +5,7 @@ import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgJoinRequests } from "@/lib/domains/owner";
+import { useT } from "@/lib/i18n";
 
 const viewRedirectTargets: Record<
   string,
@@ -19,6 +20,7 @@ const viewRedirectTargets: Record<
 };
 
 export default function OwnerLayout() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -48,7 +50,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Today",
+          title: t("nav.command"),
           tabBarButtonTestID: "bottom-nav-command",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="home" focused={focused} size={size} color={color} />
@@ -58,7 +60,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="members"
         options={{
-          title: "Members",
+          title: t("nav.members"),
           tabBarButtonTestID: "bottom-nav-members",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="members" focused={focused} size={size} color={color} />
@@ -68,7 +70,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="approvals"
         options={{
-          title: "Approvals",
+          title: t("nav.approvals"),
           tabBarButtonTestID: "bottom-nav-approvals",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="approvals" focused={focused} size={size} color={color} />
@@ -78,7 +80,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="revenue"
         options={{
-          title: "Revenue",
+          title: t("nav.revenue"),
           href: canViewRevenue ? "/owner/revenue" : null,
           tabBarItemStyle: canViewRevenue ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-revenue",
@@ -90,7 +92,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: "More",
+          title: t("nav.more"),
           tabBarButtonTestID: "bottom-nav-more",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="more" focused={focused} size={size} color={color} />
@@ -100,7 +102,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="stock"
         options={{
-          title: "Stock",
+          title: t("nav.stock"),
           href: null,
           tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-stock",
@@ -112,7 +114,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="billing"
         options={{
-          title: "Billing",
+          title: t("nav.billing"),
           href: null,
           tabBarItemStyle: { display: "none" },
           tabBarButtonTestID: "bottom-nav-billing",

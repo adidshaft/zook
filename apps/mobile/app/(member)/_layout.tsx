@@ -3,9 +3,11 @@ import { useEffect } from "react";
 
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
+import { useT } from "@/lib/i18n";
 import { useGeofenceCheckout } from "@/lib/use-geofence-checkout";
 
 export default function MemberLayout() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -40,7 +42,7 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: "Home",
+            title: t("nav.home"),
             tabBarIcon: ({ color, focused, size }) => (
               <Icon name="home" focused={focused} size={size} color={color} />
             ),
@@ -49,7 +51,7 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="plan"
           options={{
-            title: "Plan",
+            title: t("nav.plans"),
             tabBarIcon: ({ color, focused, size }) => (
               <Icon name="plan" focused={focused} size={size} color={color} />
             ),
@@ -58,7 +60,7 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="scan"
           options={{
-            title: "Scan",
+            title: t("nav.scan"),
             tabBarIcon: ({ color, size }) => (
               <Icon name="scan" size={size} color={color} />
             ),
@@ -67,7 +69,7 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="progress"
           options={{
-            title: "Progress",
+            title: t("nav.tracking"),
             tabBarIcon: ({ color, focused, size }) => (
               <Icon name="progress" focused={focused} size={size} color={color} />
             ),
@@ -76,7 +78,7 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="shop"
           options={{
-            title: "Shop",
+            title: t("nav.shop"),
             tabBarIcon: ({ color, focused, size }) => (
               <Icon name="shop" focused={focused} size={size} color={color} />
             ),
@@ -84,11 +86,11 @@ export default function MemberLayout() {
         />
         <Tabs.Screen
           name="diet"
-          options={{ title: "Diet", href: null, tabBarItemStyle: { display: "none" } }}
+          options={{ title: t("nav.diet"), href: null, tabBarItemStyle: { display: "none" } }}
         />
         <Tabs.Screen
           name="coaching"
-          options={{ title: "Coaching", href: null, tabBarItemStyle: { display: "none" } }}
+          options={{ title: t("nav.coaching"), href: null, tabBarItemStyle: { display: "none" } }}
         />
       </Tabs>
       {geofenceCheckout.permissionSheet}

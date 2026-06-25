@@ -5,6 +5,7 @@ import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
 import { useHasPermission } from "@/lib/auth";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
+import { useT } from "@/lib/i18n";
 
 const viewRedirectTargets: Record<string, "/reception" | "/reception/members" | "/reception/payments" | "/reception/orders"> = {
   home: "/reception",
@@ -14,6 +15,7 @@ const viewRedirectTargets: Record<string, "/reception" | "/reception/members" | 
 };
 
 export default function ReceptionLayout() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
@@ -33,7 +35,9 @@ export default function ReceptionLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => <RoleTabBar {...props} badges={{ index: pendingCount }} />}
+      tabBar={(props) => (
+        <RoleTabBar {...props} badges={{ index: pendingCount }} centerAction={{ routeName: "entry-qr" }} />
+      )}
       screenOptions={{
         headerShown: false,
       }}
@@ -41,7 +45,7 @@ export default function ReceptionLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Front desk",
+          title: t("nav.desk"),
           tabBarButtonTestID: "bottom-nav-desk",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="desk" focused={focused} size={size} color={color} />
@@ -51,7 +55,7 @@ export default function ReceptionLayout() {
       <Tabs.Screen
         name="members"
         options={{
-          title: "Members",
+          title: t("nav.members"),
           tabBarButtonTestID: "bottom-nav-members",
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="members" focused={focused} size={size} color={color} />
@@ -59,9 +63,17 @@ export default function ReceptionLayout() {
         }}
       />
       <Tabs.Screen
+        name="entry-qr"
+        options={{
+          title: t("nav.scan"),
+          tabBarButtonTestID: "bottom-nav-scan",
+          tabBarIcon: ({ color, size }) => <Icon name="scan" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="payments"
         options={{
-          title: "Payments",
+          title: t("nav.payments"),
           href: canRecordPayments ? "/reception/payments" : null,
           tabBarButtonTestID: "bottom-nav-payments",
           tabBarIcon: ({ color, focused, size }) => (
@@ -79,7 +91,7 @@ export default function ReceptionLayout() {
           },
         }}
         options={{
-          title: "Orders",
+          title: t("nav.orders"),
           href: canFulfillOrders ? "/reception/orders" : null,
           tabBarItemStyle: canFulfillOrders ? undefined : { display: "none" },
           tabBarButtonTestID: "bottom-nav-orders",
@@ -94,10 +106,6 @@ export default function ReceptionLayout() {
       />
       <Tabs.Screen
         name="verification/[recordId]"
-        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
-      />
-      <Tabs.Screen
-        name="entry-qr"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen

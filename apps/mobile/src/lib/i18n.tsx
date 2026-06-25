@@ -22,8 +22,11 @@ export type TranslationKey =
   | "network.offline"
   | "nav.home"
   | "nav.plans"
+  | "nav.billing"
   | "nav.checkIn"
+  | "nav.coaching"
   | "nav.scan"
+  | "nav.diet"
   | "nav.tracking"
   | "nav.more"
   | "nav.shop"
@@ -42,6 +45,7 @@ export type TranslationKey =
   | "nav.revenue"
   | "nav.stock"
   | "nav.profile"
+  | "nav.payouts"
   | "notifications.today"
   | "notifications.yesterday"
   | "notifications.earlierThisWeek"
@@ -489,8 +493,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "network.offline": "Working offline. Data may be stale.",
     "nav.home": "Home",
     "nav.plans": "Plans",
+    "nav.billing": "Billing",
     "nav.checkIn": "Check in",
+    "nav.coaching": "Coaching",
     "nav.scan": "Scan",
+    "nav.diet": "Diet",
     "nav.tracking": "Tracking",
     "nav.more": "More",
     "nav.shop": "Shop",
@@ -509,6 +516,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.revenue": "Revenue",
     "nav.stock": "Stock",
     "nav.profile": "You",
+    "nav.payouts": "Payouts",
     "notifications.today": "Today",
     "notifications.yesterday": "Yesterday",
     "notifications.earlierThisWeek": "Earlier this week",
@@ -958,8 +966,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "nav.home": "होम",
     "nav.plans": "प्लान",
+    "nav.billing": "बिलिंग",
     "nav.checkIn": "चेक इन",
+    "nav.coaching": "कोचिंग",
     "nav.scan": "स्कैन",
+    "nav.diet": "डाइट",
     "nav.tracking": "ट्रैकिंग",
     "nav.more": "और",
     "nav.shop": "शॉप",
@@ -978,6 +989,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.revenue": "रेवेन्यू",
     "nav.stock": "स्टॉक",
     "nav.profile": "आप",
+    "nav.payouts": "पेयआउट",
     "notifications.today": "आज",
     "notifications.yesterday": "कल",
     "notifications.earlierThisWeek": "इस हफ्ते पहले",

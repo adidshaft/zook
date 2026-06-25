@@ -2,6 +2,7 @@ import { Tabs, useLocalSearchParams, usePathname, useRouter } from "expo-router"
 import { useEffect } from "react";
 import { Icon } from "@/components/primitives";
 import { RoleTabBar } from "@/components/role-tab-bar";
+import { useT } from "@/lib/i18n";
 
 const viewRedirectTargets: Record<string, "/trainer" | "/trainer/clients" | "/trainer/plans" | "/trainer/payouts"> = {
   home: "/trainer",
@@ -11,6 +12,7 @@ const viewRedirectTargets: Record<string, "/trainer" | "/trainer/clients" | "/tr
 };
 
 export default function TrainerLayout() {
+  const t = useT();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
   const pathname = usePathname();
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function TrainerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Today",
+          title: t("nav.command"),
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="home" focused={focused} size={size} color={color} />
           ),
@@ -40,7 +42,7 @@ export default function TrainerLayout() {
       <Tabs.Screen
         name="clients/index"
         options={{
-          title: "Clients",
+          title: t("nav.clients"),
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="members" focused={focused} size={size} color={color} />
           ),
@@ -49,7 +51,7 @@ export default function TrainerLayout() {
       <Tabs.Screen
         name="plans"
         options={{
-          title: "Plans",
+          title: t("nav.plans"),
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="plan" focused={focused} size={size} color={color} />
           ),
@@ -58,7 +60,7 @@ export default function TrainerLayout() {
       <Tabs.Screen
         name="payouts"
         options={{
-          title: "Payouts",
+          title: t("nav.payouts"),
           tabBarIcon: ({ color, focused, size }) => (
             <Icon name="payouts" focused={focused} size={size} color={color} />
           ),
@@ -78,6 +80,10 @@ export default function TrainerLayout() {
       />
       <Tabs.Screen
         name="class-roster"
+        options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
+      />
+      <Tabs.Screen
+        name="payout-settings"
         options={{ href: null, tabBarItemStyle: { display: "none" }, tabBarStyle: { display: "none" } }}
       />
     </Tabs>
