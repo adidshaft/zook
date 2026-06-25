@@ -352,7 +352,19 @@ export type TranslationKey =
   | "owner.home.today"
   | "owner.home.todayCheckIns"
   | "owner.home.transactionNeeds"
-  | "owner.home.transactionsNeed";
+  | "owner.home.transactionsNeed"
+  | "owner.members.day"
+  | "owner.members.days"
+  | "owner.members.daysLeft"
+  | "owner.members.expiringReminderBody"
+  | "owner.members.expiringReminderTitle"
+  | "owner.members.reminderNotSent"
+  | "owner.members.reminderSent"
+  | "owner.members.sendReminder"
+  | "owner.members.soon"
+  | "owner.members.title"
+  | "owner.members.total"
+  | "owner.members.tryAgain";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -705,6 +717,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.todayCheckIns": "Today check-ins",
     "owner.home.transactionNeeds": "transaction needs",
     "owner.home.transactionsNeed": "transactions need",
+    "owner.members.day": "day",
+    "owner.members.days": "days",
+    "owner.members.daysLeft": "{{count}} {{label}} left",
+    "owner.members.expiringReminderBody": "Your membership ends on {{date}}. Renew in the app.",
+    "owner.members.expiringReminderTitle": "Membership expiring soon",
+    "owner.members.reminderNotSent": "Reminder not sent",
+    "owner.members.reminderSent": "Reminder sent to {{name}}.",
+    "owner.members.sendReminder": "Send reminder",
+    "owner.members.soon": "soon",
+    "owner.members.title": "Members",
+    "owner.members.total": "{{count}} total",
+    "owner.members.tryAgain": "Try again.",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -1056,6 +1080,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.todayCheckIns": "आज के चेक-इन",
     "owner.home.transactionNeeds": "ट्रांजैक्शन को चाहिए",
     "owner.home.transactionsNeed": "ट्रांजैक्शन को चाहिए",
+    "owner.members.day": "दिन",
+    "owner.members.days": "दिन",
+    "owner.members.daysLeft": "{{count}} {{label}} बाकी",
+    "owner.members.expiringReminderBody": "आपकी मेंबरशिप {{date}} को खत्म होती है. ऐप में रिन्यू करें.",
+    "owner.members.expiringReminderTitle": "मेंबरशिप जल्द खत्म हो रही है",
+    "owner.members.reminderNotSent": "रिमाइंडर नहीं भेजा गया",
+    "owner.members.reminderSent": "{{name}} को रिमाइंडर भेजा गया.",
+    "owner.members.sendReminder": "रिमाइंडर भेजें",
+    "owner.members.soon": "जल्द",
+    "owner.members.title": "मेंबर",
+    "owner.members.total": "कुल {{count}}",
+    "owner.members.tryAgain": "फिर कोशिश करें.",
   },
 };
 

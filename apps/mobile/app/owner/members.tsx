@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
-import { BranchSelectorChip, ProfileShortcut, ScreenHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, HeaderActions, ScreenHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAuth } from "@/lib/auth";
 import { ownerApi } from "@/lib/domain-api";
 import { useOrgMembers } from "@/lib/domains/owner";
 import { formatLongDate } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -18,6 +19,7 @@ type MemberFilter = "all" | "active" | "expiring" | "expired";
 
 export default function OwnerMembersScreen() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ filter?: string | string[] }>();
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
@@ -44,20 +46,24 @@ export default function OwnerMembersScreen() {
     async (input: { memberUserId: string; name: string; endsAt?: string | null }) => {
       if (!token || !activeOrgId) return;
       try {
-        const dateLabel = formatLongDate(input.endsAt, "soon");
+        const dateLabel = formatLongDate(input.endsAt, t("owner.members.soon"));
         await ownerApi.sendMemberNotification({
           token,
           orgId: activeOrgId,
           memberUserId: input.memberUserId,
-          title: "Membership expiring soon",
-          body: `Your membership ends on ${dateLabel}. Renew in the app.`,
+          title: t("owner.members.expiringReminderTitle"),
+          body: t("owner.members.expiringReminderBody", { date: dateLabel }),
           metadata: { reason: "manual_expiring_membership_reminder", endsAt: input.endsAt },
         });
-        showToast({ tone: "success", haptic: "success", message: `Reminder sent to ${input.name}.` });
+        showToast({
+          tone: "success",
+          haptic: "success",
+          message: t("owner.members.reminderSent", { name: input.name }),
+        });
       } catch (error) {
         showToast({
-          title: "Reminder not sent",
-          message: error instanceof Error ? error.message : "Try again.",
+          title: t("owner.members.reminderNotSent"),
+          message: error instanceof Error ? error.message : t("owner.members.tryAgain"),
           tone: "danger",
           haptic: "error",
         });
@@ -104,23 +110,26 @@ export default function OwnerMembersScreen() {
                 : "expired";
         return {
           id: member.profile.userId,
-          name: member.user?.name ?? "Member",
+          name: member.user?.name ?? t("more.fallbackName"),
           email: member.user?.email,
           phone: member.user?.phone,
           avatarUrl: member.user?.profilePhotoUrl ?? member.profile.profilePhotoUrl,
           status: normalizedStatus,
           meta:
             normalizedStatus === "expiring" && daysLeft !== null
-              ? `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`
+              ? t("owner.members.daysLeft", {
+                  count: daysLeft,
+                  label: daysLeft === 1 ? t("owner.members.day") : t("owner.members.days"),
+                })
               : (member.user?.fitnessGoal ?? member.profile.fitnessGoal ?? undefined),
           action:
             normalizedStatus === "expiring"
               ? {
-                  label: "Send reminder",
+                  label: t("owner.members.sendReminder"),
                   onPress: () =>
                     void sendReminder({
                       memberUserId: member.profile.userId,
-                      name: member.user?.name ?? "Member",
+                      name: member.user?.name ?? t("more.fallbackName"),
                       endsAt: member.activeSubscription?.endsAt,
                     }),
                 }
@@ -145,15 +154,15 @@ export default function OwnerMembersScreen() {
             testID="owner-view-members"
             header={
               <ScreenHeader
-                title="Members"
-                subtitle={`${membersQuery.data?.members.length ?? 0} total`}
+                title={t("owner.members.title")}
+                subtitle={t("owner.members.total", { count: membersQuery.data?.members.length ?? 0 })}
                 contextSlot={
                   <>
                     <RoleSwitcherContextPill />
                     <BranchSelectorChip />
                   </>
                 }
-                trailing={<ProfileShortcut />}
+                trailing={<HeaderActions showBell />}
               />
             }
             items={memberItems}
