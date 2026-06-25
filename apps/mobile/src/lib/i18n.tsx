@@ -310,7 +310,49 @@ export type TranslationKey =
   | "more.profile.subtitle"
   | "more.settings.title"
   | "more.settings.subtitle"
-  | "more.fallbackName";
+  | "more.fallbackName"
+  | "owner.home.activeMembers"
+  | "owner.home.allClear"
+  | "owner.home.approvals"
+  | "owner.home.approvalsWaiting"
+  | "owner.home.approvalsWaitingSubtitle"
+  | "owner.home.billingSetupBody"
+  | "owner.home.billingSetupRequired"
+  | "owner.home.collectedPickup"
+  | "owner.home.createMembershipPlans"
+  | "owner.home.displayCheckInQr"
+  | "owner.home.expiringSoon"
+  | "owner.home.expiringSoonSubtitle"
+  | "owner.home.finishGymSetup"
+  | "owner.home.gymFallback"
+  | "owner.home.inviteStaff"
+  | "owner.home.join"
+  | "owner.home.lowStock"
+  | "owner.home.lowStockSubtitle"
+  | "owner.home.mainBranch"
+  | "owner.home.membership"
+  | "owner.home.memberships"
+  | "owner.home.needsAttention"
+  | "owner.home.open"
+  | "owner.home.openBilling"
+  | "owner.home.paymentExceptions"
+  | "owner.home.paymentExceptionsSubtitle"
+  | "owner.home.pendingReviews"
+  | "owner.home.productIs"
+  | "owner.home.productsAre"
+  | "owner.home.request"
+  | "owner.home.requests"
+  | "owner.home.revenue"
+  | "owner.home.review"
+  | "owner.home.reviews"
+  | "owner.home.scan"
+  | "owner.home.setup"
+  | "owner.home.shareJoinLink"
+  | "owner.home.shareJoinMessage"
+  | "owner.home.today"
+  | "owner.home.todayCheckIns"
+  | "owner.home.transactionNeeds"
+  | "owner.home.transactionsNeed";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -620,6 +662,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.settings.title": "Settings",
     "more.settings.subtitle": "Language, roles, privacy, and account.",
     "more.fallbackName": "Member",
+    "owner.home.activeMembers": "Active members",
+    "owner.home.allClear": "All clear",
+    "owner.home.approvals": "Approvals",
+    "owner.home.approvalsWaiting": "Approvals waiting",
+    "owner.home.approvalsWaitingSubtitle": "{{join}} join {{joinLabel}} · {{scans}} scan {{scanLabel}}",
+    "owner.home.billingSetupBody":
+      "Trial access is on, but owner/admin writes need a SaaS mandate before the gym can operate normally.",
+    "owner.home.billingSetupRequired": "Billing setup required",
+    "owner.home.collectedPickup": "Collected + pickup",
+    "owner.home.createMembershipPlans": "Create membership plans",
+    "owner.home.displayCheckInQr": "Display your check-in QR",
+    "owner.home.expiringSoon": "Expiring soon",
+    "owner.home.expiringSoonSubtitle": "{{count}} active {{label}} in the next 7 days",
+    "owner.home.finishGymSetup": "Finish gym setup",
+    "owner.home.gymFallback": "Gym",
+    "owner.home.inviteStaff": "Invite staff",
+    "owner.home.join": "join",
+    "owner.home.lowStock": "Low stock",
+    "owner.home.lowStockSubtitle": "{{count}} {{label}} under threshold",
+    "owner.home.mainBranch": "Main branch",
+    "owner.home.membership": "membership",
+    "owner.home.memberships": "memberships",
+    "owner.home.needsAttention": "Needs attention",
+    "owner.home.open": "Open",
+    "owner.home.openBilling": "Open billing",
+    "owner.home.paymentExceptions": "Payment exceptions",
+    "owner.home.paymentExceptionsSubtitle": "{{count}} {{action}} review",
+    "owner.home.pendingReviews": "{{count}} pending {{label}}",
+    "owner.home.productIs": "product is",
+    "owner.home.productsAre": "products are",
+    "owner.home.request": "request",
+    "owner.home.requests": "requests",
+    "owner.home.revenue": "Revenue",
+    "owner.home.review": "review",
+    "owner.home.reviews": "reviews",
+    "owner.home.scan": "scan",
+    "owner.home.setup": "Setup",
+    "owner.home.shareJoinLink": "Share your join link",
+    "owner.home.shareJoinMessage": "Join my gym on Zook: {{url}}",
+    "owner.home.today": "Today",
+    "owner.home.todayCheckIns": "Today check-ins",
+    "owner.home.transactionNeeds": "transaction needs",
+    "owner.home.transactionsNeed": "transactions need",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -928,6 +1013,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.settings.title": "सेटिंग्स",
     "more.settings.subtitle": "भाषा, रोल, प्राइवेसी और अकाउंट.",
     "more.fallbackName": "मेंबर",
+    "owner.home.activeMembers": "सक्रिय मेंबर",
+    "owner.home.allClear": "सब ठीक",
+    "owner.home.approvals": "मंजूरी",
+    "owner.home.approvalsWaiting": "मंजूरी बाकी",
+    "owner.home.approvalsWaitingSubtitle": "{{join}} जॉइन {{joinLabel}} · {{scans}} स्कैन {{scanLabel}}",
+    "owner.home.billingSetupBody":
+      "ट्रायल एक्सेस चालू है, लेकिन जिम सामान्य रूप से चलाने से पहले owner/admin बदलावों के लिए SaaS mandate चाहिए.",
+    "owner.home.billingSetupRequired": "बिलिंग सेटअप जरूरी",
+    "owner.home.collectedPickup": "कलेक्टेड + पिकअप",
+    "owner.home.createMembershipPlans": "मेंबरशिप प्लान बनाएं",
+    "owner.home.displayCheckInQr": "अपना चेक-इन QR दिखाएं",
+    "owner.home.expiringSoon": "जल्द खत्म",
+    "owner.home.expiringSoonSubtitle": "अगले 7 दिनों में {{count}} सक्रिय {{label}}",
+    "owner.home.finishGymSetup": "जिम सेटअप पूरा करें",
+    "owner.home.gymFallback": "जिम",
+    "owner.home.inviteStaff": "स्टाफ आमंत्रित करें",
+    "owner.home.join": "जॉइन",
+    "owner.home.lowStock": "कम स्टॉक",
+    "owner.home.lowStockSubtitle": "{{count}} {{label}} threshold से कम",
+    "owner.home.mainBranch": "मुख्य ब्रांच",
+    "owner.home.membership": "मेंबरशिप",
+    "owner.home.memberships": "मेंबरशिप",
+    "owner.home.needsAttention": "ध्यान चाहिए",
+    "owner.home.open": "खोलें",
+    "owner.home.openBilling": "बिलिंग खोलें",
+    "owner.home.paymentExceptions": "पेमेंट अपवाद",
+    "owner.home.paymentExceptionsSubtitle": "{{count}} {{action}} रिव्यू",
+    "owner.home.pendingReviews": "{{count}} पेंडिंग {{label}}",
+    "owner.home.productIs": "प्रोडक्ट है",
+    "owner.home.productsAre": "प्रोडक्ट हैं",
+    "owner.home.request": "रिक्वेस्ट",
+    "owner.home.requests": "रिक्वेस्ट",
+    "owner.home.revenue": "रेवेन्यू",
+    "owner.home.review": "रिव्यू",
+    "owner.home.reviews": "रिव्यू",
+    "owner.home.scan": "स्कैन",
+    "owner.home.setup": "सेटअप",
+    "owner.home.shareJoinLink": "अपना जॉइन लिंक शेयर करें",
+    "owner.home.shareJoinMessage": "Zook पर मेरे जिम से जुड़ें: {{url}}",
+    "owner.home.today": "आज",
+    "owner.home.todayCheckIns": "आज के चेक-इन",
+    "owner.home.transactionNeeds": "ट्रांजैक्शन को चाहिए",
+    "owner.home.transactionsNeed": "ट्रांजैक्शन को चाहिए",
   },
 };
 

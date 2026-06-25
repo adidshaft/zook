@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, ProfileShortcut, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, HeaderActions, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
@@ -15,12 +15,14 @@ import { useOrgRecentPayments } from "@/lib/domains/payments";
 import { formatBranchName, formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useAuth, useHasPermission } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { OwnerDashboardCharts } from "@/features/owner/components/dashboard-charts";
 
 export default function OwnerCommandScreen() {
   const router = useRouter();
+  const t = useT();
   const queryClient = useQueryClient();
   const { activeOrgId } = useAuth();
   const canManageBilling = useHasPermission("ORG_MANAGE_BILLING");
@@ -53,30 +55,30 @@ export default function OwnerCommandScreen() {
     ? [
         {
           id: "plans",
-          label: "Create membership plans",
+          label: t("owner.home.createMembershipPlans"),
           done: setupStatus.hasMembershipPlans,
           onPress: () => router.push("/owner/plans"),
         },
         {
           id: "qr",
-          label: "Display your check-in QR",
+          label: t("owner.home.displayCheckInQr"),
           done: setupStatus.hasQrDisplayed,
           onPress: () => router.push("/owner/entry-qr"),
         },
         {
           id: "staff",
-          label: "Invite staff",
+          label: t("owner.home.inviteStaff"),
           done: setupStatus.staffCount > 1,
           onPress: () => router.push("/owner/staff"),
         },
         {
           id: "join",
-          label: "Share your join link",
+          label: t("owner.home.shareJoinLink"),
           done: setupStatus.memberCount > 1,
           onPress: () => {
             const username = roleContext?.org?.username;
             const url = username ? `https://zookfit.in/g/${username}` : "https://zookfit.in";
-            void Share.share({ message: `Join my gym on Zook: ${url}`, url });
+            void Share.share({ message: t("owner.home.shareJoinMessage", { url }), url });
           },
         },
       ]
@@ -91,41 +93,55 @@ export default function OwnerCommandScreen() {
     pendingApprovals > 0
       ? {
           id: "approvals",
-          title: "Approvals waiting",
-          subtitle: `${joinRequests.length} join ${joinRequests.length === 1 ? "request" : "requests"} · ${attentionAttempts.length} scan ${attentionAttempts.length === 1 ? "review" : "reviews"}`,
+          title: t("owner.home.approvalsWaiting"),
+          subtitle: t("owner.home.approvalsWaitingSubtitle", {
+            join: joinRequests.length,
+            joinLabel: joinRequests.length === 1 ? t("owner.home.request") : t("owner.home.requests"),
+            scans: attentionAttempts.length,
+            scanLabel: attentionAttempts.length === 1 ? t("owner.home.review") : t("owner.home.reviews"),
+          }),
           tone: "amber",
           icon: "checkmark-done-outline",
-          cta: { label: "Approvals", onPress: () => router.push("/owner/approvals") },
+          cta: { label: t("owner.home.approvals"), onPress: () => router.push("/owner/approvals") },
         }
       : null,
     paymentExceptionCount > 0
       ? {
           id: "revenue",
-          title: "Payment exceptions",
-          subtitle: `${paymentExceptionCount} ${paymentExceptionCount === 1 ? "transaction needs" : "transactions need"} review`,
+          title: t("owner.home.paymentExceptions"),
+          subtitle: t("owner.home.paymentExceptionsSubtitle", {
+            count: paymentExceptionCount,
+            action: paymentExceptionCount === 1 ? t("owner.home.transactionNeeds") : t("owner.home.transactionsNeed"),
+          }),
           tone: "amber",
           icon: "card-outline",
-          cta: { label: "Open", onPress: () => router.push("/owner/revenue") },
+          cta: { label: t("owner.home.open"), onPress: () => router.push("/owner/revenue") },
         }
       : null,
     lowStock.length > 0
       ? {
           id: "stock",
-          title: "Low stock",
-          subtitle: `${lowStock.length} ${lowStock.length === 1 ? "product is" : "products are"} under threshold`,
+          title: t("owner.home.lowStock"),
+          subtitle: t("owner.home.lowStockSubtitle", {
+            count: lowStock.length,
+            label: lowStock.length === 1 ? t("owner.home.productIs") : t("owner.home.productsAre"),
+          }),
           tone: "amber",
           icon: "cube-outline",
-          cta: { label: "Open", onPress: () => router.push("/owner/stock") },
+          cta: { label: t("owner.home.open"), onPress: () => router.push("/owner/stock") },
         }
       : null,
     expiringSoon > 0
       ? {
           id: "memberships",
-          title: "Expiring soon",
-          subtitle: `${expiringSoon} active ${expiringSoon === 1 ? "membership" : "memberships"} in the next 7 days`,
+          title: t("owner.home.expiringSoon"),
+          subtitle: t("owner.home.expiringSoonSubtitle", {
+            count: expiringSoon,
+            label: expiringSoon === 1 ? t("owner.home.membership") : t("owner.home.memberships"),
+          }),
           tone: "blue",
           icon: "time-outline",
-          cta: { label: "Open", onPress: () => router.push("/owner/members?filter=expiring" as never) },
+          cta: { label: t("owner.home.open"), onPress: () => router.push("/owner/members?filter=expiring" as never) },
         }
       : null,
   ];
@@ -142,15 +158,15 @@ export default function OwnerCommandScreen() {
   const branchName =
     dashboard?.branchScope?.selectedBranch?.name ??
     dashboard?.branchScope?.defaultBranch?.name ??
-    "Main branch";
-  const orgName = roleContext?.org?.name ?? "Gym";
+    t("owner.home.mainBranch");
+  const orgName = roleContext?.org?.name ?? t("owner.home.gymFallback");
   const branchLabel = formatBranchName(orgName, branchName, {
     collapseOrgMatch: true,
-    fallback: "Main branch",
+    fallback: t("owner.home.mainBranch"),
   });
   const metrics: MetricTileItem[] = [
     {
-      label: "Active members",
+      label: t("owner.home.activeMembers"),
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
       hint: branchLabel ?? undefined,
       tone: "blue",
@@ -158,28 +174,31 @@ export default function OwnerCommandScreen() {
       onPress: () => router.push("/owner/members"),
     },
     {
-      label: "Today check-ins",
+      label: t("owner.home.todayCheckIns"),
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
       hint:
         (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
-          ? `${dashboard?.summary?.pendingAttendanceApprovals ?? 0} pending ${(dashboard?.summary?.pendingAttendanceApprovals ?? 0) === 1 ? "review" : "reviews"}`
+          ? t("owner.home.pendingReviews", {
+              count: dashboard?.summary?.pendingAttendanceApprovals ?? 0,
+              label: (dashboard?.summary?.pendingAttendanceApprovals ?? 0) === 1 ? t("owner.home.review") : t("owner.home.reviews"),
+            })
           : undefined,
       tone: "blue",
       icon: "qr-code-outline",
       onPress: () => router.push("/owner/approvals"),
     },
     {
-      label: "Revenue",
+      label: t("owner.home.revenue"),
       value: formatInr(dashboard?.summary?.revenuePaise ?? 0),
-      hint: "Collected + pickup",
+      hint: t("owner.home.collectedPickup"),
       tone: "amber",
       icon: "trending-up-outline",
       onPress: () => router.push("/owner/revenue"),
     },
     {
-      label: "Approvals",
+      label: t("owner.home.approvals"),
       value: pendingApprovals,
-      hint: pendingApprovals > 0 ? "Needs attention" : undefined,
+      hint: pendingApprovals > 0 ? t("owner.home.needsAttention") : undefined,
       tone: "violet",
       icon: "checkmark-done-outline",
       onPress: () => router.push("/owner/approvals"),
@@ -214,10 +233,10 @@ export default function OwnerCommandScreen() {
           }}
         >
           <ScreenHeader
-            title="Today"
+            title={t("owner.home.today")}
             subtitle={orgName}
             titleAccessory={<BranchSelectorChip />}
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
             scrollY={scrollY}
           />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
@@ -226,7 +245,7 @@ export default function OwnerCommandScreen() {
             <>
               {showSetupChecklist ? (
                 <AnimatedAppear delay={0}>
-                  <SetupChecklist title="Finish gym setup" steps={setupSteps} />
+                  <SetupChecklist title={t("owner.home.finishGymSetup")} steps={setupSteps} />
                 </AnimatedAppear>
               ) : null}
               {!billingReady ? (
@@ -234,14 +253,15 @@ export default function OwnerCommandScreen() {
                   <Card variant="warning" contentStyle={styles.billingCard}>
                     <View style={styles.billingHeader}>
                       <View style={styles.billingCopy}>
-                        <Text style={[styles.billingTitle, { color: palette.text.primary }]}>Billing setup required</Text>
+                        <Text style={[styles.billingTitle, { color: palette.text.primary }]}>
+                          {t("owner.home.billingSetupRequired")}
+                        </Text>
                         <Text style={[styles.billingBody, { color: palette.text.secondary }]}>
-                          Trial access is on, but owner/admin writes need a SaaS mandate before the
-                          gym can operate normally.
+                          {t("owner.home.billingSetupBody")}
                         </Text>
                       </View>
                       <StatusChip
-                        status={subscription ? titleCaseFromCode(subscription.status) : "Setup"}
+                        status={subscription ? titleCaseFromCode(subscription.status) : t("owner.home.setup")}
                         tone={toneForSaasSubscriptionStatus(subscription?.status)}
                       />
                     </View>
@@ -250,7 +270,7 @@ export default function OwnerCommandScreen() {
                       icon="card-outline"
                       onPress={() => router.push("/owner/billing" as never)}
                     >
-                      Open billing
+                      {t("owner.home.openBilling")}
                     </ZookButton>
                   </Card>
                 </AnimatedAppear>
@@ -264,7 +284,7 @@ export default function OwnerCommandScreen() {
                 ) : (
                   <Card variant="compact">
                     <EmptyState
-                      title="All clear"
+                      title={t("owner.home.allClear")}
                     />
                   </Card>
                 )}
