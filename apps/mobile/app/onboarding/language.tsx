@@ -23,7 +23,7 @@ const languageOptions: LanguageOption[] = [
 export default function OnboardingLanguageStep() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { preference, setLocalePreference } = useI18n();
+  const { preference, setLocalePreference, t } = useI18n();
   const [selected, setSelected] = useState<LocalePreference>(preference);
   const [busy, setBusy] = useState(false);
   const { palette } = useTheme();
@@ -35,8 +35,8 @@ export default function OnboardingLanguageStep() {
       router.replace("/onboarding/value-props" as never);
     } catch {
       showToast({
-        title: "Couldn't save language",
-        message: "Try again.",
+        title: t("onboarding.couldNotSaveLanguage"),
+        message: t("shop.tryAgain"),
         tone: "amber",
         haptic: "warning",
       });
@@ -55,8 +55,8 @@ export default function OnboardingLanguageStep() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.brand, { color: palette.text.primary }]}>Pick your language</Text>
-          <Text style={[styles.kicker, { color: palette.text.secondary }]}>You can change this any time in Settings.</Text>
+          <Text style={[styles.brand, { color: palette.text.primary }]}>{t("onboarding.pickLanguage")}</Text>
+          <Text style={[styles.kicker, { color: palette.text.secondary }]}>{t("onboarding.changeLanguageAnytime")}</Text>
         </View>
 
         <View style={styles.list}>
@@ -101,7 +101,7 @@ export default function OnboardingLanguageStep() {
           onPress={continueOn}
           disabled={busy}
         >
-          {busy ? "Saving..." : "Continue"}
+          {busy ? t("settings.saving") : t("onboarding.continue")}
         </ZookButton>
       </View>
     </View>

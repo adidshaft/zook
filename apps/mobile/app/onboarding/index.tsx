@@ -11,6 +11,7 @@ import Reanimated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/primitives";
+import { useT } from "@/lib/i18n";
 import { useReduceMotion } from "@/lib/motion";
 import { layout, useTheme } from "@/lib/theme";
 
@@ -19,6 +20,7 @@ export default function OnboardingSplash() {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
   const { palette } = useTheme();
+  const t = useT();
   const navigatedRef = useRef(false);
   const useStaticIntro = reduceMotion || Platform.OS === "android";
   const wordmarkOpacity = useSharedValue(useStaticIntro ? 1 : 0);
@@ -63,7 +65,7 @@ export default function OnboardingSplash() {
     <Pressable
       testID="onboarding-intro-screen"
       accessibilityRole="button"
-      accessibilityLabel="Skip intro"
+      accessibilityLabel={t("onboarding.skipIntro")}
       onPress={navigateNext}
       style={[styles.screen, { backgroundColor: palette.bg.app, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}
     >
@@ -80,10 +82,10 @@ export default function OnboardingSplash() {
         >
           <View style={styles.wordmark}>
             <BrandMark size="lg" />
-            <Text style={[styles.wordmarkText, { color: palette.text.primary }]}>Zook</Text>
+            <Text style={[styles.wordmarkText, { color: palette.text.primary }]}>{t("onboarding.brand")}</Text>
           </View>
           <Text style={[styles.heroSubtitle, { color: palette.text.secondary }]}>
-            Check-ins, memberships, plans, and the front desk flow in one place.
+            {t("onboarding.splashSubtitle")}
           </Text>
         </Reanimated.View>
         <Reanimated.View style={[styles.scanMark, markStyle]}>
@@ -96,7 +98,7 @@ export default function OnboardingSplash() {
               },
             ]}
           >
-            <Text style={[styles.scanLabel, { color: palette.text.primary }]}>Gym ops, without the clutter.</Text>
+            <Text style={[styles.scanLabel, { color: palette.text.primary }]}>{t("onboarding.splashBadge")}</Text>
           </View>
         </Reanimated.View>
       </View>

@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { IconBubble, ZookButton } from "@/components/primitives";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { setStoredValue } from "@/lib/storage";
 import { gradients, gradientsLight, layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -24,29 +25,29 @@ const valueProps: Array<{
   icon: keyof typeof Ionicons.glyphMap;
   tone: "lime" | "blue" | "violet";
   gradient: (mode: "light" | "dark") => readonly [string, string];
-  eyebrow: string;
-  copy: string;
+  eyebrowKey: TranslationKey;
+  copyKey: TranslationKey;
 }> = [
   {
     icon: "location-outline",
     tone: "lime",
     gradient: (mode) => (mode === "light" ? gradientsLight.heroCardAccent : gradients.heroCardAccent),
-    eyebrow: "Find your gym",
-    copy: "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
+    eyebrowKey: "onboarding.findGym",
+    copyKey: "onboarding.findGymCopy",
   },
   {
     icon: "barbell-outline",
     tone: "blue",
     gradient: (mode) => (mode === "light" ? gradientsLight.classBlue : gradients.classBlue),
-    eyebrow: "Train & track",
-    copy: "Scan in seconds, follow your plan, and watch every workout add up.",
+    eyebrowKey: "onboarding.trainTrack",
+    copyKey: "onboarding.trainTrackCopy",
   },
   {
     icon: "sparkles-outline",
     tone: "violet",
     gradient: (mode) => (mode === "light" ? gradientsLight.classViolet : gradients.classViolet),
-    eyebrow: "All in one",
-    copy: "Memberships, classes, payments and store pickup — all in one place.",
+    eyebrowKey: "onboarding.allInOne",
+    copyKey: "onboarding.allInOneCopy",
   },
 ];
 
@@ -65,6 +66,7 @@ export function ValuePropsStep() {
   const [busy, setBusy] = useState(false);
   const cardWidth = width;
   const { palette, mode } = useTheme();
+  const t = useT();
 
   function clearAutoScrollTimer() {
     if (timerRef.current) {
@@ -107,8 +109,8 @@ export function ValuePropsStep() {
       router.replace("/login" as never);
     } catch {
       showToast({
-        title: "Couldn't save preference",
-        message: "Try again.",
+        title: t("onboarding.couldNotSavePreference"),
+        message: t("shop.tryAgain"),
         tone: "amber",
         haptic: "warning",
       });
@@ -127,7 +129,7 @@ export function ValuePropsStep() {
       <Pressable
         testID="onboarding-value-skip"
         accessibilityRole="button"
-        accessibilityLabel="Skip onboarding"
+        accessibilityLabel={t("onboarding.skipOnboarding")}
         disabled={busy}
         onPress={() => void finishOnboarding()}
         style={({ pressed }) => [
@@ -140,11 +142,11 @@ export function ValuePropsStep() {
           pressed && !busy ? styles.skipButtonPressed : null,
         ]}
       >
-        <Text style={[styles.skipText, { color: palette.text.secondary }]}>Skip</Text>
+        <Text style={[styles.skipText, { color: palette.text.secondary }]}>{t("onboarding.skip")}</Text>
       </Pressable>
       <View style={styles.header}>
-        <Text style={[styles.brand, { color: palette.text.primary }]}>Zook</Text>
-        <Text style={[styles.kicker, { color: palette.text.secondary }]}>Built for gym days</Text>
+        <Text style={[styles.brand, { color: palette.text.primary }]}>{t("onboarding.brand")}</Text>
+        <Text style={[styles.kicker, { color: palette.text.secondary }]}>{t("onboarding.builtForGymDays")}</Text>
       </View>
 
       <View style={styles.valueStage}>
@@ -162,7 +164,7 @@ export function ValuePropsStep() {
           scrollEventThrottle={16}
         >
           {valueProps.map((item, index) => (
-            <View key={item.eyebrow} style={[styles.valueCard, { width: cardWidth }]}>
+            <View key={item.eyebrowKey} style={[styles.valueCard, { width: cardWidth }]}>
               <View style={[styles.valuePanel, { borderColor: palette.border.subtle }]}>
                 <LinearGradient
                   colors={item.gradient(mode)}
@@ -176,9 +178,9 @@ export function ValuePropsStep() {
                 <View style={styles.valuePanelBody}>
                   <IconBubble icon={item.icon} tone={item.tone} size={56} />
                   <Text style={[styles.valueEyebrow, { color: palette.accent.base }]}>
-                    {item.eyebrow.toUpperCase()}
+                    {t(item.eyebrowKey).toUpperCase()}
                   </Text>
-                  <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{item.copy}</Text>
+                  <Text style={[styles.valueCopy, { color: palette.text.primary }]}>{t(item.copyKey)}</Text>
                 </View>
               </View>
             </View>
@@ -190,7 +192,7 @@ export function ValuePropsStep() {
         <View style={styles.dots}>
           {valueProps.map((item, index) => (
             <View
-              key={item.eyebrow}
+              key={item.eyebrowKey}
               style={[
                 styles.dot,
                 { backgroundColor: palette.border.strong },
@@ -213,7 +215,7 @@ export function ValuePropsStep() {
           }}
           disabled={busy}
         >
-          {busy ? "Saving..." : isFinalSlide ? "Continue to sign in" : "Continue"}
+          {busy ? t("settings.saving") : isFinalSlide ? t("onboarding.continueToSignIn") : t("onboarding.continue")}
         </ZookButton>
       </View>
     </View>

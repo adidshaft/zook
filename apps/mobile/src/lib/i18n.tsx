@@ -120,6 +120,25 @@ export type TranslationKey =
   | "auth.sessionExpiredTitle"
   | "auth.sessionExpiredBody"
   | "auth.verifyToContinue"
+  | "onboarding.allInOne"
+  | "onboarding.allInOneCopy"
+  | "onboarding.brand"
+  | "onboarding.builtForGymDays"
+  | "onboarding.changeLanguageAnytime"
+  | "onboarding.continue"
+  | "onboarding.continueToSignIn"
+  | "onboarding.couldNotSaveLanguage"
+  | "onboarding.couldNotSavePreference"
+  | "onboarding.findGym"
+  | "onboarding.findGymCopy"
+  | "onboarding.pickLanguage"
+  | "onboarding.skip"
+  | "onboarding.skipIntro"
+  | "onboarding.skipOnboarding"
+  | "onboarding.splashBadge"
+  | "onboarding.splashSubtitle"
+  | "onboarding.trainTrack"
+  | "onboarding.trainTrackCopy"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -891,6 +910,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expired",
     "auth.sessionExpiredBody": "Sign in again to continue.",
     "auth.verifyToContinue": "Verify it's you to continue.",
+    "onboarding.allInOne": "All in one",
+    "onboarding.allInOneCopy": "Memberships, classes, payments and store pickup — all in one place.",
+    "onboarding.brand": "Zook",
+    "onboarding.builtForGymDays": "Built for gym days",
+    "onboarding.changeLanguageAnytime": "You can change this any time in Settings.",
+    "onboarding.continue": "Continue",
+    "onboarding.continueToSignIn": "Continue to sign in",
+    "onboarding.couldNotSaveLanguage": "Couldn't save language",
+    "onboarding.couldNotSavePreference": "Couldn't save preference",
+    "onboarding.findGym": "Find your gym",
+    "onboarding.findGymCopy": "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
+    "onboarding.pickLanguage": "Pick your language",
+    "onboarding.skip": "Skip",
+    "onboarding.skipIntro": "Skip intro",
+    "onboarding.skipOnboarding": "Skip onboarding",
+    "onboarding.splashBadge": "Gym ops, without the clutter.",
+    "onboarding.splashSubtitle": "Check-ins, memberships, plans, and the front desk flow in one place.",
+    "onboarding.trainTrack": "Train & track",
+    "onboarding.trainTrackCopy": "Scan in seconds, follow your plan, and watch every workout add up.",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -1670,6 +1708,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expire हो गया",
     "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
     "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
+    "onboarding.allInOne": "सब एक जगह",
+    "onboarding.allInOneCopy": "Memberships, classes, payments और store pickup — सब एक जगह.",
+    "onboarding.brand": "Zook",
+    "onboarding.builtForGymDays": "Gym days के लिए बनाया गया",
+    "onboarding.changeLanguageAnytime": "आप इसे Settings में कभी भी बदल सकते हैं.",
+    "onboarding.continue": "जारी रखें",
+    "onboarding.continueToSignIn": "Sign in पर जाएं",
+    "onboarding.couldNotSaveLanguage": "भाषा सेव नहीं हो सकी",
+    "onboarding.couldNotSavePreference": "Preference सेव नहीं हो सकी",
+    "onboarding.findGym": "अपना जिम खोजें",
+    "onboarding.findGymCopy": "Pune, Mumbai, Bengaluru, Delhi और 50+ cities में अपने पास gyms खोजें.",
+    "onboarding.pickLanguage": "अपनी भाषा चुनें",
+    "onboarding.skip": "Skip",
+    "onboarding.skipIntro": "Intro skip करें",
+    "onboarding.skipOnboarding": "Onboarding skip करें",
+    "onboarding.splashBadge": "Gym ops, बिना clutter.",
+    "onboarding.splashSubtitle": "Check-ins, memberships, plans और front desk flow एक जगह.",
+    "onboarding.trainTrack": "Train और track",
+    "onboarding.trainTrackCopy": "Seconds में scan करें, अपना plan follow करें, और हर workout जुड़ता देखें.",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",
