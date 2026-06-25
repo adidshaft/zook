@@ -1392,6 +1392,80 @@ export type TranslationKey =
   | "trainer.clientDiet.publishToClient"
   | "trainer.clientDiet.subtitle"
   | "trainer.clientDiet.title"
+  | "trainer.clientDetail.overviewTab"
+  | "trainer.clientDetail.planTab"
+  | "trainer.clientDetail.sessionsTab"
+  | "trainer.clientPlan.assignedStatus"
+  | "trainer.clientPlan.calories"
+  | "trainer.clientPlan.clientDietPlanPlaceholder"
+  | "trainer.clientPlan.dietPlanPublished"
+  | "trainer.clientPlan.dietPublishedStatus"
+  | "trainer.clientPlan.dietTitle"
+  | "trainer.clientPlan.draftPrompt"
+  | "trainer.clientPlan.draftSaved"
+  | "trainer.clientPlan.exerciseGobletSquat"
+  | "trainer.clientPlan.exerciseMachineSetup"
+  | "trainer.clientPlan.exerciseNutritionCheckIn"
+  | "trainer.clientPlan.exerciseRecoveryMobility"
+  | "trainer.clientPlan.exerciseTemplates"
+  | "trainer.clientPlan.exerciseWeeklyRoutineReview"
+  | "trainer.clientPlan.noDietPlanForClient"
+  | "trainer.clientPlan.planAssigned"
+  | "trainer.clientPlan.planBuilder"
+  | "trainer.clientPlan.planCouldNotBeCreated"
+  | "trainer.clientPlan.proteinG"
+  | "trainer.clientPlan.proteinPrefix"
+  | "trainer.clientPlan.publishBody"
+  | "trainer.clientPlan.publishFourMealDiet"
+  | "trainer.clientPlan.publishToClient"
+  | "trainer.clientPlan.publishToClientTitle"
+  | "trainer.clientPlan.saveDraft"
+  | "trainer.clientPlan.savedDraftStatus"
+  | "trainer.clientPlan.saveExerciseTemplate"
+  | "trainer.clientPlan.selectClientBeforeAssigning"
+  | "trainer.clientPlan.selectClientBeforeDiet"
+  | "trainer.clientPlan.selectClientBeforeSaving"
+  | "trainer.clientPlan.templateDiet"
+  | "trainer.clientPlan.templateMachine"
+  | "trainer.clientPlan.templateNotes"
+  | "trainer.clientPlan.templateRecovery"
+  | "trainer.clientPlan.templateRoutine"
+  | "trainer.clientPlan.templateWorkout"
+  | "trainer.clientOverview.active"
+  | "trainer.clientOverview.activeMember"
+  | "trainer.clientOverview.allergyNote"
+  | "trainer.clientOverview.averagePlanCompletion"
+  | "trainer.clientOverview.baseline"
+  | "trainer.clientOverview.bodyFatPercent"
+  | "trainer.clientOverview.bodyProgressRecordedToast"
+  | "trainer.clientOverview.bodyProgressTrend"
+  | "trainer.clientOverview.createFirstPlan"
+  | "trainer.clientOverview.dietNote"
+  | "trainer.clientOverview.lastCheckIn"
+  | "trainer.clientOverview.missing"
+  | "trainer.clientOverview.needsFeedback"
+  | "trainer.clientOverview.noLog"
+  | "trainer.clientOverview.noneAdded"
+  | "trainer.clientOverview.noMeasurements"
+  | "trainer.clientOverview.noMeasurementsBody"
+  | "trainer.clientOverview.noWorkoutLogged"
+  | "trainer.clientOverview.notAdded"
+  | "trainer.clientOverview.noteAudit"
+  | "trainer.clientOverview.noteSavedToast"
+  | "trainer.clientOverview.notShared"
+  | "trainer.clientOverview.paused"
+  | "trainer.clientOverview.pausedMember"
+  | "trainer.clientOverview.ptPack"
+  | "trainer.clientOverview.recordBodyProgress"
+  | "trainer.clientOverview.saved"
+  | "trainer.clientOverview.saveNote"
+  | "trainer.clientOverview.shared"
+  | "trainer.clientOverview.tracked"
+  | "trainer.clientOverview.trainerNote"
+  | "trainer.clientOverview.trainerNotePlaceholder"
+  | "trainer.clientOverview.waistCm"
+  | "trainer.clientOverview.weightKg"
+  | "trainer.clientOverview.workoutPlan"
   | "trainer.pt.add"
   | "trainer.pt.adding"
   | "trainer.pt.allSessionsCompleted"
@@ -2872,6 +2946,80 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientDiet.publishToClient": "Publish to client",
     "trainer.clientDiet.subtitle": "Build and publish a plan for your client.",
     "trainer.clientDiet.title": "Diet plan",
+    "trainer.clientDetail.overviewTab": "Overview",
+    "trainer.clientDetail.planTab": "Plan",
+    "trainer.clientDetail.sessionsTab": "Sessions",
+    "trainer.clientPlan.assignedStatus": "{{title}} assigned. {{name}} can now see it.",
+    "trainer.clientPlan.calories": "Calories",
+    "trainer.clientPlan.clientDietPlanPlaceholder": "{{name}} diet plan",
+    "trainer.clientPlan.dietPlanPublished": "Diet plan published.",
+    "trainer.clientPlan.dietPublishedStatus": "{{title}} published. {{name}} can log meals now.",
+    "trainer.clientPlan.dietTitle": "Diet title",
+    "trainer.clientPlan.draftPrompt": "{{title}} is saved as a draft. Review before assigning.",
+    "trainer.clientPlan.draftSaved": "Draft saved.",
+    "trainer.clientPlan.exerciseGobletSquat": "Goblet squat",
+    "trainer.clientPlan.exerciseMachineSetup": "Machine setup walkthrough",
+    "trainer.clientPlan.exerciseNutritionCheckIn": "Nutrition check-in",
+    "trainer.clientPlan.exerciseRecoveryMobility": "Recovery mobility flow",
+    "trainer.clientPlan.exerciseTemplates": "Exercise templates",
+    "trainer.clientPlan.exerciseWeeklyRoutineReview": "Weekly routine review",
+    "trainer.clientPlan.noDietPlanForClient": "No diet plan published yet for {{name}}. You are starting fresh below.",
+    "trainer.clientPlan.planAssigned": "Plan assigned.",
+    "trainer.clientPlan.planBuilder": "Plan builder",
+    "trainer.clientPlan.planCouldNotBeCreated": "Plan could not be created.",
+    "trainer.clientPlan.proteinG": "Protein g",
+    "trainer.clientPlan.proteinPrefix": "{{protein}}g protein · ",
+    "trainer.clientPlan.publishBody": "The member sees this plan immediately.",
+    "trainer.clientPlan.publishFourMealDiet": "Publish 4-meal diet",
+    "trainer.clientPlan.publishToClient": "Publish to {{name}}",
+    "trainer.clientPlan.publishToClientTitle": "Publish to {{name}}?",
+    "trainer.clientPlan.saveDraft": "Save draft",
+    "trainer.clientPlan.savedDraftStatus": "{{title}} saved as a draft.",
+    "trainer.clientPlan.saveExerciseTemplate": "Save exercise as template",
+    "trainer.clientPlan.selectClientBeforeAssigning": "Select a client before assigning.",
+    "trainer.clientPlan.selectClientBeforeDiet": "Select a client before publishing diet.",
+    "trainer.clientPlan.selectClientBeforeSaving": "Select a client before saving.",
+    "trainer.clientPlan.templateDiet": "Diet",
+    "trainer.clientPlan.templateMachine": "Machine Guide",
+    "trainer.clientPlan.templateNotes": "Template notes",
+    "trainer.clientPlan.templateRecovery": "Recovery",
+    "trainer.clientPlan.templateRoutine": "Routine",
+    "trainer.clientPlan.templateWorkout": "Workout",
+    "trainer.clientOverview.active": "Active",
+    "trainer.clientOverview.activeMember": "Active member",
+    "trainer.clientOverview.allergyNote": "Allergy note",
+    "trainer.clientOverview.averagePlanCompletion": "{{percent}}% average plan completion",
+    "trainer.clientOverview.baseline": "Baseline",
+    "trainer.clientOverview.bodyFatPercent": "Body fat %",
+    "trainer.clientOverview.bodyProgressRecordedToast": "Body progress recorded.",
+    "trainer.clientOverview.bodyProgressTrend": "Body progress trend",
+    "trainer.clientOverview.createFirstPlan": "Create first plan",
+    "trainer.clientOverview.dietNote": "Diet note",
+    "trainer.clientOverview.lastCheckIn": "Last check-in",
+    "trainer.clientOverview.missing": "Missing",
+    "trainer.clientOverview.needsFeedback": "Needs feedback",
+    "trainer.clientOverview.noLog": "No log",
+    "trainer.clientOverview.noneAdded": "None added",
+    "trainer.clientOverview.noMeasurements": "No measurements yet",
+    "trainer.clientOverview.noMeasurementsBody": "Record body progress above to start tracking this client's trend.",
+    "trainer.clientOverview.noWorkoutLogged": "No workout logged",
+    "trainer.clientOverview.notAdded": "Not added",
+    "trainer.clientOverview.noteAudit": "Only assigned trainers and owners/admins can see trainer notes.",
+    "trainer.clientOverview.noteSavedToast": "Trainer note saved.",
+    "trainer.clientOverview.notShared": "Not shared",
+    "trainer.clientOverview.paused": "Paused",
+    "trainer.clientOverview.pausedMember": "Paused member",
+    "trainer.clientOverview.ptPack": "PT pack",
+    "trainer.clientOverview.recordBodyProgress": "Record body progress",
+    "trainer.clientOverview.saved": "Saved",
+    "trainer.clientOverview.saveNote": "Save note",
+    "trainer.clientOverview.shared": "Shared",
+    "trainer.clientOverview.tracked": "Tracked",
+    "trainer.clientOverview.trainerNote": "Trainer note",
+    "trainer.clientOverview.trainerNotePlaceholder": "Add coaching note for your own follow-up...",
+    "trainer.clientOverview.waistCm": "Waist cm",
+    "trainer.clientOverview.weightKg": "Weight kg",
+    "trainer.clientOverview.workoutPlan": "Workout plan",
     "trainer.pt.add": "Add",
     "trainer.pt.adding": "Adding...",
     "trainer.pt.allSessionsCompleted": "All sessions completed",
@@ -4351,6 +4499,80 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientDiet.publishToClient": "Client को publish करें",
     "trainer.clientDiet.subtitle": "अपने client के लिए plan बनाएं और publish करें.",
     "trainer.clientDiet.title": "Diet plan",
+    "trainer.clientDetail.overviewTab": "Overview",
+    "trainer.clientDetail.planTab": "Plan",
+    "trainer.clientDetail.sessionsTab": "Sessions",
+    "trainer.clientPlan.assignedStatus": "{{title}} assign हुआ. {{name}} अब इसे देख सकता है.",
+    "trainer.clientPlan.calories": "Calories",
+    "trainer.clientPlan.clientDietPlanPlaceholder": "{{name}} diet plan",
+    "trainer.clientPlan.dietPlanPublished": "Diet plan publish हुआ.",
+    "trainer.clientPlan.dietPublishedStatus": "{{title}} publish हुआ. {{name}} अब meals log कर सकता है.",
+    "trainer.clientPlan.dietTitle": "Diet title",
+    "trainer.clientPlan.draftPrompt": "{{title}} draft के रूप में save है. Assign करने से पहले review करें.",
+    "trainer.clientPlan.draftSaved": "Draft save हुआ.",
+    "trainer.clientPlan.exerciseGobletSquat": "Goblet squat",
+    "trainer.clientPlan.exerciseMachineSetup": "Machine setup walkthrough",
+    "trainer.clientPlan.exerciseNutritionCheckIn": "Nutrition check-in",
+    "trainer.clientPlan.exerciseRecoveryMobility": "Recovery mobility flow",
+    "trainer.clientPlan.exerciseTemplates": "Exercise templates",
+    "trainer.clientPlan.exerciseWeeklyRoutineReview": "Weekly routine review",
+    "trainer.clientPlan.noDietPlanForClient": "{{name}} के लिए अभी कोई diet plan published नहीं. नीचे fresh start करें.",
+    "trainer.clientPlan.planAssigned": "Plan assign हुआ.",
+    "trainer.clientPlan.planBuilder": "Plan builder",
+    "trainer.clientPlan.planCouldNotBeCreated": "Plan create नहीं हो सका.",
+    "trainer.clientPlan.proteinG": "Protein g",
+    "trainer.clientPlan.proteinPrefix": "{{protein}}g protein · ",
+    "trainer.clientPlan.publishBody": "Member यह plan तुरंत देखेगा.",
+    "trainer.clientPlan.publishFourMealDiet": "4-meal diet publish करें",
+    "trainer.clientPlan.publishToClient": "{{name}} को publish करें",
+    "trainer.clientPlan.publishToClientTitle": "{{name}} को publish करें?",
+    "trainer.clientPlan.saveDraft": "Draft save करें",
+    "trainer.clientPlan.savedDraftStatus": "{{title}} draft के रूप में save हुआ.",
+    "trainer.clientPlan.saveExerciseTemplate": "Exercise को template के रूप में save करें",
+    "trainer.clientPlan.selectClientBeforeAssigning": "Assign करने से पहले client select करें.",
+    "trainer.clientPlan.selectClientBeforeDiet": "Diet publish करने से पहले client select करें.",
+    "trainer.clientPlan.selectClientBeforeSaving": "Save करने से पहले client select करें.",
+    "trainer.clientPlan.templateDiet": "Diet",
+    "trainer.clientPlan.templateMachine": "Machine Guide",
+    "trainer.clientPlan.templateNotes": "Template notes",
+    "trainer.clientPlan.templateRecovery": "Recovery",
+    "trainer.clientPlan.templateRoutine": "Routine",
+    "trainer.clientPlan.templateWorkout": "Workout",
+    "trainer.clientOverview.active": "Active",
+    "trainer.clientOverview.activeMember": "Active member",
+    "trainer.clientOverview.allergyNote": "Allergy note",
+    "trainer.clientOverview.averagePlanCompletion": "{{percent}}% average plan completion",
+    "trainer.clientOverview.baseline": "Baseline",
+    "trainer.clientOverview.bodyFatPercent": "Body fat %",
+    "trainer.clientOverview.bodyProgressRecordedToast": "Body progress record हुआ.",
+    "trainer.clientOverview.bodyProgressTrend": "Body progress trend",
+    "trainer.clientOverview.createFirstPlan": "पहला plan बनाएं",
+    "trainer.clientOverview.dietNote": "Diet note",
+    "trainer.clientOverview.lastCheckIn": "Last check-in",
+    "trainer.clientOverview.missing": "Missing",
+    "trainer.clientOverview.needsFeedback": "Feedback चाहिए",
+    "trainer.clientOverview.noLog": "No log",
+    "trainer.clientOverview.noneAdded": "None added",
+    "trainer.clientOverview.noMeasurements": "अभी कोई measurement नहीं",
+    "trainer.clientOverview.noMeasurementsBody": "इस client का trend track करने के लिए ऊपर body progress record करें.",
+    "trainer.clientOverview.noWorkoutLogged": "कोई workout logged नहीं",
+    "trainer.clientOverview.notAdded": "Not added",
+    "trainer.clientOverview.noteAudit": "Trainer notes केवल assigned trainers और owners/admins देख सकते हैं.",
+    "trainer.clientOverview.noteSavedToast": "Trainer note save हुआ.",
+    "trainer.clientOverview.notShared": "Not shared",
+    "trainer.clientOverview.paused": "Paused",
+    "trainer.clientOverview.pausedMember": "Paused member",
+    "trainer.clientOverview.ptPack": "PT pack",
+    "trainer.clientOverview.recordBodyProgress": "Body progress record करें",
+    "trainer.clientOverview.saved": "Saved",
+    "trainer.clientOverview.saveNote": "Note save करें",
+    "trainer.clientOverview.shared": "Shared",
+    "trainer.clientOverview.tracked": "Tracked",
+    "trainer.clientOverview.trainerNote": "Trainer note",
+    "trainer.clientOverview.trainerNotePlaceholder": "अपने follow-up के लिए coaching note जोड़ें...",
+    "trainer.clientOverview.waistCm": "Waist cm",
+    "trainer.clientOverview.weightKg": "Weight kg",
+    "trainer.clientOverview.workoutPlan": "Workout plan",
     "trainer.pt.add": "जोड़ें",
     "trainer.pt.adding": "जोड़ा जा रहा है...",
     "trainer.pt.allSessionsCompleted": "सभी सेशन पूरे",

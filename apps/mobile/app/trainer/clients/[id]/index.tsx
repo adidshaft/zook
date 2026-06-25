@@ -7,10 +7,12 @@ import {
   AuditWarning,
   FormField,
   Card,
+  EmptyState,
   ListRow,
   AppHeader,
   QueryErrorState,
   SegmentedControl,
+  Skeleton,
   StatusChip,
   ZookButton,
   ZookScreen,
@@ -20,7 +22,6 @@ import {
   averageCompletionFor,
   clientDetailTabs,
   fitnessGoalFor,
-  planCountLabel,
   selectedTrainerClient,
   trainerClientDetailPath,
   type ClientDetailTab,
@@ -28,9 +29,18 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { trainerApi } from "@/lib/domain-api";
 import { useTrainerClients } from "@/lib/domains";
-import { formatDateTime, formatInitials } from "@/lib/formatting";
+import { queryKeys } from "@/lib/domains/shared/keys";
+import { useClientBodyProgress } from "@/lib/domains/trainer/queries";
+import { formatDateTime, formatInitials, formatLongDate } from "@/lib/formatting";
+import { type TranslationKey, useI18n } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+
+const clientDetailTabLabelKeys: Record<ClientDetailTab, TranslationKey> = {
+  overview: "trainer.clientDetail.overviewTab",
+  plan: "trainer.clientDetail.planTab",
+  sessions: "trainer.clientDetail.sessionsTab",
+};
 
 export default function TrainerClientOverviewScreen() {
   const router = useRouter();
@@ -38,9 +48,10 @@ export default function TrainerClientOverviewScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
+  const { t } = useI18n();
   const clientsQuery = useTrainerClients();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
-  const clientName = client?.user?.name ?? (clientsQuery.isLoading ? "Client" : "Client not found");
+  const clientName = client?.user?.name ?? (clientsQuery.isLoading ? t("trainer.pt.clientFallback") : t("trainer.clients.noMatchingClients"));
   const fitnessGoal = fitnessGoalFor(client);
   const averageCompletion = averageCompletionFor(client);
   const recentWorkouts = client?.summary?.recentWorkouts ?? [];
@@ -53,6 +64,12 @@ export default function TrainerClientOverviewScreen() {
   const [bodyWeight, setBodyWeight] = useState("");
   const [bodyWaist, setBodyWaist] = useState("");
   const [bodyFat, setBodyFat] = useState("");
+  const bodyProgressQuery = useClientBodyProgress(client?.memberUserId ?? id);
+  const trendEntries = bodyProgressQuery.data?.entries?.slice(0, 5) ?? [];
+  const translatedClientDetailTabs = clientDetailTabs.map((tab) => ({
+    ...tab,
+    label: t(clientDetailTabLabelKeys[tab.value]),
+  }));
 
   useEffect(() => {
     setNoteText(client?.summary?.trainerNote ?? "");
@@ -72,9 +89,9 @@ export default function TrainerClientOverviewScreen() {
       });
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
       setNoteSaved(true);
-      showToast({ tone: "success", haptic: "success", message: "Trainer note saved." });
+      showToast({ tone: "success", haptic: "success", message: t("trainer.clientOverview.noteSavedToast") });
     } catch (error) {
-      showToast({ title: "Action failed", message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
     }
   }
 
@@ -96,12 +113,15 @@ export default function TrainerClientOverviewScreen() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "trainer"] });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.trainer.clientBodyProgress(activeOrgId, client.trainerUserId, client.memberUserId),
+      });
       setBodyWeight("");
       setBodyWaist("");
       setBodyFat("");
-      showToast({ tone: "success", haptic: "success", message: "Body progress recorded." });
+      showToast({ tone: "success", haptic: "success", message: t("trainer.clientOverview.bodyProgressRecordedToast") });
     } catch (error) {
-      showToast({ title: "Action failed", message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message: getApiErrorMessage(error), tone: "danger", haptic: "error" });
     }
   }
 
@@ -114,13 +134,13 @@ export default function TrainerClientOverviewScreen() {
       <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
           <AppHeader
-            title="Client Detail"
+            title={t("trainer.clientSessions.title")}
             subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
                 accessibilityRole="button"
-                accessibilityLabel="Back to clients"
+                accessibilityLabel={t("trainer.clientSessions.backToClients")}
                 style={({ pressed }) => [
                   styles.iconButton,
                   { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
@@ -131,7 +151,7 @@ export default function TrainerClientOverviewScreen() {
               </Pressable>
             }
           />
-          <SegmentedControl options={clientDetailTabs} value="overview" onChange={selectTab} />
+          <SegmentedControl options={translatedClientDetailTabs} value="overview" onChange={selectTab} />
 
           {clientsQuery.isError ? (
             <Card variant="compact">
@@ -141,8 +161,8 @@ export default function TrainerClientOverviewScreen() {
 
           {!clientsQuery.isLoading && !clientsQuery.isError && !client ? (
             <Card variant="compact" contentStyle={styles.notFoundContent}>
-              <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Client not found</Text>
-              <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">Back to clients</ZookButton>
+              <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("trainer.clients.noMatchingClients")}</Text>
+              <ZookButton href="/trainer/clients" variant="secondary" icon="people-outline">{t("trainer.clientSessions.backToClients")}</ZookButton>
             </Card>
           ) : null}
 
@@ -155,63 +175,122 @@ export default function TrainerClientOverviewScreen() {
                 <Text numberOfLines={1} style={[styles.clientHeroName, { color: palette.text.primary }]}>{clientName}</Text>
                 <View style={styles.clientStatusRow}>
                   <Ionicons name="person-outline" size={21} color={palette.accent.base} />
-                  <Text style={[styles.clientStatusText, { color: palette.accent.base }]}>{client?.active ? "Active member" : "Paused member"}</Text>
+                  <Text style={[styles.clientStatusText, { color: palette.accent.base }]}>{client?.active ? t("trainer.clientOverview.activeMember") : t("trainer.clientOverview.pausedMember")}</Text>
                 </View>
               </View>
             </View>
             <View style={styles.clientHeroMetrics}>
               <View style={styles.clientHeroMetric}>
                 <Ionicons name="navigate-circle-outline" size={22} color={palette.accent.base} />
-                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Goal</Text>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("assistant.contextGoal")}</Text>
                 <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{fitnessGoal}</Text>
               </View>
               <View style={styles.clientHeroMetric}>
                 <Ionicons name="barbell-outline" size={22} color={palette.accent.base} />
-                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>PT pack</Text>
-                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? `${activePlans} active ${activePlans === 1 ? "plan" : "plans"}` : "Create first plan"}</Text>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("trainer.clientOverview.ptPack")}</Text>
+                <Text numberOfLines={1} style={[styles.metricValue, { color: palette.text.primary }]}>{activePlans ? t("trainer.clients.activePlanCount", { count: activePlans, label: activePlans === 1 ? t("trainer.home.plan") : t("trainer.home.plans") }) : t("trainer.clientOverview.createFirstPlan")}</Text>
               </View>
             </View>
             <View style={styles.heroActions}>
               <ZookButton testID="trainer-create-plan-button" href={`/trainer/clients/${id}/plan` as never} icon="reader-outline" disabled={!client} style={styles.heroAction}>
-                Workout plan
+                {t("trainer.clientOverview.workoutPlan")}
               </ZookButton>
               <ZookButton testID="trainer-create-diet-button" href={`/trainer/clients/${id}/diet` as never} variant="secondary" icon="restaurant-outline" disabled={!client} style={styles.heroAction}>
-                Diet plan
+                {t("trainer.clientDiet.title")}
               </ZookButton>
             </View>
           </Card>
 
           <Card variant="compact" contentStyle={styles.stack}>
-            <ListRow title="Fitness goal" subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? "Active" : "Paused"} />} />
+            <ListRow title={t("settings.fitnessGoal")} subtitle={fitnessGoal} trailing={<StatusChip status={client?.active ? t("trainer.clientOverview.active") : t("trainer.clientOverview.paused")} />} />
             <ListRow
-              title="Diet note"
-              subtitle={dietPreference || "Not shared"}
-              trailing={<StatusChip status={dietPreference ? "Shared" : "Missing"} tone="neutral" />}
+              title={t("trainer.clientOverview.dietNote")}
+              subtitle={dietPreference || t("trainer.clientOverview.notShared")}
+              trailing={<StatusChip status={dietPreference ? t("trainer.clientOverview.shared") : t("trainer.clientOverview.missing")} tone="neutral" />}
             />
             <ListRow
-              title="Allergy note"
-              subtitle={allergies || "None added"}
-              trailing={<StatusChip status={allergies ? "Shared" : "Not added"} tone="neutral" />}
+              title={t("trainer.clientOverview.allergyNote")}
+              subtitle={allergies || t("trainer.clientOverview.noneAdded")}
+              trailing={<StatusChip status={allergies ? t("trainer.clientOverview.shared") : t("trainer.clientOverview.notAdded")} tone="neutral" />}
             />
             <ListRow
-              title="Last check-in"
-              subtitle={formatDateTime(lastWorkoutStartedAt, "No workout logged", "en-IN")}
-              trailing={<StatusChip status={lastWorkoutStartedAt ? "Tracked" : "No log"} tone="neutral" />}
+              title={t("trainer.clientOverview.lastCheckIn")}
+              subtitle={formatDateTime(lastWorkoutStartedAt, t("trainer.clientOverview.noWorkoutLogged"), "en-IN")}
+              trailing={<StatusChip status={lastWorkoutStartedAt ? t("trainer.clientOverview.tracked") : t("trainer.clientOverview.noLog")} tone="neutral" />}
             />
-            <ListRow title="Recent progress" subtitle={averageCompletion === null ? planCountLabel(activePlans) : `${averageCompletion}% average plan completion`} trailing={<StatusChip status={averageCompletion === null ? "Needs feedback" : `${averageCompletion}%`} tone="amber" />} />
+            <ListRow title={t("trainer.home.recentFeedback")} subtitle={averageCompletion === null ? t("trainer.clients.activePlanCount", { count: activePlans, label: activePlans === 1 ? t("trainer.home.plan") : t("trainer.home.plans") }) : t("trainer.clientOverview.averagePlanCompletion", { percent: averageCompletion })} trailing={<StatusChip status={averageCompletion === null ? t("trainer.clientOverview.needsFeedback") : `${averageCompletion}%`} tone="amber" />} />
           </Card>
 
           <Card contentStyle={styles.stack}>
-            <FormField testID="trainer-note" label="Trainer note" value={noteText} onChangeText={setNoteText} multiline placeholder="Add coaching note for your own follow-up..." />
-            <ZookButton testID="trainer-save-note-button" onPress={() => void saveNote()} disabled={!client} icon={noteSaved ? "checkmark-outline" : "save-outline"}>{noteSaved ? "Saved" : "Save note"}</ZookButton>
-            <AuditWarning>Only assigned trainers and owners/admins can see trainer notes.</AuditWarning>
+            <FormField testID="trainer-note" label={t("trainer.clientOverview.trainerNote")} value={noteText} onChangeText={setNoteText} multiline placeholder={t("trainer.clientOverview.trainerNotePlaceholder")} />
+            <ZookButton testID="trainer-save-note-button" onPress={() => void saveNote()} disabled={!client} icon={noteSaved ? "checkmark-outline" : "save-outline"}>{noteSaved ? t("trainer.clientOverview.saved") : t("trainer.clientOverview.saveNote")}</ZookButton>
+            <AuditWarning>{t("trainer.clientOverview.noteAudit")}</AuditWarning>
           </Card>
 
           <Card contentStyle={styles.stack}>
-            <FormField testID="trainer-client-body-weight" label="Weight kg" value={bodyWeight} onChangeText={setBodyWeight} keyboardType="decimal-pad" placeholder="72.5" />
-            <FormField label="Waist cm" value={bodyWaist} onChangeText={setBodyWaist} keyboardType="decimal-pad" placeholder="82" />
-            <FormField label="Body fat %" value={bodyFat} onChangeText={setBodyFat} keyboardType="decimal-pad" placeholder="18" />
-            <ZookButton testID="trainer-client-body-save" onPress={() => void saveBodyProgress()} disabled={!client} icon="analytics-outline">Record body progress</ZookButton>
+            <FormField testID="trainer-client-body-weight" label={t("trainer.clientOverview.weightKg")} value={bodyWeight} onChangeText={setBodyWeight} keyboardType="decimal-pad" placeholder="72.5" />
+            <FormField label={t("trainer.clientOverview.waistCm")} value={bodyWaist} onChangeText={setBodyWaist} keyboardType="decimal-pad" placeholder="82" />
+            <FormField label={t("trainer.clientOverview.bodyFatPercent")} value={bodyFat} onChangeText={setBodyFat} keyboardType="decimal-pad" placeholder="18" />
+            <ZookButton testID="trainer-client-body-save" onPress={() => void saveBodyProgress()} disabled={!client} icon="analytics-outline">{t("trainer.clientOverview.recordBodyProgress")}</ZookButton>
+          </Card>
+
+          <Card variant="compact" contentStyle={styles.stack}>
+            <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("trainer.clientOverview.bodyProgressTrend")}</Text>
+            {bodyProgressQuery.isLoading ? (
+              <>
+                <Skeleton height={18} width="50%" />
+                <Skeleton height={44} />
+              </>
+            ) : null}
+            {bodyProgressQuery.isError ? (
+              <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} />
+            ) : null}
+            {!bodyProgressQuery.isLoading && !bodyProgressQuery.isError ? (
+              trendEntries.length ? (
+                trendEntries.map((entry, index) => {
+                  const next = trendEntries[index + 1];
+                  const weight = entry.weightKg != null ? Number(entry.weightKg) : null;
+                  const previousWeight = next?.weightKg != null ? Number(next.weightKg) : null;
+                  const delta =
+                    weight != null && previousWeight != null ? weight - previousWeight : null;
+                  return (
+                    <View key={entry.id} style={styles.trendRow}>
+                      <Text style={[styles.trendDate, { color: palette.text.secondary }]}>
+                        {formatLongDate(entry.measuredAt)}
+                      </Text>
+                      <Text style={[styles.trendWeight, { color: palette.text.primary }]}>
+                        {weight != null ? `${weight} kg` : "-"}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.trendDelta,
+                          {
+                            color:
+                              delta == null
+                                ? palette.text.secondary
+                                : delta > 0
+                                  ? palette.feedback.danger
+                                  : delta < 0
+                                    ? palette.feedback.success
+                                    : palette.text.secondary,
+                          },
+                        ]}
+                      >
+                        {delta == null
+                          ? t("trainer.clientOverview.baseline")
+                          : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`}
+                      </Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <EmptyState
+                  icon="analytics-outline"
+                  title={t("trainer.clientOverview.noMeasurements")}
+                  body={t("trainer.clientOverview.noMeasurementsBody")}
+                />
+              )
+            ) : null}
           </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
@@ -241,4 +320,8 @@ const styles = StyleSheet.create({
   metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
   cardTitle: { ...typography.cardTitle },
   stack: { gap: spacing.sm },
+  trendRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  trendDate: { ...typography.caption, flex: 1 },
+  trendWeight: { ...typography.bodyStrong, marginHorizontal: spacing.sm },
+  trendDelta: { ...typography.caption, minWidth: 72, textAlign: "right" },
 });
