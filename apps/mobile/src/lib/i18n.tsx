@@ -1412,6 +1412,35 @@ export type TranslationKey =
   | "owner.more.trainerPayouts"
   | "owner.more.trainerPayoutsSubtitle"
   | "owner.more.webControlRoom"
+  | "owner.plans.createPlan"
+  | "owner.plans.dateRange"
+  | "owner.plans.daysCount"
+  | "owner.plans.duration"
+  | "owner.plans.durationDays"
+  | "owner.plans.edit"
+  | "owner.plans.editAccessibility"
+  | "owner.plans.editPlan"
+  | "owner.plans.hidden"
+  | "owner.plans.hybrid"
+  | "owner.plans.newPlan"
+  | "owner.plans.noPlansYet"
+  | "owner.plans.noPlansYetBody"
+  | "owner.plans.planName"
+  | "owner.plans.planNamePlaceholder"
+  | "owner.plans.plans"
+  | "owner.plans.priceInr"
+  | "owner.plans.remove"
+  | "owner.plans.removePlanBody"
+  | "owner.plans.removePlanTitle"
+  | "owner.plans.saveChanges"
+  | "owner.plans.showPublicly"
+  | "owner.plans.subtitle"
+  | "owner.plans.title"
+  | "owner.plans.trial"
+  | "owner.plans.type"
+  | "owner.plans.visitPack"
+  | "owner.plans.visits"
+  | "owner.plans.visitsCount"
   | "owner.billing.activeMembers"
   | "owner.billing.activeMembersCopy"
   | "owner.billing.aiImages"
@@ -3362,6 +3391,35 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "Review and pay your coaches",
     "owner.more.webControlRoom": "Web control room",
+    "owner.plans.createPlan": "Create plan",
+    "owner.plans.dateRange": "Date range",
+    "owner.plans.daysCount": "{{count}} days",
+    "owner.plans.duration": "Duration",
+    "owner.plans.durationDays": "Duration (days)",
+    "owner.plans.edit": "Edit",
+    "owner.plans.editAccessibility": "Edit {{name}}",
+    "owner.plans.editPlan": "Edit plan",
+    "owner.plans.hidden": "Hidden",
+    "owner.plans.hybrid": "Hybrid",
+    "owner.plans.newPlan": "New plan",
+    "owner.plans.noPlansYet": "No plans yet",
+    "owner.plans.noPlansYetBody": "Create your first membership plan.",
+    "owner.plans.planName": "Plan name",
+    "owner.plans.planNamePlaceholder": "Monthly Active",
+    "owner.plans.plans": "Plans",
+    "owner.plans.priceInr": "Price (₹)",
+    "owner.plans.remove": "Remove",
+    "owner.plans.removePlanBody": "Members won't be able to buy \"{{name}}\" anymore.",
+    "owner.plans.removePlanTitle": "Remove plan?",
+    "owner.plans.saveChanges": "Save changes",
+    "owner.plans.showPublicly": "Show publicly",
+    "owner.plans.subtitle": "The plans members can buy at your gym.",
+    "owner.plans.title": "Membership plans",
+    "owner.plans.trial": "Trial",
+    "owner.plans.type": "Type",
+    "owner.plans.visitPack": "Visit pack",
+    "owner.plans.visits": "Visits",
+    "owner.plans.visitsCount": "{{count}} visits",
     "owner.billing.activeMembers": "Active members",
     "owner.billing.activeMembersCopy": "{{count}} {{noun}} {{verb}} toward your plan limits",
     "owner.billing.aiImages": "AI images",
@@ -5311,6 +5369,35 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
     "owner.more.webControlRoom": "Web control room",
+    "owner.plans.createPlan": "Plan बनाएं",
+    "owner.plans.dateRange": "Date range",
+    "owner.plans.daysCount": "{{count}} days",
+    "owner.plans.duration": "Duration",
+    "owner.plans.durationDays": "Duration (days)",
+    "owner.plans.edit": "Edit",
+    "owner.plans.editAccessibility": "{{name}} edit करें",
+    "owner.plans.editPlan": "Plan edit करें",
+    "owner.plans.hidden": "Hidden",
+    "owner.plans.hybrid": "Hybrid",
+    "owner.plans.newPlan": "New plan",
+    "owner.plans.noPlansYet": "अभी कोई plan नहीं",
+    "owner.plans.noPlansYetBody": "अपना पहला membership plan बनाएं.",
+    "owner.plans.planName": "Plan name",
+    "owner.plans.planNamePlaceholder": "Monthly Active",
+    "owner.plans.plans": "Plans",
+    "owner.plans.priceInr": "Price (₹)",
+    "owner.plans.remove": "Remove",
+    "owner.plans.removePlanBody": "Members अब \"{{name}}\" नहीं खरीद पाएंगे.",
+    "owner.plans.removePlanTitle": "Plan remove करें?",
+    "owner.plans.saveChanges": "Changes save करें",
+    "owner.plans.showPublicly": "Publicly दिखाएं",
+    "owner.plans.subtitle": "आपके gym में members जो plans खरीद सकते हैं.",
+    "owner.plans.title": "Membership plans",
+    "owner.plans.trial": "Trial",
+    "owner.plans.type": "Type",
+    "owner.plans.visitPack": "Visit pack",
+    "owner.plans.visits": "Visits",
+    "owner.plans.visitsCount": "{{count}} visits",
     "owner.billing.activeMembers": "Active members",
     "owner.billing.activeMembersCopy": "{{count}} {{noun}} plan limits में {{verb}} होते हैं",
     "owner.billing.aiImages": "AI images",

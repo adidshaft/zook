@@ -18,21 +18,22 @@ import {
 import { useOrgMembershipPlans, type MembershipPlanRecord } from "@/lib/domains/owner/queries";
 import { useDeleteMembershipPlan, useSaveMembershipPlan, type MembershipPlanInput } from "@/lib/domains/owner/mutations";
 import { formatInr } from "@/lib/formatting";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 type PlanType = MembershipPlanInput["type"];
-const PLAN_TYPES: Array<{ value: PlanType; label: string }> = [
-  { value: "DURATION", label: "Duration" },
-  { value: "VISIT_PACK", label: "Visit pack" },
-  { value: "HYBRID", label: "Hybrid" },
-  { value: "TRIAL", label: "Trial" },
-  { value: "DATE_RANGE", label: "Date range" },
+const PLAN_TYPES: Array<{ value: PlanType; labelKey: TranslationKey }> = [
+  { value: "DURATION", labelKey: "owner.plans.duration" },
+  { value: "VISIT_PACK", labelKey: "owner.plans.visitPack" },
+  { value: "HYBRID", labelKey: "owner.plans.hybrid" },
+  { value: "TRIAL", labelKey: "owner.plans.trial" },
+  { value: "DATE_RANGE", labelKey: "owner.plans.dateRange" },
 ];
 
-function planSummary(plan: MembershipPlanRecord) {
+function planSummary(plan: MembershipPlanRecord, t: (key: TranslationKey, values?: Record<string, string | number>) => string) {
   return [
-    plan.durationDays ? `${plan.durationDays} days` : null,
-    plan.visitLimit ? `${plan.visitLimit} visits` : null,
+    plan.durationDays ? t("owner.plans.daysCount", { count: plan.durationDays }) : null,
+    plan.visitLimit ? t("owner.plans.visitsCount", { count: plan.visitLimit }) : null,
   ]
     .filter(Boolean)
     .join(" · ") || plan.type;
@@ -40,6 +41,7 @@ function planSummary(plan: MembershipPlanRecord) {
 
 export default function OwnerPlans() {
   const { palette } = useTheme();
+  const t = useT();
   const plansQuery = useOrgMembershipPlans();
   const savePlan = useSaveMembershipPlan();
   const deletePlan = useDeleteMembershipPlan();
@@ -103,9 +105,9 @@ export default function OwnerPlans() {
   }
 
   function confirmDelete(plan: MembershipPlanRecord) {
-    Alert.alert("Remove plan?", `Members won't be able to buy "${plan.name}" anymore.`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => deletePlan.mutate(plan.id) },
+    Alert.alert(t("owner.plans.removePlanTitle"), t("owner.plans.removePlanBody", { name: plan.name }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("owner.plans.remove"), style: "destructive", onPress: () => deletePlan.mutate(plan.id) },
     ]);
   }
 
@@ -119,47 +121,47 @@ export default function OwnerPlans() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Membership plans" subtitle="The plans members can buy at your gym." showBack />
+          <AppHeader title={t("owner.plans.title")} subtitle={t("owner.plans.subtitle")} showBack />
 
           <SectionHeader
-            title="Plans"
+            title={t("owner.plans.plans")}
             action={
               <ZookButton size="sm" variant={showForm && !editingId ? "secondary" : "primary"} icon={showForm && !editingId ? "close" : "add"} onPress={() => (showForm && !editingId ? resetForm() : (resetForm(), setShowForm(true)))}>
-                {showForm && !editingId ? "Cancel" : "New plan"}
+                {showForm && !editingId ? t("common.cancel") : t("owner.plans.newPlan")}
               </ZookButton>
             }
           />
 
           {showForm ? (
             <Card contentStyle={styles.formCard}>
-              <Text style={[styles.formTitle, { color: palette.text.primary }]}>{editingId ? "Edit plan" : "New plan"}</Text>
-              <FormField label="Plan name" value={name} onChangeText={setName} placeholder="Monthly Active" />
-              <Text style={[styles.label, { color: palette.text.secondary }]}>Type</Text>
+              <Text style={[styles.formTitle, { color: palette.text.primary }]}>{editingId ? t("owner.plans.editPlan") : t("owner.plans.newPlan")}</Text>
+              <FormField label={t("owner.plans.planName")} value={name} onChangeText={setName} placeholder={t("owner.plans.planNamePlaceholder")} />
+              <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.plans.type")}</Text>
               <View style={styles.chipWrap}>
                 {PLAN_TYPES.map((option) => {
                   const selected = type === option.value;
                   return (
                     <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setType(option.value)} style={[styles.chip, { borderColor: selected ? palette.accent.base : palette.border.default, backgroundColor: selected ? palette.surface.accentSoft : palette.surface.default }]}>
-                      <Text style={[styles.chipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{option.label}</Text>
+                      <Text style={[styles.chipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{t(option.labelKey)}</Text>
                     </Pressable>
                   );
                 })}
               </View>
               <View style={styles.formRow}>
-                <FormField label="Price (₹)" value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="1499" style={styles.formField} />
+                <FormField label={t("owner.plans.priceInr")} value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="1499" style={styles.formField} />
                 {showDuration ? (
-                  <FormField label="Duration (days)" value={durationDays} onChangeText={setDurationDays} keyboardType="number-pad" placeholder="30" style={styles.formField} />
+                  <FormField label={t("owner.plans.durationDays")} value={durationDays} onChangeText={setDurationDays} keyboardType="number-pad" placeholder="30" style={styles.formField} />
                 ) : null}
                 {showVisits ? (
-                  <FormField label="Visits" value={visitLimit} onChangeText={setVisitLimit} keyboardType="number-pad" placeholder="12" style={styles.formField} />
+                  <FormField label={t("owner.plans.visits")} value={visitLimit} onChangeText={setVisitLimit} keyboardType="number-pad" placeholder="12" style={styles.formField} />
                 ) : null}
               </View>
               <View style={styles.switchRow}>
-                <Text style={[styles.switchTitle, { color: palette.text.primary }]}>Show publicly</Text>
+                <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.plans.showPublicly")}</Text>
                 <ThemedSwitch value={publicVisible} onValueChange={setPublicVisible} />
               </View>
-              <ZookButton onPress={submit} disabled={!canSubmit} busy={savePlan.isPending} busyLabel="Saving..." icon="save-outline">
-                {editingId ? "Save changes" : "Create plan"}
+              <ZookButton onPress={submit} disabled={!canSubmit} busy={savePlan.isPending} busyLabel={t("common.saving")} icon="save-outline">
+                {editingId ? t("owner.plans.saveChanges") : t("owner.plans.createPlan")}
               </ZookButton>
             </Card>
           ) : null}
@@ -169,30 +171,30 @@ export default function OwnerPlans() {
           ) : null}
           {!plansQuery.isLoading && plans.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="pricetag-outline" title="No plans yet" body="Create your first membership plan." />
+              <EmptyState icon="pricetag-outline" title={t("owner.plans.noPlansYet")} body={t("owner.plans.noPlansYetBody")} />
             </Card>
           ) : null}
 
           <View style={styles.stack}>
             {plans.map((plan) => (
               <Card key={plan.id} variant="compact" contentStyle={styles.planCard}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${plan.name}`} onPress={() => startEdit(plan)} style={styles.planMain}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t("owner.plans.editAccessibility", { name: plan.name })} onPress={() => startEdit(plan)} style={styles.planMain}>
                   <IconBubble icon="card-outline" tone="lime" size={42} />
                   <View style={styles.planCopy}>
                     <Text style={[styles.planName, { color: palette.text.primary }]} numberOfLines={1}>{plan.name}</Text>
-                    <Text style={[styles.planMeta, { color: palette.text.secondary }]} numberOfLines={1}>{planSummary(plan)}</Text>
+                    <Text style={[styles.planMeta, { color: palette.text.secondary }]} numberOfLines={1}>{planSummary(plan, t)}</Text>
                   </View>
                   <View style={styles.planRight}>
                     <Text style={[styles.planPrice, { color: palette.text.primary }]}>{formatInr(plan.pricePaise)}</Text>
-                    {!plan.publicVisible ? <Pill tone="neutral">Hidden</Pill> : null}
+                    {!plan.publicVisible ? <Pill tone="neutral">{t("owner.plans.hidden")}</Pill> : null}
                   </View>
                 </Pressable>
                 <View style={styles.planActions}>
                   <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={() => startEdit(plan)} style={styles.planAction}>
-                    Edit
+                    {t("owner.plans.edit")}
                   </ZookButton>
                   <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmDelete(plan)} style={styles.planAction}>
-                    Remove
+                    {t("owner.plans.remove")}
                   </ZookButton>
                 </View>
               </Card>
