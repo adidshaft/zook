@@ -209,6 +209,52 @@ export type TranslationKey =
   | "onboarding.splashSubtitle"
   | "onboarding.trainTrack"
   | "onboarding.trainTrackCopy"
+  | "qa.aarogyaGym"
+  | "qa.adminApprovals"
+  | "qa.adminHome"
+  | "qa.adminMore"
+  | "qa.adminStock"
+  | "qa.gyms"
+  | "qa.login"
+  | "qa.memberAssistant"
+  | "qa.memberAttendanceDetail"
+  | "qa.memberClasses"
+  | "qa.memberHistory"
+  | "qa.memberHome"
+  | "qa.memberMembership"
+  | "qa.memberNotifications"
+  | "qa.memberPlan"
+  | "qa.memberProgress"
+  | "qa.memberScan"
+  | "qa.memberShop"
+  | "qa.memberTrackingEntry"
+  | "qa.ownerApprovals"
+  | "qa.ownerBilling"
+  | "qa.ownerHome"
+  | "qa.ownerMemberDetail"
+  | "qa.ownerMembers"
+  | "qa.ownerMore"
+  | "qa.ownerNotifications"
+  | "qa.ownerRevenue"
+  | "qa.ownerStock"
+  | "qa.public"
+  | "qa.receptionHome"
+  | "qa.receptionMemberDetail"
+  | "qa.receptionMembers"
+  | "qa.receptionOrders"
+  | "qa.receptionPayments"
+  | "qa.receptionScan"
+  | "qa.receptionVerification"
+  | "qa.roles"
+  | "qa.title"
+  | "qa.trainerClientDetail"
+  | "qa.trainerClientPlan"
+  | "qa.trainerClientSessions"
+  | "qa.trainerClients"
+  | "qa.trainerHome"
+  | "qa.trainerPayouts"
+  | "qa.trainerPlans"
+  | "qa.valueProps"
   | "settings.profileTitle"
   | "settings.profileSubtitle"
   | "settings.goBack"
@@ -1752,6 +1798,52 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "onboarding.splashSubtitle": "Check-ins, memberships, plans, and the front desk flow in one place.",
     "onboarding.trainTrack": "Train & track",
     "onboarding.trainTrackCopy": "Scan in seconds, follow your plan, and watch every workout add up.",
+    "qa.aarogyaGym": "Aarogya gym",
+    "qa.adminApprovals": "Admin approvals",
+    "qa.adminHome": "Admin home",
+    "qa.adminMore": "Admin more",
+    "qa.adminStock": "Admin stock",
+    "qa.gyms": "Gyms",
+    "qa.login": "Login",
+    "qa.memberAssistant": "Member assistant",
+    "qa.memberAttendanceDetail": "Member attendance detail",
+    "qa.memberClasses": "Member classes",
+    "qa.memberHistory": "Member history",
+    "qa.memberHome": "Member home",
+    "qa.memberMembership": "Member membership",
+    "qa.memberNotifications": "Member notifications",
+    "qa.memberPlan": "Member plan",
+    "qa.memberProgress": "Member progress",
+    "qa.memberScan": "Member scan",
+    "qa.memberShop": "Member shop",
+    "qa.memberTrackingEntry": "Member tracking entry",
+    "qa.ownerApprovals": "Owner approvals",
+    "qa.ownerBilling": "Owner billing",
+    "qa.ownerHome": "Owner home",
+    "qa.ownerMemberDetail": "Owner member detail",
+    "qa.ownerMembers": "Owner members",
+    "qa.ownerMore": "Owner more",
+    "qa.ownerNotifications": "Owner notifications",
+    "qa.ownerRevenue": "Owner revenue",
+    "qa.ownerStock": "Owner stock",
+    "qa.public": "Public",
+    "qa.receptionHome": "Reception home",
+    "qa.receptionMemberDetail": "Reception member detail",
+    "qa.receptionMembers": "Reception members",
+    "qa.receptionOrders": "Reception orders",
+    "qa.receptionPayments": "Reception payments",
+    "qa.receptionScan": "Reception scan",
+    "qa.receptionVerification": "Reception verification",
+    "qa.roles": "Roles",
+    "qa.title": "QA shortcuts",
+    "qa.trainerClientDetail": "Trainer client detail",
+    "qa.trainerClientPlan": "Trainer client plan",
+    "qa.trainerClientSessions": "Trainer client sessions",
+    "qa.trainerClients": "Trainer clients",
+    "qa.trainerHome": "Trainer home",
+    "qa.trainerPayouts": "Trainer payouts",
+    "qa.trainerPlans": "Trainer plans",
+    "qa.valueProps": "Value props",
     "settings.profileTitle": "Profile",
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
@@ -3303,6 +3395,52 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "onboarding.splashSubtitle": "Check-ins, memberships, plans और front desk flow एक जगह.",
     "onboarding.trainTrack": "Train और track",
     "onboarding.trainTrackCopy": "Seconds में scan करें, अपना plan follow करें, और हर workout जुड़ता देखें.",
+    "qa.aarogyaGym": "Aarogya gym",
+    "qa.adminApprovals": "Admin approvals",
+    "qa.adminHome": "Admin home",
+    "qa.adminMore": "Admin more",
+    "qa.adminStock": "Admin stock",
+    "qa.gyms": "Gyms",
+    "qa.login": "Login",
+    "qa.memberAssistant": "Member assistant",
+    "qa.memberAttendanceDetail": "Member attendance detail",
+    "qa.memberClasses": "Member classes",
+    "qa.memberHistory": "Member history",
+    "qa.memberHome": "Member home",
+    "qa.memberMembership": "Member membership",
+    "qa.memberNotifications": "Member notifications",
+    "qa.memberPlan": "Member plan",
+    "qa.memberProgress": "Member progress",
+    "qa.memberScan": "Member scan",
+    "qa.memberShop": "Member shop",
+    "qa.memberTrackingEntry": "Member tracking entry",
+    "qa.ownerApprovals": "Owner approvals",
+    "qa.ownerBilling": "Owner billing",
+    "qa.ownerHome": "Owner home",
+    "qa.ownerMemberDetail": "Owner member detail",
+    "qa.ownerMembers": "Owner members",
+    "qa.ownerMore": "Owner more",
+    "qa.ownerNotifications": "Owner notifications",
+    "qa.ownerRevenue": "Owner revenue",
+    "qa.ownerStock": "Owner stock",
+    "qa.public": "Public",
+    "qa.receptionHome": "Reception home",
+    "qa.receptionMemberDetail": "Reception member detail",
+    "qa.receptionMembers": "Reception members",
+    "qa.receptionOrders": "Reception orders",
+    "qa.receptionPayments": "Reception payments",
+    "qa.receptionScan": "Reception scan",
+    "qa.receptionVerification": "Reception verification",
+    "qa.roles": "Roles",
+    "qa.title": "QA shortcuts",
+    "qa.trainerClientDetail": "Trainer client detail",
+    "qa.trainerClientPlan": "Trainer client plan",
+    "qa.trainerClientSessions": "Trainer client sessions",
+    "qa.trainerClients": "Trainer clients",
+    "qa.trainerHome": "Trainer home",
+    "qa.trainerPayouts": "Trainer payouts",
+    "qa.trainerPlans": "Trainer plans",
+    "qa.valueProps": "Value props",
     "settings.profileTitle": "प्रोफाइल",
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",

@@ -3,11 +3,13 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Role } from "@zook/core";
 
 import { AppHeader, Card, ZookButton, ZookScreen } from "@/components/primitives";
+import type { TranslationKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type RoleShortcut = {
-  label: string;
+  labelKey: TranslationKey;
   role: Role;
   target: string;
   view?: string;
@@ -15,53 +17,53 @@ type RoleShortcut = {
 };
 
 const publicShortcuts = [
-  { label: "Login", href: "/login", testID: "qa-public-login" },
-  { label: "Gyms", href: "/gyms", testID: "qa-public-gyms" },
-  { label: "Aarogya gym", href: "/gyms/aarogya-strength", testID: "qa-public-gym-aarogya" },
-  { label: "Language", href: "/onboarding/language", testID: "qa-public-language" },
-  { label: "Value props", href: "/onboarding/value-props", testID: "qa-public-value-props" },
-] as const;
+  { labelKey: "qa.login", href: "/login", testID: "qa-public-login" },
+  { labelKey: "qa.gyms", href: "/gyms", testID: "qa-public-gyms" },
+  { labelKey: "qa.aarogyaGym", href: "/gyms/aarogya-strength", testID: "qa-public-gym-aarogya" },
+  { labelKey: "settings.language", href: "/onboarding/language", testID: "qa-public-language" },
+  { labelKey: "qa.valueProps", href: "/onboarding/value-props", testID: "qa-public-value-props" },
+] as const satisfies ReadonlyArray<{ labelKey: TranslationKey; href: string; testID: string }>;
 
 const roleShortcuts: readonly RoleShortcut[] = [
-  { label: "Member home", role: "MEMBER", target: "/", testID: "qa-member-home" },
-  { label: "Member progress", role: "MEMBER", target: "/progress", testID: "qa-member-progress" },
-  { label: "Member scan", role: "MEMBER", target: "/scan", testID: "qa-member-scan" },
-  { label: "Member plan", role: "MEMBER", target: "/plan", testID: "qa-member-plan" },
-  { label: "Member membership", role: "MEMBER", target: "/membership", testID: "qa-member-membership" },
-  { label: "Member classes", role: "MEMBER", target: "/classes", testID: "qa-member-classes" },
-  { label: "Member shop", role: "MEMBER", target: "/__qa-open?kind=member-shop", testID: "qa-member-shop" },
-  { label: "Member assistant", role: "MEMBER", target: "/assistant", testID: "qa-member-assistant" },
-  { label: "Member notifications", role: "MEMBER", target: "/notifications", testID: "qa-member-notifications" },
-  { label: "Member history", role: "MEMBER", target: "/tracking-history", testID: "qa-member-history" },
-  { label: "Member tracking entry", role: "MEMBER", target: "/tracking-entry", testID: "qa-member-tracking-entry" },
-  { label: "Member attendance detail", role: "MEMBER", target: "/__qa-open?kind=member-attendance-detail", testID: "qa-member-attendance-detail" },
-  { label: "Owner home", role: "OWNER", target: "/owner", testID: "qa-owner-home" },
-  { label: "Owner members", role: "OWNER", target: "/owner/members", testID: "qa-owner-members" },
-  { label: "Owner member detail", role: "OWNER", target: "/__qa-open?kind=owner-member-detail", testID: "qa-owner-member-detail" },
-  { label: "Owner approvals", role: "OWNER", target: "/owner/approvals", testID: "qa-owner-approvals" },
-  { label: "Owner revenue", role: "OWNER", target: "/owner/revenue", testID: "qa-owner-revenue" },
-  { label: "Owner stock", role: "OWNER", target: "/owner/stock", testID: "qa-owner-stock" },
-  { label: "Owner billing", role: "OWNER", target: "/owner/billing", testID: "qa-owner-billing" },
-  { label: "Owner more", role: "OWNER", target: "/owner/more", testID: "qa-owner-more" },
-  { label: "Owner notifications", role: "OWNER", target: "/notifications", testID: "qa-owner-notifications" },
-  { label: "Admin home", role: "ADMIN", target: "/owner", testID: "qa-admin-home" },
-  { label: "Admin approvals", role: "ADMIN", target: "/owner/approvals", testID: "qa-admin-approvals" },
-  { label: "Admin stock", role: "ADMIN", target: "/owner/stock", testID: "qa-admin-stock" },
-  { label: "Admin more", role: "ADMIN", target: "/owner/more", testID: "qa-admin-more" },
-  { label: "Trainer home", role: "TRAINER", target: "/trainer", view: "home", testID: "qa-trainer-home" },
-  { label: "Trainer clients", role: "TRAINER", target: "/trainer", view: "clients", testID: "qa-trainer-clients" },
-  { label: "Trainer plans", role: "TRAINER", target: "/trainer", view: "plans", testID: "qa-trainer-plans" },
-  { label: "Trainer payouts", role: "TRAINER", target: "/trainer", view: "payouts", testID: "qa-trainer-payouts" },
-  { label: "Trainer client detail", role: "TRAINER", target: "/__qa-open?kind=trainer-client-detail", testID: "qa-trainer-client-detail" },
-  { label: "Trainer client plan", role: "TRAINER", target: "/__qa-open?kind=trainer-client-plan", testID: "qa-trainer-client-plan" },
-  { label: "Trainer client sessions", role: "TRAINER", target: "/__qa-open?kind=trainer-client-sessions", testID: "qa-trainer-client-sessions" },
-  { label: "Reception home", role: "RECEPTIONIST", target: "/reception", testID: "qa-reception-home" },
-  { label: "Reception members", role: "RECEPTIONIST", target: "/reception/members", testID: "qa-reception-members" },
-  { label: "Reception member detail", role: "RECEPTIONIST", target: "/__qa-open?kind=reception-member-detail", testID: "qa-reception-member-detail" },
-  { label: "Reception payments", role: "RECEPTIONIST", target: "/reception/payments", testID: "qa-reception-payments" },
-  { label: "Reception orders", role: "RECEPTIONIST", target: "/reception/orders", testID: "qa-reception-orders" },
-  { label: "Reception scan", role: "RECEPTIONIST", target: "/scan", testID: "qa-reception-scan" },
-  { label: "Reception verification", role: "RECEPTIONIST", target: "/__qa-open?kind=reception-verification", testID: "qa-reception-verification" },
+  { labelKey: "qa.memberHome", role: "MEMBER", target: "/", testID: "qa-member-home" },
+  { labelKey: "qa.memberProgress", role: "MEMBER", target: "/progress", testID: "qa-member-progress" },
+  { labelKey: "qa.memberScan", role: "MEMBER", target: "/scan", testID: "qa-member-scan" },
+  { labelKey: "qa.memberPlan", role: "MEMBER", target: "/plan", testID: "qa-member-plan" },
+  { labelKey: "qa.memberMembership", role: "MEMBER", target: "/membership", testID: "qa-member-membership" },
+  { labelKey: "qa.memberClasses", role: "MEMBER", target: "/classes", testID: "qa-member-classes" },
+  { labelKey: "qa.memberShop", role: "MEMBER", target: "/__qa-open?kind=member-shop", testID: "qa-member-shop" },
+  { labelKey: "qa.memberAssistant", role: "MEMBER", target: "/assistant", testID: "qa-member-assistant" },
+  { labelKey: "qa.memberNotifications", role: "MEMBER", target: "/notifications", testID: "qa-member-notifications" },
+  { labelKey: "qa.memberHistory", role: "MEMBER", target: "/tracking-history", testID: "qa-member-history" },
+  { labelKey: "qa.memberTrackingEntry", role: "MEMBER", target: "/tracking-entry", testID: "qa-member-tracking-entry" },
+  { labelKey: "qa.memberAttendanceDetail", role: "MEMBER", target: "/__qa-open?kind=member-attendance-detail", testID: "qa-member-attendance-detail" },
+  { labelKey: "qa.ownerHome", role: "OWNER", target: "/owner", testID: "qa-owner-home" },
+  { labelKey: "qa.ownerMembers", role: "OWNER", target: "/owner/members", testID: "qa-owner-members" },
+  { labelKey: "qa.ownerMemberDetail", role: "OWNER", target: "/__qa-open?kind=owner-member-detail", testID: "qa-owner-member-detail" },
+  { labelKey: "qa.ownerApprovals", role: "OWNER", target: "/owner/approvals", testID: "qa-owner-approvals" },
+  { labelKey: "qa.ownerRevenue", role: "OWNER", target: "/owner/revenue", testID: "qa-owner-revenue" },
+  { labelKey: "qa.ownerStock", role: "OWNER", target: "/owner/stock", testID: "qa-owner-stock" },
+  { labelKey: "qa.ownerBilling", role: "OWNER", target: "/owner/billing", testID: "qa-owner-billing" },
+  { labelKey: "qa.ownerMore", role: "OWNER", target: "/owner/more", testID: "qa-owner-more" },
+  { labelKey: "qa.ownerNotifications", role: "OWNER", target: "/notifications", testID: "qa-owner-notifications" },
+  { labelKey: "qa.adminHome", role: "ADMIN", target: "/owner", testID: "qa-admin-home" },
+  { labelKey: "qa.adminApprovals", role: "ADMIN", target: "/owner/approvals", testID: "qa-admin-approvals" },
+  { labelKey: "qa.adminStock", role: "ADMIN", target: "/owner/stock", testID: "qa-admin-stock" },
+  { labelKey: "qa.adminMore", role: "ADMIN", target: "/owner/more", testID: "qa-admin-more" },
+  { labelKey: "qa.trainerHome", role: "TRAINER", target: "/trainer", view: "home", testID: "qa-trainer-home" },
+  { labelKey: "qa.trainerClients", role: "TRAINER", target: "/trainer", view: "clients", testID: "qa-trainer-clients" },
+  { labelKey: "qa.trainerPlans", role: "TRAINER", target: "/trainer", view: "plans", testID: "qa-trainer-plans" },
+  { labelKey: "qa.trainerPayouts", role: "TRAINER", target: "/trainer", view: "payouts", testID: "qa-trainer-payouts" },
+  { labelKey: "qa.trainerClientDetail", role: "TRAINER", target: "/__qa-open?kind=trainer-client-detail", testID: "qa-trainer-client-detail" },
+  { labelKey: "qa.trainerClientPlan", role: "TRAINER", target: "/__qa-open?kind=trainer-client-plan", testID: "qa-trainer-client-plan" },
+  { labelKey: "qa.trainerClientSessions", role: "TRAINER", target: "/__qa-open?kind=trainer-client-sessions", testID: "qa-trainer-client-sessions" },
+  { labelKey: "qa.receptionHome", role: "RECEPTIONIST", target: "/reception", testID: "qa-reception-home" },
+  { labelKey: "qa.receptionMembers", role: "RECEPTIONIST", target: "/reception/members", testID: "qa-reception-members" },
+  { labelKey: "qa.receptionMemberDetail", role: "RECEPTIONIST", target: "/__qa-open?kind=reception-member-detail", testID: "qa-reception-member-detail" },
+  { labelKey: "qa.receptionPayments", role: "RECEPTIONIST", target: "/reception/payments", testID: "qa-reception-payments" },
+  { labelKey: "qa.receptionOrders", role: "RECEPTIONIST", target: "/reception/orders", testID: "qa-reception-orders" },
+  { labelKey: "qa.receptionScan", role: "RECEPTIONIST", target: "/scan", testID: "qa-reception-scan" },
+  { labelKey: "qa.receptionVerification", role: "RECEPTIONIST", target: "/__qa-open?kind=reception-verification", testID: "qa-reception-verification" },
 ] as const;
 
 function launchRoleShortcut(shortcut: RoleShortcut) {
@@ -75,6 +77,7 @@ function launchRoleShortcut(shortcut: RoleShortcut) {
 
 export default function QaLauncherScreen() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const visibleRoleShortcuts = isMobileFeatureEnabled("AI_CHAT_ENABLED")
     ? roleShortcuts
@@ -92,12 +95,12 @@ export default function QaLauncherScreen() {
         contentContainerStyle={styles.content}
       >
         <AppHeader
-          title="QA shortcuts"
+          title={t("qa.title")}
           showBack
         />
 
         <Card contentStyle={styles.section}>
-          <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Public</Text>
+          <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("qa.public")}</Text>
           <View style={styles.grid}>
             {publicShortcuts.map((shortcut) => (
               <ZookButton
@@ -106,14 +109,14 @@ export default function QaLauncherScreen() {
                 variant="secondary"
                 onPress={() => router.replace(shortcut.href as never)}
               >
-                {shortcut.label}
+                {t(shortcut.labelKey)}
               </ZookButton>
             ))}
           </View>
         </Card>
 
         <Card contentStyle={styles.section}>
-          <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Roles</Text>
+          <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("qa.roles")}</Text>
           <View style={styles.grid}>
             {visibleRoleShortcuts.map((shortcut) => (
               <ZookButton
@@ -122,7 +125,7 @@ export default function QaLauncherScreen() {
                 variant="secondary"
                 onPress={() => launchRoleShortcut(shortcut)}
               >
-                {shortcut.label}
+                {t(shortcut.labelKey)}
               </ZookButton>
             ))}
           </View>
