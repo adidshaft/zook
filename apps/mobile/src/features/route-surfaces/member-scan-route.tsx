@@ -20,10 +20,10 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
   EmptyState,
+  HeaderActions,
   IconBubble,
   ScreenHeader,
   type PillTone,
-  ProfileShortcut,
   ScannerFrame,
   useRequestPermissionWithRationale,
   ZookButton,
@@ -36,6 +36,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { useMemberHome, type MemberDashboardData, type MemberHomeData } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { getMobileAppEnv, isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
   enqueueAttendanceScan,
@@ -222,6 +223,7 @@ function readScannedAttendancePayload(
 
 export default function Scan() {
   const { mode, palette } = useTheme();
+  const t = useT();
   const isDark = mode === "dark";
   const showDevTestScan =
     __DEV__ && getMobileAppEnv() === "local" && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
@@ -307,7 +309,7 @@ export default function Scan() {
       return result.suspiciousFlags.join(", ");
     }
     if (result.duplicate) {
-      return "Already checked in today.";
+      return t("member.scan.alreadyCheckedInToday");
     }
     return result.attendance.reason ?? "";
   }
@@ -319,7 +321,7 @@ export default function Scan() {
     return result.warnings
       .map((warning) =>
         warning === "profile_photo_recommended"
-          ? "Add a profile photo after check-in so the desk can verify you faster next time."
+          ? t("member.scan.profilePhotoRecommended")
           : String(warning),
       )
       .join(" ");
@@ -463,7 +465,7 @@ export default function Scan() {
         showToast({
           tone: "success",
           haptic: "success",
-          message: synced === 1 ? "Saved check-in confirmed." : `${synced} saved check-ins confirmed.`,
+          message: t(synced === 1 ? "member.scan.savedCheckInConfirmed" : "member.scan.savedCheckInsConfirmed", { count: synced }),
         });
       }
     } finally {
@@ -484,12 +486,12 @@ export default function Scan() {
   useEffect(() => {
     if (scanMode !== "scan") return;
     const message = cameraBlocked
-      ? "Camera access blocked. Open device settings to allow QR scanning."
+      ? t("member.scan.cameraBlockedAnnouncement")
       : hasCamera
-        ? "Camera available. Point it at your gym QR code."
-        : "Camera permission needed before scanning.";
+        ? t("member.scan.cameraAvailableAnnouncement")
+        : t("member.scan.cameraNeededAnnouncement");
     AccessibilityInfo.announceForAccessibility(message);
-  }, [cameraBlocked, hasCamera, scanMode]);
+  }, [cameraBlocked, hasCamera, scanMode, t]);
   const needsProfilePhoto = /profile photo/i.test(errorMessage);
   const codeReady = codePrefix.length === 2 && codeDigits.length === 4;
 
@@ -501,11 +503,11 @@ export default function Scan() {
         label:
           scanMode === "code"
             ? codeReady
-              ? "Code entered"
-              : "Enter code"
+              ? t("member.scan.codeEntered")
+              : t("member.scan.enterCode")
             : hasCamera
-              ? "Camera available"
-              : "Camera needed",
+              ? t("member.scan.cameraAvailable")
+              : t("member.scan.cameraNeeded"),
         state: captureComplete ? "complete" : "idle",
       },
       {
@@ -513,21 +515,21 @@ export default function Scan() {
         label:
           scanState === "idle"
             ? scanMode === "code"
-              ? "Awaiting submit"
-              : "Awaiting QR"
-            : "Code captured",
+              ? t("member.scan.awaitingSubmit")
+              : t("member.scan.awaitingQr")
+            : t("member.scan.codeCaptured"),
         state: scanState === "idle" ? "idle" : scanState === "failed" ? "failed" : "complete",
       },
       {
         key: "server",
         label:
           scanState === "accepted"
-            ? "Server verified"
+            ? t("member.scan.serverVerified")
             : scanState === "failed"
-              ? "Not verified"
+              ? t("member.scan.notVerified")
               : scanState === "checking"
-                ? "Verifying"
-                : "Server check",
+                ? t("member.scan.verifying")
+                : t("member.scan.serverCheck"),
         state:
           scanState === "accepted"
             ? "complete"
@@ -538,7 +540,7 @@ export default function Scan() {
                 : "idle",
       },
     ];
-  }, [codeReady, hasCamera, scanMode, scanState]);
+  }, [codeReady, hasCamera, scanMode, scanState, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -576,7 +578,7 @@ export default function Scan() {
     setErrorMessage("");
     try {
       if (!token) {
-        throw new Error("Sign in again before scanning.");
+        throw new Error(t("member.scan.signInAgain"));
       }
       const activeMembership = memberHomeQuery.data?.activeMembership;
       const membershipExpired =
@@ -586,7 +588,7 @@ export default function Scan() {
           .includes("EXPIRED") ||
           (typeof activeMembership?.daysLeft === "number" && activeMembership.daysLeft <= 0));
       if (membershipExpired && !memberHomeQuery.isFetching) {
-        throw new Error("Membership expired. Renew before checking in.");
+        throw new Error(t("member.scan.membershipExpired"));
       }
       const result = await attendanceApi.scan<ScanResult>({
         token,
@@ -613,7 +615,7 @@ export default function Scan() {
             gymName:
               result.attendance.branchName ??
               memberHomeQuery.data?.activeOrganization?.name ??
-              "Your gym",
+              t("member.scan.yourGym"),
           });
           await sleep(CHECK_IN_MOMENT_VISIBLE_MS);
           setCheckInMoment(null);
@@ -632,11 +634,11 @@ export default function Scan() {
         setQueuedScanCount(nextQueue.length);
         setScanState("failed");
         setErrorMessage(
-          "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
+          t("member.scan.offlineSavedBody"),
         );
         showToast({
-          title: "Scan saved for retry",
-          message: "Entry is not confirmed until the server accepts it.",
+          title: t("member.scan.offlineSavedTitle"),
+          message: t("member.scan.offlineSavedToast"),
           tone: "amber",
           haptic: "warning",
         });
@@ -668,7 +670,7 @@ export default function Scan() {
     setErrorMessage("");
     try {
       if (!token || !activeOrgId) {
-        throw new Error("Sign in and select a gym before scanning.");
+        throw new Error(t("member.scan.signInSelectGym"));
       }
       const result = await attendanceApi.devScan<ScanResult>({
         token,
@@ -705,7 +707,7 @@ export default function Scan() {
     const scanned = readScannedAttendancePayload(data ?? "");
     if (!scanned) {
       completedRef.current = false;
-      setErrorMessage("Could not read QR code. Try again.");
+      setErrorMessage(t("member.scan.couldNotReadQr"));
       setScanState("failed");
       return;
     }
@@ -776,10 +778,10 @@ export default function Scan() {
           }}
         >
           <ScreenHeader
-            title="Scan to check in"
+            title={t("member.scan.title")}
             contextSlot={<RoleSwitcherChip />}
-            subtitle="Point your camera at the QR code at your gym"
-            trailing={<ProfileShortcut />}
+            subtitle={t("member.scan.subtitle")}
+            trailing={<HeaderActions showBell />}
           />
 
           {cameraBlocked ? (
@@ -787,10 +789,10 @@ export default function Scan() {
               <IconBubble icon="camera-outline" tone="red" size={42} />
               <View style={styles.blockedPermissionCopy}>
                 <Text style={[styles.cameraFallbackTitle, { color: palette.text.primary }]}>
-                  Camera access blocked
+                  {t("member.scan.cameraAccessBlocked")}
                 </Text>
                 <Text style={[styles.cameraFallbackText, { color: palette.text.secondary }]}>
-                  Allow camera access in Settings to scan QR codes.
+                  {t("member.scan.allowCameraSettings")}
                 </Text>
               </View>
               <ZookButton
@@ -798,7 +800,7 @@ export default function Scan() {
                 variant="secondary"
                 icon="settings-outline"
               >
-                Open settings
+                {t("member.scan.openSettings")}
               </ZookButton>
               <View style={styles.permissionRecoveryRow}>
                 <ZookButton
@@ -807,7 +809,7 @@ export default function Scan() {
                   icon="keypad-outline"
                   style={styles.permissionRecoveryAction}
                 >
-                  Enter code manually
+                  {t("member.scan.enterCodeManually")}
                 </ZookButton>
                 <ZookButton
                   onPress={() => void cameraPermission.requestPermission()}
@@ -817,7 +819,7 @@ export default function Scan() {
                   icon="refresh-outline"
                   style={styles.permissionRecoveryAction}
                 >
-                  Try camera again
+                  {t("member.scan.tryCameraAgain")}
                 </ZookButton>
               </View>
             </Card>
@@ -834,7 +836,7 @@ export default function Scan() {
                 {hasCamera ? (
                   <CameraView
                     testID="scanner-view"
-                    accessibilityLabel="QR scanner camera preview"
+                    accessibilityLabel={t("member.scan.cameraPreviewAccessibility")}
                     style={styles.camera}
                     facing="back"
                     onBarcodeScanned={completedRef.current ? undefined : handleBarcode}
@@ -844,11 +846,11 @@ export default function Scan() {
                   <View style={styles.cameraFallback}>
                     <EmptyState
                       icon="camera-outline"
-                      title={cameraBlocked ? "Camera access blocked" : "Enable camera"}
+                      title={cameraBlocked ? t("member.scan.cameraAccessBlocked") : t("member.scan.enableCamera")}
                       body={
                         cameraBlocked
-                          ? "Open device settings to allow QR scanning."
-                          : "Allow camera access to scan the gym QR."
+                          ? t("member.scan.openDeviceSettings")
+                          : t("member.scan.allowCameraQr")
                       }
                     />
                     <ZookButton
@@ -864,7 +866,7 @@ export default function Scan() {
                       variant="secondary"
                       style={styles.permissionButton}
                     >
-                      {cameraBlocked ? "Open settings" : "Allow camera"}
+                      {cameraBlocked ? t("member.scan.openSettings") : t("member.scan.allowCamera")}
                     </ZookButton>
                   </View>
                 )}
@@ -884,7 +886,7 @@ export default function Scan() {
                 >
                   <View style={[styles.liveDot, { backgroundColor: palette.accent.base }]} />
                   <Text style={[styles.cameraBadgeText, { color: palette.text.primary }]}>
-                    {busy ? "Checking code..." : "Searching for code..."}
+                    {busy ? t("member.scan.checkingCode") : t("member.scan.searchingForCode")}
                   </Text>
                 </View>
               </View>
@@ -893,21 +895,21 @@ export default function Scan() {
                 <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
                 <View style={styles.helpCopy}>
                   <Text style={[styles.helpTitle, { color: palette.text.primary }]}>
-                    Can’t scan?
+                    {t("member.scan.cantScan")}
                   </Text>
                   <Text style={[styles.helpBody, { color: palette.text.secondary }]}>
-                    Enter the desk code manually.
+                    {t("member.scan.enterDeskCodeManually")}
                   </Text>
                 </View>
                 <Pressable
                   testID="scan-manual-code"
                   onPress={() => setScanMode("code")}
                   accessibilityRole="button"
-                  accessibilityLabel="Enter manual check-in code"
+                  accessibilityLabel={t("member.scan.enterManualCodeAccessibility")}
                   style={({ pressed }) => [styles.manualCodeLink, pressed ? styles.linkPressed : null]}
                 >
                   <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
-                    Enter code
+                    {t("member.scan.enterCode")}
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={palette.accent.strong} />
                 </Pressable>
@@ -917,10 +919,10 @@ export default function Scan() {
             <Card variant="compact" contentStyle={styles.codeContent}>
               <View style={styles.codeHeader}>
                 <Text style={[styles.codeTitle, { color: palette.text.primary }]}>
-                  Enter check-in code
+                  {t("member.scan.enterCheckInCode")}
                 </Text>
                 <Text style={[styles.codeHint, { color: palette.text.secondary }]}>
-                  Use the two letters and four digits shown with the QR.
+                  {t("member.scan.codeHint")}
                 </Text>
               </View>
               <View style={styles.codeRow}>
@@ -973,7 +975,7 @@ export default function Scan() {
                   onPress={submitCode}
                   disabled={busy || !codeReady}
                   accessibilityRole="button"
-                  accessibilityLabel="Check code"
+                  accessibilityLabel={t("member.scan.checkCodeAccessibility")}
                   style={[
                     styles.codeButton,
                     { backgroundColor: palette.accent.base },
@@ -986,26 +988,26 @@ export default function Scan() {
               {!codeReady && (codePrefix.length > 0 || codeDigits.length > 0) ? (
                 <Text style={[styles.codeValidationHint, { color: palette.text.secondary }]}>
                   {codePrefix.length < 2
-                    ? "Need 2 letters (e.g. AB)"
-                    : "Need 4 numbers (e.g. 1234)"}
+                    ? t("member.scan.needTwoLetters")
+                    : t("member.scan.needFourNumbers")}
                 </Text>
               ) : null}
               {busy ? (
                 <Text style={[styles.checkingText, { color: palette.text.secondary }]}>
                   <Text style={[styles.checkingDot, { color: palette.accent.base }]}>● </Text>
-                  Checking code...
+                  {t("member.scan.checkingCode")}
                 </Text>
               ) : null}
               <Pressable
                 testID="scan-back-to-camera"
                 onPress={() => setScanMode("scan")}
                 accessibilityRole="button"
-                accessibilityLabel="Return to QR scanner"
+                accessibilityLabel={t("member.scan.returnToQrScannerAccessibility")}
                 style={({ pressed }) => [styles.backToScannerLink, pressed ? styles.linkPressed : null]}
               >
                 <Ionicons name="qr-code-outline" size={15} color={palette.accent.strong} />
                 <Text style={[styles.manualCodeLinkText, { color: palette.accent.strong }]}>
-                  Back to camera scanner
+                  {t("member.scan.backToCameraScanner")}
                 </Text>
               </Pressable>
             </Card>
@@ -1070,7 +1072,7 @@ export default function Scan() {
                 icon={needsProfilePhoto ? "person-circle-outline" : "refresh-outline"}
                 style={styles.retryButton}
               >
-                {needsProfilePhoto ? "Add photo" : "Scan again"}
+                {needsProfilePhoto ? t("member.scan.addPhoto") : t("member.scan.scanAgain")}
               </ZookButton>
             </Card>
           ) : null}
@@ -1080,8 +1082,7 @@ export default function Scan() {
               <View style={styles.errorRow}>
                 <Ionicons name="cloud-upload-outline" size={18} color={palette.feedback.warning} />
                 <Text style={[styles.errorText, { color: palette.text.primary }]}>
-                  {queuedScanCount} scan{queuedScanCount === 1 ? "" : "s"} waiting for server
-                  confirmation.
+                  {t(queuedScanCount === 1 ? "member.scan.queuedScanWaiting" : "member.scan.queuedScansWaiting", { count: queuedScanCount })}
                 </Text>
               </View>
               <ZookButton
@@ -1089,10 +1090,10 @@ export default function Scan() {
                 variant="secondary"
                 icon="refresh-outline"
                 busy={replayingQueue}
-                busyLabel="Saving"
+                busyLabel={t("common.saving")}
                 style={styles.retryButton}
               >
-                Retry now
+                {t("member.scan.retryNow")}
               </ZookButton>
             </Card>
           ) : null}
@@ -1102,11 +1103,11 @@ export default function Scan() {
               testID="scan-dev-test"
               onPress={() => void completeDevScan()}
               accessibilityRole="button"
-              accessibilityLabel="Try check-in"
+              accessibilityLabel={t("member.scan.tryCheckIn")}
               style={styles.devLink}
             >
               <Text style={[styles.devLinkText, { color: palette.text.secondary }]}>
-                Try check-in
+                {t("member.scan.tryCheckIn")}
               </Text>
             </Pressable>
           ) : null}
@@ -1116,7 +1117,7 @@ export default function Scan() {
       {notificationPermission.permissionSheet}
       <CheckInMoment
         visible={Boolean(checkInMoment)}
-        gymName={checkInMoment?.gymName ?? "Your gym"}
+        gymName={checkInMoment?.gymName ?? t("member.scan.yourGym")}
         onDone={() => setCheckInMoment(null)}
       />
     </>
@@ -1133,6 +1134,7 @@ function CheckInMoment({
   onDone: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const scale = useRef(new RNAnimated.Value(0.82)).current;
   const opacity = useRef(new RNAnimated.Value(0)).current;
 
@@ -1187,7 +1189,7 @@ function CheckInMoment({
           <Text style={[styles.checkInMomentGym, { color: palette.text.secondary }]} numberOfLines={1}>
             {gymName}
           </Text>
-          <Text style={[styles.checkInMomentTitle, { color: palette.text.primary }]}>Checked in</Text>
+          <Text style={[styles.checkInMomentTitle, { color: palette.text.primary }]}>{t("member.scan.checkedIn")}</Text>
         </RNAnimated.View>
       </View>
     </Modal>

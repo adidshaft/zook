@@ -618,6 +618,63 @@ export type TranslationKey =
   | "member.receipt.status"
   | "member.receipt.title"
   | "member.receipt.total"
+  | "member.scan.addPhoto"
+  | "member.scan.allowCamera"
+  | "member.scan.allowCameraQr"
+  | "member.scan.allowCameraSettings"
+  | "member.scan.alreadyCheckedInToday"
+  | "member.scan.awaitingQr"
+  | "member.scan.awaitingSubmit"
+  | "member.scan.backToCameraScanner"
+  | "member.scan.cameraAccessBlocked"
+  | "member.scan.cameraAvailable"
+  | "member.scan.cameraAvailableAnnouncement"
+  | "member.scan.cameraBlockedAnnouncement"
+  | "member.scan.cameraNeeded"
+  | "member.scan.cameraNeededAnnouncement"
+  | "member.scan.cameraPreviewAccessibility"
+  | "member.scan.cantScan"
+  | "member.scan.checkCodeAccessibility"
+  | "member.scan.checkedIn"
+  | "member.scan.checkingCode"
+  | "member.scan.codeCaptured"
+  | "member.scan.codeEntered"
+  | "member.scan.codeHint"
+  | "member.scan.couldNotReadQr"
+  | "member.scan.enableCamera"
+  | "member.scan.enterCheckInCode"
+  | "member.scan.enterCode"
+  | "member.scan.enterCodeManually"
+  | "member.scan.enterDeskCodeManually"
+  | "member.scan.enterManualCodeAccessibility"
+  | "member.scan.membershipExpired"
+  | "member.scan.needFourNumbers"
+  | "member.scan.needTwoLetters"
+  | "member.scan.notVerified"
+  | "member.scan.offlineSavedBody"
+  | "member.scan.offlineSavedTitle"
+  | "member.scan.offlineSavedToast"
+  | "member.scan.openDeviceSettings"
+  | "member.scan.openSettings"
+  | "member.scan.profilePhotoRecommended"
+  | "member.scan.queuedScanWaiting"
+  | "member.scan.queuedScansWaiting"
+  | "member.scan.retryNow"
+  | "member.scan.returnToQrScannerAccessibility"
+  | "member.scan.savedCheckInConfirmed"
+  | "member.scan.savedCheckInsConfirmed"
+  | "member.scan.scanAgain"
+  | "member.scan.searchingForCode"
+  | "member.scan.serverCheck"
+  | "member.scan.serverVerified"
+  | "member.scan.signInAgain"
+  | "member.scan.signInSelectGym"
+  | "member.scan.subtitle"
+  | "member.scan.title"
+  | "member.scan.tryCameraAgain"
+  | "member.scan.tryCheckIn"
+  | "member.scan.verifying"
+  | "member.scan.yourGym"
   | "more.title"
   | "more.subtitle"
   | "more.accountSubtitle"
@@ -1452,6 +1509,63 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.receipt.status": "Status",
     "member.receipt.title": "Receipt",
     "member.receipt.total": "Total",
+    "member.scan.addPhoto": "Add photo",
+    "member.scan.allowCamera": "Allow camera",
+    "member.scan.allowCameraQr": "Allow camera access to scan the gym QR.",
+    "member.scan.allowCameraSettings": "Allow camera access in Settings to scan QR codes.",
+    "member.scan.alreadyCheckedInToday": "Already checked in today.",
+    "member.scan.awaitingQr": "Awaiting QR",
+    "member.scan.awaitingSubmit": "Awaiting submit",
+    "member.scan.backToCameraScanner": "Back to camera scanner",
+    "member.scan.cameraAccessBlocked": "Camera access blocked",
+    "member.scan.cameraAvailable": "Camera available",
+    "member.scan.cameraAvailableAnnouncement": "Camera available. Point it at your gym QR code.",
+    "member.scan.cameraBlockedAnnouncement": "Camera access blocked. Open device settings to allow QR scanning.",
+    "member.scan.cameraNeeded": "Camera needed",
+    "member.scan.cameraNeededAnnouncement": "Camera permission needed before scanning.",
+    "member.scan.cameraPreviewAccessibility": "QR scanner camera preview",
+    "member.scan.cantScan": "Can't scan?",
+    "member.scan.checkCodeAccessibility": "Check code",
+    "member.scan.checkedIn": "Checked in",
+    "member.scan.checkingCode": "Checking code...",
+    "member.scan.codeCaptured": "Code captured",
+    "member.scan.codeEntered": "Code entered",
+    "member.scan.codeHint": "Use the two letters and four digits shown with the QR.",
+    "member.scan.couldNotReadQr": "Could not read QR code. Try again.",
+    "member.scan.enableCamera": "Enable camera",
+    "member.scan.enterCheckInCode": "Enter check-in code",
+    "member.scan.enterCode": "Enter code",
+    "member.scan.enterCodeManually": "Enter code manually",
+    "member.scan.enterDeskCodeManually": "Enter the desk code manually.",
+    "member.scan.enterManualCodeAccessibility": "Enter manual check-in code",
+    "member.scan.membershipExpired": "Membership expired. Renew before checking in.",
+    "member.scan.needFourNumbers": "Need 4 numbers (e.g. 1234)",
+    "member.scan.needTwoLetters": "Need 2 letters (e.g. AB)",
+    "member.scan.notVerified": "Not verified",
+    "member.scan.offlineSavedBody": "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
+    "member.scan.offlineSavedTitle": "Scan saved for retry",
+    "member.scan.offlineSavedToast": "Entry is not confirmed until the server accepts it.",
+    "member.scan.openDeviceSettings": "Open device settings to allow QR scanning.",
+    "member.scan.openSettings": "Open settings",
+    "member.scan.profilePhotoRecommended": "Add a profile photo after check-in so the desk can verify you faster next time.",
+    "member.scan.queuedScanWaiting": "{{count}} scan waiting for server confirmation.",
+    "member.scan.queuedScansWaiting": "{{count}} scans waiting for server confirmation.",
+    "member.scan.retryNow": "Retry now",
+    "member.scan.returnToQrScannerAccessibility": "Return to QR scanner",
+    "member.scan.savedCheckInConfirmed": "Saved check-in confirmed.",
+    "member.scan.savedCheckInsConfirmed": "{{count}} saved check-ins confirmed.",
+    "member.scan.scanAgain": "Scan again",
+    "member.scan.searchingForCode": "Searching for code...",
+    "member.scan.serverCheck": "Server check",
+    "member.scan.serverVerified": "Server verified",
+    "member.scan.signInAgain": "Sign in again before scanning.",
+    "member.scan.signInSelectGym": "Sign in and select a gym before scanning.",
+    "member.scan.subtitle": "Point your camera at the QR code at your gym",
+    "member.scan.title": "Scan to check in",
+    "member.scan.tryCameraAgain": "Try camera again",
+    "member.scan.tryCheckIn": "Try check-in",
+    "member.scan.verifying": "Verifying",
+    "member.scan.yourGym": "Your gym",
     "more.title": "More",
     "more.subtitle": "Everything else in one place.",
     "more.accountSubtitle": "Zook member account",
@@ -2286,6 +2400,63 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.receipt.status": "Status",
     "member.receipt.title": "Receipt",
     "member.receipt.total": "Total",
+    "member.scan.addPhoto": "फोटो जोड़ें",
+    "member.scan.allowCamera": "कैमरा allow करें",
+    "member.scan.allowCameraQr": "जिम QR स्कैन करने के लिए कैमरा access allow करें.",
+    "member.scan.allowCameraSettings": "QR code स्कैन करने के लिए Settings में camera access allow करें.",
+    "member.scan.alreadyCheckedInToday": "आज पहले से चेक-इन हो चुका है.",
+    "member.scan.awaitingQr": "QR का इंतज़ार",
+    "member.scan.awaitingSubmit": "Submit का इंतज़ार",
+    "member.scan.backToCameraScanner": "Camera scanner पर वापस",
+    "member.scan.cameraAccessBlocked": "Camera access blocked",
+    "member.scan.cameraAvailable": "Camera available",
+    "member.scan.cameraAvailableAnnouncement": "Camera available है. इसे gym QR code पर point करें.",
+    "member.scan.cameraBlockedAnnouncement": "Camera access blocked है. QR scanning allow करने के लिए device settings खोलें.",
+    "member.scan.cameraNeeded": "Camera चाहिए",
+    "member.scan.cameraNeededAnnouncement": "Scanning से पहले camera permission चाहिए.",
+    "member.scan.cameraPreviewAccessibility": "QR scanner camera preview",
+    "member.scan.cantScan": "Scan नहीं हो रहा?",
+    "member.scan.checkCodeAccessibility": "Code check करें",
+    "member.scan.checkedIn": "Checked in",
+    "member.scan.checkingCode": "Code check हो रहा है...",
+    "member.scan.codeCaptured": "Code captured",
+    "member.scan.codeEntered": "Code entered",
+    "member.scan.codeHint": "QR के साथ दिखाए गए दो letters और चार digits डालें.",
+    "member.scan.couldNotReadQr": "QR code पढ़ा नहीं जा सका. फिर कोशिश करें.",
+    "member.scan.enableCamera": "Camera enable करें",
+    "member.scan.enterCheckInCode": "Check-in code डालें",
+    "member.scan.enterCode": "Code डालें",
+    "member.scan.enterCodeManually": "Code manually डालें",
+    "member.scan.enterDeskCodeManually": "Desk code manually डालें.",
+    "member.scan.enterManualCodeAccessibility": "Manual check-in code डालें",
+    "member.scan.membershipExpired": "Membership expire हो गई है. Check-in से पहले renew करें.",
+    "member.scan.needFourNumbers": "4 numbers चाहिए (जैसे 1234)",
+    "member.scan.needTwoLetters": "2 letters चाहिए (जैसे AB)",
+    "member.scan.notVerified": "Verified नहीं",
+    "member.scan.offlineSavedBody": "Connection नहीं है. आपका scan retry के लिए save है, लेकिन entry अभी confirm नहीं है.",
+    "member.scan.offlineSavedTitle": "Scan retry के लिए save हुआ",
+    "member.scan.offlineSavedToast": "Server accept करने तक entry confirm नहीं है.",
+    "member.scan.openDeviceSettings": "QR scanning allow करने के लिए device settings खोलें.",
+    "member.scan.openSettings": "Settings खोलें",
+    "member.scan.profilePhotoRecommended": "Check-in के बाद profile photo जोड़ें ताकि desk अगली बार आपको जल्दी verify कर सके.",
+    "member.scan.queuedScanWaiting": "{{count}} scan server confirmation का इंतज़ार कर रहा है.",
+    "member.scan.queuedScansWaiting": "{{count}} scans server confirmation का इंतज़ार कर रहे हैं.",
+    "member.scan.retryNow": "अब retry करें",
+    "member.scan.returnToQrScannerAccessibility": "QR scanner पर वापस जाएं",
+    "member.scan.savedCheckInConfirmed": "Saved check-in confirmed.",
+    "member.scan.savedCheckInsConfirmed": "{{count}} saved check-ins confirmed.",
+    "member.scan.scanAgain": "फिर scan करें",
+    "member.scan.searchingForCode": "Code खोज रहा है...",
+    "member.scan.serverCheck": "Server check",
+    "member.scan.serverVerified": "Server verified",
+    "member.scan.signInAgain": "Scanning से पहले फिर sign in करें.",
+    "member.scan.signInSelectGym": "Scanning से पहले sign in करें और gym चुनें.",
+    "member.scan.subtitle": "अपने gym के QR code पर camera point करें",
+    "member.scan.title": "Check-in scan करें",
+    "member.scan.tryCameraAgain": "Camera फिर try करें",
+    "member.scan.tryCheckIn": "Check-in try करें",
+    "member.scan.verifying": "Verify हो रहा है",
+    "member.scan.yourGym": "आपका gym",
     "more.title": "और",
     "more.subtitle": "बाकी सब कुछ एक जगह.",
     "more.accountSubtitle": "Zook मेंबर अकाउंट",
