@@ -18,10 +18,12 @@ import { useOrgPayouts, useTrainerPayoutConfig } from "@/lib/domains/owner/queri
 import { useMarkPayoutPaid, useUpdatePayoutConfig } from "@/lib/domains/owner/mutations";
 import type { TrainerPayoutRecord } from "@/lib/domains/shared/types";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 function PayoutConfigForm({ trainerId }: { trainerId: string }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const configQuery = useTrainerPayoutConfig(trainerId);
   const updateConfig = useUpdatePayoutConfig();
   const config = configQuery.data?.config;
@@ -53,17 +55,19 @@ function PayoutConfigForm({ trainerId }: { trainerId: string }) {
 
   return (
     <View style={[styles.configBox, { borderTopColor: palette.border.subtle }]}>
-      <Text style={[styles.configTitle, { color: palette.text.secondary }]}>Payout settings</Text>
+      <Text style={[styles.configTitle, { color: palette.text.secondary }]}>
+        {t("owner.payouts.settings")}
+      </Text>
       <View style={styles.configRow}>
-        <FormField label="Base / month (₹)" value={base} onChangeText={setBase} keyboardType="number-pad" placeholder="15000" style={styles.configField} />
-        <FormField label="PT commission (%)" value={commission} onChangeText={setCommission} keyboardType="number-pad" placeholder="40" style={styles.configField} />
+        <FormField label={t("owner.payouts.baseMonthly")} value={base} onChangeText={setBase} keyboardType="number-pad" placeholder="15000" style={styles.configField} />
+        <FormField label={t("owner.payouts.ptCommission")} value={commission} onChangeText={setCommission} keyboardType="number-pad" placeholder="40" style={styles.configField} />
       </View>
       <View style={styles.configRow}>
-        <FormField label="Per session (₹)" value={perSession} onChangeText={setPerSession} keyboardType="number-pad" placeholder="300" style={styles.configField} />
-        <FormField label="Pay day (1-28)" value={payDay} onChangeText={setPayDay} keyboardType="number-pad" placeholder="5" style={styles.configField} />
+        <FormField label={t("owner.payouts.perSession")} value={perSession} onChangeText={setPerSession} keyboardType="number-pad" placeholder="300" style={styles.configField} />
+        <FormField label={t("owner.payouts.payDay")} value={payDay} onChangeText={setPayDay} keyboardType="number-pad" placeholder="5" style={styles.configField} />
       </View>
-      <ZookButton size="sm" onPress={save} busy={updateConfig.isPending} busyLabel="Saving..." icon="save-outline">
-        Save settings
+      <ZookButton size="sm" onPress={save} busy={updateConfig.isPending} busyLabel={t("common.saving")} icon="save-outline">
+        {t("owner.payouts.saveSettings")}
       </ZookButton>
     </View>
   );
@@ -87,6 +91,7 @@ function PayoutCard({
   onMarkPaid: () => void;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const isPaid = payout.status.toUpperCase() === "PAID";
   const [showConfig, setShowConfig] = useState(false);
   return (
@@ -95,10 +100,10 @@ function PayoutCard({
         <IconBubble icon="person-outline" tone="blue" size={42} />
         <View style={styles.payoutCopy}>
           <Text style={[styles.payoutName, { color: palette.text.primary }]}>
-            {payout.trainerName ?? "Trainer"}
+            {payout.trainerName ?? t("owner.payouts.trainerFallback")}
           </Text>
           <Text style={[styles.payoutMeta, { color: palette.text.secondary }]}>
-            {payout.period ?? "This month"} · {payout.lines?.length ?? 0} earning lines
+            {payout.period ?? t("owner.payouts.thisMonth")} · {t("owner.payouts.earningLines", { count: payout.lines?.length ?? 0 })}
           </Text>
         </View>
         <Pill tone={payoutTone(payout.status)}>{titleCaseFromCode(payout.status)}</Pill>
@@ -121,12 +126,12 @@ function PayoutCard({
       {isPaid ? (
         <View style={styles.paidRow}>
           <Text style={[styles.paidText, { color: palette.accent.base }]}>
-            Paid{payout.paidAt ? ` · ${new Date(payout.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+            {t("owner.payouts.paid")}{payout.paidAt ? ` · ${new Date(payout.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
           </Text>
         </View>
       ) : (
-        <ZookButton onPress={onMarkPaid} busy={busy} busyLabel="Marking..." icon="checkmark-circle-outline">
-          Mark paid
+        <ZookButton onPress={onMarkPaid} busy={busy} busyLabel={t("owner.payouts.marking")} icon="checkmark-circle-outline">
+          {t("owner.payouts.markPaid")}
         </ZookButton>
       )}
       <ZookButton
@@ -135,7 +140,7 @@ function PayoutCard({
         icon={showConfig ? "chevron-up" : "options-outline"}
         onPress={() => setShowConfig((current) => !current)}
       >
-        {showConfig ? "Hide payout settings" : "Payout settings"}
+        {showConfig ? t("owner.payouts.hideSettings") : t("owner.payouts.settings")}
       </ZookButton>
       {showConfig ? <PayoutConfigForm trainerId={payout.trainerId} /> : null}
     </Card>
@@ -144,6 +149,7 @@ function PayoutCard({
 
 export default function OwnerPayouts() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const payoutsQuery = useOrgPayouts();
   const markPaid = useMarkPayoutPaid();
   const [refreshing, setRefreshing] = useState(false);
@@ -160,12 +166,15 @@ export default function OwnerPayouts() {
 
   function confirmMarkPaid(payout: TrainerPayoutRecord) {
     Alert.alert(
-      `Pay ${payout.trainerName ?? "trainer"}?`,
-      `Mark ${formatInr(payout.totalPaise)} as paid for ${payout.period ?? "this month"}.`,
+      t("owner.payouts.confirmTitle", { name: payout.trainerName ?? t("owner.payouts.trainerLower") }),
+      t("owner.payouts.confirmBody", {
+        amount: formatInr(payout.totalPaise),
+        period: payout.period ?? t("owner.payouts.thisMonthLower"),
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Mark paid",
+          text: t("owner.payouts.markPaid"),
           onPress: () => markPaid.mutate({ payoutId: payout.id, method: "BANK_TRANSFER" }),
         },
       ],
@@ -190,14 +199,14 @@ export default function OwnerPayouts() {
           }
         >
           <AppHeader
-            title="Trainer payouts"
-            subtitle="Review and pay your coaches."
+            title={t("owner.payouts.title")}
+            subtitle={t("owner.payouts.subtitle")}
             showBack
           />
 
           <Card variant="compact" contentStyle={styles.summaryCard}>
             <Text style={[styles.summaryLabel, { color: palette.text.secondary }]}>
-              Outstanding this month
+              {t("owner.payouts.outstanding")}
             </Text>
             <Text style={[styles.summaryValue, { color: palette.text.primary }]}>
               {formatInr(outstanding)}
@@ -210,7 +219,7 @@ export default function OwnerPayouts() {
 
           {!payoutsQuery.isLoading && payouts.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="cash-outline" title="No payouts yet" body="Trainer earnings appear here as they accrue." />
+              <EmptyState icon="cash-outline" title={t("owner.payouts.emptyTitle")} body={t("owner.payouts.emptyBody")} />
             </Card>
           ) : null}
 

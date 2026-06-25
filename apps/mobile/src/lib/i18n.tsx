@@ -1026,6 +1026,43 @@ export type TranslationKey =
   | "owner.members.title"
   | "owner.members.total"
   | "owner.members.tryAgain"
+  | "owner.payouts.baseMonthly"
+  | "owner.payouts.confirmBody"
+  | "owner.payouts.confirmTitle"
+  | "owner.payouts.earningLines"
+  | "owner.payouts.emptyBody"
+  | "owner.payouts.emptyTitle"
+  | "owner.payouts.hideSettings"
+  | "owner.payouts.markPaid"
+  | "owner.payouts.marking"
+  | "owner.payouts.outstanding"
+  | "owner.payouts.paid"
+  | "owner.payouts.payDay"
+  | "owner.payouts.perSession"
+  | "owner.payouts.ptCommission"
+  | "owner.payouts.saveSettings"
+  | "owner.payouts.settings"
+  | "owner.payouts.subtitle"
+  | "owner.payouts.thisMonth"
+  | "owner.payouts.thisMonthLower"
+  | "owner.payouts.title"
+  | "owner.payouts.trainerFallback"
+  | "owner.payouts.trainerLower"
+  | "owner.stock.allInStock"
+  | "owner.stock.allInStockBody"
+  | "owner.stock.lowStock"
+  | "owner.stock.memberPickup"
+  | "owner.stock.noPickups"
+  | "owner.stock.noPickupsBody"
+  | "owner.stock.paidOrders"
+  | "owner.stock.pickupOrders"
+  | "owner.stock.pickupPending"
+  | "owner.stock.pickups"
+  | "owner.stock.productsToReorder"
+  | "owner.stock.reorderBody"
+  | "owner.stock.reorderSubject"
+  | "owner.stock.title"
+  | "owner.stock.underThreshold"
   | "owner.referrals.allowTrainerReferrals"
   | "owner.referrals.codeExpiryDays"
   | "owner.referrals.creditInr"
@@ -2197,6 +2234,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "Members",
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
+    "owner.payouts.baseMonthly": "Base / month (₹)",
+    "owner.payouts.confirmBody": "Mark {{amount}} as paid for {{period}}.",
+    "owner.payouts.confirmTitle": "Pay {{name}}?",
+    "owner.payouts.earningLines": "{{count}} earning lines",
+    "owner.payouts.emptyBody": "Trainer earnings appear here as they accrue.",
+    "owner.payouts.emptyTitle": "No payouts yet",
+    "owner.payouts.hideSettings": "Hide payout settings",
+    "owner.payouts.markPaid": "Mark paid",
+    "owner.payouts.marking": "Marking...",
+    "owner.payouts.outstanding": "Outstanding this month",
+    "owner.payouts.paid": "Paid",
+    "owner.payouts.payDay": "Pay day (1-28)",
+    "owner.payouts.perSession": "Per session (₹)",
+    "owner.payouts.ptCommission": "PT commission (%)",
+    "owner.payouts.saveSettings": "Save settings",
+    "owner.payouts.settings": "Payout settings",
+    "owner.payouts.subtitle": "Review and pay your coaches.",
+    "owner.payouts.thisMonth": "This month",
+    "owner.payouts.thisMonthLower": "this month",
+    "owner.payouts.title": "Trainer payouts",
+    "owner.payouts.trainerFallback": "Trainer",
+    "owner.payouts.trainerLower": "trainer",
+    "owner.stock.allInStock": "All products in stock",
+    "owner.stock.allInStockBody": "Items running low on inventory will appear here.",
+    "owner.stock.lowStock": "Low stock",
+    "owner.stock.memberPickup": "Member pickup",
+    "owner.stock.noPickups": "No pickups waiting",
+    "owner.stock.noPickupsBody": "Paid shop orders awaiting collection will appear here.",
+    "owner.stock.paidOrders": "Paid orders",
+    "owner.stock.pickupOrders": "Pickup orders",
+    "owner.stock.pickupPending": "Pickup pending",
+    "owner.stock.pickups": "Pickups",
+    "owner.stock.productsToReorder": "Products to reorder",
+    "owner.stock.reorderBody": "Hi,\n\nPlease share supplier options for {{name}}.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
+    "owner.stock.reorderSubject": "Reorder {{name}}",
+    "owner.stock.title": "Stock",
+    "owner.stock.underThreshold": "Under threshold",
     "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
     "owner.referrals.codeExpiryDays": "Code expiry (days)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -3367,6 +3441,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "मेंबर",
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
+    "owner.payouts.baseMonthly": "Base / month (₹)",
+    "owner.payouts.confirmBody": "{{period}} के लिए {{amount}} paid mark करें.",
+    "owner.payouts.confirmTitle": "{{name}} को pay करें?",
+    "owner.payouts.earningLines": "{{count}} earning lines",
+    "owner.payouts.emptyBody": "Trainer earnings accrue होने पर यहां दिखेंगी.",
+    "owner.payouts.emptyTitle": "अभी कोई payout नहीं",
+    "owner.payouts.hideSettings": "Payout settings छिपाएं",
+    "owner.payouts.markPaid": "Paid mark करें",
+    "owner.payouts.marking": "Mark हो रहा है...",
+    "owner.payouts.outstanding": "इस महीने outstanding",
+    "owner.payouts.paid": "Paid",
+    "owner.payouts.payDay": "Pay day (1-28)",
+    "owner.payouts.perSession": "Per session (₹)",
+    "owner.payouts.ptCommission": "PT commission (%)",
+    "owner.payouts.saveSettings": "Settings save करें",
+    "owner.payouts.settings": "Payout settings",
+    "owner.payouts.subtitle": "अपने coaches को review और pay करें.",
+    "owner.payouts.thisMonth": "इस महीने",
+    "owner.payouts.thisMonthLower": "इस महीने",
+    "owner.payouts.title": "Trainer payouts",
+    "owner.payouts.trainerFallback": "Trainer",
+    "owner.payouts.trainerLower": "trainer",
+    "owner.stock.allInStock": "सभी products stock में हैं",
+    "owner.stock.allInStockBody": "Inventory कम होने वाले items यहां दिखेंगे.",
+    "owner.stock.lowStock": "Low stock",
+    "owner.stock.memberPickup": "Member pickup",
+    "owner.stock.noPickups": "कोई pickup waiting नहीं",
+    "owner.stock.noPickupsBody": "Collection के लिए waiting paid shop orders यहां दिखेंगे.",
+    "owner.stock.paidOrders": "Paid orders",
+    "owner.stock.pickupOrders": "Pickup orders",
+    "owner.stock.pickupPending": "Pickup pending",
+    "owner.stock.pickups": "Pickups",
+    "owner.stock.productsToReorder": "Reorder करने वाले products",
+    "owner.stock.reorderBody": "Hi,\n\nकृपया {{name}} के supplier options share करें.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
+    "owner.stock.reorderSubject": "{{name}} reorder",
+    "owner.stock.title": "Stock",
+    "owner.stock.underThreshold": "Threshold से कम",
     "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
     "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
     "owner.referrals.creditInr": "Credit (₹)",
