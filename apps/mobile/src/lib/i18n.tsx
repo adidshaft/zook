@@ -283,6 +283,7 @@ export type TranslationKey =
   | "rewards.subtitle"
   | "rewards.title"
   | "rewards.yourEarnings"
+  | "referral.opening"
   | "branch.switch"
   | "branch.current"
   | "branch.allBranches"
@@ -1075,6 +1076,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "rewards.subtitle": "Bring new gyms to Zook and get rewarded.",
     "rewards.title": "Refer & earn",
     "rewards.yourEarnings": "Your earnings",
+    "referral.opening": "Opening referral...",
     "branch.switch": "Switch branch",
     "branch.current": "Current branch",
     "branch.allBranches": "All branches",
@@ -1875,6 +1877,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "rewards.subtitle": "नए gyms को Zook पर लाएं और reward पाएं.",
     "rewards.title": "Refer & earn",
     "rewards.yourEarnings": "आपकी earnings",
+    "referral.opening": "Referral खुल रहा है...",
     "branch.switch": "ब्रांच बदलें",
     "branch.current": "मौजूदा ब्रांच",
     "branch.allBranches": "सभी ब्रांच",

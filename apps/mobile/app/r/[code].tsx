@@ -4,10 +4,12 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { ZookScreen } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { typography, useTheme } from "@/lib/theme";
 
 export default function ReferralAliasScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const params = useLocalSearchParams<{ code?: string | string[] }>();
   const code = (Array.isArray(params.code) ? params.code[0] : params.code)?.toUpperCase();
   const referralQuery = useQuery({
@@ -58,7 +60,7 @@ export default function ReferralAliasScreen() {
       <ZookScreen>
         <View style={styles.center}>
           <ActivityIndicator color={palette.accent.fill} />
-          <Text style={[styles.text, { color: palette.text.secondary }]}>Opening referral...</Text>
+          <Text style={[styles.text, { color: palette.text.secondary }]}>{t("referral.opening")}</Text>
         </View>
       </ZookScreen>
     </>
