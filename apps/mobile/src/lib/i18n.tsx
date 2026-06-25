@@ -1063,6 +1063,58 @@ export type TranslationKey =
   | "owner.stock.reorderSubject"
   | "owner.stock.title"
   | "owner.stock.underThreshold"
+  | "reception.desk.active"
+  | "reception.desk.branch"
+  | "reception.desk.coachName"
+  | "reception.desk.code"
+  | "reception.desk.displayEntryQr"
+  | "reception.desk.enterCode"
+  | "reception.desk.flagged"
+  | "reception.desk.gateQueueClear"
+  | "reception.desk.needsApprovalQueue"
+  | "reception.desk.noCheckIns"
+  | "reception.desk.noCheckInsBody"
+  | "reception.desk.openApprovalQueue"
+  | "reception.desk.pending"
+  | "reception.desk.pendingCount"
+  | "reception.desk.queueClear"
+  | "reception.desk.queueClearBody"
+  | "reception.desk.queueMeta"
+  | "reception.desk.queueNeedsAction"
+  | "reception.desk.queueNeedsActionBody"
+  | "reception.desk.recentActivity"
+  | "reception.desk.referGym"
+  | "reception.desk.referGymAccessibility"
+  | "reception.desk.referGymBody"
+  | "reception.desk.reviewRequired"
+  | "reception.desk.today"
+  | "reception.desk.todayCount"
+  | "reception.desk.todaysClasses"
+  | "reception.desk.verifying"
+  | "reception.desk.verifyCode"
+  | "reception.desk.verifyEntryCode"
+  | "reception.desk.viewRosterFor"
+  | "reception.home.title"
+  | "reception.members.attendanceNote"
+  | "reception.members.auditReason"
+  | "reception.members.clearSelectedMember"
+  | "reception.members.deskActions"
+  | "reception.members.generalFitness"
+  | "reception.members.hiddenHint"
+  | "reception.members.memberTitle"
+  | "reception.members.membership"
+  | "reception.members.multiSelectCount"
+  | "reception.members.noMembers"
+  | "reception.members.noMembersBody"
+  | "reception.members.noMembership"
+  | "reception.members.reasonTooShort"
+  | "reception.members.recordAttendance"
+  | "reception.members.recordForAll"
+  | "reception.members.recording"
+  | "reception.members.searchOrSelect"
+  | "reception.members.selectMultiple"
+  | "reception.members.selectedCount"
+  | "reception.members.title"
   | "owner.referrals.allowTrainerReferrals"
   | "owner.referrals.codeExpiryDays"
   | "owner.referrals.creditInr"
@@ -2271,6 +2323,58 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.reorderSubject": "Reorder {{name}}",
     "owner.stock.title": "Stock",
     "owner.stock.underThreshold": "Under threshold",
+    "reception.desk.active": "Active",
+    "reception.desk.branch": "Branch",
+    "reception.desk.coachName": "Coach {{name}}",
+    "reception.desk.code": "Code",
+    "reception.desk.displayEntryQr": "Display entry QR",
+    "reception.desk.enterCode": "Enter code",
+    "reception.desk.flagged": "Flagged",
+    "reception.desk.gateQueueClear": "Gate queue clear",
+    "reception.desk.needsApprovalQueue": "Needs Approval queue",
+    "reception.desk.noCheckIns": "No check-ins yet",
+    "reception.desk.noCheckInsBody": "Member check-ins for today will appear here.",
+    "reception.desk.openApprovalQueue": "Open approval queue",
+    "reception.desk.pending": "Pending",
+    "reception.desk.pendingCount": "{{count}} pending",
+    "reception.desk.queueClear": "Desk queue clear",
+    "reception.desk.queueClearBody": "No pending or flagged scans need the desk.",
+    "reception.desk.queueMeta": "{{pending}} pending · {{flagged}} flagged",
+    "reception.desk.queueNeedsAction": "Desk queue needs action",
+    "reception.desk.queueNeedsActionBody": "Review pending and flagged entry attempts before they age out.",
+    "reception.desk.recentActivity": "Recent activity",
+    "reception.desk.referGym": "Refer a gym & earn",
+    "reception.desk.referGymAccessibility": "Refer a gym to Zook and earn",
+    "reception.desk.referGymBody": "Earn cash when a gym you refer subscribes to Zook",
+    "reception.desk.reviewRequired": "Review required",
+    "reception.desk.today": "Today",
+    "reception.desk.todayCount": "{{count}} today",
+    "reception.desk.todaysClasses": "Today's classes",
+    "reception.desk.verifying": "Verifying...",
+    "reception.desk.verifyCode": "Verify Code",
+    "reception.desk.verifyEntryCode": "Verify Entry Code",
+    "reception.desk.viewRosterFor": "View roster for {{name}}",
+    "reception.home.title": "Front desk",
+    "reception.members.attendanceNote": "Attendance note",
+    "reception.members.auditReason": "Add a reason so the gym has a clear record.",
+    "reception.members.clearSelectedMember": "Clear selected member",
+    "reception.members.deskActions": "Desk actions",
+    "reception.members.generalFitness": "General fitness",
+    "reception.members.hiddenHint": "Showing {{visible}} of {{total}} matches. Refine the search to find a specific member faster.",
+    "reception.members.memberTitle": "Member",
+    "reception.members.membership": "Membership",
+    "reception.members.multiSelectCount": "Multi-select · {{count}}",
+    "reception.members.noMembers": "No members",
+    "reception.members.noMembersBody": "Try a different name or email.",
+    "reception.members.noMembership": "No membership",
+    "reception.members.reasonTooShort": "Add at least 2 characters.",
+    "reception.members.recordAttendance": "Record Attendance",
+    "reception.members.recordForAll": "Record for all",
+    "reception.members.recording": "Recording...",
+    "reception.members.searchOrSelect": "Search or select a member",
+    "reception.members.selectMultiple": "Select multiple",
+    "reception.members.selectedCount": "{{count}} members selected",
+    "reception.members.title": "Members",
     "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
     "owner.referrals.codeExpiryDays": "Code expiry (days)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -3478,6 +3582,58 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.reorderSubject": "{{name}} reorder",
     "owner.stock.title": "Stock",
     "owner.stock.underThreshold": "Threshold से कम",
+    "reception.desk.active": "Active",
+    "reception.desk.branch": "Branch",
+    "reception.desk.coachName": "Coach {{name}}",
+    "reception.desk.code": "Code",
+    "reception.desk.displayEntryQr": "Entry QR दिखाएं",
+    "reception.desk.enterCode": "Code डालें",
+    "reception.desk.flagged": "Flagged",
+    "reception.desk.gateQueueClear": "Gate queue clear",
+    "reception.desk.needsApprovalQueue": "Needs Approval queue",
+    "reception.desk.noCheckIns": "अभी कोई check-in नहीं",
+    "reception.desk.noCheckInsBody": "आज के member check-ins यहां दिखेंगे.",
+    "reception.desk.openApprovalQueue": "Approval queue खोलें",
+    "reception.desk.pending": "Pending",
+    "reception.desk.pendingCount": "{{count}} pending",
+    "reception.desk.queueClear": "Desk queue clear",
+    "reception.desk.queueClearBody": "कोई pending या flagged scan desk attention नहीं चाहता.",
+    "reception.desk.queueMeta": "{{pending}} pending · {{flagged}} flagged",
+    "reception.desk.queueNeedsAction": "Desk queue को action चाहिए",
+    "reception.desk.queueNeedsActionBody": "Pending और flagged entry attempts age out होने से पहले review करें.",
+    "reception.desk.recentActivity": "Recent activity",
+    "reception.desk.referGym": "Gym refer करें और earn करें",
+    "reception.desk.referGymAccessibility": "Zook को gym refer करें और earn करें",
+    "reception.desk.referGymBody": "आपके refer किए gym के subscribe करने पर cash earn करें",
+    "reception.desk.reviewRequired": "Review required",
+    "reception.desk.today": "आज",
+    "reception.desk.todayCount": "{{count}} today",
+    "reception.desk.todaysClasses": "आज की classes",
+    "reception.desk.verifying": "Verify हो रहा है...",
+    "reception.desk.verifyCode": "Code verify करें",
+    "reception.desk.verifyEntryCode": "Entry code verify करें",
+    "reception.desk.viewRosterFor": "{{name}} का roster देखें",
+    "reception.home.title": "Front desk",
+    "reception.members.attendanceNote": "Attendance note",
+    "reception.members.auditReason": "Reason जोड़ें ताकि gym के पास clear record रहे.",
+    "reception.members.clearSelectedMember": "Selected member clear करें",
+    "reception.members.deskActions": "Desk actions",
+    "reception.members.generalFitness": "General fitness",
+    "reception.members.hiddenHint": "{{visible}} of {{total}} matches दिख रहे हैं. Specific member जल्दी ढूंढने के लिए search refine करें.",
+    "reception.members.memberTitle": "Member",
+    "reception.members.membership": "Membership",
+    "reception.members.multiSelectCount": "Multi-select · {{count}}",
+    "reception.members.noMembers": "कोई member नहीं",
+    "reception.members.noMembersBody": "अलग नाम या email try करें.",
+    "reception.members.noMembership": "No membership",
+    "reception.members.reasonTooShort": "कम से कम 2 characters जोड़ें.",
+    "reception.members.recordAttendance": "Attendance record करें",
+    "reception.members.recordForAll": "सभी के लिए record करें",
+    "reception.members.recording": "Record हो रहा है...",
+    "reception.members.searchOrSelect": "Member search या select करें",
+    "reception.members.selectMultiple": "Multiple select करें",
+    "reception.members.selectedCount": "{{count}} members selected",
+    "reception.members.title": "Members",
     "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
     "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
     "owner.referrals.creditInr": "Credit (₹)",

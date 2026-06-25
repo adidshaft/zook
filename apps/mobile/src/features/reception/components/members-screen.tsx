@@ -5,11 +5,13 @@ import { MemberList } from "@/components/domain/member-list";
 import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { formatAgeLabel, titleCaseFromCode } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 
 export function ReceptionMembersScreenBody() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const {
     attendanceReason,
     attendanceReasonInvalid,
@@ -79,15 +81,15 @@ export function ReceptionMembersScreenBody() {
                   ]}
                 >
                   {multiSelectMode
-                    ? `Multi-select · ${selectedMemberIds.size}`
-                    : "Select multiple"}
+                    ? t("reception.members.multiSelectCount", { count: selectedMemberIds.size })
+                    : t("reception.members.selectMultiple")}
                 </Text>
               </Pressable>
               {memberRecord && !multiSelectMode ? (
                 <Pressable
                   onPress={() => setSelectedMemberId(null)}
                   accessibilityRole="button"
-                  accessibilityLabel="Clear selected member"
+                  accessibilityLabel={t("reception.members.clearSelectedMember")}
                   style={({ pressed }) => [
                     styles.membersToolbarChip,
                     {
@@ -98,22 +100,24 @@ export function ReceptionMembersScreenBody() {
                   ]}
                 >
                   <Ionicons name="close-outline" size={16} color={palette.text.tertiary} />
-                  <Text style={[styles.membersToolbarText, { color: palette.text.secondary }]}>Clear</Text>
+                  <Text style={[styles.membersToolbarText, { color: palette.text.secondary }]}>
+                    {t("assistant.clear")}
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
             {multiSelectMode && selectedMemberIds.size ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
-                  title={`${selectedMemberIds.size} member${selectedMemberIds.size === 1 ? "" : "s"} selected`}
+                  title={t("reception.members.selectedCount", { count: selectedMemberIds.size })}
                 />
                 <FormField
                   testID="reception-bulk-attendance-reason"
-                  label="Attendance note"
+                  label={t("reception.members.attendanceNote")}
                   value={reason}
                   onChangeText={setReason}
                   required
-                  error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
+                  error={attendanceReasonInvalid ? t("reception.members.reasonTooShort") : undefined}
                 />
                 <PrimaryButton
                   testID="reception-bulk-record-attendance"
@@ -126,7 +130,7 @@ export function ReceptionMembersScreenBody() {
                   onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
                   onPress={() => void recordBulkAttendance()}
                 >
-                  {manualAttendanceMutation.isPending ? "Recording..." : "Record for all"}
+                  {manualAttendanceMutation.isPending ? t("reception.members.recording") : t("reception.members.recordForAll")}
                 </PrimaryButton>
                 {bulkAttendanceStatus ? (
                   <Text style={[styles.statusText, { color: palette.accent.base }]}>
@@ -138,32 +142,32 @@ export function ReceptionMembersScreenBody() {
             {!multiSelectMode && memberRecord ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
                 <SectionHeader
-                  title="Desk actions"
+                  title={t("reception.members.deskActions")}
                   subtitle={
                     member?.name
                       ? `${member.name} selected · ${formatAgeLabel(member.dateOfBirth)}`
-                      : "Search or select a member"
+                      : t("reception.members.searchOrSelect")
                   }
                 />
                 <ListRow
-                  title="Membership"
-                  subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? "General fitness"}
+                  title={t("reception.members.membership")}
+                  subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? t("reception.members.generalFitness")}
                   trailing={
                     <Pill tone={membership ? toneForStatus(membership.status) : "amber"}>
-                      {membership ? titleCaseFromCode(membership.status) : "No membership"}
+                      {membership ? titleCaseFromCode(membership.status) : t("reception.members.noMembership")}
                     </Pill>
                   }
                 />
-                <AuditWarning>Add a reason so the gym has a clear record.</AuditWarning>
+                <AuditWarning>{t("reception.members.auditReason")}</AuditWarning>
                 <FormField
                   testID="reception-attendance-reason"
-                  label="Attendance note"
+                  label={t("reception.members.attendanceNote")}
                   value={reason}
                   onChangeText={setReason}
                   returnKeyType="done"
                   blurOnSubmit
                   required
-                  error={attendanceReasonInvalid ? "Add at least 2 characters." : undefined}
+                  error={attendanceReasonInvalid ? t("reception.members.reasonTooShort") : undefined}
                 />
                 <PrimaryButton
                   testID="reception-record-attendance"
@@ -177,7 +181,7 @@ export function ReceptionMembersScreenBody() {
                   onLongPress={!canRecordManualAttendance ? showOwnerApprovalRequired : undefined}
                   onPress={recordManualAttendance}
                 >
-                  {manualAttendanceMutation.isPending ? "Recording..." : "Record Attendance"}
+                  {manualAttendanceMutation.isPending ? t("reception.members.recording") : t("reception.members.recordAttendance")}
                 </PrimaryButton>
                 {attendanceStatus ? (
                   <Text
@@ -199,7 +203,7 @@ export function ReceptionMembersScreenBody() {
                 onRetry={() => void membersQuery.refetch()}
                 searchValue={memberSearch}
                 onSearchChange={setMemberSearch}
-                emptyState={{ title: "No members", subtitle: "Try a different name or email." }}
+                emptyState={{ title: t("reception.members.noMembers"), subtitle: t("reception.members.noMembersBody") }}
                 onPressMember={(user) => {
                   if (multiSelectMode) {
                     toggleMemberSelection(user.id);
@@ -213,8 +217,10 @@ export function ReceptionMembersScreenBody() {
               />
               {hiddenMemberCount ? (
                 <Text style={[styles.resultHint, { color: palette.text.tertiary }]}>
-                  Showing {visibleMembers.length} of {filteredMembers.length} matches. Refine the search
-                  to find a specific member faster.
+                  {t("reception.members.hiddenHint", {
+                    visible: visibleMembers.length,
+                    total: filteredMembers.length,
+                  })}
                 </Text>
               ) : null}
             </View>

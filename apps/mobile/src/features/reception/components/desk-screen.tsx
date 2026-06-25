@@ -7,6 +7,7 @@ import { Card, EmptyState, FormField, IconBubble, OperationalQueueCard, Pill, Pr
 import { ReceptionQueueSkeleton } from "@/components/skeletons";
 import { useMyClasses } from "@/lib/domains";
 import { formatDateTime, formatTime, titleCaseFromCode } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
 import type { PillTone } from "@/components/primitives";
@@ -27,6 +28,7 @@ function iconForAttendanceStatus(status?: string | null) {
 
 export function ReceptionDeskScreenBody() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const classesQuery = useMyClasses();
   const todayClasses = (classesQuery.data?.classes ?? []).filter((entry) => {
@@ -61,17 +63,17 @@ export function ReceptionDeskScreenBody() {
   return (
     <>
             <OperationalQueueCard
-              title={pendingCount || flaggedCount ? "Desk queue needs action" : "Desk queue clear"}
+              title={pendingCount || flaggedCount ? t("reception.desk.queueNeedsAction") : t("reception.desk.queueClear")}
               subtitle={
                 pendingCount || flaggedCount
-                  ? "Review pending and flagged entry attempts before they age out."
-                  : "No pending or flagged scans need the desk."
+                  ? t("reception.desk.queueNeedsActionBody")
+                  : t("reception.desk.queueClearBody")
               }
-              meta={`${pendingCount} pending · ${flaggedCount} flagged`}
-              status={pendingCount || flaggedCount ? "Review required" : "Active"}
+              meta={t("reception.desk.queueMeta", { pending: pendingCount, flagged: flaggedCount })}
+              status={pendingCount || flaggedCount ? t("reception.desk.reviewRequired") : t("reception.desk.active")}
               tone={flaggedCount ? "red" : pendingCount ? "amber" : "neutral"}
               icon={flaggedCount ? "alert-circle-outline" : "shield-checkmark-outline"}
-              actionLabel="Open approval queue"
+              actionLabel={t("reception.desk.openApprovalQueue")}
               onPress={
                 firstQueueItem
                   ? () => {
@@ -88,19 +90,19 @@ export function ReceptionDeskScreenBody() {
               columns={3}
               items={[
                 {
-                  label: "Today",
+                  label: t("reception.desk.today"),
                   value: todayCount,
                   tone: "neutral",
                   icon: "qr-code-outline",
                 },
                 {
-                  label: "Pending",
+                  label: t("reception.desk.pending"),
                   value: pendingCount,
                   tone: "amber",
                   icon: "flash-outline",
                 },
                 {
-                  label: "Flagged",
+                  label: t("reception.desk.flagged"),
                   value: flaggedCount,
                   tone: "red",
                   icon: "alert-circle-outline",
@@ -109,13 +111,13 @@ export function ReceptionDeskScreenBody() {
             />
 
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader title="Verify Entry Code" />
+              <SectionHeader title={t("reception.desk.verifyEntryCode")} />
               <FormField
                 testID="reception-verify-code"
-                label="Code"
+                label={t("reception.desk.code")}
                 value={verifyCode}
                 onChangeText={handleVerifyCodeChange}
-                placeholder="Enter code"
+                placeholder={t("reception.desk.enterCode")}
                 autoCapitalize="characters"
                 returnKeyType="done"
                 blurOnSubmit
@@ -127,7 +129,7 @@ export function ReceptionDeskScreenBody() {
                 disabled={!canVerifyCode || verifyingCode}
                 onPress={verifyEntryCode}
               >
-                {verifyingCode ? "Verifying..." : "Verify Code"}
+                {verifyingCode ? t("reception.desk.verifying") : t("reception.desk.verifyCode")}
               </PrimaryButton>
               <ZookButton
                 testID="reception-entry-qr-button"
@@ -135,36 +137,38 @@ export function ReceptionDeskScreenBody() {
                 icon="qr-code-outline"
                 onPress={() => router.push("/reception/entry-qr")}
               >
-                Display entry QR
+                {t("reception.desk.displayEntryQr")}
               </ZookButton>
             </Card>
 
             <Pressable
               testID="reception-rewards"
               accessibilityRole="button"
-              accessibilityLabel="Refer a gym to Zook and earn"
+              accessibilityLabel={t("reception.desk.referGymAccessibility")}
               onPress={() => router.push("/rewards")}
               style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
             >
               <Card variant="compact" padding={14} contentStyle={styles.liveFeedItem}>
                 <IconBubble icon="gift-outline" tone="lime" size={34} />
                 <View style={styles.liveFeedCopy}>
-                  <Text style={[styles.queueTitle, { color: palette.text.primary }]}>Refer a gym & earn</Text>
+                  <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
+                    {t("reception.desk.referGym")}
+                  </Text>
                   <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
-                    Earn cash when a gym you refer subscribes to Zook
+                    {t("reception.desk.referGymBody")}
                   </Text>
                 </View>
               </Card>
             </Pressable>
 
             <SectionHeader
-              title="Recent activity"
-              action={<Pill tone="neutral">{todayCount} today</Pill>}
+              title={t("reception.desk.recentActivity")}
+              action={<Pill tone="neutral">{t("reception.desk.todayCount", { count: todayCount })}</Pill>}
             />
             <View style={styles.liveFeed}>
               {todayAttendanceQuery.isLoading ? <ReceptionQueueSkeleton /> : null}
               {!todayAttendanceQuery.isLoading && !recentScans.length ? (
-                <EmptyState icon="scan-outline" title="No check-ins yet" body="Member check-ins for today will appear here." />
+                <EmptyState icon="scan-outline" title={t("reception.desk.noCheckIns")} body={t("reception.desk.noCheckInsBody")} />
               ) : null}
               {recentScans.map((scan) => {
                 const statusTone = toneForAttendanceStatus(scan.status);
@@ -182,11 +186,11 @@ export function ReceptionDeskScreenBody() {
                     />
                     <View style={styles.liveFeedCopy}>
                       <Text style={[styles.queueTitle, { color: palette.text.primary }]}>
-                        {scan.user?.name ?? scan.user?.email ?? "Member"}
+                        {scan.user?.name ?? scan.user?.email ?? t("reception.members.memberTitle")}
                       </Text>
                       <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                        {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? "Branch"} ·{" "}
-                        {scan.plan?.name ?? "Membership"}
+                        {formatDateTime(scan.checkedInAt)} · {scan.branchName ?? t("reception.desk.branch")} ·{" "}
+                        {scan.plan?.name ?? t("reception.members.membership")}
                       </Text>
                     </View>
                     <Pill tone={statusTone}>{titleCaseFromCode(scan.status)}</Pill>
@@ -196,8 +200,8 @@ export function ReceptionDeskScreenBody() {
             </View>
 
             <SectionHeader
-              title="Needs Approval queue"
-              action={<Pill tone="amber">{pendingCount} pending</Pill>}
+              title={t("reception.desk.needsApprovalQueue")}
+              action={<Pill tone="amber">{t("reception.desk.pendingCount", { count: pendingCount })}</Pill>}
             />
             <ApprovalQueue
               testID="reception-approval-queue"
@@ -208,8 +212,8 @@ export function ReceptionDeskScreenBody() {
               approvingId={approveAttendanceMutation.isPending ? selectedDecisionAttempt?.id : undefined}
               rejectingId={rejectAttendanceMutation.isPending ? selectedDecisionAttempt?.id : undefined}
               emptyState={{
-                title: "Gate queue clear",
-                subtitle: "No pending or flagged scans need the desk.",
+                title: t("reception.desk.gateQueueClear"),
+                subtitle: t("reception.desk.queueClearBody"),
               }}
               onApprove={(attemptId) => {
                 const attempt = approvalQueue.find((item) => item.id === attemptId);
@@ -234,7 +238,7 @@ export function ReceptionDeskScreenBody() {
             {todayClasses.length ? (
               <>
                 <SectionHeader
-                  title="Today's classes"
+                  title={t("reception.desk.todaysClasses")}
                   action={<Pill tone="neutral">{todayClasses.length}</Pill>}
                 />
                 <View style={styles.liveFeed}>
@@ -243,7 +247,7 @@ export function ReceptionDeskScreenBody() {
                       key={entry.id}
                       testID={`reception-class-${entry.id}`}
                       accessibilityRole="button"
-                      accessibilityLabel={`View roster for ${entry.name}`}
+                      accessibilityLabel={t("reception.desk.viewRosterFor", { name: entry.name })}
                       onPress={() =>
                         router.push(`/reception/class-roster?classId=${entry.id}&name=${encodeURIComponent(entry.name)}` as never)
                       }
@@ -256,7 +260,7 @@ export function ReceptionDeskScreenBody() {
                             {entry.name}
                           </Text>
                           <Text style={[styles.cardBody, { color: palette.text.secondary }]} numberOfLines={1}>
-                            {formatTime(entry.startTime)} · {entry.trainerName ? `Coach ${entry.trainerName}` : entry.classType}
+                            {formatTime(entry.startTime)} · {entry.trainerName ? t("reception.desk.coachName", { name: entry.trainerName }) : entry.classType}
                           </Text>
                         </View>
                         <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>

@@ -2,9 +2,11 @@ import { ReceptionDeskScreenBody } from "@/features/reception/components/desk-sc
 import { ReceptionWorkspace } from "@/features/reception/reception-workspace";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n";
 
 export default function ReceptionDeskScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const params = useLocalSearchParams<{ view?: string | string[] }>();
 
   useEffect(() => {
@@ -15,7 +17,7 @@ export default function ReceptionDeskScreen() {
   }, [params.view, router]);
 
   return (
-    <ReceptionWorkspace title="Front desk" testID="reception-home-screen">
+    <ReceptionWorkspace title={t("reception.home.title")} testID="reception-home-screen">
       <ReceptionDeskScreenBody />
     </ReceptionWorkspace>
   );
