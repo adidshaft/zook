@@ -1412,6 +1412,39 @@ export type TranslationKey =
   | "owner.more.trainerPayouts"
   | "owner.more.trainerPayoutsSubtitle"
   | "owner.more.webControlRoom"
+  | "owner.exerciseLibrary.add"
+  | "owner.exerciseLibrary.customExercise"
+  | "owner.exerciseLibrary.edit"
+  | "owner.exerciseLibrary.editTemplate"
+  | "owner.exerciseLibrary.equipment"
+  | "owner.exerciseLibrary.equipmentPlaceholder"
+  | "owner.exerciseLibrary.exerciseName"
+  | "owner.exerciseLibrary.exerciseNamePlaceholder"
+  | "owner.exerciseLibrary.featured"
+  | "owner.exerciseLibrary.muscle"
+  | "owner.exerciseLibrary.musclePlaceholder"
+  | "owner.exerciseLibrary.new"
+  | "owner.exerciseLibrary.newTemplate"
+  | "owner.exerciseLibrary.noSharedTemplates"
+  | "owner.exerciseLibrary.noSharedTemplatesBody"
+  | "owner.exerciseLibrary.notes"
+  | "owner.exerciseLibrary.notesPlaceholder"
+  | "owner.exerciseLibrary.remove"
+  | "owner.exerciseLibrary.removeTemplateBody"
+  | "owner.exerciseLibrary.removeTemplateTitle"
+  | "owner.exerciseLibrary.reps"
+  | "owner.exerciseLibrary.repsCount"
+  | "owner.exerciseLibrary.restSec"
+  | "owner.exerciseLibrary.saveTemplate"
+  | "owner.exerciseLibrary.sets"
+  | "owner.exerciseLibrary.setsCount"
+  | "owner.exerciseLibrary.shared"
+  | "owner.exerciseLibrary.sharedLibrary"
+  | "owner.exerciseLibrary.starter"
+  | "owner.exerciseLibrary.starters"
+  | "owner.exerciseLibrary.subtitle"
+  | "owner.exerciseLibrary.tempo"
+  | "owner.exerciseLibrary.title"
   | "owner.coupons.active"
   | "owner.coupons.amountOffInput"
   | "owner.coupons.amountOffValue"
@@ -3421,6 +3454,39 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "Review and pay your coaches",
     "owner.more.webControlRoom": "Web control room",
+    "owner.exerciseLibrary.add": "Add",
+    "owner.exerciseLibrary.customExercise": "Custom exercise",
+    "owner.exerciseLibrary.edit": "Edit",
+    "owner.exerciseLibrary.editTemplate": "Edit template",
+    "owner.exerciseLibrary.equipment": "Equipment",
+    "owner.exerciseLibrary.equipmentPlaceholder": "Barbell",
+    "owner.exerciseLibrary.exerciseName": "Exercise name",
+    "owner.exerciseLibrary.exerciseNamePlaceholder": "Bench press",
+    "owner.exerciseLibrary.featured": "Featured",
+    "owner.exerciseLibrary.muscle": "Muscle",
+    "owner.exerciseLibrary.musclePlaceholder": "Chest",
+    "owner.exerciseLibrary.new": "New",
+    "owner.exerciseLibrary.newTemplate": "New template",
+    "owner.exerciseLibrary.noSharedTemplates": "No shared templates",
+    "owner.exerciseLibrary.noSharedTemplatesBody": "Add starters or create your own house favorites.",
+    "owner.exerciseLibrary.notes": "Notes",
+    "owner.exerciseLibrary.notesPlaceholder": "Coaching cues",
+    "owner.exerciseLibrary.remove": "Remove",
+    "owner.exerciseLibrary.removeTemplateBody": "\"{{name}}\" will be hidden from the shared library.",
+    "owner.exerciseLibrary.removeTemplateTitle": "Remove template?",
+    "owner.exerciseLibrary.reps": "Reps",
+    "owner.exerciseLibrary.repsCount": "{{count}} reps",
+    "owner.exerciseLibrary.restSec": "Rest sec",
+    "owner.exerciseLibrary.saveTemplate": "Save template",
+    "owner.exerciseLibrary.sets": "Sets",
+    "owner.exerciseLibrary.setsCount": "{{count}} sets",
+    "owner.exerciseLibrary.shared": "Shared",
+    "owner.exerciseLibrary.sharedLibrary": "Shared library",
+    "owner.exerciseLibrary.starter": "Starter",
+    "owner.exerciseLibrary.starters": "Starters",
+    "owner.exerciseLibrary.subtitle": "Shared workout templates your trainers can reuse.",
+    "owner.exerciseLibrary.tempo": "Tempo",
+    "owner.exerciseLibrary.title": "Exercise library",
     "owner.coupons.active": "Active",
     "owner.coupons.amountOffInput": "Amount off (₹)",
     "owner.coupons.amountOffValue": "{{amount}} off",
@@ -5429,6 +5495,39 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
     "owner.more.webControlRoom": "Web control room",
+    "owner.exerciseLibrary.add": "Add",
+    "owner.exerciseLibrary.customExercise": "Custom exercise",
+    "owner.exerciseLibrary.edit": "Edit",
+    "owner.exerciseLibrary.editTemplate": "Template edit करें",
+    "owner.exerciseLibrary.equipment": "Equipment",
+    "owner.exerciseLibrary.equipmentPlaceholder": "Barbell",
+    "owner.exerciseLibrary.exerciseName": "Exercise name",
+    "owner.exerciseLibrary.exerciseNamePlaceholder": "Bench press",
+    "owner.exerciseLibrary.featured": "Featured",
+    "owner.exerciseLibrary.muscle": "Muscle",
+    "owner.exerciseLibrary.musclePlaceholder": "Chest",
+    "owner.exerciseLibrary.new": "New",
+    "owner.exerciseLibrary.newTemplate": "New template",
+    "owner.exerciseLibrary.noSharedTemplates": "अभी कोई shared template नहीं",
+    "owner.exerciseLibrary.noSharedTemplatesBody": "Starter add करें या अपने house favorites बनाएं.",
+    "owner.exerciseLibrary.notes": "Notes",
+    "owner.exerciseLibrary.notesPlaceholder": "Coaching cues",
+    "owner.exerciseLibrary.remove": "Remove",
+    "owner.exerciseLibrary.removeTemplateBody": "\"{{name}}\" shared library से hidden हो जाएगा.",
+    "owner.exerciseLibrary.removeTemplateTitle": "Template remove करें?",
+    "owner.exerciseLibrary.reps": "Reps",
+    "owner.exerciseLibrary.repsCount": "{{count}} reps",
+    "owner.exerciseLibrary.restSec": "Rest sec",
+    "owner.exerciseLibrary.saveTemplate": "Template save करें",
+    "owner.exerciseLibrary.sets": "Sets",
+    "owner.exerciseLibrary.setsCount": "{{count}} sets",
+    "owner.exerciseLibrary.shared": "Shared",
+    "owner.exerciseLibrary.sharedLibrary": "Shared library",
+    "owner.exerciseLibrary.starter": "Starter",
+    "owner.exerciseLibrary.starters": "Starters",
+    "owner.exerciseLibrary.subtitle": "Shared workout templates जिन्हें trainers reuse कर सकते हैं.",
+    "owner.exerciseLibrary.tempo": "Tempo",
+    "owner.exerciseLibrary.title": "Exercise library",
     "owner.coupons.active": "Active",
     "owner.coupons.amountOffInput": "Amount off (₹)",
     "owner.coupons.amountOffValue": "{{amount}} off",

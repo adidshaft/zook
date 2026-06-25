@@ -21,10 +21,33 @@ import {
   useSaveExerciseTemplate,
   type ExerciseTemplateRecord,
 } from "@/lib/domains";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
+
+type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string;
+
+function templateMeta(template: ExerciseTemplateRecord, t: Translate) {
+  return (
+    [
+      template.muscleGroup,
+      template.equipment,
+      template.defaultSets ? t("owner.exerciseLibrary.setsCount", { count: template.defaultSets }) : null,
+      template.defaultReps ? t("owner.exerciseLibrary.repsCount", { count: template.defaultReps }) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || t("owner.exerciseLibrary.customExercise")
+  );
+}
+
+function templatePillLabel(template: ExerciseTemplateRecord, t: Translate) {
+  if (template.scope === "STARTER") return t("owner.exerciseLibrary.starter");
+  if (template.featured) return t("owner.exerciseLibrary.featured");
+  return t("owner.exerciseLibrary.shared");
+}
 
 export default function OwnerExerciseLibraryScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const templatesQuery = useOrgExerciseTemplates();
   const saveTemplate = useSaveExerciseTemplate();
   const deleteTemplate = useDeleteExerciseTemplate();
@@ -114,9 +137,9 @@ export default function OwnerExerciseLibraryScreen() {
   }
 
   function confirmDelete(template: ExerciseTemplateRecord) {
-    Alert.alert("Remove template?", `"${template.name}" will be hidden from the shared library.`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => deleteTemplate.mutate(template.id) },
+    Alert.alert(t("owner.exerciseLibrary.removeTemplateTitle"), t("owner.exerciseLibrary.removeTemplateBody", { name: template.name }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("owner.exerciseLibrary.remove"), style: "destructive", onPress: () => deleteTemplate.mutate(template.id) },
     ]);
   }
 
@@ -128,25 +151,25 @@ export default function OwnerExerciseLibraryScreen() {
           <View style={styles.templateCopy}>
             <Text style={[styles.templateName, { color: palette.text.primary }]} numberOfLines={1}>{template.name}</Text>
             <Text style={[styles.templateMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-              {[template.muscleGroup, template.equipment, template.defaultSets ? `${template.defaultSets} sets` : null, template.defaultReps ? `${template.defaultReps} reps` : null].filter(Boolean).join(" · ") || "Custom exercise"}
+              {templateMeta(template, t)}
             </Text>
           </View>
           <Pill tone={template.scope === "STARTER" ? "blue" : template.featured ? "amber" : "neutral"}>
-            {template.scope === "STARTER" ? "Starter" : template.featured ? "Featured" : "Shared"}
+            {templatePillLabel(template, t)}
           </Pill>
         </View>
         <View style={styles.actions}>
           {template.scope === "STARTER" ? (
             <ZookButton size="sm" variant="secondary" icon="add" onPress={() => adoptStarter(template)} style={styles.actionButton}>
-              Add
+              {t("owner.exerciseLibrary.add")}
             </ZookButton>
           ) : (
             <>
               <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={() => startEdit(template)} style={styles.actionButton}>
-                Edit
+                {t("owner.exerciseLibrary.edit")}
               </ZookButton>
               <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmDelete(template)} style={styles.actionButton}>
-                Remove
+                {t("owner.exerciseLibrary.remove")}
               </ZookButton>
             </>
           )}
@@ -165,47 +188,47 @@ export default function OwnerExerciseLibraryScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Exercise library" subtitle="Shared workout templates your trainers can reuse." showBack />
+          <AppHeader title={t("owner.exerciseLibrary.title")} subtitle={t("owner.exerciseLibrary.subtitle")} showBack />
           <SectionHeader
-            title="Shared library"
+            title={t("owner.exerciseLibrary.sharedLibrary")}
             action={
               <ZookButton size="sm" variant={showForm && !editing ? "secondary" : "primary"} icon={showForm && !editing ? "close" : "add"} onPress={() => (showForm && !editing ? resetForm() : (resetForm(), setShowForm(true)))}>
-                {showForm && !editing ? "Cancel" : "New"}
+                {showForm && !editing ? t("common.cancel") : t("owner.exerciseLibrary.new")}
               </ZookButton>
             }
           />
           {showForm ? (
             <Card contentStyle={styles.formCard}>
-              <Text style={[styles.formTitle, { color: palette.text.primary }]}>{editing ? "Edit template" : "New template"}</Text>
-              <FormField label="Exercise name" value={name} onChangeText={setName} placeholder="Bench press" />
+              <Text style={[styles.formTitle, { color: palette.text.primary }]}>{editing ? t("owner.exerciseLibrary.editTemplate") : t("owner.exerciseLibrary.newTemplate")}</Text>
+              <FormField label={t("owner.exerciseLibrary.exerciseName")} value={name} onChangeText={setName} placeholder={t("owner.exerciseLibrary.exerciseNamePlaceholder")} />
               <View style={styles.formRow}>
-                <FormField label="Muscle" value={muscleGroup} onChangeText={setMuscleGroup} placeholder="Chest" style={styles.formField} />
-                <FormField label="Equipment" value={equipment} onChangeText={setEquipment} placeholder="Barbell" style={styles.formField} />
+                <FormField label={t("owner.exerciseLibrary.muscle")} value={muscleGroup} onChangeText={setMuscleGroup} placeholder={t("owner.exerciseLibrary.musclePlaceholder")} style={styles.formField} />
+                <FormField label={t("owner.exerciseLibrary.equipment")} value={equipment} onChangeText={setEquipment} placeholder={t("owner.exerciseLibrary.equipmentPlaceholder")} style={styles.formField} />
               </View>
               <View style={styles.formRow}>
-                <FormField label="Sets" value={sets} onChangeText={setSets} keyboardType="number-pad" style={styles.formField} />
-                <FormField label="Reps" value={reps} onChangeText={setReps} keyboardType="number-pad" style={styles.formField} />
-                <FormField label="Rest sec" value={restSeconds} onChangeText={setRestSeconds} keyboardType="number-pad" style={styles.formField} />
+                <FormField label={t("owner.exerciseLibrary.sets")} value={sets} onChangeText={setSets} keyboardType="number-pad" style={styles.formField} />
+                <FormField label={t("owner.exerciseLibrary.reps")} value={reps} onChangeText={setReps} keyboardType="number-pad" style={styles.formField} />
+                <FormField label={t("owner.exerciseLibrary.restSec")} value={restSeconds} onChangeText={setRestSeconds} keyboardType="number-pad" style={styles.formField} />
               </View>
-              <FormField label="Tempo" value={tempo} onChangeText={setTempo} placeholder="2-0-1" />
-              <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Coaching cues" multiline />
+              <FormField label={t("owner.exerciseLibrary.tempo")} value={tempo} onChangeText={setTempo} placeholder="2-0-1" />
+              <FormField label={t("owner.exerciseLibrary.notes")} value={notes} onChangeText={setNotes} placeholder={t("owner.exerciseLibrary.notesPlaceholder")} multiline />
               <View style={styles.switchRow}>
-                <Text style={[styles.switchTitle, { color: palette.text.primary }]}>Featured</Text>
+                <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.exerciseLibrary.featured")}</Text>
                 <ThemedSwitch value={featured} onValueChange={setFeatured} />
               </View>
-              <ZookButton onPress={submit} disabled={!canSubmit} busy={saveTemplate.isPending} busyLabel="Saving..." icon="save-outline">
-                Save template
+              <ZookButton onPress={submit} disabled={!canSubmit} busy={saveTemplate.isPending} busyLabel={t("common.saving")} icon="save-outline">
+                {t("owner.exerciseLibrary.saveTemplate")}
               </ZookButton>
             </Card>
           ) : null}
           {templatesQuery.isError ? <QueryErrorState error={templatesQuery.error} onRetry={() => void templatesQuery.refetch()} /> : null}
           {!templatesQuery.isLoading && !orgTemplates.length ? (
             <Card variant="compact">
-              <EmptyState icon="barbell-outline" title="No shared templates" body="Add starters or create your own house favorites." />
+              <EmptyState icon="barbell-outline" title={t("owner.exerciseLibrary.noSharedTemplates")} body={t("owner.exerciseLibrary.noSharedTemplatesBody")} />
             </Card>
           ) : null}
           <View style={styles.stack}>{orgTemplates.map(renderTemplate)}</View>
-          <SectionHeader title="Starters" />
+          <SectionHeader title={t("owner.exerciseLibrary.starters")} />
           <View style={styles.stack}>{starters.map(renderTemplate)}</View>
         </ScrollView>
       </ZookScreen>
