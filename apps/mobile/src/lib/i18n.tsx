@@ -416,6 +416,14 @@ export type TranslationKey =
   | "trainer.home.today"
   | "trainer.home.trainerFallback"
   | "trainer.home.trainerPlanningQueue"
+  | "trainer.clients.activePlanCount"
+  | "trainer.clients.generalFitness"
+  | "trainer.clients.noClients"
+  | "trainer.clients.noClientsBody"
+  | "trainer.clients.noMatchingClients"
+  | "trainer.clients.subtitle"
+  | "trainer.clients.title"
+  | "trainer.clients.tryAnotherSearch"
   | "trainer.pt.add"
   | "trainer.pt.adding"
   | "trainer.pt.allSessionsCompleted"
@@ -880,6 +888,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.today": "Today",
     "trainer.home.trainerFallback": "Trainer",
     "trainer.home.trainerPlanningQueue": "Trainer planning queue",
+    "trainer.clients.activePlanCount": "{{count}} active {{label}}",
+    "trainer.clients.generalFitness": "General fitness",
+    "trainer.clients.noClients": "No clients",
+    "trainer.clients.noClientsBody": "No clients added by your gym.",
+    "trainer.clients.noMatchingClients": "No matching clients",
+    "trainer.clients.subtitle": "{{name}} · client list is access-controlled",
+    "trainer.clients.title": "Clients",
+    "trainer.clients.tryAnotherSearch": "Try another search or filter.",
     "trainer.pt.add": "Add",
     "trainer.pt.adding": "Adding...",
     "trainer.pt.allSessionsCompleted": "All sessions completed",
@@ -1343,6 +1359,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.today": "आज",
     "trainer.home.trainerFallback": "ट्रेनर",
     "trainer.home.trainerPlanningQueue": "ट्रेनर प्लानिंग क्यू",
+    "trainer.clients.activePlanCount": "{{count}} सक्रिय {{label}}",
+    "trainer.clients.generalFitness": "सामान्य फिटनेस",
+    "trainer.clients.noClients": "कोई क्लाइंट नहीं",
+    "trainer.clients.noClientsBody": "आपके जिम ने कोई क्लाइंट नहीं जोड़ा.",
+    "trainer.clients.noMatchingClients": "कोई मेल खाता क्लाइंट नहीं",
+    "trainer.clients.subtitle": "{{name}} · क्लाइंट सूची access-controlled है",
+    "trainer.clients.title": "क्लाइंट",
+    "trainer.clients.tryAnotherSearch": "दूसरी खोज या फिल्टर आजमाएं.",
     "trainer.pt.add": "जोड़ें",
     "trainer.pt.adding": "जोड़ा जा रहा है...",
     "trainer.pt.allSessionsCompleted": "सभी सेशन पूरे",

@@ -4,17 +4,18 @@ import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import {
-  ProfileShortcut,
+  HeaderActions,
   ScreenHeader,
   ZookScreen,
 } from "@/components/primitives";
-import { fitnessGoalFor, planCountLabel } from "@/features/trainer/helpers";
 import { useAuth } from "@/lib/auth";
 import { useTrainerClients } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { layout, spacing } from "@/lib/theme";
 
 export default function TrainerClientsScreen() {
   const router = useRouter();
+  const t = useT();
   const queryClient = useQueryClient();
   const { activeOrgId, session } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -24,11 +25,14 @@ export default function TrainerClientsScreen() {
   const clients = clientsQuery.data?.clients ?? [];
   const items: MemberRowItem[] = clients.map((client) => ({
     id: client.memberUserId,
-    name: client.user?.name ?? "Client",
+    name: client.user?.name ?? t("trainer.home.clientFallback"),
     email: client.user?.email,
     avatarUrl: client.profile?.profilePhotoUrl,
     status: client.active ? "active" : "pending",
-    meta: `${fitnessGoalFor(client)} · ${planCountLabel(client.summary?.activePlans ?? 0)}`,
+    meta: `${client.summary?.fitnessGoal ?? client.profile?.fitnessGoal ?? t("trainer.clients.generalFitness")} · ${t("trainer.clients.activePlanCount", {
+      count: client.summary?.activePlans ?? 0,
+      label: (client.summary?.activePlans ?? 0) === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
+    })}`,
   }));
   const filteredItems = useMemo(() => {
     const term = clientSearch.trim().toLowerCase();
@@ -73,17 +77,19 @@ export default function TrainerClientsScreen() {
             availableFilters={[{ kind: "all" }, { kind: "status", status: "active" }, { kind: "status", status: "pending" }]}
             onPressMember={(client) => router.push(`/trainer/clients/${client.id}` as never)}
             emptyState={{
-              title: clients.length ? "No matching clients" : "No clients",
-              subtitle: clients.length ? "Try another search or filter." : "No clients added by your gym.",
+              title: clients.length ? t("trainer.clients.noMatchingClients") : t("trainer.clients.noClients"),
+              subtitle: clients.length ? t("trainer.clients.tryAnotherSearch") : t("trainer.clients.noClientsBody"),
             }}
             refreshing={refreshing}
             onRefresh={onRefresh}
             header={
               <>
                 <ScreenHeader
-                  title="Clients"
-                  subtitle={`${session?.user.name ?? "Trainer"} · client list is access-controlled`}
-                  trailing={<ProfileShortcut />}
+                  title={t("trainer.clients.title")}
+                  subtitle={t("trainer.clients.subtitle", {
+                    name: session?.user.name ?? t("trainer.home.trainerFallback"),
+                  })}
+                  trailing={<HeaderActions showBell />}
                 />
               </>
             }
