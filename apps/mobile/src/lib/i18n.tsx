@@ -219,6 +219,54 @@ export type TranslationKey =
   | "tracking.totalDuration"
   | "tracking.sessions"
   | "common.seeAll"
+  | "member.coaching.active"
+  | "member.coaching.browsePtPackages"
+  | "member.coaching.completedCount"
+  | "member.coaching.ends"
+  | "member.coaching.noActiveCoaching"
+  | "member.coaching.noActiveCoachingBody"
+  | "member.coaching.noPackagesAvailable"
+  | "member.coaching.noPackagesAvailableBody"
+  | "member.coaching.noSessionsYet"
+  | "member.coaching.noSessionsYetBody"
+  | "member.coaching.pending"
+  | "member.coaching.recentSessions"
+  | "member.coaching.requesting"
+  | "member.coaching.requestSent"
+  | "member.coaching.requestThisPackage"
+  | "member.coaching.sessionsCount"
+  | "member.coaching.sessionsLeft"
+  | "member.coaching.subtitle"
+  | "member.coaching.title"
+  | "member.coaching.trainerFallback"
+  | "member.coaching.trainingSession"
+  | "member.coaching.viewDietPlan"
+  | "member.coaching.yourCoach"
+  | "member.coaching.yourTrainer"
+  | "member.home.accessActive"
+  | "member.home.active"
+  | "member.home.activeCheckIn"
+  | "member.home.activeCheckInHint"
+  | "member.home.browsePlansToStart"
+  | "member.home.currentBranch"
+  | "member.home.daysLeft"
+  | "member.home.dayStreak"
+  | "member.home.getMembership"
+  | "member.home.greeting"
+  | "member.home.gymFallback"
+  | "member.home.habits"
+  | "member.home.membershipAccess"
+  | "member.home.membershipAccessibility"
+  | "member.home.membershipActive"
+  | "member.home.noActiveMembership"
+  | "member.home.openProgress"
+  | "member.home.renewMembership"
+  | "member.home.renewalNeeded"
+  | "member.home.stopSession"
+  | "member.home.stoppingSession"
+  | "member.home.visits"
+  | "member.home.visitsLeft"
+  | "member.home.workouts"
   | "more.title"
   | "more.subtitle"
   | "more.accountSubtitle"
@@ -452,6 +500,56 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.totalDuration": "Total duration",
     "tracking.sessions": "Sessions",
     "common.seeAll": "See all",
+    "member.coaching.active": "Active",
+    "member.coaching.browsePtPackages": "Browse PT packages",
+    "member.coaching.completedCount": "{{count}} completed",
+    "member.coaching.ends": "Ends {{date}}",
+    "member.coaching.noActiveCoaching": "No active coaching",
+    "member.coaching.noActiveCoachingBody":
+      "Browse PT packages below and request one — a trainer will confirm and collect payment.",
+    "member.coaching.noPackagesAvailable": "No packages available",
+    "member.coaching.noPackagesAvailableBody":
+      "Check back later — trainers haven't published PT packages yet.",
+    "member.coaching.noSessionsYet": "No sessions yet",
+    "member.coaching.noSessionsYetBody": "Your logged sessions will appear here.",
+    "member.coaching.pending": "Pending",
+    "member.coaching.recentSessions": "Recent sessions",
+    "member.coaching.requesting": "Requesting...",
+    "member.coaching.requestSent": "Request sent — a trainer will confirm",
+    "member.coaching.requestThisPackage": "Request this package",
+    "member.coaching.sessionsCount": "{{count}} sessions",
+    "member.coaching.sessionsLeft": "{{remaining}} of {{total}} sessions left",
+    "member.coaching.subtitle": "Personal training with your coach.",
+    "member.coaching.title": "Your coaching",
+    "member.coaching.trainerFallback": "Trainer",
+    "member.coaching.trainingSession": "Training session",
+    "member.coaching.viewDietPlan": "View my diet plan",
+    "member.coaching.yourCoach": "Your coach",
+    "member.coaching.yourTrainer": "Your trainer",
+    "member.home.accessActive": "Access active",
+    "member.home.active": "Active",
+    "member.home.activeCheckIn": "Active check-in",
+    "member.home.activeCheckInHint": "Re-scan the branch QR to check out, or stop it here.",
+    "member.home.browsePlansToStart": "Browse plans to start training here",
+    "member.home.currentBranch": "Current branch",
+    "member.home.daysLeft": "{{count}} days left",
+    "member.home.dayStreak": "{{count}}-day streak",
+    "member.home.getMembership": "Get membership",
+    "member.home.greeting": "Hello, {{name}}",
+    "member.home.gymFallback": "Gym",
+    "member.home.habits": "Habits",
+    "member.home.membershipAccess": "Membership access",
+    "member.home.membershipAccessibility": "{{status}}. {{detail}}. {{gym}}.",
+    "member.home.membershipActive": "Membership active",
+    "member.home.noActiveMembership": "No active membership",
+    "member.home.openProgress": "Open progress",
+    "member.home.renewMembership": "Renew membership",
+    "member.home.renewalNeeded": "Renewal needed",
+    "member.home.stopSession": "Stop session",
+    "member.home.stoppingSession": "Stopping...",
+    "member.home.visits": "Visits",
+    "member.home.visitsLeft": "{{count}} visits left",
+    "member.home.workouts": "Workouts",
     "more.title": "More",
     "more.subtitle": "Everything else in one place.",
     "more.accountSubtitle": "Zook member account",
@@ -684,6 +782,56 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.totalDuration": "कुल अवधि",
     "tracking.sessions": "सेशन",
     "common.seeAll": "सभी देखें",
+    "member.coaching.active": "सक्रिय",
+    "member.coaching.browsePtPackages": "PT पैकेज देखें",
+    "member.coaching.completedCount": "{{count}} पूरे हुए",
+    "member.coaching.ends": "{{date}} खत्म",
+    "member.coaching.noActiveCoaching": "कोई सक्रिय कोचिंग नहीं",
+    "member.coaching.noActiveCoachingBody":
+      "नीचे PT पैकेज देखें और अनुरोध करें — ट्रेनर पुष्टि करके भुगतान लेगा.",
+    "member.coaching.noPackagesAvailable": "कोई पैकेज उपलब्ध नहीं",
+    "member.coaching.noPackagesAvailableBody":
+      "बाद में देखें — ट्रेनरों ने अभी PT पैकेज प्रकाशित नहीं किए हैं.",
+    "member.coaching.noSessionsYet": "अभी कोई सेशन नहीं",
+    "member.coaching.noSessionsYetBody": "आपके लॉग किए हुए सेशन यहां दिखेंगे.",
+    "member.coaching.pending": "पेंडिंग",
+    "member.coaching.recentSessions": "हाल के सेशन",
+    "member.coaching.requesting": "अनुरोध भेजा जा रहा है...",
+    "member.coaching.requestSent": "अनुरोध भेजा गया — ट्रेनर पुष्टि करेगा",
+    "member.coaching.requestThisPackage": "यह पैकेज अनुरोध करें",
+    "member.coaching.sessionsCount": "{{count}} सेशन",
+    "member.coaching.sessionsLeft": "{{remaining}} में से {{total}} सेशन बाकी",
+    "member.coaching.subtitle": "अपने कोच के साथ पर्सनल ट्रेनिंग.",
+    "member.coaching.title": "आपकी कोचिंग",
+    "member.coaching.trainerFallback": "ट्रेनर",
+    "member.coaching.trainingSession": "ट्रेनिंग सेशन",
+    "member.coaching.viewDietPlan": "मेरा डाइट प्लान देखें",
+    "member.coaching.yourCoach": "आपके कोच",
+    "member.coaching.yourTrainer": "आपके ट्रेनर",
+    "member.home.accessActive": "एक्सेस सक्रिय है",
+    "member.home.active": "सक्रिय",
+    "member.home.activeCheckIn": "सक्रिय चेक-इन",
+    "member.home.activeCheckInHint": "चेक आउट करने के लिए ब्रांच QR फिर स्कैन करें, या यहां रोकें.",
+    "member.home.browsePlansToStart": "यहां ट्रेनिंग शुरू करने के लिए प्लान देखें",
+    "member.home.currentBranch": "मौजूदा ब्रांच",
+    "member.home.daysLeft": "{{count}} दिन बाकी",
+    "member.home.dayStreak": "{{count}} दिन की स्ट्रीक",
+    "member.home.getMembership": "मेंबरशिप लें",
+    "member.home.greeting": "नमस्ते, {{name}}",
+    "member.home.gymFallback": "जिम",
+    "member.home.habits": "आदतें",
+    "member.home.membershipAccess": "मेंबरशिप एक्सेस",
+    "member.home.membershipAccessibility": "{{status}}. {{detail}}. {{gym}}.",
+    "member.home.membershipActive": "मेंबरशिप सक्रिय है",
+    "member.home.noActiveMembership": "कोई सक्रिय मेंबरशिप नहीं",
+    "member.home.openProgress": "प्रोग्रेस खोलें",
+    "member.home.renewMembership": "मेंबरशिप रिन्यू करें",
+    "member.home.renewalNeeded": "रिन्यूअल जरूरी है",
+    "member.home.stopSession": "सेशन रोकें",
+    "member.home.stoppingSession": "रुक रहा है...",
+    "member.home.visits": "विजिट",
+    "member.home.visitsLeft": "{{count}} विजिट बाकी",
+    "member.home.workouts": "वर्कआउट",
     "more.title": "और",
     "more.subtitle": "बाकी सब कुछ एक जगह.",
     "more.accountSubtitle": "Zook मेंबर अकाउंट",

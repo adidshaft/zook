@@ -19,6 +19,7 @@ import { useBrowsePtPlans, useMyCoaching, useRequestPtSubscription } from "@/lib
 import type { PtPlanRecord } from "@/lib/domains/shared/types";
 import { formatInr, formatRelativeDate } from "@/lib/formatting";
 import { getApiErrorMessage } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -34,6 +35,7 @@ function PtPlanCard({
   onRequest: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <Card contentStyle={styles.planCard}>
       <View style={styles.planHeader}>
@@ -43,8 +45,8 @@ function PtPlanCard({
             {plan.name}
           </Text>
           <Text style={[styles.planMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-            {plan.trainerName ?? "Trainer"}
-            {plan.sessionCount ? ` · ${plan.sessionCount} sessions` : ""}
+            {plan.trainerName ?? t("member.coaching.trainerFallback")}
+            {plan.sessionCount ? ` · ${t("member.coaching.sessionsCount", { count: plan.sessionCount })}` : ""}
           </Text>
         </View>
         <Text style={[styles.planPrice, { color: palette.text.primary }]}>{formatInr(plan.pricePaise)}</Text>
@@ -55,17 +57,17 @@ function PtPlanCard({
         </Text>
       ) : null}
       {requested ? (
-        <Pill tone="amber">Request sent — a trainer will confirm</Pill>
+        <Pill tone="amber">{t("member.coaching.requestSent")}</Pill>
       ) : (
         <ZookButton
           size="sm"
           variant="secondary"
           icon="paper-plane-outline"
           busy={requesting}
-          busyLabel="Requesting..."
+          busyLabel={t("member.coaching.requesting")}
           onPress={onRequest}
         >
-          Request this package
+          {t("member.coaching.requestThisPackage")}
         </ZookButton>
       )}
     </Card>
@@ -74,6 +76,7 @@ function PtPlanCard({
 
 export default function MemberCoaching() {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const coachingQuery = useMyCoaching();
   const plansQuery = useBrowsePtPlans();
@@ -123,7 +126,7 @@ export default function MemberCoaching() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Your coaching" subtitle="Personal training with your coach." showBack />
+          <AppHeader title={t("member.coaching.title")} subtitle={t("member.coaching.subtitle")} showBack />
 
           {coachingQuery.isError ? (
             <QueryErrorState error={coachingQuery.error} onRetry={() => void coachingQuery.refetch()} />
@@ -147,12 +150,12 @@ export default function MemberCoaching() {
               <Card variant="compact">
                 <EmptyState
                   icon="barbell-outline"
-                  title="No active coaching"
-                  body="Browse PT packages below and request one — a trainer will confirm and collect payment."
+                  title={t("member.coaching.noActiveCoaching")}
+                  body={t("member.coaching.noActiveCoachingBody")}
                 />
               </Card>
 
-              <SectionHeader title="Browse PT packages" />
+              <SectionHeader title={t("member.coaching.browsePtPackages")} />
 
               {plansQuery.isError ? (
                 <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} />
@@ -170,8 +173,8 @@ export default function MemberCoaching() {
                 <Card variant="compact">
                   <EmptyState
                     icon="pricetag-outline"
-                    title="No packages available"
-                    body="Check back later — trainers haven't published PT packages yet."
+                    title={t("member.coaching.noPackagesAvailable")}
+                    body={t("member.coaching.noPackagesAvailableBody")}
                   />
                 </Card>
               ) : null}
@@ -196,13 +199,15 @@ export default function MemberCoaching() {
                 <View style={styles.coachRow}>
                   <IconBubble icon="person" tone="lime" size={52} />
                   <View style={styles.coachCopy}>
-                    <Text style={[styles.coachLabel, { color: palette.text.secondary }]}>Your coach</Text>
+                    <Text style={[styles.coachLabel, { color: palette.text.secondary }]}>
+                      {t("member.coaching.yourCoach")}
+                    </Text>
                     <Text style={[styles.coachName, { color: palette.text.primary }]} numberOfLines={1}>
-                      {data?.trainer?.name ?? "Your trainer"}
+                      {data?.trainer?.name ?? t("member.coaching.yourTrainer")}
                     </Text>
                   </View>
                   <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
-                    {subscription.status === "ACTIVE" ? "Active" : "Pending"}
+                    {subscription.status === "ACTIVE" ? t("member.coaching.active") : t("member.coaching.pending")}
                   </Pill>
                 </View>
                 {subscription.planName ? (
@@ -211,14 +216,18 @@ export default function MemberCoaching() {
                 {data?.plan?.description ? (
                   <Text style={[styles.planDesc, { color: palette.text.secondary }]}>{data.plan.description}</Text>
                 ) : null}
-                <ProgressBar value={progress} tone="lime" label={`${remaining} of ${total} sessions left`} />
+                <ProgressBar
+                  value={progress}
+                  tone="lime"
+                  label={t("member.coaching.sessionsLeft", { remaining, total })}
+                />
                 <View style={styles.metaRow}>
                   <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                    {used} completed
+                    {t("member.coaching.completedCount", { count: used })}
                   </Text>
                   {subscription.endsAt ? (
                     <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                      Ends {formatRelativeDate(subscription.endsAt)}
+                      {t("member.coaching.ends", { date: formatRelativeDate(subscription.endsAt) })}
                     </Text>
                   ) : null}
                   <Text style={[styles.metaText, { color: palette.text.secondary }]}>
@@ -228,13 +237,17 @@ export default function MemberCoaching() {
               </Card>
 
               <ZookButton variant="secondary" icon="restaurant-outline" onPress={() => router.push("/plan?tab=diet" as never)}>
-                View my diet plan
+                {t("member.coaching.viewDietPlan")}
               </ZookButton>
 
-              <SectionHeader title="Recent sessions" />
+              <SectionHeader title={t("member.coaching.recentSessions")} />
               {data && data.sessions.length === 0 ? (
                 <Card variant="compact">
-                  <EmptyState icon="time-outline" title="No sessions yet" body="Your logged sessions will appear here." />
+                  <EmptyState
+                    icon="time-outline"
+                    title={t("member.coaching.noSessionsYet")}
+                    body={t("member.coaching.noSessionsYetBody")}
+                  />
                 </Card>
               ) : null}
               <View style={styles.stack}>
@@ -243,7 +256,7 @@ export default function MemberCoaching() {
                     <IconBubble icon="checkmark-done" tone="blue" size={40} />
                     <View style={styles.sessionCopy}>
                       <Text style={[styles.sessionTitle, { color: palette.text.primary }]} numberOfLines={1}>
-                        {session.notes ?? "Training session"}
+                        {session.notes ?? t("member.coaching.trainingSession")}
                       </Text>
                       <Text style={[styles.sessionMeta, { color: palette.text.secondary }]}>
                         {formatRelativeDate(session.sessionAt)}

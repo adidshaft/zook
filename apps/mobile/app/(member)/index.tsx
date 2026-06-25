@@ -15,9 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
   AnimatedAppear,
+  HeaderActions,
   HeaderMeta,
   IconBubble,
-  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   StatStrip,
@@ -35,6 +35,7 @@ import { useMyTracking } from "@/lib/domains";
 import { useMemberHome } from "@/lib/domains/member";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { formatCompactMinutes, formatElapsedTimer } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
@@ -58,6 +59,7 @@ function ActiveCheckInCard({
   onStop: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     secondsSince(activeCheckIn.checkedInAt),
   );
@@ -76,10 +78,10 @@ function ActiveCheckInCard({
         <IconBubble icon="time-outline" tone="blue" size={42} />
         <View style={styles.activeSessionCopy}>
           <Text style={[styles.activeSessionLabel, { color: palette.text.secondary }]}>
-            Active check-in
+            {t("member.home.activeCheckIn")}
           </Text>
           <Text style={[styles.activeSessionBranch, { color: palette.text.primary }]}>
-            {activeCheckIn.branchName ?? "Current branch"}
+            {activeCheckIn.branchName ?? t("member.home.currentBranch")}
           </Text>
         </View>
       </View>
@@ -87,10 +89,10 @@ function ActiveCheckInCard({
         {formatElapsedTimer(elapsedSeconds)}
       </Text>
       <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
-        Re-scan the branch QR to check out, or stop it here.
+        {t("member.home.activeCheckInHint")}
       </Text>
       <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary">
-        {busy ? "Stopping..." : "Stop session"}
+        {busy ? t("member.home.stoppingSession") : t("member.home.stopSession")}
       </ZookButton>
     </Card>
   );
@@ -99,6 +101,7 @@ function ActiveCheckInCard({
 function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
   const router = useRouter();
   const { palette } = useTheme();
+  const t = useT();
   const membership = home?.activeMembership;
   const organization = home?.activeOrganization;
   const daysLeft = membership?.daysLeft;
@@ -110,18 +113,20 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
       (typeof daysLeft === "number" && daysLeft <= 0));
   const needsAction = !hasMembership || isExpired;
   const statusLabel = !hasMembership
-    ? "No active membership"
+    ? t("member.home.noActiveMembership")
     : isExpired
-      ? "Renewal needed"
-      : "Access active";
+      ? t("member.home.renewalNeeded")
+      : t("member.home.accessActive");
   const detail = !hasMembership
-    ? "Browse plans to start training here"
+    ? t("member.home.browsePlansToStart")
     : [
-        typeof daysLeft === "number" ? `${Math.max(0, daysLeft)} days left` : null,
-        typeof visitsLeft === "number" ? `${visitsLeft} visits left` : null,
+        typeof daysLeft === "number"
+          ? t("member.home.daysLeft", { count: Math.max(0, daysLeft) })
+          : null,
+        typeof visitsLeft === "number" ? t("member.home.visitsLeft", { count: visitsLeft }) : null,
       ]
         .filter(Boolean)
-        .join(" · ") || "Membership active";
+        .join(" · ") || t("member.home.membershipActive");
 
   return (
     <Card
@@ -130,7 +135,11 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
       contentStyle={styles.membershipCard}
       pressable={!needsAction}
       onPress={!needsAction ? () => router.push("/membership" as never) : undefined}
-      accessibilityLabel={`${statusLabel}. ${detail}. ${organization?.name ?? "Gym"}.`}
+      accessibilityLabel={t("member.home.membershipAccessibility", {
+        status: statusLabel,
+        detail,
+        gym: organization?.name ?? t("member.home.gymFallback"),
+      })}
     >
       <View style={styles.membershipTop}>
         <IconBubble
@@ -140,7 +149,7 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
         />
         <View style={styles.membershipCopy}>
           <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
-            Membership access
+            {t("member.home.membershipAccess")}
           </Text>
           <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
             {statusLabel}
@@ -157,7 +166,7 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
           icon="card-outline"
           fullWidth
         >
-          {hasMembership ? "Renew membership" : "Get membership"}
+          {hasMembership ? t("member.home.renewMembership") : t("member.home.getMembership")}
         </ZookButton>
       ) : null}
     </Card>
@@ -168,11 +177,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const homeQuery = useMemberHome();
   const trackingQuery = useMyTracking();
   const home = homeQuery.data;
   const state = deriveHomeState(home);
-  const firstName = session?.user.name?.trim().split(/\s+/)[0] || "Member";
+  const firstName = session?.user.name?.trim().split(/\s+/)[0] || t("more.fallbackName");
   const { activeCheckIn, checkoutBusy, stopActiveCheckIn } = useManualCheckout();
   const scrollY = useSharedValue(0);
   const streakDays = home?.streakDays ?? 0;
@@ -204,12 +214,12 @@ export default function HomeScreen() {
           }
         >
           <ScreenHeader
-            title={`Hello, ${firstName}`}
-            trailing={<ProfileShortcut />}
+            title={t("member.home.greeting", { name: firstName })}
+            trailing={<HeaderActions showBell />}
             meta={
               streakDays > 0 ? (
                 <HeaderMeta icon="flame" tone="accent">
-                  {streakDays}-day streak
+                  {t("member.home.dayStreak", { count: streakDays })}
                 </HeaderMeta>
               ) : null
             }
@@ -244,16 +254,16 @@ export default function HomeScreen() {
               <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Open progress"
+                  accessibilityLabel={t("member.home.openProgress")}
                   onPress={() => router.push("/progress" as never)}
                   style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
                 >
                   <StatStrip
                     items={[
-                      { label: "Visits", value: String(weeklyVisits) },
-                      { label: "Active", value: formatCompactMinutes(activeMinutes) },
-                      { label: "Workouts", value: String(workoutsLogged) },
-                      { label: "Habits", value: String(habitsDone) },
+                      { label: t("member.home.visits"), value: String(weeklyVisits) },
+                      { label: t("member.home.active"), value: formatCompactMinutes(activeMinutes) },
+                      { label: t("member.home.workouts"), value: String(workoutsLogged) },
+                      { label: t("member.home.habits"), value: String(habitsDone) },
                     ]}
                   />
                 </Pressable>
