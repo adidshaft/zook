@@ -23,6 +23,7 @@ import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { formatDurationSeconds, formatTime, titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -89,6 +90,7 @@ export default function AttendanceResultScreen() {
   }>();
   const { activeOrgId, status, token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const activeRole = useRoleContext()?.role;
   const queryClient = useQueryClient();
   const memberHomeQuery = useMemberHome();
@@ -125,7 +127,7 @@ export default function AttendanceResultScreen() {
     <Pressable
       onPress={dismissAttendance}
       accessibilityRole="button"
-      accessibilityLabel="Dismiss attendance details"
+      accessibilityLabel={t("member.attendance.dismissDetails")}
       hitSlop={{ top: 4, right: 4, bottom: 4, left: 4 }}
       style={({ pressed }) => [
         styles.iconButton,
@@ -166,7 +168,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" leading={dismissButton} showProfileShortcut={false} />
+            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -187,16 +189,16 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title="Attendance" leading={dismissButton} showProfileShortcut={false} />
+            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
-              <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>Record not found in your history</Text>
+              <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>{t("member.attendance.notFound")}</Text>
               <ZookButton
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 variant="secondary"
                 icon="chevron-back"
               >
-                Back
+                {t("shop.back")}
               </ZookButton>
             </Card>
           </ScrollView>
@@ -215,9 +217,10 @@ export default function AttendanceResultScreen() {
   const code = record.entryCode?.trim() || null;
   const branchName =
     record.branchName === fallbackDefaultBranchName
-      ? "Main branch"
-      : (record.branchName ?? "Assigned branch");
-  const planName = record.planName ?? "Active membership";
+      ? t("member.attendance.mainBranch")
+      : (record.branchName ?? t("member.attendance.assignedBranch"));
+  const planName = record.planName ?? t("member.attendance.activeMembership");
+  const reason = record.reason === "Membership active." ? t("member.attendance.membershipActive") : record.reason;
   const planTarget: Href =
     activeRole === "TRAINER" ? ("/trainer/plans" as Href) : ("/plan?view=detail" as Href);
 
@@ -230,7 +233,7 @@ export default function AttendanceResultScreen() {
           contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
           <AppHeader
-            title="Attendance"
+            title={t("member.attendance.title")}
             subtitle={pending ? branchName : undefined}
             leading={dismissButton}
             showProfileShortcut={false}
@@ -245,21 +248,21 @@ export default function AttendanceResultScreen() {
             />
             <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
               {pending
-                ? "Waiting for desk approval"
+                ? t("member.attendance.waitingDeskApproval")
                 : blocked
-                  ? "Desk help needed"
+                  ? t("member.attendance.deskHelpNeeded")
                   : checkedOut
-                    ? "Checked out"
-                    : "Checked in"}
+                    ? t("member.attendance.checkedOut")
+                    : t("member.attendance.checkedIn")}
             </Text>
             <Text style={[styles.heroBody, { color: palette.text.secondary }]}>
               {pending
-                ? "Your check-in was received. Show this code at the front desk."
+                ? t("member.attendance.pendingBody")
                 : blocked
-                  ? (record.reason ?? "Please ask the front desk to review this check-in.")
+                  ? (reason ?? t("member.attendance.reviewAtDesk"))
                   : checkedOut
-                    ? "Your gym time was recorded."
-                    : (record.reason ?? "Entry approved for your gym")}
+                    ? t("member.attendance.gymTimeRecorded")
+                    : (reason ?? t("member.attendance.entryApproved"))}
             </Text>
           </View>
 
@@ -267,7 +270,7 @@ export default function AttendanceResultScreen() {
             <Card contentStyle={styles.warningContent}>
               <IconBubble icon="person-circle-outline" tone="amber" size={42} />
               <View style={styles.warningCopy}>
-                <Text style={[styles.warningTitle, { color: palette.text.primary }]}>Profile photo recommended</Text>
+                <Text style={[styles.warningTitle, { color: palette.text.primary }]}>{t("member.attendance.profilePhotoRecommended")}</Text>
                 <Text style={[styles.warningBody, { color: palette.text.secondary }]}>{warning}</Text>
               </View>
             </Card>
@@ -276,34 +279,34 @@ export default function AttendanceResultScreen() {
           {pending ? (
             <>
               <Card variant="warning" contentStyle={styles.pendingCodeContent}>
-                <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
+                <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>{t("member.attendance.entryCode")}</Text>
                 {code ? (
                   <>
                     <Pressable
                       onPress={async () => {
                         try {
                           await Clipboard.setStringAsync(code);
-                          showToast({ tone: "success", message: "Entry code copied." });
+                          showToast({ tone: "success", message: t("member.attendance.entryCodeCopied") });
                         } catch {
-                          showToast({ tone: "danger", message: "Could not copy code." });
+                          showToast({ tone: "danger", message: t("member.attendance.copyCodeFailed") });
                         }
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`Copy entry code ${code}`}
+                      accessibilityLabel={t("member.attendance.copyEntryCodeAccessibility", { code })}
                       hitSlop={8}
                       style={({ pressed }) => (pressed ? styles.codePressed : null)}
                     >
                       <Text style={[styles.pendingCode, { color: palette.feedback.warning }]}>{code}</Text>
                     </Pressable>
                     <View style={styles.pendingChips}>
-                      <StatusChip status="Pending approval" />
-                      <StatusChip status="Membership active" icon="checkmark" />
+                      <StatusChip status={t("member.attendance.pendingApproval")} />
+                      <StatusChip status={t("member.attendance.membershipActive")} icon="checkmark" />
                     </View>
-                    <StatusChip status="Desk confirmation needed" icon="alert-circle-outline" />
+                    <StatusChip status={t("member.attendance.deskConfirmationNeeded")} icon="alert-circle-outline" />
                   </>
                 ) : (
                   <Text style={[styles.codeUnavailable, { color: palette.text.secondary }]}>
-                    Entry code unavailable — please ask reception to check you in manually.
+                    {t("member.attendance.entryCodeUnavailable")}
                   </Text>
                 )}
               </Card>
@@ -311,10 +314,9 @@ export default function AttendanceResultScreen() {
               <Card contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
-                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Why confirmation?</Text>
+                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>{t("member.attendance.whyConfirmation")}</Text>
                   <Text style={[styles.reasonBody, { color: palette.text.secondary }]}>
-                    Your gym asks the desk to confirm some check-ins before entry is marked
-                    approved.
+                    {t("member.attendance.whyConfirmationBody")}
                   </Text>
                 </View>
               </Card>
@@ -324,10 +326,10 @@ export default function AttendanceResultScreen() {
                 disabled={attendanceQuery.isFetching}
                 icon="refresh-outline"
               >
-                {attendanceQuery.isFetching ? "Updating..." : "Refresh status"}
+                {attendanceQuery.isFetching ? t("member.attendance.updating") : t("member.attendance.refreshStatus")}
               </ZookButton>
               <ZookButton href="/" variant="secondary" icon="home-outline">
-                Back to Home
+                {t("member.attendance.backToHome")}
               </ZookButton>
             </>
           ) : blocked ? (
@@ -335,46 +337,46 @@ export default function AttendanceResultScreen() {
               <Card variant="warning" contentStyle={styles.reasonContent}>
                 <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
                 <View style={styles.reasonCopy}>
-                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>Check-in not approved</Text>
+                  <Text style={[styles.reasonTitle, { color: palette.text.primary }]}>{t("member.attendance.notApproved")}</Text>
                   <Text style={[styles.reasonBody, { color: palette.text.secondary }]}>
-                    {record.reason || "The desk can help you complete this check-in."}
+                    {reason || t("member.attendance.deskCanHelp")}
                   </Text>
                 </View>
               </Card>
               <ZookButton href="/scan" variant="secondary" icon="qr-code-outline">
-                Try again
+                {t("shop.tryAgain")}
               </ZookButton>
             </>
           ) : (
             <>
               <Card contentStyle={styles.approvedCodeContent}>
                 <View style={styles.approvedCodeHero}>
-                  <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>Entry Code</Text>
+                  <Text style={[styles.entryLabel, { color: palette.text.secondary }]}>{t("member.attendance.entryCode")}</Text>
                   {code ? (
                     <>
                       <Text style={[styles.approvedCode, { color: palette.accent.base }]}>{code}</Text>
-                      <ZookChip tone="lime">Approved</ZookChip>
-                      <Text style={[styles.codeDetail, { color: palette.text.secondary }]}>Show this to the front desk if asked.</Text>
+                      <ZookChip tone="lime">{t("member.attendance.approved")}</ZookChip>
+                      <Text style={[styles.codeDetail, { color: palette.text.secondary }]}>{t("member.attendance.showToDesk")}</Text>
                     </>
                   ) : (
                     <Text style={[styles.codeUnavailable, { color: palette.text.secondary }]}>
-                      Entry code unavailable — please ask reception to check you in manually.
+                      {t("member.attendance.entryCodeUnavailable")}
                     </Text>
                   )}
                 </View>
                 <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} />
                 <DetailLine
-                  label="Check-in"
+                  label={t("member.attendance.checkIn")}
                   value={formatTime(record.checkedInAt, "--:--")}
                   icon="time-outline"
                 />
                 <DetailLine
-                  label="Check-out"
-                  value={record.checkedOutAt ? formatTime(record.checkedOutAt, "--:--") : "In progress"}
+                  label={t("member.attendance.checkOut")}
+                  value={record.checkedOutAt ? formatTime(record.checkedOutAt, "--:--") : t("member.attendance.inProgress")}
                   icon="stop-circle-outline"
                 />
                 <DetailLine
-                  label="Duration"
+                  label={t("member.attendance.duration")}
                   value={formatDurationSeconds(record.durationSeconds, {
                     includeZeroMinutes: true,
                     minimumMinutes: 1,
@@ -382,10 +384,10 @@ export default function AttendanceResultScreen() {
                   })}
                   icon="timer-outline"
                 />
-                <DetailLine label="Branch" value={branchName} icon="shield-checkmark-outline" />
-                <DetailLine label="Plan" value={planName} icon="reader-outline" />
+                <DetailLine label={t("member.attendance.branch")} value={branchName} icon="shield-checkmark-outline" />
+                <DetailLine label={t("member.attendance.plan")} value={planName} icon="reader-outline" />
                 <DetailLine
-                  label="Status"
+                  label={t("member.attendance.status")}
                   value={titleCaseFromCode(record.status ?? "RECORDED")}
                   icon="checkmark-circle-outline"
                   highlight
@@ -395,26 +397,26 @@ export default function AttendanceResultScreen() {
               <Card contentStyle={styles.nextContent}>
                 <IconBubble icon="barbell-outline" tone="neutral" size={44} />
                 <View style={styles.nextCopy}>
-                  <Text style={[styles.nextTitle, { color: palette.text.primary }]}>Next up</Text>
+                  <Text style={[styles.nextTitle, { color: palette.text.primary }]}>{t("member.attendance.nextUp")}</Text>
                   <Text style={[styles.nextBody, { color: palette.text.secondary }]}>
-                    Open your current assigned plan.
+                    {t("member.attendance.openAssignedPlanBody")}
                   </Text>
                 </View>
                 <Link href={planTarget} asChild>
                   <Pressable
                     accessibilityRole="link"
-                    accessibilityLabel="Open assigned plan"
+                    accessibilityLabel={t("member.attendance.openAssignedPlanAccessibility")}
                     style={({ pressed }) => (pressed ? styles.controlPressed : null)}
                     hitSlop={6}
                   >
                     <ZookChip tone="blue" icon="chevron-forward">
-                      Open Plan
+                      {t("member.attendance.openPlan")}
                     </ZookChip>
                   </Pressable>
                 </Link>
               </Card>
               <ZookButton onPress={() => router.replace("/")} icon="home-outline">
-                Done
+                {t("common.done")}
               </ZookButton>
             </>
           )}

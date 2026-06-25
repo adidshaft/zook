@@ -535,6 +535,49 @@ export type TranslationKey =
   | "tracking.totalDuration"
   | "tracking.sessions"
   | "common.seeAll"
+  | "member.attendance.activeMembership"
+  | "member.attendance.approved"
+  | "member.attendance.assignedBranch"
+  | "member.attendance.backToHome"
+  | "member.attendance.branch"
+  | "member.attendance.checkIn"
+  | "member.attendance.checkOut"
+  | "member.attendance.checkedIn"
+  | "member.attendance.checkedOut"
+  | "member.attendance.copyCodeFailed"
+  | "member.attendance.copyEntryCodeAccessibility"
+  | "member.attendance.deskCanHelp"
+  | "member.attendance.deskConfirmationNeeded"
+  | "member.attendance.deskHelpNeeded"
+  | "member.attendance.dismissDetails"
+  | "member.attendance.duration"
+  | "member.attendance.entryApproved"
+  | "member.attendance.entryCode"
+  | "member.attendance.entryCodeCopied"
+  | "member.attendance.entryCodeUnavailable"
+  | "member.attendance.gymTimeRecorded"
+  | "member.attendance.inProgress"
+  | "member.attendance.mainBranch"
+  | "member.attendance.membershipActive"
+  | "member.attendance.nextUp"
+  | "member.attendance.notApproved"
+  | "member.attendance.notFound"
+  | "member.attendance.openAssignedPlanAccessibility"
+  | "member.attendance.openAssignedPlanBody"
+  | "member.attendance.openPlan"
+  | "member.attendance.pendingApproval"
+  | "member.attendance.pendingBody"
+  | "member.attendance.plan"
+  | "member.attendance.profilePhotoRecommended"
+  | "member.attendance.refreshStatus"
+  | "member.attendance.reviewAtDesk"
+  | "member.attendance.showToDesk"
+  | "member.attendance.status"
+  | "member.attendance.title"
+  | "member.attendance.updating"
+  | "member.attendance.waitingDeskApproval"
+  | "member.attendance.whyConfirmation"
+  | "member.attendance.whyConfirmationBody"
   | "member.coaching.active"
   | "member.coaching.browsePtPackages"
   | "member.coaching.completedCount"
@@ -1463,6 +1506,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.totalDuration": "Total duration",
     "tracking.sessions": "Sessions",
     "common.seeAll": "See all",
+    "member.attendance.activeMembership": "Active membership",
+    "member.attendance.approved": "Approved",
+    "member.attendance.assignedBranch": "Assigned branch",
+    "member.attendance.backToHome": "Back to Home",
+    "member.attendance.branch": "Branch",
+    "member.attendance.checkIn": "Check-in",
+    "member.attendance.checkOut": "Check-out",
+    "member.attendance.checkedIn": "Checked in",
+    "member.attendance.checkedOut": "Checked out",
+    "member.attendance.copyCodeFailed": "Could not copy code.",
+    "member.attendance.copyEntryCodeAccessibility": "Copy entry code {{code}}",
+    "member.attendance.deskCanHelp": "The desk can help you complete this check-in.",
+    "member.attendance.deskConfirmationNeeded": "Desk confirmation needed",
+    "member.attendance.deskHelpNeeded": "Desk help needed",
+    "member.attendance.dismissDetails": "Dismiss attendance details",
+    "member.attendance.duration": "Duration",
+    "member.attendance.entryApproved": "Entry approved for your gym",
+    "member.attendance.entryCode": "Entry Code",
+    "member.attendance.entryCodeCopied": "Entry code copied.",
+    "member.attendance.entryCodeUnavailable": "Entry code unavailable - please ask reception to check you in manually.",
+    "member.attendance.gymTimeRecorded": "Your gym time was recorded.",
+    "member.attendance.inProgress": "In progress",
+    "member.attendance.mainBranch": "Main branch",
+    "member.attendance.membershipActive": "Membership active",
+    "member.attendance.nextUp": "Next up",
+    "member.attendance.notApproved": "Check-in not approved",
+    "member.attendance.notFound": "Record not found in your history",
+    "member.attendance.openAssignedPlanAccessibility": "Open assigned plan",
+    "member.attendance.openAssignedPlanBody": "Open your current assigned plan.",
+    "member.attendance.openPlan": "Open Plan",
+    "member.attendance.pendingApproval": "Pending approval",
+    "member.attendance.pendingBody": "Your check-in was received. Show this code at the front desk.",
+    "member.attendance.plan": "Plan",
+    "member.attendance.profilePhotoRecommended": "Profile photo recommended",
+    "member.attendance.refreshStatus": "Refresh status",
+    "member.attendance.reviewAtDesk": "Please ask the front desk to review this check-in.",
+    "member.attendance.showToDesk": "Show this to the front desk if asked.",
+    "member.attendance.status": "Status",
+    "member.attendance.title": "Attendance",
+    "member.attendance.updating": "Updating...",
+    "member.attendance.waitingDeskApproval": "Waiting for desk approval",
+    "member.attendance.whyConfirmation": "Why confirmation?",
+    "member.attendance.whyConfirmationBody": "Your gym asks the desk to confirm some check-ins before entry is marked approved.",
     "member.coaching.active": "Active",
     "member.coaching.browsePtPackages": "Browse PT packages",
     "member.coaching.completedCount": "{{count}} completed",
@@ -2393,6 +2479,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.totalDuration": "कुल अवधि",
     "tracking.sessions": "सेशन",
     "common.seeAll": "सभी देखें",
+    "member.attendance.activeMembership": "सक्रिय मेंबरशिप",
+    "member.attendance.approved": "Approved",
+    "member.attendance.assignedBranch": "Assigned branch",
+    "member.attendance.backToHome": "Home पर वापस",
+    "member.attendance.branch": "ब्रांच",
+    "member.attendance.checkIn": "Check-in",
+    "member.attendance.checkOut": "Check-out",
+    "member.attendance.checkedIn": "Checked in",
+    "member.attendance.checkedOut": "Checked out",
+    "member.attendance.copyCodeFailed": "Code copy नहीं हो सका.",
+    "member.attendance.copyEntryCodeAccessibility": "Entry code {{code}} copy करें",
+    "member.attendance.deskCanHelp": "Desk इस check-in को पूरा करने में मदद कर सकता है.",
+    "member.attendance.deskConfirmationNeeded": "Desk confirmation चाहिए",
+    "member.attendance.deskHelpNeeded": "Desk help चाहिए",
+    "member.attendance.dismissDetails": "Attendance details बंद करें",
+    "member.attendance.duration": "अवधि",
+    "member.attendance.entryApproved": "आपके gym के लिए entry approved है",
+    "member.attendance.entryCode": "Entry Code",
+    "member.attendance.entryCodeCopied": "Entry code copy हुआ.",
+    "member.attendance.entryCodeUnavailable": "Entry code unavailable - reception से manual check-in करने को कहें.",
+    "member.attendance.gymTimeRecorded": "आपका gym time record हो गया.",
+    "member.attendance.inProgress": "चल रहा है",
+    "member.attendance.mainBranch": "Main branch",
+    "member.attendance.membershipActive": "मेंबरशिप सक्रिय है",
+    "member.attendance.nextUp": "Next up",
+    "member.attendance.notApproved": "Check-in approved नहीं हुआ",
+    "member.attendance.notFound": "यह record आपकी history में नहीं मिला",
+    "member.attendance.openAssignedPlanAccessibility": "Assigned plan खोलें",
+    "member.attendance.openAssignedPlanBody": "अपना current assigned plan खोलें.",
+    "member.attendance.openPlan": "Plan खोलें",
+    "member.attendance.pendingApproval": "Pending approval",
+    "member.attendance.pendingBody": "आपका check-in receive हो गया है. यह code front desk पर दिखाएं.",
+    "member.attendance.plan": "प्लान",
+    "member.attendance.profilePhotoRecommended": "Profile photo recommended",
+    "member.attendance.refreshStatus": "Status refresh करें",
+    "member.attendance.reviewAtDesk": "Front desk से इस check-in को review करने को कहें.",
+    "member.attendance.showToDesk": "पूछे जाने पर इसे front desk को दिखाएं.",
+    "member.attendance.status": "Status",
+    "member.attendance.title": "Attendance",
+    "member.attendance.updating": "Update हो रहा है...",
+    "member.attendance.waitingDeskApproval": "Desk approval का इंतज़ार",
+    "member.attendance.whyConfirmation": "Confirmation क्यों?",
+    "member.attendance.whyConfirmationBody": "आपका gym कुछ check-ins को approved mark करने से पहले desk confirmation मांगता है.",
     "member.coaching.active": "सक्रिय",
     "member.coaching.browsePtPackages": "PT पैकेज देखें",
     "member.coaching.completedCount": "{{count}} पूरे हुए",
