@@ -267,6 +267,24 @@ export type TranslationKey =
   | "member.home.visits"
   | "member.home.visitsLeft"
   | "member.home.workouts"
+  | "member.plan.assignedPlan"
+  | "member.plan.coachGuided"
+  | "member.plan.couldNotLoadExercises"
+  | "member.plan.dietTab"
+  | "member.plan.insideThisPlan"
+  | "member.plan.morePlans"
+  | "member.plan.noExercises"
+  | "member.plan.noPlanAssigned"
+  | "member.plan.noPlanAssignedBody"
+  | "member.plan.openTodayPlan"
+  | "member.plan.percentComplete"
+  | "member.plan.planMeta"
+  | "member.plan.progress"
+  | "member.plan.title"
+  | "member.plan.todaysWorkout"
+  | "member.plan.trainerAssigned"
+  | "member.plan.viewFullExerciseList"
+  | "member.plan.workoutTab"
   | "more.title"
   | "more.subtitle"
   | "more.accountSubtitle"
@@ -550,6 +568,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.visits": "Visits",
     "member.home.visitsLeft": "{{count}} visits left",
     "member.home.workouts": "Workouts",
+    "member.plan.assignedPlan": "Assigned plan",
+    "member.plan.coachGuided": "Coach guided",
+    "member.plan.couldNotLoadExercises": "Could not load exercises",
+    "member.plan.dietTab": "Diet",
+    "member.plan.insideThisPlan": "Inside this plan",
+    "member.plan.morePlans": "More plans",
+    "member.plan.noExercises": "No exercises",
+    "member.plan.noPlanAssigned": "No plan assigned",
+    "member.plan.noPlanAssignedBody": "Your trainer will assign a workout plan here.",
+    "member.plan.openTodayPlan": "Open today plan",
+    "member.plan.percentComplete": "{{percent}}% complete",
+    "member.plan.planMeta": "{{kind}} · {{assignment}}",
+    "member.plan.progress": "Progress",
+    "member.plan.title": "Plan",
+    "member.plan.todaysWorkout": "Today's workout",
+    "member.plan.trainerAssigned": "trainer assigned",
+    "member.plan.viewFullExerciseList": "View full exercise list",
+    "member.plan.workoutTab": "Workout",
     "more.title": "More",
     "more.subtitle": "Everything else in one place.",
     "more.accountSubtitle": "Zook member account",
@@ -832,6 +868,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.visits": "विजिट",
     "member.home.visitsLeft": "{{count}} विजिट बाकी",
     "member.home.workouts": "वर्कआउट",
+    "member.plan.assignedPlan": "असाइन किया गया प्लान",
+    "member.plan.coachGuided": "कोच गाइडेड",
+    "member.plan.couldNotLoadExercises": "एक्सरसाइज लोड नहीं हो सकीं",
+    "member.plan.dietTab": "डाइट",
+    "member.plan.insideThisPlan": "इस प्लान में",
+    "member.plan.morePlans": "और प्लान",
+    "member.plan.noExercises": "कोई एक्सरसाइज नहीं",
+    "member.plan.noPlanAssigned": "कोई प्लान असाइन नहीं",
+    "member.plan.noPlanAssignedBody": "आपका ट्रेनर यहां वर्कआउट प्लान असाइन करेगा.",
+    "member.plan.openTodayPlan": "आज का प्लान खोलें",
+    "member.plan.percentComplete": "{{percent}}% पूरा",
+    "member.plan.planMeta": "{{kind}} · {{assignment}}",
+    "member.plan.progress": "प्रोग्रेस",
+    "member.plan.title": "प्लान",
+    "member.plan.todaysWorkout": "आज का वर्कआउट",
+    "member.plan.trainerAssigned": "ट्रेनर ने असाइन किया",
+    "member.plan.viewFullExerciseList": "पूरी एक्सरसाइज सूची देखें",
+    "member.plan.workoutTab": "वर्कआउट",
     "more.title": "और",
     "more.subtitle": "बाकी सब कुछ एक जगह.",
     "more.accountSubtitle": "Zook मेंबर अकाउंट",

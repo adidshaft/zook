@@ -24,11 +24,12 @@ import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { PlansSkeleton } from "@/components/skeletons";
 import { DietPanel } from "@/features/member/plan/diet-panel";
 import { useMyPlans, usePlanExercises, type MyPlanRecord } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
-function planTitle(assignment?: MyPlanRecord | null) {
-  return resolvePlanName(assignment?.plan) || "Assigned plan";
+function planTitle(assignment: MyPlanRecord | null | undefined, fallback: string) {
+  return resolvePlanName(assignment?.plan) || fallback;
 }
 
 function planKind(assignment?: MyPlanRecord | null) {
@@ -37,6 +38,7 @@ function planKind(assignment?: MyPlanRecord | null) {
 
 export default function MemberPlanScreen() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const plansQuery = useMyPlans();
   const [activeTab, setActiveTab] = useState<"workout" | "diet">("workout");
@@ -86,12 +88,12 @@ export default function MemberPlanScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <ScreenHeader title="Plan" contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
+          <ScreenHeader title={t("member.plan.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <SegmentedControl
               options={[
-                { label: "Workout", value: "workout" },
-                { label: "Diet", value: "diet" },
+                { label: t("member.plan.workoutTab"), value: "workout" },
+                { label: t("member.plan.dietTab"), value: "diet" },
               ]}
               value={activeTab}
               onChange={setActiveTab}
@@ -108,31 +110,42 @@ export default function MemberPlanScreen() {
               {plansQuery.isError ? <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} /> : null}
 
               <AnimatedAppear delay={40}>
-                <SectionHeader title="Today's workout" />
+                <SectionHeader title={t("member.plan.todaysWorkout")} />
                 {todayPlan ? (
                   <Card variant="selected" contentStyle={styles.todayCard}>
                     <View style={styles.todayTop}>
                       <IconBubble icon="barbell-outline" tone="blue" size={46} />
                       <View style={styles.todayCopy}>
-                        <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>{planTitle(todayPlan)}</Text>
-                        <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>{planKind(todayPlan)} · trainer assigned</Text>
+                        <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>
+                          {planTitle(todayPlan, t("member.plan.assignedPlan"))}
+                        </Text>
+                        <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>
+                          {t("member.plan.planMeta", {
+                            kind: planKind(todayPlan),
+                            assignment: t("member.plan.trainerAssigned"),
+                          })}
+                        </Text>
                       </View>
                     </View>
-                    <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label="Progress" />
+                    <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label={t("member.plan.progress")} />
                     <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
-                      Open today plan
+                      {t("member.plan.openTodayPlan")}
                     </ZookButton>
                   </Card>
                 ) : !plansQuery.isLoading ? (
                   <Card variant="compact">
-                    <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign a workout plan here." />
+                    <EmptyState
+                      icon="clipboard-outline"
+                      title={t("member.plan.noPlanAssigned")}
+                      body={t("member.plan.noPlanAssignedBody")}
+                    />
                   </Card>
                 ) : null}
               </AnimatedAppear>
 
               {upcomingPlans.length ? (
                 <AnimatedAppear delay={80}>
-                  <SectionHeader title="More plans" />
+                  <SectionHeader title={t("member.plan.morePlans")} />
                   <View style={styles.stack}>
                   {upcomingPlans.map((assignment, index) => (
                     <Card
@@ -143,8 +156,10 @@ export default function MemberPlanScreen() {
                       variant="compact"
                     >
                       <ListRow
-                        title={planTitle(assignment)}
-                        subtitle={`${assignment.progress?.completionPct ?? 0}% complete`}
+                        title={planTitle(assignment, t("member.plan.assignedPlan"))}
+                        subtitle={t("member.plan.percentComplete", {
+                          percent: assignment.progress?.completionPct ?? 0,
+                        })}
                         leading={<IconBubble icon="calendar-outline" tone="neutral" />}
                         trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
                       />
@@ -156,13 +171,13 @@ export default function MemberPlanScreen() {
 
               {singleWorkoutPlan ? (
                 <AnimatedAppear delay={80}>
-                  <SectionHeader title="Inside this plan" />
+                  <SectionHeader title={t("member.plan.insideThisPlan")} />
                   <Card variant="compact" contentStyle={styles.previewCard}>
                     {exercisePreviewQuery.isError ? (
                       <QueryErrorState
                         error={exercisePreviewQuery.error}
                         onRetry={() => void exercisePreviewQuery.refetch()}
-                        title="Could not load exercises"
+                        title={t("member.plan.couldNotLoadExercises")}
                       />
                     ) : exercisePreviewQuery.isLoading ? (
                       <View style={styles.previewSkeleton}>
@@ -176,7 +191,7 @@ export default function MemberPlanScreen() {
                           <ListRow
                             key={exercise.id}
                             title={exercise.name}
-                            subtitle={[exercise.sets, exercise.reps].filter(Boolean).join(" · ") || exercise.day || "Coach guided"}
+                            subtitle={[exercise.sets, exercise.reps].filter(Boolean).join(" · ") || exercise.day || t("member.plan.coachGuided")}
                             leading={<IconBubble icon={index === 0 ? "flash-outline" : "barbell-outline"} tone="neutral" />}
                           />
                         ))}
@@ -187,12 +202,12 @@ export default function MemberPlanScreen() {
                           variant="secondary"
                           fullWidth
                         >
-                          View full exercise list
+                          {t("member.plan.viewFullExerciseList")}
                         </ZookButton>
                       </>
                     ) : (
                       <EmptyState
-                        title="No exercises"
+                        title={t("member.plan.noExercises")}
                       />
                     )}
                   </Card>
