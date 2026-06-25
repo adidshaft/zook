@@ -11,6 +11,7 @@ import {
   type CreateHabitInput,
 } from "@/lib/domains";
 import type { HabitCategory, HabitRecord } from "@/lib/domains/shared/types";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
 type CategoryVisual = { icon: keyof typeof Ionicons.glyphMap; tone: PillTone };
@@ -24,12 +25,12 @@ const CATEGORY_VISUAL: Record<string, CategoryVisual> = {
   CUSTOM: { icon: "checkmark-circle-outline", tone: "neutral" },
 };
 
-const PRESETS: Array<{ label: string } & CreateHabitInput> = [
-  { label: "Water", title: "Drink 3L water", category: "HYDRATION", targetValue: 3, unit: "L" },
-  { label: "Sleep", title: "Sleep 8 hours", category: "SLEEP", targetValue: 8, unit: "hrs" },
-  { label: "Steps", title: "10,000 steps", category: "STEPS", targetValue: 10000, unit: "steps" },
-  { label: "Protein", title: "Hit protein target", category: "PROTEIN" },
-  { label: "Stretch", title: "Stretch 10 min", category: "STRETCHING", targetValue: 10, unit: "min" },
+const PRESETS: Array<{ labelKey: TranslationKey; titleKey: TranslationKey } & Omit<CreateHabitInput, "title">> = [
+  { labelKey: "member.habits.waterLabel", titleKey: "member.habits.waterTitle", category: "HYDRATION", targetValue: 3, unit: "L" },
+  { labelKey: "member.habits.sleepLabel", titleKey: "member.habits.sleepTitle", category: "SLEEP", targetValue: 8, unit: "hrs" },
+  { labelKey: "member.habits.stepsLabel", titleKey: "member.habits.stepsTitle", category: "STEPS", targetValue: 10000, unit: "steps" },
+  { labelKey: "member.habits.proteinLabel", titleKey: "member.habits.proteinTitle", category: "PROTEIN" },
+  { labelKey: "member.habits.stretchLabel", titleKey: "member.habits.stretchTitle", category: "STRETCHING", targetValue: 10, unit: "min" },
 ];
 
 function visualFor(category: string): CategoryVisual {
@@ -76,23 +77,30 @@ function HabitRow({
   onToggle: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const visual = visualFor(habit.category);
   const done = doneToday(habit);
   const streak = streakFor(habit);
   const meta =
     streak > 0
-      ? `${streak}-day streak${done ? "" : " · do it today"}`
+      ? done
+        ? t("member.habits.dayStreak", { count: streak })
+        : t("member.habits.dayStreakDoToday", { count: streak })
       : done
-        ? "Done today"
+        ? t("member.habits.doneToday")
         : habit.targetValue
-          ? `Target ${habit.targetValue}${habit.unit ? ` ${habit.unit}` : ""}`
-          : "Tap to complete today";
+          ? t("member.habits.target", { value: habit.targetValue, unit: habit.unit ? ` ${habit.unit}` : "" })
+          : t("member.habits.tapToCompleteToday");
 
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done, busy }}
-      accessibilityLabel={`${habit.title}. ${done ? "Completed today" : "Not done"}`}
+      accessibilityLabel={
+        done
+          ? t("member.habits.completedTodayAccessibility", { title: habit.title })
+          : t("member.habits.notDoneAccessibility", { title: habit.title })
+      }
       onPress={onToggle}
       disabled={busy}
       style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
@@ -122,6 +130,7 @@ function HabitRow({
 
 export function HabitsPanel() {
   const { palette } = useTheme();
+  const t = useT();
   const habitsQuery = useMyHabits();
   const createHabit = useCreateHabit();
   const logHabit = useLogHabit();
@@ -132,11 +141,11 @@ export function HabitsPanel() {
   return (
     <View>
       <SectionHeader
-        title="Daily habits"
+        title={t("member.habits.dailyHabits")}
         action={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={showAdd ? "Close add habit" : "Add a habit"}
+            accessibilityLabel={showAdd ? t("member.habits.closeAddHabit") : t("member.habits.addHabit")}
             hitSlop={8}
             onPress={() => setShowAdd((current) => !current)}
             style={({ pressed }) => [styles.addToggle, pressed ? styles.rowPressed : null]}
@@ -147,7 +156,7 @@ export function HabitsPanel() {
               color={palette.accent.base}
             />
             <Text style={[styles.addToggleText, { color: palette.accent.base }]}>
-              {showAdd ? "Done" : "Add"}
+              {showAdd ? t("member.habits.done") : t("member.habits.add")}
             </Text>
           </Pressable>
         }
@@ -156,16 +165,17 @@ export function HabitsPanel() {
         {showAdd ? (
           <View style={styles.presets}>
             {PRESETS.map((preset) => {
-              const already = existingTitles.has(preset.title);
+              const presetTitle = t(preset.titleKey);
+              const already = existingTitles.has(presetTitle);
               return (
                 <Pressable
-                  key={preset.title}
+                  key={preset.titleKey}
                   accessibilityRole="button"
-                  accessibilityLabel={`Add habit ${preset.title}`}
+                  accessibilityLabel={t("member.habits.addHabitAccessibility", { title: presetTitle })}
                   disabled={already || createHabit.isPending}
                   onPress={() =>
                     createHabit.mutate({
-                      title: preset.title,
+                      title: presetTitle,
                       category: preset.category as HabitCategory,
                       ...(preset.targetValue !== undefined
                         ? { targetValue: preset.targetValue }
@@ -195,7 +205,7 @@ export function HabitsPanel() {
                       { color: already ? palette.text.tertiary : palette.accent.base },
                     ]}
                   >
-                    {preset.label}
+                    {t(preset.labelKey)}
                   </Text>
                 </Pressable>
               );
@@ -211,9 +221,9 @@ export function HabitsPanel() {
           >
             <IconBubble icon="sparkles-outline" tone="lime" size={40} />
             <Text style={[styles.emptyText, { color: palette.text.secondary }]}>
-              Track daily habits like water, sleep and steps to build streaks.
+              {t("member.habits.emptyBody")}
             </Text>
-            <Text style={[styles.emptyCta, { color: palette.accent.base }]}>Add your first habit</Text>
+            <Text style={[styles.emptyCta, { color: palette.accent.base }]}>{t("member.habits.addFirstHabit")}</Text>
           </Pressable>
         ) : null}
 

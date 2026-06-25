@@ -1030,6 +1030,49 @@ export type TranslationKey =
   | "member.profile.visitsReferralBenefit"
   | "member.profile.visitsRemaining"
   | "member.profile.workoutPlan"
+  | "member.diet.activePlan"
+  | "member.diet.addCaloriesOrMacro"
+  | "member.diet.addMealName"
+  | "member.diet.calories"
+  | "member.diet.carbs"
+  | "member.diet.couldNotLogMeal"
+  | "member.diet.fats"
+  | "member.diet.kcalRemainingToday"
+  | "member.diet.logMeal"
+  | "member.diet.logging"
+  | "member.diet.meal"
+  | "member.diet.mealLogged"
+  | "member.diet.mealPlaceholder"
+  | "member.diet.noDietPlan"
+  | "member.diet.noDietPlanBody"
+  | "member.diet.noPlan"
+  | "member.diet.protein"
+  | "member.diet.today"
+  | "member.habits.add"
+  | "member.habits.addFirstHabit"
+  | "member.habits.addHabit"
+  | "member.habits.addHabitAccessibility"
+  | "member.habits.closeAddHabit"
+  | "member.habits.completedTodayAccessibility"
+  | "member.habits.dailyHabits"
+  | "member.habits.dayStreak"
+  | "member.habits.dayStreakDoToday"
+  | "member.habits.done"
+  | "member.habits.doneToday"
+  | "member.habits.emptyBody"
+  | "member.habits.notDoneAccessibility"
+  | "member.habits.proteinLabel"
+  | "member.habits.proteinTitle"
+  | "member.habits.sleepLabel"
+  | "member.habits.sleepTitle"
+  | "member.habits.stepsLabel"
+  | "member.habits.stepsTitle"
+  | "member.habits.stretchLabel"
+  | "member.habits.stretchTitle"
+  | "member.habits.tapToCompleteToday"
+  | "member.habits.target"
+  | "member.habits.waterLabel"
+  | "member.habits.waterTitle"
   | "member.plan.assignedPlan"
   | "member.plan.coachGuided"
   | "member.plan.couldNotLoadExercises"
@@ -2761,6 +2804,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "You'll get {{count}} visits for every friend who joins.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "member.diet.activePlan": "Active plan",
+    "member.diet.addCaloriesOrMacro": "Add calories or at least one macro before logging.",
+    "member.diet.addMealName": "Add a meal name before logging.",
+    "member.diet.calories": "Calories",
+    "member.diet.carbs": "Carbs",
+    "member.diet.couldNotLogMeal": "Could not log meal",
+    "member.diet.fats": "Fats",
+    "member.diet.kcalRemainingToday": "{{kcal}} kcal remaining today",
+    "member.diet.logMeal": "Log meal",
+    "member.diet.logging": "Logging...",
+    "member.diet.meal": "Meal",
+    "member.diet.mealLogged": "Meal logged.",
+    "member.diet.mealPlaceholder": "Paneer sandwich",
+    "member.diet.noDietPlan": "No diet plan",
+    "member.diet.noDietPlanBody": "Your trainer will publish your meal plan here.",
+    "member.diet.noPlan": "No plan",
+    "member.diet.protein": "Protein",
+    "member.diet.today": "Today",
+    "member.habits.add": "Add",
+    "member.habits.addFirstHabit": "Add your first habit",
+    "member.habits.addHabit": "Add a habit",
+    "member.habits.addHabitAccessibility": "Add habit {{title}}",
+    "member.habits.closeAddHabit": "Close add habit",
+    "member.habits.completedTodayAccessibility": "{{title}}. Completed today",
+    "member.habits.dailyHabits": "Daily habits",
+    "member.habits.dayStreak": "{{count}}-day streak",
+    "member.habits.dayStreakDoToday": "{{count}}-day streak · do it today",
+    "member.habits.done": "Done",
+    "member.habits.doneToday": "Done today",
+    "member.habits.emptyBody": "Track daily habits like water, sleep and steps to build streaks.",
+    "member.habits.notDoneAccessibility": "{{title}}. Not done",
+    "member.habits.proteinLabel": "Protein",
+    "member.habits.proteinTitle": "Hit protein target",
+    "member.habits.sleepLabel": "Sleep",
+    "member.habits.sleepTitle": "Sleep 8 hours",
+    "member.habits.stepsLabel": "Steps",
+    "member.habits.stepsTitle": "10,000 steps",
+    "member.habits.stretchLabel": "Stretch",
+    "member.habits.stretchTitle": "Stretch 10 min",
+    "member.habits.tapToCompleteToday": "Tap to complete today",
+    "member.habits.target": "Target {{value}}{{unit}}",
+    "member.habits.waterLabel": "Water",
+    "member.habits.waterTitle": "Drink 3L water",
     "member.plan.assignedPlan": "Assigned plan",
     "member.plan.coachGuided": "Coach guided",
     "member.plan.couldNotLoadExercises": "Could not load exercises",
@@ -4492,6 +4578,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "member.diet.activePlan": "Active plan",
+    "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
+    "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",
+    "member.diet.calories": "Calories",
+    "member.diet.carbs": "Carbs",
+    "member.diet.couldNotLogMeal": "Meal log नहीं हो सका",
+    "member.diet.fats": "Fats",
+    "member.diet.kcalRemainingToday": "आज {{kcal}} kcal बाकी",
+    "member.diet.logMeal": "Meal log करें",
+    "member.diet.logging": "Log हो रहा है...",
+    "member.diet.meal": "Meal",
+    "member.diet.mealLogged": "Meal log हो गया.",
+    "member.diet.mealPlaceholder": "Paneer sandwich",
+    "member.diet.noDietPlan": "कोई diet plan नहीं",
+    "member.diet.noDietPlanBody": "आपका trainer आपका meal plan यहां publish करेगा.",
+    "member.diet.noPlan": "No plan",
+    "member.diet.protein": "Protein",
+    "member.diet.today": "आज",
+    "member.habits.add": "Add",
+    "member.habits.addFirstHabit": "पहली habit जोड़ें",
+    "member.habits.addHabit": "Habit जोड़ें",
+    "member.habits.addHabitAccessibility": "{{title}} habit जोड़ें",
+    "member.habits.closeAddHabit": "Add habit बंद करें",
+    "member.habits.completedTodayAccessibility": "{{title}}. आज complete",
+    "member.habits.dailyHabits": "Daily habits",
+    "member.habits.dayStreak": "{{count}}-day streak",
+    "member.habits.dayStreakDoToday": "{{count}}-day streak · आज करें",
+    "member.habits.done": "Done",
+    "member.habits.doneToday": "आज done",
+    "member.habits.emptyBody": "Water, sleep और steps जैसी daily habits track करके streaks बनाएं.",
+    "member.habits.notDoneAccessibility": "{{title}}. Done नहीं",
+    "member.habits.proteinLabel": "Protein",
+    "member.habits.proteinTitle": "Protein target पूरा करें",
+    "member.habits.sleepLabel": "Sleep",
+    "member.habits.sleepTitle": "8 घंटे sleep",
+    "member.habits.stepsLabel": "Steps",
+    "member.habits.stepsTitle": "10,000 steps",
+    "member.habits.stretchLabel": "Stretch",
+    "member.habits.stretchTitle": "10 min stretch",
+    "member.habits.tapToCompleteToday": "आज complete करने के लिए tap करें",
+    "member.habits.target": "Target {{value}}{{unit}}",
+    "member.habits.waterLabel": "Water",
+    "member.habits.waterTitle": "3L water पिएं",
     "member.plan.assignedPlan": "असाइन किया गया प्लान",
     "member.plan.coachGuided": "कोच गाइडेड",
     "member.plan.couldNotLoadExercises": "एक्सरसाइज लोड नहीं हो सकीं",

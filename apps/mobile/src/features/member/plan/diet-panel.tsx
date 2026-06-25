@@ -17,6 +17,7 @@ import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { dietApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { useMyDiet } from "@/lib/domains/tracking/queries";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -24,6 +25,7 @@ export function DietPanel() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const dietQuery = useMyDiet();
   const plan = dietQuery.data?.plan ?? null;
   const logs = dietQuery.data?.logs ?? [];
@@ -38,9 +40,9 @@ export function DietPanel() {
   const macroValues = [calories, proteinG, carbsG, fatsG].map((value) => Number.parseInt(value, 10) || 0);
   const hasAnyMacro = macroValues.some((value) => value > 0);
   const validationMessage = !mealNameTrimmed
-    ? "Add a meal name before logging."
+    ? t("member.diet.addMealName")
     : !hasAnyMacro
-      ? "Add calories or at least one macro before logging."
+      ? t("member.diet.addCaloriesOrMacro")
       : "";
 
   function applyPreset(preset: (typeof indianMealPresets)[number]) {
@@ -75,10 +77,10 @@ export function DietPanel() {
       setProteinG("");
       setCarbsG("");
       setFatsG("");
-      showToast({ tone: "success", haptic: "success", message: "Meal logged." });
+      showToast({ tone: "success", haptic: "success", message: t("member.diet.mealLogged") });
     } catch (error) {
       showToast({
-        title: "Could not log meal",
+        title: t("member.diet.couldNotLogMeal"),
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",
@@ -97,18 +99,18 @@ export function DietPanel() {
       <Card variant="compact" contentStyle={styles.stack}>
         <View style={styles.rollupRow}>
           <View>
-            <Text style={[styles.rollupLabel, { color: palette.text.secondary }]}>Today</Text>
+            <Text style={[styles.rollupLabel, { color: palette.text.secondary }]}>{t("member.diet.today")}</Text>
             <Text style={[styles.rollupValue, { color: palette.text.primary }]}>
               {loggedCalories} / {plan?.calorieTarget ?? "-"} kcal
             </Text>
           </View>
-          <StatusChip status={plan ? "Active plan" : "No plan"} tone={plan ? "blue" : "neutral"} />
+          <StatusChip status={plan ? t("member.diet.activePlan") : t("member.diet.noPlan")} tone={plan ? "blue" : "neutral"} />
         </View>
         {plan?.calorieTarget ? (
           <ProgressBar
             value={loggedCalories / plan.calorieTarget}
             tone={loggedCalories > plan.calorieTarget ? "amber" : "lime"}
-            label={`${Math.max(0, plan.calorieTarget - loggedCalories)} kcal remaining today`}
+            label={t("member.diet.kcalRemainingToday", { kcal: Math.max(0, plan.calorieTarget - loggedCalories) })}
           />
         ) : null}
         {plan?.meals?.length ? (
@@ -121,12 +123,12 @@ export function DietPanel() {
             </View>
           ))
         ) : (
-          <EmptyState icon="restaurant-outline" title="No diet plan" body="Your trainer will publish your meal plan here." />
+          <EmptyState icon="restaurant-outline" title={t("member.diet.noDietPlan")} body={t("member.diet.noDietPlanBody")} />
         )}
       </Card>
 
       <Card contentStyle={styles.stack}>
-        <SectionHeader title="Log meal" />
+        <SectionHeader title={t("member.diet.logMeal")} />
         <View style={styles.presetRow}>
           {indianMealPresets.slice(0, 5).map((preset) => (
             <Pressable
@@ -145,20 +147,20 @@ export function DietPanel() {
             </Pressable>
           ))}
         </View>
-        <FormField testID="meal-log-name" label="Meal" value={mealName} onChangeText={setMealName} placeholder="Paneer sandwich" />
-        <FormField testID="meal-log-calories" label="Calories" value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="320" />
+        <FormField testID="meal-log-name" label={t("member.diet.meal")} value={mealName} onChangeText={setMealName} placeholder={t("member.diet.mealPlaceholder")} />
+        <FormField testID="meal-log-calories" label={t("member.diet.calories")} value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="320" />
         <View style={styles.macroRow}>
-          <FormField label="Protein" value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="20" style={styles.macroField} />
-          <FormField label="Carbs" value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="35" style={styles.macroField} />
-          <FormField label="Fats" value={fatsG} onChangeText={setFatsG} keyboardType="number-pad" placeholder="8" style={styles.macroField} />
+          <FormField label={t("member.diet.protein")} value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="20" style={styles.macroField} />
+          <FormField label={t("member.diet.carbs")} value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="35" style={styles.macroField} />
+          <FormField label={t("member.diet.fats")} value={fatsG} onChangeText={setFatsG} keyboardType="number-pad" placeholder="8" style={styles.macroField} />
         </View>
         {validationMessage ? (
           <Text accessibilityRole="alert" style={[styles.validationText, { color: palette.feedback.danger }]}>
             {validationMessage}
           </Text>
         ) : null}
-        <ZookButton testID="meal-log-save" onPress={() => void saveMeal()} busy={saving} busyLabel="Logging..." icon="restaurant-outline">
-          Log meal
+        <ZookButton testID="meal-log-save" onPress={() => void saveMeal()} busy={saving} busyLabel={t("member.diet.logging")} icon="restaurant-outline">
+          {t("member.diet.logMeal")}
         </ZookButton>
       </Card>
     </View>
