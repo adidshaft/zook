@@ -486,6 +486,24 @@ export type TranslationKey =
   | "member.progress.recentWorkouts"
   | "member.progress.thisWeek"
   | "member.progress.title"
+  | "member.receipt.amount"
+  | "member.receipt.downloadInvoice"
+  | "member.receipt.generating"
+  | "member.receipt.invoice"
+  | "member.receipt.invoiceNo"
+  | "member.receipt.issued"
+  | "member.receipt.membership"
+  | "member.receipt.mode"
+  | "member.receipt.notFound"
+  | "member.receipt.notFoundBody"
+  | "member.receipt.paymentDetails"
+  | "member.receipt.purpose"
+  | "member.receipt.receiptNo"
+  | "member.receipt.receiptNumber"
+  | "member.receipt.recorded"
+  | "member.receipt.status"
+  | "member.receipt.title"
+  | "member.receipt.total"
   | "more.title"
   | "more.subtitle"
   | "more.accountSubtitle"
@@ -1155,6 +1173,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.progress.recentWorkouts": "Recent workouts",
     "member.progress.thisWeek": "This week",
     "member.progress.title": "Progress",
+    "member.receipt.amount": "Amount",
+    "member.receipt.downloadInvoice": "Download invoice",
+    "member.receipt.generating": "Generating after confirmation",
+    "member.receipt.invoice": "Invoice",
+    "member.receipt.invoiceNo": "Invoice no.",
+    "member.receipt.issued": "Issued",
+    "member.receipt.membership": "Membership",
+    "member.receipt.mode": "Mode",
+    "member.receipt.notFound": "Receipt not found",
+    "member.receipt.notFoundBody": "We couldn't find that payment in your membership history.",
+    "member.receipt.paymentDetails": "Payment details",
+    "member.receipt.purpose": "Purpose",
+    "member.receipt.receiptNo": "Receipt no.",
+    "member.receipt.receiptNumber": "Receipt {{number}}",
+    "member.receipt.recorded": "Recorded",
+    "member.receipt.status": "Status",
+    "member.receipt.title": "Receipt",
+    "member.receipt.total": "Total",
     "more.title": "More",
     "more.subtitle": "Everything else in one place.",
     "more.accountSubtitle": "Zook member account",
@@ -1824,6 +1860,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.progress.recentWorkouts": "हाल के वर्कआउट",
     "member.progress.thisWeek": "इस हफ्ते",
     "member.progress.title": "प्रोग्रेस",
+    "member.receipt.amount": "राशि",
+    "member.receipt.downloadInvoice": "Invoice डाउनलोड करें",
+    "member.receipt.generating": "Confirmation के बाद generate होगा",
+    "member.receipt.invoice": "Invoice",
+    "member.receipt.invoiceNo": "Invoice no.",
+    "member.receipt.issued": "Issued",
+    "member.receipt.membership": "मेंबरशिप",
+    "member.receipt.mode": "Mode",
+    "member.receipt.notFound": "Receipt नहीं मिली",
+    "member.receipt.notFoundBody": "आपकी membership history में यह payment नहीं मिला.",
+    "member.receipt.paymentDetails": "Payment details",
+    "member.receipt.purpose": "Purpose",
+    "member.receipt.receiptNo": "Receipt no.",
+    "member.receipt.receiptNumber": "Receipt {{number}}",
+    "member.receipt.recorded": "Recorded",
+    "member.receipt.status": "Status",
+    "member.receipt.title": "Receipt",
+    "member.receipt.total": "Total",
     "more.title": "और",
     "more.subtitle": "बाकी सब कुछ एक जगह.",
     "more.accountSubtitle": "Zook मेंबर अकाउंट",

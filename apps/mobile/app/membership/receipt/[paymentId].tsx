@@ -12,6 +12,7 @@ import {
 import { useMyInvoices, useMyMemberships, type InvoiceRecord } from "@/lib/domains";
 import { toWebUrl } from "@/lib/api";
 import { formatDateTime, formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type PaymentRecord = {
@@ -33,6 +34,7 @@ export default function MembershipReceiptScreen() {
   const params = useLocalSearchParams<{ paymentId?: string | string[] }>();
   const paymentId = firstParam(params.paymentId);
   const { palette } = useTheme();
+  const t = useT();
   const membershipsQuery = useMyMemberships();
   const invoicesQuery = useMyInvoices();
   const payments = (membershipsQuery.data?.payments ?? []) as PaymentRecord[];
@@ -50,9 +52,9 @@ export default function MembershipReceiptScreen() {
         contentContainerStyle={styles.content}
       >
         <AppHeader
-          eyebrow="Membership"
-          title="Receipt"
-          subtitle={payment?.receiptNumber ? `Receipt ${payment.receiptNumber}` : "Payment details"}
+          eyebrow={t("member.receipt.membership")}
+          title={t("member.receipt.title")}
+          subtitle={payment?.receiptNumber ? t("member.receipt.receiptNumber", { number: payment.receiptNumber }) : t("member.receipt.paymentDetails")}
           showBack
         />
 
@@ -69,8 +71,8 @@ export default function MembershipReceiptScreen() {
         {!membershipsQuery.isLoading && !payment ? (
           <Card variant="compact">
             <EmptyState
-              title="Receipt not found"
-              body="We couldn't find that payment in your membership history."
+              title={t("member.receipt.notFound")}
+              body={t("member.receipt.notFoundBody")}
             />
           </Card>
         ) : null}
@@ -79,39 +81,39 @@ export default function MembershipReceiptScreen() {
           <>
             <Card contentStyle={styles.stack}>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Purpose</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.purpose")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
                   {titleCaseFromCode(payment.purpose ?? "PAYMENT")}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Amount</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.amount")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
                   {formatInr(payment.amountPaise)}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Status</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.status")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
                   {titleCaseFromCode(payment.status ?? "CREATED")}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Mode</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.mode")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
                   {titleCaseFromCode(payment.mode ?? "ONLINE")}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Recorded</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.recorded")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
                   {formatDateTime(payment.recordedAt ?? payment.createdAt)}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Receipt no.</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.receiptNo")}</Text>
                 <Text style={[styles.value, { color: palette.text.primary }]}>
-                  {payment.receiptNumber ?? "Generating after confirmation"}
+                  {payment.receiptNumber ?? t("member.receipt.generating")}
                 </Text>
               </View>
             </Card>
@@ -119,22 +121,22 @@ export default function MembershipReceiptScreen() {
             {invoice ? (
               <Card variant="compact" contentStyle={styles.stack}>
                 <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
-                  Invoice
+                  {t("member.receipt.invoice")}
                 </Text>
                 <View style={styles.row}>
-                  <Text style={[styles.label, { color: palette.text.secondary }]}>Invoice no.</Text>
+                  <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.invoiceNo")}</Text>
                   <Text style={[styles.value, { color: palette.text.primary }]}>
-                    {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
+                    {invoice.invoiceNumber ?? invoice.invoiceNo ?? t("member.receipt.invoice")}
                   </Text>
                 </View>
                 <View style={styles.row}>
-                  <Text style={[styles.label, { color: palette.text.secondary }]}>Issued</Text>
+                  <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.issued")}</Text>
                   <Text style={[styles.value, { color: palette.text.primary }]}>
                     {formatDateTime(invoice.issueDate ?? invoice.issuedAt)}
                   </Text>
                 </View>
                 <View style={styles.row}>
-                  <Text style={[styles.label, { color: palette.text.secondary }]}>Total</Text>
+                  <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.receipt.total")}</Text>
                   <Text style={[styles.value, { color: palette.text.primary }]}>
                     {formatInr(invoice.totalPaise ?? invoice.amountPaise)}
                   </Text>
@@ -144,7 +146,7 @@ export default function MembershipReceiptScreen() {
                     icon="download-outline"
                     onPress={() => void Linking.openURL(toWebUrl(invoice.invoiceUrl ?? ""))}
                   >
-                    Download invoice
+                    {t("member.receipt.downloadInvoice")}
                   </ZookButton>
                 ) : null}
               </Card>
