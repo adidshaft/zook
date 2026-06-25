@@ -8,6 +8,7 @@ import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HabitsPanel } from "@/features/member/progress/habits-panel";
 import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -16,6 +17,7 @@ type TrackingWorkout = Parameters<typeof workoutToEntry>[0];
 
 export default function ProgressScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const summaryQuery = useMyTracking();
   const workoutsQuery = useMyTrackingWorkouts();
@@ -55,14 +57,14 @@ export default function ProgressScreen() {
           scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <ScreenHeader title="Progress" contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
+          <ScreenHeader title={t("member.progress.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <View style={styles.actions}>
               <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
-                Log workout
+                {t("member.progress.logWorkout")}
               </ZookButton>
               <ZookButton variant="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
-                History
+                {t("member.progress.history")}
               </ZookButton>
             </View>
           </AnimatedAppear>
@@ -70,7 +72,7 @@ export default function ProgressScreen() {
             <QueryErrorState error={summaryQuery.error ?? workoutsQuery.error} onRetry={() => void onRefresh()} />
           ) : null}
           <AnimatedAppear delay={40}>
-            <SectionHeader title="This week" />
+            <SectionHeader title={t("member.progress.thisWeek")} />
             {isLoading ? (
               <Card variant="compact" contentStyle={styles.loadingCard}>
                 <Skeleton width="60%" height={18} borderRadius={9} />
@@ -89,14 +91,18 @@ export default function ProgressScreen() {
             <HabitsPanel />
           </AnimatedAppear>
           <AnimatedAppear delay={80}>
-            <SectionHeader title="Recent workouts" />
+            <SectionHeader title={t("member.progress.recentWorkouts")} />
             <View style={styles.stack}>
               {workouts.slice(0, 3).map((workout, index) => (
                 <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
               ))}
               {!workouts.length && !workoutsQuery.isLoading ? (
                 <Card variant="compact">
-                  <EmptyState icon="barbell-outline" title="No workouts logged" body="Log your first workout to start tracking your progress." />
+                  <EmptyState
+                    icon="barbell-outline"
+                    title={t("member.progress.noWorkoutsLogged")}
+                    body={t("member.progress.noWorkoutsLoggedBody")}
+                  />
                 </Card>
               ) : null}
             </View>
@@ -104,7 +110,9 @@ export default function ProgressScreen() {
           <AnimatedAppear delay={120}>
             <Card variant="compact" contentStyle={styles.note}>
               <Ionicons name="shield-checkmark-outline" size={20} color={palette.accent.base} />
-              <Text style={[styles.noteText, { color: palette.text.secondary }]}>Private entries stay with you unless you choose trainer visibility.</Text>
+              <Text style={[styles.noteText, { color: palette.text.secondary }]}>
+                {t("member.progress.privacyNote")}
+              </Text>
             </Card>
           </AnimatedAppear>
         </ScrollView>

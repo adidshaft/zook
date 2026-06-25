@@ -285,6 +285,14 @@ export type TranslationKey =
   | "member.plan.trainerAssigned"
   | "member.plan.viewFullExerciseList"
   | "member.plan.workoutTab"
+  | "member.progress.history"
+  | "member.progress.logWorkout"
+  | "member.progress.noWorkoutsLogged"
+  | "member.progress.noWorkoutsLoggedBody"
+  | "member.progress.privacyNote"
+  | "member.progress.recentWorkouts"
+  | "member.progress.thisWeek"
+  | "member.progress.title"
   | "more.title"
   | "more.subtitle"
   | "more.accountSubtitle"
@@ -586,6 +594,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.trainerAssigned": "trainer assigned",
     "member.plan.viewFullExerciseList": "View full exercise list",
     "member.plan.workoutTab": "Workout",
+    "member.progress.history": "History",
+    "member.progress.logWorkout": "Log workout",
+    "member.progress.noWorkoutsLogged": "No workouts logged",
+    "member.progress.noWorkoutsLoggedBody": "Log your first workout to start tracking your progress.",
+    "member.progress.privacyNote": "Private entries stay with you unless you choose trainer visibility.",
+    "member.progress.recentWorkouts": "Recent workouts",
+    "member.progress.thisWeek": "This week",
+    "member.progress.title": "Progress",
     "more.title": "More",
     "more.subtitle": "Everything else in one place.",
     "more.accountSubtitle": "Zook member account",
@@ -886,6 +902,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.trainerAssigned": "ट्रेनर ने असाइन किया",
     "member.plan.viewFullExerciseList": "पूरी एक्सरसाइज सूची देखें",
     "member.plan.workoutTab": "वर्कआउट",
+    "member.progress.history": "हिस्ट्री",
+    "member.progress.logWorkout": "वर्कआउट लॉग करें",
+    "member.progress.noWorkoutsLogged": "कोई वर्कआउट लॉग नहीं",
+    "member.progress.noWorkoutsLoggedBody": "प्रोग्रेस ट्रैक करने के लिए अपना पहला वर्कआउट लॉग करें.",
+    "member.progress.privacyNote": "निजी एंट्री आपके पास रहती हैं जब तक आप ट्रेनर विजिबिलिटी नहीं चुनते.",
+    "member.progress.recentWorkouts": "हाल के वर्कआउट",
+    "member.progress.thisWeek": "इस हफ्ते",
+    "member.progress.title": "प्रोग्रेस",
     "more.title": "और",
     "more.subtitle": "बाकी सब कुछ एक जगह.",
     "more.accountSubtitle": "Zook मेंबर अकाउंट",
