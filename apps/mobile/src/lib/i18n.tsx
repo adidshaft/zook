@@ -163,6 +163,33 @@ export type TranslationKey =
   | "assistant.trainerTitle"
   | "assistant.unavailableBody"
   | "assistant.unavailableTitle"
+  | "classRoster.attendanceHint"
+  | "classRoster.confirmed"
+  | "classRoster.confirmedCount"
+  | "classRoster.markedNoShowAccessibility"
+  | "classRoster.markedPresentAccessibility"
+  | "classRoster.markNoShowAccessibility"
+  | "classRoster.markPresentAccessibility"
+  | "classRoster.memberFallback"
+  | "classRoster.noBookings"
+  | "classRoster.noBookingsBody"
+  | "classRoster.subtitle"
+  | "classRoster.title"
+  | "classRoster.waitlist"
+  | "classRoster.waitlistCount"
+  | "classRoster.waitlistHint"
+  | "entryQr.branchAware"
+  | "entryQr.branchAwareBody"
+  | "entryQr.loadingQr"
+  | "entryQr.manualCode"
+  | "entryQr.noQr"
+  | "entryQr.refreshesIn"
+  | "entryQr.refreshing"
+  | "entryQr.refreshNow"
+  | "entryQr.secureToken"
+  | "entryQr.secureTokenBody"
+  | "entryQr.subtitle"
+  | "entryQr.title"
   | "onboarding.allInOne"
   | "onboarding.allInOneCopy"
   | "onboarding.brand"
@@ -1467,6 +1494,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "assistant.trainerTitle": "Coach with context",
     "assistant.unavailableBody": "Owner and desk operations stay in the web dashboard.",
     "assistant.unavailableTitle": "Plan assistant",
+    "classRoster.attendanceHint": "Tap the check or cross next to a member to mark them present or no-show.",
+    "classRoster.confirmed": "Confirmed",
+    "classRoster.confirmedCount": "Confirmed ({{count}})",
+    "classRoster.markedNoShowAccessibility": "{{name}} marked no-show",
+    "classRoster.markedPresentAccessibility": "{{name}} marked present",
+    "classRoster.markNoShowAccessibility": "Mark {{name}} no-show",
+    "classRoster.markPresentAccessibility": "Mark {{name}} present",
+    "classRoster.memberFallback": "Member",
+    "classRoster.noBookings": "No bookings yet",
+    "classRoster.noBookingsBody": "Members who book this class will show up here.",
+    "classRoster.subtitle": "Who's coming to this class",
+    "classRoster.title": "Class roster",
+    "classRoster.waitlist": "Waitlist",
+    "classRoster.waitlistCount": "Waitlist ({{count}})",
+    "classRoster.waitlistHint": "Waitlisted members are promoted automatically when someone cancels.",
+    "entryQr.branchAware": "Branch-aware",
+    "entryQr.branchAwareBody": "This QR is tied to your active branch. Only members with a valid membership at this gym can check in — others are turned away automatically.",
+    "entryQr.loadingQr": "Loading QR...",
+    "entryQr.manualCode": "Manual check-in code",
+    "entryQr.noQr": "No QR",
+    "entryQr.refreshesIn": "Refreshes in {{seconds}}s",
+    "entryQr.refreshing": "Refreshing...",
+    "entryQr.refreshNow": "Refresh now",
+    "entryQr.secureToken": "Secure rolling token",
+    "entryQr.secureTokenBody": "The code rotates automatically and is single-use. Members can scan the QR with their phone camera or type the code in the Zook app.",
+    "entryQr.subtitle": "Display this at your entrance. Members scan it to check in.",
+    "entryQr.title": "Entry QR",
     "onboarding.allInOne": "All in one",
     "onboarding.allInOneCopy": "Memberships, classes, payments and store pickup — all in one place.",
     "onboarding.brand": "Zook",
@@ -2779,6 +2833,33 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "assistant.trainerTitle": "Context के साथ coach करें",
     "assistant.unavailableBody": "Owner और desk operations web dashboard में रहते हैं.",
     "assistant.unavailableTitle": "Plan assistant",
+    "classRoster.attendanceHint": "Member को present या no-show mark करने के लिए check या cross tap करें.",
+    "classRoster.confirmed": "Confirmed",
+    "classRoster.confirmedCount": "Confirmed ({{count}})",
+    "classRoster.markedNoShowAccessibility": "{{name}} no-show mark है",
+    "classRoster.markedPresentAccessibility": "{{name}} present mark है",
+    "classRoster.markNoShowAccessibility": "{{name}} को no-show mark करें",
+    "classRoster.markPresentAccessibility": "{{name}} को present mark करें",
+    "classRoster.memberFallback": "Member",
+    "classRoster.noBookings": "अभी कोई booking नहीं",
+    "classRoster.noBookingsBody": "इस class को book करने वाले members यहां दिखेंगे.",
+    "classRoster.subtitle": "इस class में कौन आ रहा है",
+    "classRoster.title": "Class roster",
+    "classRoster.waitlist": "Waitlist",
+    "classRoster.waitlistCount": "Waitlist ({{count}})",
+    "classRoster.waitlistHint": "किसी के cancel करने पर waitlisted members automatic promote होते हैं.",
+    "entryQr.branchAware": "Branch-aware",
+    "entryQr.branchAwareBody": "यह QR आपकी active branch से जुड़ा है. सिर्फ इस gym की valid membership वाले members check in कर सकते हैं — बाकी automatically turned away होंगे.",
+    "entryQr.loadingQr": "QR load हो रहा है...",
+    "entryQr.manualCode": "Manual check-in code",
+    "entryQr.noQr": "No QR",
+    "entryQr.refreshesIn": "{{seconds}}s में refresh होगा",
+    "entryQr.refreshing": "Refresh हो रहा है...",
+    "entryQr.refreshNow": "अब refresh करें",
+    "entryQr.secureToken": "Secure rolling token",
+    "entryQr.secureTokenBody": "Code automatic rotate होता है और single-use है. Members phone camera से QR scan कर सकते हैं या Zook app में code type कर सकते हैं.",
+    "entryQr.subtitle": "इसे entrance पर दिखाएं. Members check in करने के लिए इसे scan करते हैं.",
+    "entryQr.title": "Entry QR",
     "onboarding.allInOne": "सब एक जगह",
     "onboarding.allInOneCopy": "Memberships, classes, payments और store pickup — सब एक जगह.",
     "onboarding.brand": "Zook",

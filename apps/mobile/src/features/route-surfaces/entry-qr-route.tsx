@@ -14,6 +14,7 @@ import {
 } from "@/components/primitives";
 import { useAttendanceQrToken } from "@/lib/domains/owner/queries";
 import { toWebUrl } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 const QR_PAPER = "#FFFFFF";
@@ -26,6 +27,7 @@ function secondsUntil(expiresAt?: string) {
 
 export default function EntryQrRoute() {
   const { palette, mode } = useTheme();
+  const { t } = useI18n();
   const tokenQuery = useAttendanceQrToken();
   const token = tokenQuery.data;
   const [remaining, setRemaining] = useState(0);
@@ -56,8 +58,8 @@ export default function EntryQrRoute() {
           contentContainerStyle={styles.content}
         >
           <AppHeader
-            title="Entry QR"
-            subtitle="Display this at your entrance. Members scan it to check in."
+            title={t("entryQr.title")}
+            subtitle={t("entryQr.subtitle")}
             showBack
           />
 
@@ -72,23 +74,25 @@ export default function EntryQrRoute() {
               ) : (
                 <View style={styles.qrPlaceholder}>
                   <Text style={{ color: QR_INK, ...typography.small }}>
-                    {tokenQuery.isLoading ? "Loading QR…" : "No QR"}
+                    {tokenQuery.isLoading ? t("entryQr.loadingQr") : t("entryQr.noQr")}
                   </Text>
                 </View>
               )}
             </View>
 
             <View style={styles.codeBlock}>
-              <Text style={[styles.codeLabel, { color: palette.text.secondary }]}>Manual check-in code</Text>
+              <Text style={[styles.codeLabel, { color: palette.text.secondary }]}>
+                {t("entryQr.manualCode")}
+              </Text>
               <Text style={[styles.code, { color: palette.accent.base }]}>{token?.checkInCode ?? "—— ————"}</Text>
             </View>
 
             <View style={styles.refreshRow}>
               <Pill tone={remaining > 5 ? "lime" : "amber"}>
-                {remaining > 0 ? `Refreshes in ${remaining}s` : "Refreshing…"}
+                {remaining > 0 ? t("entryQr.refreshesIn", { seconds: remaining }) : t("entryQr.refreshing")}
               </Pill>
               <ZookButton size="sm" variant="secondary" icon="refresh-outline" onPress={() => void tokenQuery.refetch()}>
-                Refresh now
+                {t("entryQr.refreshNow")}
               </ZookButton>
             </View>
           </Card>
@@ -96,10 +100,11 @@ export default function EntryQrRoute() {
           <Card variant="compact" contentStyle={styles.infoRow}>
             <IconBubble icon="shield-checkmark-outline" tone="lime" size={38} />
             <View style={styles.infoCopy}>
-              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>Secure rolling token</Text>
+              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>
+                {t("entryQr.secureToken")}
+              </Text>
               <Text style={[styles.infoBody, { color: palette.text.secondary }]}>
-                The code rotates automatically and is single-use. Members can scan the QR with their
-                phone camera or type the code in the Zook app.
+                {t("entryQr.secureTokenBody")}
               </Text>
             </View>
           </Card>
@@ -107,10 +112,11 @@ export default function EntryQrRoute() {
           <Card variant="compact" contentStyle={styles.infoRow}>
             <IconBubble icon="business-outline" tone="blue" size={38} />
             <View style={styles.infoCopy}>
-              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>Branch-aware</Text>
+              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>
+                {t("entryQr.branchAware")}
+              </Text>
               <Text style={[styles.infoBody, { color: palette.text.secondary }]}>
-                This QR is tied to your active branch. Only members with a valid membership at this
-                gym can check in — others are turned away automatically.
+                {t("entryQr.branchAwareBody")}
               </Text>
             </View>
           </Card>
