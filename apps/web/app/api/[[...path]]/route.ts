@@ -36,7 +36,7 @@ function withCors(request: NextRequest, response: Response) {
   headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   headers.set(
     "Access-Control-Allow-Headers",
-    "authorization,content-type,x-request-id,x-zook-org-id,x-zook-branch-id",
+    "authorization,content-type,x-request-id,x-zook-org-id,x-zook-branch-id,x-zook-intent",
   );
   headers.set("Access-Control-Expose-Headers", "retry-after,x-request-id");
   headers.set("Vary", "Origin");
