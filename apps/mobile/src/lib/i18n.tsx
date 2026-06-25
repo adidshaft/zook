@@ -278,6 +278,93 @@ export type TranslationKey =
   | "findGyms.searching"
   | "findGyms.title"
   | "findGyms.view"
+  | "gymProfile.activeUntil"
+  | "gymProfile.address"
+  | "gymProfile.alreadyActive"
+  | "gymProfile.apply"
+  | "gymProfile.approvedDate"
+  | "gymProfile.approvedForPayment"
+  | "gymProfile.atAGlance"
+  | "gymProfile.choosePlan"
+  | "gymProfile.choosePlanToContinue"
+  | "gymProfile.coaches"
+  | "gymProfile.completeEarlierStep"
+  | "gymProfile.couldNotLoad"
+  | "gymProfile.currentMembership"
+  | "gymProfile.dateRange"
+  | "gymProfile.daysCount"
+  | "gymProfile.equipment"
+  | "gymProfile.eyebrow"
+  | "gymProfile.flexibleMembership"
+  | "gymProfile.getDirections"
+  | "gymProfile.gettingThere"
+  | "gymProfile.howToJoin"
+  | "gymProfile.inside"
+  | "gymProfile.instant"
+  | "gymProfile.inviteCode"
+  | "gymProfile.inviteOnly"
+  | "gymProfile.inviteReferralRequired"
+  | "gymProfile.inviteReferralRequiredBody"
+  | "gymProfile.joinFlow"
+  | "gymProfile.joinPath"
+  | "gymProfile.joinRequest"
+  | "gymProfile.location"
+  | "gymProfile.membershipOptions"
+  | "gymProfile.membershipProfile"
+  | "gymProfile.membershipRequestSubmitted"
+  | "gymProfile.membershipRequestSubmittedBody"
+  | "gymProfile.membershipState"
+  | "gymProfile.moveStraightToPayment"
+  | "gymProfile.noBioAdded"
+  | "gymProfile.noPublicPlans"
+  | "gymProfile.noPublicTrainerProfiles"
+  | "gymProfile.noTrainerBioPublished"
+  | "gymProfile.notFound"
+  | "gymProfile.notFoundBody"
+  | "gymProfile.openTrainerProfile"
+  | "gymProfile.openingPayment"
+  | "gymProfile.paymentStarted"
+  | "gymProfile.pendingSince"
+  | "gymProfile.photoOf"
+  | "gymProfile.planAvailableMany"
+  | "gymProfile.planAvailableOne"
+  | "gymProfile.referralApplied"
+  | "gymProfile.referralInviteRequired"
+  | "gymProfile.referralPrice"
+  | "gymProfile.requestMembershipFirst"
+  | "gymProfile.requestMembershipFirstBody"
+  | "gymProfile.reviewed"
+  | "gymProfile.securePayment"
+  | "gymProfile.sendMembershipRequest"
+  | "gymProfile.staffApprovalBeforePayment"
+  | "gymProfile.standardMembershipPlan"
+  | "gymProfile.stepActivatePlan"
+  | "gymProfile.stepActivatePlanBody"
+  | "gymProfile.stepBrowsePublicPlans"
+  | "gymProfile.stepBrowsePublicPlansBody"
+  | "gymProfile.stepPayInstantly"
+  | "gymProfile.stepPayInstantlyBody"
+  | "gymProfile.stepPaySecurely"
+  | "gymProfile.stepPaySecurelyBody"
+  | "gymProfile.stepReferralAttached"
+  | "gymProfile.stepReferralRequired"
+  | "gymProfile.stepReviewPlans"
+  | "gymProfile.stepReviewPlansBody"
+  | "gymProfile.stepSecureReferral"
+  | "gymProfile.stepSendRequest"
+  | "gymProfile.stepSendRequestBody"
+  | "gymProfile.stepStaffReview"
+  | "gymProfile.stepStaffReviewBody"
+  | "gymProfile.stepStartTraining"
+  | "gymProfile.stepStartTrainingBody"
+  | "gymProfile.submitting"
+  | "gymProfile.trainerTeam"
+  | "gymProfile.unableStartPayment"
+  | "gymProfile.unableSubmitMembershipRequest"
+  | "gymProfile.updatingMembershipStatus"
+  | "gymProfile.validityDays"
+  | "gymProfile.visitsRemaining"
+  | "gymProfile.whatsInside"
   | "empty.loading"
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
@@ -853,6 +940,98 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.searching": "Searching...",
     "findGyms.title": "Find your gym",
     "findGyms.view": "View",
+    "gymProfile.activeUntil": "Active until {{date}}",
+    "gymProfile.address": "Address",
+    "gymProfile.alreadyActive": "Already active",
+    "gymProfile.apply": "Apply",
+    "gymProfile.approvedDate": "Approved {{date}}",
+    "gymProfile.approvedForPayment": "Approved for payment",
+    "gymProfile.atAGlance": "At a glance",
+    "gymProfile.choosePlan": "Choose plan",
+    "gymProfile.choosePlanToContinue": "Choose a plan to continue.",
+    "gymProfile.coaches": "Coaches",
+    "gymProfile.completeEarlierStep": "Complete earlier step first",
+    "gymProfile.couldNotLoad": "Could not load this gym",
+    "gymProfile.currentMembership": "Current membership",
+    "gymProfile.dateRange": "{{start}} to {{end}}",
+    "gymProfile.daysCount": "{{count}} days",
+    "gymProfile.equipment": "Equipment",
+    "gymProfile.eyebrow": "Gym profile",
+    "gymProfile.flexibleMembership": "Flexible membership",
+    "gymProfile.getDirections": "Get directions",
+    "gymProfile.gettingThere": "Getting there",
+    "gymProfile.howToJoin": "How to join",
+    "gymProfile.inside": "Inside",
+    "gymProfile.instant": "Instant",
+    "gymProfile.inviteCode": "Invite code",
+    "gymProfile.inviteOnly": "Invite only",
+    "gymProfile.inviteReferralRequired": "Invite or referral required",
+    "gymProfile.inviteReferralRequiredBody":
+      "Open this gym from a referral link or ask the gym team for a code to continue.",
+    "gymProfile.joinFlow": "Join flow",
+    "gymProfile.joinPath": "Join path",
+    "gymProfile.joinRequest": "Join request",
+    "gymProfile.location": "Location",
+    "gymProfile.membershipOptions": "Membership options",
+    "gymProfile.membershipProfile": "Membership profile",
+    "gymProfile.membershipRequestSubmitted": "Membership request submitted.",
+    "gymProfile.membershipRequestSubmittedBody":
+      "Membership request submitted. The gym team can now review it from their dashboard.",
+    "gymProfile.membershipState": "Membership state",
+    "gymProfile.moveStraightToPayment": "You can move straight to payment.",
+    "gymProfile.noBioAdded": "No bio added.",
+    "gymProfile.noPublicPlans": "No public plans",
+    "gymProfile.noPublicTrainerProfiles": "No public trainer profiles",
+    "gymProfile.noTrainerBioPublished": "No trainer bio published.",
+    "gymProfile.notFound": "Gym not found",
+    "gymProfile.notFoundBody": "This link may be expired or the gym may have moved.",
+    "gymProfile.openTrainerProfile": "Open {{name}} profile",
+    "gymProfile.openingPayment": "Opening payment...",
+    "gymProfile.paymentStarted": "Payment started. Complete it to activate your membership.",
+    "gymProfile.pendingSince": "Pending since {{date}}",
+    "gymProfile.photoOf": "Photo {{index}} of {{count}}",
+    "gymProfile.planAvailableMany": "{{count}} plans available",
+    "gymProfile.planAvailableOne": "1 plan available",
+    "gymProfile.referralApplied": "Referral applied",
+    "gymProfile.referralInviteRequired": "Referral or invite is required.",
+    "gymProfile.referralPrice": "Referral price",
+    "gymProfile.requestMembershipFirst": "Request membership first",
+    "gymProfile.requestMembershipFirstBody":
+      "This gym reviews new members before payment. Submit your request and the owner can approve it from the web dashboard.",
+    "gymProfile.reviewed": "Reviewed",
+    "gymProfile.securePayment": "Secure payment",
+    "gymProfile.sendMembershipRequest": "Send membership request",
+    "gymProfile.staffApprovalBeforePayment": "Staff approval happens before payment.",
+    "gymProfile.standardMembershipPlan": "Standard membership plan.",
+    "gymProfile.stepActivatePlan": "Activate plan",
+    "gymProfile.stepActivatePlanBody": "Return here and complete payment once you are approved.",
+    "gymProfile.stepBrowsePublicPlans": "Browse public plans",
+    "gymProfile.stepBrowsePublicPlansBody":
+      "Compare price, access, trainer support, and plan format without waiting for staff.",
+    "gymProfile.stepPayInstantly": "Pay instantly",
+    "gymProfile.stepPayInstantlyBody": "Pay securely from mobile.",
+    "gymProfile.stepPaySecurely": "Pay securely",
+    "gymProfile.stepPaySecurelyBody": "Payment activates the membership once the invite rules are met.",
+    "gymProfile.stepReferralAttached": "Referral {{code}} is attached.",
+    "gymProfile.stepReferralRequired": "A referral or invite is required before you can continue.",
+    "gymProfile.stepReviewPlans": "Review plans",
+    "gymProfile.stepReviewPlansBody": "Once the code is accepted, plans can be joined.",
+    "gymProfile.stepSecureReferral": "Secure a referral",
+    "gymProfile.stepSendRequest": "Send request",
+    "gymProfile.stepSendRequestBody": "Send your request before payment if this gym reviews new members.",
+    "gymProfile.stepStaffReview": "Staff review",
+    "gymProfile.stepStaffReviewBody": "The gym team reviews your request.",
+    "gymProfile.stepStartTraining": "Start training",
+    "gymProfile.stepStartTrainingBody":
+      "Scan the gym QR, get a unique entry code, and present it at the floor or desk.",
+    "gymProfile.submitting": "Submitting...",
+    "gymProfile.trainerTeam": "Trainer team",
+    "gymProfile.unableStartPayment": "Unable to start payment.",
+    "gymProfile.unableSubmitMembershipRequest": "Unable to submit membership request.",
+    "gymProfile.updatingMembershipStatus": "Updating membership status...",
+    "gymProfile.validityDays": "{{count}} validity days",
+    "gymProfile.visitsRemaining": "{{count}} visits remaining",
+    "gymProfile.whatsInside": "What's inside",
     "empty.loading": "Loading",
     "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
@@ -1430,6 +1609,98 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.searching": "खोज हो रही है...",
     "findGyms.title": "अपना जिम खोजें",
     "findGyms.view": "देखें",
+    "gymProfile.activeUntil": "{{date}} तक सक्रिय",
+    "gymProfile.address": "पता",
+    "gymProfile.alreadyActive": "पहले से सक्रिय",
+    "gymProfile.apply": "लागू करें",
+    "gymProfile.approvedDate": "{{date}} को approved",
+    "gymProfile.approvedForPayment": "पेमेंट के लिए approved",
+    "gymProfile.atAGlance": "एक नजर में",
+    "gymProfile.choosePlan": "प्लान चुनें",
+    "gymProfile.choosePlanToContinue": "जारी रखने के लिए प्लान चुनें.",
+    "gymProfile.coaches": "कोच",
+    "gymProfile.completeEarlierStep": "पहले वाला स्टेप पूरा करें",
+    "gymProfile.couldNotLoad": "यह जिम लोड नहीं हो सका",
+    "gymProfile.currentMembership": "मौजूदा मेंबरशिप",
+    "gymProfile.dateRange": "{{start}} से {{end}}",
+    "gymProfile.daysCount": "{{count}} दिन",
+    "gymProfile.equipment": "उपकरण",
+    "gymProfile.eyebrow": "जिम प्रोफाइल",
+    "gymProfile.flexibleMembership": "Flexible membership",
+    "gymProfile.getDirections": "Directions पाएं",
+    "gymProfile.gettingThere": "वहां पहुंचना",
+    "gymProfile.howToJoin": "कैसे जुड़ें",
+    "gymProfile.inside": "अंदर",
+    "gymProfile.instant": "तुरंत",
+    "gymProfile.inviteCode": "Invite code",
+    "gymProfile.inviteOnly": "Invite only",
+    "gymProfile.inviteReferralRequired": "Invite या referral जरूरी",
+    "gymProfile.inviteReferralRequiredBody":
+      "इस जिम को referral link से खोलें या जारी रखने के लिए gym team से code मांगें.",
+    "gymProfile.joinFlow": "Join flow",
+    "gymProfile.joinPath": "Join path",
+    "gymProfile.joinRequest": "Join request",
+    "gymProfile.location": "लोकेशन",
+    "gymProfile.membershipOptions": "मेंबरशिप विकल्प",
+    "gymProfile.membershipProfile": "मेंबरशिप प्रोफाइल",
+    "gymProfile.membershipRequestSubmitted": "मेंबरशिप अनुरोध भेजा गया.",
+    "gymProfile.membershipRequestSubmittedBody":
+      "मेंबरशिप अनुरोध भेजा गया. जिम टीम अब इसे अपने dashboard से review कर सकती है.",
+    "gymProfile.membershipState": "मेंबरशिप स्थिति",
+    "gymProfile.moveStraightToPayment": "आप सीधे पेमेंट पर जा सकते हैं.",
+    "gymProfile.noBioAdded": "Bio नहीं जोड़ा गया.",
+    "gymProfile.noPublicPlans": "कोई public plan नहीं",
+    "gymProfile.noPublicTrainerProfiles": "कोई public trainer profile नहीं",
+    "gymProfile.noTrainerBioPublished": "Trainer bio प्रकाशित नहीं है.",
+    "gymProfile.notFound": "जिम नहीं मिला",
+    "gymProfile.notFoundBody": "यह लिंक expire हो सकता है या जिम move हो गया हो सकता है.",
+    "gymProfile.openTrainerProfile": "{{name}} profile खोलें",
+    "gymProfile.openingPayment": "पेमेंट खुल रहा है...",
+    "gymProfile.paymentStarted": "पेमेंट शुरू हुआ. मेंबरशिप activate करने के लिए इसे पूरा करें.",
+    "gymProfile.pendingSince": "{{date}} से pending",
+    "gymProfile.photoOf": "फोटो {{index}} / {{count}}",
+    "gymProfile.planAvailableMany": "{{count}} plans उपलब्ध",
+    "gymProfile.planAvailableOne": "1 plan उपलब्ध",
+    "gymProfile.referralApplied": "Referral लागू",
+    "gymProfile.referralInviteRequired": "Referral या invite जरूरी है.",
+    "gymProfile.referralPrice": "Referral price",
+    "gymProfile.requestMembershipFirst": "पहले मेंबरशिप अनुरोध करें",
+    "gymProfile.requestMembershipFirstBody":
+      "यह जिम पेमेंट से पहले नए members को review करता है. अपना request भेजें और owner web dashboard से approve कर सकता है.",
+    "gymProfile.reviewed": "Reviewed",
+    "gymProfile.securePayment": "Secure payment",
+    "gymProfile.sendMembershipRequest": "मेंबरशिप अनुरोध भेजें",
+    "gymProfile.staffApprovalBeforePayment": "पेमेंट से पहले staff approval होता है.",
+    "gymProfile.standardMembershipPlan": "Standard membership plan.",
+    "gymProfile.stepActivatePlan": "प्लान activate करें",
+    "gymProfile.stepActivatePlanBody": "Approved होने के बाद यहां लौटकर payment पूरा करें.",
+    "gymProfile.stepBrowsePublicPlans": "Public plans देखें",
+    "gymProfile.stepBrowsePublicPlansBody":
+      "Staff का इंतजार किए बिना price, access, trainer support और plan format compare करें.",
+    "gymProfile.stepPayInstantly": "तुरंत पेमेंट करें",
+    "gymProfile.stepPayInstantlyBody": "मोबाइल से सुरक्षित पेमेंट करें.",
+    "gymProfile.stepPaySecurely": "सुरक्षित पेमेंट करें",
+    "gymProfile.stepPaySecurelyBody": "Invite rules पूरी होने पर payment membership activate करता है.",
+    "gymProfile.stepReferralAttached": "Referral {{code}} जुड़ा है.",
+    "gymProfile.stepReferralRequired": "जारी रखने से पहले referral या invite जरूरी है.",
+    "gymProfile.stepReviewPlans": "Plans review करें",
+    "gymProfile.stepReviewPlansBody": "Code accept होने के बाद plans join किए जा सकते हैं.",
+    "gymProfile.stepSecureReferral": "Referral सुरक्षित करें",
+    "gymProfile.stepSendRequest": "Request भेजें",
+    "gymProfile.stepSendRequestBody": "अगर यह जिम नए members review करता है, तो payment से पहले request भेजें.",
+    "gymProfile.stepStaffReview": "Staff review",
+    "gymProfile.stepStaffReviewBody": "Gym team आपका request review करती है.",
+    "gymProfile.stepStartTraining": "Training शुरू करें",
+    "gymProfile.stepStartTrainingBody":
+      "Gym QR scan करें, unique entry code लें, और floor या desk पर दिखाएं.",
+    "gymProfile.submitting": "भेजा जा रहा है...",
+    "gymProfile.trainerTeam": "Trainer team",
+    "gymProfile.unableStartPayment": "पेमेंट शुरू नहीं हो सका.",
+    "gymProfile.unableSubmitMembershipRequest": "मेंबरशिप अनुरोध नहीं भेजा जा सका.",
+    "gymProfile.updatingMembershipStatus": "मेंबरशिप status update हो रहा है...",
+    "gymProfile.validityDays": "{{count}} validity days",
+    "gymProfile.visitsRemaining": "{{count}} visits बाकी",
+    "gymProfile.whatsInside": "अंदर क्या है",
     "empty.loading": "लोड हो रहा है",
     "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",

@@ -54,11 +54,13 @@ import {
   titleCaseFromCode,
 } from "@/lib/formatting";
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
+import { useI18n } from "@/lib/i18n";
 import { usePushNotifications } from "@/lib/push-notifications";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type PublicTrainer = NonNullable<GymProfileData["trainers"]>[number];
+type Translate = ReturnType<typeof useI18n>["t"];
 
 export default function GymProfileScreen() {
   const router = useRouter();
@@ -68,6 +70,7 @@ export default function GymProfileScreen() {
   const username = Array.isArray(params.username) ? params.username[0] : params.username;
   const referralCode = Array.isArray(params.ref) ? params.ref[0] : params.ref;
   const { token } = useAuth();
+  const { t } = useI18n();
   const { mode, palette } = useTheme();
   const { selectedBranchId } = useBranchSelection();
   const queryClient = useQueryClient();
@@ -172,7 +175,7 @@ export default function GymProfileScreen() {
         return;
       }
       refreshAfterCheckoutRef.current = false;
-      setStatusMessage("Updating membership status...");
+      setStatusMessage(t("gymProfile.updatingMembershipStatus"));
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -207,9 +210,9 @@ export default function GymProfileScreen() {
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
       setStatusMessage(
-        "Membership request submitted. The gym team can now review it from their dashboard.",
+        t("gymProfile.membershipRequestSubmittedBody"),
       );
-      showToast({ tone: "success", haptic: "success", message: "Membership request submitted." });
+      showToast({ tone: "success", haptic: "success", message: t("gymProfile.membershipRequestSubmitted") });
       if (permissionState !== "granted") {
         const granted = await notificationPermission.requestPermission();
         if (granted) {
@@ -218,9 +221,9 @@ export default function GymProfileScreen() {
       }
       await queryClient.invalidateQueries({ queryKey: ["gym", username] });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to submit membership request.";
+      const message = error instanceof Error ? error.message : t("gymProfile.unableSubmitMembershipRequest");
       setStatusMessage(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -245,7 +248,7 @@ export default function GymProfileScreen() {
         ...(selectedGymBranchId ? { branchId: selectedGymBranchId } : {}),
         ...(effectiveReferral ? { referralCode: effectiveReferral } : {}),
       });
-      setStatusMessage("Payment started. Complete it to activate your membership.");
+      setStatusMessage(t("gymProfile.paymentStarted"));
       refreshAfterCheckoutRef.current = true;
       await Linking.openURL(checkoutUrlWithReturnUrl(payload.checkoutUrl, payload.session?.id));
       await Promise.all([
@@ -254,9 +257,9 @@ export default function GymProfileScreen() {
         queryClient.invalidateQueries({ queryKey: ["gym", username] }),
       ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to start payment.";
+      const message = error instanceof Error ? error.message : t("gymProfile.unableStartPayment");
       setStatusMessage(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -301,14 +304,14 @@ export default function GymProfileScreen() {
       >
         {gym ? (
           <AppHeader
-            eyebrow="Gym profile"
+            eyebrow={t("gymProfile.eyebrow")}
             title={gym.name}
             subtitle={`${gym.city}, ${gym.state}`}
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
-                accessibilityLabel="Back"
+                accessibilityLabel={t("shop.back")}
                 style={({ pressed }) => [
                   styles.iconButton,
                   { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
@@ -324,13 +327,13 @@ export default function GymProfileScreen() {
           />
         ) : (
           <AppHeader
-            eyebrow="Gym profile"
-            title="Membership profile"
+            eyebrow={t("gymProfile.eyebrow")}
+            title={t("gymProfile.membershipProfile")}
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
-                accessibilityLabel="Back"
+                accessibilityLabel={t("shop.back")}
                 style={({ pressed }) => [
                   styles.iconButton,
                   { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
@@ -351,16 +354,16 @@ export default function GymProfileScreen() {
             <QueryErrorState
               error={gymQuery.error}
               onRetry={() => void gymQuery.refetch()}
-              title="Could not load this gym"
+              title={t("gymProfile.couldNotLoad")}
             />
           </Card>
         ) : null}
 
         {!gymQuery.isLoading && !gymQuery.isError && !gym ? (
           <EmptyState
-            title="Gym not found"
-            body="This link may be expired or the gym may have moved."
-            action={<PrimaryButton href="/gyms">Find gyms</PrimaryButton>}
+            title={t("gymProfile.notFound")}
+            body={t("gymProfile.notFoundBody")}
+            action={<PrimaryButton href="/gyms">{t("findGyms.title")}</PrimaryButton>}
           />
         ) : null}
 
@@ -377,7 +380,7 @@ export default function GymProfileScreen() {
                     />
                   ) : null}
                   <Text style={[styles.coverEyebrow, { color: palette.accent.base }]}>{gym.tagline ?? gym.name}</Text>
-                  <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{plans.length} plans available</Text>
+                  <Text style={[styles.coverTitle, { color: palette.text.primary }]}>{t(plans.length === 1 ? "gymProfile.planAvailableOne" : "gymProfile.planAvailableMany", { count: plans.length })}</Text>
                   <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.address ?? `${gym.city}, ${gym.state}`}</Text>
                   {gym.openingHoursSummary ? (
                     <Text style={[styles.coverBody, { color: palette.text.secondary }]}>{gym.openingHoursSummary}</Text>
@@ -409,33 +412,33 @@ export default function GymProfileScreen() {
 
               <View style={styles.viewerStateStack}>
                 {effectiveReferral ? (
-                  <InfoRow label="Referral applied" value={effectiveReferral} tone="blue" />
+                  <InfoRow label={t("gymProfile.referralApplied")} value={effectiveReferral} tone="blue" />
                 ) : null}
                 {viewerState?.activeMembership ? (
                   <InfoRow
-                    label="Current membership"
+                    label={t("gymProfile.currentMembership")}
                     value={
                       viewerState.activeMembership.endsAt
-                        ? `Active until ${formatLongDate(viewerState.activeMembership.endsAt)}`
-                        : "Already active"
+                        ? t("gymProfile.activeUntil", { date: formatLongDate(viewerState.activeMembership.endsAt) })
+                        : t("gymProfile.alreadyActive")
                     }
                     tone="blue"
                   />
                 ) : null}
                 {viewerState?.pendingJoinRequest ? (
                   <InfoRow
-                    label="Join request"
-                    value={`Pending since ${formatLongDate(viewerState.pendingJoinRequest.createdAt)}`}
+                    label={t("gymProfile.joinRequest")}
+                    value={t("gymProfile.pendingSince", { date: formatLongDate(viewerState.pendingJoinRequest.createdAt) })}
                     tone="amber"
                   />
                 ) : null}
                 {viewerState?.approvedJoinRequest ? (
                   <InfoRow
-                    label="Join request"
+                    label={t("gymProfile.joinRequest")}
                     value={
                       viewerState.approvedJoinRequest.reviewedAt
-                        ? `Approved ${formatLongDate(viewerState.approvedJoinRequest.reviewedAt)}`
-                        : "Approved for payment"
+                        ? t("gymProfile.approvedDate", { date: formatLongDate(viewerState.approvedJoinRequest.reviewedAt) })
+                        : t("gymProfile.approvedForPayment")
                     }
                     tone="lime"
                   />
@@ -443,17 +446,17 @@ export default function GymProfileScreen() {
               </View>
             </Card>
 
-            <SectionHeader eyebrow="Inside" title="Gym profile" />
+            <SectionHeader eyebrow={t("gymProfile.inside")} title={t("gymProfile.eyebrow")} />
 
             <Card style={styles.firstFoldEndCard} contentStyle={styles.profileDetailsCard}>
               <InfoRow
-                label="Address"
+                label={t("gymProfile.address")}
                 value={gym.address ?? `${gym.city}, ${gym.state}`}
                 tone="neutral"
               />
               {gym.equipment?.length ? (
                 <View style={styles.inlineChipBlock}>
-                  <Text style={[styles.inlineChipTitle, { color: palette.text.primary }]}>Equipment</Text>
+                  <Text style={[styles.inlineChipTitle, { color: palette.text.primary }]}>{t("gymProfile.equipment")}</Text>
                   <View style={styles.tagMetaBlock}>
                     {gym.equipment.slice(0, 12).map((equipment) => (
                       <Text key={equipment} style={[styles.tagMeta, { color: palette.text.secondary }]}>
@@ -465,7 +468,7 @@ export default function GymProfileScreen() {
               ) : null}
             </Card>
 
-            <SectionHeader eyebrow="Getting there" title="Location" />
+            <SectionHeader eyebrow={t("gymProfile.gettingThere")} title={t("gymProfile.location")} />
             <Card contentStyle={styles.locationCard}>
               <View style={styles.locationRow}>
                 <IconBubble icon="location-outline" tone="lime" size={42} />
@@ -480,11 +483,11 @@ export default function GymProfileScreen() {
                 {distanceLabel ? <Pill tone="lime">{distanceLabel}</Pill> : null}
               </View>
               <ZookButton variant="secondary" icon="navigate-outline" onPress={openDirections}>
-                Get directions
+                {t("gymProfile.getDirections")}
               </ZookButton>
             </Card>
 
-            <SectionHeader eyebrow="At a glance" title="What's inside" />
+            <SectionHeader eyebrow={t("gymProfile.atAGlance")} title={t("gymProfile.whatsInside")} />
             <Card contentStyle={styles.amenityCard}>
               <AmenityGrid sources={[...(gym.amenities ?? []), ...(gym.equipment ?? []), gym.gymType]} />
             </Card>
@@ -499,7 +502,7 @@ export default function GymProfileScreen() {
                   <Pressable
                     key={`${imageUrl}-${index}`}
                     accessibilityRole="imagebutton"
-                    accessibilityLabel={`Photo ${index + 1} of ${gallery.length}`}
+                    accessibilityLabel={t("gymProfile.photoOf", { index: index + 1, count: gallery.length })}
                     onPress={() => setGalleryIndex(index)}
                     style={({ pressed }) => (pressed ? { opacity: 0.88 } : null)}
                   >
@@ -513,7 +516,7 @@ export default function GymProfileScreen() {
               </ScrollView>
             ) : null}
 
-            <SectionHeader eyebrow="Coaches" title="Trainer team" />
+            <SectionHeader eyebrow={t("gymProfile.coaches")} title={t("gymProfile.trainerTeam")} />
 
             <View style={styles.trainerStack}>
               {trainers.length ? (
@@ -524,7 +527,7 @@ export default function GymProfileScreen() {
                       key={trainer.userId}
                       onPress={() => openTrainerSheet(trainer)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Open ${trainer.name} profile`}
+                      accessibilityLabel={t("gymProfile.openTrainerProfile", { name: trainer.name })}
                       style={({ pressed }) => (pressed ? styles.cardPressed : null)}
                     >
                       <Card contentStyle={styles.trainerCard}>
@@ -544,7 +547,7 @@ export default function GymProfileScreen() {
                         <View style={styles.trainerCopy}>
                           <Text style={[styles.trainerName, { color: palette.text.primary }]}>{trainer.name}</Text>
                           <Text style={[styles.sectionBody, { color: palette.text.secondary }]} numberOfLines={2}>
-                            {trainer.bio ?? "No bio added."}
+                            {trainer.bio ?? t("gymProfile.noBioAdded")}
                           </Text>
                           <View style={styles.trainerSpecialties}>
                             {normalizeSpecialties(trainer.specialties)
@@ -563,48 +566,48 @@ export default function GymProfileScreen() {
                     </Pressable>
                   ))
               ) : (
-                <EmptyState title="No public trainer profiles" />
+                <EmptyState title={t("gymProfile.noPublicTrainerProfiles")} />
               )}
             </View>
 
             <View style={styles.metricRow}>
               <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
-                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Join flow</Text>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("gymProfile.joinFlow")}</Text>
                 <Text style={[styles.metricValue, { color: palette.text.primary }]}>
-                  {needsApproval ? "Reviewed" : inviteOnlyLocked ? "Invite only" : "Instant"}
+                  {needsApproval ? t("gymProfile.reviewed") : inviteOnlyLocked ? t("gymProfile.inviteOnly") : t("gymProfile.instant")}
                 </Text>
                 <Text style={[styles.metricBody, { color: palette.text.secondary }]}>
                   {needsApproval
-                    ? "Staff approval happens before payment."
+                    ? t("gymProfile.staffApprovalBeforePayment")
                     : inviteOnlyLocked
-                      ? "Referral or invite is required."
-                      : "You can move straight to payment."}
+                      ? t("gymProfile.referralInviteRequired")
+                      : t("gymProfile.moveStraightToPayment")}
                 </Text>
               </Card>
               <Card style={{ flex: 1 }} contentStyle={styles.metricCard}>
-                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Membership state</Text>
+                <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("gymProfile.membershipState")}</Text>
                 <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                   {viewerState?.activeMembership
-                    ? "Active"
+                    ? t("member.home.active")
                     : viewerState?.pendingJoinRequest
-                      ? "Pending"
-                      : "New"}
+                      ? t("member.coaching.pending")
+                      : t("trainer.pt.new")}
                 </Text>
                 <Text style={[styles.metricBody, { color: palette.text.secondary }]}>
                   {viewerState?.activeMembership?.remainingVisits !== null &&
                   viewerState?.activeMembership?.remainingVisits !== undefined
-                    ? `${viewerState.activeMembership.remainingVisits} visits remaining`
-                    : "Choose a plan to continue."}
+                    ? t("gymProfile.visitsRemaining", { count: viewerState.activeMembership.remainingVisits })
+                    : t("gymProfile.choosePlanToContinue")}
                 </Text>
               </Card>
             </View>
 
             <GymReviews orgId={gym.id} />
 
-            <SectionHeader eyebrow="Join path" title="How to join" />
+            <SectionHeader eyebrow={t("gymProfile.joinPath")} title={t("gymProfile.howToJoin")} />
 
             <Card contentStyle={styles.timelineCard}>
-              {buildJoinSteps(gym.joinMode, effectiveReferral).map((step, index) => (
+              {buildJoinSteps(gym.joinMode, t, effectiveReferral).map((step, index) => (
                 <View key={step.title} style={styles.timelineRow}>
                   <View style={[styles.timelineMarker, { backgroundColor: palette.surface.accentSoft, borderColor: palette.border.focus }]}>
                     <Text style={[styles.timelineMarkerText, { color: palette.accent.base }]}>{index + 1}</Text>
@@ -621,25 +624,24 @@ export default function GymProfileScreen() {
             !viewerState?.pendingJoinRequest &&
             !viewerState?.approvedJoinRequest ? (
               <Card variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Request membership first</Text>
+                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("gymProfile.requestMembershipFirst")}</Text>
                 <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                  This gym reviews new members before payment. Submit your request and the owner can
-                  approve it from the web dashboard.
+                  {t("gymProfile.requestMembershipFirstBody")}
                 </Text>
                 <PrimaryButton
                   testID="gym-request-membership"
                   onPress={() => void requestMembership()}
                 >
-                  {busyAction === "join-request" ? "Submitting..." : "Send membership request"}
+                  {busyAction === "join-request" ? t("gymProfile.submitting") : t("gymProfile.sendMembershipRequest")}
                 </PrimaryButton>
               </Card>
             ) : null}
 
             {inviteOnlyLocked ? (
               <Card variant="warning" contentStyle={styles.ctaCard}>
-                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Invite or referral required</Text>
+                <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("gymProfile.inviteReferralRequired")}</Text>
                 <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                  Open this gym from a referral link or ask the gym team for a code to continue.
+                  {t("gymProfile.inviteReferralRequiredBody")}
                 </Text>
                 <View style={styles.inviteCodeRow}>
                   <TextInput
@@ -647,7 +649,7 @@ export default function GymProfileScreen() {
                     value={inviteCode}
                     onChangeText={setInviteCode}
                     autoCapitalize="characters"
-                    placeholder="Invite code"
+                    placeholder={t("gymProfile.inviteCode")}
                     placeholderTextColor={palette.text.tertiary}
                     style={[
                       styles.inviteCodeInput,
@@ -658,15 +660,15 @@ export default function GymProfileScreen() {
                       },
                     ]}
                   />
-                  <PrimaryButton testID="gym-apply-invite-code" onPress={applyInviteCode}>Apply</PrimaryButton>
+                  <PrimaryButton testID="gym-apply-invite-code" onPress={applyInviteCode}>{t("gymProfile.apply")}</PrimaryButton>
                 </View>
               </Card>
             ) : null}
 
-            <SectionHeader eyebrow="Plans" title="Membership options" />
+            <SectionHeader eyebrow={t("nav.plans")} title={t("gymProfile.membershipOptions")} />
 
             {!plans.length ? (
-              <EmptyState title="No public plans" />
+              <EmptyState title={t("gymProfile.noPublicPlans")} />
             ) : null}
 
             <View style={styles.planStack}>
@@ -685,7 +687,7 @@ export default function GymProfileScreen() {
                   effectivePricePaise < plan.pricePaise;
                 const badges = [
                   ...(pricedPlan.badges ?? []),
-                  hasReferralPrice ? "Referral price" : null,
+                  hasReferralPrice ? t("gymProfile.referralPrice") : null,
                   plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
                 ].filter((item): item is string => Boolean(item));
 
@@ -727,10 +729,10 @@ export default function GymProfileScreen() {
                     </View>
                   ) : null}
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {plan.description ?? "Standard membership plan."}
+                    {plan.description ?? t("gymProfile.standardMembershipPlan")}
                   </Text>
                   <View style={styles.planBenefits}>
-                    {buildPlanHighlights(plan).map((item) => (
+                    {buildPlanHighlights(plan, t).map((item) => (
                       <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
                         <Text style={[styles.planBenefitText, { color: palette.text.secondary }]}>{item}</Text>
                       </View>
@@ -742,10 +744,10 @@ export default function GymProfileScreen() {
                     disabled={!canCheckout(plan.id)}
                   >
                     {busyAction === plan.id
-                      ? "Opening payment..."
+                      ? t("gymProfile.openingPayment")
                       : canCheckout(plan.id)
-                        ? "Choose plan"
-                        : "Complete earlier step first"}
+                        ? t("gymProfile.choosePlan")
+                        : t("gymProfile.completeEarlierStep")}
                   </PrimaryButton>
                 </Card>
                 );
@@ -793,7 +795,7 @@ export default function GymProfileScreen() {
                 <View style={styles.trainerCopy}>
                   <Text style={[styles.trainerName, { color: palette.text.primary }]}>{selectedTrainer.name}</Text>
                   <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? "No trainer bio published."}
+                    {selectedTrainer.bio ?? t("gymProfile.noTrainerBioPublished")}
                   </Text>
                 </View>
               </View>
@@ -817,20 +819,20 @@ export default function GymProfileScreen() {
   );
 }
 
-function buildJoinSteps(joinMode: string, referralCode?: string) {
+function buildJoinSteps(joinMode: string, t: Translate, referralCode?: string) {
   if (joinMode === "APPROVAL_REQUIRED") {
     return [
       {
-        title: "Send request",
-        body: "Send your request before payment if this gym reviews new members.",
+        title: t("gymProfile.stepSendRequest"),
+        body: t("gymProfile.stepSendRequestBody"),
       },
       {
-        title: "Staff review",
-        body: "The gym team reviews your request.",
+        title: t("gymProfile.stepStaffReview"),
+        body: t("gymProfile.stepStaffReviewBody"),
       },
       {
-        title: "Activate plan",
-        body: "Return here and complete payment once you are approved.",
+        title: t("gymProfile.stepActivatePlan"),
+        body: t("gymProfile.stepActivatePlanBody"),
       },
     ];
   }
@@ -838,18 +840,18 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
   if (joinMode === "INVITE_ONLY") {
     return [
       {
-        title: "Secure a referral",
+        title: t("gymProfile.stepSecureReferral"),
         body: referralCode
-          ? `Referral ${referralCode} is attached.`
-          : "A referral or invite is required before you can continue.",
+          ? t("gymProfile.stepReferralAttached", { code: referralCode })
+          : t("gymProfile.stepReferralRequired"),
       },
       {
-        title: "Review plans",
-        body: "Once the code is accepted, plans can be joined.",
+        title: t("gymProfile.stepReviewPlans"),
+        body: t("gymProfile.stepReviewPlansBody"),
       },
       {
-        title: "Pay securely",
-        body: "Payment activates the membership once the invite rules are met.",
+        title: t("gymProfile.stepPaySecurely"),
+        body: t("gymProfile.stepPaySecurelyBody"),
       },
     ];
   }
@@ -860,16 +862,16 @@ function buildJoinSteps(joinMode: string, referralCode?: string) {
 
   return [
     {
-      title: "Browse public plans",
-      body: "Compare price, access, trainer support, and plan format without waiting for staff.",
+      title: t("gymProfile.stepBrowsePublicPlans"),
+      body: t("gymProfile.stepBrowsePublicPlansBody"),
     },
     {
-      title: "Pay instantly",
-      body: "Pay securely from mobile.",
+      title: t("gymProfile.stepPayInstantly"),
+      body: t("gymProfile.stepPayInstantlyBody"),
     },
     {
-      title: "Start training",
-      body: "Scan the gym QR, get a unique entry code, and present it at the floor or desk.",
+      title: t("gymProfile.stepStartTraining"),
+      body: t("gymProfile.stepStartTrainingBody"),
     },
   ];
 }
@@ -907,17 +909,17 @@ function buildPlanHighlights(plan: {
   validityDays?: number | null;
   startDate?: string | null;
   endDate?: string | null;
-}) {
+}, t: Translate) {
   const highlights = [
-    plan.durationDays ? `${plan.durationDays} days` : null,
+    plan.durationDays ? t("gymProfile.daysCount", { count: plan.durationDays }) : null,
     plan.visitLimit ? formatVisitLimit(plan.visitLimit) : null,
-    plan.validityDays ? `${plan.validityDays} validity days` : null,
+    plan.validityDays ? t("gymProfile.validityDays", { count: plan.validityDays }) : null,
     plan.startDate && plan.endDate
-      ? `${formatLongDate(plan.startDate)} to ${formatLongDate(plan.endDate)}`
+      ? t("gymProfile.dateRange", { start: formatLongDate(plan.startDate), end: formatLongDate(plan.endDate) })
       : null,
   ].filter(Boolean) as string[];
 
-  return highlights.length ? highlights : ["Flexible membership", "Secure payment"];
+  return highlights.length ? highlights : [t("gymProfile.flexibleMembership"), t("gymProfile.securePayment")];
 }
 
 const styles = StyleSheet.create({
