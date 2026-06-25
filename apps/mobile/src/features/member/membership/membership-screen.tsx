@@ -32,6 +32,7 @@ import {
   IconBubble,
   AppHeader,
   MoneySummaryCard,
+  QueryErrorState,
   SectionHeader,
   ZookButton,
   ZookScreen,
@@ -50,6 +51,7 @@ import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
 import { formatInr, formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import {
   useGeneratePaymentDocument,
   useGymProfile,
@@ -184,6 +186,7 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
 export default function MembershipScreen() {
   const router = useRouter();
   const { mode, palette } = useTheme();
+  const t = useT();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -230,6 +233,8 @@ export default function MembershipScreen() {
   const [autopayBusy, setAutopayBusy] = useState(false);
   const [membershipActionStatus, setMembershipActionStatus] = useState("");
   const [membershipActionBusy, setMembershipActionBusy] = useState(false);
+  const [terminateStatus, setTerminateStatus] = useState("");
+  const [terminateBusy, setTerminateBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
@@ -279,7 +284,7 @@ export default function MembershipScreen() {
 
   const refreshMembershipAfterCheckout = useCallback(async () => {
     setCheckingCheckoutStatus(true);
-    setRenewalStatus("Checking payment status...");
+    setRenewalStatus(t("member.membership.checkingPaymentStatus"));
     try {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
@@ -382,7 +387,7 @@ export default function MembershipScreen() {
           ...(activeOrgId ? { orgId: activeOrgId } : {}),
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         });
-        setRenewalStatus("Renewal confirmed.");
+        setRenewalStatus(t("member.membership.renewalConfirmed"));
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -391,7 +396,7 @@ export default function MembershipScreen() {
         return;
       }
       const url = checkoutUrlWithReturnUrl(result.checkoutUrl, result.session?.id ?? token);
-      setRenewalStatus(url ? "Continuing in your browser." : "Renewal request sent.");
+      setRenewalStatus(url ? t("member.membership.continuingBrowser") : t("member.membership.renewalRequestSent"));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -425,11 +430,11 @@ export default function MembershipScreen() {
         result.session?.id ?? token,
       );
       if (!url) {
-        setAutopayStatus("Autopay is active.");
+        setAutopayStatus(t("member.membership.autopayActive"));
         await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
         return;
       }
-      setAutopayStatus("Continuing in your browser.");
+      setAutopayStatus(t("member.membership.continuingBrowser"));
       await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
       setWaitingCheckoutSessionId(result.session?.id ?? token);
       refreshAfterCheckoutRef.current = true;
@@ -452,7 +457,7 @@ export default function MembershipScreen() {
         ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
         subscriptionId: subscription.id,
       });
-      setAutopayStatus("Autopay cancelled.");
+      setAutopayStatus(t("member.membership.autopayCancelled"));
       await queryClient.invalidateQueries({ queryKey: ["me", "memberships"] });
     } catch (error) {
       setAutopayStatus(getApiErrorMessage(error));
@@ -473,8 +478,8 @@ export default function MembershipScreen() {
         subscriptionId: renewalTarget.id,
         planId: selectedPlanId,
       });
-      setRenewalStatus("Plan switched.");
-      showToast({ tone: "success", haptic: "success", message: "Plan switched." });
+      setRenewalStatus(t("member.membership.planSwitched"));
+      showToast({ tone: "success", haptic: "success", message: t("member.membership.planSwitched") });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -483,7 +488,7 @@ export default function MembershipScreen() {
     } catch (error) {
       const message = getApiErrorMessage(error);
       setRenewalStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setMembershipActionBusy(false);
     }
@@ -498,11 +503,11 @@ export default function MembershipScreen() {
       return;
     }
     Alert.alert(
-      "Pause membership?",
-      `Your access stays frozen until ${formatLongDate(pauseResumesAt.toISOString())}. You can resume anytime before then.`,
+      t("member.membership.pauseConfirmTitle"),
+      t("member.membership.pauseConfirmBody", { date: formatLongDate(pauseResumesAt.toISOString()) }),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Pause", style: "destructive", onPress: () => void performPauseOrResume(subscription) },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("member.membership.pause"), style: "destructive", onPress: () => void performPauseOrResume(subscription) },
       ],
     );
   }
@@ -519,8 +524,8 @@ export default function MembershipScreen() {
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
           subscriptionId: subscription.id,
         });
-        setMembershipActionStatus("Membership resumed.");
-        showToast({ tone: "success", haptic: "success", message: "Membership resumed." });
+        setMembershipActionStatus(t("member.membership.resumed"));
+        showToast({ tone: "success", haptic: "success", message: t("member.membership.resumed") });
       } else {
         await memberApi.pauseMembership({
           token,
@@ -528,13 +533,13 @@ export default function MembershipScreen() {
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
           subscriptionId: subscription.id,
           resumesAt: pauseResumesAt.toISOString(),
-          reason: "Member selected a membership pause date from mobile.",
+          reason: t("member.membership.pauseReason"),
         });
-        setMembershipActionStatus(`Membership paused until ${formatLongDate(pauseResumesAt.toISOString())}.`);
+        setMembershipActionStatus(t("member.membership.pausedUntil", { date: formatLongDate(pauseResumesAt.toISOString()) }));
         showToast({
           tone: "success",
           haptic: "success",
-          message: `Paused until ${formatLongDate(pauseResumesAt.toISOString())}.`,
+          message: t("member.membership.pausedToast", { date: formatLongDate(pauseResumesAt.toISOString()) }),
         });
       }
       await Promise.all([
@@ -545,9 +550,53 @@ export default function MembershipScreen() {
     } catch (error) {
       const message = getApiErrorMessage(error);
       setMembershipActionStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setMembershipActionBusy(false);
+    }
+  }
+
+  function cancelMembership(subscription: MembershipRecord) {
+    // Terminating ends the membership outright (no resume path), so always
+    // confirm first to avoid a misfire that revokes access early.
+    Alert.alert(
+      t("member.membership.cancelConfirmTitle"),
+      t("member.membership.cancelConfirmBody"),
+      [
+        { text: t("member.membership.keepMembership"), style: "cancel" },
+        {
+          text: t("member.membership.cancelMembership"),
+          style: "destructive",
+          onPress: () => void performCancelMembership(subscription),
+        },
+      ],
+    );
+  }
+
+  async function performCancelMembership(subscription: MembershipRecord) {
+    if (!token) return;
+    setTerminateBusy(true);
+    setTerminateStatus("");
+    try {
+      await memberApi.cancelMembership({
+        token,
+        ...(activeOrgId ? { orgId: activeOrgId } : {}),
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        subscriptionId: subscription.id,
+      });
+      setTerminateStatus(t("member.membership.cancelled"));
+      showToast({ tone: "success", haptic: "success", message: t("member.membership.cancelled") });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
+        queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
+      ]);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setTerminateStatus(message);
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
+    } finally {
+      setTerminateBusy(false);
     }
   }
 
@@ -564,12 +613,12 @@ export default function MembershipScreen() {
       showToast({
         tone: "success",
         haptic: "success",
-        message: kind === "receipt" ? "Receipt generated." : "Invoice generated.",
+        message: kind === "receipt" ? t("member.membership.receiptGenerated") : t("member.membership.invoiceGenerated"),
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       showToast({
-        title: kind === "receipt" ? "Receipt unavailable" : "Invoice unavailable",
+        title: kind === "receipt" ? t("member.membership.receiptUnavailable") : t("member.membership.invoiceUnavailable"),
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",
@@ -617,8 +666,8 @@ export default function MembershipScreen() {
           }
         >
           <AppHeader
-            eyebrow="Membership"
-            title="Your plans"
+            eyebrow={t("member.membership.eyebrow")}
+            title={t("member.membership.title")}
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherChip />
@@ -627,14 +676,14 @@ export default function MembershipScreen() {
             }
             subtitle={
               memberships.length
-                ? `${activeCount} active · ${expiringSoonCount} expiring soon · ${memberships.length} total`
-                : "No active plans"
+                ? t("member.membership.summary", { active: activeCount, expiring: expiringSoonCount, total: memberships.length })
+                : t("member.membership.noActivePlans")
             }
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
-                accessibilityLabel="Back"
+                accessibilityLabel={t("shop.back")}
                 style={[
                   styles.iconButton,
                   {
@@ -665,27 +714,27 @@ export default function MembershipScreen() {
               <View style={styles.calloutCopy}>
                 <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>
                   {focusTarget === "buy"
-                    ? "Choose a plan"
+                    ? t("member.membership.choosePlan")
                     : focusTarget === "checkout"
-                      ? "Continue checkout"
+                      ? t("member.membership.continueCheckout")
                       : focusTarget === "history"
-                        ? "Membership history"
+                        ? t("member.membership.history")
                         : focusTarget === "payments"
-                          ? "Payment documents"
-                          : "Membership update"}
+                          ? t("member.membership.paymentDocuments")
+                          : t("member.membership.update")}
                 </Text>
                 <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
                   {focusTarget === "buy" || focusTarget === "checkout"
-                    ? latestSubscription
-                      ? "We opened the renewal flow for this membership."
-                      : "Browse gyms and purchase a membership to get started."
+                      ? latestSubscription
+                      ? t("member.membership.renewalFlowOpened")
+                      : t("member.membership.browseGymsBody")
                     : focusTarget === "history"
-                      ? "Jumped to your previous memberships and payment trail."
+                      ? t("member.membership.historyJumpBody")
                       : focusTarget === "payments"
-                        ? "Receipts and invoices are below."
+                        ? t("member.membership.paymentDocumentsBody")
                         : routeParams.subscriptionId
-                          ? "Your subscription has been updated."
-                          : "Membership status is below."}
+                          ? t("member.membership.subscriptionUpdated")
+                          : t("member.membership.statusBelow")}
                 </Text>
               </View>
             </Card>
@@ -694,9 +743,9 @@ export default function MembershipScreen() {
           {waitingCheckoutSessionId ? (
             <Card variant="compact" contentStyle={styles.browserReturnContent}>
               <View style={styles.browserReturnCopy}>
-                <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>Continuing in your browser</Text>
+                <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>{t("member.membership.continuingBrowserTitle")}</Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
-                  Return after checkout. Zook refreshes your membership when you come back.
+                  {t("member.membership.browserReturnBody")}
                 </Text>
               </View>
               <ZookButton
@@ -705,30 +754,38 @@ export default function MembershipScreen() {
                 onPress={() => void refreshMembershipAfterCheckout()}
                 icon="refresh-outline"
               >
-                {checkingCheckoutStatus ? "Checking..." : "Check status"}
+                {checkingCheckoutStatus ? t("shop.checking") : t("shop.checkStatus")}
               </ZookButton>
             </Card>
           ) : null}
 
           {membershipsQuery.isLoading ? <MembershipSkeleton /> : null}
 
+          {membershipsQuery.isError ? (
+            <QueryErrorState error={membershipsQuery.error} onRetry={() => void onRefresh()} />
+          ) : null}
+
+          {invoicesQuery.isError ? (
+            <QueryErrorState error={invoicesQuery.error} onRetry={() => void onRefresh()} />
+          ) : null}
+
           {!membershipsQuery.isLoading && !memberships.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
               <View style={styles.emptyCopy}>
-                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No memberships</Text>
+                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>{t("member.membership.noMemberships")}</Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                  Browse gyms and purchase a membership to get started.
+                  {t("member.membership.browseGymsBody")}
                 </Text>
               </View>
               <ZookButton testID="membership-find-gyms" href="/gyms" icon="search-outline">
-                Find gyms
+                {t("member.membership.findGyms")}
               </ZookButton>
             </Card>
           ) : null}
 
           {latestSubscription ? (
             <View onLayout={(event) => registerSectionOffset("active", event)}>
-              <SectionHeader title="Active plan" />
+              <SectionHeader title={t("member.membership.activePlan")} />
               <ActiveMembershipCard
                 activeOrganizationName={activeOrganization?.name}
                 actionBusy={membershipActionBusy}
@@ -737,9 +794,12 @@ export default function MembershipScreen() {
                 onOpenRenewal={openRenewal}
                 onPauseDateChange={setPauseResumesAt}
                 onPauseOrResume={(subscription) => void pauseOrResumeMembership(subscription)}
+                onTerminate={(subscription) => cancelMembership(subscription)}
                 pauseMinimumDate={pauseMinimumDate}
                 pauseResumesAt={pauseResumesAt}
                 subscription={latestSubscription}
+                terminateBusy={terminateBusy}
+                terminateStatus={terminateStatus}
               />
 
               <AutopayCard
@@ -769,7 +829,7 @@ export default function MembershipScreen() {
         <RenewalSheet
           availablePlans={availablePlans}
           currentPlan={renewalTarget?.plan ?? null}
-          gymName={renewalTarget?.organization?.name ?? activeOrganization?.name ?? "your gym"}
+          gymName={renewalTarget?.organization?.name ?? activeOrganization?.name ?? t("member.membership.yourGym")}
           loadingPlans={gymQuery.isLoading}
           onClose={closeRenewal}
           onRenew={() => void renewMembership()}
@@ -817,6 +877,7 @@ function RenewalSheet({
 }) {
   const insets = useSafeAreaInsets();
   const { mode, palette } = useTheme();
+  const t = useT();
   const { height: screenHeight } = useWindowDimensions();
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["CONTENT_HEIGHT"], []);
@@ -867,19 +928,19 @@ function RenewalSheet({
       <BottomSheetView style={styles.sheet}>
         <View style={styles.sheetHeader}>
           <View style={styles.sheetTitleCopy}>
-            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>Renew membership</Text>
+            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>{t("member.membership.renewMembership")}</Text>
             <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
-              {selectedPlan?.name ?? currentPlan?.name ?? "Current plan"}
+              {selectedPlan?.name ?? currentPlan?.name ?? t("member.membership.currentPlan")}
             </Text>
             <Text style={[styles.sheetBody, { color: palette.text.secondary }]}>
-              Continue at {gymName} with the same plan or choose another available option.
+              {t("member.membership.renewalSheetBody", { gym: gymName })}
             </Text>
           </View>
           <Pressable
             testID="membership-renewal-close"
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Close"
+            accessibilityLabel={t("common.dismiss")}
             style={({ pressed }) => [
               styles.closeButton,
               { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
@@ -899,7 +960,7 @@ function RenewalSheet({
             {loadingPlans ? <PlansSkeleton /> : null}
             {!loadingPlans && !plans.length ? (
               <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                No alternate plans are published. Same-plan renewal is requested.
+                {t("member.membership.noAlternatePlans")}
               </Text>
             ) : null}
             {plans.map((plan) => {
@@ -911,7 +972,7 @@ function RenewalSheet({
                     if (!renewing) setSelectedPlanId(plan.id);
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Select ${plan.name}`}
+                  accessibilityLabel={t("member.membership.selectPlanAccessibility", { plan: plan.name })}
                   accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
                   disabled={renewing}
                   style={({ pressed }) => [
@@ -955,22 +1016,22 @@ function RenewalSheet({
 
         {selectedPlan ? (
           <MoneySummaryCard
-            title="Renewal summary"
+            title={t("member.membership.renewalSummary")}
             amount={formatInr("pricePaise" in selectedPlan ? selectedPlan.pricePaise : 0)}
             rows={[
-              { label: "Plan", value: selectedPlan.name ?? currentPlan?.name ?? "Selected plan" },
+              { label: t("member.membership.plan"), value: selectedPlan.name ?? currentPlan?.name ?? t("member.membership.selectedPlan") },
               {
-                label: "Validity",
+                label: t("member.membership.validity"),
                 value: selectedPlan.durationDays
-                  ? `${selectedPlan.durationDays} days`
-                  : "Gym-defined validity",
+                  ? t("member.membership.days", { count: selectedPlan.durationDays })
+                  : t("member.membership.gymDefinedValidity"),
               },
               {
-                label: "Visits",
+                label: t("member.membership.visits"),
                 value: formatVisitLimit(selectedPlan.visitLimit),
               },
             ]}
-            consequence="The renewed membership activates after payment confirmation from the payment service or gym desk."
+            consequence={t("member.membership.renewalConsequence")}
           />
         ) : null}
 
@@ -982,7 +1043,7 @@ function RenewalSheet({
             onPress={onClose}
             style={styles.actionHalf}
           >
-            Cancel
+            {t("common.cancel")}
           </ZookButton>
           {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
             <ZookButton
@@ -991,11 +1052,11 @@ function RenewalSheet({
               onPress={onSwitch}
               disabled={renewing}
               busy={renewing}
-              busyLabel="Updating"
+              busyLabel={t("member.membership.updating")}
               icon="swap-horizontal-outline"
               style={styles.actionHalf}
             >
-              {renewing ? "Updating..." : "Switch now"}
+              {renewing ? t("member.membership.updating") : t("member.membership.switchNow")}
             </ZookButton>
           ) : null}
           <ZookButton
@@ -1003,11 +1064,11 @@ function RenewalSheet({
             onPress={onRenew}
             disabled={renewing}
             busy={renewing}
-            busyLabel="Starting"
+            busyLabel={t("member.membership.starting")}
             icon="refresh-outline"
             style={styles.actionHalf}
           >
-            {renewing ? "Starting..." : "Pay securely"}
+            {renewing ? t("member.membership.starting") : t("member.membership.paySecurely")}
           </ZookButton>
         </View>
       </BottomSheetView>

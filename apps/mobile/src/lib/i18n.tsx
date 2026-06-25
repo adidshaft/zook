@@ -677,6 +677,67 @@ export type TranslationKey =
   | "member.home.visits"
   | "member.home.visitsLeft"
   | "member.home.workouts"
+  | "member.membership.activePlan"
+  | "member.membership.autopayActive"
+  | "member.membership.autopayCancelled"
+  | "member.membership.browseGymsBody"
+  | "member.membership.browserReturnBody"
+  | "member.membership.cancelConfirmBody"
+  | "member.membership.cancelConfirmTitle"
+  | "member.membership.cancelMembership"
+  | "member.membership.cancelled"
+  | "member.membership.checkingPaymentStatus"
+  | "member.membership.choosePlan"
+  | "member.membership.continueCheckout"
+  | "member.membership.continuingBrowser"
+  | "member.membership.continuingBrowserTitle"
+  | "member.membership.currentPlan"
+  | "member.membership.days"
+  | "member.membership.eyebrow"
+  | "member.membership.findGyms"
+  | "member.membership.gymDefinedValidity"
+  | "member.membership.history"
+  | "member.membership.historyJumpBody"
+  | "member.membership.invoiceGenerated"
+  | "member.membership.invoiceUnavailable"
+  | "member.membership.keepMembership"
+  | "member.membership.noActivePlans"
+  | "member.membership.noAlternatePlans"
+  | "member.membership.noMemberships"
+  | "member.membership.pause"
+  | "member.membership.pauseConfirmBody"
+  | "member.membership.pauseConfirmTitle"
+  | "member.membership.pauseReason"
+  | "member.membership.pausedToast"
+  | "member.membership.pausedUntil"
+  | "member.membership.paySecurely"
+  | "member.membership.paymentDocuments"
+  | "member.membership.paymentDocumentsBody"
+  | "member.membership.plan"
+  | "member.membership.planSwitched"
+  | "member.membership.receiptGenerated"
+  | "member.membership.receiptUnavailable"
+  | "member.membership.renewMembership"
+  | "member.membership.renewalConfirmed"
+  | "member.membership.renewalConsequence"
+  | "member.membership.renewalFlowOpened"
+  | "member.membership.renewalRequestSent"
+  | "member.membership.renewalSheetBody"
+  | "member.membership.renewalSummary"
+  | "member.membership.resumed"
+  | "member.membership.selectedPlan"
+  | "member.membership.selectPlanAccessibility"
+  | "member.membership.starting"
+  | "member.membership.statusBelow"
+  | "member.membership.subscriptionUpdated"
+  | "member.membership.summary"
+  | "member.membership.switchNow"
+  | "member.membership.title"
+  | "member.membership.update"
+  | "member.membership.updating"
+  | "member.membership.validity"
+  | "member.membership.visits"
+  | "member.membership.yourGym"
   | "member.plan.assignedPlan"
   | "member.plan.coachGuided"
   | "member.plan.couldNotLoadExercises"
@@ -1671,6 +1732,67 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.visits": "Visits",
     "member.home.visitsLeft": "{{count}} visits left",
     "member.home.workouts": "Workouts",
+    "member.membership.activePlan": "Active plan",
+    "member.membership.autopayActive": "Autopay is active.",
+    "member.membership.autopayCancelled": "Autopay cancelled.",
+    "member.membership.browseGymsBody": "Browse gyms and purchase a membership to get started.",
+    "member.membership.browserReturnBody": "Return after checkout. Zook refreshes your membership when you come back.",
+    "member.membership.cancelConfirmBody": "You'll keep access until your current term ends, but it won't renew and can't be resumed afterwards. This can't be undone.",
+    "member.membership.cancelConfirmTitle": "Cancel membership?",
+    "member.membership.cancelMembership": "Cancel membership",
+    "member.membership.cancelled": "Membership cancelled.",
+    "member.membership.checkingPaymentStatus": "Checking payment status...",
+    "member.membership.choosePlan": "Choose a plan",
+    "member.membership.continueCheckout": "Continue checkout",
+    "member.membership.continuingBrowser": "Continuing in your browser.",
+    "member.membership.continuingBrowserTitle": "Continuing in your browser",
+    "member.membership.currentPlan": "Current plan",
+    "member.membership.days": "{{count}} days",
+    "member.membership.eyebrow": "Membership",
+    "member.membership.findGyms": "Find gyms",
+    "member.membership.gymDefinedValidity": "Gym-defined validity",
+    "member.membership.history": "Membership history",
+    "member.membership.historyJumpBody": "Jumped to your previous memberships and payment trail.",
+    "member.membership.invoiceGenerated": "Invoice generated.",
+    "member.membership.invoiceUnavailable": "Invoice unavailable",
+    "member.membership.keepMembership": "Keep membership",
+    "member.membership.noActivePlans": "No active plans",
+    "member.membership.noAlternatePlans": "No alternate plans are published. Same-plan renewal is requested.",
+    "member.membership.noMemberships": "No memberships",
+    "member.membership.pause": "Pause",
+    "member.membership.pauseConfirmBody": "Your access stays frozen until {{date}}. You can resume anytime before then.",
+    "member.membership.pauseConfirmTitle": "Pause membership?",
+    "member.membership.pauseReason": "Member selected a membership pause date from mobile.",
+    "member.membership.pausedToast": "Paused until {{date}}.",
+    "member.membership.pausedUntil": "Membership paused until {{date}}.",
+    "member.membership.paySecurely": "Pay securely",
+    "member.membership.paymentDocuments": "Payment documents",
+    "member.membership.paymentDocumentsBody": "Receipts and invoices are below.",
+    "member.membership.plan": "Plan",
+    "member.membership.planSwitched": "Plan switched.",
+    "member.membership.receiptGenerated": "Receipt generated.",
+    "member.membership.receiptUnavailable": "Receipt unavailable",
+    "member.membership.renewMembership": "Renew membership",
+    "member.membership.renewalConfirmed": "Renewal confirmed.",
+    "member.membership.renewalConsequence": "The renewed membership activates after payment confirmation from the payment service or gym desk.",
+    "member.membership.renewalFlowOpened": "We opened the renewal flow for this membership.",
+    "member.membership.renewalRequestSent": "Renewal request sent.",
+    "member.membership.renewalSheetBody": "Continue at {{gym}} with the same plan or choose another available option.",
+    "member.membership.renewalSummary": "Renewal summary",
+    "member.membership.resumed": "Membership resumed.",
+    "member.membership.selectedPlan": "Selected plan",
+    "member.membership.selectPlanAccessibility": "Select {{plan}}",
+    "member.membership.starting": "Starting...",
+    "member.membership.statusBelow": "Membership status is below.",
+    "member.membership.subscriptionUpdated": "Your subscription has been updated.",
+    "member.membership.summary": "{{active}} active · {{expiring}} expiring soon · {{total}} total",
+    "member.membership.switchNow": "Switch now",
+    "member.membership.title": "Your plans",
+    "member.membership.update": "Membership update",
+    "member.membership.updating": "Updating...",
+    "member.membership.validity": "Validity",
+    "member.membership.visits": "Visits",
+    "member.membership.yourGym": "your gym",
     "member.plan.assignedPlan": "Assigned plan",
     "member.plan.coachGuided": "Coach guided",
     "member.plan.couldNotLoadExercises": "Could not load exercises",
@@ -2665,6 +2787,67 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.visits": "विजिट",
     "member.home.visitsLeft": "{{count}} विजिट बाकी",
     "member.home.workouts": "वर्कआउट",
+    "member.membership.activePlan": "सक्रिय प्लान",
+    "member.membership.autopayActive": "Autopay active है.",
+    "member.membership.autopayCancelled": "Autopay cancel हो गया.",
+    "member.membership.browseGymsBody": "शुरू करने के लिए gyms देखें और membership खरीदें.",
+    "member.membership.browserReturnBody": "Checkout के बाद वापस आएं. वापस आने पर Zook आपकी membership refresh करेगा.",
+    "member.membership.cancelConfirmBody": "आपका current term खत्म होने तक access रहेगा, लेकिन renew नहीं होगा और बाद में resume नहीं किया जा सकेगा. इसे undo नहीं किया जा सकता.",
+    "member.membership.cancelConfirmTitle": "Membership cancel करें?",
+    "member.membership.cancelMembership": "Membership cancel करें",
+    "member.membership.cancelled": "Membership cancel हो गई.",
+    "member.membership.checkingPaymentStatus": "Payment status check हो रहा है...",
+    "member.membership.choosePlan": "Plan चुनें",
+    "member.membership.continueCheckout": "Checkout जारी रखें",
+    "member.membership.continuingBrowser": "Browser में जारी है.",
+    "member.membership.continuingBrowserTitle": "Browser में जारी",
+    "member.membership.currentPlan": "Current plan",
+    "member.membership.days": "{{count}} दिन",
+    "member.membership.eyebrow": "Membership",
+    "member.membership.findGyms": "Gyms खोजें",
+    "member.membership.gymDefinedValidity": "Gym-defined validity",
+    "member.membership.history": "Membership history",
+    "member.membership.historyJumpBody": "आपकी previous memberships और payment trail पर ले गए.",
+    "member.membership.invoiceGenerated": "Invoice generated.",
+    "member.membership.invoiceUnavailable": "Invoice unavailable",
+    "member.membership.keepMembership": "Membership रखें",
+    "member.membership.noActivePlans": "कोई active plan नहीं",
+    "member.membership.noAlternatePlans": "कोई alternate plan published नहीं है. Same-plan renewal request होगा.",
+    "member.membership.noMemberships": "कोई membership नहीं",
+    "member.membership.pause": "Pause",
+    "member.membership.pauseConfirmBody": "{{date}} तक आपका access frozen रहेगा. उससे पहले कभी भी resume कर सकते हैं.",
+    "member.membership.pauseConfirmTitle": "Membership pause करें?",
+    "member.membership.pauseReason": "Member selected a membership pause date from mobile.",
+    "member.membership.pausedToast": "{{date}} तक paused.",
+    "member.membership.pausedUntil": "Membership {{date}} तक paused.",
+    "member.membership.paySecurely": "Securely pay करें",
+    "member.membership.paymentDocuments": "Payment documents",
+    "member.membership.paymentDocumentsBody": "Receipts और invoices नीचे हैं.",
+    "member.membership.plan": "Plan",
+    "member.membership.planSwitched": "Plan switch हो गया.",
+    "member.membership.receiptGenerated": "Receipt generated.",
+    "member.membership.receiptUnavailable": "Receipt unavailable",
+    "member.membership.renewMembership": "Membership renew करें",
+    "member.membership.renewalConfirmed": "Renewal confirmed.",
+    "member.membership.renewalConsequence": "Renewed membership payment service या gym desk से payment confirmation के बाद activate होती है.",
+    "member.membership.renewalFlowOpened": "इस membership के लिए renewal flow खोल दिया गया.",
+    "member.membership.renewalRequestSent": "Renewal request भेज दी गई.",
+    "member.membership.renewalSheetBody": "{{gym}} में same plan जारी रखें या दूसरा available option चुनें.",
+    "member.membership.renewalSummary": "Renewal summary",
+    "member.membership.resumed": "Membership resume हो गई.",
+    "member.membership.selectedPlan": "Selected plan",
+    "member.membership.selectPlanAccessibility": "{{plan}} चुनें",
+    "member.membership.starting": "Start हो रहा है...",
+    "member.membership.statusBelow": "Membership status नीचे है.",
+    "member.membership.subscriptionUpdated": "आपकी subscription update हो गई.",
+    "member.membership.summary": "{{active}} active · {{expiring}} expiring soon · {{total}} total",
+    "member.membership.switchNow": "अब switch करें",
+    "member.membership.title": "आपके plans",
+    "member.membership.update": "Membership update",
+    "member.membership.updating": "Update हो रहा है...",
+    "member.membership.validity": "Validity",
+    "member.membership.visits": "Visits",
+    "member.membership.yourGym": "आपका gym",
     "member.plan.assignedPlan": "असाइन किया गया प्लान",
     "member.plan.coachGuided": "कोच गाइडेड",
     "member.plan.couldNotLoadExercises": "एक्सरसाइज लोड नहीं हो सकीं",
