@@ -1115,6 +1115,61 @@ export type TranslationKey =
   | "reception.members.selectMultiple"
   | "reception.members.selectedCount"
   | "reception.members.title"
+  | "reception.orders.confirmPickedUpBody"
+  | "reception.orders.confirmPickedUpTitle"
+  | "reception.orders.done"
+  | "reception.orders.enterPickupCode"
+  | "reception.orders.fulfillmentQueue"
+  | "reception.orders.itemCount"
+  | "reception.orders.markPickedUp"
+  | "reception.orders.noPickupsBody"
+  | "reception.orders.pickupCode"
+  | "reception.orders.pickupVerification"
+  | "reception.orders.pickupVerificationBody"
+  | "reception.orders.ready"
+  | "reception.orders.thisMember"
+  | "reception.orders.title"
+  | "reception.orders.verifyPickupCode"
+  | "reception.payments.activeDesk"
+  | "reception.payments.amount"
+  | "reception.payments.amountInvalid"
+  | "reception.payments.amountReceived"
+  | "reception.payments.auditWarning"
+  | "reception.payments.collection"
+  | "reception.payments.collectionMode"
+  | "reception.payments.desk"
+  | "reception.payments.deskNote"
+  | "reception.payments.deskNotePlaceholder"
+  | "reception.payments.due"
+  | "reception.payments.dueAmount"
+  | "reception.payments.findMember"
+  | "reception.payments.invoice"
+  | "reception.payments.memberPayment"
+  | "reception.payments.membershipSelected"
+  | "reception.payments.missing"
+  | "reception.payments.mode"
+  | "reception.payments.modeBank"
+  | "reception.payments.modeCard"
+  | "reception.payments.modeCash"
+  | "reception.payments.modeManual"
+  | "reception.payments.modeUpi"
+  | "reception.payments.newPayment"
+  | "reception.payments.noContact"
+  | "reception.payments.noMembershipSelected"
+  | "reception.payments.noPlan"
+  | "reception.payments.recordPayment"
+  | "reception.payments.reference"
+  | "reception.payments.referencePlaceholder"
+  | "reception.payments.reviewConsequence"
+  | "reception.payments.reviewTitle"
+  | "reception.payments.searchPlaceholder"
+  | "reception.payments.selectMember"
+  | "reception.payments.selectMemberAccessibility"
+  | "reception.payments.selectMemberFirst"
+  | "reception.payments.staffNote"
+  | "reception.payments.subtitle"
+  | "reception.payments.verified"
+  | "reception.verification.title"
   | "owner.referrals.allowTrainerReferrals"
   | "owner.referrals.codeExpiryDays"
   | "owner.referrals.creditInr"
@@ -2375,6 +2430,61 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.members.selectMultiple": "Select multiple",
     "reception.members.selectedCount": "{{count}} members selected",
     "reception.members.title": "Members",
+    "reception.orders.confirmPickedUpBody": "{{name}} is marked as collected for {{amount}}.",
+    "reception.orders.confirmPickedUpTitle": "Mark order picked up?",
+    "reception.orders.done": "Done",
+    "reception.orders.enterPickupCode": "Enter pickup code",
+    "reception.orders.fulfillmentQueue": "Fulfillment Queue",
+    "reception.orders.itemCount": "{{count}} items",
+    "reception.orders.markPickedUp": "Mark picked up",
+    "reception.orders.noPickupsBody": "Paid shop orders ready for collection will appear here.",
+    "reception.orders.pickupCode": "Pickup code",
+    "reception.orders.pickupVerification": "Pickup Verification",
+    "reception.orders.pickupVerificationBody": "Match the code and member before giving out the order.",
+    "reception.orders.ready": "Ready",
+    "reception.orders.thisMember": "This member",
+    "reception.orders.title": "Orders",
+    "reception.orders.verifyPickupCode": "Verify Pickup Code",
+    "reception.payments.activeDesk": "Active desk",
+    "reception.payments.amount": "Amount",
+    "reception.payments.amountInvalid": "Enter an amount greater than 0.",
+    "reception.payments.amountReceived": "Amount received",
+    "reception.payments.auditWarning": "All offline payments are recorded with audit logs. Ensure payment is received before recording.",
+    "reception.payments.collection": "Payment collection",
+    "reception.payments.collectionMode": "Collection mode",
+    "reception.payments.desk": "Desk",
+    "reception.payments.deskNote": "Desk note",
+    "reception.payments.deskNotePlaceholder": "Anything finance should see",
+    "reception.payments.due": "Due",
+    "reception.payments.dueAmount": "{{amount}} due",
+    "reception.payments.findMember": "Find a member",
+    "reception.payments.invoice": "Invoice",
+    "reception.payments.memberPayment": "Reception member payment",
+    "reception.payments.membershipSelected": "{{status}} membership selected",
+    "reception.payments.missing": "Missing",
+    "reception.payments.mode": "Mode",
+    "reception.payments.modeBank": "Bank",
+    "reception.payments.modeCard": "Card",
+    "reception.payments.modeCash": "Cash",
+    "reception.payments.modeManual": "Manual",
+    "reception.payments.modeUpi": "Direct UPI",
+    "reception.payments.newPayment": "New Payment",
+    "reception.payments.noContact": "No contact",
+    "reception.payments.noMembershipSelected": "No membership selected",
+    "reception.payments.noPlan": "No plan",
+    "reception.payments.recordPayment": "Record Payment",
+    "reception.payments.reference": "Receipt or reference",
+    "reception.payments.referencePlaceholder": "UPI ref, bank UTR, card slip",
+    "reception.payments.reviewConsequence": "Only record this after cash, UPI, card, or bank transfer is actually received at the desk.",
+    "reception.payments.reviewTitle": "Desk payment review",
+    "reception.payments.searchPlaceholder": "Name, email, or phone",
+    "reception.payments.selectMember": "Select a member",
+    "reception.payments.selectMemberAccessibility": "Select {{name}}",
+    "reception.payments.selectMemberFirst": "Select member first",
+    "reception.payments.staffNote": "Staff note",
+    "reception.payments.subtitle": "Reception",
+    "reception.payments.verified": "Verified",
+    "reception.verification.title": "Verification",
     "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
     "owner.referrals.codeExpiryDays": "Code expiry (days)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -3634,6 +3744,61 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.members.selectMultiple": "Multiple select करें",
     "reception.members.selectedCount": "{{count}} members selected",
     "reception.members.title": "Members",
+    "reception.orders.confirmPickedUpBody": "{{name}} को {{amount}} के लिए collected mark किया जाएगा.",
+    "reception.orders.confirmPickedUpTitle": "Order picked up mark करें?",
+    "reception.orders.done": "Done",
+    "reception.orders.enterPickupCode": "Pickup code डालें",
+    "reception.orders.fulfillmentQueue": "Fulfillment Queue",
+    "reception.orders.itemCount": "{{count}} items",
+    "reception.orders.markPickedUp": "Picked up mark करें",
+    "reception.orders.noPickupsBody": "Collection के लिए ready paid shop orders यहां दिखेंगे.",
+    "reception.orders.pickupCode": "Pickup code",
+    "reception.orders.pickupVerification": "Pickup Verification",
+    "reception.orders.pickupVerificationBody": "Order देने से पहले code और member match करें.",
+    "reception.orders.ready": "Ready",
+    "reception.orders.thisMember": "यह member",
+    "reception.orders.title": "Orders",
+    "reception.orders.verifyPickupCode": "Pickup code verify करें",
+    "reception.payments.activeDesk": "Active desk",
+    "reception.payments.amount": "Amount",
+    "reception.payments.amountInvalid": "0 से बड़ा amount दर्ज करें.",
+    "reception.payments.amountReceived": "Amount received",
+    "reception.payments.auditWarning": "सभी offline payments audit logs के साथ record होते हैं. Record करने से पहले payment received होना सुनिश्चित करें.",
+    "reception.payments.collection": "Payment collection",
+    "reception.payments.collectionMode": "Collection mode",
+    "reception.payments.desk": "Desk",
+    "reception.payments.deskNote": "Desk note",
+    "reception.payments.deskNotePlaceholder": "Finance को जो दिखना चाहिए",
+    "reception.payments.due": "Due",
+    "reception.payments.dueAmount": "{{amount}} due",
+    "reception.payments.findMember": "Member ढूंढें",
+    "reception.payments.invoice": "Invoice",
+    "reception.payments.memberPayment": "Reception member payment",
+    "reception.payments.membershipSelected": "{{status}} membership selected",
+    "reception.payments.missing": "Missing",
+    "reception.payments.mode": "Mode",
+    "reception.payments.modeBank": "Bank",
+    "reception.payments.modeCard": "Card",
+    "reception.payments.modeCash": "Cash",
+    "reception.payments.modeManual": "Manual",
+    "reception.payments.modeUpi": "Direct UPI",
+    "reception.payments.newPayment": "New Payment",
+    "reception.payments.noContact": "No contact",
+    "reception.payments.noMembershipSelected": "No membership selected",
+    "reception.payments.noPlan": "No plan",
+    "reception.payments.recordPayment": "Payment record करें",
+    "reception.payments.reference": "Receipt या reference",
+    "reception.payments.referencePlaceholder": "UPI ref, bank UTR, card slip",
+    "reception.payments.reviewConsequence": "इसे तभी record करें जब cash, UPI, card या bank transfer desk पर सच में receive हो गया हो.",
+    "reception.payments.reviewTitle": "Desk payment review",
+    "reception.payments.searchPlaceholder": "Name, email, या phone",
+    "reception.payments.selectMember": "Member select करें",
+    "reception.payments.selectMemberAccessibility": "{{name}} select करें",
+    "reception.payments.selectMemberFirst": "पहले member select करें",
+    "reception.payments.staffNote": "Staff note",
+    "reception.payments.subtitle": "Reception",
+    "reception.payments.verified": "Verified",
+    "reception.verification.title": "Verification",
     "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
     "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
     "owner.referrals.creditInr": "Credit (₹)",

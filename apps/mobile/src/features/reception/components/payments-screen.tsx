@@ -5,12 +5,22 @@ import { MetricGrid } from "@/components/domain/metric-grid";
 import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, IconBubble, ListRow, MoneySummaryCard, Pill, PrimaryButton, SearchField, SectionHeader } from "@/components/primitives";
 import { formatInr, normalizeRupeeInput, titleCaseFromCode } from "@/lib/formatting";
+import { type TranslationKey, useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
-import { paymentModes } from "../constants";
+import { type DeskPaymentMode, paymentModes } from "../constants";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
+
+const paymentModeLabelKeys: Record<DeskPaymentMode, TranslationKey> = {
+  BANK_TRANSFER: "reception.payments.modeBank",
+  CARD: "reception.payments.modeCard",
+  CASH: "reception.payments.modeCash",
+  DIRECT_UPI: "reception.payments.modeUpi",
+  OTHER: "reception.payments.modeManual",
+};
 
 export function ReceptionPaymentsScreenBody() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const {
     amount,
     amountInvalid,
@@ -38,20 +48,21 @@ export function ReceptionPaymentsScreenBody() {
     setSelectedMemberId,
     showOwnerApprovalRequired,
   } = useReceptionWorkspace();
+  const selectedPaymentModeLabel = t(paymentModeLabelKeys[paymentMode] ?? "reception.payments.modeManual");
 
   return (
     <>
             <MetricGrid
               items={[
                 {
-                  label: "Amount",
+                  label: t("reception.payments.amount"),
                   value: formatInr(dueAmount),
                   tone: "neutral",
                   icon: "receipt-outline",
                 },
                 {
-                  label: "Mode",
-                  value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
+                  label: t("reception.payments.mode"),
+                  value: selectedPaymentModeLabel,
                   tone: "blue",
                   icon: "reader-outline",
                 },
@@ -60,7 +71,7 @@ export function ReceptionPaymentsScreenBody() {
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
               <FormField
                 testID="reception-payment-amount"
-                label="Amount received"
+                label={t("reception.payments.amountReceived")}
                 value={amount}
                 onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
                 keyboardType="numeric"
@@ -68,31 +79,31 @@ export function ReceptionPaymentsScreenBody() {
                 leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                 returnKeyType="next"
                 required
-                error={amountInvalid ? "Enter an amount greater than 0." : undefined}
+                error={amountInvalid ? t("reception.payments.amountInvalid") : undefined}
               />
             </Card>
             <MoneySummaryCard
-              title="Desk payment review"
+              title={t("reception.payments.reviewTitle")}
               amount={formatInr(Number.parseFloat(amount || "0") * 100 || dueAmount)}
               rows={[
-                { label: "Member", value: member?.name ?? "Select a member" },
-                { label: "Due", value: formatInr(dueAmount) },
+                { label: t("reception.members.memberTitle"), value: member?.name ?? t("reception.payments.selectMember") },
+                { label: t("reception.payments.due"), value: formatInr(dueAmount) },
                 {
-                  label: "Mode",
-                  value: paymentModes.find((mode) => mode.value === paymentMode)?.label ?? "Manual",
+                  label: t("reception.payments.mode"),
+                  value: selectedPaymentModeLabel,
                 },
-                { label: "Desk", value: memberRecord ? "Active desk" : "Select member first" },
+                { label: t("reception.payments.desk"), value: memberRecord ? t("reception.payments.activeDesk") : t("reception.payments.selectMemberFirst") },
               ]}
-              consequence="Only record this after cash, UPI, card, or bank transfer is actually received at the desk."
+              consequence={t("reception.payments.reviewConsequence")}
             />
             {!memberRecord ? (
               <Card variant="compact" padding={14} contentStyle={styles.stack}>
-                <SectionHeader title="Find a member" />
+                <SectionHeader title={t("reception.payments.findMember")} />
                 <SearchField
                   testID="reception-payment-member-search"
                   value={paymentMemberSearch}
                   onChangeText={setPaymentMemberSearch}
-                  placeholder="Name, email, or phone"
+                  placeholder={t("reception.payments.searchPlaceholder")}
                 />
                 {paymentMemberSearch.trim().length >= 2 ? (
                   <View style={styles.stack}>
@@ -113,7 +124,7 @@ export function ReceptionPaymentsScreenBody() {
                             setPaymentMemberSearch("");
                           }}
                           accessibilityRole="button"
-                          accessibilityLabel={`Select ${record.user?.name ?? "member"}`}
+                          accessibilityLabel={t("reception.payments.selectMemberAccessibility", { name: record.user?.name ?? t("reception.orders.thisMember") })}
                           style={({ pressed }) => [
                             styles.paymentPersonRow,
                             {
@@ -129,13 +140,13 @@ export function ReceptionPaymentsScreenBody() {
                               numberOfLines={1}
                               style={[styles.paymentMemberName, { color: palette.text.primary }]}
                             >
-                              {record.user?.name ?? "Member"}
+                              {record.user?.name ?? t("reception.members.memberTitle")}
                             </Text>
                             <Text
                               numberOfLines={1}
                               style={[styles.paymentMemberMeta, { color: palette.text.secondary }]}
                             >
-                              {record.user?.email ?? record.user?.phone ?? "No contact"}
+                              {record.user?.email ?? record.user?.phone ?? t("reception.payments.noContact")}
                             </Text>
                           </View>
                           <Pill
@@ -147,7 +158,7 @@ export function ReceptionPaymentsScreenBody() {
                           >
                             {record.activeSubscription
                               ? titleCaseFromCode(record.activeSubscription.status)
-                              : "No plan"}
+                              : t("reception.payments.noPlan")}
                           </Pill>
                         </Pressable>
                       ))}
@@ -156,32 +167,32 @@ export function ReceptionPaymentsScreenBody() {
               </Card>
             ) : null}
             <Card variant="compact" padding={14} contentStyle={styles.stack}>
-              <SectionHeader title="Payment collection" />
+              <SectionHeader title={t("reception.payments.collection")} />
               <ListRow
-                title="Member"
-                subtitle={member?.name ?? "Select a member"}
+                title={t("reception.members.memberTitle")}
+                subtitle={member?.name ?? t("reception.payments.selectMember")}
                 leading={<IconBubble icon="person-outline" tone="neutral" size={38} />}
                 trailing={
-                  <Pill tone={member ? "lime" : "amber"}>{member ? "Verified" : "Missing"}</Pill>
+                  <Pill tone={member ? "lime" : "amber"}>{member ? t("reception.payments.verified") : t("reception.payments.missing")}</Pill>
                 }
               />
               <ListRow
-                title="Invoice"
+                title={t("reception.payments.invoice")}
                 subtitle={
                   membership?.status
-                    ? `${titleCaseFromCode(membership.status)} membership selected`
-                    : "No membership selected"
+                    ? t("reception.payments.membershipSelected", { status: titleCaseFromCode(membership.status) })
+                    : t("reception.payments.noMembershipSelected")
                 }
                 leading={<IconBubble icon="document-text-outline" tone="neutral" size={38} />}
                 trailing={
                   <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
-                    {formatInr(dueAmount)} due
+                    {t("reception.payments.dueAmount", { amount: formatInr(dueAmount) })}
                   </Text>
                 }
               />
               <View style={styles.formStack}>
                 <Text style={[styles.fieldGroupLabel, { color: palette.text.tertiary }]}>
-                  Collection mode
+                  {t("reception.payments.collectionMode")}
                 </Text>
                 <View style={styles.paymentModeGrid}>
                   {paymentModes.map((mode) => {
@@ -227,14 +238,14 @@ export function ReceptionPaymentsScreenBody() {
                             },
                           ]}
                         >
-                          {mode.label}
+                          {t(paymentModeLabelKeys[mode.value])}
                         </Text>
                       </Pressable>
                     );
                   })}
                 </View>
                 <FormField
-                  label="Amount received"
+                  label={t("reception.payments.amountReceived")}
                   value={amount}
                   onChangeText={(value) => setAmount(normalizeRupeeInput(value))}
                   keyboardType="numeric"
@@ -242,33 +253,33 @@ export function ReceptionPaymentsScreenBody() {
                   leading={<Text style={{ color: palette.text.tertiary }}>₹</Text>}
                   returnKeyType="next"
                   required
-                  error={amountInvalid ? "Enter an amount greater than 0." : undefined}
+                  error={amountInvalid ? t("reception.payments.amountInvalid") : undefined}
                 />
                 <FormField
                   testID="reception-payment-reference"
-                  label="Receipt or reference"
+                  label={t("reception.payments.reference")}
                   value={referenceId}
                   onChangeText={setReferenceId}
                   optional
                   autoCapitalize="characters"
-                  placeholder="UPI ref, bank UTR, card slip"
+                  placeholder={t("reception.payments.referencePlaceholder")}
                 />
                 <FormField
                   testID="reception-payment-note"
-                  label="Desk note"
+                  label={t("reception.payments.deskNote")}
                   value={paymentNote}
                   onChangeText={setPaymentNote}
                   optional
                   multiline
-                  placeholder="Anything finance should see"
+                  placeholder={t("reception.payments.deskNotePlaceholder")}
                 />
               </View>
               <AuditWarning>
-                All offline payments are recorded with audit logs. Ensure payment is received before recording.
+                {t("reception.payments.auditWarning")}
               </AuditWarning>
               <FormField
                 testID="reception-payment-staff-note"
-                label="Staff note"
+                label={t("reception.payments.staffNote")}
                 value={paymentReason}
                 onChangeText={setPaymentReason}
                 required
@@ -282,7 +293,7 @@ export function ReceptionPaymentsScreenBody() {
                 onLongPress={!canRecordOfflinePayment ? showOwnerApprovalRequired : undefined}
                 onPress={recordPayment}
               >
-                Record Payment
+                {t("reception.payments.recordPayment")}
               </PrimaryButton>
               {paymentStatus ? (
                 <Text
