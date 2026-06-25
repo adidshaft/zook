@@ -66,6 +66,7 @@ function trustedWebOrigins() {
     origins.dashboard,
     "https://zookfit.in",
     "https://app.zookfit.in",
+    "https://dashboard.zookfit.in",
   ]);
 }
 

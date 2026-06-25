@@ -12,6 +12,9 @@ function isAllowedApiOrigin(origin: string | null) {
     process.env.NEXT_PUBLIC_WEB_URL,
     process.env.NEXT_PUBLIC_DASHBOARD_URL,
     process.env.NEXT_PUBLIC_MOBILE_WEB_URL,
+    "https://zookfit.in",
+    "https://app.zookfit.in",
+    "https://dashboard.zookfit.in",
   ]
     .flatMap((value) => (value ? value.split(",") : []))
     .map((value) => value.trim())

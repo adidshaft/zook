@@ -120,6 +120,20 @@ describe("mutation safety", () => {
     ).not.toThrow();
   });
 
+  it("allows intent-marked same-site writes from the dashboard subdomain to the app host", () => {
+    expect(() =>
+      assertSafeMutationRequest(
+        createMutationRequest({
+          origin: "https://dashboard.zookfit.in",
+          fetchSite: "same-site",
+          hasCookieSession: true,
+          nextOrigin: "https://app.zookfit.in",
+          intent: "mutate",
+        }) as never,
+      ),
+    ).not.toThrow();
+  });
+
   it("allows intent-marked same-site writes when the proxy origin is internal", () => {
     expect(() =>
       assertSafeMutationRequest(
