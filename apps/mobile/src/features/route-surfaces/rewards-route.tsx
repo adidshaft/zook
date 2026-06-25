@@ -21,6 +21,7 @@ import {
   type RewardEntry,
 } from "@/lib/domains/rewards/queries";
 import { formatInr, formatRelativeDate } from "@/lib/formatting";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 const MIN_WITHDRAWAL_PAISE = 100000; // ₹1,000
@@ -32,17 +33,18 @@ function statusTone(status: RewardEntry["status"]): PillTone {
   return "red"; // REVERSED
 }
 
-function statusLabel(status: RewardEntry["status"]) {
-  if (status === "PAYABLE") return "Ready";
-  if (status === "PAID") return "Paid";
-  if (status === "QUALIFIED") return "Clearing";
-  if (status === "PENDING") return "Pending";
-  if (status === "REQUESTED") return "Requested";
-  return "Reversed";
+function statusLabelKey(status: RewardEntry["status"]): TranslationKey {
+  if (status === "PAYABLE") return "rewards.status.ready";
+  if (status === "PAID") return "rewards.status.paid";
+  if (status === "QUALIFIED") return "rewards.status.clearing";
+  if (status === "PENDING") return "rewards.status.pending";
+  if (status === "REQUESTED") return "rewards.status.requested";
+  return "rewards.status.reversed";
 }
 
 export default function RewardsRoute() {
   const { palette } = useTheme();
+  const t = useT();
   const walletQuery = useRewardsWallet();
   const referralQuery = useGymReferral();
   const requestWithdrawal = useRequestWithdrawal();
@@ -63,7 +65,7 @@ export default function RewardsRoute() {
   function shareCode() {
     if (!referral) return;
     void Share.share({
-      message: `Run your gym on Zook — sign up with my link: ${referral.shareUrl}`,
+      message: t("rewards.shareMessage", { url: referral.shareUrl }),
       url: referral.shareUrl,
     });
   }
@@ -71,11 +73,11 @@ export default function RewardsRoute() {
   function confirmWithdraw() {
     if (!canWithdraw) return;
     Alert.alert(
-      "Request withdrawal?",
-      `We'll review and pay out ${formatInr(payable)} to you. You'll get a confirmation once it's sent.`,
+      t("rewards.requestWithdrawalTitle"),
+      t("rewards.requestWithdrawalBody", { amount: formatInr(payable) }),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Request", onPress: () => requestWithdrawal.mutate(payable) },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("rewards.request"), onPress: () => requestWithdrawal.mutate(payable) },
       ],
     );
   }
@@ -90,7 +92,7 @@ export default function RewardsRoute() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Refer & earn" subtitle="Bring new gyms to Zook and get rewarded." showBack />
+          <AppHeader title={t("rewards.title")} subtitle={t("rewards.subtitle")} showBack />
 
           {referralQuery.isError ? (
             <QueryErrorState error={referralQuery.error} onRetry={() => void referralQuery.refetch()} />
@@ -102,8 +104,8 @@ export default function RewardsRoute() {
               <IconBubble icon="gift" tone="lime" size={48} />
               <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
                 {isCash
-                  ? `Earn ${formatInr(referral.rewardPaise ?? 0)} per gym`
-                  : `Earn ${referral.rewardDays} free days per gym`}
+                  ? t("rewards.earnCashPerGym", { amount: formatInr(referral.rewardPaise ?? 0) })
+                  : t("rewards.earnDaysPerGym", { count: referral.rewardDays ?? 0 })}
               </Text>
               <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{referral.terms}</Text>
               <View style={styles.codeRow}>
@@ -117,7 +119,7 @@ export default function RewardsRoute() {
                 </View>
               </View>
               <ZookButton onPress={shareCode} icon="share-social-outline" size="lg">
-                Share your link
+                {t("rewards.shareYourLink")}
               </ZookButton>
             </Card>
           ) : null}
@@ -125,20 +127,20 @@ export default function RewardsRoute() {
           {/* Cash wallet (non-owners only) */}
           {isCash ? (
             <>
-              <SectionHeader title="Your earnings" />
+              <SectionHeader title={t("rewards.yourEarnings")} />
               {walletQuery.isError ? (
                 <QueryErrorState error={walletQuery.error} onRetry={() => void walletQuery.refetch()} />
               ) : null}
               <Card contentStyle={styles.walletCard}>
                 <View style={styles.balanceRow}>
                   <View style={styles.balanceMain}>
-                    <Text style={[styles.balanceLabel, { color: palette.text.secondary }]}>Ready to withdraw</Text>
+                    <Text style={[styles.balanceLabel, { color: palette.text.secondary }]}>{t("rewards.readyToWithdraw")}</Text>
                     <Text style={[styles.balanceValue, { color: palette.text.primary }]}>{formatInr(payable)}</Text>
                   </View>
                   <View style={styles.balanceSide}>
-                    <Text style={[styles.sideLabel, { color: palette.text.secondary }]}>Clearing</Text>
+                    <Text style={[styles.sideLabel, { color: palette.text.secondary }]}>{t("rewards.status.clearing")}</Text>
                     <Text style={[styles.sideValue, { color: palette.text.primary }]}>{formatInr(wallet?.pendingPaise ?? 0)}</Text>
-                    <Text style={[styles.sideLabel, { color: palette.text.secondary }]}>Lifetime</Text>
+                    <Text style={[styles.sideLabel, { color: palette.text.secondary }]}>{t("rewards.lifetime")}</Text>
                     <Text style={[styles.sideValue, { color: palette.text.primary }]}>{formatInr(wallet?.lifetimePaise ?? 0)}</Text>
                   </View>
                 </View>
@@ -146,18 +148,18 @@ export default function RewardsRoute() {
                   onPress={confirmWithdraw}
                   disabled={!canWithdraw}
                   busy={requestWithdrawal.isPending}
-                  busyLabel="Requesting..."
+                  busyLabel={t("rewards.requesting")}
                   icon="cash-outline"
                   variant={canWithdraw ? "primary" : "secondary"}
                 >
-                  {payable >= MIN_WITHDRAWAL_PAISE ? "Request withdrawal" : `Min ₹${MIN_WITHDRAWAL_PAISE / 100} to withdraw`}
+                  {payable >= MIN_WITHDRAWAL_PAISE ? t("rewards.requestWithdrawal") : t("rewards.minToWithdraw", { amount: `₹${MIN_WITHDRAWAL_PAISE / 100}` })}
                 </ZookButton>
               </Card>
 
-              <SectionHeader title="Activity" />
+              <SectionHeader title={t("rewards.activity")} />
               {wallet && wallet.entries.length === 0 ? (
                 <Card variant="compact">
-                  <EmptyState icon="gift-outline" title="No earnings yet" body="Share your link — you'll earn when a gym you refer subscribes." />
+                  <EmptyState icon="gift-outline" title={t("rewards.noEarningsYet")} body={t("rewards.noEarningsYetBody")} />
                 </Card>
               ) : null}
               <View style={styles.stack}>
@@ -176,7 +178,7 @@ export default function RewardsRoute() {
                       <Text style={[styles.entryAmount, { color: entry.amountPaise < 0 ? palette.text.secondary : palette.text.primary }]}>
                         {entry.amountPaise < 0 ? "-" : ""}{formatInr(Math.abs(entry.amountPaise))}
                       </Text>
-                      <Pill tone={statusTone(entry.status)}>{statusLabel(entry.status)}</Pill>
+                      <Pill tone={statusTone(entry.status)}>{t(statusLabelKey(entry.status))}</Pill>
                     </View>
                   </Card>
                 ))}
@@ -186,7 +188,7 @@ export default function RewardsRoute() {
             <Card variant="compact" contentStyle={styles.entryRow}>
               <IconBubble icon="time-outline" tone="blue" size={38} />
               <Text style={[styles.entryMeta, { color: palette.text.secondary, flex: 1 }]}>
-                Free Zook days are added to your subscription automatically once a referred gym subscribes.
+                {t("rewards.freeDaysAdded")}
               </Text>
             </Card>
           )}

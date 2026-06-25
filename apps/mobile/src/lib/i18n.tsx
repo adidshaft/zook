@@ -239,6 +239,31 @@ export type TranslationKey =
   | "settings.copy"
   | "settings.copied"
   | "settings.share"
+  | "rewards.activity"
+  | "rewards.earnCashPerGym"
+  | "rewards.earnDaysPerGym"
+  | "rewards.freeDaysAdded"
+  | "rewards.lifetime"
+  | "rewards.minToWithdraw"
+  | "rewards.noEarningsYet"
+  | "rewards.noEarningsYetBody"
+  | "rewards.readyToWithdraw"
+  | "rewards.request"
+  | "rewards.requesting"
+  | "rewards.requestWithdrawal"
+  | "rewards.requestWithdrawalBody"
+  | "rewards.requestWithdrawalTitle"
+  | "rewards.shareMessage"
+  | "rewards.shareYourLink"
+  | "rewards.status.clearing"
+  | "rewards.status.paid"
+  | "rewards.status.pending"
+  | "rewards.status.ready"
+  | "rewards.status.requested"
+  | "rewards.status.reversed"
+  | "rewards.subtitle"
+  | "rewards.title"
+  | "rewards.yourEarnings"
   | "branch.switch"
   | "branch.current"
   | "branch.allBranches"
@@ -986,6 +1011,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.copy": "Copy",
     "settings.copied": "Copied!",
     "settings.share": "Share",
+    "rewards.activity": "Activity",
+    "rewards.earnCashPerGym": "Earn {{amount}} per gym",
+    "rewards.earnDaysPerGym": "Earn {{count}} free days per gym",
+    "rewards.freeDaysAdded": "Free Zook days are added to your subscription automatically once a referred gym subscribes.",
+    "rewards.lifetime": "Lifetime",
+    "rewards.minToWithdraw": "Min {{amount}} to withdraw",
+    "rewards.noEarningsYet": "No earnings yet",
+    "rewards.noEarningsYetBody": "Share your link — you'll earn when a gym you refer subscribes.",
+    "rewards.readyToWithdraw": "Ready to withdraw",
+    "rewards.request": "Request",
+    "rewards.requesting": "Requesting...",
+    "rewards.requestWithdrawal": "Request withdrawal",
+    "rewards.requestWithdrawalBody":
+      "We'll review and pay out {{amount}} to you. You'll get a confirmation once it's sent.",
+    "rewards.requestWithdrawalTitle": "Request withdrawal?",
+    "rewards.shareMessage": "Run your gym on Zook — sign up with my link: {{url}}",
+    "rewards.shareYourLink": "Share your link",
+    "rewards.status.clearing": "Clearing",
+    "rewards.status.paid": "Paid",
+    "rewards.status.pending": "Pending",
+    "rewards.status.ready": "Ready",
+    "rewards.status.requested": "Requested",
+    "rewards.status.reversed": "Reversed",
+    "rewards.subtitle": "Bring new gyms to Zook and get rewarded.",
+    "rewards.title": "Refer & earn",
+    "rewards.yourEarnings": "Your earnings",
     "branch.switch": "Switch branch",
     "branch.current": "Current branch",
     "branch.allBranches": "All branches",
@@ -1741,6 +1792,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.copy": "कॉपी",
     "settings.copied": "कॉपी हो गया!",
     "settings.share": "शेयर",
+    "rewards.activity": "Activity",
+    "rewards.earnCashPerGym": "हर जिम पर {{amount}} कमाएं",
+    "rewards.earnDaysPerGym": "हर जिम पर {{count}} free days पाएं",
+    "rewards.freeDaysAdded": "Referred gym subscribe करने पर free Zook days आपकी subscription में अपने आप जुड़ जाते हैं.",
+    "rewards.lifetime": "Lifetime",
+    "rewards.minToWithdraw": "Withdraw के लिए minimum {{amount}}",
+    "rewards.noEarningsYet": "अभी कोई earning नहीं",
+    "rewards.noEarningsYetBody": "अपना link share करें — referred gym subscribe करने पर आप earn करेंगे.",
+    "rewards.readyToWithdraw": "Withdraw के लिए ready",
+    "rewards.request": "Request",
+    "rewards.requesting": "Request हो रहा है...",
+    "rewards.requestWithdrawal": "Withdrawal request करें",
+    "rewards.requestWithdrawalBody":
+      "हम review करके आपको {{amount}} payout करेंगे. भेजे जाने पर confirmation मिलेगा.",
+    "rewards.requestWithdrawalTitle": "Withdrawal request करें?",
+    "rewards.shareMessage": "Zook पर अपना gym चलाएं — मेरे link से sign up करें: {{url}}",
+    "rewards.shareYourLink": "अपना link share करें",
+    "rewards.status.clearing": "Clearing",
+    "rewards.status.paid": "Paid",
+    "rewards.status.pending": "Pending",
+    "rewards.status.ready": "Ready",
+    "rewards.status.requested": "Requested",
+    "rewards.status.reversed": "Reversed",
+    "rewards.subtitle": "नए gyms को Zook पर लाएं और reward पाएं.",
+    "rewards.title": "Refer & earn",
+    "rewards.yourEarnings": "आपकी earnings",
     "branch.switch": "ब्रांच बदलें",
     "branch.current": "मौजूदा ब्रांच",
     "branch.allBranches": "सभी ब्रांच",
