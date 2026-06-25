@@ -1449,6 +1449,28 @@ export type TranslationKey =
   | "owner.stock.reorderSubject"
   | "owner.stock.title"
   | "owner.stock.underThreshold"
+  | "owner.staff.admin"
+  | "owner.staff.changeRole"
+  | "owner.staff.email"
+  | "owner.staff.invite"
+  | "owner.staff.inviteStaffMember"
+  | "owner.staff.invited"
+  | "owner.staff.noStaffBody"
+  | "owner.staff.noStaffYet"
+  | "owner.staff.owner"
+  | "owner.staff.reception"
+  | "owner.staff.receptionWebHint"
+  | "owner.staff.remove"
+  | "owner.staff.removeBody"
+  | "owner.staff.removeTitle"
+  | "owner.staff.role"
+  | "owner.staff.sendInvite"
+  | "owner.staff.sending"
+  | "owner.staff.staffMember"
+  | "owner.staff.subtitle"
+  | "owner.staff.team"
+  | "owner.staff.title"
+  | "owner.staff.trainer"
   | "reception.desk.active"
   | "reception.desk.branch"
   | "reception.desk.coachName"
@@ -3315,6 +3337,28 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.reorderSubject": "Reorder {{name}}",
     "owner.stock.title": "Stock",
     "owner.stock.underThreshold": "Under threshold",
+    "owner.staff.admin": "Admin",
+    "owner.staff.changeRole": "Change role",
+    "owner.staff.email": "Email",
+    "owner.staff.invite": "Invite",
+    "owner.staff.inviteStaffMember": "Invite a staff member",
+    "owner.staff.invited": "Invited",
+    "owner.staff.noStaffBody": "Invite your first admin or trainer.",
+    "owner.staff.noStaffYet": "No staff yet",
+    "owner.staff.owner": "Owner",
+    "owner.staff.reception": "Reception",
+    "owner.staff.receptionWebHint": "Reception staff are assigned to a branch from the web dashboard.",
+    "owner.staff.remove": "Remove",
+    "owner.staff.removeBody": "{{name}} will lose access to this gym.",
+    "owner.staff.removeTitle": "Remove staff member?",
+    "owner.staff.role": "Role",
+    "owner.staff.sendInvite": "Send invite",
+    "owner.staff.sending": "Sending...",
+    "owner.staff.staffMember": "Staff member",
+    "owner.staff.subtitle": "Admins, trainers and reception at your gym.",
+    "owner.staff.team": "Team",
+    "owner.staff.title": "Staff",
+    "owner.staff.trainer": "Trainer",
     "reception.desk.active": "Active",
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",
@@ -5180,6 +5224,28 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.reorderSubject": "{{name}} reorder",
     "owner.stock.title": "Stock",
     "owner.stock.underThreshold": "Threshold से कम",
+    "owner.staff.admin": "Admin",
+    "owner.staff.changeRole": "Role बदलें",
+    "owner.staff.email": "Email",
+    "owner.staff.invite": "Invite",
+    "owner.staff.inviteStaffMember": "Staff member invite करें",
+    "owner.staff.invited": "Invited",
+    "owner.staff.noStaffBody": "अपना पहला admin या trainer invite करें.",
+    "owner.staff.noStaffYet": "अभी कोई staff नहीं",
+    "owner.staff.owner": "Owner",
+    "owner.staff.reception": "Reception",
+    "owner.staff.receptionWebHint": "Reception staff को web dashboard से branch assign किया जाता है.",
+    "owner.staff.remove": "Remove",
+    "owner.staff.removeBody": "{{name}} इस gym का access खो देगा.",
+    "owner.staff.removeTitle": "Staff member remove करें?",
+    "owner.staff.role": "Role",
+    "owner.staff.sendInvite": "Invite भेजें",
+    "owner.staff.sending": "भेजा जा रहा है...",
+    "owner.staff.staffMember": "Staff member",
+    "owner.staff.subtitle": "आपके gym के admins, trainers और reception.",
+    "owner.staff.team": "Team",
+    "owner.staff.title": "Staff",
+    "owner.staff.trainer": "Trainer",
     "reception.desk.active": "Active",
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",

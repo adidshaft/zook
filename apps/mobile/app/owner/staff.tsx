@@ -16,19 +16,8 @@ import {
 } from "@/components/primitives";
 import { useOrgStaff, type StaffAssignment, type StaffUser } from "@/lib/domains/owner/queries";
 import { useInviteStaff, useRemoveStaff, useUpdateStaffRole, type StaffRole } from "@/lib/domains/owner/mutations";
+import { useT } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
-
-const ASSIGNABLE_ROLES: Array<{ value: StaffRole; label: string }> = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "TRAINER", label: "Trainer" },
-];
-
-const ROLE_LABEL: Record<string, string> = {
-  OWNER: "Owner",
-  ADMIN: "Admin",
-  TRAINER: "Trainer",
-  RECEPTIONIST: "Reception",
-};
 
 function roleTone(role: string) {
   if (role === "OWNER") return "violet" as const;
@@ -39,6 +28,7 @@ function roleTone(role: string) {
 
 export default function OwnerStaff() {
   const { palette } = useTheme();
+  const t = useT();
   const staffQuery = useOrgStaff();
   const invite = useInviteStaff();
   const updateRole = useUpdateStaffRole();
@@ -51,6 +41,16 @@ export default function OwnerStaff() {
 
   const staff = staffQuery.data?.staff ?? [];
   const users = staffQuery.data?.users ?? [];
+  const assignableRoles: Array<{ value: StaffRole; label: string }> = [
+    { value: "ADMIN", label: t("owner.staff.admin") },
+    { value: "TRAINER", label: t("owner.staff.trainer") },
+  ];
+  const roleLabel: Record<string, string> = {
+    OWNER: t("owner.staff.owner"),
+    ADMIN: t("owner.staff.admin"),
+    TRAINER: t("owner.staff.trainer"),
+    RECEPTIONIST: t("owner.staff.reception"),
+  };
   const userById = new Map<string, StaffUser>(users.map((user) => [user.id, user]));
   const canSubmitInvite = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && !invite.isPending;
 
@@ -75,9 +75,9 @@ export default function OwnerStaff() {
   }
 
   function confirmRemove(row: StaffAssignment, name: string) {
-    Alert.alert("Remove staff member?", `${name} will lose access to this gym.`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => removeStaff.mutate(row.id) },
+    Alert.alert(t("owner.staff.removeTitle"), t("owner.staff.removeBody", { name }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("owner.staff.remove"), style: "destructive", onPress: () => removeStaff.mutate(row.id) },
     ]);
   }
 
@@ -91,24 +91,24 @@ export default function OwnerStaff() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Staff" subtitle="Admins, trainers and reception at your gym." showBack />
+          <AppHeader title={t("owner.staff.title")} subtitle={t("owner.staff.subtitle")} showBack />
 
           <SectionHeader
-            title="Team"
+            title={t("owner.staff.team")}
             action={
               <ZookButton size="sm" variant={showInvite ? "secondary" : "primary"} icon={showInvite ? "close" : "person-add"} onPress={() => setShowInvite((v) => !v)}>
-                {showInvite ? "Cancel" : "Invite"}
+                {showInvite ? t("common.cancel") : t("owner.staff.invite")}
               </ZookButton>
             }
           />
 
           {showInvite ? (
             <Card contentStyle={styles.formCard}>
-              <Text style={[styles.formTitle, { color: palette.text.primary }]}>Invite a staff member</Text>
-              <FormField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="coach@email.com" />
-              <Text style={[styles.label, { color: palette.text.secondary }]}>Role</Text>
+              <Text style={[styles.formTitle, { color: palette.text.primary }]}>{t("owner.staff.inviteStaffMember")}</Text>
+              <FormField label={t("owner.staff.email")} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="coach@email.com" />
+              <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.staff.role")}</Text>
               <View style={styles.chipWrap}>
-                {ASSIGNABLE_ROLES.map((option) => {
+                {assignableRoles.map((option) => {
                   const selected = inviteRole === option.value;
                   return (
                     <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setInviteRole(option.value)} style={[styles.chip, { borderColor: selected ? palette.accent.base : palette.border.default, backgroundColor: selected ? palette.surface.accentSoft : palette.surface.default }]}>
@@ -117,9 +117,9 @@ export default function OwnerStaff() {
                   );
                 })}
               </View>
-              <Text style={[styles.hint, { color: palette.text.tertiary }]}>Reception staff are assigned to a branch from the web dashboard.</Text>
-              <ZookButton onPress={submitInvite} disabled={!canSubmitInvite} busy={invite.isPending} busyLabel="Sending..." icon="mail-outline">
-                Send invite
+              <Text style={[styles.hint, { color: palette.text.tertiary }]}>{t("owner.staff.receptionWebHint")}</Text>
+              <ZookButton onPress={submitInvite} disabled={!canSubmitInvite} busy={invite.isPending} busyLabel={t("owner.staff.sending")} icon="mail-outline">
+                {t("owner.staff.sendInvite")}
               </ZookButton>
             </Card>
           ) : null}
@@ -129,14 +129,14 @@ export default function OwnerStaff() {
           ) : null}
           {!staffQuery.isLoading && staff.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="people-outline" title="No staff yet" body="Invite your first admin or trainer." />
+              <EmptyState icon="people-outline" title={t("owner.staff.noStaffYet")} body={t("owner.staff.noStaffBody")} />
             </Card>
           ) : null}
 
           <View style={styles.stack}>
             {staff.map((row) => {
               const user = userById.get(row.userId);
-              const name = user?.name ?? user?.email ?? "Staff member";
+              const name = user?.name ?? user?.email ?? t("owner.staff.staffMember");
               const isOwner = row.role === "OWNER";
               const editing = editingId === row.id;
               return (
@@ -148,15 +148,15 @@ export default function OwnerStaff() {
                       <Text style={[styles.staffMeta, { color: palette.text.secondary }]} numberOfLines={1}>{user?.email ?? ""}</Text>
                     </View>
                     <View style={styles.staffRight}>
-                      <Pill tone={roleTone(row.role)}>{ROLE_LABEL[row.role] ?? row.role}</Pill>
-                      {row.pending ? <Pill tone="neutral">Invited</Pill> : null}
+                      <Pill tone={roleTone(row.role)}>{roleLabel[row.role] ?? row.role}</Pill>
+                      {row.pending ? <Pill tone="neutral">{t("owner.staff.invited")}</Pill> : null}
                     </View>
                   </View>
                   {!isOwner ? (
                     <>
                       {editing ? (
                         <View style={styles.chipWrap}>
-                          {ASSIGNABLE_ROLES.map((option) => {
+                          {assignableRoles.map((option) => {
                             const selected = row.role === option.value;
                             return (
                               <Pressable
@@ -174,10 +174,10 @@ export default function OwnerStaff() {
                       ) : null}
                       <View style={styles.staffActions}>
                         <ZookButton size="sm" variant="secondary" icon="swap-horizontal-outline" onPress={() => setEditingId(editing ? null : row.id)} style={styles.staffAction}>
-                          {editing ? "Done" : "Change role"}
+                          {editing ? t("common.done") : t("owner.staff.changeRole")}
                         </ZookButton>
                         <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmRemove(row, name)} style={styles.staffAction}>
-                          Remove
+                          {t("owner.staff.remove")}
                         </ZookButton>
                       </View>
                     </>
