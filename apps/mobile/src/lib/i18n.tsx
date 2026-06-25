@@ -1412,6 +1412,54 @@ export type TranslationKey =
   | "owner.more.trainerPayouts"
   | "owner.more.trainerPayoutsSubtitle"
   | "owner.more.webControlRoom"
+  | "owner.billing.activeMembers"
+  | "owner.billing.activeMembersCopy"
+  | "owner.billing.aiImages"
+  | "owner.billing.aiText"
+  | "owner.billing.branches"
+  | "owner.billing.cancel"
+  | "owner.billing.cancelAtPeriodEnd"
+  | "owner.billing.cancelSubscriptionBody"
+  | "owner.billing.cancelSubscriptionTitle"
+  | "owner.billing.cancellationRequested"
+  | "owner.billing.couldNotCancelSubscription"
+  | "owner.billing.couldNotOpenPlanCheckout"
+  | "owner.billing.couldNotStartBillingSetup"
+  | "owner.billing.count"
+  | "owner.billing.counts"
+  | "owner.billing.currentPlanLimits"
+  | "owner.billing.currentPlanLimitsBody"
+  | "owner.billing.keep"
+  | "owner.billing.mandate"
+  | "owner.billing.member"
+  | "owner.billing.members"
+  | "owner.billing.messages"
+  | "owner.billing.month"
+  | "owner.billing.monthly"
+  | "owner.billing.nextBilling"
+  | "owner.billing.nextCharge"
+  | "owner.billing.noPaymentMandate"
+  | "owner.billing.notAvailable"
+  | "owner.billing.openingBillingSetup"
+  | "owner.billing.openingPlanCheckout"
+  | "owner.billing.planName"
+  | "owner.billing.platformReferral"
+  | "owner.billing.products"
+  | "owner.billing.referralPartnerships"
+  | "owner.billing.reports"
+  | "owner.billing.resumeSetup"
+  | "owner.billing.select"
+  | "owner.billing.setUpMandate"
+  | "owner.billing.sixMonths"
+  | "owner.billing.staff"
+  | "owner.billing.support"
+  | "owner.billing.title"
+  | "owner.billing.trainers"
+  | "owner.billing.trialEnds"
+  | "owner.billing.upgradePlan"
+  | "owner.billing.upgradePlanBody"
+  | "owner.billing.year"
+  | "owner.billing.yearly"
   | "owner.payouts.baseMonthly"
   | "owner.payouts.confirmBody"
   | "owner.payouts.confirmTitle"
@@ -3314,6 +3362,54 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "Review and pay your coaches",
     "owner.more.webControlRoom": "Web control room",
+    "owner.billing.activeMembers": "Active members",
+    "owner.billing.activeMembersCopy": "{{count}} {{noun}} {{verb}} toward your plan limits",
+    "owner.billing.aiImages": "AI images",
+    "owner.billing.aiText": "AI text",
+    "owner.billing.branches": "Branches",
+    "owner.billing.cancel": "Cancel",
+    "owner.billing.cancelAtPeriodEnd": "Cancel at period end",
+    "owner.billing.cancelSubscriptionBody": "The subscription is marked to cancel at period end.",
+    "owner.billing.cancelSubscriptionTitle": "Cancel subscription?",
+    "owner.billing.cancellationRequested": "Subscription cancellation requested.",
+    "owner.billing.couldNotCancelSubscription": "Could not cancel subscription.",
+    "owner.billing.couldNotOpenPlanCheckout": "Could not open plan checkout.",
+    "owner.billing.couldNotStartBillingSetup": "Could not start billing setup.",
+    "owner.billing.count": "count",
+    "owner.billing.counts": "counts",
+    "owner.billing.currentPlanLimits": "Current plan limits",
+    "owner.billing.currentPlanLimitsBody": "Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.",
+    "owner.billing.keep": "Keep",
+    "owner.billing.mandate": "Mandate",
+    "owner.billing.member": "member",
+    "owner.billing.members": "members",
+    "owner.billing.messages": "Messages",
+    "owner.billing.month": "month",
+    "owner.billing.monthly": "Monthly",
+    "owner.billing.nextBilling": "Next billing",
+    "owner.billing.nextCharge": "Next charge",
+    "owner.billing.noPaymentMandate": "No payment mandate is set up.",
+    "owner.billing.notAvailable": "Not available",
+    "owner.billing.openingBillingSetup": "Opening billing setup.",
+    "owner.billing.openingPlanCheckout": "Opening plan checkout.",
+    "owner.billing.planName": "{{name}} plan",
+    "owner.billing.platformReferral": "Platform referral",
+    "owner.billing.products": "Products",
+    "owner.billing.referralPartnerships": "{{count}} gym referral partnerships recorded.",
+    "owner.billing.reports": "Reports",
+    "owner.billing.resumeSetup": "Resume setup",
+    "owner.billing.select": "Select",
+    "owner.billing.setUpMandate": "Set up mandate",
+    "owner.billing.sixMonths": "6 months",
+    "owner.billing.staff": "Staff",
+    "owner.billing.support": "Support",
+    "owner.billing.title": "Billing",
+    "owner.billing.trainers": "Trainers",
+    "owner.billing.trialEnds": "Trial ends",
+    "owner.billing.upgradePlan": "Upgrade plan",
+    "owner.billing.upgradePlanBody": "Choose the same SaaS tiers used on web billing.",
+    "owner.billing.year": "year",
+    "owner.billing.yearly": "Yearly",
     "owner.payouts.baseMonthly": "Base / month (₹)",
     "owner.payouts.confirmBody": "Mark {{amount}} as paid for {{period}}.",
     "owner.payouts.confirmTitle": "Pay {{name}}?",
@@ -5215,6 +5311,54 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
     "owner.more.webControlRoom": "Web control room",
+    "owner.billing.activeMembers": "Active members",
+    "owner.billing.activeMembersCopy": "{{count}} {{noun}} plan limits में {{verb}} होते हैं",
+    "owner.billing.aiImages": "AI images",
+    "owner.billing.aiText": "AI text",
+    "owner.billing.branches": "Branches",
+    "owner.billing.cancel": "Cancel",
+    "owner.billing.cancelAtPeriodEnd": "Period end पर cancel करें",
+    "owner.billing.cancelSubscriptionBody": "Subscription period end पर cancel होने के लिए mark होगा.",
+    "owner.billing.cancelSubscriptionTitle": "Subscription cancel करें?",
+    "owner.billing.cancellationRequested": "Subscription cancellation requested.",
+    "owner.billing.couldNotCancelSubscription": "Subscription cancel नहीं हो सकी.",
+    "owner.billing.couldNotOpenPlanCheckout": "Plan checkout नहीं खुल सका.",
+    "owner.billing.couldNotStartBillingSetup": "Billing setup शुरू नहीं हो सका.",
+    "owner.billing.count": "count",
+    "owner.billing.counts": "count",
+    "owner.billing.currentPlanLimits": "Current plan limits",
+    "owner.billing.currentPlanLimitsBody": "Limits gym size, team size, branches, inventory, messages और AI usage पर लागू हैं.",
+    "owner.billing.keep": "Keep",
+    "owner.billing.mandate": "Mandate",
+    "owner.billing.member": "member",
+    "owner.billing.members": "members",
+    "owner.billing.messages": "Messages",
+    "owner.billing.month": "month",
+    "owner.billing.monthly": "Monthly",
+    "owner.billing.nextBilling": "Next billing",
+    "owner.billing.nextCharge": "Next charge",
+    "owner.billing.noPaymentMandate": "Payment mandate set up नहीं है.",
+    "owner.billing.notAvailable": "उपलब्ध नहीं",
+    "owner.billing.openingBillingSetup": "Billing setup खुल रहा है.",
+    "owner.billing.openingPlanCheckout": "Plan checkout खुल रहा है.",
+    "owner.billing.planName": "{{name}} plan",
+    "owner.billing.platformReferral": "Platform referral",
+    "owner.billing.products": "Products",
+    "owner.billing.referralPartnerships": "{{count}} gym referral partnerships recorded.",
+    "owner.billing.reports": "Reports",
+    "owner.billing.resumeSetup": "Setup resume करें",
+    "owner.billing.select": "Select",
+    "owner.billing.setUpMandate": "Mandate set up करें",
+    "owner.billing.sixMonths": "6 months",
+    "owner.billing.staff": "Staff",
+    "owner.billing.support": "Support",
+    "owner.billing.title": "Billing",
+    "owner.billing.trainers": "Trainers",
+    "owner.billing.trialEnds": "Trial ends",
+    "owner.billing.upgradePlan": "Plan upgrade करें",
+    "owner.billing.upgradePlanBody": "Web billing वाले same SaaS tiers चुनें.",
+    "owner.billing.year": "year",
+    "owner.billing.yearly": "Yearly",
     "owner.payouts.baseMonthly": "Base / month (₹)",
     "owner.payouts.confirmBody": "{{period}} के लिए {{amount}} paid mark करें.",
     "owner.payouts.confirmTitle": "{{name}} को pay करें?",

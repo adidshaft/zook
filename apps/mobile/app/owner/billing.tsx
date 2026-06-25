@@ -24,6 +24,7 @@ import {
 } from "@/lib/domains/owner";
 import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
 import { toWebUrl } from "@/lib/api";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -31,15 +32,15 @@ type Tier = "STARTER" | "GROWTH" | "PRO";
 type BillingCycle = "MONTHLY" | "SEMIANNUAL" | "YEARLY";
 
 const CYCLE_OPTIONS: BillingCycle[] = ["MONTHLY", "SEMIANNUAL", "YEARLY"];
-const CYCLE_LABEL: Record<BillingCycle, string> = {
-  MONTHLY: "Monthly",
-  SEMIANNUAL: "6 months",
-  YEARLY: "Yearly",
+const CYCLE_LABEL_KEY: Record<BillingCycle, TranslationKey> = {
+  MONTHLY: "owner.billing.monthly",
+  SEMIANNUAL: "owner.billing.sixMonths",
+  YEARLY: "owner.billing.yearly",
 };
-const CYCLE_PERIOD: Record<BillingCycle, string> = {
-  MONTHLY: "month",
-  SEMIANNUAL: "6 months",
-  YEARLY: "year",
+const CYCLE_PERIOD_KEY: Record<BillingCycle, TranslationKey> = {
+  MONTHLY: "owner.billing.month",
+  SEMIANNUAL: "owner.billing.sixMonths",
+  YEARLY: "owner.billing.year",
 };
 const CYCLE_PRICE_KEY: Record<BillingCycle, "monthly" | "semiannual" | "yearly"> = {
   MONTHLY: "monthly",
@@ -51,12 +52,6 @@ const tiers: Tier[] = ["STARTER", "GROWTH", "PRO"];
 
 function usageLine(used?: number, limit?: number | null) {
   return `${used ?? 0} / ${formatUsageLimit(limit)}`;
-}
-
-function activeMembersCopy(count: number) {
-  const noun = count === 1 ? "member" : "members";
-  const verb = count === 1 ? "counts" : "count";
-  return `${count} ${noun} ${verb} toward your plan limits`;
 }
 
 function toneForMandateStatus(status?: string | null) {
@@ -94,6 +89,7 @@ async function openCheckout(value?: string | null) {
 
 export default function OwnerBillingScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const billingQuery = useOwnerBillingSubscription();
   const createMandate = useCreateSaasBillingMandate();
   const upgrade = useUpgradeSaasSubscription();
@@ -107,12 +103,12 @@ export default function OwnerBillingScreen() {
   async function startMandateSetup() {
     try {
       const result = await createMandate.mutateAsync();
-      showToast({ tone: "success", message: "Opening billing setup." });
+      showToast({ tone: "success", message: t("owner.billing.openingBillingSetup") });
       await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
     } catch (error) {
       showToast({
         tone: "danger",
-        message: error instanceof Error ? error.message : "Could not start billing setup.",
+        message: error instanceof Error ? error.message : t("owner.billing.couldNotStartBillingSetup"),
       });
     }
   }
@@ -120,32 +116,32 @@ export default function OwnerBillingScreen() {
   async function upgradeTier(tier: Tier) {
     try {
       const result = await upgrade.mutateAsync({ tier, billingCycle: cycle });
-      showToast({ tone: "success", message: "Opening plan checkout." });
+      showToast({ tone: "success", message: t("owner.billing.openingPlanCheckout") });
       await openCheckout(result.checkoutUrl ?? result.mandate?.checkoutUrl);
     } catch (error) {
       showToast({
         tone: "danger",
-        message: error instanceof Error ? error.message : "Could not open plan checkout.",
+        message: error instanceof Error ? error.message : t("owner.billing.couldNotOpenPlanCheckout"),
       });
     }
   }
 
   function confirmCancel() {
-    Alert.alert("Cancel subscription?", "The subscription is marked to cancel at period end.", [
-      { text: "Keep", style: "cancel" },
+    Alert.alert(t("owner.billing.cancelSubscriptionTitle"), t("owner.billing.cancelSubscriptionBody"), [
+      { text: t("owner.billing.keep"), style: "cancel" },
       {
-        text: "Cancel",
+        text: t("owner.billing.cancel"),
         style: "destructive",
         onPress: () => {
           void cancel
             .mutateAsync()
             .then(() => {
-              showToast({ tone: "success", message: "Subscription cancellation requested." });
+              showToast({ tone: "success", message: t("owner.billing.cancellationRequested") });
             })
             .catch((error) => {
               showToast({
                 tone: "danger",
-                message: error instanceof Error ? error.message : "Could not cancel subscription.",
+                message: error instanceof Error ? error.message : t("owner.billing.couldNotCancelSubscription"),
               });
             });
         },
@@ -172,7 +168,7 @@ export default function OwnerBillingScreen() {
           }}
         >
           <ScreenHeader
-            title="Billing"
+            title={t("owner.billing.title")}
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
@@ -200,7 +196,7 @@ export default function OwnerBillingScreen() {
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
-                      {titleCaseFromCode(subscription?.tier)} plan
+                      {t("owner.billing.planName", { name: titleCaseFromCode(subscription?.tier) })}
                     </Text>
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
                       {titleCaseFromCode(subscription?.status)} · {titleCaseFromCode(subscription?.billingCycle)}
@@ -212,18 +208,22 @@ export default function OwnerBillingScreen() {
                   />
                 </View>
                 <ListRow
-                  title="Trial ends"
+                  title={t("owner.billing.trialEnds")}
                   subtitle={formatLongDate(subscription?.trialEndAt)}
                   leading={<Ionicons name="timer-outline" size={20} color={palette.accent.fill} />}
                 />
                 <ListRow
-                  title="Next billing"
+                  title={t("owner.billing.nextBilling")}
                   subtitle={formatLongDate(subscription?.nextBillingAt)}
                   leading={<Ionicons name="calendar-outline" size={20} color={palette.accent.fill} />}
                 />
                 <ListRow
-                  title="Active members"
-                  subtitle={activeMembersCopy(data.activeMemberCount)}
+                  title={t("owner.billing.activeMembers")}
+                  subtitle={t("owner.billing.activeMembersCopy", {
+                    count: data.activeMemberCount,
+                    noun: data.activeMemberCount === 1 ? t("owner.billing.member") : t("owner.billing.members"),
+                    verb: data.activeMemberCount === 1 ? t("owner.billing.counts") : t("owner.billing.count"),
+                  })}
                   leading={<Ionicons name="people-outline" size={20} color={palette.accent.fill} />}
                 />
               </Card>
@@ -231,11 +231,11 @@ export default function OwnerBillingScreen() {
               <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
-                    <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Mandate</Text>
+                    <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.mandate")}</Text>
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
                       {mandate
                         ? `${titleCaseFromCode(mandate.status)} · ${formatInr(mandate.amountPaise)}`
-                        : "No payment mandate is set up."}
+                        : t("owner.billing.noPaymentMandate")}
                     </Text>
                   </View>
                   <StatusChip
@@ -245,7 +245,7 @@ export default function OwnerBillingScreen() {
                 </View>
                 {mandate?.nextChargeAt ? (
                   <ListRow
-                    title="Next charge"
+                    title={t("owner.billing.nextCharge")}
                     subtitle={formatLongDate(mandate.nextChargeAt)}
                     leading={<Ionicons name="card-outline" size={20} color={palette.accent.fill} />}
                   />
@@ -256,16 +256,16 @@ export default function OwnerBillingScreen() {
                   disabled={busy}
                   onPress={startMandateSetup}
                 >
-                  {mandate?.checkoutUrl ? "Resume setup" : "Set up mandate"}
+                  {mandate?.checkoutUrl ? t("owner.billing.resumeSetup") : t("owner.billing.setUpMandate")}
                 </ZookButton>
               </Card>
 
               <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
-                    <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Upgrade plan</Text>
+                    <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.upgradePlan")}</Text>
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
-                      Choose the same SaaS tiers used on web billing.
+                      {t("owner.billing.upgradePlanBody")}
                     </Text>
                   </View>
                 </View>
@@ -277,7 +277,7 @@ export default function OwnerBillingScreen() {
                       variant={cycle === item ? "primary" : "secondary"}
                       onPress={() => setCycle(item)}
                     >
-                      {CYCLE_LABEL[item]}
+                      {t(CYCLE_LABEL_KEY[item])}
                     </ZookButton>
                   ))}
                 </View>
@@ -290,7 +290,7 @@ export default function OwnerBillingScreen() {
                           {titleCaseFromCode(tier)}
                         </Text>
                         <Text style={[styles.body, { color: palette.text.secondary }]}>
-                          {formatInr(price)} / {CYCLE_PERIOD[cycle]}
+                          {formatInr(price)} / {t(CYCLE_PERIOD_KEY[cycle])}
                         </Text>
                       </View>
                       <ZookButton
@@ -299,7 +299,7 @@ export default function OwnerBillingScreen() {
                         disabled={busy}
                         onPress={() => upgradeTier(tier)}
                       >
-                        Select
+                        {t("owner.billing.select")}
                       </ZookButton>
                     </View>
                   );
@@ -307,30 +307,30 @@ export default function OwnerBillingScreen() {
               </Card>
 
               <Card contentStyle={styles.stack}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Current plan limits</Text>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.currentPlanLimits")}</Text>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.
+                  {t("owner.billing.currentPlanLimitsBody")}
                 </Text>
                 <View style={styles.limitGrid}>
                   {[
-                    ["Members", usageLine(data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
-                    ["Branches", usageLine(data.usage?.branchCount, data.entitlements?.branchLimit)],
-                    ["Staff", usageLine(data.usage?.staffCount, data.entitlements?.staffLimit)],
-                    ["Trainers", usageLine(data.usage?.trainerCount, data.entitlements?.trainerLimit)],
-                    ["Products", usageLine(data.usage?.productCount, data.entitlements?.productLimit)],
+                    [t("owner.billing.members"), usageLine(data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
+                    [t("owner.billing.branches"), usageLine(data.usage?.branchCount, data.entitlements?.branchLimit)],
+                    [t("owner.billing.staff"), usageLine(data.usage?.staffCount, data.entitlements?.staffLimit)],
+                    [t("owner.billing.trainers"), usageLine(data.usage?.trainerCount, data.entitlements?.trainerLimit)],
+                    [t("owner.billing.products"), usageLine(data.usage?.productCount, data.entitlements?.productLimit)],
                     [
-                      "Messages",
+                      t("owner.billing.messages"),
                       usageLine(
                         data.usage?.notificationMonthlyCount,
                         data.entitlements?.notificationMonthlyLimit,
                       ),
                     ],
                     [
-                      "AI text",
+                      t("owner.billing.aiText"),
                       usageLine(data.usage?.aiTextMonthlyCount, data.entitlements?.aiTextMonthlyLimit),
                     ],
                     [
-                      "AI images",
+                      t("owner.billing.aiImages"),
                       usageLine(data.usage?.aiImageMonthlyCount, data.entitlements?.aiImageMonthlyLimit),
                     ],
                   ].map(([label, value]) => (
@@ -341,18 +341,20 @@ export default function OwnerBillingScreen() {
                   ))}
                 </View>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  Reports: {titleCaseFromCode(data.entitlements?.reports)} · Support:{" "}
+                  {t("owner.billing.reports")}: {titleCaseFromCode(data.entitlements?.reports)} · {t("owner.billing.support")}:{" "}
                   {titleCaseFromCode(data.entitlements?.support)}
                 </Text>
               </Card>
 
               <Card contentStyle={styles.stack}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Platform referral</Text>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.platformReferral")}</Text>
                 <Text selectable style={[styles.referralCode, { color: palette.text.primary }]}>
-                  {data.platformReferral?.code ?? "Not available"}
+                  {data.platformReferral?.code ?? t("owner.billing.notAvailable")}
                 </Text>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  {data.platformReferral?.referredCount ?? 0} gym referral partnerships recorded.
+                  {t("owner.billing.referralPartnerships", {
+                    count: data.platformReferral?.referredCount ?? 0,
+                  })}
                 </Text>
               </Card>
 
@@ -364,7 +366,7 @@ export default function OwnerBillingScreen() {
                   disabled={busy}
                   onPress={confirmCancel}
                 >
-                  Cancel at period end
+                  {t("owner.billing.cancelAtPeriodEnd")}
                 </ZookButton>
               ) : null}
             </>
