@@ -27,14 +27,11 @@ import {
 } from "@/lib/domains/trainer/queries";
 import type { PtPlanRecord, PtSubscriptionRecord } from "@/lib/domains/shared/types";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, layout, useTheme } from "@/lib/theme";
 
 type PaymentMode = "CASH" | "DIRECT_UPI" | "OTHER";
-const PAYMENT_MODES: Array<{ value: PaymentMode; label: string }> = [
-  { value: "CASH", label: "Cash" },
-  { value: "DIRECT_UPI", label: "UPI" },
-  { value: "OTHER", label: "Other" },
-];
+const PAYMENT_MODES: PaymentMode[] = ["CASH", "DIRECT_UPI", "OTHER"];
 
 function subscriptionTone(status: string) {
   const normalized = status.toUpperCase();
@@ -87,6 +84,7 @@ function ClientRow({
   onLogSession: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const active = sub.status.toUpperCase().includes("ACTIVE");
   const remaining = sub.remainingSessions ?? 0;
   const canLog = active && remaining > 0;
@@ -96,21 +94,21 @@ function ClientRow({
         <IconBubble icon="person-outline" tone="blue" size={40} />
         <View style={styles.clientCopy}>
           <Text style={[styles.clientName, { color: palette.text.primary }]} numberOfLines={1}>
-            {sub.memberName ?? "Client"}
+            {sub.memberName ?? t("trainer.pt.clientFallback")}
           </Text>
           <Text style={[styles.clientMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-            {sub.planName ?? "PT package"}
-            {sub.totalSessions ? ` · ${remaining}/${sub.totalSessions} left` : ""}
+            {sub.planName ?? t("trainer.pt.ptPackage")}
+            {sub.totalSessions ? ` · ${t("trainer.pt.sessionsLeftShort", { remaining, total: sub.totalSessions })}` : ""}
           </Text>
         </View>
         <Pill tone={subscriptionTone(sub.status)}>{titleCaseFromCode(sub.status)}</Pill>
       </View>
       {canLog ? (
-        <ZookButton size="sm" variant="secondary" icon="checkmark-done-outline" busy={logging} busyLabel="Logging..." onPress={onLogSession}>
-          Log session
+        <ZookButton size="sm" variant="secondary" icon="checkmark-done-outline" busy={logging} busyLabel={t("trainer.pt.logging")} onPress={onLogSession}>
+          {t("trainer.pt.logSession")}
         </ZookButton>
       ) : remaining <= 0 && sub.totalSessions ? (
-        <Text style={[styles.clientMeta, { color: palette.text.tertiary }]}>All sessions completed</Text>
+        <Text style={[styles.clientMeta, { color: palette.text.tertiary }]}>{t("trainer.pt.allSessionsCompleted")}</Text>
       ) : null}
     </View>
   );
@@ -126,23 +124,24 @@ function PendingRequestRow({
   onApprove: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <View style={styles.clientRow}>
       <View style={styles.clientTop}>
         <IconBubble icon="person-outline" tone="amber" size={40} />
         <View style={styles.clientCopy}>
           <Text style={[styles.clientName, { color: palette.text.primary }]} numberOfLines={1}>
-            {sub.memberName ?? "Member"}
+            {sub.memberName ?? t("more.fallbackName")}
           </Text>
           <Text style={[styles.clientMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-            {sub.planName ?? "PT package"}
+            {sub.planName ?? t("trainer.pt.ptPackage")}
             {sub.amountPaise ? ` · ${formatInr(sub.amountPaise)}` : ""}
           </Text>
         </View>
-        <Pill tone="amber">Pending</Pill>
+        <Pill tone="amber">{t("trainer.pt.pending")}</Pill>
       </View>
-      <ZookButton size="sm" variant="primary" icon="checkmark-outline" busy={approving} busyLabel="Approving..." onPress={onApprove}>
-        Approve
+      <ZookButton size="sm" variant="primary" icon="checkmark-outline" busy={approving} busyLabel={t("trainer.pt.approving")} onPress={onApprove}>
+        {t("trainer.pt.approve")}
       </ZookButton>
     </View>
   );
@@ -150,6 +149,7 @@ function PendingRequestRow({
 
 export default function TrainerPersonalTraining() {
   const { palette } = useTheme();
+  const t = useT();
   const plansQuery = useTrainerPtPlans();
   const subscriptionsQuery = useTrainerPtSubscriptions();
   const clientsQuery = useTrainerClients();
@@ -179,7 +179,7 @@ export default function TrainerPersonalTraining() {
     () =>
       (clientsQuery.data?.clients ?? []).map((client) => ({
         id: client.memberUserId as string,
-        name: (client.user?.name as string) ?? "Member",
+        name: (client.user?.name as string) ?? t("more.fallbackName"),
       })),
     [clientsQuery.data],
   );
@@ -241,10 +241,10 @@ export default function TrainerPersonalTraining() {
   }
 
   function confirmDeletePlan(plan: PtPlanRecord) {
-    Alert.alert("Remove package?", `${plan.name} will no longer be available to members.`, [
-      { text: "Keep", style: "cancel" },
+    Alert.alert(t("trainer.pt.removePackageTitle"), t("trainer.pt.removePackageBody", { name: plan.name }), [
+      { text: t("trainer.pt.keep"), style: "cancel" },
       {
-        text: "Remove",
+        text: t("trainer.pt.remove"),
         style: "destructive",
         onPress: () => deletePlan.mutate(plan.id),
       },
@@ -284,22 +284,22 @@ export default function TrainerPersonalTraining() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title="Personal Training" subtitle="Your own coaching packages and clients." showBack />
+          <AppHeader title={t("trainer.pt.title")} subtitle={t("trainer.pt.subtitle")} showBack />
 
           <View style={styles.statRow}>
             <Card variant="compact" contentStyle={styles.statCard}>
               <Text style={[styles.statValue, { color: palette.text.primary }]}>{activeClients}</Text>
-              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>PT clients</Text>
+              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>{t("trainer.pt.ptClients")}</Text>
             </Card>
             <Card variant="compact" contentStyle={styles.statCard}>
               <Text style={[styles.statValue, { color: palette.text.primary }]}>{plans.length}</Text>
-              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>Packages</Text>
+              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>{t("trainer.pt.packages")}</Text>
             </Card>
           </View>
 
           {pendingRequests.length > 0 ? (
             <>
-              <SectionHeader title="Pending requests" />
+              <SectionHeader title={t("trainer.pt.pendingRequests")} />
               <Card variant="compact" contentStyle={styles.clientsCard}>
                 {pendingRequests.map((sub, index) => (
                   <View key={sub.id}>
@@ -316,7 +316,7 @@ export default function TrainerPersonalTraining() {
           ) : null}
 
           <SectionHeader
-            title="Your PT clients"
+            title={t("trainer.pt.yourPtClients")}
             action={
               <ZookButton
                 size="sm"
@@ -325,43 +325,48 @@ export default function TrainerPersonalTraining() {
                 disabled={plans.length === 0}
                 onPress={() => setShowClientForm((current) => !current)}
               >
-                {showClientForm ? "Cancel" : "Add"}
+                {showClientForm ? t("common.cancel") : t("trainer.pt.add")}
               </ZookButton>
             }
           />
 
           {showClientForm ? (
             <Card contentStyle={styles.formCard}>
-              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>Member</Text>
+              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>{t("trainer.pt.member")}</Text>
               <View style={styles.chipWrap}>
                 {clientsQuery.isError ? (
                   <QueryErrorState
                     error={clientsQuery.error}
                     onRetry={() => void clientsQuery.refetch()}
-                    title="Could not load members"
+                    title={t("trainer.pt.couldNotLoadMembers")}
                   />
                 ) : members.length ? (
                   members.map((member) => (
                     <Chip key={member.id} label={member.name} selected={memberId === member.id} onPress={() => setMemberId(member.id)} />
                   ))
                 ) : (
-                  <Text style={[styles.clientMeta, { color: palette.text.tertiary }]}>No members available.</Text>
+                  <Text style={[styles.clientMeta, { color: palette.text.tertiary }]}>{t("trainer.pt.noMembersAvailable")}</Text>
                 )}
               </View>
-              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>Package</Text>
+              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>{t("trainer.pt.package")}</Text>
               <View style={styles.chipWrap}>
                 {plans.map((plan) => (
                   <Chip key={plan.id} label={`${plan.name} · ${formatInr(plan.pricePaise)}`} selected={planId === plan.id} onPress={() => setPlanId(plan.id)} />
                 ))}
               </View>
-              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>Payment</Text>
+              <Text style={[styles.formLabel, { color: palette.text.secondary }]}>{t("trainer.pt.payment")}</Text>
               <View style={styles.chipWrap}>
                 {PAYMENT_MODES.map((mode) => (
-                  <Chip key={mode.value} label={mode.label} selected={paymentMode === mode.value} onPress={() => setPaymentMode(mode.value)} />
+                  <Chip
+                    key={mode}
+                    label={t(`trainer.pt.paymentMode.${mode}`)}
+                    selected={paymentMode === mode}
+                    onPress={() => setPaymentMode(mode)}
+                  />
                 ))}
               </View>
-              <ZookButton onPress={submitClient} disabled={!canSubmitClient} busy={recordClient.isPending} busyLabel="Adding..." icon="person-add-outline">
-                {selectedPlan ? `Record client · ${formatInr(selectedPlan.pricePaise)}` : "Record client"}
+              <ZookButton onPress={submitClient} disabled={!canSubmitClient} busy={recordClient.isPending} busyLabel={t("trainer.pt.adding")} icon="person-add-outline">
+                {selectedPlan ? t("trainer.pt.recordClientWithPrice", { price: formatInr(selectedPlan.pricePaise) }) : t("trainer.pt.recordClient")}
               </ZookButton>
             </Card>
           ) : null}
@@ -372,7 +377,7 @@ export default function TrainerPersonalTraining() {
 
           <Card variant="compact" contentStyle={styles.clientsCard}>
             {confirmedSubscriptions.length === 0 && !subscriptionsQuery.isLoading ? (
-              <EmptyState icon="people-outline" title="No PT clients yet" body="Add a client to start coaching them one-on-one." />
+              <EmptyState icon="people-outline" title={t("trainer.pt.noPtClientsYet")} body={t("trainer.pt.noPtClientsYetBody")} />
             ) : (
               confirmedSubscriptions.map((sub, index) => (
                 <View key={sub.id}>
@@ -384,30 +389,30 @@ export default function TrainerPersonalTraining() {
           </Card>
 
           <SectionHeader
-            title="Your packages"
+            title={t("trainer.pt.yourPackages")}
             action={
               <ZookButton size="sm" variant={showPackageForm ? "secondary" : "primary"} icon={showPackageForm ? "close" : "add"} onPress={() => showPackageForm ? resetPackageForm() : setShowPackageForm(true)}>
-                {showPackageForm ? "Cancel" : "New"}
+                {showPackageForm ? t("common.cancel") : t("trainer.pt.new")}
               </ZookButton>
             }
           />
 
           {showPackageForm ? (
             <Card contentStyle={styles.formCard}>
-              <FormField label="Package name" value={name} onChangeText={setName} placeholder="1-on-1 Strength · 12 sessions" />
+              <FormField label={t("trainer.pt.packageName")} value={name} onChangeText={setName} placeholder={t("trainer.pt.packageNamePlaceholder")} />
               <View style={styles.formRow}>
-                <FormField label="Sessions" value={sessions} onChangeText={setSessions} keyboardType="number-pad" placeholder="12" style={styles.formField} />
-                <FormField label="Valid days" value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="45" style={styles.formField} />
+                <FormField label={t("trainer.pt.sessions")} value={sessions} onChangeText={setSessions} keyboardType="number-pad" placeholder="12" style={styles.formField} />
+                <FormField label={t("trainer.pt.validDays")} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="45" style={styles.formField} />
               </View>
-              <FormField label="Price (₹)" value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="12000" />
+              <FormField label={t("trainer.pt.priceInr")} value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="12000" />
               <ZookButton
                 onPress={submitPackage}
                 disabled={!canSubmitPackage}
                 busy={createPlan.isPending || updatePlan.isPending}
-                busyLabel={editingPlanId ? "Saving..." : "Creating..."}
+                busyLabel={editingPlanId ? t("settings.saving") : t("trainer.pt.creating")}
                 icon="pricetag-outline"
               >
-                {editingPlanId ? "Save package" : "Create package"}
+                {editingPlanId ? t("trainer.pt.savePackage") : t("trainer.pt.createPackage")}
               </ZookButton>
             </Card>
           ) : null}
@@ -418,7 +423,7 @@ export default function TrainerPersonalTraining() {
 
           {!plansQuery.isLoading && plans.length === 0 && !showPackageForm ? (
             <Card variant="compact">
-              <EmptyState icon="pricetag-outline" title="No packages yet" body="Create a PT package, then add clients to it." />
+              <EmptyState icon="pricetag-outline" title={t("trainer.pt.noPackagesYet")} body={t("trainer.pt.noPackagesYetBody")} />
             </Card>
           ) : null}
 
@@ -430,7 +435,10 @@ export default function TrainerPersonalTraining() {
                   <View style={styles.planCopy}>
                     <Text style={[styles.planName, { color: palette.text.primary }]}>{plan.name}</Text>
                     <Text style={[styles.planMeta, { color: palette.text.secondary }]}>
-                      {[plan.sessionCount ? `${plan.sessionCount} sessions` : null, plan.durationDays ? `${plan.durationDays} days` : null].filter(Boolean).join(" · ")}
+                      {[
+                        plan.sessionCount ? t("trainer.pt.sessionsCount", { count: plan.sessionCount }) : null,
+                        plan.durationDays ? t("trainer.pt.daysCount", { count: plan.durationDays }) : null,
+                      ].filter(Boolean).join(" · ")}
                     </Text>
                   </View>
                   <Text style={[styles.planPrice, { color: palette.text.primary }]}>{formatInr(plan.pricePaise)}</Text>
@@ -440,17 +448,17 @@ export default function TrainerPersonalTraining() {
                 ) : null}
                 <View style={styles.planActions}>
                   <ZookButton size="sm" variant="secondary" icon="pencil-outline" onPress={() => openEditPlan(plan)}>
-                    Edit
+                    {t("trainer.pt.edit")}
                   </ZookButton>
                   <ZookButton
                     size="sm"
                     variant="secondary"
                     icon="trash-outline"
                     busy={deletePlan.isPending && deletePlan.variables === plan.id}
-                    busyLabel="Removing..."
+                    busyLabel={t("trainer.pt.removing")}
                     onPress={() => confirmDeletePlan(plan)}
                   >
-                    Remove
+                    {t("trainer.pt.remove")}
                   </ZookButton>
                 </View>
               </Card>

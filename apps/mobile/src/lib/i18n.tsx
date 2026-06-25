@@ -415,7 +415,56 @@ export type TranslationKey =
   | "trainer.home.referGymSubtitle"
   | "trainer.home.today"
   | "trainer.home.trainerFallback"
-  | "trainer.home.trainerPlanningQueue";
+  | "trainer.home.trainerPlanningQueue"
+  | "trainer.pt.add"
+  | "trainer.pt.adding"
+  | "trainer.pt.allSessionsCompleted"
+  | "trainer.pt.approve"
+  | "trainer.pt.approving"
+  | "trainer.pt.couldNotLoadMembers"
+  | "trainer.pt.createPackage"
+  | "trainer.pt.creating"
+  | "trainer.pt.clientFallback"
+  | "trainer.pt.daysCount"
+  | "trainer.pt.edit"
+  | "trainer.pt.keep"
+  | "trainer.pt.logSession"
+  | "trainer.pt.logging"
+  | "trainer.pt.member"
+  | "trainer.pt.new"
+  | "trainer.pt.noMembersAvailable"
+  | "trainer.pt.noPackagesYet"
+  | "trainer.pt.noPackagesYetBody"
+  | "trainer.pt.noPtClientsYet"
+  | "trainer.pt.noPtClientsYetBody"
+  | "trainer.pt.package"
+  | "trainer.pt.packageName"
+  | "trainer.pt.packageNamePlaceholder"
+  | "trainer.pt.packages"
+  | "trainer.pt.payment"
+  | "trainer.pt.paymentMode.CASH"
+  | "trainer.pt.paymentMode.DIRECT_UPI"
+  | "trainer.pt.paymentMode.OTHER"
+  | "trainer.pt.pending"
+  | "trainer.pt.pendingRequests"
+  | "trainer.pt.priceInr"
+  | "trainer.pt.ptClients"
+  | "trainer.pt.ptPackage"
+  | "trainer.pt.recordClient"
+  | "trainer.pt.recordClientWithPrice"
+  | "trainer.pt.remove"
+  | "trainer.pt.removePackageBody"
+  | "trainer.pt.removePackageTitle"
+  | "trainer.pt.removing"
+  | "trainer.pt.savePackage"
+  | "trainer.pt.sessions"
+  | "trainer.pt.sessionsCount"
+  | "trainer.pt.sessionsLeftShort"
+  | "trainer.pt.subtitle"
+  | "trainer.pt.title"
+  | "trainer.pt.validDays"
+  | "trainer.pt.yourPackages"
+  | "trainer.pt.yourPtClients";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -831,6 +880,55 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.today": "Today",
     "trainer.home.trainerFallback": "Trainer",
     "trainer.home.trainerPlanningQueue": "Trainer planning queue",
+    "trainer.pt.add": "Add",
+    "trainer.pt.adding": "Adding...",
+    "trainer.pt.allSessionsCompleted": "All sessions completed",
+    "trainer.pt.approve": "Approve",
+    "trainer.pt.approving": "Approving...",
+    "trainer.pt.couldNotLoadMembers": "Could not load members",
+    "trainer.pt.createPackage": "Create package",
+    "trainer.pt.creating": "Creating...",
+    "trainer.pt.clientFallback": "Client",
+    "trainer.pt.daysCount": "{{count}} days",
+    "trainer.pt.edit": "Edit",
+    "trainer.pt.keep": "Keep",
+    "trainer.pt.logSession": "Log session",
+    "trainer.pt.logging": "Logging...",
+    "trainer.pt.member": "Member",
+    "trainer.pt.new": "New",
+    "trainer.pt.noMembersAvailable": "No members available.",
+    "trainer.pt.noPackagesYet": "No packages yet",
+    "trainer.pt.noPackagesYetBody": "Create a PT package, then add clients to it.",
+    "trainer.pt.noPtClientsYet": "No PT clients yet",
+    "trainer.pt.noPtClientsYetBody": "Add a client to start coaching them one-on-one.",
+    "trainer.pt.package": "Package",
+    "trainer.pt.packageName": "Package name",
+    "trainer.pt.packageNamePlaceholder": "1-on-1 Strength · 12 sessions",
+    "trainer.pt.packages": "Packages",
+    "trainer.pt.payment": "Payment",
+    "trainer.pt.paymentMode.CASH": "Cash",
+    "trainer.pt.paymentMode.DIRECT_UPI": "UPI",
+    "trainer.pt.paymentMode.OTHER": "Other",
+    "trainer.pt.pending": "Pending",
+    "trainer.pt.pendingRequests": "Pending requests",
+    "trainer.pt.priceInr": "Price (₹)",
+    "trainer.pt.ptClients": "PT clients",
+    "trainer.pt.ptPackage": "PT package",
+    "trainer.pt.recordClient": "Record client",
+    "trainer.pt.recordClientWithPrice": "Record client · {{price}}",
+    "trainer.pt.remove": "Remove",
+    "trainer.pt.removePackageBody": "{{name}} will no longer be available to members.",
+    "trainer.pt.removePackageTitle": "Remove package?",
+    "trainer.pt.removing": "Removing...",
+    "trainer.pt.savePackage": "Save package",
+    "trainer.pt.sessions": "Sessions",
+    "trainer.pt.sessionsCount": "{{count}} sessions",
+    "trainer.pt.sessionsLeftShort": "{{remaining}}/{{total}} left",
+    "trainer.pt.subtitle": "Your own coaching packages and clients.",
+    "trainer.pt.title": "Personal Training",
+    "trainer.pt.validDays": "Valid days",
+    "trainer.pt.yourPackages": "Your packages",
+    "trainer.pt.yourPtClients": "Your PT clients",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -1245,6 +1343,55 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.today": "आज",
     "trainer.home.trainerFallback": "ट्रेनर",
     "trainer.home.trainerPlanningQueue": "ट्रेनर प्लानिंग क्यू",
+    "trainer.pt.add": "जोड़ें",
+    "trainer.pt.adding": "जोड़ा जा रहा है...",
+    "trainer.pt.allSessionsCompleted": "सभी सेशन पूरे",
+    "trainer.pt.approve": "मंजूर करें",
+    "trainer.pt.approving": "मंजूर हो रहा है...",
+    "trainer.pt.couldNotLoadMembers": "मेंबर लोड नहीं हो सके",
+    "trainer.pt.createPackage": "पैकेज बनाएं",
+    "trainer.pt.creating": "बन रहा है...",
+    "trainer.pt.clientFallback": "क्लाइंट",
+    "trainer.pt.daysCount": "{{count}} दिन",
+    "trainer.pt.edit": "एडिट",
+    "trainer.pt.keep": "रखें",
+    "trainer.pt.logSession": "सेशन लॉग करें",
+    "trainer.pt.logging": "लॉग हो रहा है...",
+    "trainer.pt.member": "मेंबर",
+    "trainer.pt.new": "नया",
+    "trainer.pt.noMembersAvailable": "कोई मेंबर उपलब्ध नहीं.",
+    "trainer.pt.noPackagesYet": "अभी कोई पैकेज नहीं",
+    "trainer.pt.noPackagesYetBody": "PT पैकेज बनाएं, फिर उसमें क्लाइंट जोड़ें.",
+    "trainer.pt.noPtClientsYet": "अभी कोई PT क्लाइंट नहीं",
+    "trainer.pt.noPtClientsYetBody": "वन-ऑन-वन कोचिंग शुरू करने के लिए क्लाइंट जोड़ें.",
+    "trainer.pt.package": "पैकेज",
+    "trainer.pt.packageName": "पैकेज नाम",
+    "trainer.pt.packageNamePlaceholder": "1-on-1 Strength · 12 sessions",
+    "trainer.pt.packages": "पैकेज",
+    "trainer.pt.payment": "पेमेंट",
+    "trainer.pt.paymentMode.CASH": "कैश",
+    "trainer.pt.paymentMode.DIRECT_UPI": "UPI",
+    "trainer.pt.paymentMode.OTHER": "अन्य",
+    "trainer.pt.pending": "पेंडिंग",
+    "trainer.pt.pendingRequests": "पेंडिंग अनुरोध",
+    "trainer.pt.priceInr": "कीमत (₹)",
+    "trainer.pt.ptClients": "PT क्लाइंट",
+    "trainer.pt.ptPackage": "PT पैकेज",
+    "trainer.pt.recordClient": "क्लाइंट रिकॉर्ड करें",
+    "trainer.pt.recordClientWithPrice": "क्लाइंट रिकॉर्ड करें · {{price}}",
+    "trainer.pt.remove": "हटाएं",
+    "trainer.pt.removePackageBody": "{{name}} अब मेंबरों के लिए उपलब्ध नहीं रहेगा.",
+    "trainer.pt.removePackageTitle": "पैकेज हटाएं?",
+    "trainer.pt.removing": "हटाया जा रहा है...",
+    "trainer.pt.savePackage": "पैकेज सेव करें",
+    "trainer.pt.sessions": "सेशन",
+    "trainer.pt.sessionsCount": "{{count}} सेशन",
+    "trainer.pt.sessionsLeftShort": "{{remaining}}/{{total}} बाकी",
+    "trainer.pt.subtitle": "आपके कोचिंग पैकेज और क्लाइंट.",
+    "trainer.pt.title": "पर्सनल ट्रेनिंग",
+    "trainer.pt.validDays": "मान्य दिन",
+    "trainer.pt.yourPackages": "आपके पैकेज",
+    "trainer.pt.yourPtClients": "आपके PT क्लाइंट",
   },
 };
 
