@@ -16,6 +16,7 @@ import {
 import { useCancelEnrollment, useClassDetail, useEnrollInClass } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { formatInr, formatTime } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 import {
   classDayHeading,
@@ -23,22 +24,24 @@ import {
   classTypeVisual,
 } from "@/features/member/classes/class-display";
 
-function statusPill(entry: MemberClassRecord) {
-  if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
+function statusPill(entry: MemberClassRecord, t: ReturnType<typeof useT>) {
+  if (entry.myEnrollmentStatus === "confirmed") return { label: t("member.classDetail.booked"), tone: "lime" as const };
   if (entry.myEnrollmentStatus === "pending_payment")
-    return { label: "Payment due", tone: "amber" as const };
+    return { label: t("member.classDetail.paymentDue"), tone: "amber" as const };
   if (entry.myEnrollmentStatus === "waitlisted")
-    return { label: "Waitlisted", tone: "amber" as const };
-  if (entry.remainingCapacity <= 0) return { label: "Full", tone: "red" as const };
+    return { label: t("member.classDetail.waitlisted"), tone: "amber" as const };
+  if (entry.remainingCapacity <= 0) return { label: t("member.classDetail.full"), tone: "red" as const };
   if (entry.remainingCapacity <= 3)
-    return { label: `${entry.remainingCapacity} left`, tone: "amber" as const };
-  return { label: `${entry.remainingCapacity} spots`, tone: "neutral" as const };
+    return { label: t("member.classDetail.left", { count: entry.remainingCapacity }), tone: "amber" as const };
+  return { label: t("member.classDetail.spots", { count: entry.remainingCapacity }), tone: "neutral" as const };
 }
 
-function bookingLabel(entry: MemberClassRecord) {
-  if (entry.myEnrollmentStatus === "pending_payment") return "Continue payment";
-  if (entry.remainingCapacity <= 0) return "Join waitlist";
-  return entry.pricePaise && entry.pricePaise > 0 ? `Book · ${formatInr(entry.pricePaise)}` : "Book class";
+function bookingLabel(entry: MemberClassRecord, t: ReturnType<typeof useT>) {
+  if (entry.myEnrollmentStatus === "pending_payment") return t("member.classDetail.continuePayment");
+  if (entry.remainingCapacity <= 0) return t("member.classDetail.joinWaitlist");
+  return entry.pricePaise && entry.pricePaise > 0
+    ? t("member.classDetail.bookWithPrice", { price: formatInr(entry.pricePaise) })
+    : t("member.classDetail.bookClass");
 }
 
 function ClassDetailSkeleton() {
@@ -56,6 +59,7 @@ export default function MemberClassDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const classId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { palette, mode } = useTheme();
+  const t = useT();
   const classQuery = useClassDetail(classId);
   const enrollMutation = useEnrollInClass();
   const cancelMutation = useCancelEnrollment();
@@ -85,7 +89,7 @@ export default function MemberClassDetailScreen() {
   }
 
   const visual = entry ? classTypeVisual(entry.classType) : null;
-  const pill = entry ? statusPill(entry) : null;
+  const pill = entry ? statusPill(entry, t) : null;
   const booked = entry?.myEnrollmentStatus === "confirmed";
   const waitlisted = entry?.myEnrollmentStatus === "waitlisted";
   const busy = Boolean(entry && enrollMutation.isPending && enrollMutation.variables?.classId === entry.id);
@@ -111,8 +115,8 @@ export default function MemberClassDetailScreen() {
           }
         >
           <AppHeader
-            title={entry?.name ?? "Class"}
-            subtitle={entry ? `${classDayHeading(entry.startTime)} · ${formatTime(entry.startTime)}` : "Class details"}
+            title={entry?.name ?? t("member.classDetail.classFallback")}
+            subtitle={entry ? `${classDayHeading(entry.startTime)} · ${formatTime(entry.startTime)}` : t("member.classDetail.classDetails")}
             showBack
           />
 
@@ -126,7 +130,7 @@ export default function MemberClassDetailScreen() {
 
           {!classQuery.isLoading && !classQuery.isError && !entry ? (
             <Card variant="compact">
-              <EmptyState icon="calendar-outline" title="Class not found" />
+              <EmptyState icon="calendar-outline" title={t("member.classDetail.notFound")} />
             </Card>
           ) : null}
 
@@ -148,7 +152,7 @@ export default function MemberClassDetailScreen() {
                   {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
                 </Text>
                 <Text style={[styles.meta, { color: palette.text.tertiary }]}>
-                  {[entry.classType, entry.trainerName ? `Coach ${entry.trainerName}` : null, entry.branchName]
+                  {[entry.classType, entry.trainerName ? t("member.classDetail.coachName", { name: entry.trainerName }) : null, entry.branchName]
                     .filter(Boolean)
                     .join(" · ")}
                 </Text>
@@ -157,7 +161,7 @@ export default function MemberClassDetailScreen() {
                 <Text style={[styles.capacity, { color: palette.text.primary }]}>
                   {entry.enrollmentCount}/{entry.maxCapacity}
                 </Text>
-                <Text style={[styles.meta, { color: palette.text.secondary }]}>spots booked</Text>
+                <Text style={[styles.meta, { color: palette.text.secondary }]}>{t("member.classDetail.spotsBooked")}</Text>
               </View>
               {entry.description ? (
                 <Text style={[styles.description, { color: palette.text.secondary }]}>
@@ -171,11 +175,11 @@ export default function MemberClassDetailScreen() {
                   variant="secondary"
                   icon="close-circle-outline"
                 >
-                  {cancelling ? "Cancelling..." : "Cancel booking"}
+                  {cancelling ? t("member.classDetail.cancelling") : t("member.classDetail.cancelBooking")}
                 </ZookButton>
               ) : (
                 <ZookButton onPress={book} disabled={busy} variant="primary">
-                  {busy ? "Saving..." : bookingLabel(entry)}
+                  {busy ? t("settings.saving") : bookingLabel(entry, t)}
                 </ZookButton>
               )}
             </Card>

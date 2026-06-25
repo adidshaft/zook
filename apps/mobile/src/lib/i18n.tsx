@@ -247,6 +247,23 @@ export type TranslationKey =
   | "member.coaching.viewDietPlan"
   | "member.coaching.yourCoach"
   | "member.coaching.yourTrainer"
+  | "member.classDetail.bookClass"
+  | "member.classDetail.booked"
+  | "member.classDetail.bookWithPrice"
+  | "member.classDetail.cancelBooking"
+  | "member.classDetail.cancelling"
+  | "member.classDetail.classDetails"
+  | "member.classDetail.classFallback"
+  | "member.classDetail.coachName"
+  | "member.classDetail.continuePayment"
+  | "member.classDetail.full"
+  | "member.classDetail.joinWaitlist"
+  | "member.classDetail.left"
+  | "member.classDetail.notFound"
+  | "member.classDetail.paymentDue"
+  | "member.classDetail.spots"
+  | "member.classDetail.spotsBooked"
+  | "member.classDetail.waitlisted"
   | "member.home.accessActive"
   | "member.home.active"
   | "member.home.activeCheckIn"
@@ -722,6 +739,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.coaching.viewDietPlan": "View my diet plan",
     "member.coaching.yourCoach": "Your coach",
     "member.coaching.yourTrainer": "Your trainer",
+    "member.classDetail.bookClass": "Book class",
+    "member.classDetail.booked": "Booked",
+    "member.classDetail.bookWithPrice": "Book · {{price}}",
+    "member.classDetail.cancelBooking": "Cancel booking",
+    "member.classDetail.cancelling": "Cancelling...",
+    "member.classDetail.classDetails": "Class details",
+    "member.classDetail.classFallback": "Class",
+    "member.classDetail.coachName": "Coach {{name}}",
+    "member.classDetail.continuePayment": "Continue payment",
+    "member.classDetail.full": "Full",
+    "member.classDetail.joinWaitlist": "Join waitlist",
+    "member.classDetail.left": "{{count}} left",
+    "member.classDetail.notFound": "Class not found",
+    "member.classDetail.paymentDue": "Payment due",
+    "member.classDetail.spots": "{{count}} spots",
+    "member.classDetail.spotsBooked": "spots booked",
+    "member.classDetail.waitlisted": "Waitlisted",
     "member.home.accessActive": "Access active",
     "member.home.active": "Active",
     "member.home.activeCheckIn": "Active check-in",
@@ -1197,6 +1231,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.coaching.viewDietPlan": "मेरा डाइट प्लान देखें",
     "member.coaching.yourCoach": "आपके कोच",
     "member.coaching.yourTrainer": "आपके ट्रेनर",
+    "member.classDetail.bookClass": "क्लास बुक करें",
+    "member.classDetail.booked": "बुक्ड",
+    "member.classDetail.bookWithPrice": "बुक करें · {{price}}",
+    "member.classDetail.cancelBooking": "बुकिंग रद्द करें",
+    "member.classDetail.cancelling": "रद्द हो रहा है...",
+    "member.classDetail.classDetails": "क्लास विवरण",
+    "member.classDetail.classFallback": "क्लास",
+    "member.classDetail.coachName": "कोच {{name}}",
+    "member.classDetail.continuePayment": "पेमेंट जारी रखें",
+    "member.classDetail.full": "फुल",
+    "member.classDetail.joinWaitlist": "वेटलिस्ट में जुड़ें",
+    "member.classDetail.left": "{{count}} बाकी",
+    "member.classDetail.notFound": "क्लास नहीं मिली",
+    "member.classDetail.paymentDue": "पेमेंट बाकी",
+    "member.classDetail.spots": "{{count}} स्पॉट",
+    "member.classDetail.spotsBooked": "स्पॉट बुक",
+    "member.classDetail.waitlisted": "वेटलिस्टेड",
     "member.home.accessActive": "एक्सेस सक्रिय है",
     "member.home.active": "सक्रिय",
     "member.home.activeCheckIn": "सक्रिय चेक-इन",
