@@ -13,24 +13,26 @@ import {
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { memberApi } from "@/lib/domain-api";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
 export default function AccountSettingsScreen() {
   const { activeOrgId, biometricEnabled, refresh, session, setBiometricEnabled, token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   return (
     <>
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Account" showBack />
+          <AppHeader title={t("settings.account")} showBack />
           <Card variant="compact" contentStyle={styles.list}>
-            <ListRow title="Name" subtitle={session?.user.name ?? "Not set"} icon="person-outline" />
-            <ListRow title="Email" subtitle={session?.user.email ?? "Not set"} icon="mail-outline" />
-            <ListRow title="Phone" subtitle={session?.user.phone ?? "Not set"} icon="call-outline" />
+            <ListRow title={t("settings.name")} subtitle={session?.user.name ?? t("settings.notSet")} icon="person-outline" />
+            <ListRow title={t("settings.email")} subtitle={session?.user.email ?? t("settings.notSet")} icon="mail-outline" />
+            <ListRow title={t("settings.phone")} subtitle={session?.user.phone ?? t("settings.notSet")} icon="call-outline" />
           </Card>
           <Card variant="compact" contentStyle={styles.form}>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Contact verification</Text>
+            <Text style={[styles.title, { color: palette.text.primary }]}>{t("settings.contactVerification")}</Text>
             <ContactVerifier
               activeOrgId={activeOrgId}
               currentValue={session?.user.email}
@@ -47,7 +49,7 @@ export default function AccountSettingsScreen() {
             />
           </Card>
           <Card variant="compact" contentStyle={styles.toggleRow}>
-            <Text style={[styles.title, { color: palette.text.primary }]}>Biometric unlock</Text>
+            <Text style={[styles.title, { color: palette.text.primary }]}>{t("settings.biometricUnlock")}</Text>
             <ThemedSwitch
               value={biometricEnabled}
               onValueChange={(value) => void setBiometricEnabled(value)}
@@ -73,6 +75,7 @@ function ContactVerifier({
   token?: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const [value, setValue] = useState(currentValue ?? "");
   const [code, setCode] = useState("");
   const [requestedFor, setRequestedFor] = useState<string | undefined>();
@@ -80,24 +83,24 @@ function ContactVerifier({
   const [error, setError] = useState<string | undefined>();
   const [status, setStatus] = useState<string | undefined>();
   const trimmedValue = value.trim();
-  const title = kind === "email" ? "Email" : "Mobile number";
-  const placeholder = kind === "email" ? "you@example.com" : "+91 98765 43210";
+  const title = kind === "email" ? t("settings.email") : t("settings.mobileNumber");
+  const placeholder = kind === "email" ? t("settings.emailPlaceholder") : "+91 98765 43210";
   const keyboardType = kind === "email" ? "email-address" : "phone-pad";
   const inputMode = kind === "email" ? "email" : "tel";
   const helper = useMemo(() => {
     if (!currentValue) {
-      return `No ${kind === "email" ? "email" : "mobile number"} linked.`;
+      return kind === "email" ? t("settings.noEmailLinked") : t("settings.noMobileLinked");
     }
-    return `Current: ${currentValue}`;
-  }, [currentValue, kind]);
+    return t("settings.currentValue", { value: currentValue });
+  }, [currentValue, kind, t]);
 
   async function requestOtp() {
     if (!token) {
-      setError("Sign in again to update your contact details.");
+      setError(t("settings.signInAgainContact"));
       return;
     }
     if (!trimmedValue) {
-      setError(`Enter your ${kind === "email" ? "email" : "mobile number"}.`);
+      setError(kind === "email" ? t("settings.enterEmail") : t("settings.enterMobile"));
       return;
     }
     setBusy("request");
@@ -111,9 +114,9 @@ function ContactVerifier({
       });
       setRequestedFor(trimmedValue);
       setCode("");
-      setStatus(`Enter the code sent to ${trimmedValue}.`);
+      setStatus(t("settings.enterCodeSentTo", { identifier: trimmedValue }));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not send OTP.");
+      setError(requestError instanceof Error ? requestError.message : t("settings.couldNotSendOtp"));
     } finally {
       setBusy(undefined);
     }
@@ -124,7 +127,7 @@ function ContactVerifier({
       return;
     }
     if (nextCode.length !== 6) {
-      setError("Enter the 6 digit OTP.");
+      setError(t("settings.enterSixDigitOtp"));
       return;
     }
     setBusy("verify");
@@ -140,9 +143,9 @@ function ContactVerifier({
       await onVerified();
       setRequestedFor(undefined);
       setCode("");
-      setStatus(`${title} verified. Your account has been updated.`);
+      setStatus(t("settings.contactVerifiedUpdated", { contact: title }));
     } catch (verifyError) {
-      setError(verifyError instanceof Error ? verifyError.message : "Could not verify OTP.");
+      setError(verifyError instanceof Error ? verifyError.message : t("settings.couldNotVerifyOtp"));
     } finally {
       setBusy(undefined);
     }
@@ -178,14 +181,14 @@ function ContactVerifier({
         size="sm"
         variant="secondary"
       >
-        {currentValue ? `Update ${title}` : `Add ${title}`}
+        {currentValue ? t("settings.updateContact", { contact: title }) : t("settings.addContact", { contact: title })}
       </ZookButton>
       {requestedFor ? (
         <View style={styles.otpBlock}>
           <OtpInput
-            accessibilityLabel={`Enter ${title.toLowerCase()} OTP`}
+            accessibilityLabel={t("settings.enterContactOtp", { contact: title.toLowerCase() })}
             disabled={busy === "verify"}
-            label={`OTP for ${requestedFor}`}
+            label={t("settings.otpFor", { identifier: requestedFor })}
             onChange={setCode}
             onComplete={(completeCode) => void verifyOtp(completeCode)}
             testID={`account-${kind}-otp`}
@@ -199,7 +202,7 @@ function ContactVerifier({
             onPress={() => void verifyOtp()}
             size="sm"
           >
-            Verify {title}
+            {t("settings.verifyContactType", { contact: title })}
           </ZookButton>
         </View>
       ) : null}

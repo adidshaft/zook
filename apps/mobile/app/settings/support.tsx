@@ -12,21 +12,23 @@ import {
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { supportApi } from "@/lib/domain-api";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 
 const supportRows = [
-  { title: "Help center", subtitle: "Open zookfit.in/help", url: "https://zookfit.in/help" },
-  { title: "Terms", subtitle: "View terms of service", url: "https://zookfit.in/terms" },
-  { title: "Privacy Policy", subtitle: "View privacy policy", url: "https://zookfit.in/privacy" },
+  { titleKey: "settings.helpCenter", subtitleKey: "settings.helpCenterSubtitle", url: "https://zookfit.in/help" },
+  { titleKey: "settings.terms", subtitleKey: "settings.termsSubtitle", url: "https://zookfit.in/terms" },
+  { titleKey: "settings.privacyPolicy", subtitleKey: "settings.privacyPolicySubtitle", url: "https://zookfit.in/privacy" },
 ] as const;
 
 export default function SupportSettingsScreen() {
   const { activeOrgId, token } = useAuth();
   const roleContext = useRoleContext();
   const { palette } = useTheme();
+  const t = useT();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,8 +39,8 @@ export default function SupportSettingsScreen() {
     const message = feedback.trim();
     if (!token || message.length < 10) {
       showToast({
-        title: "Add a few details",
-        message: "Tell us what went wrong so support can follow up.",
+        title: t("settings.addFewDetails"),
+        message: t("settings.supportDetailsPrompt"),
         tone: "amber",
         haptic: "warning",
       });
@@ -55,10 +57,10 @@ export default function SupportSettingsScreen() {
       });
       setFeedback("");
       setFeedbackOpen(false);
-      showToast({ tone: "success", haptic: "success", message: "Report sent to support." });
+      showToast({ tone: "success", haptic: "success", message: t("settings.reportSent") });
     } catch (error) {
       showToast({
-        title: "Could not send report",
+        title: t("settings.couldNotSendReport"),
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",
@@ -77,19 +79,19 @@ export default function SupportSettingsScreen() {
           contentContainerStyle={styles.content}
         >
           <AppHeader
-            title="Help & support"
-            subtitle={`Version ${Constants.expoConfig?.version ?? "dev"}`}
+            title={t("member.you.helpSupport")}
+            subtitle={t("settings.version", { version: Constants.expoConfig?.version ?? "dev" })}
             showBack
           />
           <Card variant="compact" contentStyle={styles.list}>
             <Pressable
               onPress={() => setFeedbackOpen((open) => !open)}
               accessibilityRole="button"
-              accessibilityLabel="Report a problem"
+              accessibilityLabel={t("settings.reportProblem")}
               style={({ pressed }) => (pressed ? styles.rowPressed : null)}
             >
               <ListRow
-                title="Report a problem"
+                title={t("settings.reportProblem")}
                 icon="bug-outline"
                 style={styles.row}
               />
@@ -97,35 +99,39 @@ export default function SupportSettingsScreen() {
             {feedbackOpen ? (
               <View style={styles.feedbackForm}>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  Include the issue, what you expected, and what happened.
+                  {t("settings.reportProblemBody")}
                 </Text>
                 <FormField
-                  label="Problem details"
+                  label={t("settings.problemDetails")}
                   value={feedback}
                   onChangeText={setFeedback}
                   multiline
                   textAlignVertical="top"
                   numberOfLines={5}
                   maxLength={2_000}
-                  placeholder="I was trying to..."
-                  hint={`${role} · ${roleContext?.org?.name ?? "No gym selected"} · ${appVersion}`}
+                  placeholder={t("settings.problemDetailsPlaceholder")}
+                  hint={t("settings.supportContext", {
+                    role,
+                    gym: roleContext?.org?.name ?? t("settings.noActiveGym"),
+                    version: appVersion,
+                  })}
                 />
                 <ZookButton onPress={() => void submitFeedback()} busy={busy} disabled={busy}>
-                  Send report
+                  {t("settings.sendReport")}
                 </ZookButton>
               </View>
             ) : null}
             {supportRows.map((row) => (
               <Pressable
-                key={row.title}
+                key={row.titleKey}
                 onPress={() => void Linking.openURL(row.url)}
                 accessibilityRole="button"
-                accessibilityLabel={row.title}
+                accessibilityLabel={t(row.titleKey)}
                 style={({ pressed }) => (pressed ? styles.rowPressed : null)}
               >
                 <ListRow
-                  title={row.title}
-                  subtitle={row.subtitle}
+                  title={t(row.titleKey)}
+                  subtitle={t(row.subtitleKey)}
                   icon="help-circle-outline"
                   style={styles.row}
                 />

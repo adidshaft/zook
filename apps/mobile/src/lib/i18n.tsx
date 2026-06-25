@@ -102,14 +102,45 @@ export type TranslationKey =
   | "settings.goBack"
   | "settings.account"
   | "settings.accountSubtitle"
+  | "settings.addContact"
+  | "settings.addFewDetails"
   | "settings.activeGymPreferenceNote"
   | "settings.appearanceSubtitle"
+  | "settings.biometricUnlock"
   | "settings.signedIn"
+  | "settings.contactVerification"
+  | "settings.contactVerifiedUpdated"
+  | "settings.couldNotSendOtp"
+  | "settings.couldNotSendReport"
+  | "settings.couldNotVerifyOtp"
+  | "settings.currentValue"
+  | "settings.enterCodeSentTo"
+  | "settings.enterContactOtp"
+  | "settings.enterEmail"
+  | "settings.enterMobile"
+  | "settings.enterSixDigitOtp"
   | "settings.useZookAs"
   | "settings.name"
   | "settings.email"
   | "settings.phone"
   | "settings.emailPlaceholder"
+  | "settings.mobileNumber"
+  | "settings.noEmailLinked"
+  | "settings.noMobileLinked"
+  | "settings.notSet"
+  | "settings.otpFor"
+  | "settings.problemDetails"
+  | "settings.problemDetailsPlaceholder"
+  | "settings.reportProblem"
+  | "settings.reportProblemBody"
+  | "settings.reportSent"
+  | "settings.sendReport"
+  | "settings.signInAgainContact"
+  | "settings.supportContext"
+  | "settings.supportDetailsPrompt"
+  | "settings.terms"
+  | "settings.termsSubtitle"
+  | "settings.updateContact"
   | "settings.sendEmailCode"
   | "settings.sendPhoneCode"
   | "settings.emailCode"
@@ -166,7 +197,13 @@ export type TranslationKey =
   | "settings.system"
   | "settings.systemSubtitle"
   | "settings.supportSubtitle"
+  | "settings.helpCenter"
+  | "settings.helpCenterSubtitle"
+  | "settings.privacyPolicy"
+  | "settings.privacyPolicySubtitle"
   | "settings.theme"
+  | "settings.verifyContactType"
+  | "settings.version"
   | "settings.defaultRole"
   | "settings.contactSupport"
   | "settings.contactSupportSubtitle"
@@ -622,14 +659,45 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.goBack": "Go back",
     "settings.account": "Account",
     "settings.accountSubtitle": "Name, phone, email, and biometric unlock",
+    "settings.addContact": "Add {{contact}}",
+    "settings.addFewDetails": "Add a few details",
     "settings.activeGymPreferenceNote": "Changes apply to your active gym when available.",
     "settings.appearanceSubtitle": "Theme and default role",
+    "settings.biometricUnlock": "Biometric unlock",
     "settings.signedIn": "Signed in",
+    "settings.contactVerification": "Contact verification",
+    "settings.contactVerifiedUpdated": "{{contact}} verified. Your account has been updated.",
+    "settings.couldNotSendOtp": "Could not send OTP.",
+    "settings.couldNotSendReport": "Could not send report",
+    "settings.couldNotVerifyOtp": "Could not verify OTP.",
+    "settings.currentValue": "Current: {{value}}",
+    "settings.enterCodeSentTo": "Enter the code sent to {{identifier}}.",
+    "settings.enterContactOtp": "Enter {{contact}} OTP",
+    "settings.enterEmail": "Enter your email.",
+    "settings.enterMobile": "Enter your mobile number.",
+    "settings.enterSixDigitOtp": "Enter the 6 digit OTP.",
     "settings.useZookAs": "Use Zook as",
     "settings.name": "Name",
     "settings.email": "Email",
     "settings.phone": "Phone",
     "settings.emailPlaceholder": "you@example.com",
+    "settings.mobileNumber": "Mobile number",
+    "settings.noEmailLinked": "No email linked.",
+    "settings.noMobileLinked": "No mobile number linked.",
+    "settings.notSet": "Not set",
+    "settings.otpFor": "OTP for {{identifier}}",
+    "settings.problemDetails": "Problem details",
+    "settings.problemDetailsPlaceholder": "I was trying to...",
+    "settings.reportProblem": "Report a problem",
+    "settings.reportProblemBody": "Include the issue, what you expected, and what happened.",
+    "settings.reportSent": "Report sent to support.",
+    "settings.sendReport": "Send report",
+    "settings.signInAgainContact": "Sign in again to update your contact details.",
+    "settings.supportContext": "{{role}} · {{gym}} · {{version}}",
+    "settings.supportDetailsPrompt": "Tell us what went wrong so support can follow up.",
+    "settings.terms": "Terms",
+    "settings.termsSubtitle": "View terms of service",
+    "settings.updateContact": "Update {{contact}}",
     "settings.sendEmailCode": "Send email code",
     "settings.sendPhoneCode": "Send phone code",
     "settings.emailCode": "Email code",
@@ -687,7 +755,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.system": "System",
     "settings.systemSubtitle": "Help, policies, and app info",
     "settings.supportSubtitle": "Contact, legal, and app version",
+    "settings.helpCenter": "Help center",
+    "settings.helpCenterSubtitle": "Open zookfit.in/help",
+    "settings.privacyPolicy": "Privacy Policy",
+    "settings.privacyPolicySubtitle": "View privacy policy",
     "settings.theme": "Theme",
+    "settings.verifyContactType": "Verify {{contact}}",
+    "settings.version": "Version {{version}}",
     "settings.defaultRole": "Default role",
     "settings.contactSupport": "Contact support",
     "settings.contactSupportSubtitle": "Email support@zookfit.in with account or gym issues",
@@ -1144,14 +1218,45 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.goBack": "वापस जाएं",
     "settings.account": "अकाउंट",
     "settings.accountSubtitle": "नाम, फोन, ईमेल और biometric unlock",
+    "settings.addContact": "{{contact}} जोड़ें",
+    "settings.addFewDetails": "थोड़ी जानकारी जोड़ें",
     "settings.activeGymPreferenceNote": "उपलब्ध होने पर बदलाव आपके सक्रिय जिम पर लागू होते हैं.",
     "settings.appearanceSubtitle": "थीम और default role",
+    "settings.biometricUnlock": "Biometric unlock",
     "settings.signedIn": "साइन इन",
+    "settings.contactVerification": "कॉन्टैक्ट वेरिफिकेशन",
+    "settings.contactVerifiedUpdated": "{{contact}} वेरिफाई हो गया. आपका अकाउंट अपडेट हो गया.",
+    "settings.couldNotSendOtp": "OTP नहीं भेजा जा सका.",
+    "settings.couldNotSendReport": "रिपोर्ट नहीं भेजी जा सकी",
+    "settings.couldNotVerifyOtp": "OTP वेरिफाई नहीं हो सका.",
+    "settings.currentValue": "मौजूदा: {{value}}",
+    "settings.enterCodeSentTo": "{{identifier}} पर भेजा गया कोड डालें.",
+    "settings.enterContactOtp": "{{contact}} OTP डालें",
+    "settings.enterEmail": "अपना ईमेल डालें.",
+    "settings.enterMobile": "अपना मोबाइल नंबर डालें.",
+    "settings.enterSixDigitOtp": "6 अंकों का OTP डालें.",
     "settings.useZookAs": "Zook इस्तेमाल करें",
     "settings.name": "नाम",
     "settings.email": "ईमेल",
     "settings.phone": "फोन",
     "settings.emailPlaceholder": "you@example.com",
+    "settings.mobileNumber": "मोबाइल नंबर",
+    "settings.noEmailLinked": "कोई ईमेल लिंक नहीं है.",
+    "settings.noMobileLinked": "कोई मोबाइल नंबर लिंक नहीं है.",
+    "settings.notSet": "सेट नहीं",
+    "settings.otpFor": "{{identifier}} के लिए OTP",
+    "settings.problemDetails": "समस्या का विवरण",
+    "settings.problemDetailsPlaceholder": "मैं कोशिश कर रहा था...",
+    "settings.reportProblem": "समस्या रिपोर्ट करें",
+    "settings.reportProblemBody": "समस्या, आपकी उम्मीद और क्या हुआ, यह शामिल करें.",
+    "settings.reportSent": "रिपोर्ट सपोर्ट को भेजी गई.",
+    "settings.sendReport": "रिपोर्ट भेजें",
+    "settings.signInAgainContact": "कॉन्टैक्ट विवरण अपडेट करने के लिए फिर से साइन इन करें.",
+    "settings.supportContext": "{{role}} · {{gym}} · {{version}}",
+    "settings.supportDetailsPrompt": "क्या गलत हुआ बताएं ताकि सपोर्ट follow up कर सके.",
+    "settings.terms": "Terms",
+    "settings.termsSubtitle": "Terms of service देखें",
+    "settings.updateContact": "{{contact}} अपडेट करें",
     "settings.sendEmailCode": "ईमेल कोड भेजें",
     "settings.sendPhoneCode": "फोन कोड भेजें",
     "settings.emailCode": "ईमेल कोड",
@@ -1210,7 +1315,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.system": "सिस्टम",
     "settings.systemSubtitle": "मदद, पॉलिसी और ऐप जानकारी",
     "settings.supportSubtitle": "कॉन्टैक्ट, लीगल और ऐप version",
+    "settings.helpCenter": "Help center",
+    "settings.helpCenterSubtitle": "zookfit.in/help खोलें",
+    "settings.privacyPolicy": "Privacy Policy",
+    "settings.privacyPolicySubtitle": "Privacy policy देखें",
     "settings.theme": "थीम",
+    "settings.verifyContactType": "{{contact}} वेरिफाई करें",
+    "settings.version": "Version {{version}}",
     "settings.defaultRole": "Default role",
     "settings.contactSupport": "सपोर्ट से संपर्क करें",
     "settings.contactSupportSubtitle":
