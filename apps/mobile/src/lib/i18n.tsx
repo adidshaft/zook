@@ -1860,6 +1860,13 @@ export type TranslationKey =
   | "trainer.classes.time"
   | "trainer.classes.title"
   | "trainer.classes.type"
+  | "trainer.classes.typeBoxing"
+  | "trainer.classes.typeCycling"
+  | "trainer.classes.typeDance"
+  | "trainer.classes.typeHiit"
+  | "trainer.classes.typeMobility"
+  | "trainer.classes.typeStrength"
+  | "trainer.classes.typeYoga"
   | "trainer.classes.upcomingClasses"
   | "trainer.clientSessions.adherence"
   | "trainer.clientSessions.averageCompletion"
@@ -3922,6 +3929,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.classes.time": "Time",
     "trainer.classes.title": "Classes",
     "trainer.classes.type": "Type",
+    "trainer.classes.typeBoxing": "Boxing",
+    "trainer.classes.typeCycling": "Cycling",
+    "trainer.classes.typeDance": "Dance",
+    "trainer.classes.typeHiit": "HIIT",
+    "trainer.classes.typeMobility": "Mobility",
+    "trainer.classes.typeStrength": "Strength",
+    "trainer.classes.typeYoga": "Yoga",
     "trainer.classes.upcomingClasses": "Upcoming classes",
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "{{percent}}% average completion across recent plan feedback.",
@@ -5983,6 +5997,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.classes.time": "Time",
     "trainer.classes.title": "Classes",
     "trainer.classes.type": "Type",
+    "trainer.classes.typeBoxing": "Boxing",
+    "trainer.classes.typeCycling": "Cycling",
+    "trainer.classes.typeDance": "Dance",
+    "trainer.classes.typeHiit": "HIIT",
+    "trainer.classes.typeMobility": "Mobility",
+    "trainer.classes.typeStrength": "Strength",
+    "trainer.classes.typeYoga": "Yoga",
     "trainer.classes.upcomingClasses": "Upcoming classes",
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "Recent plan feedback में {{percent}}% average completion.",

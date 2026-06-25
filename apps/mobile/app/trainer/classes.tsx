@@ -22,10 +22,19 @@ import { useCancelClass, useCreateClass, useUpdateClass } from "@/lib/domains/tr
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { classDayHeading, classTypeVisual } from "@/features/member/classes/class-display";
 import { formatInr, formatTime } from "@/lib/formatting";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { radii, spacing, typography, layout, useTheme } from "@/lib/theme";
 
 const CLASS_TYPES = ["HIIT", "Strength", "Yoga", "Cycling", "Dance", "Boxing", "Mobility"];
+const CLASS_TYPE_LABEL_KEYS: Record<string, TranslationKey> = {
+  HIIT: "trainer.classes.typeHiit",
+  Strength: "trainer.classes.typeStrength",
+  Yoga: "trainer.classes.typeYoga",
+  Cycling: "trainer.classes.typeCycling",
+  Dance: "trainer.classes.typeDance",
+  Boxing: "trainer.classes.typeBoxing",
+  Mobility: "trainer.classes.typeMobility",
+};
 const TIME_SLOTS = [
   { label: "7:00 AM", hour: 7 },
   { label: "9:30 AM", hour: 9, minute: 30 },
@@ -82,6 +91,11 @@ function formStateFromClass(entry: MemberClassRecord): FormState {
     date: dateOnly,
     slot: closestSlot(start),
   };
+}
+
+function classTypeLabel(value: string, t: (key: TranslationKey) => string) {
+  const key = CLASS_TYPE_LABEL_KEYS[value];
+  return key ? t(key) : value;
 }
 
 export default function TrainerClasses() {
@@ -212,7 +226,7 @@ export default function TrainerClasses() {
                     onPress={() => setForm((current) => ({ ...current, classType: type }))}
                     style={[styles.chip, { borderColor: form.classType === type ? palette.accent.base : palette.border.default, backgroundColor: form.classType === type ? palette.surface.accentSoft : palette.surface.default }]}
                   >
-                    <Text style={[styles.chipText, { color: form.classType === type ? palette.accent.base : palette.text.secondary }]}>{type}</Text>
+                    <Text style={[styles.chipText, { color: form.classType === type ? palette.accent.base : palette.text.secondary }]}>{classTypeLabel(type, t)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -311,7 +325,7 @@ export default function TrainerClasses() {
                     <View style={styles.classCopy}>
                       <Text style={[styles.className, { color: palette.text.primary }]} numberOfLines={1}>{entry.name}</Text>
                       <Text style={[styles.classMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType} · {entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free")}
+                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {classTypeLabel(entry.classType, t)} · {entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free")}
                       </Text>
                     </View>
                     <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
@@ -350,7 +364,7 @@ export default function TrainerClasses() {
                           {entry.name}
                         </Text>
                         <Text style={[styles.classMeta, { color: palette.text.tertiary }]} numberOfLines={1}>
-                          {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {entry.classType}
+                          {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {classTypeLabel(entry.classType, t)}
                         </Text>
                       </View>
                       <Pill tone="neutral">{t("trainer.classes.cancelled")}</Pill>
