@@ -364,7 +364,21 @@ export type TranslationKey =
   | "owner.members.soon"
   | "owner.members.title"
   | "owner.members.total"
-  | "owner.members.tryAgain";
+  | "owner.members.tryAgain"
+  | "owner.revenue.noPaymentsYet"
+  | "owner.revenue.noPaymentsYetBody"
+  | "owner.revenue.paymentFallback"
+  | "owner.revenue.pickupPending"
+  | "owner.revenue.recentTransactions"
+  | "owner.revenue.refund"
+  | "owner.revenue.refundAccessibility"
+  | "owner.revenue.refundPaymentBody"
+  | "owner.revenue.refundPaymentTitle"
+  | "owner.revenue.refundedByGym"
+  | "owner.revenue.shopPickupOrder"
+  | "owner.revenue.tapToRefund"
+  | "owner.revenue.thisMember"
+  | "owner.revenue.title";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -729,6 +743,20 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "Members",
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
+    "owner.revenue.noPaymentsYet": "No payments yet",
+    "owner.revenue.noPaymentsYetBody": "Payments and shop pickups will appear here as they come in.",
+    "owner.revenue.paymentFallback": "payment",
+    "owner.revenue.pickupPending": "Pickup pending",
+    "owner.revenue.recentTransactions": "Recent transactions",
+    "owner.revenue.refund": "Refund",
+    "owner.revenue.refundAccessibility": "Refund {{name}}",
+    "owner.revenue.refundPaymentBody": "Refund {{amount}} to {{name}}. This can't be undone.",
+    "owner.revenue.refundPaymentTitle": "Refund payment?",
+    "owner.revenue.refundedByGym": "Refunded by gym",
+    "owner.revenue.shopPickupOrder": "Shop pickup order",
+    "owner.revenue.tapToRefund": "Tap to refund",
+    "owner.revenue.thisMember": "this member",
+    "owner.revenue.title": "Revenue",
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
@@ -1092,6 +1120,20 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "मेंबर",
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
+    "owner.revenue.noPaymentsYet": "अभी कोई पेमेंट नहीं",
+    "owner.revenue.noPaymentsYetBody": "पेमेंट और शॉप पिकअप आते ही यहां दिखेंगे.",
+    "owner.revenue.paymentFallback": "पेमेंट",
+    "owner.revenue.pickupPending": "पिकअप पेंडिंग",
+    "owner.revenue.recentTransactions": "हाल के ट्रांजैक्शन",
+    "owner.revenue.refund": "रिफंड",
+    "owner.revenue.refundAccessibility": "{{name}} को रिफंड करें",
+    "owner.revenue.refundPaymentBody": "{{name}} को {{amount}} रिफंड करें. इसे वापस नहीं किया जा सकता.",
+    "owner.revenue.refundPaymentTitle": "पेमेंट रिफंड करें?",
+    "owner.revenue.refundedByGym": "जिम द्वारा रिफंड",
+    "owner.revenue.shopPickupOrder": "शॉप पिकअप ऑर्डर",
+    "owner.revenue.tapToRefund": "रिफंड के लिए टैप करें",
+    "owner.revenue.thisMember": "इस मेंबर",
+    "owner.revenue.title": "रेवेन्यू",
   },
 };
 

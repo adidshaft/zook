@@ -5,9 +5,9 @@ import {
   EmptyState,
   BranchSelectorChip,
   Card,
+  HeaderActions,
   IconBubble,
   ListRow,
-  ProfileShortcut,
   Skeleton,
   QueryErrorState,
   ScreenHeader,
@@ -22,10 +22,12 @@ import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgRecentPayments, useRefundPayment } from "@/lib/domains/payments";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
 import { formatInr, titleCaseFromCode, toneForPaymentStatus, toneForShopOrderStatus } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function OwnerRevenueScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const dashboardQuery = useOwnerDashboard();
   const paymentsQuery = useOrgRecentPayments();
   const ordersQuery = useOrgActiveShopOrders();
@@ -33,15 +35,18 @@ export default function OwnerRevenueScreen() {
 
   function confirmRefund(payment: { id: string; amountPaise?: number; user?: { name?: string | null } | null }) {
     Alert.alert(
-      "Refund payment?",
-      `Refund ${formatInr(payment.amountPaise ?? 0)} to ${payment.user?.name ?? "this member"}. This can't be undone.`,
+      t("owner.revenue.refundPaymentTitle"),
+      t("owner.revenue.refundPaymentBody", {
+        amount: formatInr(payment.amountPaise ?? 0),
+        name: payment.user?.name ?? t("owner.revenue.thisMember"),
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Refund",
+          text: t("owner.revenue.refund"),
           style: "destructive",
           onPress: () =>
-            refundPayment.mutate({ paymentId: payment.id, reason: "Refunded by gym" }),
+            refundPayment.mutate({ paymentId: payment.id, reason: t("owner.revenue.refundedByGym") }),
         },
       ],
     );
@@ -71,14 +76,14 @@ export default function OwnerRevenueScreen() {
           }}
         >
           <ScreenHeader
-            title="Revenue"
+            title={t("owner.revenue.title")}
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
                 <BranchSelectorChip />
               </View>
             }
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
           />
           {isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
@@ -99,7 +104,7 @@ export default function OwnerRevenueScreen() {
           ) : null}
           {!isLoading ? (
             <>
-              <SectionHeader title="Recent transactions" />
+              <SectionHeader title={t("owner.revenue.recentTransactions")} />
               <Card contentStyle={styles.stack}>
                 {dashboardQuery.isError || paymentsQuery.isError || ordersQuery.isError ? (
                   <QueryErrorState
@@ -114,7 +119,7 @@ export default function OwnerRevenueScreen() {
                 {!dashboardQuery.isError && !paymentsQuery.isError && payments.length
                   ? payments.map((payment) => {
                       const refundable = (payment.status ?? "").toUpperCase() === "SUCCEEDED";
-                      const subtitle = `${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}${refundable ? " · Tap to refund" : ""}`;
+                      const subtitle = `${titleCaseFromCode(payment.mode)} · ${titleCaseFromCode(payment.status)}${refundable ? ` · ${t("owner.revenue.tapToRefund")}` : ""}`;
                       const row = (
                         <ListRow
                           title={payment.user?.name ?? titleCaseFromCode(payment.purpose)}
@@ -131,7 +136,9 @@ export default function OwnerRevenueScreen() {
                         <Pressable
                           key={payment.id}
                           accessibilityRole="button"
-                          accessibilityLabel={`Refund ${payment.user?.name ?? "payment"}`}
+                          accessibilityLabel={t("owner.revenue.refundAccessibility", {
+                            name: payment.user?.name ?? t("owner.revenue.paymentFallback"),
+                          })}
                           onPress={() => confirmRefund(payment)}
                           style={({ pressed }) => (pressed ? styles.rowPressed : null)}
                         >
@@ -146,8 +153,8 @@ export default function OwnerRevenueScreen() {
                   ? orders.map((order) => (
                       <ListRow
                         key={order.id}
-                        title={order.user?.name ?? "Shop pickup order"}
-                        subtitle={`${order.pickupCode ?? "Pickup pending"} · ${titleCaseFromCode(order.status)}`}
+                        title={order.user?.name ?? t("owner.revenue.shopPickupOrder")}
+                        subtitle={`${order.pickupCode ?? t("owner.revenue.pickupPending")} · ${titleCaseFromCode(order.status)}`}
                         leading={<IconBubble icon="bag-outline" tone={toneForShopOrderStatus(order.status)} />}
                         trailing={
                           <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
@@ -158,7 +165,11 @@ export default function OwnerRevenueScreen() {
                     ))
                   : null}
                 {!dashboardQuery.isError && !paymentsQuery.isError && !ordersQuery.isError && !payments.length && !orders.length ? (
-                  <EmptyState icon="receipt-outline" title="No payments yet" body="Payments and shop pickups will appear here as they come in." />
+                  <EmptyState
+                    icon="receipt-outline"
+                    title={t("owner.revenue.noPaymentsYet")}
+                    body={t("owner.revenue.noPaymentsYetBody")}
+                  />
                 ) : null}
               </Card>
             </>
