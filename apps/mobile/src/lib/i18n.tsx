@@ -15,6 +15,7 @@ export type TranslationKey =
   | "app.configErrorTitle"
   | "app.configErrorBody"
   | "common.cancel"
+  | "common.confirm"
   | "common.actionFailed"
   | "common.datePicker"
   | "common.back"
@@ -1869,6 +1870,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
     "common.cancel": "Cancel",
+    "common.confirm": "Confirm",
     "common.actionFailed": "Action failed",
     "common.datePicker": "Date picker",
     "common.back": "Back",
@@ -3731,6 +3733,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
     "common.cancel": "रद्द करें",
+    "common.confirm": "Confirm करें",
     "common.actionFailed": "एक्शन फेल हुआ",
     "common.datePicker": "तारीख चुनें",
     "common.back": "वापस",
