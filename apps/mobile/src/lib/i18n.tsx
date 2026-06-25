@@ -1051,6 +1051,25 @@ export type TranslationKey =
   | "member.profileExtra.title"
   | "member.profileExtra.weeklyGoalValue"
   | "member.profileExtra.weeklyWorkoutGoal"
+  | "member.profilePhoto.addProfilePhoto"
+  | "member.profilePhoto.cameraPrimer"
+  | "member.profilePhoto.cameraSettingsPrompt"
+  | "member.profilePhoto.chooseFromLibrary"
+  | "member.profilePhoto.continue"
+  | "member.profilePhoto.libraryPrimer"
+  | "member.profilePhoto.librarySettingsPrompt"
+  | "member.profilePhoto.noFileId"
+  | "member.profilePhoto.notNow"
+  | "member.profilePhoto.permissionNeeded"
+  | "member.profilePhoto.photoNotRemoved"
+  | "member.profilePhoto.photoNotSaved"
+  | "member.profilePhoto.photoTooLarge"
+  | "member.profilePhoto.profilePhoto"
+  | "member.profilePhoto.remove"
+  | "member.profilePhoto.signInAgain"
+  | "member.profilePhoto.takePhoto"
+  | "member.profilePhoto.tryAgain"
+  | "member.profilePhoto.updateProfilePhoto"
   | "member.diet.activePlan"
   | "member.diet.addCaloriesOrMacro"
   | "member.diet.addMealName"
@@ -2883,6 +2902,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profileExtra.title": "Profile details",
     "member.profileExtra.weeklyGoalValue": "{{count}} / week",
     "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
+    "member.profilePhoto.addProfilePhoto": "Add profile photo",
+    "member.profilePhoto.cameraPrimer": "Zook needs camera access so you can take a profile photo for check-ins and your member profile.",
+    "member.profilePhoto.cameraSettingsPrompt": "Camera access is off. Enable it in Settings to take a profile photo.",
+    "member.profilePhoto.chooseFromLibrary": "Choose from library",
+    "member.profilePhoto.continue": "Continue",
+    "member.profilePhoto.libraryPrimer": "Zook needs photo access so you can choose a profile photo for check-ins and your member profile.",
+    "member.profilePhoto.librarySettingsPrompt": "Photo access is off. Enable it in Settings to choose a profile photo.",
+    "member.profilePhoto.noFileId": "Photo uploaded, but no file ID was returned.",
+    "member.profilePhoto.notNow": "Not now",
+    "member.profilePhoto.permissionNeeded": "Permission needed",
+    "member.profilePhoto.photoNotRemoved": "Photo not removed",
+    "member.profilePhoto.photoNotSaved": "Photo not saved",
+    "member.profilePhoto.photoTooLarge": "Choose a photo smaller than 5 MB.",
+    "member.profilePhoto.profilePhoto": "Profile photo",
+    "member.profilePhoto.remove": "Remove",
+    "member.profilePhoto.signInAgain": "Sign in again before updating your profile photo.",
+    "member.profilePhoto.takePhoto": "Take photo",
+    "member.profilePhoto.tryAgain": "Try again in a moment.",
+    "member.profilePhoto.updateProfilePhoto": "Update profile photo",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Add calories or at least one macro before logging.",
     "member.diet.addMealName": "Add a meal name before logging.",
@@ -4715,6 +4753,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profileExtra.title": "Profile details",
     "member.profileExtra.weeklyGoalValue": "{{count}} / week",
     "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
+    "member.profilePhoto.addProfilePhoto": "Profile photo जोड़ें",
+    "member.profilePhoto.cameraPrimer": "Check-ins और member profile के लिए profile photo लेने हेतु Zook को camera access चाहिए.",
+    "member.profilePhoto.cameraSettingsPrompt": "Camera access off है. Profile photo लेने के लिए Settings में enable करें.",
+    "member.profilePhoto.chooseFromLibrary": "Library से चुनें",
+    "member.profilePhoto.continue": "Continue",
+    "member.profilePhoto.libraryPrimer": "Check-ins और member profile के लिए profile photo चुनने हेतु Zook को photo access चाहिए.",
+    "member.profilePhoto.librarySettingsPrompt": "Photo access off है. Profile photo चुनने के लिए Settings में enable करें.",
+    "member.profilePhoto.noFileId": "Photo upload हुआ, लेकिन file ID वापस नहीं आई.",
+    "member.profilePhoto.notNow": "अभी नहीं",
+    "member.profilePhoto.permissionNeeded": "Permission चाहिए",
+    "member.profilePhoto.photoNotRemoved": "Photo remove नहीं हुआ",
+    "member.profilePhoto.photoNotSaved": "Photo save नहीं हुआ",
+    "member.profilePhoto.photoTooLarge": "5 MB से छोटी photo चुनें.",
+    "member.profilePhoto.profilePhoto": "Profile photo",
+    "member.profilePhoto.remove": "Remove",
+    "member.profilePhoto.signInAgain": "Profile photo update करने से पहले फिर sign in करें.",
+    "member.profilePhoto.takePhoto": "Photo लें",
+    "member.profilePhoto.tryAgain": "थोड़ी देर में फिर कोशिश करें.",
+    "member.profilePhoto.updateProfilePhoto": "Profile photo update करें",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
     "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",

@@ -22,6 +22,7 @@ import {
   type FileUploadResponse,
   type ProfilePhotoSaveResponse,
 } from "@/lib/domain-api";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { typography, useTheme } from "@/lib/theme";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
@@ -57,41 +58,44 @@ function initialsForName(name?: string | null) {
     .join("");
 }
 
-function showPrimer(kind: "camera" | "library") {
+type Translate = (key: TranslationKey) => string;
+
+function showPrimer(kind: "camera" | "library", t: Translate) {
   const message =
     kind === "camera"
-      ? "Zook needs camera access so you can take a profile photo for check-ins and your member profile."
-      : "Zook needs photo access so you can choose a profile photo for check-ins and your member profile.";
+      ? t("member.profilePhoto.cameraPrimer")
+      : t("member.profilePhoto.libraryPrimer");
 
   return new Promise<boolean>((resolve) => {
-    Alert.alert("Add profile photo", message, [
-      { text: "Not now", style: "cancel", onPress: () => resolve(false) },
-      { text: "Continue", onPress: () => resolve(true) },
+    Alert.alert(t("member.profilePhoto.addProfilePhoto"), message, [
+      { text: t("member.profilePhoto.notNow"), style: "cancel", onPress: () => resolve(false) },
+      { text: t("member.profilePhoto.continue"), onPress: () => resolve(true) },
     ]);
   });
 }
 
-function showSettingsPrompt(kind: "camera" | "library") {
+function showSettingsPrompt(kind: "camera" | "library", t: Translate) {
   Alert.alert(
-    "Permission needed",
+    t("member.profilePhoto.permissionNeeded"),
     kind === "camera"
-      ? "Camera access is off. Enable it in Settings to take a profile photo."
-      : "Photo access is off. Enable it in Settings to choose a profile photo.",
+      ? t("member.profilePhoto.cameraSettingsPrompt")
+      : t("member.profilePhoto.librarySettingsPrompt"),
   );
 }
 
-function pickAction(canRemove: boolean) {
+function pickAction(canRemove: boolean, t: Translate) {
   return new Promise<PhotoAction | null>((resolve) => {
     const actions: Array<{ label: string; value: PhotoAction }> = [
-      { label: "Take photo", value: "camera" },
-      { label: "Choose from library", value: "library" },
-      ...(canRemove ? [{ label: "Remove", value: "remove" as const }] : []),
+      { label: t("member.profilePhoto.takePhoto"), value: "camera" },
+      { label: t("member.profilePhoto.chooseFromLibrary"), value: "library" },
+      ...(canRemove ? [{ label: t("member.profilePhoto.remove"), value: "remove" as const }] : []),
     ];
+    const cancelLabel = t("common.cancel");
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: [...actions.map((action) => action.label), "Cancel"],
+          options: [...actions.map((action) => action.label), cancelLabel],
           cancelButtonIndex: actions.length,
           destructiveButtonIndex: canRemove ? actions.findIndex((action) => action.value === "remove") : undefined,
         },
@@ -100,13 +104,13 @@ function pickAction(canRemove: boolean) {
       return;
     }
 
-    Alert.alert("Profile photo", "Update your profile photo.", [
+    Alert.alert(t("member.profilePhoto.profilePhoto"), t("member.profilePhoto.updateProfilePhoto"), [
       ...actions.map((action) => ({
         text: action.label,
         style: action.value === "remove" ? ("destructive" as const) : ("default" as const),
         onPress: () => resolve(action.value),
       })),
-      { text: "Cancel", style: "cancel", onPress: () => resolve(null) },
+      { text: cancelLabel, style: "cancel", onPress: () => resolve(null) },
     ]);
   });
 }
@@ -145,6 +149,7 @@ export function ProfilePhotoControl({
   onError,
 }: ProfilePhotoControlProps) {
   const { palette } = useTheme();
+  const t = useT();
   const [committedUrl, setCommittedUrl] = useState(profilePhotoUrl ?? null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -159,7 +164,7 @@ export function ProfilePhotoControl({
   }, [busy, profilePhotoUrl]);
 
   async function requestPermission(kind: "camera" | "library") {
-    const canContinue = await showPrimer(kind);
+    const canContinue = await showPrimer(kind, t);
     if (!canContinue) return false;
 
     const permission =
@@ -168,7 +173,7 @@ export function ProfilePhotoControl({
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      showSettingsPrompt(kind);
+      showSettingsPrompt(kind, t);
       return false;
     }
     return true;
@@ -198,13 +203,13 @@ export function ProfilePhotoControl({
 
   async function savePickedPhoto(kind: "camera" | "library") {
     if (!token) {
-      throw new Error("Sign in again before updating your profile photo.");
+      throw new Error(t("member.profilePhoto.signInAgain"));
     }
 
     const asset = await choosePhoto(kind);
     if (!asset) return;
     if (asset.fileSize && asset.fileSize > maxProfilePhotoBytes) {
-      throw new Error("Choose a photo smaller than 5 MB.");
+      throw new Error(t("member.profilePhoto.photoTooLarge"));
     }
 
     const previousUrl = committedUrl;
@@ -222,7 +227,7 @@ export function ProfilePhotoControl({
       });
       const profilePhotoAssetId = upload.file?.id;
       if (!profilePhotoAssetId) {
-        throw new Error("Photo uploaded, but no file ID was returned.");
+        throw new Error(t("member.profilePhoto.noFileId"));
       }
       const profile = await memberApi.saveProfilePhotoAsset({
         token,
@@ -237,7 +242,7 @@ export function ProfilePhotoControl({
       setCommittedUrl(previousUrl);
       setPreviewUri(null);
       onError?.(error);
-      Alert.alert("Photo not saved", getApiErrorMessage(error) || "Try again in a moment.");
+      Alert.alert(t("member.profilePhoto.photoNotSaved"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
     } finally {
       setBusy(false);
     }
@@ -245,7 +250,7 @@ export function ProfilePhotoControl({
 
   async function removePhoto() {
     if (!token) {
-      throw new Error("Sign in again before updating your profile photo.");
+      throw new Error(t("member.profilePhoto.signInAgain"));
     }
 
     const previousUrl = committedUrl;
@@ -261,7 +266,7 @@ export function ProfilePhotoControl({
     } catch (error) {
       setCommittedUrl(previousUrl);
       onError?.(error);
-      Alert.alert("Photo not removed", getApiErrorMessage(error) || "Try again in a moment.");
+      Alert.alert(t("member.profilePhoto.photoNotRemoved"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
     } finally {
       setBusy(false);
     }
@@ -269,7 +274,7 @@ export function ProfilePhotoControl({
 
   async function handlePress() {
     if (disabled || busy) return;
-    const action = await pickAction(hasPhoto);
+    const action = await pickAction(hasPhoto, t);
     try {
       if (action === "camera" || action === "library") {
         await savePickedPhoto(action);
@@ -278,14 +283,14 @@ export function ProfilePhotoControl({
       }
     } catch (error) {
       onError?.(error);
-      Alert.alert("Profile photo", getApiErrorMessage(error) || "Try again in a moment.");
+      Alert.alert(t("member.profilePhoto.profilePhoto"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
     }
   }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Update profile photo"
+      accessibilityLabel={t("member.profilePhoto.updateProfilePhoto")}
       disabled={disabled || busy}
       onPress={() => void handlePress()}
       style={({ pressed }) => [
