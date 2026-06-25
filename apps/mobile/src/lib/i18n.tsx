@@ -1030,6 +1030,27 @@ export type TranslationKey =
   | "member.profile.visitsReferralBenefit"
   | "member.profile.visitsRemaining"
   | "member.profile.workoutPlan"
+  | "member.profileExtra.addDateOfBirth"
+  | "member.profileExtra.aiConsent"
+  | "member.profileExtra.aiConsentBody"
+  | "member.profileExtra.completedFields"
+  | "member.profileExtra.dateOfBirth"
+  | "member.profileExtra.decreaseWeeklyWorkoutGoal"
+  | "member.profileExtra.emergencyContact"
+  | "member.profileExtra.gender"
+  | "member.profileExtra.genderFemale"
+  | "member.profileExtra.genderMale"
+  | "member.profileExtra.genderNonBinary"
+  | "member.profileExtra.genderNotSpecified"
+  | "member.profileExtra.increaseWeeklyWorkoutGoal"
+  | "member.profileExtra.locale"
+  | "member.profileExtra.marketingOptIn"
+  | "member.profileExtra.name"
+  | "member.profileExtra.phone"
+  | "member.profileExtra.saved"
+  | "member.profileExtra.title"
+  | "member.profileExtra.weeklyGoalValue"
+  | "member.profileExtra.weeklyWorkoutGoal"
   | "member.diet.activePlan"
   | "member.diet.addCaloriesOrMacro"
   | "member.diet.addMealName"
@@ -2841,6 +2862,27 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "You'll get {{count}} visits for every friend who joins.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "member.profileExtra.addDateOfBirth": "Add date of birth",
+    "member.profileExtra.aiConsent": "AI consent",
+    "member.profileExtra.aiConsentBody": "Allow AI features to use your profile context.",
+    "member.profileExtra.completedFields": "{{completed}}/{{total}} safety and KYC fields complete.",
+    "member.profileExtra.dateOfBirth": "Date of birth",
+    "member.profileExtra.decreaseWeeklyWorkoutGoal": "Decrease weekly workout goal",
+    "member.profileExtra.emergencyContact": "Emergency contact",
+    "member.profileExtra.gender": "Gender",
+    "member.profileExtra.genderFemale": "Female",
+    "member.profileExtra.genderMale": "Male",
+    "member.profileExtra.genderNonBinary": "Non-binary",
+    "member.profileExtra.genderNotSpecified": "Not specified",
+    "member.profileExtra.increaseWeeklyWorkoutGoal": "Increase weekly workout goal",
+    "member.profileExtra.locale": "Locale",
+    "member.profileExtra.marketingOptIn": "Marketing opt-in",
+    "member.profileExtra.name": "Name",
+    "member.profileExtra.phone": "Phone",
+    "member.profileExtra.saved": "Saved",
+    "member.profileExtra.title": "Profile details",
+    "member.profileExtra.weeklyGoalValue": "{{count}} / week",
+    "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Add calories or at least one macro before logging.",
     "member.diet.addMealName": "Add a meal name before logging.",
@@ -4652,6 +4694,27 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "member.profileExtra.addDateOfBirth": "Date of birth जोड़ें",
+    "member.profileExtra.aiConsent": "AI consent",
+    "member.profileExtra.aiConsentBody": "AI features को आपका profile context use करने दें.",
+    "member.profileExtra.completedFields": "{{completed}}/{{total}} safety और KYC fields complete.",
+    "member.profileExtra.dateOfBirth": "Date of birth",
+    "member.profileExtra.decreaseWeeklyWorkoutGoal": "Weekly workout goal घटाएं",
+    "member.profileExtra.emergencyContact": "Emergency contact",
+    "member.profileExtra.gender": "Gender",
+    "member.profileExtra.genderFemale": "Female",
+    "member.profileExtra.genderMale": "Male",
+    "member.profileExtra.genderNonBinary": "Non-binary",
+    "member.profileExtra.genderNotSpecified": "Not specified",
+    "member.profileExtra.increaseWeeklyWorkoutGoal": "Weekly workout goal बढ़ाएं",
+    "member.profileExtra.locale": "Locale",
+    "member.profileExtra.marketingOptIn": "Marketing opt-in",
+    "member.profileExtra.name": "Name",
+    "member.profileExtra.phone": "Phone",
+    "member.profileExtra.saved": "Saved",
+    "member.profileExtra.title": "Profile details",
+    "member.profileExtra.weeklyGoalValue": "{{count}} / week",
+    "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
     "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",

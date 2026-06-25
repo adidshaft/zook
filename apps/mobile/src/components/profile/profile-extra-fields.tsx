@@ -28,13 +28,6 @@ type SaveKey =
   | "preferredLocale"
   | "weeklyWorkoutGoal";
 
-const genderOptions: Array<{ label: string; value: GenderValue }> = [
-  { label: "Male", value: "male" },
-  { label: "Female", value: "female" },
-  { label: "Non-binary", value: "non_binary" },
-  { label: "Not specified", value: "prefer_not_to_say" },
-];
-
 const localeOptions: Array<{ label: string; value: LocaleValue }> = [
   { label: "EN", value: "en" },
   { label: "हिन्दी", value: "hi" },
@@ -64,7 +57,7 @@ export function ProfileExtraFields() {
   const { palette } = useTheme();
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
-  const { locale, setLocalePreference } = useI18n();
+  const { locale, setLocalePreference, t } = useI18n();
   const profileQuery = useMyProfile();
   const profileUser = profileQuery.data?.user;
   const sessionUser = session?.user;
@@ -89,6 +82,12 @@ export function ProfileExtraFields() {
   const fieldSurface = palette.surface.raised;
   const decreaseGoalDisabled = weeklyWorkoutGoal <= 1 || savingKey === "weeklyWorkoutGoal";
   const increaseGoalDisabled = weeklyWorkoutGoal >= 14 || savingKey === "weeklyWorkoutGoal";
+  const genderOptions: Array<{ label: string; value: GenderValue }> = [
+    { label: t("member.profileExtra.genderMale"), value: "male" },
+    { label: t("member.profileExtra.genderFemale"), value: "female" },
+    { label: t("member.profileExtra.genderNonBinary"), value: "non_binary" },
+    { label: t("member.profileExtra.genderNotSpecified"), value: "prefer_not_to_say" },
+  ];
 
   const completedCount = [
     dob,
@@ -172,30 +171,30 @@ export function ProfileExtraFields() {
     <Card contentStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={[styles.title, { color: palette.text.primary }]}>Profile details</Text>
+          <Text style={[styles.title, { color: palette.text.primary }]}>{t("member.profileExtra.title")}</Text>
           <Text style={[styles.subtitle, { color: palette.text.secondary }]}>
-            {completedCount}/5 safety and KYC fields complete.
+            {t("member.profileExtra.completedFields", { completed: completedCount, total: 5 })}
           </Text>
         </View>
-        {savedKey ? <Pill tone="blue">Saved</Pill> : null}
+        {savedKey ? <Pill tone="blue">{t("member.profileExtra.saved")}</Pill> : null}
       </View>
 
       <View style={styles.fieldGroup}>
         <DatePickerField
-          accessibilityLabel="Date of birth"
-          label="Date of birth"
+          accessibilityLabel={t("member.profileExtra.dateOfBirth")}
+          label={t("member.profileExtra.dateOfBirth")}
           maximumDate={new Date()}
           onChange={(selectedDate) => {
             setDob(selectedDate);
             void saveField("dateOfBirth", { dateOfBirth: dateOnly(selectedDate) });
           }}
-          placeholder="Add date of birth"
+          placeholder={t("member.profileExtra.addDateOfBirth")}
           value={dob}
         />
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.text.secondary }]}>Gender</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.profileExtra.gender")}</Text>
         <SegmentedControl
           options={genderOptions}
           value={gender}
@@ -209,9 +208,9 @@ export function ProfileExtraFields() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.text.secondary }]}>Emergency contact</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.profileExtra.emergencyContact")}</Text>
         <Input
-          label="Name"
+          label={t("member.profileExtra.name")}
           value={emergencyName}
           onChangeText={setEmergencyName}
           onBlur={() => saveEmergency(undefined, undefined, "emergencyContactName")}
@@ -219,7 +218,7 @@ export function ProfileExtraFields() {
           returnKeyType="next"
         />
         <Input
-          label="Phone"
+          label={t("member.profileExtra.phone")}
           value={emergencyPhone}
           onChangeText={setEmergencyPhone}
           onBlur={() => saveEmergency(undefined, undefined, "emergencyContactPhone")}
@@ -230,7 +229,7 @@ export function ProfileExtraFields() {
       </View>
 
       <PreferenceToggle
-        title="Marketing opt-in"
+        title={t("member.profileExtra.marketingOptIn")}
         value={marketingOptIn}
         disabled={savingKey === "marketingOptIn"}
         onValueChange={(value) => {
@@ -240,8 +239,8 @@ export function ProfileExtraFields() {
       />
 
       <PreferenceToggle
-        title="AI consent"
-        subtitle="Allow AI features to use your profile context."
+        title={t("member.profileExtra.aiConsent")}
+        subtitle={t("member.profileExtra.aiConsentBody")}
         value={aiConsent}
         disabled={savingKey === "aiConsent"}
         onValueChange={(value) => {
@@ -251,7 +250,7 @@ export function ProfileExtraFields() {
       />
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.text.secondary }]}>Locale</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.profileExtra.locale")}</Text>
         <SegmentedControl
           options={localeOptions}
           value={preferredLocale}
@@ -264,11 +263,11 @@ export function ProfileExtraFields() {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: palette.text.secondary }]}>Weekly workout goal</Text>
+        <Text style={[styles.label, { color: palette.text.secondary }]}>{t("member.profileExtra.weeklyWorkoutGoal")}</Text>
         <View style={styles.stepperRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Decrease weekly workout goal"
+            accessibilityLabel={t("member.profileExtra.decreaseWeeklyWorkoutGoal")}
             disabled={decreaseGoalDisabled}
             onPress={() => {
               const nextGoal = Math.max(1, weeklyWorkoutGoal - 1);
@@ -291,11 +290,11 @@ export function ProfileExtraFields() {
             />
           </Pressable>
           <Text style={[styles.stepperValue, { color: palette.text.primary }]}>
-            {weeklyWorkoutGoal} / week
+            {t("member.profileExtra.weeklyGoalValue", { count: weeklyWorkoutGoal })}
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Increase weekly workout goal"
+            accessibilityLabel={t("member.profileExtra.increaseWeeklyWorkoutGoal")}
             disabled={increaseGoalDisabled}
             onPress={() => {
               const nextGoal = Math.min(14, weeklyWorkoutGoal + 1);
