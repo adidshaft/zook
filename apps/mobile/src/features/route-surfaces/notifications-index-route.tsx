@@ -165,7 +165,7 @@ export default function NotificationsScreen() {
           queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         ]);
-        showToast({ tone: "success", haptic: "success", message: "Notification marked read." });
+        showToast({ tone: "success", haptic: "success", message: t("notifications.markedRead") });
       } catch (error) {
         if (previous) {
           queryClient.setQueryData(["me", "notifications"], previous);
@@ -175,8 +175,8 @@ export default function NotificationsScreen() {
           queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
         ]);
         showToast({
-          title: "Action failed",
-          message: error instanceof Error ? error.message : "Notification could not be updated.",
+          title: t("common.actionFailed"),
+          message: error instanceof Error ? error.message : t("notifications.couldNotUpdate"),
           tone: "danger",
           haptic: "error",
         });
@@ -216,7 +216,7 @@ export default function NotificationsScreen() {
         queryClient.invalidateQueries({ queryKey: ["me", "notifications"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
-      showToast({ tone: "success", haptic: "success", message: "All notifications marked read." });
+      showToast({ tone: "success", haptic: "success", message: t("notifications.allMarkedRead") });
     } catch (error) {
       if (previous) {
         queryClient.setQueryData(["me", "notifications"], previous);
@@ -226,8 +226,8 @@ export default function NotificationsScreen() {
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
       showToast({
-        title: "Action failed",
-        message: error instanceof Error ? error.message : "Notifications could not be updated.",
+        title: t("common.actionFailed"),
+        message: error instanceof Error ? error.message : t("notifications.couldNotUpdateMany"),
         tone: "danger",
         haptic: "error",
       });
@@ -354,11 +354,11 @@ export default function NotificationsScreen() {
                 <Pressable
                   onPress={() => setOlderExpanded((current) => !current)}
                   accessibilityRole="button"
-                  accessibilityLabel={olderExpanded ? "Show fewer older notifications" : "Show older notifications"}
+                  accessibilityLabel={olderExpanded ? t("notifications.showFewerOlder") : t("notifications.showOlder")}
                   style={({ pressed }) => [styles.showOlderButton, pressed ? styles.pressed : null]}
                 >
                   <Text style={[styles.showOlderText, { color: palette.accent.base }]}>
-                    {olderExpanded ? "Show fewer" : `Show ${section.originalCount - 3} older`}
+                    {olderExpanded ? t("notifications.showFewer") : t("notifications.showOlderCount", { count: section.originalCount - 3 })}
                   </Text>
                 </Pressable>
               );
@@ -368,19 +368,19 @@ export default function NotificationsScreen() {
           ListHeaderComponent={
             <View style={{ gap: 14, marginBottom: 14 }}>
               <AppHeader
-                title="Inbox"
+                title={t("nav.inbox")}
                 subtitle={
                   unreadCount > 0
-                    ? `${unreadCount} unread${latestLabel ? ` · recent ${latestLabel}` : ""}`
+                    ? t(latestLabel ? "notifications.unreadRecent" : "notifications.unreadCount", { count: unreadCount, date: latestLabel ?? "" })
                     : latestLabel
-                      ? `All caught up · recent ${latestLabel}`
-                      : "All caught up"
+                      ? t("notifications.allCaughtUpRecent", { date: latestLabel })
+                      : t("notifications.allCaughtUp")
                 }
                 leading={
                   <Pressable
                     onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                     accessibilityRole="button"
-                    accessibilityLabel="Back"
+                    accessibilityLabel={t("shop.back")}
                     style={({ pressed }) => [
                       styles.iconButton,
                       {
@@ -400,7 +400,7 @@ export default function NotificationsScreen() {
                       onPress={() => void markAllRead()}
                       disabled={markAllBusy}
                       accessibilityRole="button"
-                      accessibilityLabel="Mark all read"
+                      accessibilityLabel={t("notifications.markAllRead")}
                       accessibilityState={{ busy: markAllBusy }}
                       style={({ pressed }) => [
                         styles.markAllButton,
@@ -413,7 +413,7 @@ export default function NotificationsScreen() {
                     >
                       <Ionicons name="checkmark-done" size={18} color={palette.accent.base} />
                       <Text numberOfLines={1} style={[styles.markAllText, { color: palette.accent.base }]}>
-                        Mark all read
+                        {t("notifications.markAllRead")}
                       </Text>
                     </Pressable>
                   ) : null
@@ -426,8 +426,8 @@ export default function NotificationsScreen() {
                   <IconBubble icon="notifications" tone="neutral" size={36} />
                   <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
-                      ? "Attendance alert received"
-                      : "Opened from push notification"}
+                      ? t("notifications.attendanceAlertReceived")
+                      : t("notifications.openedFromPush")}
                   </Text>
                 </Card>
               ) : null}
@@ -441,7 +441,7 @@ export default function NotificationsScreen() {
               ) : null}
 
               {!notificationsQuery.isLoading && !notificationsQuery.isError && !notifications.length ? (
-                <EmptyState icon="notifications-outline" title="You're all caught up" body="New alerts about your membership, classes and coaching land here." />
+                <EmptyState icon="notifications-outline" title={t("notifications.emptyTitle")} body={t("notifications.emptyBody")} />
               ) : null}
             </View>
           }
@@ -486,7 +486,7 @@ export default function NotificationsScreen() {
               />
               <View style={styles.detailCopy}>
                 <Text style={[styles.detailTitle, { color: palette.text.primary }]}>
-                  {focusedNotification?.notification?.title ?? "Notification"}
+                  {focusedNotification?.notification?.title ?? t("notifications.fallbackTitle")}
                 </Text>
                 <Text style={[styles.detailTime, { color: palette.text.secondary }]}>
                   {focusedNotification?.notification?.createdAt
@@ -498,7 +498,7 @@ export default function NotificationsScreen() {
                 testID="notification-detail-close"
                 onPress={closeNotificationDetails}
                 accessibilityRole="button"
-                accessibilityLabel="Close notification details"
+                accessibilityLabel={t("notifications.closeDetails")}
                 style={({ pressed }) => [
                   styles.iconButton,
                   {
@@ -512,7 +512,7 @@ export default function NotificationsScreen() {
               </Pressable>
             </View>
             <Text style={[styles.detailBody, { color: palette.text.primary }]}>
-              {focusedNotification?.notification?.body ?? "No details available."}
+              {focusedNotification?.notification?.body ?? t("notifications.noDetails")}
             </Text>
           </BottomSheetScrollView>
         </BottomSheetModal>
@@ -535,6 +535,7 @@ function NotificationRow({
   onPress: () => void;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const notification = item.notification;
   const unread = !item.readAt;
   const type = notification?.type;
@@ -550,7 +551,7 @@ function NotificationRow({
       testID={first ? "notification-row-first" : `notification-row-${item.id}`}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={notification?.title ?? "Notification"}
+      accessibilityLabel={notification?.title ?? t("notifications.fallbackTitle")}
       accessibilityState={{ busy }}
       style={({ pressed }) => [pressed ? styles.pressed : null]}
     >
@@ -566,7 +567,7 @@ function NotificationRow({
           <View style={styles.notificationCopy}>
             <View style={styles.notificationTitleRow}>
               <Text numberOfLines={2} style={[styles.notificationTitle, { color: palette.text.primary }]}>
-                {notification?.title ?? "Notification"}
+                {notification?.title ?? t("notifications.fallbackTitle")}
               </Text>
               {unread ? (
                 <View
@@ -576,11 +577,11 @@ function NotificationRow({
               ) : null}
             </View>
             <Text numberOfLines={2} style={[styles.notificationBody, { color: palette.text.secondary }]}>
-              {notification?.body ?? "No details available."}
+              {notification?.body ?? t("notifications.noDetails")}
             </Text>
             <Text style={[styles.notificationTime, { color: palette.text.tertiary }]}>
               {notification?.createdAt ? formatRelativeDate(notification.createdAt) : ""}
-              {busy ? " · Opening..." : ` · ${opensRoute ? "Open linked screen" : "Mark read"}`}
+              {busy ? t("notifications.openingSuffix") : ` · ${opensRoute ? t("notifications.openLinkedScreen") : t("notifications.markRead")}`}
             </Text>
           </View>
           <Ionicons

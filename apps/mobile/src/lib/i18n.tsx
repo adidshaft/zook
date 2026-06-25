@@ -55,6 +55,29 @@ export type TranslationKey =
   | "notifications.yesterday"
   | "notifications.earlierThisWeek"
   | "notifications.older"
+  | "notifications.allCaughtUp"
+  | "notifications.allCaughtUpRecent"
+  | "notifications.allMarkedRead"
+  | "notifications.attendanceAlertReceived"
+  | "notifications.closeDetails"
+  | "notifications.couldNotUpdate"
+  | "notifications.couldNotUpdateMany"
+  | "notifications.emptyBody"
+  | "notifications.emptyTitle"
+  | "notifications.fallbackTitle"
+  | "notifications.markAllRead"
+  | "notifications.markRead"
+  | "notifications.markedRead"
+  | "notifications.noDetails"
+  | "notifications.openedFromPush"
+  | "notifications.openingSuffix"
+  | "notifications.openLinkedScreen"
+  | "notifications.showFewer"
+  | "notifications.showFewerOlder"
+  | "notifications.showOlder"
+  | "notifications.showOlderCount"
+  | "notifications.unreadCount"
+  | "notifications.unreadRecent"
   | "auth.heroEyebrow"
   | "auth.heroBody"
   | "auth.signIn"
@@ -778,6 +801,29 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.yesterday": "Yesterday",
     "notifications.earlierThisWeek": "Earlier this week",
     "notifications.older": "Older",
+    "notifications.allCaughtUp": "All caught up",
+    "notifications.allCaughtUpRecent": "All caught up · recent {{date}}",
+    "notifications.allMarkedRead": "All notifications marked read.",
+    "notifications.attendanceAlertReceived": "Attendance alert received",
+    "notifications.closeDetails": "Close notification details",
+    "notifications.couldNotUpdate": "Notification could not be updated.",
+    "notifications.couldNotUpdateMany": "Notifications could not be updated.",
+    "notifications.emptyBody": "New alerts about your membership, classes and coaching land here.",
+    "notifications.emptyTitle": "You're all caught up",
+    "notifications.fallbackTitle": "Notification",
+    "notifications.markAllRead": "Mark all read",
+    "notifications.markRead": "Mark read",
+    "notifications.markedRead": "Notification marked read.",
+    "notifications.noDetails": "No details available.",
+    "notifications.openedFromPush": "Opened from push notification",
+    "notifications.openingSuffix": " · Opening...",
+    "notifications.openLinkedScreen": "Open linked screen",
+    "notifications.showFewer": "Show fewer",
+    "notifications.showFewerOlder": "Show fewer older notifications",
+    "notifications.showOlder": "Show older notifications",
+    "notifications.showOlderCount": "Show {{count}} older",
+    "notifications.unreadCount": "{{count}} unread",
+    "notifications.unreadRecent": "{{count}} unread · recent {{date}}",
     "auth.heroEyebrow": "Fitness Operating System",
     "auth.heroBody": "Your gym, your membership, your rhythm. Sign in to get started.",
     "auth.signIn": "Sign in",
@@ -1508,6 +1554,29 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.yesterday": "कल",
     "notifications.earlierThisWeek": "इस हफ्ते पहले",
     "notifications.older": "पुराने",
+    "notifications.allCaughtUp": "सब देखा जा चुका है",
+    "notifications.allCaughtUpRecent": "सब देखा जा चुका है · हाल का {{date}}",
+    "notifications.allMarkedRead": "सभी notifications read mark हो गए.",
+    "notifications.attendanceAlertReceived": "Attendance alert मिला",
+    "notifications.closeDetails": "Notification details बंद करें",
+    "notifications.couldNotUpdate": "Notification update नहीं हो सका.",
+    "notifications.couldNotUpdateMany": "Notifications update नहीं हो सके.",
+    "notifications.emptyBody": "Membership, classes और coaching से जुड़े नए alerts यहां आएंगे.",
+    "notifications.emptyTitle": "आप all caught up हैं",
+    "notifications.fallbackTitle": "Notification",
+    "notifications.markAllRead": "सभी read mark करें",
+    "notifications.markRead": "Read mark करें",
+    "notifications.markedRead": "Notification read mark हो गया.",
+    "notifications.noDetails": "कोई details उपलब्ध नहीं.",
+    "notifications.openedFromPush": "Push notification से खोला गया",
+    "notifications.openingSuffix": " · खुल रहा है...",
+    "notifications.openLinkedScreen": "Linked screen खोलें",
+    "notifications.showFewer": "कम दिखाएं",
+    "notifications.showFewerOlder": "पुराने notifications कम दिखाएं",
+    "notifications.showOlder": "पुराने notifications दिखाएं",
+    "notifications.showOlderCount": "{{count}} पुराने दिखाएं",
+    "notifications.unreadCount": "{{count}} unread",
+    "notifications.unreadRecent": "{{count}} unread · हाल का {{date}}",
     "auth.heroEyebrow": "फिटनेस ऑपरेटिंग सिस्टम",
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",
