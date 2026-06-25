@@ -5,7 +5,6 @@ import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ZookButton } from "@/components/zook-button";
-import { getOrigins } from "@/lib/origins";
 
 export function DashboardSignOutButton({
   className,
@@ -28,9 +27,14 @@ export function DashboardSignOutButton({
 
   async function signOut() {
     setSigningOut(true);
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    const payload = await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "x-zook-intent": "mutate" },
+    })
+      .then((response) => response.json() as Promise<{ data?: { redirectUrl?: string } }>)
+      .catch(() => null);
     queryClient.clear();
-    window.location.assign(getOrigins().public);
+    window.location.assign(payload?.data?.redirectUrl ?? "https://zookfit.in/");
   }
 
   return (

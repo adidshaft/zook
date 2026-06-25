@@ -76,9 +76,14 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
 
   async function signOut() {
     setSigningOut(true);
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    const payload = await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "x-zook-intent": "mutate" },
+    })
+      .then((response) => response.json() as Promise<{ data?: { redirectUrl?: string } }>)
+      .catch(() => null);
     queryClient.clear();
-    window.location.assign(localizedPath("/", locale));
+    window.location.assign(payload?.data?.redirectUrl ?? localizedPath("/", locale));
   }
 
   if (session) {
