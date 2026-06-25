@@ -1412,6 +1412,36 @@ export type TranslationKey =
   | "owner.more.trainerPayouts"
   | "owner.more.trainerPayoutsSubtitle"
   | "owner.more.webControlRoom"
+  | "owner.coupons.active"
+  | "owner.coupons.amountOffInput"
+  | "owner.coupons.amountOffValue"
+  | "owner.coupons.code"
+  | "owner.coupons.coupons"
+  | "owner.coupons.createCoupon"
+  | "owner.coupons.discount"
+  | "owner.coupons.edit"
+  | "owner.coupons.editAccessibility"
+  | "owner.coupons.editCoupon"
+  | "owner.coupons.flatInrOff"
+  | "owner.coupons.maxRedemptions"
+  | "owner.coupons.newCoupon"
+  | "owner.coupons.noCouponsYet"
+  | "owner.coupons.noCouponsYetBody"
+  | "owner.coupons.paused"
+  | "owner.coupons.perMember"
+  | "owner.coupons.perMemberLimit"
+  | "owner.coupons.percentOff"
+  | "owner.coupons.percentOffInput"
+  | "owner.coupons.percentOffValue"
+  | "owner.coupons.remove"
+  | "owner.coupons.removeCouponBody"
+  | "owner.coupons.removeCouponTitle"
+  | "owner.coupons.saveChanges"
+  | "owner.coupons.subtitle"
+  | "owner.coupons.title"
+  | "owner.coupons.unlimited"
+  | "owner.coupons.usedCount"
+  | "owner.coupons.usedWithLimit"
   | "owner.plans.createPlan"
   | "owner.plans.dateRange"
   | "owner.plans.daysCount"
@@ -3391,6 +3421,36 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "Review and pay your coaches",
     "owner.more.webControlRoom": "Web control room",
+    "owner.coupons.active": "Active",
+    "owner.coupons.amountOffInput": "Amount off (₹)",
+    "owner.coupons.amountOffValue": "{{amount}} off",
+    "owner.coupons.code": "Code",
+    "owner.coupons.coupons": "Coupons",
+    "owner.coupons.createCoupon": "Create coupon",
+    "owner.coupons.discount": "Discount",
+    "owner.coupons.edit": "Edit",
+    "owner.coupons.editAccessibility": "Edit {{code}}",
+    "owner.coupons.editCoupon": "Edit coupon",
+    "owner.coupons.flatInrOff": "Flat ₹ off",
+    "owner.coupons.maxRedemptions": "Max redemptions",
+    "owner.coupons.newCoupon": "New coupon",
+    "owner.coupons.noCouponsYet": "No coupons yet",
+    "owner.coupons.noCouponsYetBody": "Create a discount code to run a campaign.",
+    "owner.coupons.paused": "Paused",
+    "owner.coupons.perMember": "Per member",
+    "owner.coupons.perMemberLimit": "{{count}}/member",
+    "owner.coupons.percentOff": "Percent off",
+    "owner.coupons.percentOffInput": "Percent off (%)",
+    "owner.coupons.percentOffValue": "{{value}}% off",
+    "owner.coupons.remove": "Remove",
+    "owner.coupons.removeCouponBody": "\"{{code}}\" will no longer be redeemable.",
+    "owner.coupons.removeCouponTitle": "Remove coupon?",
+    "owner.coupons.saveChanges": "Save changes",
+    "owner.coupons.subtitle": "Discount codes members can apply at checkout.",
+    "owner.coupons.title": "Coupons & offers",
+    "owner.coupons.unlimited": "Unlimited",
+    "owner.coupons.usedCount": "{{count}} used",
+    "owner.coupons.usedWithLimit": "{{used}}/{{limit}} used",
     "owner.plans.createPlan": "Create plan",
     "owner.plans.dateRange": "Date range",
     "owner.plans.daysCount": "{{count}} days",
@@ -5369,6 +5429,36 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.trainerPayouts": "Trainer payouts",
     "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
     "owner.more.webControlRoom": "Web control room",
+    "owner.coupons.active": "Active",
+    "owner.coupons.amountOffInput": "Amount off (₹)",
+    "owner.coupons.amountOffValue": "{{amount}} off",
+    "owner.coupons.code": "Code",
+    "owner.coupons.coupons": "Coupons",
+    "owner.coupons.createCoupon": "Coupon बनाएं",
+    "owner.coupons.discount": "Discount",
+    "owner.coupons.edit": "Edit",
+    "owner.coupons.editAccessibility": "{{code}} edit करें",
+    "owner.coupons.editCoupon": "Coupon edit करें",
+    "owner.coupons.flatInrOff": "Flat ₹ off",
+    "owner.coupons.maxRedemptions": "Max redemptions",
+    "owner.coupons.newCoupon": "New coupon",
+    "owner.coupons.noCouponsYet": "अभी कोई coupon नहीं",
+    "owner.coupons.noCouponsYetBody": "Campaign चलाने के लिए discount code बनाएं.",
+    "owner.coupons.paused": "Paused",
+    "owner.coupons.perMember": "Per member",
+    "owner.coupons.perMemberLimit": "{{count}}/member",
+    "owner.coupons.percentOff": "Percent off",
+    "owner.coupons.percentOffInput": "Percent off (%)",
+    "owner.coupons.percentOffValue": "{{value}}% off",
+    "owner.coupons.remove": "Remove",
+    "owner.coupons.removeCouponBody": "\"{{code}}\" अब redeem नहीं होगा.",
+    "owner.coupons.removeCouponTitle": "Coupon remove करें?",
+    "owner.coupons.saveChanges": "Changes save करें",
+    "owner.coupons.subtitle": "Members checkout पर जो discount codes apply कर सकते हैं.",
+    "owner.coupons.title": "Coupons और offers",
+    "owner.coupons.unlimited": "Unlimited",
+    "owner.coupons.usedCount": "{{count}} used",
+    "owner.coupons.usedWithLimit": "{{used}}/{{limit}} used",
     "owner.plans.createPlan": "Plan बनाएं",
     "owner.plans.dateRange": "Date range",
     "owner.plans.daysCount": "{{count}} days",
