@@ -748,6 +748,14 @@ export type TranslationKey =
   | "trainer.clients.subtitle"
   | "trainer.clients.title"
   | "trainer.clients.tryAnotherSearch"
+  | "trainer.clientSessions.adherence"
+  | "trainer.clientSessions.averageCompletion"
+  | "trainer.clientSessions.backToClients"
+  | "trainer.clientSessions.noDetails"
+  | "trainer.clientSessions.noPlans"
+  | "trainer.clientSessions.planFeedback"
+  | "trainer.clientSessions.title"
+  | "trainer.clientSessions.waitingForFeedback"
   | "trainer.pt.add"
   | "trainer.pt.adding"
   | "trainer.pt.allSessionsCompleted"
@@ -1550,6 +1558,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · client list is access-controlled",
     "trainer.clients.title": "Clients",
     "trainer.clients.tryAnotherSearch": "Try another search or filter.",
+    "trainer.clientSessions.adherence": "Adherence",
+    "trainer.clientSessions.averageCompletion": "{{percent}}% average completion across recent plan feedback.",
+    "trainer.clientSessions.backToClients": "Back to clients",
+    "trainer.clientSessions.noDetails": "No details added.",
+    "trainer.clientSessions.noPlans": "No plans",
+    "trainer.clientSessions.planFeedback": "Plan feedback",
+    "trainer.clientSessions.title": "Client Detail",
+    "trainer.clientSessions.waitingForFeedback": "Waiting for member feedback and workout logs.",
     "trainer.pt.add": "Add",
     "trainer.pt.adding": "Adding...",
     "trainer.pt.allSessionsCompleted": "All sessions completed",
@@ -2351,6 +2367,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · क्लाइंट सूची access-controlled है",
     "trainer.clients.title": "क्लाइंट",
     "trainer.clients.tryAnotherSearch": "दूसरी खोज या फिल्टर आजमाएं.",
+    "trainer.clientSessions.adherence": "Adherence",
+    "trainer.clientSessions.averageCompletion": "Recent plan feedback में {{percent}}% average completion.",
+    "trainer.clientSessions.backToClients": "Clients पर वापस",
+    "trainer.clientSessions.noDetails": "कोई details नहीं जोड़ी गई.",
+    "trainer.clientSessions.noPlans": "कोई plan नहीं",
+    "trainer.clientSessions.planFeedback": "Plan feedback",
+    "trainer.clientSessions.title": "Client Detail",
+    "trainer.clientSessions.waitingForFeedback": "Member feedback और workout logs का इंतजार है.",
     "trainer.pt.add": "जोड़ें",
     "trainer.pt.adding": "जोड़ा जा रहा है...",
     "trainer.pt.allSessionsCompleted": "सभी सेशन पूरे",

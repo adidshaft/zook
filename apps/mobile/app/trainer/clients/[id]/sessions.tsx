@@ -18,15 +18,17 @@ import {
   type ClientDetailTab,
 } from "@/features/trainer/helpers";
 import { useTrainerClients } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, useTheme } from "@/lib/theme";
 
 export default function TrainerClientSessionsScreen() {
   const router = useRouter();
   const { id = "" } = useLocalSearchParams<{ id: string }>();
   const { palette } = useTheme();
+  const t = useT();
   const clientsQuery = useTrainerClients();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
-  const clientName = client?.user?.name ?? "Client";
+  const clientName = client?.user?.name ?? t("trainer.home.clientFallback");
   const activePlans = client?.summary?.activePlans ?? 0;
   const hasActivePlans = activePlans > 0;
   const averageCompletion = averageCompletionFor(client);
@@ -41,13 +43,13 @@ export default function TrainerClientSessionsScreen() {
       <ZookScreen testID="trainer-client-sessions-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <AppHeader
-            title="Client Detail"
+            title={t("trainer.clientSessions.title")}
             subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
                 accessibilityRole="button"
-                accessibilityLabel="Back to clients"
+                accessibilityLabel={t("trainer.clientSessions.backToClients")}
                 style={[styles.iconButton, { backgroundColor: palette.surface.raised, borderColor: palette.border.default }]}
               >
                 <Text style={[styles.backIcon, { color: palette.text.primary }]}>‹</Text>
@@ -57,23 +59,23 @@ export default function TrainerClientSessionsScreen() {
           <SegmentedControl options={clientDetailTabs} value="sessions" onChange={selectTab} />
           <Card variant="compact" contentStyle={styles.stack}>
             <ListRow
-              title="Adherence"
-              subtitle={averageCompletion === null ? "Waiting for member feedback and workout logs." : `${averageCompletion}% average completion across recent plan feedback.`}
+              title={t("trainer.clientSessions.adherence")}
+              subtitle={averageCompletion === null ? t("trainer.clientSessions.waitingForFeedback") : t("trainer.clientSessions.averageCompletion", { percent: averageCompletion })}
               trailing={averageCompletion === null ? undefined : <StatusChip status={`${averageCompletion}%`} tone="blue" />}
             />
             {progressTimeline.length ? (
               progressTimeline.map((entry) => (
-                <ListRow key={entry.id} title={entry.title} subtitle={entry.body || "No details added."} trailing={<StatusChip status={entry.status} tone={entry.tone} />} />
+                <ListRow key={entry.id} title={entry.title} subtitle={entry.body || t("trainer.clientSessions.noDetails")} trailing={<StatusChip status={entry.status} tone={entry.tone} />} />
               ))
             ) : (
-              <ListRow title="Plan feedback" />
+              <ListRow title={t("trainer.clientSessions.planFeedback")} />
             )}
             <ListRow
-              title="Plans"
+              title={t("nav.plans")}
               subtitle={planCountLabel(activePlans)}
               trailing={
                 <StatusChip
-                  status={hasActivePlans ? "Active" : "No plans"}
+                  status={hasActivePlans ? t("member.home.active") : t("trainer.clientSessions.noPlans")}
                   tone={hasActivePlans ? "blue" : "neutral"}
                 />
               }
