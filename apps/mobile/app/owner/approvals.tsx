@@ -6,7 +6,7 @@ import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
 import { MetricGrid } from "@/components/domain/metric-grid";
-import { BranchSelectorChip, EmptyState, Card, PrimaryButton, ProfileShortcut, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, HeaderActions, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useHasPermission, useAuth } from "@/lib/auth";
@@ -14,6 +14,7 @@ import { ownerApi } from "@/lib/domain-api";
 import { useApproveAttendance, useOrgAttendancePending } from "@/lib/domains/attendance";
 import { useApproveJoinRequest, useOrgJoinRequests, useRejectJoinRequest } from "@/lib/domains/owner";
 import { formatReviewReason, titleCaseFromCode } from "@/lib/formatting";
+import { useI18n } from "@/lib/i18n";
 import { layout, spacing, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
@@ -21,6 +22,7 @@ export default function OwnerApprovalsScreen() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
+  const { t } = useI18n();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const joinRequestsQuery = useOrgJoinRequests();
   const attentionQuery = useOrgAttendancePending();
@@ -38,14 +40,14 @@ export default function OwnerApprovalsScreen() {
   const pendingApprovals = joinRequests.length + attentionAttempts.length;
   const joinItems: ApprovalItem[] = joinRequests.map((request) => ({
     id: request.id,
-    primaryText: request.userName ?? "Join request",
-    secondaryText: `${request.userEmail ?? request.userId} · Referral ${request.referralCode ?? "none"}`,
-    metaText: "Pending",
+    primaryText: request.userName ?? t("owner.approvals.joinRequest"),
+    secondaryText: `${request.userEmail ?? request.userId} · ${t("owner.approvals.referral")}: ${request.referralCode ?? t("owner.approvals.none")}`,
+    metaText: t("owner.approvals.pending"),
   }));
   const attendanceItems: ApprovalItem[] = attentionAttempts.map((record) => ({
     id: record.id,
-    primaryText: record.user?.name ?? record.user?.email ?? "Member check-in",
-    secondaryText: `${record.branchName ?? "Main branch"} · ${titleCaseFromCode(record.status)}`,
+    primaryText: record.user?.name ?? record.user?.email ?? t("owner.approvals.memberCheckIn"),
+    secondaryText: `${record.branchName ?? t("owner.home.mainBranch")} · ${titleCaseFromCode(record.status)}`,
     reason: formatReviewReason(
       Array.isArray(record.suspiciousFlags) ? record.suspiciousFlags.join(", ") : null,
     ),
@@ -62,11 +64,17 @@ export default function OwnerApprovalsScreen() {
       });
       const approved = result.approved?.length ?? joinRequests.length;
       const failed = result.failed?.length ?? 0;
-      showToast({ tone: failed ? "amber" : "success", haptic: failed ? "warning" : "success", message: failed ? `Approved ${approved} of ${joinRequests.length}.` : `Approved ${approved} join ${approved === 1 ? "request" : "requests"}.` });
+      showToast({
+        tone: failed ? "amber" : "success",
+        haptic: failed ? "warning" : "success",
+        message: failed
+          ? t("owner.approvals.approvedPartial", { approved, total: joinRequests.length })
+          : t("owner.approvals.approvedJoinRequests", { count: approved }),
+      });
       await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to approve join requests.";
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      const message = error instanceof Error ? error.message : t("owner.approvals.approveFailed");
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setBatchApproving(false);
     }
@@ -74,23 +82,23 @@ export default function OwnerApprovalsScreen() {
 
   function confirmApproveAllJoinRequests() {
     Alert.alert(
-      "Approve all join requests?",
-      `${joinRequests.length} pending ${joinRequests.length === 1 ? "member" : "members"} will be added to this gym.`,
+      t("owner.approvals.approveAllTitle"),
+      t("owner.approvals.approveAllBody", { count: joinRequests.length }),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Approve all", onPress: () => void approveAllJoinRequests() },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("owner.approvals.approveAll"), onPress: () => void approveAllJoinRequests() },
       ],
     );
   }
 
   function confirmRejectJoinRequest(id: string) {
     Alert.alert(
-      "Reject join request?",
-      "This person won't be added to the gym and would need to request again.",
+      t("owner.approvals.rejectTitle"),
+      t("owner.approvals.rejectBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Reject",
+          text: t("owner.approvals.reject"),
           style: "destructive",
           onPress: () => {
             void rejectJoinRequestMutation
@@ -99,13 +107,13 @@ export default function OwnerApprovalsScreen() {
                 showToast({
                   tone: "success",
                   haptic: "success",
-                  message: "Join request rejected.",
+                  message: t("owner.approvals.rejected"),
                 });
               })
               .catch((error) => {
                 const message =
-                  error instanceof Error ? error.message : "Unable to reject join request.";
-                showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+                  error instanceof Error ? error.message : t("owner.approvals.rejectFailed");
+                showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
               });
           },
         },
@@ -137,24 +145,24 @@ export default function OwnerApprovalsScreen() {
           }}
         >
           <ScreenHeader
-            title="Approvals"
+            title={t("owner.approvals.title")}
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
                 <BranchSelectorChip />
               </View>
             }
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
           />
           <MetricGrid
             items={[
               {
-                label: "Join requests",
+                label: t("owner.approvals.joinRequests"),
                 value: joinRequests.length,
                 tone: "amber",
               },
               {
-                label: "Scan reviews",
+                label: t("owner.approvals.scanReviews"),
                 value: attentionAttempts.length,
                 tone: "red",
               },
@@ -164,14 +172,14 @@ export default function OwnerApprovalsScreen() {
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
           ) : pendingApprovals === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="checkmark-done-outline" title="All caught up" body="No join requests or flagged check-ins need your review." />
+              <EmptyState icon="checkmark-done-outline" title={t("owner.approvals.allCaughtUp")} body={t("owner.approvals.allCaughtUpBody")} />
             </Card>
           ) : null}
           {joinRequests.length ? (
             <>
               <SectionHeader
-                title={`Request list (${joinRequests.length})`}
-                action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>Approve all</PrimaryButton>}
+                title={t("owner.approvals.requestListCount", { count: joinRequests.length })}
+                action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>{t("owner.approvals.approveAll")}</PrimaryButton>}
               />
               <ApprovalQueue
                 testID="pending-approvals-list"
@@ -183,12 +191,12 @@ export default function OwnerApprovalsScreen() {
           ) : null}
           {attendanceItems.length ? (
             <>
-              <SectionHeader title={`Scan review queue (${attendanceItems.length})`} />
+              <SectionHeader title={t("owner.approvals.scanReviewQueueCount", { count: attendanceItems.length })} />
               <ApprovalQueue
                 items={attendanceItems}
                 onApprove={(id) => {
                   if (!canApproveAttendance) {
-                    showToast({ title: "Owner approval required", tone: "amber" });
+                    showToast({ title: t("owner.approvals.ownerApprovalRequired"), tone: "amber" });
                     return;
                   }
                   approveAttendanceMutation.mutate(id);

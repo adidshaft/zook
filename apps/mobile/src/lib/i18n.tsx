@@ -1053,6 +1053,58 @@ export type TranslationKey =
   | "owner.members.title"
   | "owner.members.total"
   | "owner.members.tryAgain"
+  | "owner.approvals.allCaughtUp"
+  | "owner.approvals.allCaughtUpBody"
+  | "owner.approvals.approveAll"
+  | "owner.approvals.approveAllBody"
+  | "owner.approvals.approveAllTitle"
+  | "owner.approvals.approveFailed"
+  | "owner.approvals.approvedJoinRequests"
+  | "owner.approvals.approvedPartial"
+  | "owner.approvals.joinRequest"
+  | "owner.approvals.joinRequests"
+  | "owner.approvals.memberCheckIn"
+  | "owner.approvals.none"
+  | "owner.approvals.ownerApprovalRequired"
+  | "owner.approvals.pending"
+  | "owner.approvals.referral"
+  | "owner.approvals.reject"
+  | "owner.approvals.rejectBody"
+  | "owner.approvals.rejected"
+  | "owner.approvals.rejectFailed"
+  | "owner.approvals.rejectTitle"
+  | "owner.approvals.requestListCount"
+  | "owner.approvals.scanReviewQueueCount"
+  | "owner.approvals.scanReviews"
+  | "owner.approvals.title"
+  | "owner.more.billing"
+  | "owner.more.billingSubtitle"
+  | "owner.more.branches"
+  | "owner.more.branchesSubtitle"
+  | "owner.more.couponsOffers"
+  | "owner.more.couponsOffersSubtitle"
+  | "owner.more.entryQr"
+  | "owner.more.entryQrSubtitle"
+  | "owner.more.exerciseLibrary"
+  | "owner.more.exerciseLibrarySubtitle"
+  | "owner.more.membershipPlans"
+  | "owner.more.membershipPlansSubtitle"
+  | "owner.more.notificationTemplates"
+  | "owner.more.notificationTemplatesSubtitle"
+  | "owner.more.ownerTools"
+  | "owner.more.referGym"
+  | "owner.more.referGymSubtitle"
+  | "owner.more.referralProgram"
+  | "owner.more.referralProgramSubtitle"
+  | "owner.more.reports"
+  | "owner.more.reportsSubtitle"
+  | "owner.more.staff"
+  | "owner.more.staffSubtitle"
+  | "owner.more.stock"
+  | "owner.more.stockSubtitle"
+  | "owner.more.trainerPayouts"
+  | "owner.more.trainerPayoutsSubtitle"
+  | "owner.more.webControlRoom"
   | "owner.payouts.baseMonthly"
   | "owner.payouts.confirmBody"
   | "owner.payouts.confirmTitle"
@@ -2455,6 +2507,58 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "Members",
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
+    "owner.approvals.allCaughtUp": "All caught up",
+    "owner.approvals.allCaughtUpBody": "No join requests or flagged check-ins need your review.",
+    "owner.approvals.approveAll": "Approve all",
+    "owner.approvals.approveAllBody": "{{count}} pending members will be added to this gym.",
+    "owner.approvals.approveAllTitle": "Approve all join requests?",
+    "owner.approvals.approveFailed": "Unable to approve join requests.",
+    "owner.approvals.approvedJoinRequests": "Approved {{count}} join requests.",
+    "owner.approvals.approvedPartial": "Approved {{approved}} of {{total}}.",
+    "owner.approvals.joinRequest": "Join request",
+    "owner.approvals.joinRequests": "Join requests",
+    "owner.approvals.memberCheckIn": "Member check-in",
+    "owner.approvals.none": "none",
+    "owner.approvals.ownerApprovalRequired": "Owner approval required",
+    "owner.approvals.pending": "Pending",
+    "owner.approvals.referral": "Referral",
+    "owner.approvals.reject": "Reject",
+    "owner.approvals.rejectBody": "This person won't be added to the gym and would need to request again.",
+    "owner.approvals.rejected": "Join request rejected.",
+    "owner.approvals.rejectFailed": "Unable to reject join request.",
+    "owner.approvals.rejectTitle": "Reject join request?",
+    "owner.approvals.requestListCount": "Request list ({{count}})",
+    "owner.approvals.scanReviewQueueCount": "Scan review queue ({{count}})",
+    "owner.approvals.scanReviews": "Scan reviews",
+    "owner.approvals.title": "Approvals",
+    "owner.more.billing": "Billing",
+    "owner.more.billingSubtitle": "Trial and subscription",
+    "owner.more.branches": "Branches",
+    "owner.more.branchesSubtitle": "Locations and operating details",
+    "owner.more.couponsOffers": "Coupons & offers",
+    "owner.more.couponsOffersSubtitle": "Discount codes for checkout campaigns",
+    "owner.more.entryQr": "Entry QR",
+    "owner.more.entryQrSubtitle": "Display the rolling check-in QR at your door",
+    "owner.more.exerciseLibrary": "Exercise library",
+    "owner.more.exerciseLibrarySubtitle": "Shared workout templates for trainers",
+    "owner.more.membershipPlans": "Membership plans",
+    "owner.more.membershipPlansSubtitle": "Create and price the plans members buy",
+    "owner.more.notificationTemplates": "Notification templates",
+    "owner.more.notificationTemplatesSubtitle": "Reusable message drafts",
+    "owner.more.ownerTools": "Owner tools",
+    "owner.more.referGym": "Refer a gym & earn",
+    "owner.more.referGymSubtitle": "Get free Zook days when a gym you refer subscribes",
+    "owner.more.referralProgram": "Referral program",
+    "owner.more.referralProgramSubtitle": "Set rewards for members, trainers & gym referrals",
+    "owner.more.reports": "Reports",
+    "owner.more.reportsSubtitle": "Revenue, attendance, and member movement",
+    "owner.more.staff": "Staff",
+    "owner.more.staffSubtitle": "Invite and manage admins and trainers",
+    "owner.more.stock": "Stock",
+    "owner.more.stockSubtitle": "Products and pickups",
+    "owner.more.trainerPayouts": "Trainer payouts",
+    "owner.more.trainerPayoutsSubtitle": "Review and pay your coaches",
+    "owner.more.webControlRoom": "Web control room",
     "owner.payouts.baseMonthly": "Base / month (₹)",
     "owner.payouts.confirmBody": "Mark {{amount}} as paid for {{period}}.",
     "owner.payouts.confirmTitle": "Pay {{name}}?",
@@ -3856,6 +3960,58 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "मेंबर",
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
+    "owner.approvals.allCaughtUp": "सब caught up",
+    "owner.approvals.allCaughtUpBody": "कोई join request या flagged check-in review नहीं चाहता.",
+    "owner.approvals.approveAll": "सभी approve करें",
+    "owner.approvals.approveAllBody": "{{count}} pending members इस gym में जोड़े जाएंगे.",
+    "owner.approvals.approveAllTitle": "सभी join requests approve करें?",
+    "owner.approvals.approveFailed": "Join requests approve नहीं हो सकीं.",
+    "owner.approvals.approvedJoinRequests": "{{count}} join requests approve हुईं.",
+    "owner.approvals.approvedPartial": "{{approved}} of {{total}} approve हुए.",
+    "owner.approvals.joinRequest": "Join request",
+    "owner.approvals.joinRequests": "Join requests",
+    "owner.approvals.memberCheckIn": "Member check-in",
+    "owner.approvals.none": "none",
+    "owner.approvals.ownerApprovalRequired": "Owner approval required",
+    "owner.approvals.pending": "Pending",
+    "owner.approvals.referral": "Referral",
+    "owner.approvals.reject": "Reject",
+    "owner.approvals.rejectBody": "यह व्यक्ति gym में add नहीं होगा और उसे फिर request करनी होगी.",
+    "owner.approvals.rejected": "Join request reject हो गई.",
+    "owner.approvals.rejectFailed": "Join request reject नहीं हो सकी.",
+    "owner.approvals.rejectTitle": "Join request reject करें?",
+    "owner.approvals.requestListCount": "Request list ({{count}})",
+    "owner.approvals.scanReviewQueueCount": "Scan review queue ({{count}})",
+    "owner.approvals.scanReviews": "Scan reviews",
+    "owner.approvals.title": "Approvals",
+    "owner.more.billing": "Billing",
+    "owner.more.billingSubtitle": "Trial और subscription",
+    "owner.more.branches": "Branches",
+    "owner.more.branchesSubtitle": "Locations और operating details",
+    "owner.more.couponsOffers": "Coupons & offers",
+    "owner.more.couponsOffersSubtitle": "Checkout campaigns के discount codes",
+    "owner.more.entryQr": "Entry QR",
+    "owner.more.entryQrSubtitle": "Door पर rolling check-in QR दिखाएं",
+    "owner.more.exerciseLibrary": "Exercise library",
+    "owner.more.exerciseLibrarySubtitle": "Trainers के लिए shared workout templates",
+    "owner.more.membershipPlans": "Membership plans",
+    "owner.more.membershipPlansSubtitle": "Members जो plans खरीदते हैं उन्हें create और price करें",
+    "owner.more.notificationTemplates": "Notification templates",
+    "owner.more.notificationTemplatesSubtitle": "Reusable message drafts",
+    "owner.more.ownerTools": "Owner tools",
+    "owner.more.referGym": "Gym refer करें और earn करें",
+    "owner.more.referGymSubtitle": "आपके refer किए gym के subscribe करने पर free Zook days पाएं",
+    "owner.more.referralProgram": "Referral program",
+    "owner.more.referralProgramSubtitle": "Members, trainers और gym referrals के rewards set करें",
+    "owner.more.reports": "Reports",
+    "owner.more.reportsSubtitle": "Revenue, attendance और member movement",
+    "owner.more.staff": "Staff",
+    "owner.more.staffSubtitle": "Admins और trainers invite/manage करें",
+    "owner.more.stock": "Stock",
+    "owner.more.stockSubtitle": "Products और pickups",
+    "owner.more.trainerPayouts": "Trainer payouts",
+    "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
+    "owner.more.webControlRoom": "Web control room",
     "owner.payouts.baseMonthly": "Base / month (₹)",
     "owner.payouts.confirmBody": "{{period}} के लिए {{amount}} paid mark करें.",
     "owner.payouts.confirmTitle": "{{name}} को pay करें?",
