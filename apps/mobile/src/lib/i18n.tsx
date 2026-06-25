@@ -619,6 +619,27 @@ export type TranslationKey =
   | "member.classDetail.spots"
   | "member.classDetail.spotsBooked"
   | "member.classDetail.waitlisted"
+  | "member.classes.bookClass"
+  | "member.classes.bookWithPrice"
+  | "member.classes.booked"
+  | "member.classes.branchSchedule"
+  | "member.classes.cancelling"
+  | "member.classes.coachName"
+  | "member.classes.continuePayment"
+  | "member.classes.couldNotLoad"
+  | "member.classes.free"
+  | "member.classes.full"
+  | "member.classes.joinWaitlist"
+  | "member.classes.left"
+  | "member.classes.noClasses"
+  | "member.classes.noClassesBody"
+  | "member.classes.onWaitlist"
+  | "member.classes.opening"
+  | "member.classes.paymentDue"
+  | "member.classes.spots"
+  | "member.classes.subtitle"
+  | "member.classes.title"
+  | "member.classes.waitlisted"
   | "member.you.accountCenter"
   | "member.you.appearance"
   | "member.you.backToOwnerMode"
@@ -1592,6 +1613,27 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classDetail.spots": "{{count}} spots",
     "member.classDetail.spotsBooked": "spots booked",
     "member.classDetail.waitlisted": "Waitlisted",
+    "member.classes.bookClass": "Book class",
+    "member.classes.bookWithPrice": "Book · {{price}}",
+    "member.classes.booked": "Booked",
+    "member.classes.branchSchedule": "{{branch}} schedule",
+    "member.classes.cancelling": "Cancelling...",
+    "member.classes.coachName": "Coach {{name}}",
+    "member.classes.continuePayment": "Continue payment",
+    "member.classes.couldNotLoad": "Classes could not load.",
+    "member.classes.free": "Free",
+    "member.classes.full": "Full",
+    "member.classes.joinWaitlist": "Join waitlist",
+    "member.classes.left": "{{count}} left",
+    "member.classes.noClasses": "No classes scheduled",
+    "member.classes.noClassesBody": "Check back soon - new group sessions are added every week.",
+    "member.classes.onWaitlist": "On waitlist",
+    "member.classes.opening": "Opening...",
+    "member.classes.paymentDue": "Payment due",
+    "member.classes.spots": "{{count}} spots",
+    "member.classes.subtitle": "Reserve your spot in upcoming group sessions.",
+    "member.classes.title": "Classes",
+    "member.classes.waitlisted": "Waitlisted",
     "member.you.accountCenter": "Zook account center",
     "member.you.appearance": "Appearance",
     "member.you.backToOwnerMode": "Back to Owner mode",
@@ -2565,6 +2607,27 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classDetail.spots": "{{count}} स्पॉट",
     "member.classDetail.spotsBooked": "स्पॉट बुक",
     "member.classDetail.waitlisted": "वेटलिस्टेड",
+    "member.classes.bookClass": "क्लास बुक करें",
+    "member.classes.bookWithPrice": "बुक करें · {{price}}",
+    "member.classes.booked": "बुक्ड",
+    "member.classes.branchSchedule": "{{branch}} schedule",
+    "member.classes.cancelling": "रद्द हो रहा है...",
+    "member.classes.coachName": "कोच {{name}}",
+    "member.classes.continuePayment": "पेमेंट जारी रखें",
+    "member.classes.couldNotLoad": "Classes लोड नहीं हो सकीं.",
+    "member.classes.free": "फ्री",
+    "member.classes.full": "फुल",
+    "member.classes.joinWaitlist": "वेटलिस्ट में जुड़ें",
+    "member.classes.left": "{{count}} बाकी",
+    "member.classes.noClasses": "कोई क्लास scheduled नहीं",
+    "member.classes.noClassesBody": "जल्द फिर देखें - हर हफ्ते नए group sessions जोड़े जाते हैं.",
+    "member.classes.onWaitlist": "वेटलिस्ट पर",
+    "member.classes.opening": "खुल रहा है...",
+    "member.classes.paymentDue": "पेमेंट बाकी",
+    "member.classes.spots": "{{count}} स्पॉट",
+    "member.classes.subtitle": "Upcoming group sessions में अपनी spot reserve करें.",
+    "member.classes.title": "क्लासेस",
+    "member.classes.waitlisted": "वेटलिस्टेड",
     "member.you.accountCenter": "Zook अकाउंट सेंटर",
     "member.you.appearance": "दिखावट",
     "member.you.backToOwnerMode": "Owner मोड पर वापस",

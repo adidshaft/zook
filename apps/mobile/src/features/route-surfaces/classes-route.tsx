@@ -18,6 +18,7 @@ import { useBranchSelection } from "@/lib/branch-selection";
 import { useCancelEnrollment, useEnrollInClass, useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { formatInr, formatTime } from "@/lib/formatting";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 import {
   classDayHeading,
@@ -25,24 +26,26 @@ import {
   classTypeVisual,
 } from "@/features/member/classes/class-display";
 
-function bookingLabel(entry: MemberClassRecord) {
-  if (entry.myEnrollmentStatus === "confirmed") return "Booked";
-  if (entry.myEnrollmentStatus === "pending_payment") return "Continue payment";
-  if (entry.myEnrollmentStatus === "waitlisted") return "On waitlist";
-  if (entry.remainingCapacity <= 0) return "Join waitlist";
-  return entry.pricePaise && entry.pricePaise > 0 ? `Book · ${formatInr(entry.pricePaise)}` : "Book class";
+type TFunction = (key: TranslationKey, values?: Record<string, string | number>) => string;
+
+function bookingLabel(entry: MemberClassRecord, t: TFunction) {
+  if (entry.myEnrollmentStatus === "confirmed") return t("member.classes.booked");
+  if (entry.myEnrollmentStatus === "pending_payment") return t("member.classes.continuePayment");
+  if (entry.myEnrollmentStatus === "waitlisted") return t("member.classes.onWaitlist");
+  if (entry.remainingCapacity <= 0) return t("member.classes.joinWaitlist");
+  return entry.pricePaise && entry.pricePaise > 0 ? t("member.classes.bookWithPrice", { price: formatInr(entry.pricePaise) }) : t("member.classes.bookClass");
 }
 
-function statusPill(entry: MemberClassRecord) {
-  if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
+function statusPill(entry: MemberClassRecord, t: TFunction) {
+  if (entry.myEnrollmentStatus === "confirmed") return { label: t("member.classes.booked"), tone: "lime" as const };
   if (entry.myEnrollmentStatus === "pending_payment")
-    return { label: "Payment due", tone: "amber" as const };
+    return { label: t("member.classes.paymentDue"), tone: "amber" as const };
   if (entry.myEnrollmentStatus === "waitlisted")
-    return { label: "Waitlisted", tone: "amber" as const };
-  if (entry.remainingCapacity <= 0) return { label: "Full", tone: "red" as const };
+    return { label: t("member.classes.waitlisted"), tone: "amber" as const };
+  if (entry.remainingCapacity <= 0) return { label: t("member.classes.full"), tone: "red" as const };
   if (entry.remainingCapacity <= 3)
-    return { label: `${entry.remainingCapacity} left`, tone: "amber" as const };
-  return { label: `${entry.remainingCapacity} spots`, tone: "neutral" as const };
+    return { label: t("member.classes.left", { count: entry.remainingCapacity }), tone: "amber" as const };
+  return { label: t("member.classes.spots", { count: entry.remainingCapacity }), tone: "neutral" as const };
 }
 
 function groupByDay(classes: MemberClassRecord[]) {
@@ -72,16 +75,17 @@ function ClassCard({
   onBook: () => void;
   onCancel: () => void;
 }) {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
+  const t = useT();
   const visual = classTypeVisual(entry.classType);
-  const pill = statusPill(entry);
+  const pill = statusPill(entry, t);
   const booked = entry.myEnrollmentStatus === "confirmed";
   const pendingPayment = entry.myEnrollmentStatus === "pending_payment";
   const waitlisted = entry.myEnrollmentStatus === "waitlisted";
   const meta = [
     entry.classType,
-    entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : "Free",
-    entry.trainerName ? `Coach ${entry.trainerName}` : null,
+    entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free"),
+    entry.trainerName ? t("member.classes.coachName", { name: entry.trainerName }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -94,7 +98,7 @@ function ClassCard({
       ]}
     >
       <LinearGradient
-        colors={classTypeGradient(entry.classType)}
+        colors={classTypeGradient(entry.classType, mode)}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.8, y: 1 }}
         style={StyleSheet.absoluteFillObject}
@@ -122,7 +126,7 @@ function ClassCard({
           <View style={styles.actionRow}>
             <View style={styles.bookedBadge}>
               <Pill tone={waitlisted ? "amber" : "lime"}>
-                {waitlisted ? "On waitlist" : "Booked"}
+                {waitlisted ? t("member.classes.onWaitlist") : t("member.classes.booked")}
               </Pill>
             </View>
             <ZookButton
@@ -132,16 +136,16 @@ function ClassCard({
               icon="close-circle-outline"
               style={styles.cancelButton}
             >
-              {cancelling ? "Cancelling..." : "Cancel"}
+              {cancelling ? t("member.classes.cancelling") : t("common.cancel")}
             </ZookButton>
           </View>
         ) : pendingPayment ? (
           <ZookButton onPress={onBook} disabled={busy} variant="primary">
-            {busy ? "Opening..." : bookingLabel(entry)}
+            {busy ? t("member.classes.opening") : bookingLabel(entry, t)}
           </ZookButton>
         ) : (
           <ZookButton onPress={onBook} disabled={busy} variant="primary">
-            {busy ? "Saving..." : bookingLabel(entry)}
+            {busy ? t("common.saving") : bookingLabel(entry, t)}
           </ZookButton>
         )}
       </View>
@@ -151,6 +155,7 @@ function ClassCard({
 
 export default function ClassesRoute() {
   const { palette } = useTheme();
+  const t = useT();
   const { selectedBranch } = useBranchSelection();
   const classesQuery = useMyClasses();
   const enrollMutation = useEnrollInClass();
@@ -158,7 +163,7 @@ export default function ClassesRoute() {
   const [refreshing, setRefreshing] = useState(false);
 
   const classes = useMemo(
-    () => classesQuery.data?.classes ?? [],
+    () => (classesQuery.data?.classes ?? []).filter((entry) => entry.status !== "CANCELLED"),
     [classesQuery.data?.classes],
   );
   const groups = useMemo(() => groupByDay(classes), [classes]);
@@ -187,11 +192,11 @@ export default function ClassesRoute() {
           }
         >
           <AppHeader
-            title="Classes"
+            title={t("member.classes.title")}
             subtitle={
               selectedBranch
-                ? `${selectedBranch.name} schedule`
-                : "Reserve your spot in upcoming group sessions."
+                ? t("member.classes.branchSchedule", { branch: selectedBranch.name })
+                : t("member.classes.subtitle")
             }
             contextSlot={<BranchSelectorChip />}
             showBack
@@ -203,7 +208,7 @@ export default function ClassesRoute() {
                 error={
                   classesQuery.error instanceof Error
                     ? classesQuery.error
-                    : new Error("Classes could not load.")
+                    : new Error(t("member.classes.couldNotLoad"))
                 }
                 onRetry={() => void classesQuery.refetch()}
               />
@@ -216,8 +221,8 @@ export default function ClassesRoute() {
             <Card variant="compact">
               <EmptyState
                 icon="calendar-outline"
-                title="No classes scheduled"
-                body="Check back soon — new group sessions are added every week."
+                title={t("member.classes.noClasses")}
+                body={t("member.classes.noClassesBody")}
               />
             </Card>
           ) : null}
