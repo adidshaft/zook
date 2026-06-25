@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { OtpInput, type OtpInputHandle } from "@/components/primitives";
 import { setPrivilegedPinPrompt } from "@/lib/privileged-action";
+import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
 type PendingPrompt = {
@@ -22,6 +23,7 @@ type PendingPrompt = {
 
 export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
   const { mode, palette } = useTheme();
+  const t = useT();
   const inputRef = useRef<OtpInputHandle>(null);
   const [pending, setPending] = useState<PendingPrompt | null>(null);
   const [pin, setPin] = useState("");
@@ -126,18 +128,18 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
               </View>
               <View style={styles.copy}>
                 <Text style={[styles.title, { color: palette.text.primary }]}>
-                  {pending?.label ?? "Confirm action"}
+                  {pending?.label ?? t("privilegedPin.confirmAction")}
                 </Text>
                 <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  Enter the 4-digit org PIN to continue.
+                  {t("privilegedPin.body")}
                 </Text>
               </View>
             </View>
             <OtpInput
               ref={inputRef}
               testID="privileged-pin"
-              accessibilityLabel="Org PIN"
-              label="Org PIN"
+              accessibilityLabel={t("privilegedPin.orgPin")}
+              label={t("privilegedPin.orgPin")}
               length={4}
               value={pin}
               onChange={setPin}
@@ -156,7 +158,7 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
                   },
                 ]}
               >
-                <Text style={[styles.secondaryButtonText, { color: palette.text.primary }]}>Cancel</Text>
+                <Text style={[styles.secondaryButtonText, { color: palette.text.primary }]}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable
                 onPress={() => close(/^\d{4}$/.test(pin))}
@@ -171,7 +173,7 @@ export function PrivilegedPinProvider({ children }: { children: ReactNode }) {
                 ]}
               >
                 <Text style={[styles.primaryButtonText, { color: palette.text.onAccent }]}>
-                  Continue
+                  {t("privilegedPin.continue")}
                 </Text>
               </Pressable>
             </View>

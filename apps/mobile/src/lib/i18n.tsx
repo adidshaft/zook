@@ -1079,6 +1079,10 @@ export type TranslationKey =
   | "memberList.revealPhoneFor"
   | "memberList.searchMembers"
   | "memberList.tryDifferentSearch"
+  | "privilegedPin.body"
+  | "privilegedPin.confirmAction"
+  | "privilegedPin.continue"
+  | "privilegedPin.orgPin"
   | "member.diet.activePlan"
   | "member.diet.addCaloriesOrMacro"
   | "member.diet.addMealName"
@@ -2939,6 +2943,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "memberList.revealPhoneFor": "Reveal phone for {{name}}",
     "memberList.searchMembers": "Search members",
     "memberList.tryDifferentSearch": "Try a different search or filter.",
+    "privilegedPin.body": "Enter the 4-digit org PIN to continue.",
+    "privilegedPin.confirmAction": "Confirm action",
+    "privilegedPin.continue": "Continue",
+    "privilegedPin.orgPin": "Org PIN",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Add calories or at least one macro before logging.",
     "member.diet.addMealName": "Add a meal name before logging.",
@@ -4799,6 +4807,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "memberList.revealPhoneFor": "{{name}} का phone reveal करें",
     "memberList.searchMembers": "Members search करें",
     "memberList.tryDifferentSearch": "अलग search या filter try करें.",
+    "privilegedPin.body": "Continue करने के लिए 4-digit org PIN डालें.",
+    "privilegedPin.confirmAction": "Action confirm करें",
+    "privilegedPin.continue": "Continue",
+    "privilegedPin.orgPin": "Org PIN",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
     "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",
