@@ -54,10 +54,6 @@ function readRetryAfterSeconds(error: ApiError) {
     : OTP_RATE_LIMIT_FALLBACK_SECONDS;
 }
 
-function tooManyAttemptsMessage(seconds: number) {
-  return `Too many attempts. Try again in ${seconds}s.`;
-}
-
 function isAccountLockedError(error: unknown) {
   return error instanceof ApiError && (error.status === 423 || error.code === "account_locked");
 }
@@ -171,7 +167,7 @@ export default function Login() {
 
   useEffect(() => {
     if (rateLimitCooldown <= 0) return undefined;
-    showMessage(tooManyAttemptsMessage(rateLimitCooldown), "danger");
+    showMessage(t("auth.tooManyAttempts", { seconds: rateLimitCooldown }), "danger");
     const timer = setInterval(() => {
       setRateLimitCooldown((current) => Math.max(0, current - 1));
     }, 1000);
@@ -213,7 +209,7 @@ export default function Login() {
     if (error instanceof ApiError && error.status === 429) {
       const seconds = readRetryAfterSeconds(error);
       setRateLimitCooldown(seconds);
-      showMessage(tooManyAttemptsMessage(seconds), "danger");
+      showMessage(t("auth.tooManyAttempts", { seconds }), "danger");
       return;
     }
     showMessage(getApiErrorMessage(error), "danger");
@@ -527,7 +523,7 @@ export default function Login() {
                     variant="ghost"
                     onPress={() => router.push("/qa" as never)}
                   >
-                    QA shortcuts
+                    {t("auth.qaShortcuts")}
                   </ZookButton>
                 ) : null}
               </>

@@ -17,6 +17,7 @@ export type TranslationKey =
   | "common.cancel"
   | "common.actionFailed"
   | "common.datePicker"
+  | "common.back"
   | "common.dismiss"
   | "common.done"
   | "common.or"
@@ -121,6 +122,47 @@ export type TranslationKey =
   | "auth.sessionExpiredTitle"
   | "auth.sessionExpiredBody"
   | "auth.verifyToContinue"
+  | "auth.tooManyAttempts"
+  | "auth.qaShortcuts"
+  | "assistant.attachSummary"
+  | "assistant.attachedClientData"
+  | "assistant.attachedProfile"
+  | "assistant.clear"
+  | "assistant.clearConversation"
+  | "assistant.clientData"
+  | "assistant.contextActivePlans"
+  | "assistant.contextAllergies"
+  | "assistant.contextClient"
+  | "assistant.contextDiet"
+  | "assistant.contextGoal"
+  | "assistant.contextPlans"
+  | "assistant.contextWeight"
+  | "assistant.copied"
+  | "assistant.copyHint"
+  | "assistant.inputPlaceholder"
+  | "assistant.memberEyebrow"
+  | "assistant.memberPromptFocus"
+  | "assistant.memberPromptFood"
+  | "assistant.memberPromptWorkout"
+  | "assistant.memberStarter"
+  | "assistant.memberSubtitle"
+  | "assistant.memberTitle"
+  | "assistant.myProfile"
+  | "assistant.notSavedToastBody"
+  | "assistant.notSavedToastTitle"
+  | "assistant.resetToastBody"
+  | "assistant.resetToastTitle"
+  | "assistant.send"
+  | "assistant.thinking"
+  | "assistant.trainerEyebrow"
+  | "assistant.trainerPromptPlan"
+  | "assistant.trainerPromptSummary"
+  | "assistant.trainerPromptSwaps"
+  | "assistant.trainerStarter"
+  | "assistant.trainerSubtitle"
+  | "assistant.trainerTitle"
+  | "assistant.unavailableBody"
+  | "assistant.unavailableTitle"
   | "onboarding.allInOne"
   | "onboarding.allInOneCopy"
   | "onboarding.brand"
@@ -1135,6 +1177,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.cancel": "Cancel",
     "common.actionFailed": "Action failed",
     "common.datePicker": "Date picker",
+    "common.back": "Back",
     "common.dismiss": "Dismiss",
     "common.done": "Done",
     "common.or": "or",
@@ -1239,6 +1282,47 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expired",
     "auth.sessionExpiredBody": "Sign in again to continue.",
     "auth.verifyToContinue": "Verify it's you to continue.",
+    "auth.tooManyAttempts": "Too many attempts. Try again in {{seconds}}s.",
+    "auth.qaShortcuts": "QA shortcuts",
+    "assistant.attachSummary": "Attach summary",
+    "assistant.attachedClientData": "Attached client data",
+    "assistant.attachedProfile": "Attached profile",
+    "assistant.clear": "Clear",
+    "assistant.clearConversation": "Clear conversation",
+    "assistant.clientData": "Client data",
+    "assistant.contextActivePlans": "Active plans",
+    "assistant.contextAllergies": "Allergies",
+    "assistant.contextClient": "Client",
+    "assistant.contextDiet": "Diet",
+    "assistant.contextGoal": "Goal",
+    "assistant.contextPlans": "Plans",
+    "assistant.contextWeight": "Weight",
+    "assistant.copied": "Copied",
+    "assistant.copyHint": "Long press to copy",
+    "assistant.inputPlaceholder": "Ask in any language...",
+    "assistant.memberEyebrow": "Plan assistant",
+    "assistant.memberPromptFocus": "What should I focus on today?",
+    "assistant.memberPromptFood": "What should I eat after training?",
+    "assistant.memberPromptWorkout": "Make my workout easier to follow.",
+    "assistant.memberStarter": "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
+    "assistant.memberSubtitle": "Ask in any language — answers are tied to your profile.",
+    "assistant.memberTitle": "Talk through training",
+    "assistant.myProfile": "My profile",
+    "assistant.notSavedToastBody": "New messages may not be restored next time.",
+    "assistant.notSavedToastTitle": "Assistant not saved",
+    "assistant.resetToastBody": "Saved messages were unreadable.",
+    "assistant.resetToastTitle": "Assistant reset",
+    "assistant.send": "Send",
+    "assistant.thinking": "Thinking...",
+    "assistant.trainerEyebrow": "Trainer assistant",
+    "assistant.trainerPromptPlan": "Draft a 4-week hypertrophy plan.",
+    "assistant.trainerPromptSummary": "Summarize this client's progress.",
+    "assistant.trainerPromptSwaps": "Suggest safe exercise swaps.",
+    "assistant.trainerStarter": "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance.",
+    "assistant.trainerSubtitle": "Attach client summaries, import notes, draft plans.",
+    "assistant.trainerTitle": "Coach with context",
+    "assistant.unavailableBody": "Owner and desk operations stay in the web dashboard.",
+    "assistant.unavailableTitle": "Plan assistant",
     "onboarding.allInOne": "All in one",
     "onboarding.allInOneCopy": "Memberships, classes, payments and store pickup — all in one place.",
     "onboarding.brand": "Zook",
@@ -2261,6 +2345,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.cancel": "रद्द करें",
     "common.actionFailed": "एक्शन फेल हुआ",
     "common.datePicker": "तारीख चुनें",
+    "common.back": "वापस",
     "common.dismiss": "बंद करें",
     "common.done": "हो गया",
     "common.or": "या",
@@ -2365,6 +2450,47 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.sessionExpiredTitle": "Session expire हो गया",
     "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
     "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
+    "auth.tooManyAttempts": "बहुत ज़्यादा attempts. {{seconds}}s में फिर कोशिश करें.",
+    "auth.qaShortcuts": "QA shortcuts",
+    "assistant.attachSummary": "Summary जोड़ें",
+    "assistant.attachedClientData": "जुड़ा हुआ client data",
+    "assistant.attachedProfile": "जुड़ी हुई profile",
+    "assistant.clear": "Clear",
+    "assistant.clearConversation": "Conversation clear करें",
+    "assistant.clientData": "Client data",
+    "assistant.contextActivePlans": "Active plans",
+    "assistant.contextAllergies": "Allergies",
+    "assistant.contextClient": "Client",
+    "assistant.contextDiet": "Diet",
+    "assistant.contextGoal": "Goal",
+    "assistant.contextPlans": "Plans",
+    "assistant.contextWeight": "Weight",
+    "assistant.copied": "Copied",
+    "assistant.copyHint": "Copy करने के लिए long press करें",
+    "assistant.inputPlaceholder": "किसी भी भाषा में पूछें...",
+    "assistant.memberEyebrow": "Plan assistant",
+    "assistant.memberPromptFocus": "आज मुझे किस पर focus करना चाहिए?",
+    "assistant.memberPromptFood": "Training के बाद मुझे क्या खाना चाहिए?",
+    "assistant.memberPromptWorkout": "मेरा workout follow करना आसान बनाएं.",
+    "assistant.memberStarter": "किसी भी भाषा में पूछें. मैं assigned plans, diet preferences, recovery और gym routine में मदद कर सकता हूं.",
+    "assistant.memberSubtitle": "किसी भी भाषा में पूछें — answers आपकी profile से जुड़े होते हैं.",
+    "assistant.memberTitle": "Training पर बात करें",
+    "assistant.myProfile": "मेरी profile",
+    "assistant.notSavedToastBody": "नए messages अगली बार restore नहीं हो सकते.",
+    "assistant.notSavedToastTitle": "Assistant save नहीं हुआ",
+    "assistant.resetToastBody": "Saved messages पढ़े नहीं जा सके.",
+    "assistant.resetToastTitle": "Assistant reset हुआ",
+    "assistant.send": "भेजें",
+    "assistant.thinking": "सोच रहा है...",
+    "assistant.trainerEyebrow": "Trainer assistant",
+    "assistant.trainerPromptPlan": "4-week hypertrophy plan draft करें.",
+    "assistant.trainerPromptSummary": "इस client की progress summarize करें.",
+    "assistant.trainerPromptSwaps": "Safe exercise swaps suggest करें.",
+    "assistant.trainerStarter": "Client summary, workout data, या natural-language question भेजें. मैं plans, diet notes और recovery guidance draft करने में मदद कर सकता हूं.",
+    "assistant.trainerSubtitle": "Client summaries जोड़ें, notes import करें, plans draft करें.",
+    "assistant.trainerTitle": "Context के साथ coach करें",
+    "assistant.unavailableBody": "Owner और desk operations web dashboard में रहते हैं.",
+    "assistant.unavailableTitle": "Plan assistant",
     "onboarding.allInOne": "सब एक जगह",
     "onboarding.allInOneCopy": "Memberships, classes, payments और store pickup — सब एक जगह.",
     "onboarding.brand": "Zook",

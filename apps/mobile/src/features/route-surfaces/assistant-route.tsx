@@ -24,6 +24,7 @@ import {
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { aiApi } from "@/lib/domain-api";
+import { type TranslationKey, useI18n } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useMyPlans, useMyProfile, useTrainerClients } from "@/lib/domains";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
@@ -37,25 +38,23 @@ type ChatMessage = {
   body: string;
 };
 
-const memberPrompts = [
-  "What should I focus on today?",
-  "Make my workout easier to follow.",
-  "What should I eat after training?",
+const memberPromptKeys: TranslationKey[] = [
+  "assistant.memberPromptFocus",
+  "assistant.memberPromptWorkout",
+  "assistant.memberPromptFood",
 ];
 
-const trainerPrompts = [
-  "Draft a 4-week hypertrophy plan.",
-  "Summarize this client's progress.",
-  "Suggest safe exercise swaps.",
+const trainerPromptKeys: TranslationKey[] = [
+  "assistant.trainerPromptPlan",
+  "assistant.trainerPromptSummary",
+  "assistant.trainerPromptSwaps",
 ];
 
-function starterMessage(isTrainer: boolean): ChatMessage {
+function starterMessage(isTrainer: boolean, t: (key: TranslationKey) => string): ChatMessage {
   return {
     id: `hello-${isTrainer ? "trainer" : "member"}`,
     role: "assistant",
-    body: isTrainer
-      ? "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance."
-      : "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
+    body: isTrainer ? t("assistant.trainerStarter") : t("assistant.memberStarter"),
   };
 }
 
@@ -68,6 +67,7 @@ function homeRouteForRole(role: string) {
 
 export default function AssistantScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { palette, mode } = useTheme();
   const isDark = mode === "dark";
   const quietSurface = palette.surface.default;
@@ -93,7 +93,7 @@ export default function AssistantScreen() {
   const fallbackRoute = homeRouteForRole(activeRole);
   const storageKey = `zook_assistant_messages_${activeOrgId ?? "global"}_${activeRole ?? "member"}`;
   const hydratedRef = useRef(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([starterMessage(isTrainer)]);
+  const [messages, setMessages] = useState<ChatMessage[]>([starterMessage(isTrainer, t)]);
   const [draft, setDraft] = useState("");
   const [attachSummary, setAttachSummary] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -105,23 +105,37 @@ export default function AssistantScreen() {
   const profile = profileQuery.data;
   const contextSummary = isTrainer
     ? [
-        firstClient?.user?.name ? `Client: ${firstClient.user.name}` : null,
-        firstClient?.summary?.fitnessGoal ? `Goal: ${firstClient.summary.fitnessGoal}` : null,
-        firstClient?.summary?.weightKg ? `Weight: ${firstClient.summary.weightKg} kg` : null,
-        firstClient?.summary?.dietPreference ? `Diet: ${firstClient.summary.dietPreference}` : null,
-        firstClient?.summary?.allergies ? `Allergies: ${firstClient.summary.allergies}` : null,
+        firstClient?.user?.name ? `${t("assistant.contextClient")}: ${firstClient.user.name}` : null,
+        firstClient?.summary?.fitnessGoal
+          ? `${t("assistant.contextGoal")}: ${firstClient.summary.fitnessGoal}`
+          : null,
+        firstClient?.summary?.weightKg
+          ? `${t("assistant.contextWeight")}: ${firstClient.summary.weightKg} kg`
+          : null,
+        firstClient?.summary?.dietPreference
+          ? `${t("assistant.contextDiet")}: ${firstClient.summary.dietPreference}`
+          : null,
+        firstClient?.summary?.allergies
+          ? `${t("assistant.contextAllergies")}: ${firstClient.summary.allergies}`
+          : null,
         firstClient?.summary?.activePlans
-          ? `Active plans: ${firstClient.summary.activePlans}`
+          ? `${t("assistant.contextActivePlans")}: ${firstClient.summary.activePlans}`
           : null,
       ]
         .filter(Boolean)
         .join("\n")
     : [
-        profile?.user?.fitnessGoal ? `Goal: ${profile.user.fitnessGoal}` : null,
-        profile?.wellness?.weightKg ? `Weight: ${profile.wellness.weightKg} kg` : null,
-        profile?.wellness?.dietPreference ? `Diet: ${profile.wellness.dietPreference}` : null,
-        profile?.wellness?.allergies ? `Allergies: ${profile.wellness.allergies}` : null,
-        `Plans: ${plansCount}`,
+        profile?.user?.fitnessGoal ? `${t("assistant.contextGoal")}: ${profile.user.fitnessGoal}` : null,
+        profile?.wellness?.weightKg
+          ? `${t("assistant.contextWeight")}: ${profile.wellness.weightKg} kg`
+          : null,
+        profile?.wellness?.dietPreference
+          ? `${t("assistant.contextDiet")}: ${profile.wellness.dietPreference}`
+          : null,
+        profile?.wellness?.allergies
+          ? `${t("assistant.contextAllergies")}: ${profile.wellness.allergies}`
+          : null,
+        `${t("assistant.contextPlans")}: ${plansCount}`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -144,24 +158,24 @@ export default function AssistantScreen() {
           if (Array.isArray(parsed) && parsed.length) {
             setMessages(parsed.slice(-50));
           } else {
-            setMessages([starterMessage(isTrainer)]);
+            setMessages([starterMessage(isTrainer, t)]);
           }
         } catch {
-          setMessages([starterMessage(isTrainer)]);
+          setMessages([starterMessage(isTrainer, t)]);
           void deleteStoredValue(storageKey);
           showToast({
-            title: "Assistant reset",
-            message: "Saved messages were unreadable.",
+            title: t("assistant.resetToastTitle"),
+            message: t("assistant.resetToastBody"),
             tone: "amber",
             haptic: "warning",
           });
         }
       } else {
-        setMessages([starterMessage(isTrainer)]);
+        setMessages([starterMessage(isTrainer, t)]);
       }
       hydratedRef.current = true;
     });
-  }, [assistantEnabled, isTrainer, storageKey]);
+  }, [assistantEnabled, isTrainer, storageKey, t]);
 
   useEffect(() => {
     if (!assistantEnabled || !hydratedRef.current || !messages.length) {
@@ -169,13 +183,13 @@ export default function AssistantScreen() {
     }
     void setStoredValue(storageKey, JSON.stringify(messages.slice(-50))).catch(() => {
       showToast({
-        title: "Assistant not saved",
-        message: "New messages may not be restored next time.",
+        title: t("assistant.notSavedToastTitle"),
+        message: t("assistant.notSavedToastBody"),
         tone: "amber",
         haptic: "warning",
       });
     });
-  }, [assistantEnabled, messages, storageKey]);
+  }, [assistantEnabled, messages, storageKey, t]);
 
   useEffect(() => {
     if (!assistantEnabled) {
@@ -209,7 +223,7 @@ export default function AssistantScreen() {
       return;
     }
     await Clipboard.setStringAsync(message.body);
-    setCopyStatus("Copied");
+    setCopyStatus(t("assistant.copied"));
     setTimeout(() => setCopyStatus(""), 1400);
   }
 
@@ -254,7 +268,7 @@ export default function AssistantScreen() {
   }
 
   function resetConversation() {
-    setMessages([{ ...starterMessage(isTrainer), id: `hello-${Date.now()}` }]);
+    setMessages([{ ...starterMessage(isTrainer, t), id: `hello-${Date.now()}` }]);
     setDraft("");
     setCopyStatus("");
     void deleteStoredValue(storageKey);
@@ -273,7 +287,7 @@ export default function AssistantScreen() {
     }
   };
 
-  const suggestedPrompts = isTrainer ? trainerPrompts : memberPrompts;
+  const suggestedPrompts = (isTrainer ? trainerPromptKeys : memberPromptKeys).map((key) => t(key));
   const composerBottom = layout.bottomNavHeight + Math.max(insets.bottom, 12) + spacing.lg;
   if (!assistantEnabled) {
     return null;
@@ -286,9 +300,9 @@ export default function AssistantScreen() {
           <Card variant="compact" contentStyle={styles.emptyContent}>
             <IconBubble icon="chatbubble-ellipses-outline" tone="neutral" size={42} />
             <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>Plan assistant</Text>
+              <Text style={styles.emptyTitle}>{t("assistant.unavailableTitle")}</Text>
               <Text style={styles.emptyBody}>
-                Owner and desk operations stay in the web dashboard.
+                {t("assistant.unavailableBody")}
               </Text>
             </View>
           </Card>
@@ -314,18 +328,18 @@ export default function AssistantScreen() {
         }
       >
         <AppHeader
-          eyebrow={isTrainer ? "Trainer assistant" : "Plan assistant"}
-          title={isTrainer ? "Coach with context" : "Talk through training"}
+          eyebrow={isTrainer ? t("assistant.trainerEyebrow") : t("assistant.memberEyebrow")}
+          title={isTrainer ? t("assistant.trainerTitle") : t("assistant.memberTitle")}
           subtitle={
             isTrainer
-              ? "Attach client summaries, import notes, draft plans."
-              : "Ask in any language — answers are tied to your profile."
+              ? t("assistant.trainerSubtitle")
+              : t("assistant.memberSubtitle")
           }
           leading={
             <Pressable
               onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
               accessibilityRole="button"
-              accessibilityLabel="Back"
+              accessibilityLabel={t("common.back")}
               style={({ pressed }) => [
                 styles.iconButton,
                 {
@@ -361,7 +375,7 @@ export default function AssistantScreen() {
               pressed ? styles.controlPressed : null,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Attach summary"
+            accessibilityLabel={t("assistant.attachSummary")}
           >
             <Ionicons
               name="document-text-outline"
@@ -374,7 +388,7 @@ export default function AssistantScreen() {
                 { color: attachSummary ? palette.text.onAccent : palette.text.secondary },
               ]}
             >
-              {isTrainer ? "Client data" : "My profile"}
+              {isTrainer ? t("assistant.clientData") : t("assistant.myProfile")}
             </Text>
           </Pressable>
           <Pressable
@@ -389,10 +403,12 @@ export default function AssistantScreen() {
               pressed ? styles.controlPressed : null,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Clear conversation"
+            accessibilityLabel={t("assistant.clearConversation")}
           >
             <Ionicons name="refresh-outline" size={16} color={palette.text.secondary} />
-            <Text style={[styles.controlChipText, { color: palette.text.secondary }]}>Clear</Text>
+            <Text style={[styles.controlChipText, { color: palette.text.secondary }]}>
+              {t("assistant.clear")}
+            </Text>
           </Pressable>
           {copyStatus ? <Text style={[styles.copyStatus, { color: palette.accent.base }]}>{copyStatus}</Text> : null}
         </View>
@@ -426,7 +442,7 @@ export default function AssistantScreen() {
             <View style={styles.contextHeader}>
               <IconBubble icon="person-outline" tone="neutral" size={32} />
               <Text style={[styles.contextLabel, { color: palette.text.secondary }]}>
-                {isTrainer ? "Attached client data" : "Attached profile"}
+                {isTrainer ? t("assistant.attachedClientData") : t("assistant.attachedProfile")}
               </Text>
             </View>
             <Text style={[styles.contextText, { color: palette.text.secondary }]}>
@@ -446,7 +462,7 @@ export default function AssistantScreen() {
               }
               onLongPress={() => void copyMessage(message)}
               accessibilityRole={message.role === "assistant" ? "button" : undefined}
-              accessibilityHint={message.role === "assistant" ? "Long press to copy" : undefined}
+              accessibilityHint={message.role === "assistant" ? t("assistant.copyHint") : undefined}
               style={[
                 styles.messageBubble,
                 message.role === "user"
@@ -503,7 +519,9 @@ export default function AssistantScreen() {
               >
                 <Ionicons name="chatbubble-ellipses" size={14} color={palette.accent.base} />
               </View>
-              <Text style={[styles.typingText, { color: palette.text.secondary }]}>Thinking...</Text>
+              <Text style={[styles.typingText, { color: palette.text.secondary }]}>
+                {t("assistant.thinking")}
+              </Text>
             </View>
           ) : null}
         </View>
@@ -519,7 +537,7 @@ export default function AssistantScreen() {
             testID="assistant-message-input"
             value={draft}
             onChangeText={setDraft}
-            placeholder="Ask in any language..."
+            placeholder={t("assistant.inputPlaceholder")}
             placeholderTextColor={palette.text.tertiary}
             multiline
             style={[styles.input, { color: palette.text.primary }]}
@@ -533,7 +551,7 @@ export default function AssistantScreen() {
                 testID="assistant-clear-draft"
                 onPress={() => setDraft("")}
                 accessibilityRole="button"
-                accessibilityLabel="Clear"
+                accessibilityLabel={t("assistant.clear")}
                 style={({ pressed }) => [
                   styles.clearButton,
                   {
@@ -551,7 +569,7 @@ export default function AssistantScreen() {
               onPress={() => void askAssistant()}
               disabled={!draft.trim() || loading}
               accessibilityRole="button"
-              accessibilityLabel="Send"
+              accessibilityLabel={t("assistant.send")}
               style={({ pressed }) => [
                 styles.sendButton,
                 { backgroundColor: palette.accent.fill },
