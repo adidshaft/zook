@@ -10,6 +10,7 @@ import {
 } from "@/components/primitives";
 import { WorkoutLogCard } from "@/components/tracking";
 import { useMyBodyProgress, useMyTrackingWorkouts } from "@/lib/domains";
+import { useT } from "@/lib/i18n";
 import { workoutToEntry } from "@/lib/tracking-view";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -17,6 +18,7 @@ type TrackingWorkout = Parameters<typeof workoutToEntry>[0];
 
 export default function TrackingHistoryScreen() {
   const { palette } = useTheme();
+  const t = useT();
   const workoutsQuery = useMyTrackingWorkouts();
   const bodyProgressQuery = useMyBodyProgress();
   const workouts = (workoutsQuery.data?.workouts ?? []) as TrackingWorkout[];
@@ -50,7 +52,7 @@ export default function TrackingHistoryScreen() {
             />
           }
         >
-          <AppHeader title="Workout history" showBack />
+          <AppHeader title={t("tracking.historyTitle")} showBack />
           {workoutsQuery.isError ? <QueryErrorState error={workoutsQuery.error} onRetry={() => void workoutsQuery.refetch()} /> : null}
           {bodyProgressQuery.isError ? <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} /> : null}
           <View style={styles.stack}>
@@ -64,17 +66,17 @@ export default function TrackingHistoryScreen() {
             ) : null}
             {!workoutsQuery.isLoading && !bodyProgressQuery.isLoading ? (
               <Card variant="compact" contentStyle={styles.bodyCard}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Body progress</Text>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("tracking.bodyProgress")}</Text>
                 {latest ? (
                   <>
                     <View style={styles.metricRow}>
-                      <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Weight</Text>
+                      <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("tracking.weight")}</Text>
                       <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                         {latest.weightKg ?? "-"} kg
                       </Text>
                     </View>
                     <View style={styles.metricRow}>
-                      <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>Waist</Text>
+                      <Text style={[styles.metricLabel, { color: palette.text.secondary }]}>{t("tracking.waist")}</Text>
                       <Text style={[styles.metricValue, { color: palette.text.primary }]}>
                         {latest.waistCm ?? "-"} cm
                       </Text>
@@ -93,7 +95,7 @@ export default function TrackingHistoryScreen() {
                     </View>
                   </>
                 ) : (
-                  <EmptyState icon="body-outline" title="No body measurements" body="Log your measurements to see your trends over time." />
+                  <EmptyState icon="body-outline" title={t("tracking.noBodyMeasurements")} body={t("tracking.noBodyMeasurementsBody")} />
                 )}
               </Card>
             ) : null}
@@ -102,7 +104,7 @@ export default function TrackingHistoryScreen() {
             ))}
             {!workouts.length && !workoutsQuery.isLoading ? (
               <Card variant="compact">
-                <EmptyState icon="barbell-outline" title="No workouts yet" body="Your logged workouts will show up here." />
+                <EmptyState icon="barbell-outline" title={t("tracking.noWorkoutsYet")} body={t("tracking.noWorkoutsYetBody")} />
               </Card>
             ) : null}
           </View>

@@ -15,6 +15,7 @@ import {
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { memberApi, trackingApi } from "@/lib/domain-api";
 import { queryKeys } from "@/lib/domains/shared/keys";
+import { useT } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -24,6 +25,7 @@ export default function TrackingEntryScreen() {
   const queryClient = useQueryClient();
   const bottomPadding = useBottomScrollPadding();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   const [title, setTitle] = useState("");
   const [exerciseName, setExerciseName] = useState("");
   const [sets, setSets] = useState("");
@@ -61,15 +63,15 @@ export default function TrackingEntryScreen() {
         ...(activeOrgId ? { orgId: activeOrgId } : {}),
         body: {
           ...(activeOrgId ? { organizationId: activeOrgId } : {}),
-          title: title.trim() || "Logged workout",
-          workoutType: "Strength",
+          title: title.trim() || t("tracking.loggedWorkout"),
+          workoutType: t("tracking.strength"),
           startedAt: startedAt.toISOString(),
           endedAt: endedAt.toISOString(),
           intensity: "Moderate",
           visibility: "TRAINER_VISIBLE",
           exercises: [
             {
-              exerciseName: exerciseName.trim() || "Workout set",
+              exerciseName: exerciseName.trim() || t("tracking.workoutSet"),
               orderIndex: 0,
               setsCompleted: Number.parseInt(sets, 10) || 0,
               reps: Number.parseInt(reps, 10) || 0,
@@ -82,12 +84,12 @@ export default function TrackingEntryScreen() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.summary() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.workouts() }),
       ]);
-      showToast({ tone: "success", haptic: "success", message: "Workout saved." });
+      showToast({ tone: "success", haptic: "success", message: t("tracking.workoutSaved") });
       router.replace("/progress" as never);
     } catch (caught) {
       const nextError = new Error(getApiErrorMessage(caught));
       setError(nextError);
-      showToast({ title: "Could not save workout", message: nextError.message, tone: "danger", haptic: "error" });
+      showToast({ title: t("tracking.couldNotSaveWorkout"), message: nextError.message, tone: "danger", haptic: "error" });
     } finally {
       setSaving(false);
     }
@@ -131,12 +133,12 @@ export default function TrackingEntryScreen() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.summary() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.bodyProgress() }),
       ]);
-      showToast({ tone: "success", haptic: "success", message: "Body measurements saved." });
+      showToast({ tone: "success", haptic: "success", message: t("tracking.bodyMeasurementsSaved") });
       router.replace("/progress" as never);
     } catch (caught) {
       const nextError = new Error(getApiErrorMessage(caught));
       setError(nextError);
-      showToast({ title: "Could not save measurements", message: nextError.message, tone: "danger", haptic: "error" });
+      showToast({ title: t("tracking.couldNotSaveMeasurements"), message: nextError.message, tone: "danger", haptic: "error" });
     } finally {
       setSaving(false);
     }
@@ -146,11 +148,11 @@ export default function TrackingEntryScreen() {
     <>
       <ZookScreen testID="tracking-entry-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}>
-          <AppHeader title={mode === "workout" ? "Log workout" : "Body measurements"} showBack />
+          <AppHeader title={mode === "workout" ? t("member.progress.logWorkout") : t("tracking.bodyMeasurements")} showBack />
           <SegmentedControl
             options={[
-              { value: "workout", label: "Workout" },
-              { value: "body", label: "Body" },
+              { value: "workout", label: t("tracking.workout") },
+              { value: "body", label: t("tracking.body") },
             ]}
             value={mode}
             onChange={(value) => setMode(value as "workout" | "body")}
@@ -158,37 +160,37 @@ export default function TrackingEntryScreen() {
           {error ? <QueryErrorState error={error} onRetry={() => void (mode === "workout" ? saveWorkout() : saveBodyProgress())} /> : null}
           {mode === "workout" ? (
             <>
-              <SectionHeader title="Session" />
-              <FormField testID="tracking-entry-title" label="Workout title" value={title} onChangeText={setTitle} placeholder="e.g. Push day" />
-              <FormField testID="tracking-entry-duration" label="Duration (minutes)" value={durationMinutes} onChangeText={setDurationMinutes} keyboardType="number-pad" placeholder="45" />
-              <SectionHeader title="Exercise" />
-              <FormField testID="tracking-entry-exercise-0-name" label="Exercise name" value={exerciseName} onChangeText={setExerciseName} placeholder="Push press" />
-              <FormField testID="tracking-entry-exercise-0-sets" label="Sets" value={sets} onChangeText={setSets} keyboardType="number-pad" placeholder="3" />
-              <FormField testID="tracking-entry-exercise-0-reps" label="Reps" value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="8" />
-              <ZookButton testID="tracking-entry-save" onPress={() => void saveWorkout()} busy={saving} busyLabel="Saving..." icon="save-outline">
-                Save workout
+              <SectionHeader title={t("tracking.session")} />
+              <FormField testID="tracking-entry-title" label={t("tracking.workoutTitle")} value={title} onChangeText={setTitle} placeholder={t("tracking.workoutTitlePlaceholder")} />
+              <FormField testID="tracking-entry-duration" label={t("tracking.durationMinutes")} value={durationMinutes} onChangeText={setDurationMinutes} keyboardType="number-pad" placeholder="45" />
+              <SectionHeader title={t("tracking.exercise")} />
+              <FormField testID="tracking-entry-exercise-0-name" label={t("tracking.exerciseName")} value={exerciseName} onChangeText={setExerciseName} placeholder={t("tracking.exerciseNamePlaceholder")} />
+              <FormField testID="tracking-entry-exercise-0-sets" label={t("tracking.sets")} value={sets} onChangeText={setSets} keyboardType="number-pad" placeholder="3" />
+              <FormField testID="tracking-entry-exercise-0-reps" label={t("tracking.reps")} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="8" />
+              <ZookButton testID="tracking-entry-save" onPress={() => void saveWorkout()} busy={saving} busyLabel={t("settings.saving")} icon="save-outline">
+                {t("tracking.saveWorkout")}
               </ZookButton>
             </>
           ) : (
             <>
-              <SectionHeader title="Body measurements" />
-              <FormField testID="tracking-body-weight" label="Weight kg" value={weightKg} onChangeText={setWeightKg} keyboardType="decimal-pad" placeholder="72.5" />
-              <FormField label="Body fat %" value={bodyFatPercent} onChangeText={setBodyFatPercent} keyboardType="decimal-pad" placeholder="18" />
-              <FormField label="Muscle mass kg" value={muscleMassKg} onChangeText={setMuscleMassKg} keyboardType="decimal-pad" placeholder="34" />
-              <FormField label="Waist cm" value={waistCm} onChangeText={setWaistCm} keyboardType="decimal-pad" placeholder="82" />
-              <FormField label="Hips cm" value={hipCm} onChangeText={setHipCm} keyboardType="decimal-pad" placeholder="96" />
-              <FormField label="Chest cm" value={chestCm} onChangeText={setChestCm} keyboardType="decimal-pad" placeholder="101" />
-              <FormField label="Shoulders cm" value={shoulderCm} onChangeText={setShoulderCm} keyboardType="decimal-pad" placeholder="118" />
-              <FormField label="Arms cm" value={armCm} onChangeText={setArmCm} keyboardType="decimal-pad" placeholder="34" />
-              <FormField label="Forearms cm" value={forearmCm} onChangeText={setForearmCm} keyboardType="decimal-pad" placeholder="28" />
-              <FormField label="Thighs cm" value={thighCm} onChangeText={setThighCm} keyboardType="decimal-pad" placeholder="56" />
-              <FormField label="Calves cm" value={calfCm} onChangeText={setCalfCm} keyboardType="decimal-pad" placeholder="37" />
-              <FormField label="Neck cm" value={neckCm} onChangeText={setNeckCm} keyboardType="decimal-pad" placeholder="39" />
-              <FormField label="Visceral fat rating" value={visceralFatRating} onChangeText={setVisceralFatRating} keyboardType="number-pad" placeholder="7" />
-              <FormField label="Resting heart rate" value={restingHeartRate} onChangeText={setRestingHeartRate} keyboardType="number-pad" placeholder="62" />
-              <FormField label="Notes" value={notes} onChangeText={setNotes} multiline placeholder="Front/side/back photos can be attached from progress photos." />
-              <ZookButton testID="tracking-body-save" onPress={() => void saveBodyProgress()} busy={saving} busyLabel="Saving..." icon="save-outline">
-                Save measurements
+              <SectionHeader title={t("tracking.bodyMeasurements")} />
+              <FormField testID="tracking-body-weight" label={t("tracking.weightKg")} value={weightKg} onChangeText={setWeightKg} keyboardType="decimal-pad" placeholder="72.5" />
+              <FormField label={t("tracking.bodyFatPercent")} value={bodyFatPercent} onChangeText={setBodyFatPercent} keyboardType="decimal-pad" placeholder="18" />
+              <FormField label={t("tracking.muscleMassKg")} value={muscleMassKg} onChangeText={setMuscleMassKg} keyboardType="decimal-pad" placeholder="34" />
+              <FormField label={t("tracking.waistCm")} value={waistCm} onChangeText={setWaistCm} keyboardType="decimal-pad" placeholder="82" />
+              <FormField label={t("tracking.hipsCm")} value={hipCm} onChangeText={setHipCm} keyboardType="decimal-pad" placeholder="96" />
+              <FormField label={t("tracking.chestCm")} value={chestCm} onChangeText={setChestCm} keyboardType="decimal-pad" placeholder="101" />
+              <FormField label={t("tracking.shouldersCm")} value={shoulderCm} onChangeText={setShoulderCm} keyboardType="decimal-pad" placeholder="118" />
+              <FormField label={t("tracking.armsCm")} value={armCm} onChangeText={setArmCm} keyboardType="decimal-pad" placeholder="34" />
+              <FormField label={t("tracking.forearmsCm")} value={forearmCm} onChangeText={setForearmCm} keyboardType="decimal-pad" placeholder="28" />
+              <FormField label={t("tracking.thighsCm")} value={thighCm} onChangeText={setThighCm} keyboardType="decimal-pad" placeholder="56" />
+              <FormField label={t("tracking.calvesCm")} value={calfCm} onChangeText={setCalfCm} keyboardType="decimal-pad" placeholder="37" />
+              <FormField label={t("tracking.neckCm")} value={neckCm} onChangeText={setNeckCm} keyboardType="decimal-pad" placeholder="39" />
+              <FormField label={t("tracking.visceralFatRating")} value={visceralFatRating} onChangeText={setVisceralFatRating} keyboardType="number-pad" placeholder="7" />
+              <FormField label={t("tracking.restingHeartRate")} value={restingHeartRate} onChangeText={setRestingHeartRate} keyboardType="number-pad" placeholder="62" />
+              <FormField label={t("tracking.notes")} value={notes} onChangeText={setNotes} multiline placeholder={t("tracking.notesPlaceholder")} />
+              <ZookButton testID="tracking-body-save" onPress={() => void saveBodyProgress()} busy={saving} busyLabel={t("settings.saving")} icon="save-outline">
+                {t("tracking.saveMeasurements")}
               </ZookButton>
             </>
           )}

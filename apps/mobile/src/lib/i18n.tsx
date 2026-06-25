@@ -369,6 +369,51 @@ export type TranslationKey =
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
   | "tracking.bodyTimelineSubtitle"
+  | "tracking.armsCm"
+  | "tracking.body"
+  | "tracking.bodyFatPercent"
+  | "tracking.bodyMeasurements"
+  | "tracking.bodyMeasurementsSaved"
+  | "tracking.bodyProgress"
+  | "tracking.calfCm"
+  | "tracking.calvesCm"
+  | "tracking.chestCm"
+  | "tracking.couldNotSaveMeasurements"
+  | "tracking.couldNotSaveWorkout"
+  | "tracking.durationMinutes"
+  | "tracking.exercise"
+  | "tracking.exerciseName"
+  | "tracking.exerciseNamePlaceholder"
+  | "tracking.forearmsCm"
+  | "tracking.hipsCm"
+  | "tracking.historyTitle"
+  | "tracking.loggedWorkout"
+  | "tracking.muscleMassKg"
+  | "tracking.neckCm"
+  | "tracking.noBodyMeasurements"
+  | "tracking.noBodyMeasurementsBody"
+  | "tracking.noWorkoutsYet"
+  | "tracking.noWorkoutsYetBody"
+  | "tracking.notes"
+  | "tracking.notesPlaceholder"
+  | "tracking.reps"
+  | "tracking.restingHeartRate"
+  | "tracking.saveMeasurements"
+  | "tracking.saveWorkout"
+  | "tracking.session"
+  | "tracking.sets"
+  | "tracking.shouldersCm"
+  | "tracking.strength"
+  | "tracking.thighsCm"
+  | "tracking.visceralFatRating"
+  | "tracking.waist"
+  | "tracking.waistCm"
+  | "tracking.weightKg"
+  | "tracking.workout"
+  | "tracking.workoutSaved"
+  | "tracking.workoutSet"
+  | "tracking.workoutTitle"
+  | "tracking.workoutTitlePlaceholder"
   | "tracking.photoLogged"
   | "tracking.noPhoto"
   | "tracking.bodyComposition"
@@ -1054,6 +1099,51 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
     "tracking.bodyTimelineSubtitle": "{{count}} body composition entries",
+    "tracking.armsCm": "Arms cm",
+    "tracking.body": "Body",
+    "tracking.bodyFatPercent": "Body fat %",
+    "tracking.bodyMeasurements": "Body measurements",
+    "tracking.bodyMeasurementsSaved": "Body measurements saved.",
+    "tracking.bodyProgress": "Body progress",
+    "tracking.calfCm": "Calf cm",
+    "tracking.calvesCm": "Calves cm",
+    "tracking.chestCm": "Chest cm",
+    "tracking.couldNotSaveMeasurements": "Could not save measurements",
+    "tracking.couldNotSaveWorkout": "Could not save workout",
+    "tracking.durationMinutes": "Duration (minutes)",
+    "tracking.exercise": "Exercise",
+    "tracking.exerciseName": "Exercise name",
+    "tracking.exerciseNamePlaceholder": "Push press",
+    "tracking.forearmsCm": "Forearms cm",
+    "tracking.hipsCm": "Hips cm",
+    "tracking.historyTitle": "Workout history",
+    "tracking.loggedWorkout": "Logged workout",
+    "tracking.muscleMassKg": "Muscle mass kg",
+    "tracking.neckCm": "Neck cm",
+    "tracking.noBodyMeasurements": "No body measurements",
+    "tracking.noBodyMeasurementsBody": "Log your measurements to see your trends over time.",
+    "tracking.noWorkoutsYet": "No workouts yet",
+    "tracking.noWorkoutsYetBody": "Your logged workouts will show up here.",
+    "tracking.notes": "Notes",
+    "tracking.notesPlaceholder": "Front/side/back photos can be attached from progress photos.",
+    "tracking.reps": "Reps",
+    "tracking.restingHeartRate": "Resting heart rate",
+    "tracking.saveMeasurements": "Save measurements",
+    "tracking.saveWorkout": "Save workout",
+    "tracking.session": "Session",
+    "tracking.sets": "Sets",
+    "tracking.shouldersCm": "Shoulders cm",
+    "tracking.strength": "Strength",
+    "tracking.thighsCm": "Thighs cm",
+    "tracking.visceralFatRating": "Visceral fat rating",
+    "tracking.waist": "Waist",
+    "tracking.waistCm": "Waist cm",
+    "tracking.weightKg": "Weight kg",
+    "tracking.workout": "Workout",
+    "tracking.workoutSaved": "Workout saved.",
+    "tracking.workoutSet": "Workout set",
+    "tracking.workoutTitle": "Workout title",
+    "tracking.workoutTitlePlaceholder": "e.g. Push day",
     "tracking.photoLogged": "Photo logged",
     "tracking.noPhoto": "No photo",
     "tracking.bodyComposition": "Body composition",
@@ -1741,6 +1831,51 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",
     "tracking.bodyTimelineSubtitle": "{{count}} बॉडी कंपोजिशन एंट्री",
+    "tracking.armsCm": "Arms cm",
+    "tracking.body": "Body",
+    "tracking.bodyFatPercent": "Body fat %",
+    "tracking.bodyMeasurements": "Body measurements",
+    "tracking.bodyMeasurementsSaved": "Body measurements सेव हो गईं.",
+    "tracking.bodyProgress": "Body progress",
+    "tracking.calfCm": "Calf cm",
+    "tracking.calvesCm": "Calves cm",
+    "tracking.chestCm": "Chest cm",
+    "tracking.couldNotSaveMeasurements": "Measurements सेव नहीं हो सकीं",
+    "tracking.couldNotSaveWorkout": "Workout सेव नहीं हो सका",
+    "tracking.durationMinutes": "Duration (minutes)",
+    "tracking.exercise": "Exercise",
+    "tracking.exerciseName": "Exercise name",
+    "tracking.exerciseNamePlaceholder": "Push press",
+    "tracking.forearmsCm": "Forearms cm",
+    "tracking.hipsCm": "Hips cm",
+    "tracking.historyTitle": "Workout history",
+    "tracking.loggedWorkout": "Logged workout",
+    "tracking.muscleMassKg": "Muscle mass kg",
+    "tracking.neckCm": "Neck cm",
+    "tracking.noBodyMeasurements": "Body measurements नहीं हैं",
+    "tracking.noBodyMeasurementsBody": "समय के साथ trends देखने के लिए measurements log करें.",
+    "tracking.noWorkoutsYet": "अभी कोई workout नहीं",
+    "tracking.noWorkoutsYetBody": "आपके logged workouts यहां दिखेंगे.",
+    "tracking.notes": "Notes",
+    "tracking.notesPlaceholder": "Front/side/back photos progress photos से attach की जा सकती हैं.",
+    "tracking.reps": "Reps",
+    "tracking.restingHeartRate": "Resting heart rate",
+    "tracking.saveMeasurements": "Measurements सेव करें",
+    "tracking.saveWorkout": "Workout सेव करें",
+    "tracking.session": "Session",
+    "tracking.sets": "Sets",
+    "tracking.shouldersCm": "Shoulders cm",
+    "tracking.strength": "Strength",
+    "tracking.thighsCm": "Thighs cm",
+    "tracking.visceralFatRating": "Visceral fat rating",
+    "tracking.waist": "Waist",
+    "tracking.waistCm": "Waist cm",
+    "tracking.weightKg": "Weight kg",
+    "tracking.workout": "Workout",
+    "tracking.workoutSaved": "Workout सेव हो गया.",
+    "tracking.workoutSet": "Workout set",
+    "tracking.workoutTitle": "Workout title",
+    "tracking.workoutTitlePlaceholder": "जैसे Push day",
     "tracking.photoLogged": "फोटो लॉग हुई",
     "tracking.noPhoto": "फोटो नहीं",
     "tracking.bodyComposition": "बॉडी कंपोजिशन",
