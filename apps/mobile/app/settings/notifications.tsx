@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Card, AppHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
+import { useT } from "@/lib/i18n";
 import { mergeNotificationPreferences } from "@/lib/notification-preferences";
 import { useMyNotificationPreferences } from "@/lib/domains";
 import { layout, spacing, typography } from "@/lib/theme";
@@ -12,10 +13,10 @@ import { useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 
 const rows = [
-  { key: "transactional", title: "Payments and receipts" },
-  { key: "operational", title: "Gym operations" },
-  { key: "engagement", title: "Training reminders" },
-  { key: "promotional", title: "Offers" },
+  { key: "transactional", titleKey: "settings.paymentsReceipts" },
+  { key: "operational", titleKey: "settings.gymOperations" },
+  { key: "engagement", titleKey: "settings.trainingReminders" },
+  { key: "promotional", titleKey: "settings.offers" },
 ] as const;
 
 export default function NotificationSettingsScreen() {
@@ -23,6 +24,7 @@ export default function NotificationSettingsScreen() {
   const queryClient = useQueryClient();
   const query = useMyNotificationPreferences();
   const { palette } = useTheme();
+  const t = useT();
   const preferences = mergeNotificationPreferences(query.data?.preferences, activeOrgId);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
@@ -32,10 +34,10 @@ export default function NotificationSettingsScreen() {
     try {
       await notificationsApi.updatePreferences({ token, ...(activeOrgId ? { orgId: activeOrgId } : {}), preferences: { ...(activeOrgId ? { orgId: activeOrgId } : {}), [key]: value } });
       await queryClient.invalidateQueries({ queryKey: ["me", "notification-preferences"] });
-      showToast({ tone: "success", haptic: "success", message: "Notification preference saved." });
+      showToast({ tone: "success", haptic: "success", message: t("settings.preferencesUpdated") });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Preference was not saved.";
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      const message = error instanceof Error ? error.message : t("settings.preferenceNotSaved");
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
       await queryClient.invalidateQueries({ queryKey: ["me", "notification-preferences"] });
     } finally {
       setPendingKey(null);
@@ -46,14 +48,14 @@ export default function NotificationSettingsScreen() {
     <>
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Notifications" showBack />
+          <AppHeader title={t("settings.notifications")} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
-            <PreferenceRow title="Push notifications" value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
+            <PreferenceRow title={t("settings.pushNotifications")} value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
             {rows.map((row) => (
-              <PreferenceRow key={row.key} title={row.title} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
+              <PreferenceRow key={row.key} title={t(row.titleKey)} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
             ))}
           </Card>
-          <Text style={[styles.note, { color: palette.text.secondary }]}>Changes apply to your active gym when available.</Text>
+          <Text style={[styles.note, { color: palette.text.secondary }]}>{t("settings.activeGymPreferenceNote")}</Text>
         </ScrollView>
       </ZookScreen>
     </>

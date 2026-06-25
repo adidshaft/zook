@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 import { Card, AppHeader, ZookButton, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
+import { useT } from "@/lib/i18n";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
@@ -11,6 +12,7 @@ import { showToast } from "@/lib/toast";
 export default function PrivacySettingsScreen() {
   const { token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const [exportBusy, setExportBusy] = useState(false);
   const [deletionBusy, setDeletionBusy] = useState(false);
 
@@ -19,10 +21,10 @@ export default function PrivacySettingsScreen() {
     setExportBusy(true);
     try {
       await privacyApi.requestDataExport({ token });
-      showToast({ tone: "success", haptic: "success", message: "Data export requested." });
+      showToast({ tone: "success", haptic: "success", message: t("settings.exportRequested") });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to request data export.";
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      const message = error instanceof Error ? error.message : t("settings.noExport");
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setExportBusy(false);
     }
@@ -33,10 +35,10 @@ export default function PrivacySettingsScreen() {
     setDeletionBusy(true);
     try {
       await privacyApi.requestAccountDeletion({ token });
-      showToast({ tone: "success", haptic: "success", message: "Account deletion request started." });
+      showToast({ tone: "success", haptic: "success", message: t("settings.deletionRequested") });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to request account deletion.";
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      const message = error instanceof Error ? error.message : t("settings.noDeletion");
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     } finally {
       setDeletionBusy(false);
     }
@@ -44,11 +46,11 @@ export default function PrivacySettingsScreen() {
 
   function confirmDeletionRequest() {
     Alert.alert(
-      "Request account deletion?",
-      "Zook support will review this request before any account data is removed.",
+      t("settings.deleteConfirmTitle"),
+      t("settings.deleteConfirmBody"),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Request deletion", style: "destructive", onPress: () => void requestDeletion() },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("settings.requestDeletion"), style: "destructive", onPress: () => void requestDeletion() },
       ],
     );
   }
@@ -57,11 +59,11 @@ export default function PrivacySettingsScreen() {
     <>
       <ZookScreen testID="settings-privacy-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Privacy" showBack />
+          <AppHeader title={t("member.you.privacy")} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
-            <Text style={[styles.body, { color: palette.text.secondary }]}>Request a copy of your Zook data or start an account deletion request.</Text>
-            <ZookButton onPress={() => void requestExport()} variant="secondary" disabled={exportBusy}>Request data export</ZookButton>
-            <ZookButton onPress={confirmDeletionRequest} variant="destructive" disabled={deletionBusy}>Request account deletion</ZookButton>
+            <Text style={[styles.body, { color: palette.text.secondary }]}>{t("settings.privacyRequestBody")}</Text>
+            <ZookButton onPress={() => void requestExport()} variant="secondary" disabled={exportBusy}>{t("settings.requestDataExport")}</ZookButton>
+            <ZookButton onPress={confirmDeletionRequest} variant="destructive" disabled={deletionBusy}>{t("settings.requestAccountDeletion")}</ZookButton>
           </Card>
         </ScrollView>
       </ZookScreen>

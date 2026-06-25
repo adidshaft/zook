@@ -3,20 +3,21 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import { AppHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme, type ThemePreference } from "@/lib/theme/index";
 
-const themeOptions: Array<{ label: string; value: ThemePreference }> = [
-  { label: "System", value: "system" },
-  { label: "Light", value: "light" },
-  { label: "Dark", value: "dark" },
-];
-
 export default function AppearanceSettingsScreen() {
   const { defaultRolePreference, setDefaultRole } = useAuth();
   const ctx = useRoleContext();
+  const t = useT();
   const { palette, preference, setPreference } = useTheme();
+  const themeOptions: Array<{ label: string; value: ThemePreference }> = [
+    { label: t("member.you.theme.system"), value: "system" },
+    { label: t("member.you.theme.light"), value: "light" },
+    { label: t("member.you.theme.dark"), value: "dark" },
+  ];
   const roleOptions =
     ctx?.availableRoles.map((role) => ({
       label: titleCaseFromCode(role),
@@ -27,8 +28,8 @@ export default function AppearanceSettingsScreen() {
     <>
       <ZookScreen testID="settings-appearance-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title="Appearance" showBack />
-          <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Theme</Text>
+          <AppHeader title={t("member.you.appearance")} showBack />
+          <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>{t("settings.theme")}</Text>
           <SegmentedControl
             options={themeOptions}
             value={preference}
@@ -36,7 +37,7 @@ export default function AppearanceSettingsScreen() {
           />
           {roleOptions.length > 1 && selectedRole ? (
             <>
-              <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>Default role</Text>
+              <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>{t("settings.defaultRole")}</Text>
               <SegmentedControl
                 options={roleOptions}
                 value={selectedRole}

@@ -15,6 +15,7 @@ export type TranslationKey =
   | "app.configErrorTitle"
   | "app.configErrorBody"
   | "common.cancel"
+  | "common.actionFailed"
   | "common.datePicker"
   | "common.dismiss"
   | "common.done"
@@ -100,6 +101,9 @@ export type TranslationKey =
   | "settings.profileSubtitle"
   | "settings.goBack"
   | "settings.account"
+  | "settings.accountSubtitle"
+  | "settings.activeGymPreferenceNote"
+  | "settings.appearanceSubtitle"
   | "settings.signedIn"
   | "settings.useZookAs"
   | "settings.name"
@@ -123,6 +127,7 @@ export type TranslationKey =
   | "settings.emailVerified"
   | "settings.phoneVerified"
   | "settings.notifications"
+  | "settings.notificationsSubtitle"
   | "settings.notificationScope"
   | "settings.notificationScopeGym"
   | "settings.notificationScopeGlobal"
@@ -137,6 +142,7 @@ export type TranslationKey =
   | "settings.offers"
   | "settings.offersSubtitle"
   | "settings.preferencesUpdated"
+  | "settings.preferenceNotSaved"
   | "settings.language"
   | "settings.languageSubtitle"
   | "settings.languageSystem"
@@ -144,7 +150,13 @@ export type TranslationKey =
   | "settings.languageHindi"
   | "settings.privacyData"
   | "settings.privacySubtitle"
+  | "settings.privacyRequestBody"
   | "settings.privacyWarning"
+  | "settings.requestAccountDeletion"
+  | "settings.requestDataExport"
+  | "settings.requestDeletion"
+  | "settings.deleteConfirmTitle"
+  | "settings.deleteConfirmBody"
   | "settings.export"
   | "settings.delete"
   | "settings.exportRequested"
@@ -153,6 +165,9 @@ export type TranslationKey =
   | "settings.noDeletion"
   | "settings.system"
   | "settings.systemSubtitle"
+  | "settings.supportSubtitle"
+  | "settings.theme"
+  | "settings.defaultRole"
   | "settings.contactSupport"
   | "settings.contactSupportSubtitle"
   | "settings.aboutZook"
@@ -520,6 +535,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
     "common.cancel": "Cancel",
+    "common.actionFailed": "Action failed",
     "common.datePicker": "Date picker",
     "common.dismiss": "Dismiss",
     "common.done": "Done",
@@ -605,6 +621,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.profileSubtitle": "Account, notifications, and support",
     "settings.goBack": "Go back",
     "settings.account": "Account",
+    "settings.accountSubtitle": "Name, phone, email, and biometric unlock",
+    "settings.activeGymPreferenceNote": "Changes apply to your active gym when available.",
+    "settings.appearanceSubtitle": "Theme and default role",
     "settings.signedIn": "Signed in",
     "settings.useZookAs": "Use Zook as",
     "settings.name": "Name",
@@ -628,6 +647,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.emailVerified": "Email verified.",
     "settings.phoneVerified": "Phone verified.",
     "settings.notifications": "Notifications",
+    "settings.notificationsSubtitle": "Push categories and reminders",
     "settings.notificationScope": "{{scope}} preferences",
     "settings.notificationScopeGym": "Gym-specific",
     "settings.notificationScopeGlobal": "Global",
@@ -643,6 +663,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.offers": "Offers",
     "settings.offersSubtitle": "Referral, coupon, and gym campaign messages",
     "settings.preferencesUpdated": "Notification preferences updated.",
+    "settings.preferenceNotSaved": "Preference was not saved.",
     "settings.language": "Language",
     "settings.languageSubtitle": "Choose app language",
     "settings.languageSystem": "System",
@@ -650,7 +671,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.languageHindi": "Hindi",
     "settings.privacyData": "Privacy & data",
     "settings.privacySubtitle": "Export or delete data",
+    "settings.privacyRequestBody": "Request a copy of your Zook data or start an account deletion request.",
     "settings.privacyWarning": "These requests are saved and reviewed before anything changes.",
+    "settings.requestAccountDeletion": "Request account deletion",
+    "settings.requestDataExport": "Request data export",
+    "settings.requestDeletion": "Request deletion",
+    "settings.deleteConfirmTitle": "Request account deletion?",
+    "settings.deleteConfirmBody": "Zook support will review this request before any account data is removed.",
     "settings.export": "Export",
     "settings.delete": "Delete",
     "settings.exportRequested": "Export requested. You'll receive an email when the file is available.",
@@ -659,6 +686,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.noDeletion": "No deletion request",
     "settings.system": "System",
     "settings.systemSubtitle": "Help, policies, and app info",
+    "settings.supportSubtitle": "Contact, legal, and app version",
+    "settings.theme": "Theme",
+    "settings.defaultRole": "Default role",
     "settings.contactSupport": "Contact support",
     "settings.contactSupportSubtitle": "Email support@zookfit.in with account or gym issues",
     "settings.aboutZook": "About Zook",
@@ -1027,6 +1057,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
     "common.cancel": "रद्द करें",
+    "common.actionFailed": "एक्शन फेल हुआ",
     "common.datePicker": "तारीख चुनें",
     "common.dismiss": "बंद करें",
     "common.done": "हो गया",
@@ -1112,6 +1143,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.profileSubtitle": "अकाउंट, नोटिफिकेशन और सपोर्ट",
     "settings.goBack": "वापस जाएं",
     "settings.account": "अकाउंट",
+    "settings.accountSubtitle": "नाम, फोन, ईमेल और biometric unlock",
+    "settings.activeGymPreferenceNote": "उपलब्ध होने पर बदलाव आपके सक्रिय जिम पर लागू होते हैं.",
+    "settings.appearanceSubtitle": "थीम और default role",
     "settings.signedIn": "साइन इन",
     "settings.useZookAs": "Zook इस्तेमाल करें",
     "settings.name": "नाम",
@@ -1135,6 +1169,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.emailVerified": "ईमेल वेरिफाई हो गया.",
     "settings.phoneVerified": "फोन वेरिफाई हो गया.",
     "settings.notifications": "नोटिफिकेशन",
+    "settings.notificationsSubtitle": "पुश श्रेणियां और रिमाइंडर",
     "settings.notificationScope": "{{scope}} प्राथमिकताएं",
     "settings.notificationScopeGym": "जिम-विशेष",
     "settings.notificationScopeGlobal": "ग्लोबल",
@@ -1149,6 +1184,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.offers": "ऑफर",
     "settings.offersSubtitle": "रेफरल, कूपन और जिम कैंपेन संदेश",
     "settings.preferencesUpdated": "नोटिफिकेशन प्राथमिकताएं अपडेट हो गईं.",
+    "settings.preferenceNotSaved": "प्राथमिकता सेव नहीं हुई.",
     "settings.language": "भाषा",
     "settings.languageSubtitle": "ऐप की भाषा चुनें",
     "settings.languageSystem": "सिस्टम",
@@ -1156,8 +1192,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.languageHindi": "हिंदी",
     "settings.privacyData": "प्राइवेसी और डेटा",
     "settings.privacySubtitle": "डेटा एक्सपोर्ट या डिलीट करें",
+    "settings.privacyRequestBody": "अपने Zook डेटा की कॉपी मांगें या अकाउंट डिलीशन अनुरोध शुरू करें.",
     "settings.privacyWarning":
       "इन अनुरोधों को सेव किया जाता है और बदलाव से पहले रिव्यू किया जाता है.",
+    "settings.requestAccountDeletion": "अकाउंट डिलीशन अनुरोध करें",
+    "settings.requestDataExport": "डेटा एक्सपोर्ट अनुरोध करें",
+    "settings.requestDeletion": "डिलीशन अनुरोध करें",
+    "settings.deleteConfirmTitle": "अकाउंट डिलीशन अनुरोध करें?",
+    "settings.deleteConfirmBody": "कोई भी अकाउंट डेटा हटाने से पहले Zook support इस अनुरोध को रिव्यू करेगा.",
     "settings.export": "एक्सपोर्ट",
     "settings.delete": "डिलीट",
     "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. फ़ाइल उपलब्ध होने पर आपको ईमेल मिलेगा.",
@@ -1167,6 +1209,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.noDeletion": "अभी कोई डिलीशन अनुरोध नहीं",
     "settings.system": "सिस्टम",
     "settings.systemSubtitle": "मदद, पॉलिसी और ऐप जानकारी",
+    "settings.supportSubtitle": "कॉन्टैक्ट, लीगल और ऐप version",
+    "settings.theme": "थीम",
+    "settings.defaultRole": "Default role",
     "settings.contactSupport": "सपोर्ट से संपर्क करें",
     "settings.contactSupportSubtitle":
       "अकाउंट या जिम समस्या के लिए support@zookfit.in पर ईमेल करें",
