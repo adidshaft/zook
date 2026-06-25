@@ -8,17 +8,18 @@ import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
+import { useT } from "@/lib/i18n";
 import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
 const settingsRows = [
-  { href: "/settings/account", title: "Account", icon: "person-outline" },
-  { href: "/settings/appearance", title: "Appearance", icon: "contrast-outline" },
-  { href: "/settings/notifications", title: "Notifications", icon: "notifications-outline" },
-  { href: "/settings/privacy", title: "Privacy", icon: "lock-closed-outline" },
-  { href: "/settings/support", title: "Help & support", icon: "help-circle-outline" },
+  { href: "/settings/account", titleKey: "settings.account", icon: "person-outline" },
+  { href: "/settings/appearance", titleKey: "member.you.appearance", icon: "contrast-outline" },
+  { href: "/settings/notifications", titleKey: "settings.notifications", icon: "notifications-outline" },
+  { href: "/settings/privacy", titleKey: "member.you.privacy", icon: "lock-closed-outline" },
+  { href: "/settings/support", titleKey: "member.you.helpSupport", icon: "help-circle-outline" },
 ] as const;
 
 export default function YouScreen() {
@@ -27,6 +28,7 @@ export default function YouScreen() {
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
   const { palette, preference } = useTheme();
+  const t = useT();
   const signOutConfirm = useConfirmSheet();
   const scrollY = useSharedValue(0);
   
@@ -35,9 +37,9 @@ export default function YouScreen() {
 
   function confirmSignOut() {
     signOutConfirm.confirm({
-      title: "Sign out?",
-      body: "You can sign back in with OTP any time.",
-      destructiveLabel: "Sign out",
+      title: t("more.signOutConfirmTitle"),
+      body: t("more.signOutConfirmBody"),
+      destructiveLabel: t("more.signOut"),
       onConfirm: () => void logout(),
     });
   }
@@ -59,7 +61,7 @@ export default function YouScreen() {
           }}
           scrollEventThrottle={16}
         >
-          <ScreenHeader title="You" contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
+          <ScreenHeader title={t("nav.profile")} contextSlot={<RoleSwitcherContextPill />} scrollY={scrollY} />
 
           <AnimatedAppear delay={0}>
             <IdentityCard
@@ -70,7 +72,7 @@ export default function YouScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={40}>
-            <SectionHeader title="Membership" />
+            <SectionHeader title={t("member.you.membership")} />
             <MembershipSummary
               membership={homeQuery.data?.activeMembership}
               onViewDetail={() => router.push("/membership" as never)}
@@ -78,11 +80,11 @@ export default function YouScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={80}>
-            <SectionHeader title="Quick actions" />
+            <SectionHeader title={t("member.you.quickActions")} />
             <Card variant="compact" contentStyle={styles.list}>
             {showBackToOwner && (
               <PillActionRow
-                title="Back to Owner mode"
+                title={t("member.you.backToOwnerMode")}
                 icon="apps-outline"
                 onPress={() => void switchRole("OWNER")}
               />
@@ -90,19 +92,19 @@ export default function YouScreen() {
             
             {showSwitchRole && nextRole && (
               <PillActionRow
-                title={`Switch to ${titleCase(nextRole)}`}
+                title={t("member.you.switchToRole", { role: titleCase(nextRole) })}
                 icon="swap-horizontal-outline"
                 onPress={() => void switchRole(nextRole)}
               />
             )}
 
             <PillActionRow
-              title="Switch gym"
+              title={t("member.you.switchGym")}
               icon="business-outline"
               onPress={() => router.push(gymHref as never)}
             />
             <PillActionRow
-              title="Gym shop"
+              title={t("member.you.gymShop")}
               icon="storefront-outline"
               onPress={() => router.push("/shop" as never)}
             />
@@ -110,13 +112,13 @@ export default function YouScreen() {
           </AnimatedAppear>
 
           <AnimatedAppear delay={120}>
-            <SectionHeader title="Settings" />
+            <SectionHeader title={t("more.settings.title")} />
             <Card variant="compact" contentStyle={styles.list}>
             {settingsRows.map((row) => (
               <PillActionRow
                 key={row.href}
-                title={row.title}
-                subtitle={row.href === "/settings/appearance" ? titleCase(preference) : undefined}
+                title={t(row.titleKey)}
+                subtitle={row.href === "/settings/appearance" ? t(`member.you.theme.${preference}`) : undefined}
                 icon={row.icon}
                 onPress={() => router.push(row.href as never)}
               />
@@ -131,15 +133,15 @@ export default function YouScreen() {
                 variant="destructive"
                 icon="log-out-outline"
                 fullWidth
-                accessibilityLabel="Sign out"
+                accessibilityLabel={t("more.signOut")}
               >
-                Sign out
+                {t("more.signOut")}
               </ZookButton>
             </View>
           </AnimatedAppear>
 
           <Text style={[styles.footer, { color: palette.text.tertiary }]}>
-            Zook account center
+            {t("member.you.accountCenter")}
           </Text>
         </ScrollView>
       </ZookScreen>

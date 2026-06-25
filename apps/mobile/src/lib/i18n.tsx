@@ -20,6 +20,10 @@ export type TranslationKey =
   | "common.done"
   | "common.or"
   | "network.offline"
+  | "notFound.body"
+  | "notFound.goWorkspace"
+  | "notFound.helper"
+  | "notFound.title"
   | "nav.home"
   | "nav.plans"
   | "nav.billing"
@@ -264,6 +268,19 @@ export type TranslationKey =
   | "member.classDetail.spots"
   | "member.classDetail.spotsBooked"
   | "member.classDetail.waitlisted"
+  | "member.you.accountCenter"
+  | "member.you.appearance"
+  | "member.you.backToOwnerMode"
+  | "member.you.gymShop"
+  | "member.you.helpSupport"
+  | "member.you.membership"
+  | "member.you.privacy"
+  | "member.you.quickActions"
+  | "member.you.switchGym"
+  | "member.you.switchToRole"
+  | "member.you.theme.dark"
+  | "member.you.theme.light"
+  | "member.you.theme.system"
   | "member.home.accessActive"
   | "member.home.active"
   | "member.home.activeCheckIn"
@@ -508,6 +525,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "Done",
     "common.or": "or",
     "network.offline": "Working offline. Data may be stale.",
+    "notFound.body": "The link may be old, or this role may not have access to that workflow.",
+    "notFound.goWorkspace": "Go to my workspace",
+    "notFound.helper": "Return to your workspace to continue.",
+    "notFound.title": "This screen is not available",
     "nav.home": "Home",
     "nav.plans": "Plans",
     "nav.billing": "Billing",
@@ -756,6 +777,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classDetail.spots": "{{count}} spots",
     "member.classDetail.spotsBooked": "spots booked",
     "member.classDetail.waitlisted": "Waitlisted",
+    "member.you.accountCenter": "Zook account center",
+    "member.you.appearance": "Appearance",
+    "member.you.backToOwnerMode": "Back to Owner mode",
+    "member.you.gymShop": "Gym shop",
+    "member.you.helpSupport": "Help & support",
+    "member.you.membership": "Membership",
+    "member.you.privacy": "Privacy",
+    "member.you.quickActions": "Quick actions",
+    "member.you.switchGym": "Switch gym",
+    "member.you.switchToRole": "Switch to {{role}}",
+    "member.you.theme.dark": "Dark",
+    "member.you.theme.light": "Light",
+    "member.you.theme.system": "System",
     "member.home.accessActive": "Access active",
     "member.home.active": "Active",
     "member.home.activeCheckIn": "Active check-in",
@@ -998,6 +1032,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "हो गया",
     "common.or": "या",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
+    "notFound.body": "लिंक पुराना हो सकता है, या इस रोल को उस वर्कफ्लो का एक्सेस नहीं है.",
+    "notFound.goWorkspace": "मेरे वर्कस्पेस पर जाएं",
+    "notFound.helper": "जारी रखने के लिए अपने वर्कस्पेस पर वापस जाएं.",
+    "notFound.title": "यह स्क्रीन उपलब्ध नहीं है",
     "nav.home": "होम",
     "nav.plans": "प्लान",
     "nav.billing": "बिलिंग",
@@ -1248,6 +1286,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classDetail.spots": "{{count}} स्पॉट",
     "member.classDetail.spotsBooked": "स्पॉट बुक",
     "member.classDetail.waitlisted": "वेटलिस्टेड",
+    "member.you.accountCenter": "Zook अकाउंट सेंटर",
+    "member.you.appearance": "दिखावट",
+    "member.you.backToOwnerMode": "Owner मोड पर वापस",
+    "member.you.gymShop": "जिम शॉप",
+    "member.you.helpSupport": "मदद और सपोर्ट",
+    "member.you.membership": "मेंबरशिप",
+    "member.you.privacy": "प्राइवेसी",
+    "member.you.quickActions": "त्वरित एक्शन",
+    "member.you.switchGym": "जिम बदलें",
+    "member.you.switchToRole": "{{role}} पर स्विच करें",
+    "member.you.theme.dark": "डार्क",
+    "member.you.theme.light": "लाइट",
+    "member.you.theme.system": "सिस्टम",
     "member.home.accessActive": "एक्सेस सक्रिय है",
     "member.home.active": "सक्रिय",
     "member.home.activeCheckIn": "सक्रिय चेक-इन",
