@@ -1436,6 +1436,7 @@ export type TranslationKey =
   | "owner.payouts.trainerLower"
   | "owner.stock.allInStock"
   | "owner.stock.allInStockBody"
+  | "owner.stock.leftThreshold"
   | "owner.stock.lowStock"
   | "owner.stock.memberPickup"
   | "owner.stock.noPickups"
@@ -1445,6 +1446,8 @@ export type TranslationKey =
   | "owner.stock.pickupPending"
   | "owner.stock.pickups"
   | "owner.stock.productsToReorder"
+  | "owner.stock.reorder"
+  | "owner.stock.reorderAccessibility"
   | "owner.stock.reorderBody"
   | "owner.stock.reorderSubject"
   | "owner.stock.title"
@@ -1471,6 +1474,15 @@ export type TranslationKey =
   | "owner.staff.team"
   | "owner.staff.title"
   | "owner.staff.trainer"
+  | "owner.dashboard.activeCount"
+  | "owner.dashboard.attendance7Days"
+  | "owner.dashboard.chartAccessibility"
+  | "owner.dashboard.members30Days"
+  | "owner.dashboard.noActiveMemberPlans"
+  | "owner.dashboard.planMix"
+  | "owner.dashboard.revenue7Days"
+  | "owner.dashboard.trends"
+  | "owner.dashboard.trendsSubtitle"
   | "reception.desk.active"
   | "reception.desk.branch"
   | "reception.desk.coachName"
@@ -1612,6 +1624,8 @@ export type TranslationKey =
   | "owner.revenue.refundPaymentBody"
   | "owner.revenue.refundPaymentTitle"
   | "owner.revenue.refundedByGym"
+  | "owner.revenue.manualRecords"
+  | "owner.revenue.revenueToday"
   | "owner.revenue.shopPickupOrder"
   | "owner.revenue.tapToRefund"
   | "owner.revenue.thisMember"
@@ -3324,6 +3338,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.payouts.trainerLower": "trainer",
     "owner.stock.allInStock": "All products in stock",
     "owner.stock.allInStockBody": "Items running low on inventory will appear here.",
+    "owner.stock.leftThreshold": "{{stock}} left · threshold {{threshold}}",
     "owner.stock.lowStock": "Low stock",
     "owner.stock.memberPickup": "Member pickup",
     "owner.stock.noPickups": "No pickups waiting",
@@ -3333,6 +3348,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.pickupPending": "Pickup pending",
     "owner.stock.pickups": "Pickups",
     "owner.stock.productsToReorder": "Products to reorder",
+    "owner.stock.reorder": "Reorder",
+    "owner.stock.reorderAccessibility": "Reorder {{name}}",
     "owner.stock.reorderBody": "Hi,\n\nPlease share supplier options for {{name}}.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
     "owner.stock.reorderSubject": "Reorder {{name}}",
     "owner.stock.title": "Stock",
@@ -3359,6 +3376,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.staff.team": "Team",
     "owner.staff.title": "Staff",
     "owner.staff.trainer": "Trainer",
+    "owner.dashboard.activeCount": "{{count}} active",
+    "owner.dashboard.attendance7Days": "Attendance · 7 days",
+    "owner.dashboard.chartAccessibility": "Dashboard chart",
+    "owner.dashboard.members30Days": "Members · 30 days",
+    "owner.dashboard.noActiveMemberPlans": "No active member plans.",
+    "owner.dashboard.planMix": "Plan mix",
+    "owner.dashboard.revenue7Days": "Revenue · 7 days",
+    "owner.dashboard.trends": "Trends",
+    "owner.dashboard.trendsSubtitle": "Revenue, attendance, and member trends",
     "reception.desk.active": "Active",
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",
@@ -3500,6 +3526,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.revenue.refundPaymentBody": "Refund {{amount}} to {{name}}. This can't be undone.",
     "owner.revenue.refundPaymentTitle": "Refund payment?",
     "owner.revenue.refundedByGym": "Refunded by gym",
+    "owner.revenue.manualRecords": "Manual records",
+    "owner.revenue.revenueToday": "Revenue today",
     "owner.revenue.shopPickupOrder": "Shop pickup order",
     "owner.revenue.tapToRefund": "Tap to refund",
     "owner.revenue.thisMember": "this member",
@@ -5211,6 +5239,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.payouts.trainerLower": "trainer",
     "owner.stock.allInStock": "सभी products stock में हैं",
     "owner.stock.allInStockBody": "Inventory कम होने वाले items यहां दिखेंगे.",
+    "owner.stock.leftThreshold": "{{stock}} left · threshold {{threshold}}",
     "owner.stock.lowStock": "Low stock",
     "owner.stock.memberPickup": "Member pickup",
     "owner.stock.noPickups": "कोई pickup waiting नहीं",
@@ -5220,6 +5249,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.pickupPending": "Pickup pending",
     "owner.stock.pickups": "Pickups",
     "owner.stock.productsToReorder": "Reorder करने वाले products",
+    "owner.stock.reorder": "Reorder",
+    "owner.stock.reorderAccessibility": "{{name}} reorder करें",
     "owner.stock.reorderBody": "Hi,\n\nकृपया {{name}} के supplier options share करें.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
     "owner.stock.reorderSubject": "{{name}} reorder",
     "owner.stock.title": "Stock",
@@ -5246,6 +5277,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.staff.team": "Team",
     "owner.staff.title": "Staff",
     "owner.staff.trainer": "Trainer",
+    "owner.dashboard.activeCount": "{{count}} active",
+    "owner.dashboard.attendance7Days": "Attendance · 7 days",
+    "owner.dashboard.chartAccessibility": "Dashboard chart",
+    "owner.dashboard.members30Days": "Members · 30 days",
+    "owner.dashboard.noActiveMemberPlans": "कोई active member plans नहीं.",
+    "owner.dashboard.planMix": "Plan mix",
+    "owner.dashboard.revenue7Days": "Revenue · 7 days",
+    "owner.dashboard.trends": "Trends",
+    "owner.dashboard.trendsSubtitle": "Revenue, attendance और member trends",
     "reception.desk.active": "Active",
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",
@@ -5387,6 +5427,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.revenue.refundPaymentBody": "{{name}} को {{amount}} रिफंड करें. इसे वापस नहीं किया जा सकता.",
     "owner.revenue.refundPaymentTitle": "पेमेंट रिफंड करें?",
     "owner.revenue.refundedByGym": "जिम द्वारा रिफंड",
+    "owner.revenue.manualRecords": "Manual records",
+    "owner.revenue.revenueToday": "आज का revenue",
     "owner.revenue.shopPickupOrder": "शॉप पिकअप ऑर्डर",
     "owner.revenue.tapToRefund": "रिफंड के लिए टैप करें",
     "owner.revenue.thisMember": "इस मेंबर",

@@ -6,6 +6,7 @@ import type {
   OwnerDashboardPlanMixPoint,
 } from "@/lib/domains/shared/types";
 import { formatCompactNumber, formatInr, formatSignedPercent } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
 function pointMax(points: OwnerDashboardChartPoint[]) {
@@ -14,16 +15,18 @@ function pointMax(points: OwnerDashboardChartPoint[]) {
 
 function ChartBars({
   accent,
+  accessibilityLabel,
   labelColor,
   points,
 }: {
   accent: string;
+  accessibilityLabel: string;
   labelColor: string;
   points: OwnerDashboardChartPoint[];
 }) {
   const max = pointMax(points);
   return (
-    <View style={styles.bars} accessibilityLabel="Dashboard chart">
+    <View style={styles.bars} accessibilityLabel={accessibilityLabel}>
       {points.map((point, index) => {
         const height = Math.max(6, Math.round((Math.max(0, point.value) / max) * 72));
         return (
@@ -56,6 +59,7 @@ function ChartCard({
   title: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const latest = points.at(-1)?.value ?? 0;
   const value = format === "currency" ? formatInr(latest * 100) : formatCompactNumber(latest);
   return (
@@ -84,13 +88,19 @@ function ChartCard({
           {formatSignedPercent(delta)}
         </Text>
       </View>
-      <ChartBars accent={palette.accent.fill} labelColor={palette.text.tertiary} points={points} />
+      <ChartBars
+        accent={palette.accent.fill}
+        accessibilityLabel={t("owner.dashboard.chartAccessibility")}
+        labelColor={palette.text.tertiary}
+        points={points}
+      />
     </View>
   );
 }
 
 function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
   const { palette } = useTheme();
+  const t = useT();
   const total = plans.reduce((sum, plan) => sum + plan.value, 0);
   return (
     <View
@@ -101,7 +111,7 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
     >
       <View style={styles.cardHeader}>
         <View style={styles.titleBlock}>
-          <Text style={[styles.eyebrow, { color: palette.text.tertiary }]}>Plan mix</Text>
+          <Text style={[styles.eyebrow, { color: palette.text.tertiary }]}>{t("owner.dashboard.planMix")}</Text>
           <Text style={[styles.value, { color: palette.text.primary }]}>
             {formatCompactNumber(total)}
           </Text>
@@ -118,7 +128,7 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
                     {plan.label}
                   </Text>
                   <Text style={[styles.planMeta, { color: palette.text.tertiary }]}>
-                    {formatCompactNumber(plan.value)} active
+                    {t("owner.dashboard.activeCount", { count: formatCompactNumber(plan.value) })}
                   </Text>
                 </View>
                 <View style={[styles.planTrack, { backgroundColor: palette.bg.sunken }]}>
@@ -135,7 +145,7 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
           })
         ) : (
           <Text style={[styles.empty, { color: palette.text.secondary }]}>
-            No active member plans.
+            {t("owner.dashboard.noActiveMemberPlans")}
           </Text>
         )}
       </View>
@@ -145,28 +155,29 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
 
 export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts }) {
   const { palette } = useTheme();
+  const t = useT();
   if (!charts) return null;
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Trends</Text>
+        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("owner.dashboard.trends")}</Text>
         <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
-          Revenue, attendance, and member trends
+          {t("owner.dashboard.trendsSubtitle")}
         </Text>
       </View>
       <ChartCard
-        title="Revenue · 7 days"
+        title={t("owner.dashboard.revenue7Days")}
         format="currency"
         points={charts.revenue7d ?? []}
         delta={charts.deltas?.revenue7d}
       />
       <ChartCard
-        title="Attendance · 7 days"
+        title={t("owner.dashboard.attendance7Days")}
         points={charts.attendance7d ?? []}
         delta={charts.deltas?.attendance7d}
       />
       <ChartCard
-        title="Members · 30 days"
+        title={t("owner.dashboard.members30Days")}
         points={charts.memberGrowth30d ?? []}
         delta={charts.deltas?.memberGrowth30d}
       />

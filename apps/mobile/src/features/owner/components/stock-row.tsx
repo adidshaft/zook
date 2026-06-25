@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { ListRow } from "@/components/primitives";
+import { useT } from "@/lib/i18n";
 import { typography, useTheme } from "@/lib/theme";
 
 export type LowStockProduct = {
@@ -19,15 +20,19 @@ export function StockRow({
   onReorder: () => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <ListRow
       title={product.name}
-      subtitle={`${product.stock ?? 0} left · threshold ${product.lowStockThreshold ?? 0}`}
+      subtitle={t("owner.stock.leftThreshold", {
+        stock: product.stock ?? 0,
+        threshold: product.lowStockThreshold ?? 0,
+      })}
       trailing={
         <Pressable
           onPress={onReorder}
           accessibilityRole="button"
-          accessibilityLabel={`Reorder ${product.name}`}
+          accessibilityLabel={t("owner.stock.reorderAccessibility", { name: product.name })}
           style={({ pressed }) => [
             styles.reorderButton,
             {
@@ -37,7 +42,7 @@ export function StockRow({
             pressed ? styles.reorderButtonPressed : null,
           ]}
         >
-          <Text style={[styles.reorderText, { color: palette.feedback.warning }]}>Reorder</Text>
+          <Text style={[styles.reorderText, { color: palette.feedback.warning }]}>{t("owner.stock.reorder")}</Text>
         </Pressable>
       }
     />
