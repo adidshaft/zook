@@ -1091,6 +1091,43 @@ export type TranslationKey =
   | "member.plan.trainerAssigned"
   | "member.plan.viewFullExerciseList"
   | "member.plan.workoutTab"
+  | "member.planDetail.actionFailed"
+  | "member.planDetail.active"
+  | "member.planDetail.addShortNote"
+  | "member.planDetail.assigned"
+  | "member.planDetail.assignedByCoach"
+  | "member.planDetail.closeFeedback"
+  | "member.planDetail.completedCount"
+  | "member.planDetail.completeWorkout"
+  | "member.planDetail.completing"
+  | "member.planDetail.defaultSets"
+  | "member.planDetail.dietFilter"
+  | "member.planDetail.done"
+  | "member.planDetail.exercises"
+  | "member.planDetail.failedToSend"
+  | "member.planDetail.feedback"
+  | "member.planDetail.feedbackSent"
+  | "member.planDetail.feedbackSheetBody"
+  | "member.planDetail.needSwap"
+  | "member.planDetail.noPlanAssignedBody"
+  | "member.planDetail.pain"
+  | "member.planDetail.pickNoteFirst"
+  | "member.planDetail.progressNotSaved"
+  | "member.planDetail.progressNotSavedBody"
+  | "member.planDetail.seeWeeklyList"
+  | "member.planDetail.send"
+  | "member.planDetail.sending"
+  | "member.planDetail.sentToCoach"
+  | "member.planDetail.signInAgainFeedback"
+  | "member.planDetail.tellCoach"
+  | "member.planDetail.tooHard"
+  | "member.planDetail.upNextThisWeek"
+  | "member.planDetail.workoutFilter"
+  | "member.planDetail.workoutMarkedComplete"
+  | "member.planDetail.workoutProgress"
+  | "member.planDetail.workoutProgressNotSaved"
+  | "member.planDetail.yourCoach"
+  | "member.planDetail.yourPlan"
   | "member.progress.history"
   | "member.progress.logWorkout"
   | "member.progress.noWorkoutsLogged"
@@ -2865,6 +2902,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.trainerAssigned": "trainer assigned",
     "member.plan.viewFullExerciseList": "View full exercise list",
     "member.plan.workoutTab": "Workout",
+    "member.planDetail.actionFailed": "Action failed",
+    "member.planDetail.active": "ACTIVE",
+    "member.planDetail.addShortNote": "Add a short note",
+    "member.planDetail.assigned": "Assigned",
+    "member.planDetail.assignedByCoach": "Assigned by coach",
+    "member.planDetail.closeFeedback": "Close feedback",
+    "member.planDetail.completedCount": "{{completed}} of {{total}} completed",
+    "member.planDetail.completeWorkout": "Complete workout",
+    "member.planDetail.completing": "Completing...",
+    "member.planDetail.defaultSets": "3 sets",
+    "member.planDetail.dietFilter": "Diet",
+    "member.planDetail.done": "Done",
+    "member.planDetail.exercises": "Exercises",
+    "member.planDetail.failedToSend": "Failed to send. Try again.",
+    "member.planDetail.feedback": "Feedback",
+    "member.planDetail.feedbackSent": "Feedback sent to coach.",
+    "member.planDetail.feedbackSheetBody": "Send a note about this assignment.",
+    "member.planDetail.needSwap": "Need swap",
+    "member.planDetail.noPlanAssignedBody": "Your trainer will assign a workout plan here. Check back soon.",
+    "member.planDetail.pain": "Pain",
+    "member.planDetail.pickNoteFirst": "Pick one note first.",
+    "member.planDetail.progressNotSaved": "Progress not saved",
+    "member.planDetail.progressNotSavedBody": "This device may not restore the checkbox state.",
+    "member.planDetail.seeWeeklyList": "See weekly list",
+    "member.planDetail.send": "Send",
+    "member.planDetail.sending": "Sending...",
+    "member.planDetail.sentToCoach": "Sent to coach.",
+    "member.planDetail.signInAgainFeedback": "Sign in again to send feedback.",
+    "member.planDetail.tellCoach": "Tell coach",
+    "member.planDetail.tooHard": "Too hard",
+    "member.planDetail.upNextThisWeek": "Up next this week",
+    "member.planDetail.workoutFilter": "Workout",
+    "member.planDetail.workoutMarkedComplete": "Workout marked complete.",
+    "member.planDetail.workoutProgress": "Workout progress",
+    "member.planDetail.workoutProgressNotSaved": "Workout progress could not be saved.",
+    "member.planDetail.yourCoach": "Your coach",
+    "member.planDetail.yourPlan": "Your plan",
     "member.progress.history": "History",
     "member.progress.logWorkout": "Log workout",
     "member.progress.noWorkoutsLogged": "No workouts logged",
@@ -4639,6 +4713,43 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.trainerAssigned": "ट्रेनर ने असाइन किया",
     "member.plan.viewFullExerciseList": "पूरी एक्सरसाइज सूची देखें",
     "member.plan.workoutTab": "वर्कआउट",
+    "member.planDetail.actionFailed": "Action failed",
+    "member.planDetail.active": "ACTIVE",
+    "member.planDetail.addShortNote": "छोटा note जोड़ें",
+    "member.planDetail.assigned": "Assigned",
+    "member.planDetail.assignedByCoach": "Coach ने assign किया",
+    "member.planDetail.closeFeedback": "Feedback बंद करें",
+    "member.planDetail.completedCount": "{{completed}} of {{total}} complete",
+    "member.planDetail.completeWorkout": "Workout complete करें",
+    "member.planDetail.completing": "Complete हो रहा है...",
+    "member.planDetail.defaultSets": "3 sets",
+    "member.planDetail.dietFilter": "डाइट",
+    "member.planDetail.done": "Done",
+    "member.planDetail.exercises": "एक्सरसाइज",
+    "member.planDetail.failedToSend": "Send नहीं हुआ. फिर कोशिश करें.",
+    "member.planDetail.feedback": "Feedback",
+    "member.planDetail.feedbackSent": "Feedback coach को भेजा गया.",
+    "member.planDetail.feedbackSheetBody": "इस assignment के बारे में note भेजें.",
+    "member.planDetail.needSwap": "Swap चाहिए",
+    "member.planDetail.noPlanAssignedBody": "आपका trainer यहां workout plan assign करेगा. फिर check करें.",
+    "member.planDetail.pain": "Pain",
+    "member.planDetail.pickNoteFirst": "पहले एक note चुनें.",
+    "member.planDetail.progressNotSaved": "Progress save नहीं हुई",
+    "member.planDetail.progressNotSavedBody": "यह device checkbox state restore नहीं कर पाएगा.",
+    "member.planDetail.seeWeeklyList": "Weekly list देखें",
+    "member.planDetail.send": "Send",
+    "member.planDetail.sending": "Send हो रहा है...",
+    "member.planDetail.sentToCoach": "Coach को भेजा गया.",
+    "member.planDetail.signInAgainFeedback": "Feedback भेजने के लिए फिर sign in करें.",
+    "member.planDetail.tellCoach": "Coach को बताएं",
+    "member.planDetail.tooHard": "Too hard",
+    "member.planDetail.upNextThisWeek": "इस हफ्ते आगे",
+    "member.planDetail.workoutFilter": "वर्कआउट",
+    "member.planDetail.workoutMarkedComplete": "Workout complete mark हो गया.",
+    "member.planDetail.workoutProgress": "Workout progress",
+    "member.planDetail.workoutProgressNotSaved": "Workout progress save नहीं हो सकी.",
+    "member.planDetail.yourCoach": "आपका coach",
+    "member.planDetail.yourPlan": "आपका plan",
     "member.progress.history": "हिस्ट्री",
     "member.progress.logWorkout": "वर्कआउट लॉग करें",
     "member.progress.noWorkoutsLogged": "कोई वर्कआउट लॉग नहीं",

@@ -35,6 +35,7 @@ import {
 } from "@/lib/domains";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { plansApi } from "@/lib/domain-api";
+import { useT } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
@@ -42,30 +43,26 @@ import { showToast } from "@/lib/toast";
 type PlanFilter = "workout" | "diet";
 type PlanExercise = { name: string; sets: string; equipment: string; reps: string };
 
-const filters: Array<{ label: string; value: PlanFilter }> = [
-  { label: "Workout", value: "workout" },
-  { label: "Diet", value: "diet" },
-];
 const feedbackAccessoryId = "plan-feedback-accessory";
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function planTitle(assignment?: MyPlanRecord | null) {
-  return resolvePlanName(assignment?.plan) || "Assigned plan";
+function planTitle(assignment: MyPlanRecord | null | undefined, fallback: string) {
+  return resolvePlanName(assignment?.plan) || fallback;
 }
 
 function planKind(assignment?: MyPlanRecord | null) {
   return (assignment?.plan?.type ?? "WORKOUT").toLowerCase();
 }
 
-function exerciseFromApi(exercise: PlanExerciseRecord): PlanExercise {
+function exerciseFromApi(exercise: PlanExerciseRecord, fallbacks: { sets: string; assigned: string; coachGuided: string }): PlanExercise {
   return {
     name: exercise.name,
-    sets: exercise.sets ?? "3 sets",
-    equipment: exercise.equipment ?? exercise.day ?? "Assigned",
-    reps: exercise.reps ?? exercise.raw ?? "Coach guided",
+    sets: exercise.sets ?? fallbacks.sets,
+    equipment: exercise.equipment ?? exercise.day ?? fallbacks.assigned,
+    reps: exercise.reps ?? exercise.raw ?? fallbacks.coachGuided,
   };
 }
 
@@ -73,15 +70,23 @@ export default function Plans() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { mode, palette } = useTheme();
+  const t = useT();
   const [filter, setFilter] = useState<PlanFilter>("workout");
   const [refreshing, setRefreshing] = useState(false);
   const plansQuery = useMyPlans();
+  const filters = useMemo(
+    () => [
+      { label: t("member.planDetail.workoutFilter"), value: "workout" as const },
+      { label: t("member.planDetail.dietFilter"), value: "diet" as const },
+    ],
+    [t],
+  );
   const plans = plansQuery.data?.plans ?? [];
   const filteredPlans = plans.filter((assignment) => {
     return planKind(assignment).includes(filter);
   });
   const selectedAssignment = filteredPlans[0] ?? plans[0] ?? null;
-  const coachName = selectedAssignment?.assignedById ? "Assigned by coach" : "Your coach";
+  const coachName = selectedAssignment?.assignedById ? t("member.planDetail.assignedByCoach") : t("member.planDetail.yourCoach");
 
   function openAssignment(assignmentId: string) {
     router.push(`/plan/${assignmentId}` as never);
@@ -116,13 +121,13 @@ export default function Plans() {
           }}
         >
           <AppHeader
-            title="Your plan"
+            title={t("member.planDetail.yourPlan")}
             showProfileShortcut={false}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/plan"))}
                 accessibilityRole="button"
-                accessibilityLabel="Back"
+                accessibilityLabel={t("common.back")}
                 hitSlop={12}
                 style={({ pressed }) => [
                   styles.headerBackButton,
@@ -142,9 +147,9 @@ export default function Plans() {
             <Card variant="selected" contentStyle={styles.activePlanContent}>
               <View style={styles.activePlanTop}>
                 <View style={styles.activePlanCopy}>
-                  <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>ACTIVE</Text>
+                  <Text style={[styles.eyebrow, { color: palette.text.secondary }]}>{t("member.planDetail.active")}</Text>
                   <Text style={[styles.activePlanTitle, { color: palette.text.primary }]}>
-                    {planTitle(selectedAssignment)}
+                    {planTitle(selectedAssignment, t("member.plan.assignedPlan"))}
                   </Text>
                   <Text style={[styles.activePlanMeta, { color: palette.text.secondary }]}>
                     {coachName} · {planKind(selectedAssignment)}
@@ -159,7 +164,7 @@ export default function Plans() {
               </View>
               <ProgressBar
                 value={(selectedAssignment.progress?.completionPct ?? 0) / 100}
-                label="Progress"
+                label={t("member.plan.progress")}
               />
               <View style={styles.activePlanActions}>
                 <ZookButton
@@ -168,7 +173,7 @@ export default function Plans() {
                   icon="open-outline"
                   style={styles.activePlanPrimaryAction}
                 >
-                  Open today's plan
+                  {t("member.plan.openTodayPlan")}
                 </ZookButton>
                 <ZookButton
                   testID="plans-view-active"
@@ -176,7 +181,7 @@ export default function Plans() {
                   variant="secondary"
                   style={styles.activePlanSecondaryAction}
                 >
-                  See weekly list
+                  {t("member.planDetail.seeWeeklyList")}
                 </ZookButton>
               </View>
             </Card>
@@ -184,7 +189,7 @@ export default function Plans() {
 
           <SegmentedControl options={filters} value={filter} onChange={setFilter} />
 
-          <SectionHeader title="Up next this week" />
+          <SectionHeader title={t("member.planDetail.upNextThisWeek")} />
           <View style={styles.libraryGrid}>
             {plansQuery.isLoading ? (
               <View style={styles.fullWidth}>
@@ -203,7 +208,7 @@ export default function Plans() {
             ) : null}
             {!plansQuery.isLoading && !plansQuery.isError && !filteredPlans.length ? (
               <Card variant="compact" style={styles.emptyPlanCard}>
-                <EmptyState icon="clipboard-outline" title="No plan assigned" body="Your trainer will assign a workout plan here. Check back soon." />
+                <EmptyState icon="clipboard-outline" title={t("member.plan.noPlanAssigned")} body={t("member.planDetail.noPlanAssignedBody")} />
               </Card>
             ) : null}
             {filteredPlans.map((assignment, index) => (
@@ -228,10 +233,10 @@ export default function Plans() {
                   size={42}
                 />
                 <Text style={[styles.libraryTitle, { color: palette.text.primary }]}>
-                  {planTitle(assignment)}
+                  {planTitle(assignment, t("member.plan.assignedPlan"))}
                 </Text>
                 <Text style={[styles.libraryDetail, { color: palette.text.secondary }]}>
-                  {assignment.progress?.completionPct ?? 0}% complete
+                  {t("member.plan.percentComplete", { percent: assignment.progress?.completionPct ?? 0 })}
                 </Text>
               </Pressable>
             ))}
@@ -252,6 +257,7 @@ export function PlanDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { mode, palette } = useTheme();
+  const t = useT();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(new Set<string>());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -270,7 +276,7 @@ export function PlanDetailScreen() {
     plans[0] ??
     null;
   const exercisesQuery = usePlanExercises(selectedAssignment?.id);
-  const coachName = selectedAssignment?.assignedById ? "Assigned by coach" : "Your coach";
+  const coachName = selectedAssignment?.assignedById ? t("member.planDetail.assignedByCoach") : t("member.planDetail.yourCoach");
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
   const requestedAssignmentId = firstParam(params.assignmentId);
@@ -318,7 +324,15 @@ export function PlanDetailScreen() {
 
   useEffect(() => {
     const apiExercises = exercisesQuery.data?.exercises ?? [];
-    setExercises(apiExercises.map(exerciseFromApi));
+    setExercises(
+      apiExercises.map((exercise) =>
+        exerciseFromApi(exercise, {
+          sets: t("member.planDetail.defaultSets"),
+          assigned: t("member.planDetail.assigned"),
+          coachGuided: t("member.plan.coachGuided"),
+        }),
+      ),
+    );
     const apiCompleted = apiExercises
       .filter((exercise) => exercise.completed)
       .map((exercise) => exercise.name);
@@ -380,8 +394,8 @@ export function PlanDetailScreen() {
       if (progressStorageKey) {
         void setStoredValue(progressStorageKey, JSON.stringify(Array.from(next))).catch(() => {
           showToast({
-            title: "Progress not saved",
-            message: "This device may not restore the checkbox state.",
+            title: t("member.planDetail.progressNotSaved"),
+            message: t("member.planDetail.progressNotSavedBody"),
             tone: "amber",
             haptic: "warning",
           });
@@ -394,16 +408,16 @@ export function PlanDetailScreen() {
   async function sendFeedback() {
     const cleanNote = feedbackNote.trim();
     if (!cleanNote) {
-      setFeedbackStatus("Pick one note first.");
+      setFeedbackStatus(t("member.planDetail.pickNoteFirst"));
       return;
     }
     if (!selectedAssignment || !token || !activeOrgId) {
-      setFeedbackStatus("Sign in again to send feedback.");
+      setFeedbackStatus(t("member.planDetail.signInAgainFeedback"));
       return;
     }
     Keyboard.dismiss();
     closeFeedbackSheet();
-    setFeedbackStatus("Sending...");
+    setFeedbackStatus(t("member.planDetail.sending"));
     try {
       await plansApi.sendFeedback({
         token,
@@ -411,13 +425,13 @@ export function PlanDetailScreen() {
         assignmentId: selectedAssignment.id,
         message: cleanNote,
       });
-      setFeedbackStatus("Sent to coach.");
-      showToast({ tone: "success", haptic: "success", message: "Feedback sent to coach." });
+      setFeedbackStatus(t("member.planDetail.sentToCoach"));
+      showToast({ tone: "success", haptic: "success", message: t("member.planDetail.feedbackSent") });
       setFeedbackNote("");
     } catch (error) {
-      const message = getApiErrorMessage(error) || "Failed to send. Try again.";
+      const message = getApiErrorMessage(error) || t("member.planDetail.failedToSend");
       setFeedbackStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("member.planDetail.actionFailed"), message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -440,7 +454,7 @@ export function PlanDetailScreen() {
       if (progressStorageKey) {
         await deleteStoredValue(progressStorageKey);
       }
-      const message = "Workout marked complete.";
+      const message = t("member.planDetail.workoutMarkedComplete");
       setFeedbackStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
@@ -456,9 +470,9 @@ export function PlanDetailScreen() {
           : Promise.resolve(),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
       ]);
-      const message = getApiErrorMessage(error) || "Workout progress could not be saved.";
+      const message = getApiErrorMessage(error) || t("member.planDetail.workoutProgressNotSaved");
       setFeedbackStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("member.planDetail.actionFailed"), message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -497,14 +511,14 @@ export function PlanDetailScreen() {
           }}
         >
             <AppHeader
-              title={planTitle(selectedAssignment)}
+              title={planTitle(selectedAssignment, t("member.plan.assignedPlan"))}
               subtitle={coachName}
               style={[styles.stickyHeader, { backgroundColor: palette.bg.app }]}
               leading={
                 <Pressable
                   onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                   accessibilityRole="button"
-                  accessibilityLabel="Back"
+                  accessibilityLabel={t("common.back")}
                   style={[
                     styles.iconButton,
                     {
@@ -521,7 +535,7 @@ export function PlanDetailScreen() {
                   testID="plan-detail-open-feedback"
                   onPress={openFeedbackSheet}
                   accessibilityRole="button"
-                  accessibilityLabel="Tell coach"
+                  accessibilityLabel={t("member.planDetail.tellCoach")}
                   style={[
                     styles.iconButton,
                     {
@@ -554,20 +568,20 @@ export function PlanDetailScreen() {
               <View style={styles.progressHeader}>
                 <View style={styles.progressCopy}>
                   <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
-                    Workout progress
+                    {t("member.planDetail.workoutProgress")}
                   </Text>
                   <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                    {completedCount} of {exercises.length} completed
+                    {t("member.planDetail.completedCount", { completed: completedCount, total: exercises.length })}
                   </Text>
                 </View>
                 <Text style={[styles.progressText, { color: palette.accent.base }]}>
                   {Math.round(progress * 100)}%
                 </Text>
               </View>
-              <ProgressBar value={progress} label="Today" />
+              <ProgressBar value={progress} label={t("member.diet.today")} />
             </Card>
 
-            <SectionHeader title="Exercises" />
+            <SectionHeader title={t("member.planDetail.exercises")} />
             <View style={styles.stack}>
               {exercisesQuery.isLoading ? (
                 <ExerciseListSkeleton />
@@ -583,7 +597,7 @@ export function PlanDetailScreen() {
               {!exercisesQuery.isLoading && !exercisesQuery.isError && !exercises.length ? (
                 <Card variant="compact">
                   <EmptyState
-                    title="No exercises"
+                    title={t("member.plan.noExercises")}
                   />
                 </Card>
               ) : null}
@@ -608,7 +622,7 @@ export function PlanDetailScreen() {
                 icon="send-outline"
                 style={styles.stickyActionHalf}
               >
-                Feedback
+                {t("member.planDetail.feedback")}
               </ZookButton>
               <ZookButton
                 testID="plan-detail-complete-workout"
@@ -617,7 +631,7 @@ export function PlanDetailScreen() {
                 icon="checkmark-circle-outline"
                 style={styles.stickyActionPrimary}
               >
-                {completePlan.isPending ? "Completing..." : "Complete workout"}
+                {completePlan.isPending ? t("member.planDetail.completing") : t("member.planDetail.completeWorkout")}
               </ZookButton>
             </View>
           </StickyActionBar>
@@ -638,22 +652,27 @@ export function PlanDetailScreen() {
           <BottomSheetView style={styles.feedbackSheetContent}>
             <View style={styles.sheetHeader}>
               <View style={styles.sheetTitleCopy}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>Tell coach</Text>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("member.planDetail.tellCoach")}</Text>
                 <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                  Send a note about this assignment.
+                  {t("member.planDetail.feedbackSheetBody")}
                 </Text>
               </View>
               <Pressable
                 onPress={closeFeedbackSheet}
                 accessibilityRole="button"
-                accessibilityLabel="Close feedback"
+                accessibilityLabel={t("member.planDetail.closeFeedback")}
                 style={[styles.sheetCloseButton, { borderColor: palette.border.default }]}
               >
                 <Ionicons name="close" size={18} color={palette.text.primary} />
               </Pressable>
             </View>
             <View style={styles.feedbackOptions}>
-              {["Too hard", "Need swap", "Pain", "Done"].map((option) => (
+              {[
+                t("member.planDetail.tooHard"),
+                t("member.planDetail.needSwap"),
+                t("member.planDetail.pain"),
+                t("member.planDetail.done"),
+              ].map((option) => (
                 <Pressable
                   key={option}
                   onPress={() => setFeedbackNote(option)}
@@ -689,7 +708,7 @@ export function PlanDetailScreen() {
               icon="send-outline"
               style={styles.feedbackSendButton}
             >
-              Send
+              {t("member.planDetail.send")}
             </ZookButton>
             <TextInput
               testID="plan-detail-feedback-input"
@@ -699,7 +718,7 @@ export function PlanDetailScreen() {
               onSubmitEditing={() => void sendFeedback()}
               returnKeyType="send"
               maxLength={280}
-              placeholder="Add a short note"
+              placeholder={t("member.planDetail.addShortNote")}
               placeholderTextColor={palette.text.tertiary}
               style={[
                 styles.feedbackInput,
@@ -724,7 +743,7 @@ export function PlanDetailScreen() {
                     icon="send-outline"
                     style={styles.feedbackAccessoryButton}
                   >
-                    Send
+                    {t("member.planDetail.send")}
                   </ZookButton>
                 </View>
               </InputAccessoryView>
