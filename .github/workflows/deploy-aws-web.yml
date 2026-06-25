@@ -1,0 +1,107 @@
+name: Deploy AWS Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      ssh_host:
+        description: Production host or IP that serves zookfit.in.
+        required: true
+        default: 13.204.196.160
+      ssh_user:
+        description: SSH user for the production host.
+        required: true
+        default: ec2-user
+      image_uri:
+        description: Full ECR image URI to deploy.
+        required: true
+        default: 477817968459.dkr.ecr.ap-south-1.amazonaws.com/zook-web:latest
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      ZOOK_PRODUCTION_SSH_KEY: ${{ secrets.ZOOK_PRODUCTION_SSH_KEY }}
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ inputs.ssh_host }}
+        run: |
+          if [ -z "${ZOOK_PRODUCTION_SSH_KEY}" ]; then
+            echo "Missing required repository secret ZOOK_PRODUCTION_SSH_KEY." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${ZOOK_PRODUCTION_SSH_KEY}" > ~/.ssh/zook_production
+          chmod 600 ~/.ssh/zook_production
+          ssh-keyscan -H "${SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Deploy web container
+        env:
+          SSH_HOST: ${{ inputs.ssh_host }}
+          SSH_USER: ${{ inputs.ssh_user }}
+          IMAGE_URI: ${{ inputs.image_uri }}
+        run: |
+          SSH_TARGET="${SSH_USER}@${SSH_HOST}"
+          SSH_OPTS="-i ${HOME}/.ssh/zook_production -o BatchMode=yes -o ConnectTimeout=10"
+          ssh ${SSH_OPTS} "${SSH_TARGET}" "IMAGE_URI='${IMAGE_URI}' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          COMPOSE_FILE=/opt/zook/docker-compose.yml
+          if [ ! -f "${COMPOSE_FILE}" ]; then
+            echo "Missing ${COMPOSE_FILE}" >&2
+            exit 1
+          fi
+
+          if command -v aws >/dev/null 2>&1; then
+            aws ecr get-login-password --region ap-south-1 |
+              docker login --username AWS --password-stdin 477817968459.dkr.ecr.ap-south-1.amazonaws.com
+          fi
+
+          sudo cp "${COMPOSE_FILE}" "${COMPOSE_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+          sudo python3 - "${COMPOSE_FILE}" "${IMAGE_URI}" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          compose_file = Path(sys.argv[1])
+          image_uri = sys.argv[2]
+          text = compose_file.read_text()
+          next_text, count = re.subn(
+              r"(^\s*image:\s*).*(zook-web)(?::[^\s]+)?\s*$",
+              lambda match: f"{match.group(1)}{image_uri}",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if count != 1:
+              raise SystemExit("Could not find the zook-web image line in docker-compose.yml")
+          compose_file.write_text(next_text)
+          PY
+
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE="docker compose"
+          else
+            COMPOSE="docker-compose"
+          fi
+
+          ${COMPOSE} -f "${COMPOSE_FILE}" pull web
+          ${COMPOSE} -f "${COMPOSE_FILE}" up -d web
+          ${COMPOSE} -f "${COMPOSE_FILE}" ps
+
+          curl -fsS http://127.0.0.1:3000/api/health
+          curl -fsS -D- https://zookfit.in/.well-known/apple-app-site-association -o /tmp/aasa.headers
+          REMOTE
+
+      - name: Public smoke check
+        run: |
+          curl -fsS -D- https://zookfit.in/.well-known/apple-app-site-association -o /tmp/aasa.json
+          grep -q 'JP4HU7X6G7.com.zook.app' /tmp/aasa.json
+          curl -fsS -D- https://zookfit.in/.well-known/assetlinks.json -o /tmp/assetlinks.json
+          grep -q 'AF:CE:B5:DF:52:85:0C:5A:A5:70:30:CF:EF:53:57:F5:C8:39:AD:ED:16:ED:70:D1:FF:FB:BE:2C:E4:23:45:5F' /tmp/assetlinks.json
