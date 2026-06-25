@@ -20,6 +20,7 @@ export type TranslationKey =
   | "common.dismiss"
   | "common.done"
   | "common.or"
+  | "common.saving"
   | "network.offline"
   | "notFound.body"
   | "notFound.goWorkspace"
@@ -689,6 +690,30 @@ export type TranslationKey =
   | "owner.members.title"
   | "owner.members.total"
   | "owner.members.tryAgain"
+  | "owner.referrals.allowTrainerReferrals"
+  | "owner.referrals.codeExpiryDays"
+  | "owner.referrals.creditInr"
+  | "owner.referrals.discountInr"
+  | "owner.referrals.discountPercent"
+  | "owner.referrals.enabled"
+  | "owner.referrals.enabledBody"
+  | "owner.referrals.flatInr"
+  | "owner.referrals.freeDays"
+  | "owner.referrals.limits"
+  | "owner.referrals.maxPerMemberMonth"
+  | "owner.referrals.memberGymCreditBody"
+  | "owner.referrals.memberRefersMember"
+  | "owner.referrals.memberRefersNewGym"
+  | "owner.referrals.newMemberGets"
+  | "owner.referrals.none"
+  | "owner.referrals.percent"
+  | "owner.referrals.referrerEarns"
+  | "owner.referrals.saveSettings"
+  | "owner.referrals.subtitle"
+  | "owner.referrals.title"
+  | "owner.referrals.trainerEarns"
+  | "owner.referrals.trainerRefersMember"
+  | "owner.referrals.visits"
   | "owner.revenue.noPaymentsYet"
   | "owner.revenue.noPaymentsYetBody"
   | "owner.revenue.paymentFallback"
@@ -819,6 +844,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.dismiss": "Dismiss",
     "common.done": "Done",
     "common.or": "or",
+    "common.saving": "Saving...",
     "network.offline": "Working offline. Data may be stale.",
     "notFound.body": "The link may be old, or this role may not have access to that workflow.",
     "notFound.goWorkspace": "Go to my workspace",
@@ -1499,6 +1525,30 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "Members",
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
+    "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
+    "owner.referrals.codeExpiryDays": "Code expiry (days)",
+    "owner.referrals.creditInr": "Credit (₹)",
+    "owner.referrals.discountInr": "Discount ₹",
+    "owner.referrals.discountPercent": "Discount %",
+    "owner.referrals.enabled": "Referrals enabled",
+    "owner.referrals.enabledBody": "Turn the whole referral program on or off.",
+    "owner.referrals.flatInr": "Flat ₹",
+    "owner.referrals.freeDays": "Free days",
+    "owner.referrals.limits": "Limits",
+    "owner.referrals.maxPerMemberMonth": "Max / member / month",
+    "owner.referrals.memberGymCreditBody": "Account credit a member earns when a gym they refer signs up.",
+    "owner.referrals.memberRefersMember": "Member refers a member",
+    "owner.referrals.memberRefersNewGym": "Member refers a new gym",
+    "owner.referrals.newMemberGets": "New member gets",
+    "owner.referrals.none": "None",
+    "owner.referrals.percent": "Percent",
+    "owner.referrals.referrerEarns": "Referrer earns",
+    "owner.referrals.saveSettings": "Save referral settings",
+    "owner.referrals.subtitle": "Set how much everyone earns for referrals.",
+    "owner.referrals.title": "Referral program",
+    "owner.referrals.trainerEarns": "Trainer earns",
+    "owner.referrals.trainerRefersMember": "Trainer refers a member",
+    "owner.referrals.visits": "Visits",
     "owner.revenue.noPaymentsYet": "No payments yet",
     "owner.revenue.noPaymentsYetBody": "Payments and shop pickups will appear here as they come in.",
     "owner.revenue.paymentFallback": "payment",
@@ -1626,6 +1676,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.dismiss": "बंद करें",
     "common.done": "हो गया",
     "common.or": "या",
+    "common.saving": "सेव हो रहा है...",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "notFound.body": "लिंक पुराना हो सकता है, या इस रोल को उस वर्कफ्लो का एक्सेस नहीं है.",
     "notFound.goWorkspace": "मेरे वर्कस्पेस पर जाएं",
@@ -2308,6 +2359,30 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.title": "मेंबर",
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
+    "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
+    "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
+    "owner.referrals.creditInr": "Credit (₹)",
+    "owner.referrals.discountInr": "Discount ₹",
+    "owner.referrals.discountPercent": "Discount %",
+    "owner.referrals.enabled": "Referrals enabled",
+    "owner.referrals.enabledBody": "पूरे referral program को on या off करें.",
+    "owner.referrals.flatInr": "Flat ₹",
+    "owner.referrals.freeDays": "Free days",
+    "owner.referrals.limits": "Limits",
+    "owner.referrals.maxPerMemberMonth": "Max / member / month",
+    "owner.referrals.memberGymCreditBody": "जब member के referral से gym sign up करे, member को मिलने वाला account credit.",
+    "owner.referrals.memberRefersMember": "Member refers a member",
+    "owner.referrals.memberRefersNewGym": "Member refers a new gym",
+    "owner.referrals.newMemberGets": "New member gets",
+    "owner.referrals.none": "None",
+    "owner.referrals.percent": "Percent",
+    "owner.referrals.referrerEarns": "Referrer earns",
+    "owner.referrals.saveSettings": "Referral settings save करें",
+    "owner.referrals.subtitle": "Referrals पर सबको कितना reward मिलता है, सेट करें.",
+    "owner.referrals.title": "Referral program",
+    "owner.referrals.trainerEarns": "Trainer earns",
+    "owner.referrals.trainerRefersMember": "Trainer refers a member",
+    "owner.referrals.visits": "Visits",
     "owner.revenue.noPaymentsYet": "अभी कोई पेमेंट नहीं",
     "owner.revenue.noPaymentsYetBody": "पेमेंट और शॉप पिकअप आते ही यहां दिखेंगे.",
     "owner.revenue.paymentFallback": "पेमेंट",

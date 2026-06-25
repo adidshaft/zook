@@ -15,6 +15,7 @@ import {
 } from "@/components/primitives";
 import { useOrgReferralPolicy, type ReferralPolicy } from "@/lib/domains/owner/queries";
 import { useUpdateReferralPolicy } from "@/lib/domains/owner/mutations";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 function ChipRow<T extends string>({
@@ -22,11 +23,12 @@ function ChipRow<T extends string>({
   value,
   onChange,
 }: {
-  options: ReadonlyArray<{ value: T; label: string }>;
+  options: ReadonlyArray<{ value: T; labelKey: TranslationKey }>;
   value: T;
   onChange: (value: T) => void;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <View style={styles.chipWrap}>
       {options.map((option) => {
@@ -39,7 +41,7 @@ function ChipRow<T extends string>({
             onPress={() => onChange(option.value)}
             style={[styles.chip, { borderColor: selected ? palette.accent.base : palette.border.default, backgroundColor: selected ? palette.surface.accentSoft : palette.surface.default }]}
           >
-            <Text style={[styles.chipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{option.label}</Text>
+            <Text style={[styles.chipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{t(option.labelKey)}</Text>
           </Pressable>
         );
       })}
@@ -48,18 +50,19 @@ function ChipRow<T extends string>({
 }
 
 const REWARD_TYPES = [
-  { value: "DAYS", label: "Free days" },
-  { value: "VISITS", label: "Visits" },
-  { value: "NONE", label: "None" },
+  { value: "DAYS", labelKey: "owner.referrals.freeDays" },
+  { value: "VISITS", labelKey: "owner.referrals.visits" },
+  { value: "NONE", labelKey: "owner.referrals.none" },
 ] as const;
 const DISCOUNT_TYPES = [
-  { value: "PERCENTAGE", label: "Percent" },
-  { value: "FIXED", label: "Flat ₹" },
-  { value: "NONE", label: "None" },
+  { value: "PERCENTAGE", labelKey: "owner.referrals.percent" },
+  { value: "FIXED", labelKey: "owner.referrals.flatInr" },
+  { value: "NONE", labelKey: "owner.referrals.none" },
 ] as const;
 
 export default function OwnerReferralSettings() {
   const { palette } = useTheme();
+  const t = useT();
   const policyQuery = useOrgReferralPolicy();
   const updatePolicy = useUpdateReferralPolicy();
   const [refreshing, setRefreshing] = useState(false);
@@ -110,7 +113,7 @@ export default function OwnerReferralSettings() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title="Referral program" subtitle="Set how much everyone earns for referrals." showBack />
+          <AppHeader title={t("owner.referrals.title")} subtitle={t("owner.referrals.subtitle")} showBack />
 
           {policyQuery.isError ? (
             <QueryErrorState error={policyQuery.error} onRetry={() => void policyQuery.refetch()} />
@@ -128,66 +131,66 @@ export default function OwnerReferralSettings() {
             <>
               <Card variant="compact" contentStyle={styles.switchRow}>
                 <View style={styles.switchCopy}>
-                  <Text style={[styles.switchTitle, { color: palette.text.primary }]}>Referrals enabled</Text>
-                  <Text style={[styles.switchSub, { color: palette.text.secondary }]}>Turn the whole referral program on or off.</Text>
+                  <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.enabled")}</Text>
+                  <Text style={[styles.switchSub, { color: palette.text.secondary }]}>{t("owner.referrals.enabledBody")}</Text>
                 </View>
                 <ThemedSwitch value={form.enabled} onValueChange={(v) => patch({ enabled: v })} />
               </Card>
 
-              <SectionHeader title="Member refers a member" />
+              <SectionHeader title={t("owner.referrals.memberRefersMember")} />
               <Card contentStyle={styles.formCard}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>Referrer earns</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.referrals.referrerEarns")}</Text>
                 <ChipRow options={REWARD_TYPES} value={form.referrerRewardType} onChange={(v) => patch({ referrerRewardType: v })} />
                 {form.referrerRewardType !== "NONE" ? (
-                  <FormField label={form.referrerRewardType === "DAYS" ? "Free days" : "Visits"} value={String(form.referrerRewardValue)} onChangeText={(t) => patch({ referrerRewardValue: num(t) })} keyboardType="number-pad" />
+                  <FormField label={form.referrerRewardType === "DAYS" ? t("owner.referrals.freeDays") : t("owner.referrals.visits")} value={String(form.referrerRewardValue)} onChangeText={(text) => patch({ referrerRewardValue: num(text) })} keyboardType="number-pad" />
                 ) : null}
-                <Text style={[styles.label, { color: palette.text.secondary }]}>New member gets</Text>
+                <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.referrals.newMemberGets")}</Text>
                 <ChipRow options={DISCOUNT_TYPES} value={form.referredDiscountType} onChange={(v) => patch({ referredDiscountType: v })} />
                 {form.referredDiscountType !== "NONE" ? (
                   <FormField
-                    label={form.referredDiscountType === "PERCENTAGE" ? "Discount %" : "Discount ₹"}
+                    label={form.referredDiscountType === "PERCENTAGE" ? t("owner.referrals.discountPercent") : t("owner.referrals.discountInr")}
                     value={String(form.referredDiscountType === "PERCENTAGE" ? Math.round(form.referredDiscountValue / 100) : Math.round(form.referredDiscountValue / 100))}
-                    onChangeText={(t) => patch({ referredDiscountValue: num(t) * 100 })}
+                    onChangeText={(text) => patch({ referredDiscountValue: num(text) * 100 })}
                     keyboardType="number-pad"
                   />
                 ) : null}
               </Card>
 
-              <SectionHeader title="Trainer refers a member" />
+              <SectionHeader title={t("owner.referrals.trainerRefersMember")} />
               <Card contentStyle={styles.formCard}>
                 <View style={styles.switchRow}>
                   <View style={styles.switchCopy}>
-                    <Text style={[styles.switchTitle, { color: palette.text.primary }]}>Allow trainer referrals</Text>
+                    <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.allowTrainerReferrals")}</Text>
                   </View>
                   <ThemedSwitch value={form.trainerReferralEnabled} onValueChange={(v) => patch({ trainerReferralEnabled: v })} />
                 </View>
                 {form.trainerReferralEnabled ? (
                   <>
-                    <Text style={[styles.label, { color: palette.text.secondary }]}>Trainer earns</Text>
+                    <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.referrals.trainerEarns")}</Text>
                     <ChipRow options={REWARD_TYPES} value={form.trainerRewardType} onChange={(v) => patch({ trainerRewardType: v })} />
                     {form.trainerRewardType !== "NONE" ? (
-                      <FormField label={form.trainerRewardType === "DAYS" ? "Free days" : "Visits"} value={String(form.trainerRewardValue)} onChangeText={(t) => patch({ trainerRewardValue: num(t) })} keyboardType="number-pad" />
+                      <FormField label={form.trainerRewardType === "DAYS" ? t("owner.referrals.freeDays") : t("owner.referrals.visits")} value={String(form.trainerRewardValue)} onChangeText={(text) => patch({ trainerRewardValue: num(text) })} keyboardType="number-pad" />
                     ) : null}
                   </>
                 ) : null}
               </Card>
 
-              <SectionHeader title="Member refers a new gym" />
+              <SectionHeader title={t("owner.referrals.memberRefersNewGym")} />
               <Card contentStyle={styles.formCard}>
                 <Text style={[styles.label, { color: palette.text.secondary }]}>
-                  Account credit a member earns when a gym they refer signs up.
+                  {t("owner.referrals.memberGymCreditBody")}
                 </Text>
-                <FormField label="Credit (₹)" value={String(Math.round(form.memberGymReferralRewardPaise / 100))} onChangeText={(t) => patch({ memberGymReferralRewardPaise: num(t) * 100 })} keyboardType="number-pad" />
+                <FormField label={t("owner.referrals.creditInr")} value={String(Math.round(form.memberGymReferralRewardPaise / 100))} onChangeText={(text) => patch({ memberGymReferralRewardPaise: num(text) * 100 })} keyboardType="number-pad" />
               </Card>
 
-              <SectionHeader title="Limits" />
+              <SectionHeader title={t("owner.referrals.limits")} />
               <Card contentStyle={styles.formRow}>
-                <FormField label="Max / member / month" value={String(form.maxReferralsPerMonth)} onChangeText={(t) => patch({ maxReferralsPerMonth: Math.max(1, num(t)) })} keyboardType="number-pad" style={styles.formField} />
-                <FormField label="Code expiry (days)" value={String(form.referralCodeExpiryDays)} onChangeText={(t) => patch({ referralCodeExpiryDays: num(t) })} keyboardType="number-pad" style={styles.formField} />
+                <FormField label={t("owner.referrals.maxPerMemberMonth")} value={String(form.maxReferralsPerMonth)} onChangeText={(text) => patch({ maxReferralsPerMonth: Math.max(1, num(text)) })} keyboardType="number-pad" style={styles.formField} />
+                <FormField label={t("owner.referrals.codeExpiryDays")} value={String(form.referralCodeExpiryDays)} onChangeText={(text) => patch({ referralCodeExpiryDays: num(text) })} keyboardType="number-pad" style={styles.formField} />
               </Card>
 
-              <ZookButton onPress={save} busy={updatePolicy.isPending} busyLabel="Saving..." icon="save-outline" size="lg">
-                Save referral settings
+              <ZookButton onPress={save} busy={updatePolicy.isPending} busyLabel={t("common.saving")} icon="save-outline" size="lg">
+                {t("owner.referrals.saveSettings")}
               </ZookButton>
             </>
           ) : null}
