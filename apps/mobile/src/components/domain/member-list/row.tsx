@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card, normalizePillTone, Pill, StatusChip, ZookButton } from "@/components/primitives";
 import { formatInitials, formatRedactedPhone } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberRowItem } from "./types";
@@ -20,6 +21,7 @@ export function MemberListRow({
   testID?: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const showReveal = Boolean(item.phone && onRevealPhone && !item.phoneRevealed);
   return (
     <Card
@@ -47,11 +49,11 @@ export function MemberListRow({
           {item.name}
         </Text>
         <Text numberOfLines={1} style={[styles.email, { color: palette.text.secondary }]}>
-          {[item.email, item.meta].filter(Boolean).join(" · ") || "No email"}
+          {[item.email, item.meta].filter(Boolean).join(" · ") || t("memberList.noEmail")}
         </Text>
         <View style={styles.metaRow}>
           <Text numberOfLines={1} style={[styles.phoneText, { color: palette.text.secondary }]}>
-            {item.phoneRevealed ? (item.phone ?? "No phone") : formatRedactedPhone(item.phone)}
+            {item.phoneRevealed ? (item.phone ?? t("memberList.noPhone")) : formatRedactedPhone(item.phone)}
           </Text>
           {showReveal ? (
             <Pressable
@@ -60,10 +62,10 @@ export function MemberListRow({
                 onRevealPhone?.();
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Reveal phone for ${item.name}`}
+              accessibilityLabel={t("memberList.revealPhoneFor", { name: item.name })}
               style={[styles.revealButton, { borderColor: palette.border.default }]}
             >
-              <Text style={[styles.revealText, { color: palette.accent.base }]}>Reveal</Text>
+              <Text style={[styles.revealText, { color: palette.accent.base }]}>{t("memberList.reveal")}</Text>
             </Pressable>
           ) : null}
           {item.badges?.map((badge) => (

@@ -2,6 +2,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 
 import { QueryErrorState } from "@/components/primitives";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
+import { useT } from "@/lib/i18n";
 import { spacing, useTheme } from "@/lib/theme";
 import { MemberListEmptyState } from "./empty-state";
 import { MemberListFilters } from "./filters";
@@ -12,7 +13,7 @@ export type { MemberListFilter, MemberListProps, MemberRowItem } from "./types";
 
 export function MemberList({
   availableFilters,
-  emptyState = { title: "No members", subtitle: "Try a different search or filter." },
+  emptyState,
   filter,
   isError,
   isLoading,
@@ -32,6 +33,11 @@ export function MemberList({
   style,
 }: MemberListProps) {
   const { palette } = useTheme();
+  const t = useT();
+  const resolvedEmptyState = emptyState ?? {
+    title: t("memberList.noMembers"),
+    subtitle: t("memberList.tryDifferentSearch"),
+  };
   const renderItem = ({ item, index }: { item: typeof items[number]; index: number }) => (
     <MemberListRow
       item={item}
@@ -72,12 +78,12 @@ export function MemberList({
             searchTestID={searchTestID}
           />
           {isLoading ? <TrainerClientsSkeleton /> : null}
-          {isError ? <QueryErrorState error={new Error("Members could not load.")} onRetry={onRetry} /> : null}
+          {isError ? <QueryErrorState error={new Error(t("memberList.couldNotLoad"))} onRetry={onRetry} /> : null}
         </View>
       }
       ListEmptyComponent={
         !isLoading && !isError ? (
-          <MemberListEmptyState title={emptyState.title} subtitle={emptyState.subtitle} />
+          <MemberListEmptyState title={resolvedEmptyState.title} subtitle={resolvedEmptyState.subtitle} />
         ) : null
       }
       contentContainerStyle={[styles.listContent, !scrollEnabled ? styles.embeddedListContent : null]}

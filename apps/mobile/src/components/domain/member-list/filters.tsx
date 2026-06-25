@@ -2,12 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Input } from "@/components/primitives";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 import type { MemberListFilter } from "./types";
 
-function filterLabel(filter: MemberListFilter) {
-  if (filter.kind === "all") return "All";
+type Translate = (key: TranslationKey) => string;
+
+function filterLabel(filter: MemberListFilter, t: Translate) {
+  if (filter.kind === "all") return t("memberList.all");
   if (filter.kind === "status") return filter.status[0].toUpperCase() + filter.status.slice(1);
   return filter.tag;
 }
@@ -32,6 +35,7 @@ export function MemberListFilters({
   searchTestID?: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const activeKey = filterKey(filter ?? { kind: "all" });
   return (
     <View style={styles.stack}>
@@ -40,7 +44,7 @@ export function MemberListFilters({
           testID={searchTestID}
           value={searchValue ?? ""}
           onChangeText={onSearchChange}
-          placeholder="Search members"
+          placeholder={t("memberList.searchMembers")}
           leading={<Ionicons name="search-outline" size={17} color={palette.text.secondary} />}
         />
       ) : null}
@@ -64,7 +68,7 @@ export function MemberListFilters({
                 ]}
               >
                 <Text style={[styles.filterChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>
-                  {filterLabel(item)}
+                  {filterLabel(item, t)}
                 </Text>
               </Pressable>
             );

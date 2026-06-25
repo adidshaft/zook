@@ -1070,6 +1070,15 @@ export type TranslationKey =
   | "member.profilePhoto.takePhoto"
   | "member.profilePhoto.tryAgain"
   | "member.profilePhoto.updateProfilePhoto"
+  | "memberList.all"
+  | "memberList.couldNotLoad"
+  | "memberList.noEmail"
+  | "memberList.noMembers"
+  | "memberList.noPhone"
+  | "memberList.reveal"
+  | "memberList.revealPhoneFor"
+  | "memberList.searchMembers"
+  | "memberList.tryDifferentSearch"
   | "member.diet.activePlan"
   | "member.diet.addCaloriesOrMacro"
   | "member.diet.addMealName"
@@ -2921,6 +2930,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profilePhoto.takePhoto": "Take photo",
     "member.profilePhoto.tryAgain": "Try again in a moment.",
     "member.profilePhoto.updateProfilePhoto": "Update profile photo",
+    "memberList.all": "All",
+    "memberList.couldNotLoad": "Members could not load.",
+    "memberList.noEmail": "No email",
+    "memberList.noMembers": "No members",
+    "memberList.noPhone": "No phone",
+    "memberList.reveal": "Reveal",
+    "memberList.revealPhoneFor": "Reveal phone for {{name}}",
+    "memberList.searchMembers": "Search members",
+    "memberList.tryDifferentSearch": "Try a different search or filter.",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Add calories or at least one macro before logging.",
     "member.diet.addMealName": "Add a meal name before logging.",
@@ -4772,6 +4790,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profilePhoto.takePhoto": "Photo लें",
     "member.profilePhoto.tryAgain": "थोड़ी देर में फिर कोशिश करें.",
     "member.profilePhoto.updateProfilePhoto": "Profile photo update करें",
+    "memberList.all": "सभी",
+    "memberList.couldNotLoad": "Members load नहीं हो सके.",
+    "memberList.noEmail": "कोई email नहीं",
+    "memberList.noMembers": "कोई member नहीं",
+    "memberList.noPhone": "कोई phone नहीं",
+    "memberList.reveal": "Reveal",
+    "memberList.revealPhoneFor": "{{name}} का phone reveal करें",
+    "memberList.searchMembers": "Members search करें",
+    "memberList.tryDifferentSearch": "अलग search या filter try करें.",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
     "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",
