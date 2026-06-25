@@ -1366,6 +1366,32 @@ export type TranslationKey =
   | "trainer.clientSessions.planFeedback"
   | "trainer.clientSessions.title"
   | "trainer.clientSessions.waitingForFeedback"
+  | "trainer.clientDiet.addMeal"
+  | "trainer.clientDiet.breakfast"
+  | "trainer.clientDiet.dailyCalorieTarget"
+  | "trainer.clientDiet.defaultTitle"
+  | "trainer.clientDiet.kcal"
+  | "trainer.clientDiet.kcalLabel"
+  | "trainer.clientDiet.kcalTargetPrefix"
+  | "trainer.clientDiet.mealCount"
+  | "trainer.clientDiet.mealLabel"
+  | "trainer.clientDiet.meals"
+  | "trainer.clientDiet.mealsPlanned"
+  | "trainer.clientDiet.dinner"
+  | "trainer.clientDiet.lunch"
+  | "trainer.clientDiet.midMorning"
+  | "trainer.clientDiet.noPreviousPlan"
+  | "trainer.clientDiet.planTitle"
+  | "trainer.clientDiet.planTitlePlaceholder"
+  | "trainer.clientDiet.preWorkout"
+  | "trainer.clientDiet.previousPlan"
+  | "trainer.clientDiet.publish"
+  | "trainer.clientDiet.publishBody"
+  | "trainer.clientDiet.publishing"
+  | "trainer.clientDiet.publishTitle"
+  | "trainer.clientDiet.publishToClient"
+  | "trainer.clientDiet.subtitle"
+  | "trainer.clientDiet.title"
   | "trainer.pt.add"
   | "trainer.pt.adding"
   | "trainer.pt.allSessionsCompleted"
@@ -2820,6 +2846,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientSessions.planFeedback": "Plan feedback",
     "trainer.clientSessions.title": "Client Detail",
     "trainer.clientSessions.waitingForFeedback": "Waiting for member feedback and workout logs.",
+    "trainer.clientDiet.addMeal": "Add meal",
+    "trainer.clientDiet.breakfast": "Breakfast",
+    "trainer.clientDiet.dailyCalorieTarget": "Daily calorie target",
+    "trainer.clientDiet.defaultTitle": "Coached diet plan",
+    "trainer.clientDiet.kcal": "{{kcal}} kcal",
+    "trainer.clientDiet.kcalLabel": "kcal",
+    "trainer.clientDiet.kcalTargetPrefix": "{{kcal}} kcal target · ",
+    "trainer.clientDiet.mealCount": "{{count}} meals",
+    "trainer.clientDiet.mealLabel": "Meal {{index}}",
+    "trainer.clientDiet.meals": "Meals",
+    "trainer.clientDiet.mealsPlanned": "{{count}} meals · {{kcal}} kcal planned",
+    "trainer.clientDiet.dinner": "Dinner",
+    "trainer.clientDiet.lunch": "Lunch",
+    "trainer.clientDiet.midMorning": "Mid-morning",
+    "trainer.clientDiet.noPreviousPlan": "No plan published yet for this client. Build the first one below.",
+    "trainer.clientDiet.planTitle": "Plan title",
+    "trainer.clientDiet.planTitlePlaceholder": "Muscle gain · Vegetarian",
+    "trainer.clientDiet.preWorkout": "Pre-workout",
+    "trainer.clientDiet.previousPlan": "Previous plan",
+    "trainer.clientDiet.publish": "Publish",
+    "trainer.clientDiet.publishBody": "The member sees this plan in their Diet tab immediately.",
+    "trainer.clientDiet.publishing": "Publishing...",
+    "trainer.clientDiet.publishTitle": "Publish diet plan?",
+    "trainer.clientDiet.publishToClient": "Publish to client",
+    "trainer.clientDiet.subtitle": "Build and publish a plan for your client.",
+    "trainer.clientDiet.title": "Diet plan",
     "trainer.pt.add": "Add",
     "trainer.pt.adding": "Adding...",
     "trainer.pt.allSessionsCompleted": "All sessions completed",
@@ -4273,6 +4325,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientSessions.planFeedback": "Plan feedback",
     "trainer.clientSessions.title": "Client Detail",
     "trainer.clientSessions.waitingForFeedback": "Member feedback और workout logs का इंतजार है.",
+    "trainer.clientDiet.addMeal": "Meal जोड़ें",
+    "trainer.clientDiet.breakfast": "Breakfast",
+    "trainer.clientDiet.dailyCalorieTarget": "Daily calorie target",
+    "trainer.clientDiet.defaultTitle": "Coached diet plan",
+    "trainer.clientDiet.kcal": "{{kcal}} kcal",
+    "trainer.clientDiet.kcalLabel": "kcal",
+    "trainer.clientDiet.kcalTargetPrefix": "{{kcal}} kcal target · ",
+    "trainer.clientDiet.mealCount": "{{count}} meals",
+    "trainer.clientDiet.mealLabel": "Meal {{index}}",
+    "trainer.clientDiet.meals": "Meals",
+    "trainer.clientDiet.mealsPlanned": "{{count}} meals · {{kcal}} kcal planned",
+    "trainer.clientDiet.dinner": "Dinner",
+    "trainer.clientDiet.lunch": "Lunch",
+    "trainer.clientDiet.midMorning": "Mid-morning",
+    "trainer.clientDiet.noPreviousPlan": "इस client के लिए अभी कोई plan published नहीं. पहला plan नीचे बनाएं.",
+    "trainer.clientDiet.planTitle": "Plan title",
+    "trainer.clientDiet.planTitlePlaceholder": "Muscle gain · Vegetarian",
+    "trainer.clientDiet.preWorkout": "Pre-workout",
+    "trainer.clientDiet.previousPlan": "Previous plan",
+    "trainer.clientDiet.publish": "Publish",
+    "trainer.clientDiet.publishBody": "Member इस plan को तुरंत अपने Diet tab में देखेगा.",
+    "trainer.clientDiet.publishing": "Publish हो रहा है...",
+    "trainer.clientDiet.publishTitle": "Diet plan publish करें?",
+    "trainer.clientDiet.publishToClient": "Client को publish करें",
+    "trainer.clientDiet.subtitle": "अपने client के लिए plan बनाएं और publish करें.",
+    "trainer.clientDiet.title": "Diet plan",
     "trainer.pt.add": "जोड़ें",
     "trainer.pt.adding": "जोड़ा जा रहा है...",
     "trainer.pt.allSessionsCompleted": "सभी सेशन पूरे",

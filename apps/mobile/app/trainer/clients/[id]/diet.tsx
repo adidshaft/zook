@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -7,33 +7,58 @@ import {
   Card,
   FormField,
   IconBubble,
+  QueryErrorState,
   SectionHeader,
+  Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { useCreateClientDietPlan } from "@/lib/domains/trainer/queries";
+import { useClientDietPlans, useCreateClientDietPlan } from "@/lib/domains/trainer/queries";
+import type { TranslationKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type MealRow = { name: string; calories: string };
 
-const DEFAULT_MEALS: MealRow[] = [
-  { name: "Breakfast", calories: "420" },
-  { name: "Mid-morning", calories: "240" },
-  { name: "Lunch", calories: "560" },
-  { name: "Pre-workout", calories: "320" },
-  { name: "Dinner", calories: "480" },
+const defaultMealKeys: Array<{ key: TranslationKey; calories: string }> = [
+  { key: "trainer.clientDiet.breakfast", calories: "420" },
+  { key: "trainer.clientDiet.midMorning", calories: "240" },
+  { key: "trainer.clientDiet.lunch", calories: "560" },
+  { key: "trainer.clientDiet.preWorkout", calories: "320" },
+  { key: "trainer.clientDiet.dinner", calories: "480" },
 ];
 
 export default function TrainerClientDiet() {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const clientId = Array.isArray(params.id) ? params.id[0] : params.id;
   const createPlan = useCreateClientDietPlan(clientId ?? "");
+  const priorPlansQuery = useClientDietPlans(clientId);
+  const previousPlan = priorPlansQuery.data?.plans?.[0];
+  const prefilledRef = useRef(false);
 
-  const [title, setTitle] = useState("Coached diet plan");
+  const [title, setTitle] = useState(t("trainer.clientDiet.defaultTitle"));
   const [target, setTarget] = useState("2000");
-  const [meals, setMeals] = useState<MealRow[]>(DEFAULT_MEALS);
+  const [meals, setMeals] = useState<MealRow[]>(
+    defaultMealKeys.map((meal) => ({ name: t(meal.key), calories: meal.calories })),
+  );
+
+  useEffect(() => {
+    if (prefilledRef.current || !previousPlan) return;
+    prefilledRef.current = true;
+    setTitle(previousPlan.title ?? t("trainer.clientDiet.defaultTitle"));
+    if (previousPlan.calorieTarget) setTarget(String(previousPlan.calorieTarget));
+    if (previousPlan.meals?.length) {
+      setMeals(
+        previousPlan.meals.map((meal) => ({
+          name: meal.name,
+          calories: meal.calories != null ? String(meal.calories) : "",
+        })),
+      );
+    }
+  }, [previousPlan, t]);
 
   const mealsTotal = meals.reduce((total, meal) => total + (Number.parseInt(meal.calories, 10) || 0), 0);
   const validMeals = meals.filter((meal) => meal.name.trim().length >= 2);
@@ -49,10 +74,10 @@ export default function TrainerClientDiet() {
 
   function publish() {
     if (!canPublish) return;
-    Alert.alert("Publish diet plan?", "The member sees this plan in their Diet tab immediately.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("trainer.clientDiet.publishTitle"), t("trainer.clientDiet.publishBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Publish",
+        text: t("trainer.clientDiet.publish"),
         onPress: () =>
           createPlan.mutate(
             {
@@ -80,24 +105,64 @@ export default function TrainerClientDiet() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader title="Diet plan" subtitle="Build and publish a plan for your client." showBack />
+          <AppHeader title={t("trainer.clientDiet.title")} subtitle={t("trainer.clientDiet.subtitle")} showBack />
+
+          <SectionHeader title={t("trainer.clientDiet.previousPlan")} />
+          {priorPlansQuery.isLoading ? (
+            <Card variant="compact" contentStyle={styles.stack}>
+              <Skeleton height={18} width="50%" />
+              <Skeleton height={44} />
+            </Card>
+          ) : null}
+          {priorPlansQuery.isError ? (
+            <Card variant="compact">
+              <QueryErrorState error={priorPlansQuery.error} onRetry={() => void priorPlansQuery.refetch()} />
+            </Card>
+          ) : null}
+          {!priorPlansQuery.isLoading && !priorPlansQuery.isError ? (
+            previousPlan ? (
+              <Card variant="compact" contentStyle={styles.stack}>
+                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{previousPlan.title}</Text>
+                <Text style={[styles.totalText, { color: palette.text.secondary }]}>
+                  {previousPlan.calorieTarget ? t("trainer.clientDiet.kcalTargetPrefix", { kcal: previousPlan.calorieTarget }) : ""}
+                  {t("trainer.clientDiet.mealCount", { count: previousPlan.meals?.length ?? 0 })}
+                </Text>
+                {previousPlan.meals?.map((meal) => (
+                  <View key={meal.id} style={styles.previousMealRow}>
+                    <Text style={[styles.previousMealName, { color: palette.text.primary }]} numberOfLines={1}>
+                      {meal.name}
+                    </Text>
+                    <Text style={[styles.previousMealKcal, { color: palette.text.secondary }]}>
+                      {meal.calories != null ? t("trainer.clientDiet.kcal", { kcal: meal.calories }) : "-"}
+                    </Text>
+                  </View>
+                ))}
+              </Card>
+            ) : (
+              <Card variant="compact" contentStyle={styles.stack}>
+                <Text style={[styles.totalText, { color: palette.text.secondary }]}>
+                  {t("trainer.clientDiet.noPreviousPlan")}
+                </Text>
+              </Card>
+            )
+          ) : null}
 
           <Card contentStyle={styles.formCard}>
-            <FormField label="Plan title" value={title} onChangeText={setTitle} placeholder="Muscle gain · Vegetarian" />
-            <FormField label="Daily calorie target" value={target} onChangeText={setTarget} keyboardType="number-pad" placeholder="2000" />
+            <FormField label={t("trainer.clientDiet.planTitle")} value={title} onChangeText={setTitle} placeholder={t("trainer.clientDiet.planTitlePlaceholder")} />
+            <FormField label={t("trainer.clientDiet.dailyCalorieTarget")} value={target} onChangeText={setTarget} keyboardType="number-pad" placeholder="2000" />
             <View style={[styles.totalRow, { borderColor: palette.border.subtle }]}>
               <IconBubble icon="restaurant-outline" tone="lime" size={36} />
               <Text style={[styles.totalText, { color: palette.text.secondary }]}>
-                {meals.length} meals · {mealsTotal} kcal planned
+                {t("trainer.clientDiet.mealsPlanned", { count: meals.length, kcal: mealsTotal })}
               </Text>
             </View>
           </Card>
 
           <SectionHeader
-            title="Meals"
+            title={t("trainer.clientDiet.meals")}
             action={
               <ZookButton size="sm" variant="secondary" icon="add" onPress={addMeal}>
-                Add meal
+                {t("trainer.clientDiet.addMeal")}
               </ZookButton>
             }
           />
@@ -106,14 +171,14 @@ export default function TrainerClientDiet() {
             {meals.map((meal, index) => (
               <Card key={index} variant="compact" contentStyle={styles.mealRow}>
                 <FormField
-                  label={`Meal ${index + 1}`}
+                  label={t("trainer.clientDiet.mealLabel", { index: index + 1 })}
                   value={meal.name}
                   onChangeText={(value) => updateMeal(index, { name: value })}
-                  placeholder="Breakfast"
+                  placeholder={t("trainer.clientDiet.breakfast")}
                   style={styles.mealName}
                 />
                 <FormField
-                  label="kcal"
+                  label={t("trainer.clientDiet.kcalLabel")}
                   value={meal.calories}
                   onChangeText={(value) => updateMeal(index, { calories: value })}
                   keyboardType="number-pad"
@@ -124,8 +189,8 @@ export default function TrainerClientDiet() {
             ))}
           </View>
 
-          <ZookButton onPress={publish} disabled={!canPublish} busy={createPlan.isPending} busyLabel="Publishing..." icon="send-outline" size="lg">
-            Publish to client
+          <ZookButton onPress={publish} disabled={!canPublish} busy={createPlan.isPending} busyLabel={t("trainer.clientDiet.publishing")} icon="send-outline" size="lg">
+            {t("trainer.clientDiet.publishToClient")}
           </ZookButton>
         </ScrollView>
       </ZookScreen>
@@ -156,4 +221,8 @@ const styles = StyleSheet.create({
   mealRow: { alignItems: "flex-end", flexDirection: "row", gap: spacing.sm },
   mealName: { flex: 1 },
   mealKcal: { width: 96 },
+  cardTitle: { ...typography.cardTitle },
+  previousMealRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  previousMealName: { ...typography.body, flex: 1, marginRight: spacing.sm },
+  previousMealKcal: { ...typography.caption },
 });
