@@ -51,6 +51,7 @@ import {
 } from "@/lib/domains";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
+import { useT } from "@/lib/i18n";
 
 type ActivityItem = {
   id: string;
@@ -91,21 +92,22 @@ function membershipProgressLabel(input: {
   durationDays?: number | null;
   remainingVisits?: number | null;
   visitLimit?: number | null;
-}) {
+}, t: ReturnType<typeof useT>) {
   if (typeof input.remainingVisits === "number" && input.visitLimit) {
-    return `${input.remainingVisits} of ${formatVisitLimit(input.visitLimit)} remaining`;
+    return t("member.profile.visitsRemaining", { remaining: input.remainingVisits, total: formatVisitLimit(input.visitLimit) });
   }
   if (typeof input.daysLeft === "number" && input.durationDays) {
-    return `${input.daysLeft} of ${input.durationDays} days remaining`;
+    return t("member.profile.daysRemainingOf", { remaining: input.daysLeft, total: input.durationDays });
   }
   if (typeof input.daysLeft === "number") {
-    return `${input.daysLeft} days remaining`;
+    return t("member.profile.daysRemaining", { count: input.daysLeft });
   }
-  return "Membership details unavailable";
+  return t("member.profile.membershipDetailsUnavailable");
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const t = useT();
   const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const { mode, palette } = useTheme();
@@ -138,7 +140,7 @@ export default function ProfileScreen() {
     session?.activeOrganization ??
     null;
   const profile = profileQuery.data;
-  const userName = profile?.user.name || session?.user.name || "Zook member";
+  const userName = profile?.user.name || session?.user.name || t("member.profile.memberFallback");
   const userEmail = profile?.user.email || session?.user.email || "";
   const photoUrl = normalizeWebUrl(
     profile?.user.profilePhotoUrl ??
@@ -166,7 +168,7 @@ export default function ProfileScreen() {
     activeMembershipQuery.data?.membership ?? homeQuery.data?.activeMembership ?? null;
   const membershipPlan =
     activeMembershipQuery.data?.membership?.plan ?? homeQuery.data?.activePlan ?? null;
-  const planName = resolvePlanName(membershipPlan) ?? "Membership";
+  const planName = resolvePlanName(membershipPlan) ?? t("member.profile.membership");
   const daysLeft =
     typeof membership?.daysLeft === "number"
       ? membership.daysLeft
@@ -189,7 +191,7 @@ export default function ProfileScreen() {
     durationDays: membershipPlan?.durationDays ?? membershipPlan?.validityDays,
     remainingVisits: membership?.remainingVisits,
     visitLimit: membershipPlan?.visitLimit,
-  });
+  }, t);
   const referralCode = referralQuery.data?.referralCodes[0] ?? null;
   const referralPolicy = referralQuery.data?.policy as
     | { referrerRewardType?: string; referrerRewardValue?: number }
@@ -208,12 +210,12 @@ export default function ProfileScreen() {
     .reduce((total, reward) => total + (reward.rewardValue ?? 0), 0);
   const referralBenefit =
     activeRole === "TRAINER"
-      ? "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link."
+      ? t("member.profile.trainerReferralBenefit")
       : referralPolicy?.referrerRewardType === "DAYS"
-      ? `You'll get ${referralPolicy.referrerRewardValue ?? 7} free days for every friend who joins.`
+      ? t("member.profile.daysReferralBenefit", { count: referralPolicy.referrerRewardValue ?? 7 })
       : referralPolicy?.referrerRewardType === "VISITS"
-        ? `You'll get ${referralPolicy.referrerRewardValue ?? 1} visits for every friend who joins.`
-        : "Share your code so the gym can track friends you bring in.";
+        ? t("member.profile.visitsReferralBenefit", { count: referralPolicy.referrerRewardValue ?? 1 })
+        : t("member.profile.defaultReferralBenefit");
 
   const recentActivity = useMemo<ActivityItem[]>(() => {
     const attendanceItems =
@@ -226,7 +228,7 @@ export default function ProfileScreen() {
               : null;
         return {
           id: String(record.id ?? `attendance-${index}`),
-          title: "Checked in",
+          title: t("member.profile.checkedIn"),
           meta: formatActivityDate(checkedInAt),
           icon: "checkmark-circle-outline" as const,
         };
@@ -234,17 +236,17 @@ export default function ProfileScreen() {
     const workoutItems =
       plansQuery.data?.plans?.map((assignment) => ({
         id: assignment.id,
-        title: assignment.plan?.title ?? "Workout plan",
+        title: assignment.plan?.title ?? t("member.profile.workoutPlan"),
         meta:
           assignment.progress?.updatedAt || assignment.createdAt
-            ? `${assignment.progress?.completionPct ?? 0}% complete - ${formatActivityDate(
+            ? t("member.profile.percentCompleteWithDate", { percent: assignment.progress?.completionPct ?? 0, date: formatActivityDate(
                 assignment.progress?.updatedAt ?? assignment.createdAt,
-              )}`
-            : `${assignment.progress?.completionPct ?? 0}% complete`,
+              ) })
+            : t("member.profile.percentComplete", { percent: assignment.progress?.completionPct ?? 0 }),
         icon: "barbell-outline" as const,
       })) ?? [];
     return [...attendanceItems, ...workoutItems].slice(0, 3);
-  }, [attendanceQuery.data?.attendance, plansQuery.data?.plans]);
+  }, [attendanceQuery.data?.attendance, plansQuery.data?.plans, t]);
   const focusTarget = firstParam(params.focus);
 
   function rememberSection(
@@ -293,18 +295,18 @@ export default function ProfileScreen() {
 
   function confirmRoleSwitch(role: Role) {
     if (role === activeRole) return;
-    Alert.alert(`Switch to ${formatRoleLabel(role)}?`, "Zook opens that role's tools.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("member.profile.switchRoleConfirmTitle", { role: formatRoleLabel(role) }), t("member.profile.switchRoleConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Switch",
+        text: t("member.profile.switch"),
         onPress: () => {
           setRoleBusy(role);
           void switchRole(role)
             .then(() => router.replace(routeForRole(role)))
             .catch((error) => {
               Alert.alert(
-                "Role unavailable",
-                error instanceof Error ? error.message : "That role is not available here.",
+                t("member.profile.roleUnavailable"),
+                error instanceof Error ? error.message : t("member.profile.roleUnavailableBody"),
               );
             })
             .finally(() => setRoleBusy(null));
@@ -315,20 +317,20 @@ export default function ProfileScreen() {
 
   function confirmOtherGymRoleSwitch(input: { orgId: string; orgName: string; role: Role }) {
     Alert.alert(
-      `${formatRoleLabel(input.role)} is in another gym`,
-      `Switch gyms before opening ${formatRoleLabel(input.role)} tools.`,
+      t("member.profile.otherGymRoleTitle", { role: formatRoleLabel(input.role) }),
+      t("member.profile.otherGymRoleBody", { role: formatRoleLabel(input.role) }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: `Switch to ${input.orgName} to access ${formatRoleLabel(input.role)} tools`,
+          text: t("member.profile.switchGymForRole", { gym: input.orgName, role: formatRoleLabel(input.role) }),
           onPress: () => {
             void switchOrg(input.orgId)
               .then(() => switchRole(input.role))
               .then(() => router.replace(routeForRole(input.role)))
               .catch((error) => {
                 Alert.alert(
-                  "Switch failed",
-                  error instanceof Error ? error.message : "Could not switch gyms right now.",
+                  t("member.profile.switchFailed"),
+                  error instanceof Error ? error.message : t("member.profile.switchFailedBody"),
                 );
               });
           },
@@ -339,32 +341,32 @@ export default function ProfileScreen() {
 
   function showRoleSwitcher() {
     if (!roles.length && !rolesInOtherGyms.length) {
-      Alert.alert("No roles", "This account does not have another role in the active gym.");
+      Alert.alert(t("member.profile.noRoles"), t("member.profile.noRolesBody"));
       return;
     }
     Alert.alert(
-      "Switch role",
-      "Choose the role to use in this gym.",
+      t("member.profile.switchRole"),
+      t("member.profile.switchRoleBody"),
       [
         ...roles.map((role) => ({
-          text: role === activeRole ? `${formatRoleLabel(role)} (active)` : formatRoleLabel(role),
+          text: role === activeRole ? t("member.profile.activeRoleOption", { role: formatRoleLabel(role) }) : formatRoleLabel(role),
           onPress: () => confirmRoleSwitch(role),
         })),
         ...rolesInOtherGyms.map((option) => ({
-          text: `${formatRoleLabel(option.role)} at ${option.orgName}`,
+          text: t("member.profile.roleAtGym", { role: formatRoleLabel(option.role), gym: option.orgName }),
           onPress: () => confirmOtherGymRoleSwitch(option),
         })),
-        { text: "Cancel", style: "cancel" as const },
+        { text: t("common.cancel"), style: "cancel" as const },
       ],
     );
   }
 
   function confirmGymSwitch(orgId: string, orgName: string) {
     if (orgId === activeOrgId) return;
-    Alert.alert(`Switch to ${orgName}?`, "Your profile refreshes for that gym.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("member.profile.switchGymConfirmTitle", { gym: orgName }), t("member.profile.switchGymConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Switch",
+        text: t("member.profile.switch"),
         onPress: () => {
           void switchOrg(orgId);
         },
@@ -375,27 +377,27 @@ export default function ProfileScreen() {
   function showGymSwitcher() {
     const gyms = session?.organizations ?? [];
     if (!gyms.length) {
-      Alert.alert("No gyms", "Join or request access to a gym first.");
+      Alert.alert(t("member.profile.noGyms"), t("member.profile.noGymsBody"));
       return;
     }
     Alert.alert(
-      "Switch gym",
-      "Choose your active gym.",
+      t("member.profile.switchGym"),
+      t("member.profile.switchGymBody"),
       [
         ...gyms.map((gym) => ({
-          text: gym.orgId === activeOrgId ? `${gym.name} (active)` : gym.name,
+          text: gym.orgId === activeOrgId ? t("member.profile.activeGymOption", { gym: gym.name }) : gym.name,
           onPress: () => confirmGymSwitch(gym.orgId, gym.name),
         })),
-        { text: "Cancel", style: "cancel" as const },
+        { text: t("common.cancel"), style: "cancel" as const },
       ],
     );
   }
 
   function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("member.profile.signOutConfirmTitle"), t("member.profile.signOutConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Sign out",
+        text: t("member.profile.signOut"),
         style: "destructive",
         onPress: () => {
           void logout();
@@ -407,7 +409,7 @@ export default function ProfileScreen() {
   function toggleBiometricUnlock() {
     void setBiometricEnabled(!biometricEnabled).then((enabled) => {
       if (!enabled && !biometricEnabled) {
-        Alert.alert("Biometric unlock", "Set up Face ID or device biometrics to enable this.");
+        Alert.alert(t("member.profile.biometricUnlock"), t("member.profile.biometricUnlockBody"));
       }
     });
   }
@@ -422,8 +424,8 @@ export default function ProfileScreen() {
       : "";
     await Share.share({
       message: link
-        ? `Join ${activeOrganization?.name ?? "my gym"} with my referral code ${referralCode.code}: ${link}`
-        : `Use my referral code ${referralCode.code} at ${activeOrganization?.name ?? "my gym"}.`,
+        ? t("member.profile.shareReferralWithLink", { gym: activeOrganization?.name ?? t("member.profile.myGym"), code: referralCode.code, link })
+        : t("member.profile.shareReferralCode", { gym: activeOrganization?.name ?? t("member.profile.myGym"), code: referralCode.code }),
     });
   }
 
@@ -436,7 +438,7 @@ export default function ProfileScreen() {
         : toWebUrl(rawLink)
       : referralCode.code;
     await Clipboard.setStringAsync(link);
-    Alert.alert("Referral copied", link === referralCode.code ? "Your referral code is copied." : "Your referral link is copied.");
+    Alert.alert(t("member.profile.referralCopied"), link === referralCode.code ? t("member.profile.referralCodeCopied") : t("member.profile.referralLinkCopied"));
   }
 
   return (
@@ -457,12 +459,12 @@ export default function ProfileScreen() {
           }
         >
           <AppHeader
-            title="Profile"
+            title={t("member.profile.title")}
             showProfileShortcut={false}
             leading={
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Go back"
+                accessibilityLabel={t("settings.goBack")}
                 hitSlop={12}
                 onPress={() => {
                   if (router.canGoBack()) {
@@ -496,12 +498,12 @@ export default function ProfileScreen() {
                 onCopy={() => void copyReferral()}
               />
               <Text style={[styles.referralStat, { color: palette.text.primary }]}>
-                Your friends: {referralCode.redemptionCount ?? 0} joined, {pendingFriends} pending
+                {t("member.profile.friendsStat", { joined: referralCode.redemptionCount ?? 0, pending: pendingFriends })}
               </Text>
               {earnedCreditPaise > 0 || pendingCreditPaise > 0 ? (
                 <Text style={[styles.referralStat, { color: palette.accent.base }]}>
-                  {formatInr(earnedCreditPaise)} earned
-                  {pendingCreditPaise > 0 ? ` · ${formatInr(pendingCreditPaise)} pending` : ""}
+                  {t("member.profile.earnedCredit", { amount: formatInr(earnedCreditPaise) })}
+                  {pendingCreditPaise > 0 ? ` · ${t("member.profile.pendingCredit", { amount: formatInr(pendingCreditPaise) })}` : ""}
                 </Text>
               ) : null}
               <Text style={[styles.referralBenefit, { color: palette.text.secondary }]}>{referralBenefit}</Text>
@@ -510,16 +512,16 @@ export default function ProfileScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Refer a gym to Zook and earn"
+            accessibilityLabel={t("member.profile.referGymAccessibility")}
             onPress={() => router.push("/rewards" as never)}
             style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}
           >
             <Card variant="compact" contentStyle={styles.referGymRow}>
               <IconBubble icon="gift" tone="lime" size={42} />
               <View style={styles.referGymCopy}>
-                <Text style={[styles.referGymTitle, { color: palette.text.primary }]}>Refer a gym & earn cash</Text>
+                <Text style={[styles.referGymTitle, { color: palette.text.primary }]}>{t("member.profile.referGymTitle")}</Text>
                 <Text style={[styles.referGymBody, { color: palette.text.secondary }]} numberOfLines={2}>
-                  Earn when a gym you refer subscribes to Zook on a 6-month or yearly plan.
+                  {t("member.profile.referGymBody")}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />
@@ -558,7 +560,7 @@ export default function ProfileScreen() {
                       <Pressable
                         key={role}
                         accessibilityRole="button"
-                        accessibilityLabel={`Use Zook as ${formatRoleLabel(role)}`}
+                        accessibilityLabel={t("member.profile.useRoleAccessibility", { role: formatRoleLabel(role) })}
                         accessibilityState={{
                           selected: role === activeRole,
                           disabled: Boolean(roleBusy),
@@ -568,12 +570,12 @@ export default function ProfileScreen() {
                         onPress={() => confirmRoleSwitch(role)}
                       >
                         <Pill tone={role === activeRole ? "blue" : "neutral"}>
-                          {roleBusy === role ? "Switching..." : formatRoleLabel(role)}
+                          {roleBusy === role ? t("member.profile.switching") : formatRoleLabel(role)}
                         </Pill>
                       </Pressable>
                     ))
                   ) : (
-                    <Pill>No role assigned</Pill>
+                    <Pill>{t("member.profile.noRoleAssigned")}</Pill>
                   )}
                 </View>
               </View>
@@ -586,7 +588,7 @@ export default function ProfileScreen() {
 
           {activeRole === "OWNER" || activeRole === "ADMIN" ? null : (
           <View style={styles.section} onLayout={(event) => rememberSection("membership", event)}>
-            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Membership</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("member.profile.membership")}</Text>
             <Card variant="compact" contentStyle={styles.membershipCard}>
               {membership ? (
                 <>
@@ -596,7 +598,7 @@ export default function ProfileScreen() {
                         {planName}
                       </Text>
                       <Text style={[styles.cardSubtitle, { color: palette.text.secondary }]}>
-                        Expires {formatLongDate(membership.endsAt, "Updating")}
+                        {t("member.profile.expires", { date: formatLongDate(membership.endsAt, t("member.profile.updating")) })}
                       </Text>
                     </View>
                     <Pill
@@ -606,7 +608,7 @@ export default function ProfileScreen() {
                           : "lime"
                       }
                     >
-                      {membership.status ?? "Active"}
+                      {membership.status ?? t("member.profile.active")}
                     </Pill>
                   </View>
                   <ProgressBar
@@ -620,7 +622,7 @@ export default function ProfileScreen() {
                       size="sm"
                       style={styles.actionHalf}
                     >
-                      Renew
+                      {t("member.profile.renew")}
                     </ZookButton>
                     <ZookButton
                       href="/membership"
@@ -629,17 +631,17 @@ export default function ProfileScreen() {
                       size="sm"
                       style={styles.actionHalf}
                     >
-                      View history
+                      {t("member.profile.viewHistory")}
                     </ZookButton>
                   </View>
                 </>
               ) : (
                 <EmptyState
                   icon="card-outline"
-                  title="No active membership"
+                  title={t("member.profile.noActiveMembership")}
                   action={
                     <ZookButton href="/gyms" variant="secondary" icon="search-outline" size="sm">
-                      Find gyms
+                      {t("member.profile.findGyms")}
                     </ZookButton>
                   }
                 />
@@ -649,7 +651,7 @@ export default function ProfileScreen() {
           )}
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Recent activity</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("member.profile.recentActivity")}</Text>
             <Card variant="compact" contentStyle={styles.activityCard}>
               {recentActivity.length ? (
                 recentActivity.map((item) => (
@@ -668,14 +670,14 @@ export default function ProfileScreen() {
               ) : (
                 <EmptyState
                   icon="time-outline"
-                  title="No activity"
+                  title={t("member.profile.noActivity")}
                 />
               )}
             </Card>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>Quick actions</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("member.profile.quickActions")}</Text>
             <View style={styles.quickGrid}>
               <ZookButton
                 testID="profile-switch-role"
@@ -684,7 +686,7 @@ export default function ProfileScreen() {
                 onPress={showRoleSwitcher}
                 style={styles.quickButton}
               >
-                Switch role
+                {t("member.profile.switchRole")}
               </ZookButton>
               <ZookButton
                 testID="profile-switch-gym"
@@ -693,7 +695,7 @@ export default function ProfileScreen() {
                 onPress={showGymSwitcher}
                 style={styles.quickButton}
               >
-                Switch gym
+                {t("member.profile.switchGym")}
               </ZookButton>
               <ZookButton
                 variant="secondary"
@@ -701,7 +703,7 @@ export default function ProfileScreen() {
                 onPress={() => router.push("/classes" as never)}
                 style={styles.quickButton}
               >
-                Classes
+                {t("member.profile.classes")}
               </ZookButton>
               <ZookButton
                 testID="profile-biometric-toggle"
@@ -710,7 +712,7 @@ export default function ProfileScreen() {
                 onPress={toggleBiometricUnlock}
                 style={styles.quickButton}
               >
-                {biometricEnabled ? "Biometric on" : "Biometric"}
+                {biometricEnabled ? t("member.profile.biometricOn") : t("member.profile.biometric")}
               </ZookButton>
               <ZookButton
                 href="/settings"
@@ -718,7 +720,7 @@ export default function ProfileScreen() {
                 icon="settings-outline"
                 style={styles.quickButton}
               >
-                Settings
+                {t("member.profile.settings")}
               </ZookButton>
               {showQaShortcuts ? (
                 <ZookButton
@@ -728,7 +730,7 @@ export default function ProfileScreen() {
                   onPress={() => router.push("/qa" as never)}
                   style={styles.quickButton}
                 >
-                  QA shortcuts
+                  {t("member.profile.qaShortcuts")}
                 </ZookButton>
               ) : null}
               <ZookButton
@@ -738,7 +740,7 @@ export default function ProfileScreen() {
                 onPress={confirmSignOut}
                 style={styles.quickButton}
               >
-                Sign out
+                {t("member.profile.signOut")}
               </ZookButton>
             </View>
           </View>

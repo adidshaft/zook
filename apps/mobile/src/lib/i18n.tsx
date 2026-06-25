@@ -738,6 +738,79 @@ export type TranslationKey =
   | "member.membership.validity"
   | "member.membership.visits"
   | "member.membership.yourGym"
+  | "member.profile.active"
+  | "member.profile.activeGymOption"
+  | "member.profile.activeRoleOption"
+  | "member.profile.biometric"
+  | "member.profile.biometricOn"
+  | "member.profile.biometricUnlock"
+  | "member.profile.biometricUnlockBody"
+  | "member.profile.checkedIn"
+  | "member.profile.classes"
+  | "member.profile.daysReferralBenefit"
+  | "member.profile.daysRemaining"
+  | "member.profile.daysRemainingOf"
+  | "member.profile.defaultReferralBenefit"
+  | "member.profile.earnedCredit"
+  | "member.profile.expires"
+  | "member.profile.findGyms"
+  | "member.profile.friendsStat"
+  | "member.profile.membership"
+  | "member.profile.membershipDetailsUnavailable"
+  | "member.profile.memberFallback"
+  | "member.profile.myGym"
+  | "member.profile.noActiveMembership"
+  | "member.profile.noActivity"
+  | "member.profile.noGyms"
+  | "member.profile.noGymsBody"
+  | "member.profile.noRoleAssigned"
+  | "member.profile.noRoles"
+  | "member.profile.noRolesBody"
+  | "member.profile.otherGymRoleBody"
+  | "member.profile.otherGymRoleTitle"
+  | "member.profile.pendingCredit"
+  | "member.profile.percentComplete"
+  | "member.profile.percentCompleteWithDate"
+  | "member.profile.qaShortcuts"
+  | "member.profile.quickActions"
+  | "member.profile.recentActivity"
+  | "member.profile.referGymAccessibility"
+  | "member.profile.referGymBody"
+  | "member.profile.referGymTitle"
+  | "member.profile.referralCodeCopied"
+  | "member.profile.referralCopied"
+  | "member.profile.referralLinkCopied"
+  | "member.profile.renew"
+  | "member.profile.roleUnavailable"
+  | "member.profile.roleUnavailableBody"
+  | "member.profile.roleAtGym"
+  | "member.profile.settings"
+  | "member.profile.shareReferralCode"
+  | "member.profile.shareReferralWithLink"
+  | "member.profile.signOut"
+  | "member.profile.signOutConfirmBody"
+  | "member.profile.signOutConfirmTitle"
+  | "member.profile.switch"
+  | "member.profile.switchFailed"
+  | "member.profile.switchFailedBody"
+  | "member.profile.switchGym"
+  | "member.profile.switchGymBody"
+  | "member.profile.switchGymConfirmBody"
+  | "member.profile.switchGymConfirmTitle"
+  | "member.profile.switchGymForRole"
+  | "member.profile.switchRole"
+  | "member.profile.switchRoleBody"
+  | "member.profile.switchRoleConfirmBody"
+  | "member.profile.switchRoleConfirmTitle"
+  | "member.profile.switching"
+  | "member.profile.title"
+  | "member.profile.trainerReferralBenefit"
+  | "member.profile.updating"
+  | "member.profile.useRoleAccessibility"
+  | "member.profile.viewHistory"
+  | "member.profile.visitsReferralBenefit"
+  | "member.profile.visitsRemaining"
+  | "member.profile.workoutPlan"
   | "member.plan.assignedPlan"
   | "member.plan.coachGuided"
   | "member.plan.couldNotLoadExercises"
@@ -1793,6 +1866,79 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.validity": "Validity",
     "member.membership.visits": "Visits",
     "member.membership.yourGym": "your gym",
+    "member.profile.active": "Active",
+    "member.profile.activeGymOption": "{{gym}} (active)",
+    "member.profile.activeRoleOption": "{{role}} (active)",
+    "member.profile.biometric": "Biometric",
+    "member.profile.biometricOn": "Biometric on",
+    "member.profile.biometricUnlock": "Biometric unlock",
+    "member.profile.biometricUnlockBody": "Set up Face ID or device biometrics to enable this.",
+    "member.profile.checkedIn": "Checked in",
+    "member.profile.classes": "Classes",
+    "member.profile.daysReferralBenefit": "You'll get {{count}} free days for every friend who joins.",
+    "member.profile.daysRemaining": "{{count}} days remaining",
+    "member.profile.daysRemainingOf": "{{remaining}} of {{total}} days remaining",
+    "member.profile.defaultReferralBenefit": "Share your code so the gym can track friends you bring in.",
+    "member.profile.earnedCredit": "{{amount}} earned",
+    "member.profile.expires": "Expires {{date}}",
+    "member.profile.findGyms": "Find gyms",
+    "member.profile.friendsStat": "Your friends: {{joined}} joined, {{pending}} pending",
+    "member.profile.membership": "Membership",
+    "member.profile.membershipDetailsUnavailable": "Membership details unavailable",
+    "member.profile.memberFallback": "Zook member",
+    "member.profile.myGym": "my gym",
+    "member.profile.noActiveMembership": "No active membership",
+    "member.profile.noActivity": "No activity",
+    "member.profile.noGyms": "No gyms",
+    "member.profile.noGymsBody": "Join or request access to a gym first.",
+    "member.profile.noRoleAssigned": "No role assigned",
+    "member.profile.noRoles": "No roles",
+    "member.profile.noRolesBody": "This account does not have another role in the active gym.",
+    "member.profile.otherGymRoleBody": "Switch gyms before opening {{role}} tools.",
+    "member.profile.otherGymRoleTitle": "{{role}} is in another gym",
+    "member.profile.pendingCredit": "{{amount}} pending",
+    "member.profile.percentComplete": "{{percent}}% complete",
+    "member.profile.percentCompleteWithDate": "{{percent}}% complete - {{date}}",
+    "member.profile.qaShortcuts": "QA shortcuts",
+    "member.profile.quickActions": "Quick actions",
+    "member.profile.recentActivity": "Recent activity",
+    "member.profile.referGymAccessibility": "Refer a gym to Zook and earn",
+    "member.profile.referGymBody": "Earn when a gym you refer subscribes to Zook on a 6-month or yearly plan.",
+    "member.profile.referGymTitle": "Refer a gym & earn cash",
+    "member.profile.referralCodeCopied": "Your referral code is copied.",
+    "member.profile.referralCopied": "Referral copied",
+    "member.profile.referralLinkCopied": "Your referral link is copied.",
+    "member.profile.renew": "Renew",
+    "member.profile.roleUnavailable": "Role unavailable",
+    "member.profile.roleUnavailableBody": "That role is not available here.",
+    "member.profile.roleAtGym": "{{role}} at {{gym}}",
+    "member.profile.settings": "Settings",
+    "member.profile.shareReferralCode": "Use my referral code {{code}} at {{gym}}.",
+    "member.profile.shareReferralWithLink": "Join {{gym}} with my referral code {{code}}: {{link}}",
+    "member.profile.signOut": "Sign out",
+    "member.profile.signOutConfirmBody": "You can sign back in with OTP any time.",
+    "member.profile.signOutConfirmTitle": "Sign out?",
+    "member.profile.switch": "Switch",
+    "member.profile.switchFailed": "Switch failed",
+    "member.profile.switchFailedBody": "Could not switch gyms right now.",
+    "member.profile.switchGym": "Switch gym",
+    "member.profile.switchGymBody": "Choose your active gym.",
+    "member.profile.switchGymConfirmBody": "Your profile refreshes for that gym.",
+    "member.profile.switchGymConfirmTitle": "Switch to {{gym}}?",
+    "member.profile.switchGymForRole": "Switch to {{gym}} to access {{role}} tools",
+    "member.profile.switchRole": "Switch role",
+    "member.profile.switchRoleBody": "Choose the role to use in this gym.",
+    "member.profile.switchRoleConfirmBody": "Zook opens that role's tools.",
+    "member.profile.switchRoleConfirmTitle": "Switch to {{role}}?",
+    "member.profile.switching": "Switching...",
+    "member.profile.title": "Profile",
+    "member.profile.trainerReferralBenefit": "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link.",
+    "member.profile.updating": "Updating",
+    "member.profile.useRoleAccessibility": "Use Zook as {{role}}",
+    "member.profile.viewHistory": "View history",
+    "member.profile.visitsReferralBenefit": "You'll get {{count}} visits for every friend who joins.",
+    "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
+    "member.profile.workoutPlan": "Workout plan",
     "member.plan.assignedPlan": "Assigned plan",
     "member.plan.coachGuided": "Coach guided",
     "member.plan.couldNotLoadExercises": "Could not load exercises",
@@ -2848,6 +2994,79 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.validity": "Validity",
     "member.membership.visits": "Visits",
     "member.membership.yourGym": "आपका gym",
+    "member.profile.active": "सक्रिय",
+    "member.profile.activeGymOption": "{{gym}} (active)",
+    "member.profile.activeRoleOption": "{{role}} (active)",
+    "member.profile.biometric": "Biometric",
+    "member.profile.biometricOn": "Biometric on",
+    "member.profile.biometricUnlock": "Biometric unlock",
+    "member.profile.biometricUnlockBody": "इसे enable करने के लिए Face ID या device biometrics set up करें.",
+    "member.profile.checkedIn": "Checked in",
+    "member.profile.classes": "क्लासेस",
+    "member.profile.daysReferralBenefit": "हर join करने वाले friend पर आपको {{count}} free days मिलेंगे.",
+    "member.profile.daysRemaining": "{{count}} दिन बाकी",
+    "member.profile.daysRemainingOf": "{{remaining}} में से {{total}} दिन बाकी",
+    "member.profile.defaultReferralBenefit": "अपना code share करें ताकि gym आपके लाए friends track कर सके.",
+    "member.profile.earnedCredit": "{{amount}} earned",
+    "member.profile.expires": "{{date}} expire",
+    "member.profile.findGyms": "Gyms खोजें",
+    "member.profile.friendsStat": "आपके friends: {{joined}} joined, {{pending}} pending",
+    "member.profile.membership": "मेंबरशिप",
+    "member.profile.membershipDetailsUnavailable": "Membership details unavailable",
+    "member.profile.memberFallback": "Zook member",
+    "member.profile.myGym": "मेरा gym",
+    "member.profile.noActiveMembership": "कोई active membership नहीं",
+    "member.profile.noActivity": "कोई activity नहीं",
+    "member.profile.noGyms": "कोई gym नहीं",
+    "member.profile.noGymsBody": "पहले gym join करें या access request करें.",
+    "member.profile.noRoleAssigned": "कोई role assigned नहीं",
+    "member.profile.noRoles": "कोई roles नहीं",
+    "member.profile.noRolesBody": "इस account में active gym में दूसरा role नहीं है.",
+    "member.profile.otherGymRoleBody": "{{role}} tools खोलने से पहले gyms switch करें.",
+    "member.profile.otherGymRoleTitle": "{{role}} दूसरे gym में है",
+    "member.profile.pendingCredit": "{{amount}} pending",
+    "member.profile.percentComplete": "{{percent}}% complete",
+    "member.profile.percentCompleteWithDate": "{{percent}}% complete - {{date}}",
+    "member.profile.qaShortcuts": "QA shortcuts",
+    "member.profile.quickActions": "Quick actions",
+    "member.profile.recentActivity": "Recent activity",
+    "member.profile.referGymAccessibility": "Zook को gym refer करें और earn करें",
+    "member.profile.referGymBody": "आपके referred gym के 6-month या yearly plan पर Zook subscribe करने पर earn करें.",
+    "member.profile.referGymTitle": "Gym refer करें और cash earn करें",
+    "member.profile.referralCodeCopied": "आपका referral code copy हो गया.",
+    "member.profile.referralCopied": "Referral copy हुआ",
+    "member.profile.referralLinkCopied": "आपका referral link copy हो गया.",
+    "member.profile.renew": "Renew",
+    "member.profile.roleUnavailable": "Role unavailable",
+    "member.profile.roleUnavailableBody": "यह role यहां available नहीं है.",
+    "member.profile.roleAtGym": "{{gym}} में {{role}}",
+    "member.profile.settings": "Settings",
+    "member.profile.shareReferralCode": "{{gym}} पर मेरा referral code {{code}} use करें.",
+    "member.profile.shareReferralWithLink": "{{gym}} join करें मेरे referral code {{code}} से: {{link}}",
+    "member.profile.signOut": "Sign out",
+    "member.profile.signOutConfirmBody": "आप OTP से कभी भी वापस sign in कर सकते हैं.",
+    "member.profile.signOutConfirmTitle": "Sign out करें?",
+    "member.profile.switch": "Switch",
+    "member.profile.switchFailed": "Switch failed",
+    "member.profile.switchFailedBody": "अभी gyms switch नहीं हो सके.",
+    "member.profile.switchGym": "Gym switch करें",
+    "member.profile.switchGymBody": "अपना active gym चुनें.",
+    "member.profile.switchGymConfirmBody": "आपका profile उस gym के लिए refresh होगा.",
+    "member.profile.switchGymConfirmTitle": "{{gym}} पर switch करें?",
+    "member.profile.switchGymForRole": "{{role}} tools access करने के लिए {{gym}} पर switch करें",
+    "member.profile.switchRole": "Role switch करें",
+    "member.profile.switchRoleBody": "इस gym में use करने वाला role चुनें.",
+    "member.profile.switchRoleConfirmBody": "Zook उस role के tools खोलेगा.",
+    "member.profile.switchRoleConfirmTitle": "{{role}} पर switch करें?",
+    "member.profile.switching": "Switch हो रहा है...",
+    "member.profile.title": "Profile",
+    "member.profile.trainerReferralBenefit": "Trainer referrals commission review के लिए track होते हैं जब member join करता है या gym आपके link से sign up करता है.",
+    "member.profile.updating": "Updating",
+    "member.profile.useRoleAccessibility": "Zook को {{role}} की तरह use करें",
+    "member.profile.viewHistory": "History देखें",
+    "member.profile.visitsReferralBenefit": "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
+    "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
+    "member.profile.workoutPlan": "Workout plan",
     "member.plan.assignedPlan": "असाइन किया गया प्लान",
     "member.plan.coachGuided": "कोच गाइडेड",
     "member.plan.couldNotLoadExercises": "एक्सरसाइज लोड नहीं हो सकीं",
