@@ -1,14 +1,16 @@
 import { HomeCardShell } from "./card-shell";
+import { useT } from "@/lib/i18n";
 
 export default function NoOrgCard() {
+  const t = useT();
   return (
     <HomeCardShell
       testID="home-state-no-org"
       icon="business-outline"
-      title="Join a gym"
-      body="Find your gym to unlock membership, plans, check-ins, and trainer updates."
+      title={t("member.home.joinGym")}
+      body={t("member.home.joinGymBody")}
       ctaHref="/gyms"
-      ctaLabel="Find your gym"
+      ctaLabel={t("member.home.findYourGym")}
       tone="neutral"
     />
   );

@@ -1,14 +1,16 @@
 import { HomeCardShell } from "./card-shell";
+import { useT } from "@/lib/i18n";
 
 export default function MembershipPendingCard({ gymName }: { gymName: string }) {
+  const t = useT();
   return (
     <HomeCardShell
       testID="home-state-membership-pending"
       icon="time-outline"
-      title="Membership pending activation"
-      body={`Your payment is linked to ${gymName}. The front desk still needs to activate your membership before check-ins and plans unlock.`}
+      title={t("member.home.membershipPendingTitle")}
+      body={t("member.home.membershipPendingBody", { gym: gymName })}
       ctaHref="/membership"
-      ctaLabel="Open Membership"
+      ctaLabel={t("member.home.openMembership")}
       tone="amber"
     />
   );

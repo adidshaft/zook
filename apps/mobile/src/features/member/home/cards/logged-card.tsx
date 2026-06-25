@@ -1,4 +1,5 @@
 import { HomeCardShell, StreakChip } from "./card-shell";
+import { useT } from "@/lib/i18n";
 
 export default function LoggedCard({
   nextPlanName,
@@ -7,14 +8,15 @@ export default function LoggedCard({
   nextPlanName?: string;
   streak: number;
 }) {
+  const t = useT();
   return (
     <HomeCardShell
       testID="home-state-logged"
       icon="checkmark-done-outline"
-      title="Workout logged"
-      body={nextPlanName ? `Tomorrow: ${nextPlanName}.` : "Nice work. No next workout scheduled."}
+      title={t("member.home.workoutLogged")}
+      body={nextPlanName ? t("member.home.tomorrowPlan", { name: nextPlanName }) : t("member.home.noNextWorkout")}
       ctaHref="/plan"
-      ctaLabel="View plan"
+      ctaLabel={t("member.home.viewPlan")}
       tone="lime"
     >
       <StreakChip value={streak} />

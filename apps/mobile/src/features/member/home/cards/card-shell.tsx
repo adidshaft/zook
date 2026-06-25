@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
 
 import { Card, IconBubble, ZookButton } from "@/components/primitives";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function HomeCardShell({
@@ -56,6 +57,7 @@ export function HomeCardShell({
 
 export function StreakChip({ value }: { value: number }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <View
       style={[
@@ -63,7 +65,7 @@ export function StreakChip({ value }: { value: number }) {
         { borderColor: palette.accent.soft, backgroundColor: palette.surface.accentSoft },
       ]}
     >
-      <Text style={[styles.chipText, { color: palette.accent.base }]}>{value} day streak</Text>
+      <Text style={[styles.chipText, { color: palette.accent.base }]}>{t("member.home.dayStreak", { count: value })}</Text>
     </View>
   );
 }

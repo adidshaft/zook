@@ -6,6 +6,7 @@ import { IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { Ionicons } from "@expo/vector-icons";
 import { useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 import {
   classDayTime,
@@ -13,20 +14,21 @@ import {
   classTypeVisual,
 } from "@/features/member/classes/class-display";
 
-function spotPill(entry: MemberClassRecord) {
-  if (entry.myEnrollmentStatus === "confirmed") return { label: "Booked", tone: "lime" as const };
+function spotPill(entry: MemberClassRecord, t: ReturnType<typeof useT>) {
+  if (entry.myEnrollmentStatus === "confirmed") return { label: t("member.home.classBooked"), tone: "lime" as const };
   if (entry.myEnrollmentStatus === "waitlisted")
-    return { label: "Waitlisted", tone: "amber" as const };
-  if (entry.remainingCapacity <= 0) return { label: "Full", tone: "red" as const };
+    return { label: t("member.home.classWaitlisted"), tone: "amber" as const };
+  if (entry.remainingCapacity <= 0) return { label: t("member.home.classFull"), tone: "red" as const };
   if (entry.remainingCapacity <= 3)
-    return { label: `${entry.remainingCapacity} left`, tone: "amber" as const };
-  return { label: "Open", tone: "neutral" as const };
+    return { label: t("member.home.classSpotsLeft", { count: entry.remainingCapacity }), tone: "amber" as const };
+  return { label: t("member.home.classOpen"), tone: "neutral" as const };
 }
 
 function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () => void }) {
   const { palette, mode } = useTheme();
+  const t = useT();
   const visual = classTypeVisual(entry.classType);
-  const pill = spotPill(entry);
+  const pill = spotPill(entry, t);
 
   return (
     <Pressable
@@ -58,7 +60,7 @@ function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () =
         </Text>
         {entry.trainerName ? (
           <Text numberOfLines={1} style={[styles.cardMeta, { color: palette.text.tertiary }]}>
-            Coach {entry.trainerName}
+            {t("member.home.coachName", { name: entry.trainerName })}
           </Text>
         ) : null}
       </View>
@@ -69,6 +71,7 @@ function ClassChip({ entry, onPress }: { entry: MemberClassRecord; onPress: () =
 export function ClassesStrip() {
   const router = useRouter();
   const { palette } = useTheme();
+  const t = useT();
   const classesQuery = useMyClasses();
   const classes = (classesQuery.data?.classes ?? []).filter((entry) => entry.status !== "CANCELLED");
 
@@ -80,16 +83,16 @@ export function ClassesStrip() {
   return (
     <View>
       <SectionHeader
-        title="Book a class"
+        title={t("member.home.bookClass")}
         action={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="See all classes"
+            accessibilityLabel={t("member.home.seeAllClasses")}
             hitSlop={8}
             onPress={() => router.push("/classes" as never)}
             style={({ pressed }) => [styles.seeAll, pressed ? styles.seeAllPressed : null]}
           >
-            <Text style={[styles.seeAllText, { color: palette.accent.base }]}>See all</Text>
+            <Text style={[styles.seeAllText, { color: palette.accent.base }]}>{t("member.home.seeAll")}</Text>
             <Ionicons name="chevron-forward" size={14} color={palette.accent.base} />
           </Pressable>
         }

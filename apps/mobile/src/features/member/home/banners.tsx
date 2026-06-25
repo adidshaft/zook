@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Card, IconBubble, ZookButton } from "@/components/primitives";
 import { useMyShopOrders } from "@/lib/domains/shop";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
@@ -17,6 +18,7 @@ function recent(timestamp?: string | null, windowMs = DAY_MS) {
 }
 
 export function Banners({ home }: { home?: MemberHomeData }) {
+  const t = useT();
   const [dismissed, setDismissed] = useState<Record<string, string>>({});
   const orgId = home?.activeOrganization?.id ?? "none";
   const shopOrdersQuery = useMyShopOrders();
@@ -54,40 +56,40 @@ export function Banners({ home }: { home?: MemberHomeData }) {
       <Banner
         key="pickup"
         icon="bag-check-outline"
-        title="Pickup available"
-        body={`Show pickup code ${pickupOrder.pickupCode} at the desk.`}
+        title={t("member.home.pickupAvailable")}
+        body={t("member.home.pickupCodeBody", { code: pickupOrder.pickupCode ?? "" })}
         actionHref={`/shop/pickup/${pickupOrder.id}`}
-        actionLabel="Open"
+        actionLabel={t("member.home.open")}
       />
     ) : null,
     membershipExpiring ? (
       <Banner
         key="renew"
         icon="warning-outline"
-        title={daysLeft === 0 ? "Membership ends today" : `${daysLeft} days left`}
-        body="Renew now to keep check-ins and plan access moving."
+        title={daysLeft === 0 ? t("member.home.membershipEndsToday") : t("member.home.daysLeft", { count: daysLeft ?? 0 })}
+        body={t("member.home.renewNowBody")}
         actionHref="/membership?focus=buy"
-        actionLabel="Renew"
+        actionLabel={t("member.home.renew")}
       />
     ) : null,
     showProfile ? (
       <Banner
         key="profile"
         icon="person-circle-outline"
-        title="Complete your profile"
-        body="Add your details so staff and trainers can help faster."
+        title={t("member.home.completeProfile")}
+        body={t("member.home.completeProfileBody")}
         actionHref="/profile?focus=details"
-        actionLabel="Update"
+        actionLabel={t("member.home.update")}
       />
     ) : null,
     showReferral ? (
       <Banner
         key="referral"
         icon="gift-outline"
-        title="Invite a friend"
-        body="Share Zook with someone who should train with you."
+        title={t("member.home.inviteFriend")}
+        body={t("member.home.inviteFriendBody")}
         actionHref="/profile?focus=referral"
-        actionLabel="Referral"
+        actionLabel={t("member.home.referral")}
         onDismiss={() => dismiss("referral")}
       />
     ) : null,
@@ -115,6 +117,7 @@ function Banner({
   title: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   return (
     <Card variant="compact" contentStyle={styles.banner}>
       <IconBubble icon={icon} tone="neutral" size={34} />
@@ -133,7 +136,7 @@ function Banner({
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"
-          accessibilityLabel={`Dismiss ${title}`}
+          accessibilityLabel={t("member.home.dismissBanner", { title })}
           style={({ pressed }) => [
             styles.dismiss,
             {

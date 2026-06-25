@@ -773,25 +773,84 @@ export type TranslationKey =
   | "member.home.activeCheckIn"
   | "member.home.activeCheckInHint"
   | "member.home.browsePlansToStart"
+  | "member.home.bookClass"
+  | "member.home.classBooked"
+  | "member.home.classFull"
+  | "member.home.classOpen"
+  | "member.home.classSpotsLeft"
+  | "member.home.classWaitlisted"
+  | "member.home.coachName"
+  | "member.home.completeProfile"
+  | "member.home.completeProfileBody"
   | "member.home.currentBranch"
   | "member.home.daysLeft"
   | "member.home.dayStreak"
+  | "member.home.dismissBanner"
+  | "member.home.estimatedMinutes"
+  | "member.home.exerciseCount"
+  | "member.home.expiredBody"
+  | "member.home.expiredTitle"
+  | "member.home.findYourGym"
+  | "member.home.finishLoggingWork"
+  | "member.home.firstRunBody"
+  | "member.home.firstRunTitle"
   | "member.home.getMembership"
   | "member.home.greeting"
   | "member.home.gymFallback"
   | "member.home.habits"
+  | "member.home.inviteFriend"
+  | "member.home.inviteFriendBody"
+  | "member.home.joinGym"
+  | "member.home.joinGymBody"
+  | "member.home.membershipDaysLeft"
+  | "member.home.membershipEndsToday"
+  | "member.home.membershipPendingBody"
+  | "member.home.membershipPendingTitle"
+  | "member.home.membershipStatusActive"
   | "member.home.membershipAccess"
   | "member.home.membershipAccessibility"
   | "member.home.membershipActive"
   | "member.home.noActiveMembership"
+  | "member.home.noNextWorkout"
+  | "member.home.noPlanAssigned"
+  | "member.home.noPlanBody"
+  | "member.home.open"
+  | "member.home.openMembership"
+  | "member.home.openPlan"
   | "member.home.openProgress"
+  | "member.home.openYourCoaching"
+  | "member.home.personalTraining"
+  | "member.home.pickupAvailable"
+  | "member.home.pickupCodeBody"
+  | "member.home.referral"
+  | "member.home.renew"
   | "member.home.renewMembership"
+  | "member.home.renewNowBody"
   | "member.home.renewalNeeded"
+  | "member.home.restDay"
+  | "member.home.restDayBody"
+  | "member.home.resume"
+  | "member.home.scanIntoGym"
+  | "member.home.seeAll"
+  | "member.home.seeAllClasses"
+  | "member.home.sessionsDone"
+  | "member.home.sessionsLeftShort"
+  | "member.home.startWorkout"
   | "member.home.stopSession"
   | "member.home.stoppingSession"
+  | "member.home.todaysWorkout"
+  | "member.home.tomorrowPlan"
+  | "member.home.trainerAssigned"
+  | "member.home.update"
+  | "member.home.viewMembership"
+  | "member.home.viewPlan"
   | "member.home.visits"
   | "member.home.visitsLeft"
+  | "member.home.workoutInProgress"
+  | "member.home.workoutLogged"
   | "member.home.workouts"
+  | "member.home.yourCoaching"
+  | "member.home.yourTrainer"
   | "member.membership.activePlan"
   | "member.membership.autopayActive"
   | "member.membership.autopayCancelled"
@@ -2400,25 +2459,84 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.activeCheckIn": "Active check-in",
     "member.home.activeCheckInHint": "Re-scan the branch QR to check out, or stop it here.",
     "member.home.browsePlansToStart": "Browse plans to start training here",
+    "member.home.bookClass": "Book a class",
+    "member.home.classBooked": "Booked",
+    "member.home.classFull": "Full",
+    "member.home.classOpen": "Open",
+    "member.home.classSpotsLeft": "{{count}} left",
+    "member.home.classWaitlisted": "Waitlisted",
+    "member.home.coachName": "Coach {{name}}",
+    "member.home.completeProfile": "Complete your profile",
+    "member.home.completeProfileBody": "Add your details so staff and trainers can help faster.",
     "member.home.currentBranch": "Current branch",
     "member.home.daysLeft": "{{count}} days left",
     "member.home.dayStreak": "{{count}}-day streak",
+    "member.home.dismissBanner": "Dismiss {{title}}",
+    "member.home.estimatedMinutes": "~{{minutes}} min",
+    "member.home.exerciseCount": "{{count}} exercise",
+    "member.home.expiredBody": "Renew your membership to keep check-ins and plan access moving.",
+    "member.home.expiredTitle": "Your membership expired",
+    "member.home.findYourGym": "Find your gym",
+    "member.home.finishLoggingWork": "Finish logging your work.",
+    "member.home.firstRunBody": "Your membership, workouts, and check-ins collect here once your gym adds you.",
+    "member.home.firstRunTitle": "Welcome to Zook",
     "member.home.getMembership": "Get membership",
     "member.home.greeting": "Hello, {{name}}",
     "member.home.gymFallback": "Gym",
     "member.home.habits": "Habits",
+    "member.home.inviteFriend": "Invite a friend",
+    "member.home.inviteFriendBody": "Share Zook with someone who should train with you.",
+    "member.home.joinGym": "Join a gym",
+    "member.home.joinGymBody": "Find your gym to unlock membership, plans, check-ins, and trainer updates.",
+    "member.home.membershipDaysLeft": "{{count}} membership days left.",
+    "member.home.membershipEndsToday": "Membership ends today",
+    "member.home.membershipPendingBody": "Your payment is linked to {{gym}}. The front desk still needs to activate your membership before check-ins and plans unlock.",
+    "member.home.membershipPendingTitle": "Membership pending activation",
+    "member.home.membershipStatusActive": "Membership status is active.",
     "member.home.membershipAccess": "Membership access",
     "member.home.membershipAccessibility": "{{status}}. {{detail}}. {{gym}}.",
     "member.home.membershipActive": "Membership active",
     "member.home.noActiveMembership": "No active membership",
+    "member.home.noNextWorkout": "Nice work. No next workout scheduled.",
+    "member.home.noPlanAssigned": "No plan assigned",
+    "member.home.noPlanBody": "You are active at {{gym}}. Ask your trainer for a workout plan.",
+    "member.home.open": "Open",
+    "member.home.openMembership": "Open Membership",
+    "member.home.openPlan": "Open Plan",
     "member.home.openProgress": "Open progress",
+    "member.home.openYourCoaching": "Open your coaching",
+    "member.home.personalTraining": "Personal training",
+    "member.home.pickupAvailable": "Pickup available",
+    "member.home.pickupCodeBody": "Show pickup code {{code}} at the desk.",
+    "member.home.referral": "Referral",
+    "member.home.renew": "Renew",
     "member.home.renewMembership": "Renew membership",
+    "member.home.renewNowBody": "Renew now to keep check-ins and plan access moving.",
     "member.home.renewalNeeded": "Renewal needed",
+    "member.home.restDay": "Rest day",
+    "member.home.restDayBody": "{{plan}} has no workout scheduled today. Recover well and keep the routine warm.",
+    "member.home.resume": "Resume",
+    "member.home.scanIntoGym": "Scan into gym",
+    "member.home.seeAll": "See all",
+    "member.home.seeAllClasses": "See all classes",
+    "member.home.sessionsDone": "{{used}} of {{total}} sessions done",
+    "member.home.sessionsLeftShort": "{{count}} left",
+    "member.home.startWorkout": "Start workout",
     "member.home.stopSession": "Stop session",
     "member.home.stoppingSession": "Stopping...",
+    "member.home.todaysWorkout": "TODAY'S WORKOUT",
+    "member.home.tomorrowPlan": "Tomorrow: {{name}}.",
+    "member.home.trainerAssigned": "Trainer assigned",
+    "member.home.update": "Update",
+    "member.home.viewMembership": "View membership",
+    "member.home.viewPlan": "View plan",
     "member.home.visits": "Visits",
     "member.home.visitsLeft": "{{count}} visits left",
+    "member.home.workoutInProgress": "Workout in progress",
+    "member.home.workoutLogged": "Workout logged",
     "member.home.workouts": "Workouts",
+    "member.home.yourCoaching": "Your coaching",
+    "member.home.yourTrainer": "Your trainer",
     "member.membership.activePlan": "Active plan",
     "member.membership.autopayActive": "Autopay is active.",
     "member.membership.autopayCancelled": "Autopay cancelled.",
@@ -4027,25 +4145,84 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.activeCheckIn": "सक्रिय चेक-इन",
     "member.home.activeCheckInHint": "चेक आउट करने के लिए ब्रांच QR फिर स्कैन करें, या यहां रोकें.",
     "member.home.browsePlansToStart": "यहां ट्रेनिंग शुरू करने के लिए प्लान देखें",
+    "member.home.bookClass": "क्लास बुक करें",
+    "member.home.classBooked": "बुक्ड",
+    "member.home.classFull": "फुल",
+    "member.home.classOpen": "ओपन",
+    "member.home.classSpotsLeft": "{{count}} बाकी",
+    "member.home.classWaitlisted": "वेटलिस्टेड",
+    "member.home.coachName": "कोच {{name}}",
+    "member.home.completeProfile": "अपनी प्रोफाइल पूरी करें",
+    "member.home.completeProfileBody": "अपनी details जोड़ें ताकि staff और trainers तेजी से मदद कर सकें.",
     "member.home.currentBranch": "मौजूदा ब्रांच",
     "member.home.daysLeft": "{{count}} दिन बाकी",
     "member.home.dayStreak": "{{count}} दिन की स्ट्रीक",
+    "member.home.dismissBanner": "{{title}} dismiss करें",
+    "member.home.estimatedMinutes": "~{{minutes}} मिनट",
+    "member.home.exerciseCount": "{{count}} exercise",
+    "member.home.expiredBody": "Check-ins और plan access जारी रखने के लिए membership renew करें.",
+    "member.home.expiredTitle": "आपकी membership expire हो गई",
+    "member.home.findYourGym": "अपना जिम ढूंढें",
+    "member.home.finishLoggingWork": "अपना work log पूरा करें.",
+    "member.home.firstRunBody": "आपका gym जोड़ने के बाद membership, workouts और check-ins यहां दिखेंगे.",
+    "member.home.firstRunTitle": "Zook में स्वागत है",
     "member.home.getMembership": "मेंबरशिप लें",
     "member.home.greeting": "नमस्ते, {{name}}",
     "member.home.gymFallback": "जिम",
     "member.home.habits": "आदतें",
+    "member.home.inviteFriend": "दोस्त को invite करें",
+    "member.home.inviteFriendBody": "Zook किसी ऐसे व्यक्ति से share करें जिसे आपके साथ train करना चाहिए.",
+    "member.home.joinGym": "जिम जॉइन करें",
+    "member.home.joinGymBody": "Membership, plans, check-ins और trainer updates unlock करने के लिए अपना gym ढूंढें.",
+    "member.home.membershipDaysLeft": "{{count}} membership दिन बाकी.",
+    "member.home.membershipEndsToday": "Membership आज खत्म होती है",
+    "member.home.membershipPendingBody": "आपका payment {{gym}} से linked है. Check-ins और plans unlock होने से पहले front desk को membership activate करनी होगी.",
+    "member.home.membershipPendingTitle": "Membership activation pending है",
+    "member.home.membershipStatusActive": "Membership status active है.",
     "member.home.membershipAccess": "मेंबरशिप एक्सेस",
     "member.home.membershipAccessibility": "{{status}}. {{detail}}. {{gym}}.",
     "member.home.membershipActive": "मेंबरशिप सक्रिय है",
     "member.home.noActiveMembership": "कोई सक्रिय मेंबरशिप नहीं",
+    "member.home.noNextWorkout": "बढ़िया काम. अगला workout schedule नहीं है.",
+    "member.home.noPlanAssigned": "कोई plan assigned नहीं",
+    "member.home.noPlanBody": "आप {{gym}} में active हैं. Workout plan के लिए अपने trainer से पूछें.",
+    "member.home.open": "खोलें",
+    "member.home.openMembership": "Membership खोलें",
+    "member.home.openPlan": "Plan खोलें",
     "member.home.openProgress": "प्रोग्रेस खोलें",
+    "member.home.openYourCoaching": "अपनी coaching खोलें",
+    "member.home.personalTraining": "Personal training",
+    "member.home.pickupAvailable": "Pickup available",
+    "member.home.pickupCodeBody": "Desk पर pickup code {{code}} दिखाएं.",
+    "member.home.referral": "Referral",
+    "member.home.renew": "Renew",
     "member.home.renewMembership": "मेंबरशिप रिन्यू करें",
+    "member.home.renewNowBody": "Check-ins और plan access जारी रखने के लिए अभी renew करें.",
     "member.home.renewalNeeded": "रिन्यूअल जरूरी है",
+    "member.home.restDay": "Rest day",
+    "member.home.restDayBody": "{{plan}} में आज workout scheduled नहीं है. अच्छी recovery करें और routine बनाए रखें.",
+    "member.home.resume": "Resume",
+    "member.home.scanIntoGym": "Gym में scan करें",
+    "member.home.seeAll": "सब देखें",
+    "member.home.seeAllClasses": "सभी classes देखें",
+    "member.home.sessionsDone": "{{used}} of {{total}} sessions done",
+    "member.home.sessionsLeftShort": "{{count}} बाकी",
+    "member.home.startWorkout": "Workout शुरू करें",
     "member.home.stopSession": "सेशन रोकें",
     "member.home.stoppingSession": "रुक रहा है...",
+    "member.home.todaysWorkout": "आज का workout",
+    "member.home.tomorrowPlan": "कल: {{name}}.",
+    "member.home.trainerAssigned": "Trainer assigned",
+    "member.home.update": "Update",
+    "member.home.viewMembership": "Membership देखें",
+    "member.home.viewPlan": "Plan देखें",
     "member.home.visits": "विजिट",
     "member.home.visitsLeft": "{{count}} विजिट बाकी",
+    "member.home.workoutInProgress": "Workout चल रहा है",
+    "member.home.workoutLogged": "Workout logged",
     "member.home.workouts": "वर्कआउट",
+    "member.home.yourCoaching": "आपकी coaching",
+    "member.home.yourTrainer": "आपके trainer",
     "member.membership.activePlan": "सक्रिय प्लान",
     "member.membership.autopayActive": "Autopay active है.",
     "member.membership.autopayCancelled": "Autopay cancel हो गया.",

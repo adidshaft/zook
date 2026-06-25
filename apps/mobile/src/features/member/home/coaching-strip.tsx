@@ -4,11 +4,13 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, IconBubble, Pill, ProgressBar, SectionHeader } from "@/components/primitives";
 import { useMyCoaching } from "@/lib/domains/member";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function CoachingStrip() {
   const router = useRouter();
   const { palette } = useTheme();
+  const t = useT();
   const coachingQuery = useMyCoaching();
   const data = coachingQuery.data;
   const subscription = data?.subscription;
@@ -23,10 +25,10 @@ export function CoachingStrip() {
 
   return (
     <View>
-      <SectionHeader title="Your coaching" />
+      <SectionHeader title={t("member.home.yourCoaching")} />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Open your coaching"
+        accessibilityLabel={t("member.home.openYourCoaching")}
         onPress={() => router.push("/coaching" as never)}
         style={({ pressed }) => (pressed ? styles.pressed : null)}
       >
@@ -35,16 +37,16 @@ export function CoachingStrip() {
             <IconBubble icon="barbell" tone="lime" size={46} />
             <View style={styles.copy}>
               <Text style={[styles.coach, { color: palette.text.primary }]} numberOfLines={1}>
-                {data?.trainer?.name ?? "Your trainer"}
+                {data?.trainer?.name ?? t("member.home.yourTrainer")}
               </Text>
               <Text style={[styles.plan, { color: palette.text.secondary }]} numberOfLines={1}>
-                {subscription.planName ?? "Personal training"}
+                {subscription.planName ?? t("member.home.personalTraining")}
               </Text>
             </View>
-            <Pill tone="lime">{`${remaining} left`}</Pill>
+            <Pill tone="lime">{t("member.home.sessionsLeftShort", { count: remaining })}</Pill>
             <Ionicons name="chevron-forward" size={16} color={palette.text.tertiary} />
           </View>
-          <ProgressBar value={progress} tone="lime" label={`${used} of ${total} sessions done`} />
+          <ProgressBar value={progress} tone="lime" label={t("member.home.sessionsDone", { used, total })} />
         </Card>
       </Pressable>
     </View>

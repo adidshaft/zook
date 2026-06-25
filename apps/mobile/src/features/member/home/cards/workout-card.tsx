@@ -5,7 +5,8 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { ZookButton } from "@/components/primitives";
 import { usePlanExercises } from "@/lib/domains/plans";
-import { glow, gradients, radii, spacing, typography } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
+import { glow, gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 // The hero gradient is always dark in both themes, so its text must stay light
 // regardless of light/dark mode (otherwise light mode renders dark-on-dark).
@@ -13,7 +14,6 @@ const ON_DARK_PRIMARY = "#F6FFE9";
 const ON_DARK_SECONDARY = "rgba(246,255,233,0.72)";
 const ON_DARK_CHIP_BG = "rgba(255,255,255,0.10)";
 const ON_DARK_CHIP_BORDER = "rgba(255,255,255,0.20)";
-const ON_DARK_ACCENT = "#B9F455"; // brand lime — readable on the dark hero in both themes
 
 export default function WorkoutCard({
   assignmentId,
@@ -25,6 +25,8 @@ export default function WorkoutCard({
   planName: string;
 }) {
   const router = useRouter();
+  const { palette } = useTheme();
+  const t = useT();
   const exercisesQuery = usePlanExercises(assignmentId);
   const exercises = exercisesQuery.data?.exercises ?? [];
   const exerciseNames = exercises
@@ -33,15 +35,15 @@ export default function WorkoutCard({
     .slice(0, 3);
   const exerciseCount = exercises.length;
   const meta = [
-    exerciseCount ? `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}` : null,
-    estimatedMinutes ? `~${estimatedMinutes} min` : null,
-    "Trainer assigned",
+    exerciseCount ? t("member.home.exerciseCount", { count: exerciseCount }) : null,
+    estimatedMinutes ? t("member.home.estimatedMinutes", { minutes: estimatedMinutes }) : null,
+    t("member.home.trainerAssigned"),
   ]
     .filter(Boolean)
     .join("  ·  ");
 
   return (
-    <View testID="home-state-workout" style={[styles.card, glow.soft]}>
+    <View testID="home-state-workout" style={[styles.card, glow.soft, { borderColor: palette.border.subtle }]}>
       <LinearGradient
         colors={gradients.heroCard}
         start={{ x: 0, y: 0 }}
@@ -57,11 +59,11 @@ export default function WorkoutCard({
       <Ionicons
         name="barbell"
         size={150}
-        color={ON_DARK_ACCENT}
+        color={palette.accent.base}
         style={styles.decor}
       />
       <View style={styles.content}>
-        <Text style={[styles.eyebrow, { color: ON_DARK_ACCENT }]}>TODAY&apos;S WORKOUT</Text>
+        <Text style={[styles.eyebrow, { color: palette.accent.base }]}>{t("member.home.todaysWorkout")}</Text>
         <Text style={[styles.title, { color: ON_DARK_PRIMARY }]}>{planName}</Text>
         <Text style={[styles.meta, { color: ON_DARK_SECONDARY }]}>{meta}</Text>
         {exerciseNames.length ? (
@@ -88,7 +90,7 @@ export default function WorkoutCard({
           fullWidth
           style={styles.cta}
         >
-          Start workout
+          {t("member.home.startWorkout")}
         </ZookButton>
       </View>
     </View>
@@ -101,7 +103,6 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(185,244,85,0.18)",
   },
   decor: {
     position: "absolute",
