@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { membershipStatusGuidance, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
@@ -14,9 +15,12 @@ export function ActiveMembershipCard({
   onOpenRenewal,
   onPauseDateChange,
   onPauseOrResume,
+  onTerminate,
   pauseMinimumDate,
   pauseResumesAt,
   subscription,
+  terminateBusy,
+  terminateStatus,
 }: {
   activeOrganizationName?: string | null;
   actionBusy: boolean;
@@ -25,12 +29,16 @@ export function ActiveMembershipCard({
   onOpenRenewal: (subscription: MembershipRecord) => void;
   onPauseDateChange: (date: Date) => void;
   onPauseOrResume: (subscription: MembershipRecord) => void;
+  onTerminate?: (subscription: MembershipRecord) => void;
   pauseMinimumDate: () => Date;
   pauseResumesAt: Date;
   subscription: MembershipRecord;
+  terminateBusy?: boolean;
+  terminateStatus?: string;
 }) {
   const { palette } = useTheme();
-  const guidance = membershipStatusGuidance(subscription.status, daysLeft);
+  const t = useT();
+  const guidance = membershipStatusGuidance(subscription.status, daysLeft, t);
   const guidanceTone = toneForStatus(subscription.status);
   const guidanceShowsIcon = guidanceTone === "amber" || guidanceTone === "red";
   const isWarning = daysLeft !== null && daysLeft <= 7;
@@ -43,9 +51,9 @@ export function ActiveMembershipCard({
         : 0;
   const daysLeftLabel =
     daysLeft !== null && durationDays
-      ? `${daysLeft} of ${durationDays} days left`
+      ? t("member.membership.daysOfDurationLeft", { daysLeft, durationDays })
       : daysLeft !== null
-        ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`
+        ? t("member.home.daysLeft", { count: daysLeft })
         : "";
 
   return (
@@ -57,10 +65,10 @@ export function ActiveMembershipCard({
         <IconBubble icon="card-outline" tone={toneForStatus(subscription.status)} size={40} />
         <View style={styles.featuredCopy}>
           <Text style={[styles.featuredTitle, { color: palette.text.primary }]}>
-            {subscription.plan?.name ?? "Membership"}
+            {subscription.plan?.name ?? t("member.membership.eyebrow")}
           </Text>
           <Text style={[styles.featuredOrg, { color: palette.text.secondary }]}>
-            {subscription.organization?.name ?? activeOrganizationName ?? "Gym"}
+            {subscription.organization?.name ?? activeOrganizationName ?? t("member.home.gymFallback")}
           </Text>
         </View>
         <Pill tone={toneForStatus(subscription.status)}>
@@ -106,7 +114,9 @@ export function ActiveMembershipCard({
         <View style={styles.membershipMetaLine}>
           <Ionicons name="walk-outline" size={14} color={palette.accent.base} />
           <Text style={[styles.membershipMetaText, { color: palette.text.secondary }]}>
-            {formatVisitLimit(subscription.remainingVisits)} remaining
+            {t("member.membership.visitsRemaining", {
+              visits: formatVisitLimit(subscription.remainingVisits),
+            })}
           </Text>
         </View>
       ) : null}
@@ -154,14 +164,14 @@ export function ActiveMembershipCard({
       {subscription.status !== "PAUSED" ? (
         <View style={styles.pausePicker}>
           <DatePickerField
-            accessibilityLabel="Membership pause end date"
-            label="Pause until"
+            accessibilityLabel={t("member.membership.pauseEndDateAccessibility")}
+            label={t("member.membership.pauseUntil")}
             value={pauseResumesAt}
             minimumDate={pauseMinimumDate()}
             onChange={onPauseDateChange}
           />
           <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
-            Pausing freezes check-ins until this date, and your remaining days carry over.
+            {t("member.membership.pauseHelp")}
           </Text>
         </View>
       ) : null}
@@ -172,10 +182,26 @@ export function ActiveMembershipCard({
         onPress={() => onPauseOrResume(subscription)}
         icon={subscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
       >
-        {subscription.status === "PAUSED" ? "Resume membership" : "Pause membership"}
+        {subscription.status === "PAUSED" ? t("member.membership.resumeMembership") : t("member.membership.pauseMembership")}
       </ZookButton>
       {actionStatus ? (
         <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
+      ) : null}
+      {onTerminate && subscription.status !== "CANCELLED" ? (
+        <ZookButton
+          testID="membership-cancel-button"
+          variant="destructive"
+          disabled={Boolean(terminateBusy)}
+          onPress={() => onTerminate(subscription)}
+          icon="close-circle-outline"
+        >
+          {t("member.membership.cancelMembership")}
+        </ZookButton>
+      ) : null}
+      {terminateStatus ? (
+        <Text style={[styles.statusMessage, { color: palette.feedback.danger }]}>
+          {terminateStatus}
+        </Text>
       ) : null}
     </Card>
   );

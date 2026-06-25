@@ -1,3 +1,5 @@
+import type { TranslationKey } from "@/lib/i18n";
+
 export function toneForStatus(status?: string | null) {
   if (status === "ACTIVE") return "lime" as const;
   if (status === "PENDING" || status === "PENDING_PAYMENT" || status === "PAST_DUE") {
@@ -15,53 +17,62 @@ export function toneForStatus(status?: string | null) {
   return "blue" as const;
 }
 
-export function membershipStatusGuidance(status?: string | null, daysLeft?: number | null) {
+type MembershipT = (key: TranslationKey, values?: Record<string, string | number>) => string;
+
+export function membershipStatusGuidance(
+  status: string | null | undefined,
+  daysLeft: number | null | undefined,
+  t: MembershipT,
+) {
   if (status === "PENDING_PAYMENT" || status === "PENDING") {
     return {
-      title: "Payment pending",
-      body: "Complete payment or ask the desk to record an offline payment before using entry.",
-      action: "Complete payment",
+      title: t("member.membership.guidancePaymentPendingTitle"),
+      body: t("member.membership.guidancePaymentPendingBody"),
+      action: t("member.membership.guidanceCompletePayment"),
     };
   }
   if (status === "PAST_DUE") {
     return {
-      title: "Renewal overdue",
-      body: "Your membership needs payment confirmation before the gym can treat it as active.",
-      action: "Pay now",
+      title: t("member.membership.guidancePastDueTitle"),
+      body: t("member.membership.guidancePastDueBody"),
+      action: t("member.membership.guidancePayNow"),
     };
   }
   if (status === "EXPIRED") {
     return {
-      title: "Membership expired",
-      body: "Renew this plan or choose a new plan to restore QR entry and member benefits.",
-      action: "Renew now",
+      title: t("member.membership.guidanceExpiredTitle"),
+      body: t("member.membership.guidanceExpiredBody"),
+      action: t("member.membership.guidanceRenewNow"),
     };
   }
   if (status === "REJECTED" || status === "CANCELLED") {
     return {
-      title: "Membership not active",
-      body: "This membership cannot be used for entry. Contact the gym or choose another plan.",
-      action: "Choose plan",
+      title: t("member.membership.guidanceInactiveTitle"),
+      body: t("member.membership.guidanceInactiveBody"),
+      action: t("member.membership.choosePlan"),
     };
   }
   if (status === "FAILED") {
     return {
-      title: "Payment failed",
-      body: "No money was confirmed for this membership. Try again or ask the desk for help.",
-      action: "Try payment again",
+      title: t("member.membership.guidanceFailedTitle"),
+      body: t("member.membership.guidanceFailedBody"),
+      action: t("member.membership.guidanceTryPaymentAgain"),
     };
   }
   if (typeof daysLeft === "number" && daysLeft <= 7) {
     return {
-      title: "Renewal window",
-      body: daysLeft === 0 ? "Renew today to avoid an entry interruption." : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left. Renew early to keep entry uninterrupted.`,
-      action: "Renew membership",
+      title: t("member.membership.guidanceRenewalWindowTitle"),
+      body:
+        daysLeft === 0
+          ? t("member.membership.guidanceRenewTodayBody")
+          : t("member.membership.guidanceDaysLeftBody", { count: daysLeft }),
+      action: t("member.membership.renewMembership"),
     };
   }
   return {
-    title: "Membership active",
-    body: "Your QR entry and member benefits are active for this gym.",
-    action: "Renew or change plan",
+    title: t("member.membership.guidanceActiveTitle"),
+    body: t("member.membership.guidanceActiveBody"),
+    action: t("member.membership.guidanceRenewOrChangePlan"),
   };
 }
 

@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { Card, IconBubble, Pill, SectionHeader } from "@/components/primitives";
 import { formatDateTime, formatInr, titleCaseFromCode, toneForPaymentStatus } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import type { InvoiceRecord, MembershipPaymentRecord, PaymentDocumentKind } from "./types";
 
@@ -19,6 +20,7 @@ export function PaymentsSection({
   payments: MembershipPaymentRecord[];
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const documentButtonTheme = {
     accentColor: palette.accent.base,
     backgroundColor: palette.surface.accentSoft,
@@ -29,7 +31,7 @@ export function PaymentsSection({
 
   return (
     <>
-      <SectionHeader title="Payments" />
+      <SectionHeader title={t("member.membership.payments")} />
       {payments.length ? (
         <View style={styles.stack}>
           {payments.map((payment) => {
@@ -39,9 +41,11 @@ export function PaymentsSection({
             const invoiceBusy = documentBusyKey === `invoice:${payment.id}`;
             const documentHint = canGenerate
               ? payment.receiptNumber
-                ? `Receipt ${payment.receiptNumber}`
-                : "Generate a receipt or invoice."
-              : `Documents are available after payment succeeds. Status: ${titleCaseFromCode(payment.status ?? "CREATED")}.`;
+                ? t("member.membership.receiptNumber", { number: payment.receiptNumber })
+                : t("member.membership.generateReceiptOrInvoice")
+              : t("member.membership.documentsAfterSuccess", {
+                  status: titleCaseFromCode(payment.status ?? "CREATED"),
+                });
             return (
               <Card key={payment.id} variant="compact" contentStyle={styles.paymentContent}>
                 <View style={styles.paymentIcon}>
@@ -73,17 +77,19 @@ export function PaymentsSection({
                       busy={receiptBusy}
                       disabled={!canGenerate || receiptBusy || invoiceBusy}
                       icon="document-text-outline"
-                      label="Receipt"
+                      label={t("member.membership.receipt")}
                       onPress={() => onCreateDocument(payment, "receipt")}
                       theme={documentButtonTheme}
+                      generateLabel={t("member.membership.generateDocument", { label: t("member.membership.receipt").toLowerCase() })}
                     />
                     <DocumentButton
                       busy={invoiceBusy}
                       disabled={!canGenerate || invoiceBusy || receiptBusy}
                       icon="newspaper-outline"
-                      label="Invoice"
+                      label={t("member.membership.invoice")}
                       onPress={() => onCreateDocument(payment, "invoice")}
                       theme={documentButtonTheme}
+                      generateLabel={t("member.membership.generateDocument", { label: t("member.membership.invoice").toLowerCase() })}
                     />
                   </View>
                 </View>
@@ -93,19 +99,19 @@ export function PaymentsSection({
         </View>
       ) : (
         <Card variant="compact" contentStyle={styles.emptyPaymentContent}>
-          <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No payments</Text>
+          <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>{t("member.membership.noPayments")}</Text>
         </Card>
       )}
       {invoices.length ? (
         <>
-          <SectionHeader title="Invoices and receipts" />
+          <SectionHeader title={t("member.membership.invoicesAndReceipts")} />
           <View style={styles.stack}>
             {invoices.map((invoice) => (
               <Card key={invoice.id} variant="compact" contentStyle={styles.invoiceContent}>
                 <IconBubble icon="newspaper-outline" tone="neutral" size={34} />
                 <View style={styles.invoiceCopy}>
                   <Text numberOfLines={1} style={[styles.paymentTitle, { color: palette.text.primary }]}>
-                    {invoice.invoiceNumber ?? invoice.invoiceNo ?? "Invoice"}
+                    {invoice.invoiceNumber ?? invoice.invoiceNo ?? t("member.membership.invoice")}
                   </Text>
                   <Text numberOfLines={1} style={[styles.paymentBody, { color: palette.text.secondary }]}>
                     {formatDateTime(invoice.issueDate ?? invoice.issuedAt)} ·{" "}
@@ -119,7 +125,7 @@ export function PaymentsSection({
                   {invoice.invoiceUrl ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Download invoice"
+                      accessibilityLabel={t("member.membership.downloadInvoice")}
                       onPress={() => onDownloadInvoice(invoice)}
                       style={({ pressed }) => [
                         styles.documentButton,
@@ -142,7 +148,7 @@ export function PaymentsSection({
                           { color: documentButtonTheme.textColor },
                         ]}
                       >
-                        Download invoice
+                        {t("member.membership.downloadInvoice")}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -161,6 +167,7 @@ function DocumentButton({
   disabled,
   icon,
   label,
+  generateLabel,
   onPress,
   theme,
 }: {
@@ -168,6 +175,7 @@ function DocumentButton({
   disabled: boolean;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  generateLabel: string;
   onPress: () => void;
   theme: {
     accentColor: string;
@@ -180,7 +188,7 @@ function DocumentButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Generate ${label.toLowerCase()}`}
+      accessibilityLabel={generateLabel}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
