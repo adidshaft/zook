@@ -1280,6 +1280,32 @@ export type TranslationKey =
   | "trainer.clients.subtitle"
   | "trainer.clients.title"
   | "trainer.clients.tryAnotherSearch"
+  | "trainer.classes.cancelBody"
+  | "trainer.classes.cancelClass"
+  | "trainer.classes.cancelled"
+  | "trainer.classes.cancelTitle"
+  | "trainer.classes.capacity"
+  | "trainer.classes.classDateAccessibility"
+  | "trainer.classes.className"
+  | "trainer.classes.classNamePlaceholder"
+  | "trainer.classes.date"
+  | "trainer.classes.editAccessibility"
+  | "trainer.classes.editClass"
+  | "trainer.classes.keepClass"
+  | "trainer.classes.loadingClasses"
+  | "trainer.classes.loadingClassesBody"
+  | "trainer.classes.newClass"
+  | "trainer.classes.noClassesBody"
+  | "trainer.classes.priceInr"
+  | "trainer.classes.saveChanges"
+  | "trainer.classes.schedule"
+  | "trainer.classes.scheduleClass"
+  | "trainer.classes.scheduling"
+  | "trainer.classes.subtitle"
+  | "trainer.classes.time"
+  | "trainer.classes.title"
+  | "trainer.classes.type"
+  | "trainer.classes.upcomingClasses"
   | "trainer.clientSessions.adherence"
   | "trainer.clientSessions.averageCompletion"
   | "trainer.clientSessions.backToClients"
@@ -2656,6 +2682,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · client list is access-controlled",
     "trainer.clients.title": "Clients",
     "trainer.clients.tryAnotherSearch": "Try another search or filter.",
+    "trainer.classes.cancelBody": "Members who booked this class will be notified right away. This can't be undone.",
+    "trainer.classes.cancelClass": "Cancel class",
+    "trainer.classes.cancelled": "Cancelled",
+    "trainer.classes.cancelTitle": "Cancel {{name}}?",
+    "trainer.classes.capacity": "Capacity",
+    "trainer.classes.classDateAccessibility": "Class date",
+    "trainer.classes.className": "Class name",
+    "trainer.classes.classNamePlaceholder": "Sunset Yoga Flow",
+    "trainer.classes.date": "Date",
+    "trainer.classes.editAccessibility": "Edit {{name}}",
+    "trainer.classes.editClass": "Edit class",
+    "trainer.classes.keepClass": "Keep class",
+    "trainer.classes.loadingClasses": "Loading classes...",
+    "trainer.classes.loadingClassesBody": "Hang tight, fetching your schedule.",
+    "trainer.classes.newClass": "New class",
+    "trainer.classes.noClassesBody": "Schedule a class and members can book it.",
+    "trainer.classes.priceInr": "Price (₹)",
+    "trainer.classes.saveChanges": "Save changes",
+    "trainer.classes.schedule": "Schedule",
+    "trainer.classes.scheduleClass": "Schedule class",
+    "trainer.classes.scheduling": "Scheduling...",
+    "trainer.classes.subtitle": "Schedule group sessions members can book.",
+    "trainer.classes.time": "Time",
+    "trainer.classes.title": "Classes",
+    "trainer.classes.type": "Type",
+    "trainer.classes.upcomingClasses": "Upcoming classes",
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "{{percent}}% average completion across recent plan feedback.",
     "trainer.clientSessions.backToClients": "Back to clients",
@@ -4031,6 +4083,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · क्लाइंट सूची access-controlled है",
     "trainer.clients.title": "क्लाइंट",
     "trainer.clients.tryAnotherSearch": "दूसरी खोज या फिल्टर आजमाएं.",
+    "trainer.classes.cancelBody": "जिन members ने यह class book की है उन्हें तुरंत notify किया जाएगा. यह undo नहीं हो सकता.",
+    "trainer.classes.cancelClass": "Class cancel करें",
+    "trainer.classes.cancelled": "Cancelled",
+    "trainer.classes.cancelTitle": "{{name}} cancel करें?",
+    "trainer.classes.capacity": "Capacity",
+    "trainer.classes.classDateAccessibility": "Class date",
+    "trainer.classes.className": "Class name",
+    "trainer.classes.classNamePlaceholder": "Sunset Yoga Flow",
+    "trainer.classes.date": "Date",
+    "trainer.classes.editAccessibility": "{{name}} edit करें",
+    "trainer.classes.editClass": "Class edit करें",
+    "trainer.classes.keepClass": "Class रखें",
+    "trainer.classes.loadingClasses": "Classes load हो रही हैं...",
+    "trainer.classes.loadingClassesBody": "थोड़ा रुकें, आपका schedule fetch हो रहा है.",
+    "trainer.classes.newClass": "New class",
+    "trainer.classes.noClassesBody": "Class schedule करें और members इसे book कर पाएंगे.",
+    "trainer.classes.priceInr": "Price (₹)",
+    "trainer.classes.saveChanges": "Changes save करें",
+    "trainer.classes.schedule": "Schedule",
+    "trainer.classes.scheduleClass": "Class schedule करें",
+    "trainer.classes.scheduling": "Schedule हो रहा है...",
+    "trainer.classes.subtitle": "Members के book करने के लिए group sessions schedule करें.",
+    "trainer.classes.time": "Time",
+    "trainer.classes.title": "Classes",
+    "trainer.classes.type": "Type",
+    "trainer.classes.upcomingClasses": "Upcoming classes",
     "trainer.clientSessions.adherence": "Adherence",
     "trainer.clientSessions.averageCompletion": "Recent plan feedback में {{percent}}% average completion.",
     "trainer.clientSessions.backToClients": "Clients पर वापस",
