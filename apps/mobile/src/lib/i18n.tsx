@@ -262,6 +262,22 @@ export type TranslationKey =
   | "findGyms.cityPlaceholder"
   | "findGyms.deviceLocation"
   | "findGyms.recentSearches"
+  | "findGyms.availableGyms"
+  | "findGyms.city"
+  | "findGyms.coverPhoto"
+  | "findGyms.discovery"
+  | "findGyms.gymNameOrUsername"
+  | "findGyms.noGyms"
+  | "findGyms.noGymsBody"
+  | "findGyms.openGym"
+  | "findGyms.referralApplied"
+  | "findGyms.referralPrefix"
+  | "findGyms.referralSuffix"
+  | "findGyms.resultCountMany"
+  | "findGyms.resultCountOne"
+  | "findGyms.searching"
+  | "findGyms.title"
+  | "findGyms.view"
   | "empty.loading"
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
@@ -821,6 +837,22 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.cityPlaceholder": "Area, city, or pin code",
     "findGyms.deviceLocation": "Use device location",
     "findGyms.recentSearches": "Recent searches",
+    "findGyms.availableGyms": "Available gyms",
+    "findGyms.city": "City",
+    "findGyms.coverPhoto": "{{name}} cover photo",
+    "findGyms.discovery": "Discovery",
+    "findGyms.gymNameOrUsername": "Gym name or username",
+    "findGyms.noGyms": "No gyms",
+    "findGyms.noGymsBody": "Try widening the city or clearing the search.",
+    "findGyms.openGym": "Open {{name}}",
+    "findGyms.referralApplied": "Referral code applied",
+    "findGyms.referralPrefix": "Code",
+    "findGyms.referralSuffix": "is attached. Open any gym to use it.",
+    "findGyms.resultCountMany": "{{count}} results",
+    "findGyms.resultCountOne": "1 result",
+    "findGyms.searching": "Searching...",
+    "findGyms.title": "Find your gym",
+    "findGyms.view": "View",
     "empty.loading": "Loading",
     "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
@@ -1382,6 +1414,22 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.cityPlaceholder": "क्षेत्र, शहर या पिन कोड",
     "findGyms.deviceLocation": "डिवाइस लोकेशन इस्तेमाल करें",
     "findGyms.recentSearches": "हाल की खोजें",
+    "findGyms.availableGyms": "उपलब्ध जिम",
+    "findGyms.city": "शहर",
+    "findGyms.coverPhoto": "{{name}} cover photo",
+    "findGyms.discovery": "डिस्कवरी",
+    "findGyms.gymNameOrUsername": "जिम का नाम या username",
+    "findGyms.noGyms": "कोई जिम नहीं",
+    "findGyms.noGymsBody": "शहर को व्यापक करें या खोज साफ करें.",
+    "findGyms.openGym": "{{name}} खोलें",
+    "findGyms.referralApplied": "Referral code लागू हुआ",
+    "findGyms.referralPrefix": "कोड",
+    "findGyms.referralSuffix": "जुड़ा है. इसे इस्तेमाल करने के लिए कोई भी जिम खोलें.",
+    "findGyms.resultCountMany": "{{count}} results",
+    "findGyms.resultCountOne": "1 result",
+    "findGyms.searching": "खोज हो रही है...",
+    "findGyms.title": "अपना जिम खोजें",
+    "findGyms.view": "देखें",
     "empty.loading": "लोड हो रहा है",
     "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",

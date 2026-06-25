@@ -80,9 +80,9 @@ export default function FindGyms() {
   };
 
   function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in with OTP any time.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => void logout() },
+    Alert.alert(t("more.signOutConfirmTitle"), t("more.signOutConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("more.signOut"), style: "destructive", onPress: () => void logout() },
     ]);
   }
 
@@ -106,13 +106,13 @@ export default function FindGyms() {
           }}
         >
           <AppHeader
-            eyebrow="Discovery"
-            title="Find your gym"
+            eyebrow={t("findGyms.discovery")}
+            title={t("findGyms.title")}
             leading={
               <Pressable
                 onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                 accessibilityRole="button"
-                accessibilityLabel="Back"
+                accessibilityLabel={t("shop.back")}
                 style={({ pressed }) => [
                   styles.iconButton,
                   {
@@ -131,7 +131,7 @@ export default function FindGyms() {
                   testID="find-gyms-sign-out"
                   onPress={confirmSignOut}
                   accessibilityRole="button"
-                  accessibilityLabel="Sign out"
+                  accessibilityLabel={t("more.signOut")}
                   style={({ pressed }) => [
                     styles.iconButton,
                     {
@@ -151,10 +151,10 @@ export default function FindGyms() {
           {referralCode ? (
             <Card variant="compact" contentStyle={styles.referralCopy}>
               <Text style={[styles.referralTitle, { color: palette.text.primary }]}>
-                Referral code applied
+                {t("findGyms.referralApplied")}
               </Text>
               <Text style={[styles.referralBody, { color: palette.text.secondary }]}>
-                Code <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> is attached. Open any gym to use it.
+                {t("findGyms.referralPrefix")} <Text style={[styles.referralCode, { color: palette.accent.base }]}>{referralCode}</Text> {t("findGyms.referralSuffix")}
               </Text>
             </Card>
           ) : null}
@@ -162,14 +162,14 @@ export default function FindGyms() {
           <Card contentStyle={styles.searchContent}>
             <Input
               testID="find-gyms-query"
-              label="Gym name or username"
+              label={t("findGyms.gymNameOrUsername")}
               value={query}
               onChangeText={setQuery}
               placeholder={t("findGyms.searchPlaceholder")}
             />
             <Input
               testID="find-gyms-city"
-              label="City"
+              label={t("findGyms.city")}
               value={city}
               onChangeText={setCity}
               placeholder={t("findGyms.cityPlaceholder")}
@@ -177,11 +177,11 @@ export default function FindGyms() {
           </Card>
 
           <SectionHeader
-            title="Available gyms"
+            title={t("findGyms.availableGyms")}
             subtitle={
               gymsQuery.isFetching && !gyms.length
-                ? "Searching..."
-                : `${gyms.length} result${gyms.length !== 1 ? "s" : ""}`
+                ? t("findGyms.searching")
+                : t(gyms.length === 1 ? "findGyms.resultCountOne" : "findGyms.resultCountMany", { count: gyms.length })
             }
           />
 
@@ -197,10 +197,10 @@ export default function FindGyms() {
             <Card variant="compact" contentStyle={styles.emptyContent}>
               <View style={styles.emptyCopy}>
                 <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
-                  No gyms
+                  {t("findGyms.noGyms")}
                 </Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-                  Try widening the city or clearing the search.
+                  {t("findGyms.noGymsBody")}
                 </Text>
               </View>
             </Card>
@@ -222,7 +222,7 @@ export default function FindGyms() {
                 <Pressable
                   testID={index === 0 ? "find-gym-row-first" : `find-gym-row-${gym.username}`}
                   accessibilityRole="link"
-                  accessibilityLabel={`Open ${gym.name}`}
+                  accessibilityLabel={t("findGyms.openGym", { name: gym.name })}
                   style={({ pressed }) => [pressed ? styles.pressed : null]}
                 >
                   <Card contentStyle={styles.gymContent}>
@@ -237,7 +237,7 @@ export default function FindGyms() {
                             },
                           ]}
                           contentFit="cover"
-                          accessibilityLabel={`${gym.name} cover photo`}
+                          accessibilityLabel={t("findGyms.coverPhoto", { name: gym.name })}
                         />
                       ) : (
                         <View
@@ -295,7 +295,7 @@ export default function FindGyms() {
                         </Text>
                       </View>
                       <View style={styles.gymViewCta}>
-                        <Text style={[styles.gymViewText, { color: palette.accent.base }]}>View</Text>
+                        <Text style={[styles.gymViewText, { color: palette.accent.base }]}>{t("findGyms.view")}</Text>
                         <Ionicons name="chevron-forward" size={14} color={palette.accent.base} />
                       </View>
                     </View>
