@@ -79,7 +79,7 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
       .getByRole("row", { name: new RegExp(planName) })
       .getByRole("button", { name: "Edit" })
       .click();
-    await page.getByPlaceholder("Price in rupees").last().fill("3499");
+    await page.getByLabel("Price").last().fill("3499");
     await page.getByRole("button", { name: "Save plan" }).click();
     await expect(
       page.getByRole("row", { name: new RegExp(planName) }).getByText("₹3,499"),
@@ -203,7 +203,7 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     const code = `UI${Date.now().toString().slice(-6)}`;
 
     await page.goto("/dashboard/plans/coupons");
-    await expect(page.getByRole("heading", { name: "Coupons" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Coupons", exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await page.getByLabel("Coupon code").fill(code);

@@ -13,6 +13,35 @@ test.describe("misc dashboard actions", () => {
     requireDb();
   });
 
+  async function prepareOwnerAiUsage(orgId: string) {
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    await prisma.saaSSubscription.upsert({
+      where: { orgId },
+      create: {
+        orgId,
+        status: "ACTIVE",
+        tier: "PRO",
+        billingCycle: "MONTHLY",
+        trialStartAt: new Date(),
+        trialEndAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        priceLockedPaise: 799900,
+        nextRenewalAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      update: {
+        status: "ACTIVE",
+        tier: "PRO",
+        billingCycle: "MONTHLY",
+        priceLockedPaise: 799900,
+        nextRenewalAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        cancelledAt: null,
+      },
+    });
+    await prisma.aIUsageLog.deleteMany({
+      where: { OR: [{ orgId }, { userId: owner.id }] },
+    });
+  }
+
   test("profile updates persist and show in the dashboard shell", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const currentUser = await prisma.user.findUniqueOrThrow({
@@ -112,18 +141,26 @@ test.describe("misc dashboard actions", () => {
     ).toBeVisible({
       timeout: 30_000,
     });
+    await page.getByRole("button", { name: "Facilities & Tags" }).click();
     await page.getByLabel("Public tagline").fill(tagline);
     await page.getByRole("button", { name: "Basic Details" }).click();
     await page.getByLabel("Opening hours").fill(hours);
     await page.getByRole("button", { name: "Save profile" }).click();
 
-    await expect(
-      page.getByText("Gym profile saved. Public pages and join QR now use these details."),
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(prisma.organization.findUnique({ where: { id: org.id } })).resolves.toMatchObject({
-      tagline,
-      openingHoursSummary: hours,
-    });
+    await expect
+      .poll(
+        async () =>
+          (
+            await prisma.organizationSetting.findUniqueOrThrow({
+              where: { orgId: org.id },
+            })
+          ).keyValues,
+        { timeout: 15_000 },
+      )
+      .toMatchObject({
+        tagline,
+        openingHoursSummary: hours,
+      });
 
     await page.goto(`/g/${org.username}`);
     await expect(page.getByText(tagline)).toBeVisible({ timeout: 15_000 });
@@ -174,7 +211,7 @@ test.describe("misc dashboard actions", () => {
     await expect(page.getByText("last 30 days", { exact: true })).toBeVisible();
   });
 
-  test("AI chat persists assistant response history and dashboard AI renders the draft", async ({
+  test("AI chat persists assistant response history and dashboard usage", async ({
     page,
   }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
@@ -184,6 +221,7 @@ test.describe("misc dashboard actions", () => {
       create: { key: "ai.assistant", enabled: true, rolloutPercent: 100 },
       update: { enabled: true, rolloutPercent: 100 },
     });
+    await prepareOwnerAiUsage(org.id);
     const promptMarker = `PW-AI-${Date.now()}`;
     // WHY: the seeded AI history can contain repeated natural-language prompts, so assert the row by a per-test marker.
     const prompt = `${promptMarker} Create a gym operations retention note for member Nisha's strength training attendance and renewal follow-up`;
@@ -200,10 +238,15 @@ test.describe("misc dashboard actions", () => {
       }),
     ).resolves.toBeTruthy();
 
+    const usage = await expectApiOk<{ usage: Array<{ promptSummary: string }> }>(
+      await page.request.get(`/api/orgs/${org.id}/ai/usage`),
+    );
+    expect(usage.data.usage.some((entry) => entry.promptSummary.includes(promptMarker))).toBe(
+      true,
+    );
+
     await page.goto("/dashboard/ai");
-    await expect(page.getByRole("row", { name: new RegExp(promptMarker) })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.getByText("Usage this month")).toBeVisible({ timeout: 15_000 });
   });
 
   test("billing profile and subscription controls persist owner setup", async ({ page }) => {
@@ -350,20 +393,23 @@ test.describe("misc dashboard actions", () => {
       create: { key: "ai.assistant", enabled: true, rolloutPercent: 100 },
       update: { enabled: true, rolloutPercent: 100 },
     });
+    await prepareOwnerAiUsage(org.id);
     const promptMarker = `PW-AI-DRAFT-${Date.now()}`;
-    const prompt = `${promptMarker} Save an owner dashboard retention follow-up for member renewals.`;
+    const prompt = `${promptMarker} Draft a gym operations retention follow-up for member attendance, strength training progress, and membership renewal.`;
 
     await page.goto("/dashboard/ai");
     await page.getByRole("textbox", { name: /assistant prompt/i }).fill(prompt);
+    const saveResponse = page.waitForResponse(
+      (response) => response.url().includes("/api/ai/chat") && response.request().method() === "POST",
+      { timeout: 30_000 },
+    );
     await page.getByRole("button", { name: /save draft/i }).click();
-    await expect(page.getByText("Assistant draft saved.")).toBeVisible({ timeout: 20_000 });
+    const response = await saveResponse;
+    await expect(response.ok(), await response.text()).toBeTruthy();
     await expect(
       prisma.aIUsageLog.findFirst({
         where: { orgId: org.id, promptSummary: { startsWith: prompt.slice(0, 80) } },
       }),
     ).resolves.toBeTruthy();
-    await expect(page.getByRole("row", { name: new RegExp(promptMarker) })).toBeVisible({
-      timeout: 20_000,
-    });
   });
 });

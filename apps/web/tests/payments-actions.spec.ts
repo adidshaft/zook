@@ -16,10 +16,38 @@ test.describe("payments actions", () => {
   test("owner records an offline payment from the dashboard form", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
-    const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
+    const memberSuffix = Date.now();
+    const memberName = `Payment UI Member ${memberSuffix}`;
+    const memberEmail = `payment-ui-member-${memberSuffix}@zook.local`;
+    const member = await prisma.user.create({
+      data: { email: memberEmail, name: memberName },
+    });
+    await prisma.organizationUser.create({
+      data: { orgId: org.id, userId: member.id, status: "active" },
+    });
+    await prisma.organizationRoleAssignment.create({
+      data: { orgId: org.id, userId: member.id, role: "MEMBER" },
+    });
+    await prisma.memberProfile.create({
+      data: { orgId: org.id, userId: member.id },
+    });
     const plan = await createMembershipPlan(page, org.id, {
       name: `UI Payment Plan ${Date.now()}`,
       pricePaise: 210000,
+    });
+    const branch = await prisma.branch.findFirstOrThrow({
+      where: { orgId: org.id, isDefault: true, active: true },
+    });
+    await prisma.memberSubscription.create({
+      data: {
+        orgId: org.id,
+        branchId: branch.id,
+        memberUserId: member.id,
+        planId: plan.id,
+        status: "ACTIVE",
+        startsAt: new Date(),
+        endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
     });
     const receiptNumber = `UI-RCPT-${Date.now()}`;
 
@@ -29,8 +57,8 @@ test.describe("payments actions", () => {
     });
 
     await page.getByLabel("Choose member").click();
-    await page.getByPlaceholder("Search members").fill(member.email!);
-    await page.getByRole("option", { name: new RegExp(member.email!, "i") }).click();
+    await page.getByPlaceholder("Search members").fill(memberName);
+    await page.getByRole("option", { name: new RegExp(memberName, "i") }).click();
 
     await page.getByLabel("Choose plan").click();
     await page.getByPlaceholder("Search plans").fill(plan.name);
@@ -40,7 +68,7 @@ test.describe("payments actions", () => {
     await page.getByPlaceholder("Notes").fill("Dashboard UI offline payment");
     await page.getByRole("button", { name: "Record payment" }).click();
 
-    await expect(page.getByText("Payment recorded for ₹2,100.")).toBeVisible({
+    await expect(page.locator("form").getByText("Payment recorded for ₹2,100.")).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByText("Receipt generated")).toBeVisible();

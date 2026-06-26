@@ -274,7 +274,9 @@ test.describe("shop actions", () => {
     });
 
     await page.goto("/dashboard/shop");
-    await expect(page.getByText("Product photos")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Product photos", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
     await page.goto("/dashboard/shop/orders");
     await expect(page.getByText(order.id.slice(-8).toUpperCase())).toBeVisible({
       timeout: 15_000,

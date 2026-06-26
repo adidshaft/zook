@@ -104,7 +104,9 @@ test.describe("branches, staff, settings, and billing actions", () => {
     const inviteEmail = `staff-ui-invite-${Date.now()}@zook.local`;
 
     await page.goto("/dashboard/staff");
-    await expect(page.getByText("Invite staff")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Invite staff" })).toBeVisible({
+      timeout: 30_000,
+    });
     await page.getByLabel("Staff email").fill(inviteEmail);
     await page.getByLabel("Role").click();
     await page.getByRole("option", { name: "Admin" }).click();
@@ -165,7 +167,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
         timeout: 15_000,
       })
       .toMatchObject({ role: "RECEPTIONIST", branchId: branch.id });
-    await expect(row.getByText(/Receptionist/i)).toBeVisible({ timeout: 15_000 });
+    await expect(row.getByText(/Reception/i)).toBeVisible({ timeout: 15_000 });
     await expect(row.getByText(branch.name)).toBeVisible();
   });
 
@@ -235,7 +237,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
     });
 
     await page.goto("/dashboard/billing");
-    await expect(page.getByRole("button", { name: /connect mock provider/i })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByText(invoiceNumber)).toBeVisible({ timeout: 15_000 });

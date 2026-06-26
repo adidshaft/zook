@@ -66,7 +66,7 @@ export function useDashboardOperationalResources({
     MemberRow
   >({
     path: withBranch(`/api/orgs/${orgId}/members?limit=50`),
-    enabled: mode === "members",
+    enabled: mode === "members" || mode === "payments",
     itemKey: "members",
     initialPage:
       mode === "members" && initialMembers?.length

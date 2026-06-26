@@ -44,6 +44,19 @@ const organizationLocationSchema = z
     "Provide manual latitude/longitude or a Google Maps link.",
   );
 
+const publicMediaUrlSchema = z
+  .string()
+  .trim()
+  .refine((value) => {
+    if (!value) {
+      return false;
+    }
+    if (value.startsWith("/") && !value.startsWith("//")) {
+      return true;
+    }
+    return z.string().url().safeParse(value).success;
+  }, "Provide a valid image URL or public asset path.");
+
 const organizationPublicProfileSchema = z.object({
   name: z.string().trim().min(2).max(120),
   username: z.string().trim().min(3).max(32).optional(),
@@ -60,10 +73,10 @@ const organizationPublicProfileSchema = z.object({
   equipment: z.array(z.string().trim().min(2).max(80)).max(60).default([]),
   visibility: z.enum(["PUBLIC", "INVITE_ONLY", "HIDDEN"]),
   joinMode: z.enum(["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]),
-  logoUrl: z.string().trim().url().optional().or(z.literal("")),
-  coverImageUrl: z.string().trim().url().optional().or(z.literal("")),
+  logoUrl: publicMediaUrlSchema.optional().or(z.literal("")),
+  coverImageUrl: publicMediaUrlSchema.optional().or(z.literal("")),
   tagline: z.string().trim().max(160).optional(),
-  gallery: z.array(z.string().trim().url()).max(15).default([]),
+  gallery: z.array(publicMediaUrlSchema).max(15).default([]),
   galleryAssetIds: z.array(z.string()).max(15).optional(),
   facilities: z.array(z.string().trim().min(2).max(80)).max(24).default([]),
   gymType: z.string().trim().max(80).optional(),

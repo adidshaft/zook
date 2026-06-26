@@ -3,6 +3,19 @@ import { prisma } from "@zook/db";
 import { expectApiOk, loginWithSessionCookie, seedAndGetOrg } from "./helpers";
 import { requireDb } from "./helpers/db";
 
+async function createTrainerForPayout(orgId: string, assignedById: string, suffix: string) {
+  const trainer = await prisma.user.create({
+    data: { email: `trainer-payout-${suffix}@zook.local`, name: `Payout Trainer ${suffix}` },
+  });
+  await prisma.organizationUser.create({
+    data: { orgId, userId: trainer.id, status: "active" },
+  });
+  await prisma.organizationRoleAssignment.create({
+    data: { orgId, userId: trainer.id, role: "TRAINER", assignedById },
+  });
+  return trainer;
+}
+
 test.describe("trainer payouts", () => {
   test.beforeEach(() => {
     requireDb();
@@ -13,7 +26,8 @@ test.describe("trainer payouts", () => {
   }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
-    const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const trainer = await createTrainerForPayout(org.id, owner.id, `flow-${Date.now()}`);
     const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
 
     await expectApiOk(
@@ -84,7 +98,8 @@ test.describe("trainer payouts", () => {
   test("owner marks a trainer payout paid from the dashboard", async ({ page }) => {
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
-    const trainer = await prisma.user.findUniqueOrThrow({ where: { email: "trainer@zook.local" } });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
+    const trainer = await createTrainerForPayout(org.id, owner.id, `paid-${Date.now()}`);
     const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
 
     await expectApiOk(
@@ -119,7 +134,9 @@ test.describe("trainer payouts", () => {
     const payoutCard = page.locator("div").filter({ hasText: "₹8,500" }).filter({ hasText: "Mark paid" }).first();
     await payoutCard.getByRole("button", { name: "Mark paid" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Mark paid" }).click();
-    await expect(page.getByText("Payout marked paid.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("main").getByText("Payout marked paid.")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(
       prisma.trainerPayout.findUnique({ where: { id: payout!.id } }),
     ).resolves.toMatchObject({ status: "paid", paidMethod: "UPI" });
