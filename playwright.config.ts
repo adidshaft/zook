@@ -106,6 +106,9 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   use: {
     baseURL: webServerUrl,
+    extraHTTPHeaders: {
+      "x-zook-intent": "mutate",
+    },
     trace: "on-first-retry",
   },
   webServer: {

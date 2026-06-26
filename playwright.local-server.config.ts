@@ -11,6 +11,9 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   use: {
     baseURL,
+    extraHTTPHeaders: {
+      "x-zook-intent": "mutate",
+    },
     trace: "on-first-retry",
   },
   projects: [
