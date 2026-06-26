@@ -172,7 +172,7 @@ export default function Login() {
       setRateLimitCooldown((current) => Math.max(0, current - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [rateLimitCooldown]);
+  }, [rateLimitCooldown, t]);
 
   function resetOtpState() {
     setCode("");

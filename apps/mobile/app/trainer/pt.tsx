@@ -181,7 +181,7 @@ export default function TrainerPersonalTraining() {
         id: client.memberUserId as string,
         name: (client.user?.name as string) ?? t("more.fallbackName"),
       })),
-    [clientsQuery.data],
+    [clientsQuery.data, t],
   );
   const activeClients = subscriptions.filter((sub) => sub.status.toUpperCase().includes("ACTIVE")).length;
   const pendingRequests = subscriptions.filter((sub) => sub.status === "PENDING_APPROVAL");

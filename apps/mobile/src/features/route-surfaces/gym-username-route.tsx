@@ -187,7 +187,7 @@ export default function GymProfileScreen() {
       });
     });
     return () => subscription.remove();
-  }, [queryClient, setStatusMessage]);
+  }, [queryClient, setStatusMessage, t]);
 
   async function requestMembership() {
     if (!gym) {

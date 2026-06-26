@@ -351,7 +351,7 @@ export function PlanDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [exercisesQuery.data?.exercises, selectedAssignment?.id]);
+  }, [exercisesQuery.data?.exercises, selectedAssignment?.id, t]);
 
   useEffect(() => {
     setFeedbackStatus("");

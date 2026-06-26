@@ -188,7 +188,7 @@ export default function NotificationsScreen() {
         });
       }
     },
-    [busyIds, queryClient, token],
+    [busyIds, queryClient, t, token],
   );
 
   async function markAllRead() {

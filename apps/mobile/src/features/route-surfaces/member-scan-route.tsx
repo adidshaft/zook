@@ -304,7 +304,7 @@ export default function Scan() {
     };
   }, []);
 
-  function scanReason(result: ScanResult) {
+  const scanReason = useCallback((result: ScanResult) => {
     if (Array.isArray(result.suspiciousFlags) && result.suspiciousFlags.length) {
       return result.suspiciousFlags.join(", ");
     }
@@ -312,7 +312,7 @@ export default function Scan() {
       return t("member.scan.alreadyCheckedInToday");
     }
     return result.attendance.reason ?? "";
-  }
+  }, [t]);
 
   function scanWarnings(result: ScanResult) {
     if (!Array.isArray(result.warnings)) {
@@ -471,7 +471,7 @@ export default function Scan() {
     } finally {
       setReplayingQueue(false);
     }
-  }, [deviceId, queryClient, replayingQueue, token]);
+  }, [deviceId, queryClient, replayingQueue, scanReason, t, token]);
 
   useEffect(() => {
     if (token) {

@@ -69,7 +69,7 @@ export default function OwnerMembersScreen() {
         });
       }
     },
-    [activeOrgId, token],
+    [activeOrgId, t, token],
   );
 
   const filteredMembers = useMemo(() => {
@@ -136,7 +136,7 @@ export default function OwnerMembersScreen() {
               : undefined,
         };
       }),
-    [filteredMembers, sendReminder],
+    [filteredMembers, sendReminder, t],
   );
   const selectedFilter: MemberListFilter =
     memberFilter === "all" ? { kind: "all" } : { kind: "status", status: memberFilter };

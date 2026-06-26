@@ -297,7 +297,7 @@ export default function MembershipScreen() {
     } finally {
       setCheckingCheckoutStatus(false);
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
