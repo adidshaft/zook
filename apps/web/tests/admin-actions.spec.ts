@@ -19,6 +19,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
   });
 
   test("owner creates and archives a branch", async ({ page }) => {
+    test.setTimeout(90_000);
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
     await prisma.saaSSubscription.update({

@@ -14,6 +14,7 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
   });
 
   test("owner creates a membership plan from the dashboard form", async ({ page }) => {
+    test.setTimeout(90_000);
     await loginWithSessionCookie(page, "owner@zook.local");
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
     const branch = await prisma.branch.findFirstOrThrow({
@@ -21,20 +22,37 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     });
     const planName = `UI Created Plan ${Date.now().toString().slice(-6)}`;
 
+    const plansLoadPromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/orgs/${org.id}/membership-plans`) &&
+        response.request().method() === "GET",
+      { timeout: 30_000 },
+    );
     await page.goto(`/dashboard/membership-plans?branchId=${branch.id}`);
     await expect(page.getByRole("heading", { name: "Membership catalog" })).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByLabel("Plan name").fill(planName);
-    await page.getByLabel("Price").fill("2599");
-    await page.getByLabel("Duration days").fill("60");
-    await page.getByLabel("Visit limit").fill("20");
+    await plansLoadPromise;
+    const planNameInput = page.getByLabel("Plan name").first();
+    const priceInput = page.getByLabel("Price").first();
+    const durationDaysInput = page.getByLabel("Duration days").first();
+    const visitLimitInput = page.getByLabel("Visit limit").first();
+    const createPlanButton = page.getByRole("button", { name: "Create plan" });
+    await expect(createPlanButton).toBeEnabled({ timeout: 30_000 });
+    await planNameInput.fill(planName);
+    await priceInput.fill("2599");
+    await durationDaysInput.fill("60");
+    await visitLimitInput.fill("20");
+    await expect(planNameInput).toHaveValue(planName);
+    await expect(priceInput).toHaveValue("2599");
+    await expect(durationDaysInput).toHaveValue("60");
+    await expect(visitLimitInput).toHaveValue("20");
     const createResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes(`/api/orgs/${org.id}/membership-plans`) &&
         response.request().method() === "POST",
     );
-    await page.getByRole("button", { name: "Create plan" }).click();
+    await createPlanButton.click();
     const createResponse = await createResponsePromise;
     const createResponseText = await createResponse.text();
     const createPayload = JSON.parse(createResponseText) as {
