@@ -160,6 +160,35 @@ describe("mutation safety", () => {
     ).toThrow(/Include the x-zook-intent header/);
   });
 
+  it("allows local Playwright-style writes without browser origin hints", () => {
+    const previousAppEnv = process.env.APP_ENV;
+    const previousEnvProfile = process.env.ENV_PROFILE;
+    const restoreEnv = (key: "APP_ENV" | "ENV_PROFILE", value: string | undefined) => {
+      if (value === undefined) {
+        delete process.env[key];
+        return;
+      }
+      process.env[key] = value;
+    };
+
+    process.env.APP_ENV = "local";
+    process.env.ENV_PROFILE = "local";
+
+    try {
+      expect(() =>
+        assertSafeMutationRequest(
+          createMutationRequest({
+            hasCookieSession: true,
+            nextOrigin: "http://127.0.0.1:3120",
+          }) as never,
+        ),
+      ).not.toThrow();
+    } finally {
+      restoreEnv("APP_ENV", previousAppEnv);
+      restoreEnv("ENV_PROFILE", previousEnvProfile);
+    }
+  });
+
   it("blocks cross-site cookie-authenticated writes", () => {
     expect(() =>
       assertSafeMutationRequest(
