@@ -100,6 +100,7 @@ test.describe("trainer payouts", () => {
     const org = await seedAndGetOrg({ username: "aarogya-strength" });
     const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@zook.local" } });
     const trainer = await createTrainerForPayout(org.id, owner.id, `paid-${Date.now()}`);
+    const trainerName = trainer.name ?? trainer.email;
     const member = await prisma.user.findUniqueOrThrow({ where: { email: "member@zook.local" } });
 
     await expectApiOk(
@@ -126,12 +127,16 @@ test.describe("trainer payouts", () => {
     const payouts = await expectApiOk<{
       payouts: Array<{ id: string; totalPaise: number; trainer?: { name?: string | null } | null }>;
     }>(await page.request.get(`/api/orgs/${org.id}/payouts?month=${new Date().toISOString().slice(0, 7)}`));
-    const payout = payouts.data.payouts.find((item) => item.totalPaise === 8_500_00);
+    const payout = payouts.data.payouts.find(
+      (item) => item.totalPaise === 8_500_00 && item.trainer?.name === trainerName,
+    );
     expect(payout?.id).toBeTruthy();
 
     await page.goto("/dashboard/payouts");
-    await expect(page.getByText("₹8,500")).toBeVisible({ timeout: 30_000 });
-    const payoutCard = page.locator("div").filter({ hasText: "₹8,500" }).filter({ hasText: "Mark paid" }).first();
+    const trainerLabel = page.locator("p").filter({ hasText: trainerName }).first();
+    await expect(trainerLabel).toBeVisible({ timeout: 30_000 });
+    const payoutCard = trainerLabel.locator("xpath=ancestor::div[contains(@class, 'p-5')][1]");
+    await expect(payoutCard.getByText("₹8,500")).toBeVisible({ timeout: 30_000 });
     await payoutCard.getByRole("button", { name: "Mark paid" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Mark paid" }).click();
     await expect(page.getByRole("main").getByText("Payout marked paid.")).toBeVisible({

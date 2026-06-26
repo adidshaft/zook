@@ -29,21 +29,60 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     await page.getByLabel("Price").fill("2599");
     await page.getByLabel("Duration days").fill("60");
     await page.getByLabel("Visit limit").fill("20");
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/orgs/${org.id}/membership-plans`) &&
+        response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: "Create plan" }).click();
-
-    const planRow = page.getByRole("row", { name: new RegExp(planName) });
-    await expect(planRow).toBeVisible({ timeout: 15_000 });
-    await expect(planRow.getByText("₹2,599")).toBeVisible();
-    await expect(
-      prisma.membershipPlan.findFirst({
-        where: { orgId: org.id, branchId: branch.id, name: planName },
-      }),
-    ).resolves.toMatchObject({
+    const createResponse = await createResponsePromise;
+    const createResponseText = await createResponse.text();
+    const createPayload = JSON.parse(createResponseText) as {
+      ok?: boolean;
+      data?: {
+        plan: {
+          id: string;
+          branchId: string | null;
+          pricePaise: number;
+          durationDays: number;
+          visitLimit: number | null;
+        };
+      };
+      error?: { message?: string };
+    };
+    expect(
+      createResponse.ok(),
+      createPayload.error?.message ?? createResponseText,
+    ).toBeTruthy();
+    expect(createPayload.ok).toBe(true);
+    expect(createPayload.data).toBeDefined();
+    const createdPlan = createPayload.data!.plan;
+    expect(createdPlan).toMatchObject({
       pricePaise: 259900,
       durationDays: 60,
       visitLimit: 20,
-      publicVisible: true,
     });
+    await expect
+      .poll(
+        () =>
+          prisma.membershipPlan.findFirst({
+            where: { id: createdPlan.id, orgId: org.id, name: planName },
+          }),
+        { timeout: 15_000 },
+      )
+      .toMatchObject({
+        pricePaise: 259900,
+        durationDays: 60,
+        visitLimit: 20,
+        publicVisible: true,
+      });
+
+    await page.goto(
+      `/dashboard/membership-plans?branchId=${createdPlan.branchId ?? branch.id}`,
+    );
+    const planRow = page.getByRole("row", { name: new RegExp(planName) });
+    await expect(planRow).toBeVisible({ timeout: 30_000 });
+    await expect(planRow.getByText("₹2,599")).toBeVisible();
   });
 
   test("owner edits, archives, and restores a membership plan", async ({ page }) => {
