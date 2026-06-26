@@ -8,7 +8,7 @@ import {
   isSeededDemoIdentifier,
 } from "@zook/core";
 import { AuthService } from "@zook/core/services";
-import { extractSessionToken, refreshSessionCookieName, sessionCookieName } from "../context";
+import { extractSessionToken, refreshSessionCookieName } from "../context";
 import { getDevOtpResponseValue } from "../auth-response";
 import { assertRateLimit } from "../rate-limit";
 import { getClientIp } from "../security";
@@ -18,6 +18,7 @@ import { writeAuditLog } from "../audit";
 import {
   appleAuthCallbackSchema,
   assertLocalQaIdentityAllowed,
+  clearAuthCookies,
   clean,
   createAuthSessionResponse,
   createSeededDemoOtpChallenge,
@@ -37,8 +38,8 @@ import {
   PrismaAuthRepo,
   providerEmailVerified,
   refreshAuthSession,
+  setRefreshSessionCookie,
   setSessionCookie,
-  sharedSessionCookieOptions,
   verifyRemoteJwt,
   serializeUserForClient,
 } from "./core";
@@ -129,12 +130,8 @@ export async function handleAuth(request: NextRequest, path: string[]) {
       refreshExpiresAt: session.refreshExpiresAt,
       ...(sessionSummary ? { session: sessionSummary } : {}),
     });
-    response.cookies.set(sessionCookieName, session.token, {
-      ...sharedSessionCookieOptions(request, session.expiresAt),
-    });
-    response.cookies.set(refreshSessionCookieName, session.refreshToken, {
-      ...sharedSessionCookieOptions(request, session.refreshExpiresAt),
-    });
+    setSessionCookie(response, request, session.token, session.expiresAt);
+    setRefreshSessionCookie(response, request, session.refreshToken, session.refreshExpiresAt);
     return response;
   }
   if (request.method === "POST" && pathMatches(path, ["auth", "google", "callback"])) {
@@ -215,15 +212,7 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     }
     const logoutUrl = process.env.NEXT_PUBLIC_WEB_URL ?? "https://zookfit.in";
     const response = ok({ loggedOut: true, redirectUrl: new URL("/", logoutUrl).toString() });
-    response.cookies.set(sessionCookieName, "", {
-      ...sharedSessionCookieOptions(request, new Date(0)),
-    });
-    response.cookies.set(refreshSessionCookieName, "", {
-      ...sharedSessionCookieOptions(request, new Date(0)),
-    });
-    response.cookies.set(refreshSessionCookieName, "", {
-      ...sharedSessionCookieOptions(request, new Date(0), "/api/auth/refresh"),
-    });
+    clearAuthCookies(response, request);
     return response;
   }
   if (request.method === "GET" && pathMatches(path, ["auth", "refresh"])) {

@@ -25,6 +25,11 @@ for (const envFile of orderedTestEnvFiles) {
 Object.assign(process.env, parsedEnv, externalEnv);
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": resolve(rootDir, "apps/web/src")
+    }
+  },
   test: {
     include: [
       "packages/**/__tests__/**/*.{test,spec}.ts",

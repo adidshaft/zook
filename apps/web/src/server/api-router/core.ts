@@ -816,6 +816,73 @@ export function sharedSessionCookieOptions(request: NextRequest, expires: Date, 
   };
 }
 
+type SessionCookieOptions = ReturnType<typeof sharedSessionCookieOptions>;
+
+function serializeCookie(
+  name: string,
+  value: string,
+  options: SessionCookieOptions,
+) {
+  const parts = [
+    `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+    `Path=${options.path}`,
+    `Expires=${options.expires.toUTCString()}`,
+    "SameSite=Lax",
+  ];
+  if ("domain" in options && options.domain) {
+    parts.push(`Domain=${options.domain}`);
+  }
+  if (options.httpOnly) {
+    parts.push("HttpOnly");
+  }
+  if (options.secure) {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
+}
+
+function setScopedSessionCookie(
+  response: NextResponse,
+  request: NextRequest,
+  name: typeof sessionCookieName | typeof refreshSessionCookieName,
+  value: string,
+  expiresAt: Date,
+  path = "/",
+) {
+  const options = sharedSessionCookieOptions(request, expiresAt, path);
+  response.headers.append("Set-Cookie", serializeCookie(name, value, options));
+  if ("domain" in options && options.domain) {
+    const { domain: _domain, ...hostOnlyOptions } = options;
+    response.headers.append("Set-Cookie", serializeCookie(name, value, hostOnlyOptions));
+  }
+}
+
+export function setSessionCookie(
+  response: NextResponse,
+  request: NextRequest,
+  token: string,
+  expiresAt: Date,
+) {
+  setScopedSessionCookie(response, request, sessionCookieName, token, expiresAt);
+}
+
+export function setRefreshSessionCookie(
+  response: NextResponse,
+  request: NextRequest,
+  refreshToken: string,
+  expiresAt: Date,
+  path = "/",
+) {
+  setScopedSessionCookie(response, request, refreshSessionCookieName, refreshToken, expiresAt, path);
+}
+
+export function clearAuthCookies(response: NextResponse, request: NextRequest) {
+  const expired = new Date(0);
+  setSessionCookie(response, request, "", expired);
+  setRefreshSessionCookie(response, request, "", expired);
+  setRefreshSessionCookie(response, request, "", expired, "/api/auth/refresh");
+}
+
 export async function revokeActiveSessionsForUsers(userIds: string[]) {
   const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
   if (!uniqueUserIds.length) {
@@ -1987,12 +2054,8 @@ export async function createAuthSessionResponse(
     refreshExpiresAt,
     ...(sessionSummary ? { session: sessionSummary } : {}),
   });
-  response.cookies.set(sessionCookieName, token, {
-    ...sharedSessionCookieOptions(request, expiresAt),
-  });
-  response.cookies.set(refreshSessionCookieName, refreshToken, {
-    ...sharedSessionCookieOptions(request, refreshExpiresAt),
-  });
+  setSessionCookie(response, request, token, expiresAt);
+  setRefreshSessionCookie(response, request, refreshToken, refreshExpiresAt);
   return response;
 }
 
@@ -2025,17 +2088,6 @@ export async function refreshAuthSession(refreshToken: string) {
     refreshExpiresAt: currentSession.refreshExpiresAt,
     ...(sessionSummary ? { session: sessionSummary } : {}),
   };
-}
-
-export function setSessionCookie(
-  response: NextResponse,
-  request: NextRequest,
-  token: string,
-  expiresAt: Date,
-) {
-  response.cookies.set(sessionCookieName, token, {
-    ...sharedSessionCookieOptions(request, expiresAt),
-  });
 }
 
 function localQaIdentitiesAllowed() {

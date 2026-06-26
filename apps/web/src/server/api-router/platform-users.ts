@@ -4,7 +4,6 @@ import { AuthService } from "@zook/core/services";
 import { prisma } from "@zook/db";
 import { getRequestContext, requireAuth, requirePlatformAdmin } from "../access";
 import { writeAuditLog } from "../audit";
-import { sessionCookieName } from "../context";
 import { forbiddenError, notFoundError } from "../errors";
 import { getClientIp } from "../security";
 import { ok, readJson } from "../response";
@@ -16,8 +15,8 @@ import {
   pathMatches,
   platformImpersonateSchema,
   serializeUserForClient,
+  setSessionCookie,
   sha256,
-  sharedSessionCookieOptions,
 } from "./core";
 
 export async function handlePlatformUsers(request: NextRequest, path: string[]) {
@@ -188,9 +187,7 @@ export async function handlePlatformUsers(request: NextRequest, path: string[]) 
       metadata: { targetUserId, targetOrgId: body.targetOrgId ?? null, ttlMinutes: body.ttlMinutes },
     });
     const response = ok({ impersonation, token, expiresAt });
-    response.cookies.set(sessionCookieName, token, {
-      ...sharedSessionCookieOptions(request, expiresAt),
-    });
+    setSessionCookie(response, request, token, expiresAt);
     return response;
   }
 
@@ -247,9 +244,7 @@ export async function handlePlatformUsers(request: NextRequest, path: string[]) 
           lastSeenAt: new Date(),
         }),
       });
-      response.cookies.set(sessionCookieName, token, {
-        ...sharedSessionCookieOptions(request, expiresAt),
-      });
+      setSessionCookie(response, request, token, expiresAt);
     }
     return response;
   }
