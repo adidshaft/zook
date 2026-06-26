@@ -119,7 +119,7 @@ jobs:
         run: pnpm test:db:prepare && RUN_DB_WEB_TESTS=1 ALLOW_DEV_OTP_RESPONSE=true pnpm test:web
 
       - name: Action web tests
-        run: ALLOW_DEV_OTP_RESPONSE=true pnpm test:web:actions
+        run: pnpm test:db:prepare && ALLOW_DEV_OTP_RESPONSE=true pnpm test:web:actions
 
       - name: Release preflight
         run: pnpm release:preflight
