@@ -21,6 +21,7 @@ export type { OtpInputHandle } from "./otp-input";
 export { IconBubble } from "./icon-bubble";
 export { ScannerFrame, StickyActionBar } from "./layout-primitives";
 export { ProfileShortcut } from "./profile-shortcut";
+export { HeaderActions } from "./header-actions";
 export { SectionHeader } from "./section-header";
 export * from "./chips";
 export * from "./switch";

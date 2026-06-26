@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import type { PillTone } from "@/components/primitives";
 import { gradients } from "@/lib/theme";
+import type { ThemeMode } from "@/lib/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -21,7 +22,7 @@ const CLASS_VISUALS: Record<string, ClassVisual> = {
   pilates: { icon: "body-outline", tone: "amber" },
 };
 
-const TONE_GRADIENT: Record<PillTone, readonly [string, string]> = {
+const TONE_GRADIENT_DARK: Record<PillTone, readonly [string, string]> = {
   red: gradients.classRed,
   blue: gradients.classBlue,
   violet: gradients.classViolet,
@@ -30,14 +31,24 @@ const TONE_GRADIENT: Record<PillTone, readonly [string, string]> = {
   neutral: gradients.cardSheen,
 };
 
+const TONE_GRADIENT_LIGHT: Record<PillTone, readonly [string, string]> = {
+  red: ["rgba(220,38,38,0.12)", "rgba(220,38,38,0.02)"],
+  blue: ["rgba(2,132,199,0.12)", "rgba(2,132,199,0.02)"],
+  violet: ["rgba(109,40,217,0.12)", "rgba(109,40,217,0.02)"],
+  amber: ["rgba(217,119,6,0.12)", "rgba(217,119,6,0.02)"],
+  lime: ["rgba(22,163,74,0.12)", "rgba(22,163,74,0.02)"],
+  neutral: ["rgba(31,62,36,0.07)", "rgba(31,62,36,0.01)"],
+};
+
 export function classTypeVisual(classType?: string | null): ClassVisual {
   const key = (classType ?? "").trim().toLowerCase();
   return CLASS_VISUALS[key] ?? { icon: "fitness-outline", tone: "blue" };
 }
 
 /** Soft top-tinted gradient matching the class-type accent, for card surfaces. */
-export function classTypeGradient(classType?: string | null): readonly [string, string] {
-  return TONE_GRADIENT[classTypeVisual(classType).tone];
+export function classTypeGradient(classType?: string | null, mode?: ThemeMode): readonly [string, string] {
+  const map = mode === "light" ? TONE_GRADIENT_LIGHT : TONE_GRADIENT_DARK;
+  return map[classTypeVisual(classType).tone];
 }
 
 function startOfDay(date: Date) {

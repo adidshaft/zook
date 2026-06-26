@@ -300,6 +300,16 @@ export const memberApi = {
       ...(options.branchId ? { branchId: options.branchId } : {}),
     });
   },
+  cancelMembership<T = { subscription?: unknown }>(
+    options: RequestOptions & { subscriptionId: string },
+  ) {
+    return mobileApiFetch<T>(`/me/memberships/${options.subscriptionId}/cancel`, {
+      method: "POST",
+      token: options.token,
+      ...(options.orgId ? { orgId: options.orgId } : {}),
+      ...(options.branchId ? { branchId: options.branchId } : {}),
+    });
+  },
   switchMembership<T = { subscription?: unknown; proration?: unknown }>(
     options: RequestOptions & { subscriptionId: string; planId: string },
   ) {

@@ -761,6 +761,7 @@ export interface PtPlanRecord {
   id: string;
   orgId?: string;
   trainerUserId?: string;
+  trainerName?: string;
   name: string;
   description?: string | null;
   durationDays?: number | null;
@@ -816,6 +817,19 @@ export interface TrainerPayoutRecord {
   period?: string | null;
   paidAt?: string | null;
   lines?: TrainerPayoutLineRecord[];
+}
+
+export interface TrainerPayoutConfigRecord {
+  baseMonthlyPaise: number;
+  ptCommissionPercent: number;
+  perSessionFeePaise: number;
+  payDay: number;
+}
+
+export interface TrainerProfileRecord {
+  bio: string;
+  upiId: string;
+  upiQrUrl: string;
 }
 
 export interface OrgJoinRequestRecord {
