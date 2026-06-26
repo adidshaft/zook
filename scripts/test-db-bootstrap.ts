@@ -57,8 +57,19 @@ async function main() {
 
   runCommand(
     "pnpm",
-    ["--filter", "@zook/db", "exec", "prisma", "db", "push", "--schema", "prisma/schema.prisma", "--force-reset"],
-    "Prisma db push --force-reset",
+    [
+      "--filter",
+      "@zook/db",
+      "exec",
+      "prisma",
+      "migrate",
+      "reset",
+      "--schema",
+      "prisma/schema.prisma",
+      "--force",
+      "--skip-seed",
+    ],
+    "Prisma migrate reset",
   );
 
   const prisma = new PrismaClient({ log: ["error"] });
