@@ -37,7 +37,7 @@
     "smoke:resend": "tsx scripts/resend-smoke.ts",
     "analyze:web": "pnpm --filter @zook/web analyze",
     "check:dashboard-copy": "tsx scripts/check-dashboard-copy.ts",
-    "check:i18n": "tsx scripts/check-dashboard-copy.ts",
+    "check:i18n": "tsx scripts/check-dashboard-copy.ts && tsx scripts/audit-i18n.ts",
     "db:local:up": "docker compose up -d postgres",
     "db:local:setup": "tsx scripts/db-local-setup.ts",
     "db:baseline": "tsx scripts/prisma-db.ts migrate resolve --applied 20260503000000_initial_baseline --schema prisma/schema.prisma",
