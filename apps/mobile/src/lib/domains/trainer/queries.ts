@@ -3,6 +3,7 @@ import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
+import { useT } from "@/lib/i18n";
 import type {
   BodyProgressEntryRecord,
   DietPlanRecord,
@@ -76,6 +77,7 @@ export function useCreatePtPlan() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: CreatePtPlanInput) =>
       mobileApiFetch<{ plan: PtPlanRecord }>(
@@ -91,9 +93,9 @@ export function useCreatePtPlan() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptPlans(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Package created.");
+      notifyMutationSuccess(t("trainer.mutation.packageCreated"));
     },
-    onError: (error) => notifyMutationError(error, "Could not create package."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.packageCreateFailed")),
   });
 }
 
@@ -103,6 +105,7 @@ export function useUpdatePtPlan() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: ({ planId, ...input }: UpdatePtPlanInput) =>
       mobileApiFetch<{ plan: PtPlanRecord }>(
@@ -118,9 +121,9 @@ export function useUpdatePtPlan() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptPlans(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Package updated.");
+      notifyMutationSuccess(t("trainer.mutation.packageUpdated"));
     },
-    onError: (error) => notifyMutationError(error, "Could not update package."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.packageUpdateFailed")),
   });
 }
 
@@ -128,6 +131,7 @@ export function useDeletePtPlan() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (planId: string) =>
       mobileApiFetch<{ ok: boolean }>(
@@ -138,9 +142,9 @@ export function useDeletePtPlan() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptPlans(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Package removed.");
+      notifyMutationSuccess(t("trainer.mutation.packageRemoved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not remove package."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.packageRemoveFailed")),
   });
 }
 
@@ -185,6 +189,7 @@ export function useUpdateMyTrainerPayoutConfig() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: UpdateTrainerPayoutConfigInput) =>
       mobileApiFetch<{ config: TrainerPayoutConfigRecord }>(
@@ -203,9 +208,9 @@ export function useUpdateMyTrainerPayoutConfig() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.payouts(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Payout settings saved.");
+      notifyMutationSuccess(t("trainer.mutation.payoutSettingsSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save payout settings."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.payoutSettingsFailed")),
   });
 }
 
@@ -233,6 +238,7 @@ export function useUpdateTrainerProfile() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: UpdateTrainerProfileInput) =>
       mobileApiFetch<{ profile: TrainerProfileRecord }>(
@@ -248,9 +254,9 @@ export function useUpdateTrainerProfile() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.profile(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Profile saved.");
+      notifyMutationSuccess(t("trainer.mutation.profileSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save profile."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.profileFailed")),
   });
 }
 
@@ -266,6 +272,7 @@ export function useRecordPtSubscription() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: RecordPtSubscriptionInput) =>
       mobileApiFetch<{ subscription: PtSubscriptionRecord }>(
@@ -281,9 +288,9 @@ export function useRecordPtSubscription() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptSubscriptions(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("PT client added.");
+      notifyMutationSuccess(t("trainer.mutation.ptClientAdded"));
     },
-    onError: (error) => notifyMutationError(error, "Could not add client."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.ptClientAddFailed")),
   });
 }
 
@@ -291,6 +298,7 @@ export function useLogPtSession() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: ({ subscriptionId, notes }: { subscriptionId: string; notes?: string }) =>
       mobileApiFetch<{ subscription: PtSubscriptionRecord }>(`/orgs/${activeOrgId}/pt-sessions`, {
@@ -303,9 +311,9 @@ export function useLogPtSession() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptSubscriptions(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Session logged.");
+      notifyMutationSuccess(t("trainer.mutation.sessionLogged"));
     },
-    onError: (error) => notifyMutationError(error, "Could not log session."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.sessionLogFailed")),
   });
 }
 
@@ -313,6 +321,7 @@ export function useApprovePtSubscription() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: ({ subscriptionId }: { subscriptionId: string }) =>
       mobileApiFetch<{ subscription: PtSubscriptionRecord }>(
@@ -327,9 +336,9 @@ export function useApprovePtSubscription() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.ptSubscriptions(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("PT request approved.");
+      notifyMutationSuccess(t("trainer.mutation.ptRequestApproved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not approve the request."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.ptRequestApproveFailed")),
   });
 }
 
@@ -347,6 +356,7 @@ export function useCreateClientDietPlan(clientId: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: {
       title: string;
@@ -369,9 +379,9 @@ export function useCreateClientDietPlan(clientId: string) {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.trainer.clients(activeOrgId, trainerUserId),
       });
-      notifyMutationSuccess("Diet plan published.");
+      notifyMutationSuccess(t("trainer.mutation.dietPublished"));
     },
-    onError: (error) => notifyMutationError(error, "Could not publish diet plan."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.dietPublishFailed")),
   });
 }
 
@@ -428,6 +438,7 @@ export function useCreateClass() {
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const trainerUserId = session?.user.id;
+  const t = useT();
   return useMutation({
     mutationFn: (input: CreateClassInput) =>
       mobileApiFetch<{ class: { id: string } }>(`/orgs/${activeOrgId}/classes`, {
@@ -439,9 +450,9 @@ export function useCreateClass() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "classes"] });
       await queryClient.invalidateQueries({ queryKey: queryKeys.member.classes(activeOrgId, null) });
-      notifyMutationSuccess("Class scheduled.");
+      notifyMutationSuccess(t("trainer.mutation.classScheduled"));
     },
-    onError: (error) => notifyMutationError(error, "Could not schedule class."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.classScheduleFailed")),
   });
 }
 
@@ -450,6 +461,7 @@ export type UpdateClassInput = Partial<CreateClassInput> & { classId: string };
 export function useUpdateClass() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: ({ classId, ...input }: UpdateClassInput) =>
       mobileApiFetch<{ class: { id: string } }>(`/orgs/${activeOrgId}/classes/${classId}`, {
@@ -461,15 +473,16 @@ export function useUpdateClass() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "classes"] });
       await queryClient.invalidateQueries({ queryKey: queryKeys.member.classes(activeOrgId, null) });
-      notifyMutationSuccess("Class updated.");
+      notifyMutationSuccess(t("trainer.mutation.classUpdated"));
     },
-    onError: (error) => notifyMutationError(error, "Could not update class."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.classUpdateFailed")),
   });
 }
 
 export function useCancelClass() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: (classId: string) =>
       mobileApiFetch<{ class: { id: string } }>(`/orgs/${activeOrgId}/classes/${classId}/cancel`, {
@@ -480,9 +493,9 @@ export function useCancelClass() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "classes"] });
       await queryClient.invalidateQueries({ queryKey: queryKeys.member.classes(activeOrgId, null) });
-      notifyMutationSuccess("Class cancelled.");
+      notifyMutationSuccess(t("trainer.mutation.classCancelled"));
     },
-    onError: (error) => notifyMutationError(error, "Could not cancel class."),
+    onError: (error) => notifyMutationError(error, t("trainer.mutation.classCancelFailed")),
   });
 }
 
@@ -519,6 +532,7 @@ export function useMarkClassAttendance(classId?: string | null) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const queryKey = ["org", activeOrgId, "class-roster", classId ?? null] as const;
+  const t = useT();
   return useMutation({
     mutationFn: ({ memberId, status }: { memberId: string; status: ClassAttendanceStatus }) =>
       mobileApiFetch<{ ok: boolean; memberId: string; attendanceStatus: ClassAttendanceStatus }>(
@@ -542,7 +556,7 @@ export function useMarkClassAttendance(classId?: string | null) {
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
       }
-      notifyMutationError(error, "Attendance could not be updated.");
+      notifyMutationError(error, t("trainer.mutation.attendanceUpdateFailed"));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey });

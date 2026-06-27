@@ -10,11 +10,13 @@ import {
   notifyMutationWarning,
 } from "@/lib/domains/shared/request";
 import type { OrgJoinRequestRecord, OwnerBillingSubscriptionData } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 export function useApproveJoinRequest(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (joinRequestId: string) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -29,10 +31,10 @@ export function useApproveJoinRequest(orgId?: string) {
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
         invalidations.owner.members(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Join request approved.");
+      notifyMutationSuccess(t("owner.mutation.joinApproved"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Join request could not be approved.");
+      notifyMutationError(error, t("owner.mutation.joinApproveFailed"));
     },
   });
 }
@@ -41,6 +43,7 @@ export function useRejectJoinRequest(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (joinRequestId: string) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -54,10 +57,10 @@ export function useRejectJoinRequest(orgId?: string) {
         invalidations.owner.approvals(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationWarning("Join request rejected.");
+      notifyMutationWarning(t("owner.mutation.joinRejected"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Join request could not be rejected.");
+      notifyMutationError(error, t("owner.mutation.joinRejectFailed"));
     },
   });
 }
@@ -66,6 +69,7 @@ export function useCreateSaasBillingMandate(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: () => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -83,10 +87,10 @@ export function useCreateSaasBillingMandate(orgId?: string) {
     },
     onSuccess: async () => {
       await invalidations.owner.billing(queryClient, resolvedOrgId);
-      notifyMutationSuccess("Billing mandate created.");
+      notifyMutationSuccess(t("owner.mutation.billingMandateCreated"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Billing mandate could not be created.");
+      notifyMutationError(error, t("owner.mutation.billingMandateFailed"));
     },
   });
 }
@@ -95,6 +99,7 @@ export function useUpgradeSaasSubscription(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (input: {
       tier: "STARTER" | "GROWTH" | "PRO";
@@ -119,10 +124,10 @@ export function useUpgradeSaasSubscription(orgId?: string) {
         invalidations.owner.billing(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Subscription checkout started.");
+      notifyMutationSuccess(t("owner.mutation.checkoutStarted"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Subscription checkout could not be started.");
+      notifyMutationError(error, t("owner.mutation.checkoutFailed"));
     },
   });
 }
@@ -131,6 +136,7 @@ export function useCancelSaasSubscription(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: () => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -149,10 +155,10 @@ export function useCancelSaasSubscription(orgId?: string) {
         invalidations.owner.billing(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationWarning("Subscription cancellation scheduled.");
+      notifyMutationWarning(t("owner.mutation.subscriptionCancellationScheduled"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Subscription could not be cancelled.");
+      notifyMutationError(error, t("owner.mutation.subscriptionCancelFailed"));
     },
   });
 }
@@ -161,6 +167,7 @@ export function useMarkPayoutPaid(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({ payoutId, method, note }: { payoutId: string; method: string; note?: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -176,10 +183,10 @@ export function useMarkPayoutPaid(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.owner.payouts(resolvedOrgId) });
-      notifyMutationSuccess("Payout marked paid.");
+      notifyMutationSuccess(t("owner.mutation.payoutMarkedPaid"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Could not mark payout paid.");
+      notifyMutationError(error, t("owner.mutation.payoutMarkFailed"));
     },
   });
 }
@@ -188,6 +195,7 @@ export function useUpdatePayoutConfig(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({
       trainerUserId,
@@ -211,9 +219,9 @@ export function useUpdatePayoutConfig(orgId?: string) {
       await queryClient.invalidateQueries({
         queryKey: ["org", resolvedOrgId, "trainer", variables.trainerUserId, "payout-config"],
       });
-      notifyMutationSuccess("Payout settings saved.");
+      notifyMutationSuccess(t("owner.mutation.payoutSettingsSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save payout settings."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.payoutSettingsFailed")),
   });
 }
 
@@ -221,6 +229,7 @@ export function useUpdateReferralPolicy(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (patch: Record<string, unknown>) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -233,9 +242,9 @@ export function useUpdateReferralPolicy(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "referral-policy"] });
-      notifyMutationSuccess("Referral settings saved.");
+      notifyMutationSuccess(t("owner.mutation.referralSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save referral settings."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.referralFailed")),
   });
 }
 
@@ -253,6 +262,7 @@ export function useSaveMembershipPlan(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({ planId, body }: { planId?: string; body: MembershipPlanInput }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -268,9 +278,9 @@ export function useSaveMembershipPlan(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
-      notifyMutationSuccess("Plan saved.");
+      notifyMutationSuccess(t("owner.mutation.planSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save plan."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.planSaveFailed")),
   });
 }
 
@@ -278,6 +288,7 @@ export function useDeleteMembershipPlan(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (planId: string) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -289,9 +300,9 @@ export function useDeleteMembershipPlan(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "membership-plans"] });
-      notifyMutationWarning("Plan removed.");
+      notifyMutationWarning(t("owner.mutation.planRemoved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not remove plan."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.planRemoveFailed")),
   });
 }
 
@@ -309,6 +320,7 @@ export function useSaveCoupon(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({ couponId, body }: { couponId?: string; body: CouponInput }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -324,9 +336,9 @@ export function useSaveCoupon(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
-      notifyMutationSuccess("Coupon saved.");
+      notifyMutationSuccess(t("owner.mutation.couponSaved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save coupon."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.couponSaveFailed")),
   });
 }
 
@@ -334,6 +346,7 @@ export function useDeleteCoupon(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (couponId: string) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -345,9 +358,9 @@ export function useDeleteCoupon(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "coupons"] });
-      notifyMutationWarning("Coupon removed.");
+      notifyMutationWarning(t("owner.mutation.couponRemoved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not remove coupon."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.couponRemoveFailed")),
   });
 }
 
@@ -357,6 +370,7 @@ export function useInviteStaff(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (body: { email: string; role: StaffRole; branchId?: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -369,9 +383,9 @@ export function useInviteStaff(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
-      notifyMutationSuccess("Invite sent.");
+      notifyMutationSuccess(t("owner.mutation.inviteSent"));
     },
-    onError: (error) => notifyMutationError(error, "Could not send invite."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.inviteFailed")),
   });
 }
 
@@ -379,6 +393,7 @@ export function useUpdateStaffRole(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({ assignmentId, role, branchId }: { assignmentId: string; role: StaffRole; branchId?: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -391,9 +406,9 @@ export function useUpdateStaffRole(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
-      notifyMutationSuccess("Role updated.");
+      notifyMutationSuccess(t("owner.mutation.roleUpdated"));
     },
-    onError: (error) => notifyMutationError(error, "Could not update role."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.roleUpdateFailed")),
   });
 }
 
@@ -401,6 +416,7 @@ export function useRemoveStaff(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (assignmentId: string) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -412,8 +428,8 @@ export function useRemoveStaff(orgId?: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", resolvedOrgId, "staff"] });
-      notifyMutationWarning("Staff member removed.");
+      notifyMutationWarning(t("owner.mutation.staffRemoved"));
     },
-    onError: (error) => notifyMutationError(error, "Could not remove staff member."),
+    onError: (error) => notifyMutationError(error, t("owner.mutation.staffRemoveFailed")),
   });
 }

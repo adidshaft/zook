@@ -59,6 +59,61 @@ export type TranslationKey =
   | "exerciseTemplates.mutation.saveSuccess"
   | "exerciseTemplates.mutation.signInRemove"
   | "exerciseTemplates.mutation.signInSave"
+  | "owner.mutation.billingMandateCreated"
+  | "owner.mutation.billingMandateFailed"
+  | "owner.mutation.checkoutFailed"
+  | "owner.mutation.checkoutStarted"
+  | "owner.mutation.couponRemoveFailed"
+  | "owner.mutation.couponRemoved"
+  | "owner.mutation.couponSaveFailed"
+  | "owner.mutation.couponSaved"
+  | "owner.mutation.inviteFailed"
+  | "owner.mutation.inviteSent"
+  | "owner.mutation.joinApproveFailed"
+  | "owner.mutation.joinApproved"
+  | "owner.mutation.joinRejectFailed"
+  | "owner.mutation.joinRejected"
+  | "owner.mutation.payoutMarkFailed"
+  | "owner.mutation.payoutMarkedPaid"
+  | "owner.mutation.payoutSettingsFailed"
+  | "owner.mutation.payoutSettingsSaved"
+  | "owner.mutation.planRemoveFailed"
+  | "owner.mutation.planRemoved"
+  | "owner.mutation.planSaveFailed"
+  | "owner.mutation.planSaved"
+  | "owner.mutation.referralFailed"
+  | "owner.mutation.referralSaved"
+  | "owner.mutation.roleUpdateFailed"
+  | "owner.mutation.roleUpdated"
+  | "owner.mutation.staffRemoveFailed"
+  | "owner.mutation.staffRemoved"
+  | "owner.mutation.subscriptionCancelFailed"
+  | "owner.mutation.subscriptionCancellationScheduled"
+  | "trainer.mutation.attendanceUpdateFailed"
+  | "trainer.mutation.classCancelFailed"
+  | "trainer.mutation.classCancelled"
+  | "trainer.mutation.classScheduleFailed"
+  | "trainer.mutation.classScheduled"
+  | "trainer.mutation.classUpdateFailed"
+  | "trainer.mutation.classUpdated"
+  | "trainer.mutation.dietPublishFailed"
+  | "trainer.mutation.dietPublished"
+  | "trainer.mutation.packageCreateFailed"
+  | "trainer.mutation.packageCreated"
+  | "trainer.mutation.packageRemoveFailed"
+  | "trainer.mutation.packageRemoved"
+  | "trainer.mutation.packageUpdateFailed"
+  | "trainer.mutation.packageUpdated"
+  | "trainer.mutation.payoutSettingsFailed"
+  | "trainer.mutation.payoutSettingsSaved"
+  | "trainer.mutation.profileFailed"
+  | "trainer.mutation.profileSaved"
+  | "trainer.mutation.ptClientAddFailed"
+  | "trainer.mutation.ptClientAdded"
+  | "trainer.mutation.ptRequestApproveFailed"
+  | "trainer.mutation.ptRequestApproved"
+  | "trainer.mutation.sessionLogFailed"
+  | "trainer.mutation.sessionLogged"
   | "network.offline"
   | "notFound.body"
   | "notFound.goWorkspace"
@@ -2279,6 +2334,61 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "exerciseTemplates.mutation.saveSuccess": "Exercise template saved.",
     "exerciseTemplates.mutation.signInRemove": "Sign in again to remove templates.",
     "exerciseTemplates.mutation.signInSave": "Sign in again to save templates.",
+    "owner.mutation.billingMandateCreated": "Billing mandate created.",
+    "owner.mutation.billingMandateFailed": "Billing mandate could not be created.",
+    "owner.mutation.checkoutFailed": "Subscription checkout could not be started.",
+    "owner.mutation.checkoutStarted": "Subscription checkout started.",
+    "owner.mutation.couponRemoveFailed": "Could not remove coupon.",
+    "owner.mutation.couponRemoved": "Coupon removed.",
+    "owner.mutation.couponSaveFailed": "Could not save coupon.",
+    "owner.mutation.couponSaved": "Coupon saved.",
+    "owner.mutation.inviteFailed": "Could not send invite.",
+    "owner.mutation.inviteSent": "Invite sent.",
+    "owner.mutation.joinApproveFailed": "Join request could not be approved.",
+    "owner.mutation.joinApproved": "Join request approved.",
+    "owner.mutation.joinRejectFailed": "Join request could not be rejected.",
+    "owner.mutation.joinRejected": "Join request rejected.",
+    "owner.mutation.payoutMarkFailed": "Could not mark payout paid.",
+    "owner.mutation.payoutMarkedPaid": "Payout marked paid.",
+    "owner.mutation.payoutSettingsFailed": "Could not save payout settings.",
+    "owner.mutation.payoutSettingsSaved": "Payout settings saved.",
+    "owner.mutation.planRemoveFailed": "Could not remove plan.",
+    "owner.mutation.planRemoved": "Plan removed.",
+    "owner.mutation.planSaveFailed": "Could not save plan.",
+    "owner.mutation.planSaved": "Plan saved.",
+    "owner.mutation.referralFailed": "Could not save referral settings.",
+    "owner.mutation.referralSaved": "Referral settings saved.",
+    "owner.mutation.roleUpdateFailed": "Could not update role.",
+    "owner.mutation.roleUpdated": "Role updated.",
+    "owner.mutation.staffRemoveFailed": "Could not remove staff member.",
+    "owner.mutation.staffRemoved": "Staff member removed.",
+    "owner.mutation.subscriptionCancelFailed": "Subscription could not be cancelled.",
+    "owner.mutation.subscriptionCancellationScheduled": "Subscription cancellation scheduled.",
+    "trainer.mutation.attendanceUpdateFailed": "Attendance could not be updated.",
+    "trainer.mutation.classCancelFailed": "Could not cancel class.",
+    "trainer.mutation.classCancelled": "Class cancelled.",
+    "trainer.mutation.classScheduleFailed": "Could not schedule class.",
+    "trainer.mutation.classScheduled": "Class scheduled.",
+    "trainer.mutation.classUpdateFailed": "Could not update class.",
+    "trainer.mutation.classUpdated": "Class updated.",
+    "trainer.mutation.dietPublishFailed": "Could not publish diet plan.",
+    "trainer.mutation.dietPublished": "Diet plan published.",
+    "trainer.mutation.packageCreateFailed": "Could not create package.",
+    "trainer.mutation.packageCreated": "Package created.",
+    "trainer.mutation.packageRemoveFailed": "Could not remove package.",
+    "trainer.mutation.packageRemoved": "Package removed.",
+    "trainer.mutation.packageUpdateFailed": "Could not update package.",
+    "trainer.mutation.packageUpdated": "Package updated.",
+    "trainer.mutation.payoutSettingsFailed": "Could not save payout settings.",
+    "trainer.mutation.payoutSettingsSaved": "Payout settings saved.",
+    "trainer.mutation.profileFailed": "Could not save profile.",
+    "trainer.mutation.profileSaved": "Profile saved.",
+    "trainer.mutation.ptClientAddFailed": "Could not add client.",
+    "trainer.mutation.ptClientAdded": "PT client added.",
+    "trainer.mutation.ptRequestApproveFailed": "Could not approve the request.",
+    "trainer.mutation.ptRequestApproved": "PT request approved.",
+    "trainer.mutation.sessionLogFailed": "Could not log session.",
+    "trainer.mutation.sessionLogged": "Session logged.",
     "network.offline": "Working offline. Data may be stale.",
     "notFound.body": "The link may be old, or this role may not have access to that workflow.",
     "notFound.goWorkspace": "Go to my workspace",
@@ -4507,6 +4617,61 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "exerciseTemplates.mutation.saveSuccess": "Exercise template save हो गया.",
     "exerciseTemplates.mutation.signInRemove": "Templates remove करने के लिए फिर से sign in करें.",
     "exerciseTemplates.mutation.signInSave": "Templates save करने के लिए फिर से sign in करें.",
+    "owner.mutation.billingMandateCreated": "Billing mandate create हो गया.",
+    "owner.mutation.billingMandateFailed": "Billing mandate create नहीं हो सका.",
+    "owner.mutation.checkoutFailed": "Subscription checkout शुरू नहीं हो सका.",
+    "owner.mutation.checkoutStarted": "Subscription checkout शुरू हुआ.",
+    "owner.mutation.couponRemoveFailed": "Coupon remove नहीं हो सका.",
+    "owner.mutation.couponRemoved": "Coupon remove हो गया.",
+    "owner.mutation.couponSaveFailed": "Coupon save नहीं हो सका.",
+    "owner.mutation.couponSaved": "Coupon save हो गया.",
+    "owner.mutation.inviteFailed": "Invite भेजा नहीं जा सका.",
+    "owner.mutation.inviteSent": "Invite भेजा गया.",
+    "owner.mutation.joinApproveFailed": "Join request approve नहीं हो सका.",
+    "owner.mutation.joinApproved": "Join request approve हो गया.",
+    "owner.mutation.joinRejectFailed": "Join request reject नहीं हो सका.",
+    "owner.mutation.joinRejected": "Join request reject हो गया.",
+    "owner.mutation.payoutMarkFailed": "Payout paid mark नहीं हो सका.",
+    "owner.mutation.payoutMarkedPaid": "Payout paid mark हो गया.",
+    "owner.mutation.payoutSettingsFailed": "Payout settings save नहीं हो सकीं.",
+    "owner.mutation.payoutSettingsSaved": "Payout settings save हो गईं.",
+    "owner.mutation.planRemoveFailed": "Plan remove नहीं हो सका.",
+    "owner.mutation.planRemoved": "Plan remove हो गया.",
+    "owner.mutation.planSaveFailed": "Plan save नहीं हो सका.",
+    "owner.mutation.planSaved": "Plan save हो गया.",
+    "owner.mutation.referralFailed": "Referral settings save नहीं हो सकीं.",
+    "owner.mutation.referralSaved": "Referral settings save हो गईं.",
+    "owner.mutation.roleUpdateFailed": "Role update नहीं हो सका.",
+    "owner.mutation.roleUpdated": "Role update हो गया.",
+    "owner.mutation.staffRemoveFailed": "Staff member remove नहीं हो सका.",
+    "owner.mutation.staffRemoved": "Staff member remove हो गया.",
+    "owner.mutation.subscriptionCancelFailed": "Subscription cancel नहीं हो सका.",
+    "owner.mutation.subscriptionCancellationScheduled": "Subscription cancellation schedule हो गई.",
+    "trainer.mutation.attendanceUpdateFailed": "Attendance update नहीं हो सकी.",
+    "trainer.mutation.classCancelFailed": "Class cancel नहीं हो सकी.",
+    "trainer.mutation.classCancelled": "Class cancel हो गई.",
+    "trainer.mutation.classScheduleFailed": "Class schedule नहीं हो सकी.",
+    "trainer.mutation.classScheduled": "Class schedule हो गई.",
+    "trainer.mutation.classUpdateFailed": "Class update नहीं हो सकी.",
+    "trainer.mutation.classUpdated": "Class update हो गई.",
+    "trainer.mutation.dietPublishFailed": "Diet plan publish नहीं हो सका.",
+    "trainer.mutation.dietPublished": "Diet plan publish हो गया.",
+    "trainer.mutation.packageCreateFailed": "Package create नहीं हो सका.",
+    "trainer.mutation.packageCreated": "Package create हो गया.",
+    "trainer.mutation.packageRemoveFailed": "Package remove नहीं हो सका.",
+    "trainer.mutation.packageRemoved": "Package remove हो गया.",
+    "trainer.mutation.packageUpdateFailed": "Package update नहीं हो सका.",
+    "trainer.mutation.packageUpdated": "Package update हो गया.",
+    "trainer.mutation.payoutSettingsFailed": "Payout settings save नहीं हो सकीं.",
+    "trainer.mutation.payoutSettingsSaved": "Payout settings save हो गईं.",
+    "trainer.mutation.profileFailed": "Profile save नहीं हो सकी.",
+    "trainer.mutation.profileSaved": "Profile save हो गई.",
+    "trainer.mutation.ptClientAddFailed": "Client add नहीं हो सका.",
+    "trainer.mutation.ptClientAdded": "PT client add हो गया.",
+    "trainer.mutation.ptRequestApproveFailed": "Request approve नहीं हो सकी.",
+    "trainer.mutation.ptRequestApproved": "PT request approve हो गई.",
+    "trainer.mutation.sessionLogFailed": "Session log नहीं हो सका.",
+    "trainer.mutation.sessionLogged": "Session log हो गया.",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "notFound.body": "लिंक पुराना हो सकता है, या इस रोल को उस वर्कफ्लो का एक्सेस नहीं है.",
     "notFound.goWorkspace": "मेरे वर्कस्पेस पर जाएं",
