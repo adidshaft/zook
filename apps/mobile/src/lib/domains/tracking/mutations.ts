@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import type { HabitCategory, HabitRecord } from "@/lib/domains/shared/types";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
+import { useT } from "@/lib/i18n";
 
 export type CreateHabitInput = {
   title: string;
@@ -17,6 +18,7 @@ export type CreateHabitInput = {
 export function useCreateHabit() {
   const queryClient = useQueryClient();
   const { token, activeOrgId } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: (input: CreateHabitInput) =>
       mobileApiFetch<{ habit: HabitRecord }>("/me/tracking/habits", {
@@ -37,15 +39,16 @@ export function useCreateHabit() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.habits() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.summary() }),
       ]);
-      notifyMutationSuccess("Habit added.");
+      notifyMutationSuccess(t("tracking.mutation.habitAdded"));
     },
-    onError: (error) => notifyMutationError(error, "Could not add habit."),
+    onError: (error) => notifyMutationError(error, t("tracking.mutation.habitAddFailed")),
   });
 }
 
 export function useLogHabit() {
   const queryClient = useQueryClient();
   const { token, activeOrgId } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: ({ habitId, completed }: { habitId: string; completed: boolean }) =>
       mobileApiFetch<{ log: { id: string } }>(`/me/tracking/habits/${habitId}/log`, {
@@ -60,6 +63,6 @@ export function useLogHabit() {
         queryClient.invalidateQueries({ queryKey: queryKeys.tracking.summary() }),
       ]);
     },
-    onError: (error) => notifyMutationError(error, "Could not update habit."),
+    onError: (error) => notifyMutationError(error, t("tracking.mutation.habitUpdateFailed")),
   });
 }

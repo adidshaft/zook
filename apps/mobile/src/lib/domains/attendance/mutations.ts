@@ -10,11 +10,13 @@ import {
   notifyMutationWarning,
 } from "@/lib/domains/shared/request";
 import type { ReceptionQueueRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 export function useApproveAttendance(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (input: string | { recordId: string; reason?: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -65,7 +67,7 @@ export function useApproveAttendance(orgId?: string) {
         invalidations.attendance.all(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Attendance approved.");
+      notifyMutationSuccess(t("attendance.mutation.approved"));
     },
     onError: (error, _variables, context) => {
       if (context) {
@@ -74,7 +76,7 @@ export function useApproveAttendance(orgId?: string) {
         if (context.previousPending) queryClient.setQueryData(queryKeyPending, context.previousPending);
         if (context.previousToday) queryClient.setQueryData(queryKeyToday, context.previousToday);
       }
-      notifyMutationError(error, "Attendance could not be approved.");
+      notifyMutationError(error, t("attendance.mutation.approveFailed"));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.pending(resolvedOrgId) });
@@ -87,6 +89,7 @@ export function useRejectAttendance(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({ recordId, reason }: { recordId: string; reason: string }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
@@ -129,7 +132,7 @@ export function useRejectAttendance(orgId?: string) {
         invalidations.attendance.all(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationWarning("Attendance rejected.");
+      notifyMutationWarning(t("attendance.mutation.rejected"));
     },
     onError: (error, _variables, context) => {
       if (context) {
@@ -138,7 +141,7 @@ export function useRejectAttendance(orgId?: string) {
         if (context.previousPending) queryClient.setQueryData(queryKeyPending, context.previousPending);
         if (context.previousToday) queryClient.setQueryData(queryKeyToday, context.previousToday);
       }
-      notifyMutationError(error, "Attendance could not be rejected.");
+      notifyMutationError(error, t("attendance.mutation.rejectFailed"));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.pending(resolvedOrgId) });
@@ -151,6 +154,7 @@ export function useManualAttendance(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (body: {
       memberUserId: string;
@@ -170,10 +174,10 @@ export function useManualAttendance(orgId?: string) {
         invalidations.owner.members(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Manual check-in recorded.");
+      notifyMutationSuccess(t("attendance.mutation.manualRecorded"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Manual check-in could not be recorded.");
+      notifyMutationError(error, t("attendance.mutation.manualFailed"));
     },
   });
 }

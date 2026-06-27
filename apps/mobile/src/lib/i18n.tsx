@@ -6,6 +6,7 @@ import { getStoredValue, setStoredValue } from "./storage";
 const LOCALE_STORAGE_KEY = "zook_mobile_locale";
 const SESSION_STORAGE_KEY = "zook_session";
 const localeListeners = new Set<(preference: LocalePreference) => void>();
+let runtimePreference: LocalePreference = "system";
 
 export type AppLocale = "en" | "hi";
 export type LocalePreference = "system" | AppLocale;
@@ -24,6 +25,8 @@ export type TranslationKey =
   | "common.done"
   | "common.or"
   | "common.saving"
+  | "common.authenticationRequired"
+  | "common.activeGymRequired"
   | "common.closeSheet"
   | "common.dismissNotification"
   | "common.tryAgain"
@@ -686,6 +689,9 @@ export type TranslationKey =
   | "tracking.workoutSet"
   | "tracking.workoutTitle"
   | "tracking.workoutTitlePlaceholder"
+  | "tracking.mutation.habitAdded"
+  | "tracking.mutation.habitAddFailed"
+  | "tracking.mutation.habitUpdateFailed"
   | "tracking.photoLogged"
   | "tracking.noPhoto"
   | "tracking.bodyComposition"
@@ -804,6 +810,17 @@ export type TranslationKey =
   | "member.classes.subtitle"
   | "member.classes.title"
   | "member.classes.waitlisted"
+  | "member.mutation.bookingCancelled"
+  | "member.mutation.bookingCancelFailed"
+  | "member.mutation.classBooked"
+  | "member.mutation.classBookingFailed"
+  | "member.mutation.classCheckoutStarted"
+  | "member.mutation.membershipCancelFailed"
+  | "member.mutation.ptRequestFailed"
+  | "member.mutation.signInBookClass"
+  | "member.mutation.signInManageBooking"
+  | "member.mutation.signInRequestPt"
+  | "member.mutation.waitlistAdded"
   | "member.you.accountCenter"
   | "member.you.appearance"
   | "member.you.backToOwnerMode"
@@ -1801,6 +1818,12 @@ export type TranslationKey =
   | "reception.decision.reason"
   | "reception.decision.reject"
   | "reception.decision.rejecting"
+  | "attendance.mutation.approved"
+  | "attendance.mutation.approveFailed"
+  | "attendance.mutation.manualRecorded"
+  | "attendance.mutation.manualFailed"
+  | "attendance.mutation.rejected"
+  | "attendance.mutation.rejectFailed"
   | "owner.referrals.allowTrainerReferrals"
   | "owner.referrals.codeExpiryDays"
   | "owner.referrals.creditInr"
@@ -2136,6 +2159,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "Done",
     "common.or": "or",
     "common.saving": "Saving...",
+    "common.authenticationRequired": "Authentication is required.",
+    "common.activeGymRequired": "An active gym is required.",
     "common.closeSheet": "Close sheet",
     "common.dismissNotification": "Dismiss notification",
     "common.tryAgain": "Try again",
@@ -2806,6 +2831,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.workoutSet": "Workout set",
     "tracking.workoutTitle": "Workout title",
     "tracking.workoutTitlePlaceholder": "e.g. Push day",
+    "tracking.mutation.habitAdded": "Habit added.",
+    "tracking.mutation.habitAddFailed": "Could not add habit.",
+    "tracking.mutation.habitUpdateFailed": "Could not update habit.",
     "tracking.photoLogged": "Photo logged",
     "tracking.noPhoto": "No photo",
     "tracking.bodyComposition": "Body composition",
@@ -2926,6 +2954,17 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classes.subtitle": "Reserve your spot in upcoming group sessions.",
     "member.classes.title": "Classes",
     "member.classes.waitlisted": "Waitlisted",
+    "member.mutation.bookingCancelled": "Booking cancelled.",
+    "member.mutation.bookingCancelFailed": "Could not cancel your booking.",
+    "member.mutation.classBooked": "Class booked.",
+    "member.mutation.classBookingFailed": "Class booking could not be completed.",
+    "member.mutation.classCheckoutStarted": "Class checkout started.",
+    "member.mutation.membershipCancelFailed": "Could not cancel membership.",
+    "member.mutation.ptRequestFailed": "Could not send your PT request.",
+    "member.mutation.signInBookClass": "Sign in again to book a class.",
+    "member.mutation.signInManageBooking": "Sign in again to manage your booking.",
+    "member.mutation.signInRequestPt": "Sign in again to request personal training.",
+    "member.mutation.waitlistAdded": "Added to waitlist. We'll prompt payment when a spot opens.",
     "member.you.accountCenter": "Zook account center",
     "member.you.appearance": "Appearance",
     "member.you.backToOwnerMode": "Back to Owner mode",
@@ -3924,6 +3963,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.decision.reason": "Decision reason",
     "reception.decision.reject": "Reject",
     "reception.decision.rejecting": "Rejecting...",
+    "attendance.mutation.approved": "Attendance approved.",
+    "attendance.mutation.approveFailed": "Attendance could not be approved.",
+    "attendance.mutation.manualRecorded": "Manual check-in recorded.",
+    "attendance.mutation.manualFailed": "Manual check-in could not be recorded.",
+    "attendance.mutation.rejected": "Attendance rejected.",
+    "attendance.mutation.rejectFailed": "Attendance could not be rejected.",
     "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
     "owner.referrals.codeExpiryDays": "Code expiry (days)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -4256,6 +4301,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "हो गया",
     "common.or": "या",
     "common.saving": "सेव हो रहा है...",
+    "common.authenticationRequired": "Authentication जरूरी है.",
+    "common.activeGymRequired": "Active gym जरूरी है.",
     "common.closeSheet": "शीट बंद करें",
     "common.dismissNotification": "नोटिफिकेशन हटाएं",
     "common.tryAgain": "फिर कोशिश करें",
@@ -4928,6 +4975,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.workoutSet": "Workout set",
     "tracking.workoutTitle": "Workout title",
     "tracking.workoutTitlePlaceholder": "जैसे Push day",
+    "tracking.mutation.habitAdded": "Habit जोड़ दी गई.",
+    "tracking.mutation.habitAddFailed": "Habit जोड़ी नहीं जा सकी.",
+    "tracking.mutation.habitUpdateFailed": "Habit update नहीं हो सकी.",
     "tracking.photoLogged": "फोटो लॉग हुई",
     "tracking.noPhoto": "फोटो नहीं",
     "tracking.bodyComposition": "बॉडी कंपोजिशन",
@@ -5048,6 +5098,17 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classes.subtitle": "Upcoming group sessions में अपनी spot reserve करें.",
     "member.classes.title": "क्लासेस",
     "member.classes.waitlisted": "वेटलिस्टेड",
+    "member.mutation.bookingCancelled": "Booking रद्द हो गई.",
+    "member.mutation.bookingCancelFailed": "आपकी booking रद्द नहीं हो सकी.",
+    "member.mutation.classBooked": "Class book हो गई.",
+    "member.mutation.classBookingFailed": "Class booking पूरी नहीं हो सकी.",
+    "member.mutation.classCheckoutStarted": "Class checkout शुरू हुआ.",
+    "member.mutation.membershipCancelFailed": "Membership cancel नहीं हो सकी.",
+    "member.mutation.ptRequestFailed": "आपका PT request भेजा नहीं जा सका.",
+    "member.mutation.signInBookClass": "Class book करने के लिए फिर से sign in करें.",
+    "member.mutation.signInManageBooking": "Booking manage करने के लिए फिर से sign in करें.",
+    "member.mutation.signInRequestPt": "Personal training request करने के लिए फिर से sign in करें.",
+    "member.mutation.waitlistAdded": "Waitlist में जोड़ दिया गया. Spot खुलने पर payment prompt करेंगे.",
     "member.you.accountCenter": "Zook अकाउंट सेंटर",
     "member.you.appearance": "दिखावट",
     "member.you.backToOwnerMode": "Owner मोड पर वापस",
@@ -6046,6 +6107,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.decision.reason": "Decision reason",
     "reception.decision.reject": "Reject",
     "reception.decision.rejecting": "Reject हो रहा है...",
+    "attendance.mutation.approved": "Attendance approve हो गई.",
+    "attendance.mutation.approveFailed": "Attendance approve नहीं हो सकी.",
+    "attendance.mutation.manualRecorded": "Manual check-in record हो गया.",
+    "attendance.mutation.manualFailed": "Manual check-in record नहीं हो सका.",
+    "attendance.mutation.rejected": "Attendance reject हो गई.",
+    "attendance.mutation.rejectFailed": "Attendance reject नहीं हो सकी.",
     "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
     "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -6384,6 +6451,10 @@ function systemLocale(): AppLocale {
   }
 }
 
+function localeForPreference(preference: LocalePreference): AppLocale {
+  return preference === "system" ? systemLocale() : preference;
+}
+
 function normalizePreference(value?: string | null): LocalePreference {
   return value === "hi" || value === "en" || value === "system" ? value : "system";
 }
@@ -6405,6 +6476,7 @@ async function patchProfileLocale(preference: LocalePreference) {
 
 export async function applySessionLocalePreference(value?: string | null) {
   const nextPreference = normalizePreference(value);
+  runtimePreference = nextPreference;
   if (nextPreference === "system") {
     return;
   }
@@ -6422,10 +6494,15 @@ function interpolate(template: string, values?: TranslationValues) {
   );
 }
 
+export function translate(key: TranslationKey, values?: TranslationValues) {
+  const locale = localeForPreference(runtimePreference);
+  return interpolate(translations[locale][key] ?? translations.en[key] ?? key, values);
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [preference, setPreference] = useState<LocalePreference>("system");
   const [hydrated, setHydrated] = useState(false);
-  const locale = preference === "system" ? systemLocale() : preference;
+  const locale = localeForPreference(preference);
 
   useEffect(() => {
     let cancelled = false;
@@ -6438,7 +6515,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     void getStoredValue(LOCALE_STORAGE_KEY)
       .then((storedPreference) => {
         if (!cancelled) {
-          setPreference(normalizePreference(storedPreference));
+          const nextPreference = normalizePreference(storedPreference);
+          runtimePreference = nextPreference;
+          setPreference(nextPreference);
         }
       })
       .finally(() => {
@@ -6453,6 +6532,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLocalePreference = useCallback(async (nextPreference: LocalePreference) => {
+    runtimePreference = nextPreference;
     setPreference(nextPreference);
     await setStoredValue(LOCALE_STORAGE_KEY, nextPreference);
     void patchProfileLocale(nextPreference);

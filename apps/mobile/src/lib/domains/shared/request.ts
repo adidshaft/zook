@@ -1,3 +1,4 @@
+import { translate } from "@/lib/i18n";
 import { messageFromError, showToast } from "@/lib/toast";
 
 export function queryString(input: Record<string, string | undefined>) {
@@ -13,10 +14,10 @@ export function queryString(input: Record<string, string | undefined>) {
 
 export function getMutationContext(token?: string, orgId?: string) {
   if (!token) {
-    throw new Error("Authentication is required.");
+    throw new Error(translate("common.authenticationRequired"));
   }
   if (!orgId) {
-    throw new Error("An active gym is required.");
+    throw new Error(translate("common.activeGymRequired"));
   }
   return { token, orgId };
 }
@@ -33,7 +34,7 @@ export function notifyMutationError(error: unknown, fallback: string) {
   showToast({
     tone: "danger",
     haptic: "error",
-    title: "Action failed",
+    title: translate("common.actionFailed"),
     message: messageFromError(error, fallback),
   });
 }

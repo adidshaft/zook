@@ -10,15 +10,17 @@ import {
   notifyMutationWarning,
 } from "@/lib/domains/shared/request";
 import type { PtSubscriptionRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 export function useEnrollInClass() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
+  const t = useT();
   return useMutation({
     mutationFn: async ({ classId }: { classId: string }) => {
       if (!activeOrgId || !token) {
-        throw new Error("Sign in again to book a class.");
+        throw new Error(t("member.mutation.signInBookClass"));
       }
       return mobileApiFetch<{
         enrollment: { id: string; status: string };
@@ -53,17 +55,17 @@ export function useEnrollInClass() {
           const separator = checkoutUrl.includes("?") ? "&" : "?";
           await Linking.openURL(`${checkoutUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`);
         }
-        notifyMutationSuccess("Class checkout started.");
+        notifyMutationSuccess(t("member.mutation.classCheckoutStarted"));
         return;
       }
       notifyMutationSuccess(
         payload.enrollment.status === "waitlisted"
-          ? "Added to waitlist. We'll prompt payment when a spot opens."
-          : "Class booked.",
+          ? t("member.mutation.waitlistAdded")
+          : t("member.mutation.classBooked"),
       );
     },
     onError: (error) => {
-      notifyMutationError(error, "Class booking could not be completed.");
+      notifyMutationError(error, t("member.mutation.classBookingFailed"));
     },
   });
 }
@@ -72,10 +74,11 @@ export function useCancelEnrollment() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
+  const t = useT();
   return useMutation({
     mutationFn: async ({ classId }: { classId: string }) => {
       if (!activeOrgId || !token) {
-        throw new Error("Sign in again to manage your booking.");
+        throw new Error(t("member.mutation.signInManageBooking"));
       }
       return mobileApiFetch<{ ok: boolean }>(`/orgs/${activeOrgId}/classes/${classId}/enroll`, {
         method: "DELETE",
@@ -91,10 +94,10 @@ export function useCancelEnrollment() {
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId) }),
       ]);
-      notifyMutationWarning("Booking cancelled.");
+      notifyMutationWarning(t("member.mutation.bookingCancelled"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Could not cancel your booking.");
+      notifyMutationError(error, t("member.mutation.bookingCancelFailed"));
     },
   });
 }
@@ -109,10 +112,11 @@ export type RequestPtSubscriptionInput = {
 export function useRequestPtSubscription() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: async (input: RequestPtSubscriptionInput) => {
       if (!activeOrgId || !token) {
-        throw new Error("Sign in again to request personal training.");
+        throw new Error(t("member.mutation.signInRequestPt"));
       }
       return mobileApiFetch<{ subscription: PtSubscriptionRecord }>(
         "/me/pt-subscriptions/request",
@@ -128,10 +132,10 @@ export function useRequestPtSubscription() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.member.coaching(activeOrgId),
       });
-      notifyMutationSuccess("Request sent — a trainer will confirm.");
+      notifyMutationSuccess(t("member.coaching.requestSent"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Could not send your PT request.");
+      notifyMutationError(error, t("member.mutation.ptRequestFailed"));
     },
   });
 }
@@ -139,6 +143,7 @@ export function useRequestPtSubscription() {
 export function useCancelMembership() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: ({ subscriptionId }: { subscriptionId: string }) =>
       mobileApiFetch<{ subscription: Record<string, unknown> }>(
@@ -150,10 +155,10 @@ export function useCancelMembership() {
         queryClient.invalidateQueries({ queryKey: queryKeys.member.membership() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.member.activeMembership() }),
       ]);
-      notifyMutationWarning("Membership cancelled.");
+      notifyMutationWarning(t("member.membership.cancelled"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Could not cancel membership.");
+      notifyMutationError(error, t("member.mutation.membershipCancelFailed"));
     },
   });
 }
