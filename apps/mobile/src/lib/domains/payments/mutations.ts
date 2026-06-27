@@ -10,6 +10,7 @@ import {
   notifyMutationSuccess,
 } from "@/lib/domains/shared/request";
 import type { InvoiceRecord, OrgPaymentRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 type ManualPaymentMode = Extract<
   PaymentMode,
@@ -41,6 +42,7 @@ export function useRefundPayment(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: ({
       paymentId,
@@ -67,10 +69,10 @@ export function useRefundPayment(orgId?: string) {
         invalidations.payments.all(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Refund issued.");
+      notifyMutationSuccess(t("payments.mutation.refundIssued"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Refund could not be issued.");
+      notifyMutationError(error, t("payments.mutation.refundFailed"));
     },
   });
 }
@@ -80,6 +82,7 @@ export function useRecordManualPayment(orgId?: string) {
   const { activeOrgId, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (body: {
       memberUserId: string;
@@ -111,10 +114,10 @@ export function useRecordManualPayment(orgId?: string) {
         invalidations.owner.members(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Payment recorded.");
+      notifyMutationSuccess(t("payments.mutation.paymentRecorded"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Payment could not be recorded.");
+      notifyMutationError(error, t("payments.mutation.paymentRecordFailed"));
     },
   });
 }
@@ -123,10 +126,11 @@ export function useCompleteMockPayment() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
+  const t = useT();
   return useMutation({
     mutationFn: (input: string | { sessionId: string; branchId?: string }) => {
       if (!token) {
-        throw new Error("Authentication is required.");
+        throw new Error(t("common.authenticationRequired"));
       }
       const sessionId = typeof input === "string" ? input : input.sessionId;
       const branchId =
@@ -147,10 +151,10 @@ export function useCompleteMockPayment() {
         invalidations.shop.all(queryClient),
         invalidations.owner.all(queryClient),
       ]);
-      notifyMutationSuccess("Test payment completed.");
+      notifyMutationSuccess(t("payments.mutation.testCompleted"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Test payment could not be completed.");
+      notifyMutationError(error, t("payments.mutation.testFailed"));
     },
   });
 }

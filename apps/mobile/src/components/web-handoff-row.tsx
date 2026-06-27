@@ -12,12 +12,13 @@ import {
 } from "@/components/expo-safe-bottom-sheet";
 import { ListRow, PrimaryButton, SecondaryButton } from "@/components/primitives";
 import { toWebUrl } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 export function WebHandoffRow({
   path,
-  subtitle = "zookfit.in dashboard",
+  subtitle,
   title,
 }: {
   path: string;
@@ -25,9 +26,11 @@ export function WebHandoffRow({
   title: string;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
   const url = useMemo(() => toWebUrl(path), [path]);
+  const resolvedSubtitle = subtitle ?? t("webHandoff.subtitleDefault");
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -42,7 +45,7 @@ export function WebHandoffRow({
 
   async function copyLink() {
     await Clipboard.setStringAsync(url);
-    showToast({ tone: "success", haptic: "success", message: "Link copied." });
+    showToast({ tone: "success", haptic: "success", message: t("webHandoff.linkCopied") });
   }
 
   async function openLink() {
@@ -53,12 +56,12 @@ export function WebHandoffRow({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${title}, manage on web`}
+        accessibilityLabel={t("webHandoff.manageOnWeb", { title })}
         onPress={() => sheetRef.current?.present()}
       >
         <ListRow
           title={title}
-          subtitle={subtitle}
+          subtitle={resolvedSubtitle}
           icon="globe-outline"
           trailing={<Ionicons name="chevron-up-outline" size={18} color={palette.text.tertiary} />}
         />
@@ -81,10 +84,10 @@ export function WebHandoffRow({
           </View>
           <View style={styles.actions}>
             <SecondaryButton icon="copy-outline" onPress={() => void copyLink()} style={styles.action}>
-              Copy link
+              {t("webHandoff.copyLink")}
             </SecondaryButton>
             <PrimaryButton icon="open-outline" onPress={() => void openLink()} style={styles.action}>
-              Open
+              {t("webHandoff.open")}
             </PrimaryButton>
           </View>
         </BottomSheetView>

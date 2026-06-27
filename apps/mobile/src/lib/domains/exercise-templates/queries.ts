@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
+import { useT } from "@/lib/i18n";
 
 export type ExerciseTemplateRecord = {
   id: string;
@@ -53,9 +54,10 @@ export function useOrgExerciseTemplates() {
 export function useSaveExerciseTemplate() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: async (input: { templateId?: string; body: ExerciseTemplateInput }) => {
-      if (!activeOrgId || !token) throw new Error("Sign in again to save templates.");
+      if (!activeOrgId || !token) throw new Error(t("exerciseTemplates.mutation.signInSave"));
       return mobileApiFetch<{ template: ExerciseTemplateRecord }>(
         `/orgs/${activeOrgId}/exercise-templates${input.templateId ? `/${input.templateId}` : ""}`,
         {
@@ -68,18 +70,19 @@ export function useSaveExerciseTemplate() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "exercise-templates"] });
-      notifyMutationSuccess("Exercise template saved.");
+      notifyMutationSuccess(t("exerciseTemplates.mutation.saveSuccess"));
     },
-    onError: (error) => notifyMutationError(error, "Could not save exercise template."),
+    onError: (error) => notifyMutationError(error, t("exerciseTemplates.mutation.saveFailed")),
   });
 }
 
 export function useDeleteExerciseTemplate() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: async (templateId: string) => {
-      if (!activeOrgId || !token) throw new Error("Sign in again to remove templates.");
+      if (!activeOrgId || !token) throw new Error(t("exerciseTemplates.mutation.signInRemove"));
       return mobileApiFetch<{ template: ExerciseTemplateRecord }>(
         `/orgs/${activeOrgId}/exercise-templates/${templateId}`,
         { method: "DELETE", token, orgId: activeOrgId },
@@ -87,8 +90,8 @@ export function useDeleteExerciseTemplate() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "exercise-templates"] });
-      notifyMutationSuccess("Exercise template removed.");
+      notifyMutationSuccess(t("exerciseTemplates.mutation.removeSuccess"));
     },
-    onError: (error) => notifyMutationError(error, "Could not remove exercise template."),
+    onError: (error) => notifyMutationError(error, t("exerciseTemplates.mutation.removeFailed")),
   });
 }

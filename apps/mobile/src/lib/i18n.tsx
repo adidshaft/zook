@@ -30,6 +30,35 @@ export type TranslationKey =
   | "common.closeSheet"
   | "common.dismissNotification"
   | "common.tryAgain"
+  | "webHandoff.copyLink"
+  | "webHandoff.linkCopied"
+  | "webHandoff.manageOnWeb"
+  | "webHandoff.open"
+  | "webHandoff.subtitleDefault"
+  | "payments.mutation.paymentRecordFailed"
+  | "payments.mutation.paymentRecorded"
+  | "payments.mutation.refundFailed"
+  | "payments.mutation.refundIssued"
+  | "payments.mutation.testCompleted"
+  | "payments.mutation.testFailed"
+  | "shop.mutation.orderCreateFailed"
+  | "shop.mutation.orderCreated"
+  | "shop.mutation.pickupFulfillFailed"
+  | "shop.mutation.pickupFulfilled"
+  | "gym.mutation.reviewFailed"
+  | "gym.mutation.reviewThanks"
+  | "gym.mutation.signInReview"
+  | "plans.mutation.progressFailed"
+  | "plans.mutation.progressSaved"
+  | "rewards.mutation.signInWithdrawal"
+  | "rewards.mutation.withdrawalFailed"
+  | "rewards.mutation.withdrawalRequested"
+  | "exerciseTemplates.mutation.removeFailed"
+  | "exerciseTemplates.mutation.removeSuccess"
+  | "exerciseTemplates.mutation.saveFailed"
+  | "exerciseTemplates.mutation.saveSuccess"
+  | "exerciseTemplates.mutation.signInRemove"
+  | "exerciseTemplates.mutation.signInSave"
   | "network.offline"
   | "notFound.body"
   | "notFound.goWorkspace"
@@ -2221,6 +2250,35 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.closeSheet": "Close sheet",
     "common.dismissNotification": "Dismiss notification",
     "common.tryAgain": "Try again",
+    "webHandoff.copyLink": "Copy link",
+    "webHandoff.linkCopied": "Link copied.",
+    "webHandoff.manageOnWeb": "{{title}}, manage on web",
+    "webHandoff.open": "Open",
+    "webHandoff.subtitleDefault": "zookfit.in dashboard",
+    "payments.mutation.paymentRecordFailed": "Payment could not be recorded.",
+    "payments.mutation.paymentRecorded": "Payment recorded.",
+    "payments.mutation.refundFailed": "Refund could not be issued.",
+    "payments.mutation.refundIssued": "Refund issued.",
+    "payments.mutation.testCompleted": "Test payment completed.",
+    "payments.mutation.testFailed": "Test payment could not be completed.",
+    "shop.mutation.orderCreateFailed": "Order could not be created.",
+    "shop.mutation.orderCreated": "Order created.",
+    "shop.mutation.pickupFulfillFailed": "Pickup order could not be fulfilled.",
+    "shop.mutation.pickupFulfilled": "Pickup order fulfilled.",
+    "gym.mutation.reviewFailed": "Could not post your review.",
+    "gym.mutation.reviewThanks": "Thanks for your review!",
+    "gym.mutation.signInReview": "Sign in again to post a review.",
+    "plans.mutation.progressFailed": "Plan progress could not be saved.",
+    "plans.mutation.progressSaved": "Plan progress saved.",
+    "rewards.mutation.signInWithdrawal": "Sign in again to request a withdrawal.",
+    "rewards.mutation.withdrawalFailed": "Could not request a withdrawal.",
+    "rewards.mutation.withdrawalRequested": "Withdrawal requested. We'll review and pay it out shortly.",
+    "exerciseTemplates.mutation.removeFailed": "Could not remove exercise template.",
+    "exerciseTemplates.mutation.removeSuccess": "Exercise template removed.",
+    "exerciseTemplates.mutation.saveFailed": "Could not save exercise template.",
+    "exerciseTemplates.mutation.saveSuccess": "Exercise template saved.",
+    "exerciseTemplates.mutation.signInRemove": "Sign in again to remove templates.",
+    "exerciseTemplates.mutation.signInSave": "Sign in again to save templates.",
     "network.offline": "Working offline. Data may be stale.",
     "notFound.body": "The link may be old, or this role may not have access to that workflow.",
     "notFound.goWorkspace": "Go to my workspace",
@@ -4420,6 +4478,35 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.closeSheet": "शीट बंद करें",
     "common.dismissNotification": "नोटिफिकेशन हटाएं",
     "common.tryAgain": "फिर कोशिश करें",
+    "webHandoff.copyLink": "Link copy करें",
+    "webHandoff.linkCopied": "Link copy हो गया.",
+    "webHandoff.manageOnWeb": "{{title}}, web पर manage करें",
+    "webHandoff.open": "Open",
+    "webHandoff.subtitleDefault": "zookfit.in dashboard",
+    "payments.mutation.paymentRecordFailed": "Payment record नहीं हो सका.",
+    "payments.mutation.paymentRecorded": "Payment record हो गया.",
+    "payments.mutation.refundFailed": "Refund issue नहीं हो सका.",
+    "payments.mutation.refundIssued": "Refund issue हो गया.",
+    "payments.mutation.testCompleted": "Test payment complete हो गया.",
+    "payments.mutation.testFailed": "Test payment complete नहीं हो सका.",
+    "shop.mutation.orderCreateFailed": "Order create नहीं हो सका.",
+    "shop.mutation.orderCreated": "Order create हो गया.",
+    "shop.mutation.pickupFulfillFailed": "Pickup order fulfill नहीं हो सका.",
+    "shop.mutation.pickupFulfilled": "Pickup order fulfill हो गया.",
+    "gym.mutation.reviewFailed": "आपका review post नहीं हो सका.",
+    "gym.mutation.reviewThanks": "आपके review के लिए धन्यवाद!",
+    "gym.mutation.signInReview": "Review post करने के लिए फिर से sign in करें.",
+    "plans.mutation.progressFailed": "Plan progress save नहीं हो सका.",
+    "plans.mutation.progressSaved": "Plan progress save हो गया.",
+    "rewards.mutation.signInWithdrawal": "Withdrawal request करने के लिए फिर से sign in करें.",
+    "rewards.mutation.withdrawalFailed": "Withdrawal request नहीं हो सकी.",
+    "rewards.mutation.withdrawalRequested": "Withdrawal request हो गई. हम review करके payout करेंगे.",
+    "exerciseTemplates.mutation.removeFailed": "Exercise template remove नहीं हो सका.",
+    "exerciseTemplates.mutation.removeSuccess": "Exercise template remove हो गया.",
+    "exerciseTemplates.mutation.saveFailed": "Exercise template save नहीं हो सका.",
+    "exerciseTemplates.mutation.saveSuccess": "Exercise template save हो गया.",
+    "exerciseTemplates.mutation.signInRemove": "Templates remove करने के लिए फिर से sign in करें.",
+    "exerciseTemplates.mutation.signInSave": "Templates save करने के लिए फिर से sign in करें.",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "notFound.body": "लिंक पुराना हो सकता है, या इस रोल को उस वर्कफ्लो का एक्सेस नहीं है.",
     "notFound.goWorkspace": "मेरे वर्कस्पेस पर जाएं",

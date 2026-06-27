@@ -10,12 +10,14 @@ import {
   notifyMutationSuccess,
 } from "@/lib/domains/shared/request";
 import type { ShopOrderRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 export function useFulfillShopOrder(orgId?: string) {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (
       input:
@@ -67,7 +69,7 @@ export function useFulfillShopOrder(orgId?: string) {
         invalidations.shop.catalog(queryClient, resolvedOrgId),
         invalidations.owner.dashboard(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Pickup order fulfilled.");
+      notifyMutationSuccess(t("shop.mutation.pickupFulfilled"));
     },
     onError: (error, _variables, context) => {
       if (context?.previousOrders) {
@@ -76,7 +78,7 @@ export function useFulfillShopOrder(orgId?: string) {
           context.previousOrders,
         );
       }
-      notifyMutationError(error, "Pickup order could not be fulfilled.");
+      notifyMutationError(error, t("shop.mutation.pickupFulfillFailed"));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({
@@ -91,6 +93,7 @@ export function useCreateShopOrder(orgId?: string) {
   const { activeOrgId, token } = useAuth();
   const { selectedBranchId } = useBranchSelection();
   const resolvedOrgId = orgId ?? activeOrgId;
+  const t = useT();
   return useMutation({
     mutationFn: (input: {
       items: Array<{ productId: string; quantity: number }>;
@@ -117,10 +120,10 @@ export function useCreateShopOrder(orgId?: string) {
         invalidations.shop.catalog(queryClient, resolvedOrgId),
         invalidations.shop.activeOrders(queryClient, resolvedOrgId),
       ]);
-      notifyMutationSuccess("Order created.");
+      notifyMutationSuccess(t("shop.mutation.orderCreated"));
     },
     onError: (error) => {
-      notifyMutationError(error, "Order could not be created.");
+      notifyMutationError(error, t("shop.mutation.orderCreateFailed"));
     },
   });
 }

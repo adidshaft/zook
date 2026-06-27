@@ -5,10 +5,12 @@ import { invalidations } from "@/lib/domains/shared/invalidate";
 import { queryKeys } from "@/lib/domains/shared/keys";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
 import type { MemberHomeData, PlanProgressRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 
 export function useCompletePlanAssignment() {
   const queryClient = useQueryClient();
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: (input: {
       assignmentId: string;
@@ -25,7 +27,7 @@ export function useCompletePlanAssignment() {
       progressJson?: Record<string, unknown>;
     }) => {
       if (!token) {
-        throw new Error("Authentication is required.");
+        throw new Error(t("common.authenticationRequired"));
       }
       return mobileApiFetch<{ progress: PlanProgressRecord; completedExercises: string[] }>(
         `/me/plans/${input.assignmentId}/complete`,
@@ -64,13 +66,13 @@ export function useCompletePlanAssignment() {
         invalidations.plans.exercises(queryClient, input.assignmentId),
         invalidations.member.home(queryClient),
       ]);
-      notifyMutationSuccess("Plan progress saved.");
+      notifyMutationSuccess(t("plans.mutation.progressSaved"));
     },
     onError: (error, _variables, context) => {
       if (context?.previousHome) {
         queryClient.setQueryData(queryKeys.member.home(activeOrgId ?? null), context.previousHome);
       }
-      notifyMutationError(error, "Plan progress could not be saved.");
+      notifyMutationError(error, t("plans.mutation.progressFailed"));
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.member.home(activeOrgId ?? null) });

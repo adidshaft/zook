@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/domains/shared/request";
+import { useT } from "@/lib/i18n";
 
 export type RewardStatus =
   | "PENDING"
@@ -70,10 +71,11 @@ export function useGymReferral() {
 export function useRequestWithdrawal() {
   const queryClient = useQueryClient();
   const { token } = useAuth();
+  const t = useT();
   return useMutation({
     mutationFn: (amountPaise: number) => {
       if (!token) {
-        throw new Error("Sign in again to request a withdrawal.");
+        throw new Error(t("rewards.mutation.signInWithdrawal"));
       }
       return mobileApiFetch<{ withdrawal: { id: string; status: string } }>(
         "/me/rewards/withdrawals",
@@ -82,8 +84,8 @@ export function useRequestWithdrawal() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["me", "rewards", "wallet"] });
-      notifyMutationSuccess("Withdrawal requested. We'll review and pay it out shortly.");
+      notifyMutationSuccess(t("rewards.mutation.withdrawalRequested"));
     },
-    onError: (error) => notifyMutationError(error, "Could not request a withdrawal."),
+    onError: (error) => notifyMutationError(error, t("rewards.mutation.withdrawalFailed")),
   });
 }
