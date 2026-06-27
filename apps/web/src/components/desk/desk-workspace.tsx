@@ -3,6 +3,7 @@
 import { Pill } from "@/components/glass-card";
 import { useDeskWorkspace } from "@/lib/use-desk-workspace";
 import { DeskMetrics } from "./desk-metrics";
+import { DeskClassesPanel } from "./DeskClassesPanel";
 import { DeskMessageDraftForm, DeskPickupDraftForm } from "./desk-status-forms";
 import { MemberTab } from "./member-tab";
 import { PaymentTab } from "./payment-tab";
@@ -114,6 +115,10 @@ export function DeskWorkspace({
           onCheckOut={(member) => void actions.checkOutMember(member)}
           onSendMessage={(member) => void actions.sendMemberMessage(member)}
         />
+      ) : null}
+
+      {activeTab === "classes" ? (
+        <DeskClassesPanel orgId={orgId} branch={branch} members={state.members} />
       ) : null}
 
       {activeTab === "payment" ? (

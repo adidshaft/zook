@@ -86,7 +86,7 @@ export type ShopOrder = {
   }>;
 };
 
-export type TabKey = "queue" | "member" | "payment" | "pickup";
+export type TabKey = "queue" | "member" | "classes" | "payment" | "pickup";
 export type PaymentPurpose = "MEMBERSHIP" | "SHOP_ORDER" | "OTHER";
 
 export type PaymentFormState = {

@@ -49,6 +49,10 @@ const classAttendanceSchema = z.object({
   status: z.enum(["PENDING", "ATTENDED", "NO_SHOW"]),
 });
 
+const classEnrollmentSchema = z.object({
+  memberUserId: z.string().optional(),
+});
+
 const CLASS_REFUND_CUTOFF_HOURS = 6;
 
 function classSettings(settings: unknown) {
@@ -339,8 +343,13 @@ export async function handleClasses(request: NextRequest, path: string[]) {
     const orgId = path[1]!;
     const classId = path[3]!;
     const ctx = await getRequestContext(request, { orgId });
-    const userId = requireAuth(ctx);
+    const actorUserId = requireAuth(ctx);
     assertActiveContextOrg(ctx, orgId);
+    const body = classEnrollmentSchema.parse(await readJson(request));
+    const userId = body.memberUserId ?? actorUserId;
+    if (body.memberUserId && body.memberUserId !== actorUserId) {
+      requireOrgAnyPermission(ctx, orgId, ["ATTENDANCE_APPROVE"]);
+    }
     await assertRateLimit(
       "classEnrollmentByUser",
       userId,

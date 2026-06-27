@@ -4,6 +4,7 @@ import type { Permission } from "@zook/core";
 import {
   ClipboardCheck,
   CreditCard,
+  CalendarDays,
   LayoutDashboard,
   QrCode,
   Search,
@@ -39,6 +40,12 @@ const tabs: DeskChromeTab[] = [
     label: "Payments",
     icon: <CreditCard size={18} />,
     permissions: ["PAYMENTS_RECORD_OFFLINE", "PAYMENTS_VIEW"],
+  },
+  {
+    href: "/desk/classes",
+    label: "Classes",
+    icon: <CalendarDays size={18} />,
+    permissions: ["ATTENDANCE_APPROVE"],
   },
   {
     href: "/desk/orders",
@@ -79,7 +86,7 @@ export function DeskChrome({
   orgId: string;
   orgName: string;
   branchId: string | null;
-  activeTab: "queue" | "member" | "payment" | "pickup";
+  activeTab: "queue" | "member" | "classes" | "payment" | "pickup";
   locale?: string | null;
   permissions: Permission[];
   canOpenManagement?: boolean;
@@ -124,6 +131,7 @@ export function DeskChrome({
             const active =
               (tab.href === "/desk" && activeTab === "queue") ||
               (tab.href === "/desk/members" && activeTab === "member") ||
+              (tab.href === "/desk/classes" && activeTab === "classes") ||
               (tab.href === "/desk/payments" && activeTab === "payment") ||
               (tab.href === "/desk/orders" && activeTab === "pickup");
             return (
