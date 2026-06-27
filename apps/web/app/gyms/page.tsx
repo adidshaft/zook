@@ -107,9 +107,63 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   const pageStart = (page - 1) * pageSize;
   const visibleGyms = gyms.slice(pageStart, pageStart + pageSize);
   const totalPages = Math.max(1, Math.ceil(gyms.length / pageSize));
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://zookfit.in";
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: visibleGyms.map((gym, index) => ({
+      "@type": "ListItem",
+      position: pageStart + index + 1,
+      item: {
+        "@type": "LocalBusiness",
+        name: gym.name,
+        url: `${baseUrl}/g/${gym.username}`,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: gym.city,
+          addressRegion: gym.state,
+          addressCountry: "IN",
+        },
+      },
+    })),
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Gyms",
+        item: `${baseUrl}/gyms`,
+      },
+      ...(city
+        ? [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: city,
+              item: `${baseUrl}/gyms?city=${encodeURIComponent(city)}`,
+            },
+          ]
+        : []),
+    ],
+  };
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(itemListJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd),
+        }}
+      />
       <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:px-6">
         <PublicNav
           locale={locale}

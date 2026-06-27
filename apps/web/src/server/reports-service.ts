@@ -562,6 +562,27 @@ export class ReportsService {
     });
   }
 
+  async trainerClientTrainerIds(orgId: string) {
+    const assignments = await prisma.trainerAssignment.findMany({
+      where: { orgId, active: true },
+      select: { trainerUserId: true },
+      distinct: ["trainerUserId"],
+      orderBy: { trainerUserId: "asc" },
+    });
+    const trainers = await prisma.user.findMany({
+      where: { id: { in: assignments.map((assignment) => assignment.trainerUserId) } },
+      select: { id: true, name: true, email: true },
+    });
+    const trainerById = new Map(trainers.map((trainer) => [trainer.id, trainer]));
+    return assignments.map((assignment) => ({
+      trainerUserId: assignment.trainerUserId,
+      trainerName:
+        trainerById.get(assignment.trainerUserId)?.name ??
+        trainerById.get(assignment.trainerUserId)?.email ??
+        "",
+    }));
+  }
+
   async auditLogReport(orgId: string, filters: ReportFilters) {
     const createdAt = between(filters.from, filters.to);
     const logs = await prisma.auditLog.findMany({

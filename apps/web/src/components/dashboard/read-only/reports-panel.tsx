@@ -103,6 +103,8 @@ export function ReportsPanel({
     { fileName: "expiring-members.csv", label: "Expiry" },
     { fileName: "invoices.csv", label: "Invoices" },
     { fileName: "referrals.csv", label: "Referrals" },
+    { fileName: "shop.csv", label: "Shop orders" },
+    { fileName: "trainer-client.csv", label: "Trainer clients" },
     { fileName: "ai-usage.csv", label: "AI usage" },
   ];
   const buildExportHref = (fileName: string) => {

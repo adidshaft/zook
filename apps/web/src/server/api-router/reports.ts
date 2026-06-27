@@ -9,6 +9,7 @@ import {
   canExportOrgReport,
   parseReportFilters,
   renderCsv,
+  type ReportFilters,
   type OrgReportType,
 } from "../reports-service";
 import {
@@ -19,6 +20,23 @@ import {
 } from "./core";
 
 const reportsService = new ReportsService();
+
+async function trainerClientRows(orgId: string, filters: ReportFilters) {
+  if (filters.trainerId) {
+    return reportsService.trainerClientReport(orgId, filters.trainerId, filters);
+  }
+  const trainers = await reportsService.trainerClientTrainerIds(orgId);
+  const chunks = await Promise.all(
+    trainers.map(async (trainer) =>
+      (await reportsService.trainerClientReport(orgId, trainer.trainerUserId, filters)).map((row) => ({
+        trainerId: trainer.trainerUserId,
+        trainerName: trainer.trainerName,
+        ...row,
+      })),
+    ),
+  );
+  return chunks.flat();
+}
 
 function csvHeaders(fileName: string) {
   return {
@@ -38,6 +56,7 @@ const reportRoutes: Record<string, OrgReportType> = {
   "invoices.csv": "invoices",
   "referrals.csv": "referrals",
   "shop.csv": "shop",
+  "trainer-client.csv": "trainer-client",
   "ai-usage.csv": "ai-usage",
 };
 
@@ -102,7 +121,9 @@ export async function handleReports(request: NextRequest, path: string[]) {
                         ? await reportsService.referralReport(orgId, scopedFilters)
                         : report === "shop"
                           ? await reportsService.shopReport(orgId, scopedFilters)
-                          : await reportsService.aiUsageReport(orgId, scopedFilters);
+                          : report === "trainer-client"
+                            ? await trainerClientRows(orgId, scopedFilters)
+                            : await reportsService.aiUsageReport(orgId, scopedFilters);
 
     await writeAuditLog({
       request,

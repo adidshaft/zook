@@ -117,6 +117,14 @@ export function SettingsSection({
       badge: "Templates",
     },
     {
+      title: "Push devices",
+      description: "Review registered push devices, revoke stale tokens, and prepare browser push registration.",
+      href: "/dashboard/settings/push",
+      icon: Bell,
+      permission: "NOTIFICATION_MANAGE_TEMPLATES",
+      badge: copy.configured,
+    },
+    {
       title: "Activity and audit trail",
       description: "Review sensitive changes, actor history, and assistant drafts needing review.",
       href: "/dashboard/audit",
