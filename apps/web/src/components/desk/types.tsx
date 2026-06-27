@@ -111,3 +111,32 @@ export type ReceiptDetails = {
   reference?: string | undefined;
   recordedAt: string;
 };
+
+export type DeskPaymentRow = {
+  id: string;
+  orgId?: string | null;
+  purpose: string;
+  amountPaise: number;
+  status: string;
+  mode: string;
+  provider?: string | null;
+  providerRef?: string | null;
+  receiptNumber?: string | null;
+  refundedAmountPaise?: number | null;
+  refunds?: Array<{
+    id: string;
+    amountPaise: number;
+    status: string;
+    reason?: string | null;
+    createdAt: string | Date;
+    processedAt?: string | Date | null;
+  }>;
+  recordedAt?: string | Date | null;
+  createdAt: string | Date;
+  user?: {
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+  } | null;
+};

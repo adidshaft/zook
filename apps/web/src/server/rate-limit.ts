@@ -65,6 +65,7 @@ export const defaultRateLimitRules = {
   branchCreationBurstByOwner: { limit: 1, windowMs: 60 * 1000 },
   paymentRefundByActorOrg: { limit: 6, windowMs: 60 * 60 * 1000 },
   subscriptionChangeByActor: { limit: 12, windowMs: 60 * 60 * 1000 },
+  ptSubscriptionRequestByMember: { limit: 12, windowMs: 60 * 60 * 1000 },
   couponValidateByIp: { limit: 20, windowMs: 10 * 60 * 1000 },
   notificationOrgAllDaily: { limit: 50, windowMs: 24 * 60 * 60 * 1000 },
   notificationOrgOperationalDaily: { limit: 5, windowMs: 24 * 60 * 60 * 1000 },

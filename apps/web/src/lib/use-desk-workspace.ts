@@ -11,6 +11,7 @@ import { withBranch } from "@/components/desk/panel-config";
 import type {
   AttendanceQueueRecord,
   BranchSummary,
+  DeskPaymentRow,
   MemberRow,
   PaymentFormState,
   PaymentPurpose,
@@ -58,6 +59,10 @@ export function useDeskWorkspace({
     null,
   );
   const [pickupDraft, setPickupDraft] = useState<{ order: ShopOrder; code: string } | null>(null);
+  const [refundDraft, setRefundDraft] = useState<{ payment: DeskPaymentRow; reason: string } | null>(
+    null,
+  );
+  const [refundError, setRefundError] = useState("");
 
   const pendingState = useOperationalResource<{ records: AttendanceQueueRecord[] }>({
     path: withBranch(`/api/orgs/${orgId}/attendance/live`, branch),
@@ -78,6 +83,10 @@ export function useDeskWorkspace({
     summary?: { fulfilledToday: number };
   }>({
     path: withBranch(`/api/orgs/${orgId}/shop/orders/active`, branch),
+    refreshMs: 30_000,
+  });
+  const recentPaymentsState = useOperationalResource<{ payments: DeskPaymentRow[] }>({
+    path: withBranch(`/api/orgs/${orgId}/payments/recent`, branch),
     refreshMs: 30_000,
   });
 
@@ -118,6 +127,7 @@ export function useDeskWorkspace({
       (order.status === "PENDING_PAYMENT" && !order.paymentId),
   );
   const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
+  const recentPayments = recentPaymentsState.data?.payments ?? [];
 
   const filteredMembers = useMemo(() => {
     const query = memberQuery.trim().toLowerCase();
@@ -386,6 +396,7 @@ export function useDeskWorkspace({
             : `/api/orgs/${orgId}/manual-payments`;
       await webApiFetch(path, { method: "POST", body });
       if (paymentForm.purpose === "SHOP_ORDER") ordersState.reload();
+      void recentPaymentsState.reload();
       setToast(
         `${paymentForm.purpose === "SHOP_ORDER" ? copy.shopPaymentRecorded : copy.paymentRecorded} ${formatInr(amountPaise)}.`,
       );
@@ -472,6 +483,45 @@ export function useDeskWorkspace({
     }
   }
 
+  function startRefund(payment: DeskPaymentRow) {
+    setRefundError("");
+    setRefundDraft({ payment, reason: "Refund requested at desk" });
+  }
+
+  async function submitRefund() {
+    if (!refundDraft) return;
+    const { payment, reason } = refundDraft;
+    if (!payment.orgId) {
+      setRefundError("This payment is missing its gym link.");
+      return;
+    }
+    if (!reason.trim()) {
+      setRefundError("Add a reason for the refund.");
+      return;
+    }
+    try {
+      setBusyId(`refund:${payment.id}`);
+      setRefundError("");
+      await webApiFetch(`/api/orgs/${payment.orgId}/payments/${payment.id}/refund`, {
+        method: "POST",
+        body: { reason: reason.trim() },
+        feedback: { success: "Refund submitted." },
+      });
+      setRefundDraft(null);
+      void recentPaymentsState.reload();
+      setToast("Refund submitted.");
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to refund payment.";
+      setRefundError(
+        message.toLowerCase().includes("provider reference")
+          ? "This payment cannot be refunded automatically because it was not collected through Razorpay."
+          : message,
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
   return {
     copy,
     state: {
@@ -487,12 +537,17 @@ export function useDeskWorkspace({
       lastReceipt,
       messageDraft,
       pickupDraft,
+      refundDraft,
+      refundError,
       pendingRecords,
       todayRecords,
       members,
       activePlans,
       payAtDeskOrders,
       pickupOrders,
+      recentPayments,
+      recentPaymentsLoading: recentPaymentsState.loading,
+      recentPaymentsError: recentPaymentsState.error,
       fulfilledToday: ordersState.data?.summary?.fulfilledToday ?? 0,
     },
     actions: {
@@ -500,6 +555,7 @@ export function useDeskWorkspace({
       setOrderSort,
       setMessageDraft,
       setPickupDraft,
+      setRefundDraft,
       selectMember,
       updatePaymentForm,
       handlePurposeChange,
@@ -519,6 +575,9 @@ export function useDeskWorkspace({
       verifyPickupCode,
       submitPickupCode,
       fulfillOrder,
+      startRefund,
+      submitRefund,
+      reloadRecentPayments: () => void recentPaymentsState.reload(),
     },
   };
 }

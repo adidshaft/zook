@@ -395,6 +395,56 @@ function demoCreatePtPlan(trainerUserId: string, body: Record<string, unknown>) 
   return { plan };
 }
 
+function demoUpdatePtPlan(trainerUserId: string, planId: string, body: Record<string, unknown>) {
+  const toNumber = (value: unknown, fallback: number | null) => {
+    if (value === null) return null;
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const index = demoPtPlans.findIndex(
+    (plan) => plan.id === planId && plan.trainerUserId === trainerUserId,
+  );
+  if (index < 0) {
+    throw new Error("PT package not found.");
+  }
+  const existing = demoPtPlans[index]!;
+  const updated: DemoPtPlan = {
+    ...existing,
+    name: body.name !== undefined ? String(body.name).trim() || existing.name : existing.name,
+    description:
+      body.description !== undefined
+        ? body.description === null
+          ? null
+          : String(body.description)
+        : existing.description,
+    durationDays:
+      body.durationDays !== undefined
+        ? toNumber(body.durationDays, existing.durationDays)
+        : existing.durationDays,
+    sessionCount:
+      body.sessionCount !== undefined
+        ? toNumber(body.sessionCount, existing.sessionCount)
+        : existing.sessionCount,
+    pricePaise:
+      body.pricePaise !== undefined
+        ? toNumber(body.pricePaise, existing.pricePaise) ?? existing.pricePaise
+        : existing.pricePaise,
+  };
+  demoPtPlans[index] = updated;
+  return { plan: updated };
+}
+
+function demoDeletePtPlan(trainerUserId: string, planId: string) {
+  const plan = demoPtPlans.find(
+    (entry) => entry.id === planId && entry.trainerUserId === trainerUserId,
+  );
+  if (!plan) {
+    throw new Error("PT package not found.");
+  }
+  plan.active = false;
+  return { ok: true };
+}
+
 type DemoPayout = {
   id: string;
   trainerId: string;
@@ -442,7 +492,7 @@ const demoOrgPayouts: DemoPayout[] = [
   },
 ];
 
-function demoRecordPtSubscription(body: Record<string, unknown>) {
+function demoRecordPtSubscription(body: Record<string, unknown>, status: string = "ACTIVE") {
   const memberUserId = String(body.memberUserId ?? "");
   const member = zookDemoFixtures.users.find((user) => user.id === memberUserId);
   const planId = body.ptPlanId ? String(body.ptPlanId) : null;
@@ -456,10 +506,10 @@ function demoRecordPtSubscription(body: Record<string, unknown>) {
     orgId: activeOrg()?.id ?? "org-demo",
     memberUserId,
     memberName: member?.name ?? "New client",
-    trainerUserId: String(body.trainerUserId ?? "user-rhea"),
+    trainerUserId: String(body.trainerUserId ?? plan?.trainerUserId ?? "user-rhea"),
     ptPlanId: planId,
     planName: plan?.name ?? null,
-    status: "ACTIVE",
+    status,
     totalSessions,
     remainingSessions: totalSessions,
     amountPaise:
@@ -469,6 +519,34 @@ function demoRecordPtSubscription(body: Record<string, unknown>) {
     createdAt: nowIso(),
   };
   demoPtSubscriptions.unshift(subscription);
+  return { subscription };
+}
+
+// Member-facing PT browsing + self-serve requests: lets a member browse all
+// trainers' packages org-wide and request enrollment without bypassing
+// trainer/owner confirmation of payment.
+function demoBrowsePtPlans() {
+  const plans = demoPtPlans
+    .filter((plan) => plan.active)
+    .map((plan) => {
+      const trainer = zookDemoFixtures.users.find((user) => user.id === plan.trainerUserId);
+      return { ...plan, trainerName: trainer?.name ?? "Trainer" };
+    });
+  return { plans };
+}
+
+function demoRequestPtSubscription(body: Record<string, unknown>) {
+  const memberUserId = "user-aarav";
+  return demoRecordPtSubscription({ ...body, memberUserId }, "PENDING_APPROVAL");
+}
+
+function demoApprovePtSubscription(subscriptionId: string) {
+  const subscription = demoPtSubscriptions.find((entry) => entry.id === subscriptionId);
+  if (!subscription) {
+    throw new Error("PT subscription request not found.");
+  }
+  subscription.status = "ACTIVE";
+  subscription.startsAt = nowIso();
   return { subscription };
 }
 
@@ -558,6 +636,33 @@ function demoSetPayoutConfig(trainerId: string, body: Record<string, unknown>) {
   };
   demoPayoutConfigs[trainerId] = config;
   return { config };
+}
+
+const demoTrainerProfiles: Record<string, { bio: string; upiId: string; upiQrUrl: string }> = {
+  "user-rhea": {
+    bio: "Strength & conditioning coach. 8 years experience helping members build sustainable habits.",
+    upiId: "rohan.coach@upi",
+    upiQrUrl: "",
+  },
+};
+
+function demoGetTrainerProfile(trainerId: string) {
+  return {
+    profile: demoTrainerProfiles[trainerId] ?? { bio: "", upiId: "", upiQrUrl: "" },
+  };
+}
+
+function demoUpdateTrainerProfile(trainerId: string, body: Record<string, unknown>) {
+  const toText = (value: unknown, fallback: string) =>
+    typeof value === "string" ? value : fallback;
+  const existing = demoTrainerProfiles[trainerId] ?? { bio: "", upiId: "", upiQrUrl: "" };
+  const profile = {
+    bio: toText(body.bio, existing.bio),
+    upiId: toText(body.upiId, existing.upiId),
+    upiQrUrl: toText(body.upiQrUrl, existing.upiQrUrl),
+  };
+  demoTrainerProfiles[trainerId] = profile;
+  return { profile };
 }
 
 function demoTrainerPayouts(trainerId?: string) {
@@ -766,6 +871,20 @@ function demoExerciseTemplatesResponse() {
 // status sticks across refetches and on the Home strip.
 const demoClassEnrollments = new Map<string, "confirmed" | "waitlisted" | "cancelled">();
 
+// Edits/cancellations applied by a trainer to a fixed template class are kept
+// in this overlay so the templates themselves stay the canonical seed data.
+type DemoClassOverlay = {
+  name?: string;
+  description?: string | null;
+  classType?: string;
+  maxCapacity?: number;
+  pricePaise?: number;
+  startTime?: string;
+  endTime?: string;
+  status?: "SCHEDULED" | "CANCELLED";
+};
+const demoClassOverlays = new Map<string, DemoClassOverlay>();
+
 type DemoClassTemplate = {
   id: string;
   name: string;
@@ -914,9 +1033,11 @@ function demoClassRecord(template: DemoClassTemplate) {
   const userTakesSeat = userStatus === "confirmed" && !baseHasSeat;
   // A member who cancelled a pre-booked (default-confirmed) class frees that seat.
   const cancelledDefaultSeat = userStatus === "cancelled" && baseHasSeat;
+  const overlay = demoClassOverlays.get(template.id);
+  const maxCapacity = overlay?.maxCapacity ?? template.maxCapacity;
   const enrollmentCount =
     template.enrolledCount + (userTakesSeat ? 1 : 0) - (cancelledDefaultSeat ? 1 : 0);
-  const remainingCapacity = Math.max(0, template.maxCapacity - enrollmentCount);
+  const remainingCapacity = Math.max(0, maxCapacity - enrollmentCount);
   return {
     id: template.id,
     orgId: activeOrg()?.id ?? "org-demo",
@@ -924,14 +1045,15 @@ function demoClassRecord(template: DemoClassTemplate) {
     branchName: branch?.name ?? null,
     trainerId: template.trainerId,
     trainerName: template.trainerName,
-    name: template.name,
-    description: template.description,
-    classType: template.classType,
-    maxCapacity: template.maxCapacity,
-    startTime: start.toISOString(),
-    endTime: end.toISOString(),
+    name: overlay?.name ?? template.name,
+    description: overlay?.description ?? template.description,
+    classType: overlay?.classType ?? template.classType,
+    maxCapacity,
+    pricePaise: overlay?.pricePaise ?? null,
+    startTime: overlay?.startTime ?? start.toISOString(),
+    endTime: overlay?.endTime ?? end.toISOString(),
     recurrenceRule: null,
-    status: "SCHEDULED",
+    status: overlay?.status ?? "SCHEDULED",
     createdAt: nowIso(),
     enrollmentCount,
     remainingCapacity,
@@ -952,6 +1074,7 @@ type DemoScheduledClass = {
   description: string | null;
   classType: string;
   maxCapacity: number;
+  pricePaise: number;
   startTime: string;
   endTime: string;
   recurrenceRule: string | null;
@@ -982,6 +1105,7 @@ function demoCreateClass(body: Record<string, unknown>) {
   const durationMin = toNumber(body.durationMin, 60);
   const end = new Date(start.getTime() + durationMin * 60 * 1000);
   const maxCapacity = toNumber(body.maxCapacity, 16);
+  const pricePaise = toNumber(body.pricePaise, 0);
   const cls: DemoScheduledClass = {
     id: `class-custom-${Date.now()}`,
     orgId: activeOrg()?.id ?? "org-demo",
@@ -993,6 +1117,7 @@ function demoCreateClass(body: Record<string, unknown>) {
     description: body.description ? String(body.description) : null,
     classType: String(body.classType ?? "Strength"),
     maxCapacity,
+    pricePaise,
     startTime: start.toISOString(),
     endTime: end.toISOString(),
     recurrenceRule: null,
@@ -1004,6 +1129,110 @@ function demoCreateClass(body: Record<string, unknown>) {
   };
   demoScheduledClasses.unshift(cls);
   return { class: cls };
+}
+
+// Trainers can edit a scheduled class's details, or cancel it outright. A
+// cancellation notifies any member who currently holds a confirmed/waitlisted
+// seat (in this offline demo that is the "user-aarav" persona) so the member
+// app's notification feed reflects the change end to end.
+function demoNotifyClassCancelled(className: string, memberUserId: string) {
+  zookDemoFixtures.notifications.unshift({
+    id: `notif-class-cancel-${Date.now()}`,
+    orgId: activeOrg()?.id ?? "org-demo",
+    userId: memberUserId,
+    type: "OPERATIONAL",
+    title: "Class cancelled",
+    message: `${className} has been cancelled by your trainer. Please book another session.`,
+    targetRoute: "/member/classes",
+    readAt: null,
+    createdAt: nowIso(),
+  });
+}
+
+function demoUpdateClass(classId: string, body: Record<string, unknown>) {
+  const toNumber = (value: unknown, fallback: number) => {
+    const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const scheduled = demoScheduledClasses.find((entry) => entry.id === classId);
+  if (scheduled) {
+    if (scheduled.status === "CANCELLED") {
+      throw new Error("Cancelled classes cannot be edited.");
+    }
+    if (body.name !== undefined) scheduled.name = String(body.name).trim() || scheduled.name;
+    if (body.description !== undefined) scheduled.description = body.description ? String(body.description) : null;
+    if (body.classType !== undefined) scheduled.classType = String(body.classType);
+    if (body.pricePaise !== undefined) scheduled.pricePaise = toNumber(body.pricePaise, scheduled.pricePaise);
+    if (body.maxCapacity !== undefined) {
+      const nextCapacity = toNumber(body.maxCapacity, scheduled.maxCapacity);
+      scheduled.maxCapacity = nextCapacity;
+      scheduled.remainingCapacity = Math.max(0, nextCapacity - scheduled.enrollmentCount);
+    }
+    if (body.startTime) {
+      const start = new Date(String(body.startTime));
+      const durationMin = toNumber(
+        body.durationMin,
+        (new Date(scheduled.endTime).getTime() - new Date(scheduled.startTime).getTime()) / 60_000,
+      );
+      scheduled.startTime = start.toISOString();
+      scheduled.endTime = new Date(start.getTime() + durationMin * 60 * 1000).toISOString();
+    }
+    return { class: scheduled };
+  }
+  const template = DEMO_CLASS_TEMPLATES.find((entry) => entry.id === classId);
+  if (!template) {
+    throw new Error("That class could not be found.");
+  }
+  const existing = demoClassOverlays.get(classId) ?? {};
+  if (existing.status === "CANCELLED") {
+    throw new Error("Cancelled classes cannot be edited.");
+  }
+  const next: DemoClassOverlay = { ...existing };
+  if (body.name !== undefined) next.name = String(body.name).trim() || template.name;
+  if (body.description !== undefined) next.description = body.description ? String(body.description) : null;
+  if (body.classType !== undefined) next.classType = String(body.classType);
+  if (body.pricePaise !== undefined) next.pricePaise = toNumber(body.pricePaise, next.pricePaise ?? 0);
+  if (body.maxCapacity !== undefined) next.maxCapacity = toNumber(body.maxCapacity, template.maxCapacity);
+  if (body.startTime) {
+    const start = new Date(String(body.startTime));
+    const currentStart = next.startTime ? new Date(next.startTime) : classStartDate(template);
+    const currentEnd = next.endTime
+      ? new Date(next.endTime)
+      : new Date(currentStart.getTime() + template.durationMin * 60 * 1000);
+    const durationMin = toNumber(body.durationMin, (currentEnd.getTime() - currentStart.getTime()) / 60_000);
+    next.startTime = start.toISOString();
+    next.endTime = new Date(start.getTime() + durationMin * 60 * 1000).toISOString();
+  }
+  demoClassOverlays.set(classId, next);
+  return { class: demoClassRecord(template) };
+}
+
+function demoCancelClass(classId: string) {
+  const scheduled = demoScheduledClasses.find((entry) => entry.id === classId);
+  if (scheduled) {
+    if (scheduled.status !== "CANCELLED") {
+      const wasEnrolled = scheduled.myEnrollmentStatus === "confirmed" || scheduled.myEnrollmentStatus === "waitlisted";
+      scheduled.status = "CANCELLED";
+      if (wasEnrolled) {
+        demoNotifyClassCancelled(scheduled.name, "user-aarav");
+      }
+    }
+    return { class: scheduled };
+  }
+  const template = DEMO_CLASS_TEMPLATES.find((entry) => entry.id === classId);
+  if (!template) {
+    throw new Error("That class could not be found.");
+  }
+  const existing = demoClassOverlays.get(classId) ?? {};
+  if (existing.status !== "CANCELLED") {
+    const record = demoClassRecord(template);
+    const wasEnrolled = record.myEnrollmentStatus === "confirmed" || record.myEnrollmentStatus === "waitlisted";
+    demoClassOverlays.set(classId, { ...existing, status: "CANCELLED" });
+    if (wasEnrolled) {
+      demoNotifyClassCancelled(record.name, "user-aarav");
+    }
+  }
+  return { class: demoClassRecord(template) };
 }
 
 function demoEnrollInClass(classId: string) {
@@ -1063,33 +1292,77 @@ const DEMO_ROSTER_NAMES = [
   "Tara Bose", "Yash Shah", "Zoya Ali", "Kabir Roy", "Diya Sen", "Aman Kohli",
 ];
 
+export type DemoAttendanceStatus = "PENDING" | "ATTENDED" | "NO_SHOW";
+
+// Per-class, per-member attendance marks set by trainers on the roster screen.
+// Persists for the life of the JS runtime so marking a member present/no-show
+// sticks across refetches, mirroring how class enrollments are tracked above.
+const demoRosterAttendance = new Map<string, Map<string, DemoAttendanceStatus>>();
+
 function demoClassRoster(classId: string) {
   const cls = demoClasses().find((entry) => entry.id === classId);
   if (!cls) {
     throw new Error("That class could not be found.");
   }
-  const roster: Array<{ memberId: string; name: string; status: string; enrolledAt: string }> = [];
+  const attendanceForClass = demoRosterAttendance.get(classId);
+  const roster: Array<{
+    memberId: string;
+    name: string;
+    status: string;
+    enrolledAt: string;
+    attendanceStatus: DemoAttendanceStatus;
+  }> = [];
   const userConfirmed = cls.myEnrollmentStatus === "confirmed";
   const userWaitlisted = cls.myEnrollmentStatus === "waitlisted";
   if (userConfirmed) {
-    roster.push({ memberId: "user-aarav", name: "Nisha Menon", status: "confirmed", enrolledAt: hoursAgoIso(3) });
+    roster.push({
+      memberId: "user-aarav",
+      name: "Nisha Menon",
+      status: "confirmed",
+      enrolledAt: hoursAgoIso(3),
+      attendanceStatus: attendanceForClass?.get("user-aarav") ?? "PENDING",
+    });
   }
   const confirmedOthers = Math.max(0, cls.enrollmentCount - (userConfirmed ? 1 : 0));
   for (let index = 0; index < confirmedOthers; index += 1) {
+    const memberId = `demo-${classId}-${index}`;
     roster.push({
-      memberId: `demo-${classId}-${index}`,
+      memberId,
       name: DEMO_ROSTER_NAMES[index % DEMO_ROSTER_NAMES.length] ?? "Member",
       status: "confirmed",
       enrolledAt: hoursAgoIso(8 + index),
+      attendanceStatus: attendanceForClass?.get(memberId) ?? "PENDING",
     });
   }
   if (userWaitlisted) {
-    roster.push({ memberId: "user-aarav", name: "Nisha Menon", status: "waitlisted", enrolledAt: hoursAgoIso(1) });
+    roster.push({
+      memberId: "user-aarav",
+      name: "Nisha Menon",
+      status: "waitlisted",
+      enrolledAt: hoursAgoIso(1),
+      attendanceStatus: attendanceForClass?.get("user-aarav") ?? "PENDING",
+    });
   }
   return {
     class: { id: cls.id, name: cls.name, startTime: cls.startTime, maxCapacity: cls.maxCapacity },
     roster,
   };
+}
+
+function demoMarkClassAttendance(classId: string, memberId: string, status: unknown) {
+  const cls = demoClasses().find((entry) => entry.id === classId);
+  if (!cls) {
+    throw new Error("That class could not be found.");
+  }
+  const normalized = typeof status === "string" ? status.toUpperCase() : "";
+  if (normalized !== "PENDING" && normalized !== "ATTENDED" && normalized !== "NO_SHOW") {
+    throw new Error("That attendance status is not valid.");
+  }
+  if (!demoRosterAttendance.has(classId)) {
+    demoRosterAttendance.set(classId, new Map());
+  }
+  demoRosterAttendance.get(classId)!.set(memberId, normalized);
+  return { ok: true, memberId, attendanceStatus: normalized as DemoAttendanceStatus };
 }
 
 // --- Diet (offline demo) ---------------------------------------------------
@@ -1322,7 +1595,7 @@ const demoWorkoutLogs: DemoWorkoutLog[] = [
 
 type DemoBodyProgress = {
   id: string;
-  userId: string;
+  memberUserId: string;
   measuredAt: string;
   weightKg: number | null;
   waistCm: number | null;
@@ -1335,7 +1608,7 @@ type DemoBodyProgress = {
 const demoBodyProgress: DemoBodyProgress[] = [
   {
     id: "body-progress-1",
-    userId: "user-aarav",
+    memberUserId: "user-aarav",
     measuredAt: hoursAgoIso(6),
     weightKg: 78,
     waistCm: 84,
@@ -1346,7 +1619,7 @@ const demoBodyProgress: DemoBodyProgress[] = [
   },
   {
     id: "body-progress-2",
-    userId: "user-aarav",
+    memberUserId: "user-aarav",
     measuredAt: hoursAgoIso(24 * 14),
     weightKg: 79.5,
     waistCm: 86,
@@ -1354,6 +1627,39 @@ const demoBodyProgress: DemoBodyProgress[] = [
     armCm: 36,
     bodyFatPercent: 19.5,
     notes: "Start of the cut.",
+  },
+  {
+    id: "body-progress-3",
+    memberUserId: "user-aarav",
+    measuredAt: hoursAgoIso(24 * 28),
+    weightKg: 81,
+    waistCm: 88,
+    chestCm: 100,
+    armCm: 35.5,
+    bodyFatPercent: 21,
+    notes: "Baseline measurement.",
+  },
+  {
+    id: "body-progress-riya-1",
+    memberUserId: "user-riya",
+    measuredAt: hoursAgoIso(10),
+    weightKg: 62,
+    waistCm: 70,
+    chestCm: 88,
+    armCm: 27,
+    bodyFatPercent: 24,
+    notes: null,
+  },
+  {
+    id: "body-progress-riya-2",
+    memberUserId: "user-riya",
+    measuredAt: hoursAgoIso(24 * 10),
+    weightKg: 63.5,
+    waistCm: 72,
+    chestCm: 87,
+    armCm: 26.5,
+    bodyFatPercent: 25.5,
+    notes: "Start of the programme.",
   },
 ];
 
@@ -1502,9 +1808,15 @@ function demoTrackingSummary() {
       recentCount: demoWorkoutLogs.length,
     },
     recentWorkouts: demoWorkoutLogs.slice(0, 3),
-    latestBodyProgress: demoBodyProgress[0] ?? { weightKg: 78, measuredAt: nowIso() },
+    latestBodyProgress: demoMemberBodyProgress("user-aarav")[0] ?? { weightKg: 78, measuredAt: nowIso() },
     habits: demoHabits,
   };
+}
+
+function demoMemberBodyProgress(memberUserId: string) {
+  return demoBodyProgress
+    .filter((entry) => entry.memberUserId === memberUserId)
+    .sort((a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime());
 }
 
 function demoCreateWorkout(body: Record<string, unknown>) {
@@ -1540,14 +1852,14 @@ function demoCreateWorkout(body: Record<string, unknown>) {
   return { workout };
 }
 
-function demoRecordBodyProgress(body: Record<string, unknown>) {
+function demoRecordBodyProgress(body: Record<string, unknown>, memberUserId = "user-aarav") {
   const toNumber = (value: unknown) => {
     const parsed = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
     return Number.isFinite(parsed) ? parsed : null;
   };
   const entry: DemoBodyProgress = {
     id: `body-progress-${Date.now()}`,
-    userId: "user-aarav",
+    memberUserId,
     measuredAt: body.measuredAt ? String(body.measuredAt) : nowIso(),
     weightKg: toNumber(body.weightKg),
     waistCm: toNumber(body.waistCm),
@@ -1843,6 +2155,36 @@ function demoDeleteMembershipPlan(planId: string) {
   if (index >= 0) demoMembershipPlans.splice(index, 1);
   return { ok: true };
 }
+
+type DemoWorkoutPlan = {
+  id: string;
+  orgId: string;
+  creatorUserId: string | null;
+  type: string;
+  title: string;
+  description: string | null;
+  content: Record<string, unknown>;
+  aiGenerated: boolean;
+  reviewed: boolean;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const demoWorkoutPlans: DemoWorkoutPlan[] = zookDemoFixtures.trainingPlans.map((plan) => ({
+  id: plan.id,
+  orgId: plan.orgId,
+  creatorUserId: plan.trainerUserId ?? null,
+  type: plan.type,
+  title: plan.title,
+  description: plan.durationLabel ?? null,
+  content: { exercises: plan.exercises },
+  aiGenerated: plan.aiGenerated ?? false,
+  reviewed: plan.reviewed ?? false,
+  status: plan.status ?? "ACTIVE",
+  createdAt: nowIso(),
+  updatedAt: nowIso(),
+}));
 
 // --- Staff management (owner, offline demo, stateful) ----------------------
 type DemoStaffRow = {
@@ -2231,7 +2573,38 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/auth/me") return session as T;
   if (pathname === "/auth/logout") return { ok: true } as T;
+  if (pathname === "/auth/google/callback" || pathname === "/auth/apple/callback") {
+    throw new Error("Google / Apple sign-in is not available in local test mode. Use OTP with a seeded @zook.local address.");
+  }
+  if (pathname === "/auth/refresh") {
+    return { token: "offline-demo-session", expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), session: getOfflineDemoSession() } as T;
+  }
   if (pathname === "/support/feedback") return { submitted: true } as T;
+
+  if (pathname === "/files/upload" && method === "POST") {
+    return {
+      file: {
+        id: `file-${Date.now()}`,
+        url: "https://offline.zook.local/files/demo-upload",
+        mimeType: "image/jpeg",
+        sizeBytes: 0,
+        uploadedAt: nowIso(),
+      },
+    } as T;
+  }
+
+  if (pathname === "/me/contact/request-otp" && method === "POST") {
+    return {
+      challengeId: "offline-demo-otp",
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      devOtp: "000000",
+    } as T;
+  }
+
+  if (pathname === "/me/contact/verify-otp" && method === "POST") {
+    return { ok: true } as T;
+  }
+
   if (pathname === "/me/orgs")
     return { organizations: session.organizations, activeOrgId: session.activeOrgId } as T;
   if (pathname === "/me/profile") return demoProfile() as T;
@@ -2262,6 +2635,10 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/me/coaching") {
     return demoMemberCoaching() as T;
+  }
+
+  if (pathname === "/me/pt-subscriptions/request" && method === "POST") {
+    return demoRequestPtSubscription(demoBody(init)) as T;
   }
 
   if (pathname === "/me/rewards/wallet") {
@@ -2384,6 +2761,21 @@ export async function demoMobileApiFetch<T>(
       },
     } as T;
   }
+  {
+    const cancelMembershipMatch = pathname.match(/^\/me\/memberships\/([^/]+)\/cancel$/);
+    if (cancelMembershipMatch && method === "POST") {
+      const target = zookDemoFixtures.memberships.find(
+        (membership) => membership.id === cancelMembershipMatch[1],
+      );
+      if (target) {
+        target.status = "CANCELLED";
+        target.daysLeft = 0;
+      }
+      return {
+        subscription: enrichMembership(target ?? activeMembership()) ?? null,
+      } as T;
+    }
+  }
   const checkoutMatch = pathname.match(/^\/me\/attendance\/([^/]+)\/checkout$/);
   if (checkoutMatch && method === "POST") {
     const active = getDemoActiveCheckIn();
@@ -2500,6 +2892,9 @@ export async function demoMobileApiFetch<T>(
     const body = init.body as { ids?: string[] } | undefined;
     return { count: body?.ids?.length ?? 0 } as T;
   }
+  if (pathname.match(/^\/me\/notifications\/[^/]+\/read$/) && method === "POST") {
+    return { ok: true } as T;
+  }
   if (pathname === "/me/consents") {
     return {
       exportRequests: [],
@@ -2549,7 +2944,7 @@ export async function demoMobileApiFetch<T>(
     if (method === "POST") {
       return demoRecordBodyProgress(demoBody(init)) as T;
     }
-    return { entries: demoBodyProgress } as T;
+    return { entries: demoMemberBodyProgress("user-aarav") } as T;
   }
   if (pathname === "/me/tracking/summary") {
     return demoTrackingSummary() as T;
@@ -2846,6 +3241,11 @@ export async function demoMobileApiFetch<T>(
     } as T;
   }
 
+  const paymentSessionRefreshMatch = pathname.match(/^\/payments\/session\/([^/]+)\/refresh$/);
+  if (paymentSessionRefreshMatch && method === "POST") {
+    return { status: "SUCCEEDED" } as T;
+  }
+
   if (pathname === "/me/diet/meal-logs" && method === "POST") {
     return demoLogMeal(demoBody(init)) as T;
   }
@@ -2862,6 +3262,17 @@ export async function demoMobileApiFetch<T>(
       return demoCreateClientDietPlan(demoBody(init)) as T;
     }
     return { plans: [demoCurrentDietPlan()] } as T;
+  }
+
+  const clientBodyProgressMatch = pathname.match(
+    /^\/orgs\/[^/]+\/trainers\/[^/]+\/clients\/([^/]+)\/body-progress$/,
+  );
+  if (clientBodyProgressMatch) {
+    const clientId = clientBodyProgressMatch[1];
+    if (method === "POST") {
+      return demoRecordBodyProgress(demoBody(init), clientId) as T;
+    }
+    return { entries: demoMemberBodyProgress(clientId) } as T;
   }
 
   const exerciseTemplateMatch = pathname.match(/^\/orgs\/[^/]+\/exercise-templates(?:\/([^/]+))?$/);
@@ -2894,9 +3305,35 @@ export async function demoMobileApiFetch<T>(
   if (enrollMatch && method === "DELETE") {
     return demoCancelEnrollment(enrollMatch[1]) as T;
   }
+  const classCancelMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/cancel$/);
+  if (classCancelMatch && (method === "POST" || method === "DELETE")) {
+    return demoCancelClass(classCancelMatch[1]) as T;
+  }
   const rosterMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)\/roster$/);
   if (rosterMatch) {
     return demoClassRoster(rosterMatch[1]) as T;
+  }
+  const rosterAttendanceMatch = pathname.match(
+    /^\/orgs\/[^/]+\/classes\/([^/]+)\/roster\/([^/]+)\/attendance$/,
+  );
+  if (rosterAttendanceMatch && method === "POST") {
+    const body = demoBody(init);
+    return demoMarkClassAttendance(rosterAttendanceMatch[1], rosterAttendanceMatch[2], body.status) as T;
+  }
+
+  const classDetailMatch = pathname.match(/^\/orgs\/[^/]+\/classes\/([^/]+)$/);
+  if (classDetailMatch && method === "GET") {
+    const entry = demoClasses().find((item) => item.id === classDetailMatch[1]);
+    if (!entry) {
+      throw new Error("That class could not be found.");
+    }
+    return { class: entry } as T;
+  }
+  if (classDetailMatch && method === "PATCH") {
+    return demoUpdateClass(classDetailMatch[1], demoBody(init)) as T;
+  }
+  if (classDetailMatch && method === "DELETE") {
+    return demoCancelClass(classDetailMatch[1]) as T;
   }
 
   if (pathname.match(/^\/orgs\/[^/]+\/classes$/)) {
@@ -2935,6 +3372,15 @@ export async function demoMobileApiFetch<T>(
   }
   if (pathname.match(/^\/orgs\/[^/]+\/pt-sessions$/) && method === "POST") {
     return demoLogPtSession(demoBody(init)) as T;
+  }
+  const ptSubscriptionApproveMatch = pathname.match(
+    /^\/orgs\/[^/]+\/pt-subscriptions\/([^/]+)\/approve$/,
+  );
+  if (ptSubscriptionApproveMatch && method === "POST") {
+    return demoApprovePtSubscription(ptSubscriptionApproveMatch[1]) as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/pt-plans$/)) {
+    return demoBrowsePtPlans() as T;
   }
 
   if (pathname.match(/^\/orgs\/[^/]+\/referral-policy$/)) {
@@ -3009,12 +3455,31 @@ export async function demoMobileApiFetch<T>(
     return demoGetPayoutConfig(payoutConfigMatch[1]) as T;
   }
 
+  const trainerProfileMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/profile$/);
+  if (trainerProfileMatch) {
+    if (method === "PATCH" || method === "PUT") {
+      return demoUpdateTrainerProfile(trainerProfileMatch[1], demoBody(init)) as T;
+    }
+    return demoGetTrainerProfile(trainerProfileMatch[1]) as T;
+  }
+
   const ptPlanMatch = pathname.match(/^\/orgs\/[^/]+\/trainers\/([^/]+)\/pt-plans$/);
   if (ptPlanMatch) {
     if (method === "POST") {
       return demoCreatePtPlan(ptPlanMatch[1], demoBody(init)) as T;
     }
     return { plans: demoPtPlans } as T;
+  }
+  const ptPlanDetailMatch = pathname.match(
+    /^\/orgs\/[^/]+\/trainers\/([^/]+)\/pt-plans\/([^/]+)$/,
+  );
+  if (ptPlanDetailMatch) {
+    if (method === "DELETE") {
+      return demoDeletePtPlan(ptPlanDetailMatch[1], ptPlanDetailMatch[2]) as T;
+    }
+    if (method === "PATCH" || method === "PUT") {
+      return demoUpdatePtPlan(ptPlanDetailMatch[1], ptPlanDetailMatch[2], demoBody(init)) as T;
+    }
   }
 
   if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/pt-subscriptions$/)) {
@@ -3028,6 +3493,13 @@ export async function demoMobileApiFetch<T>(
   if (pathname.match(/^\/orgs\/[^/]+\/trainers\/[^/]+\/clients\/[^/]+\/note$/)) {
     const body = init.body as { note?: string } | undefined;
     return { note: body?.note ?? "" } as T;
+  }
+
+  const joinRequestsApproveBatchMatch = pathname.match(/^\/orgs\/[^/]+\/join-requests\/approve-batch$/);
+  if (joinRequestsApproveBatchMatch && method === "POST") {
+    const body = demoBody(init);
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    return { approved: ids.length } as T;
   }
 
   if (pathname.match(/\/join-requests\/[^/]+\/approve$/)) {
@@ -3073,6 +3545,141 @@ export async function demoMobileApiFetch<T>(
         quotaConsumed: 1,
       },
     } as T;
+  }
+
+  if (pathname.match(/^\/orgs\/[^/]+\/notifications$/) && method === "POST") {
+    return { ok: true } as T;
+  }
+
+  if (pathname.startsWith("/push/") && method === "POST") {
+    return { ok: true } as T;
+  }
+
+  {
+    const switchMatch = pathname.match(/^\/me\/memberships\/([^/]+)\/switch$/);
+    if (switchMatch && method === "POST") {
+      const body = demoBody(init);
+      const target = zookDemoFixtures.memberships.find((m) => m.id === switchMatch[1]);
+      if (target && body.planId) target.planId = String(body.planId);
+      return { subscription: enrichMembership(target ?? activeMembership()) } as T;
+    }
+  }
+  {
+    const pauseMatch = pathname.match(/^\/me\/memberships\/([^/]+)\/pause$/);
+    if (pauseMatch && method === "POST") {
+      const target = zookDemoFixtures.memberships.find((m) => m.id === pauseMatch[1]);
+      if (target) target.status = "PAUSED";
+      return { subscription: enrichMembership(target ?? activeMembership()) } as T;
+    }
+  }
+  {
+    const resumeMatch = pathname.match(/^\/me\/memberships\/([^/]+)\/resume$/);
+    if (resumeMatch && method === "POST") {
+      const target = zookDemoFixtures.memberships.find((m) => m.id === resumeMatch[1]);
+      if (target) target.status = "ACTIVE";
+      return { subscription: enrichMembership(target ?? activeMembership()) } as T;
+    }
+  }
+  {
+    const approveAttendanceMatch = pathname.match(/^\/orgs\/[^/]+\/attendance\/([^/]+)\/approve$/);
+    if (approveAttendanceMatch && method === "POST") {
+      const record = zookDemoFixtures.attendanceAttempts.find((a) => a.id === approveAttendanceMatch[1]);
+      if (record) record.status = "APPROVED";
+      return { attendance: record ?? { id: approveAttendanceMatch[1], status: "APPROVED" } } as T;
+    }
+  }
+  {
+    const rejectAttendanceMatch = pathname.match(/^\/orgs\/[^/]+\/attendance\/([^/]+)\/reject$/);
+    if (rejectAttendanceMatch && method === "POST") {
+      const record = zookDemoFixtures.attendanceAttempts.find((a) => a.id === rejectAttendanceMatch[1]);
+      if (record) record.status = "REJECTED";
+      return { attendance: record ?? { id: rejectAttendanceMatch[1], status: "REJECTED" } } as T;
+    }
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/attendance\/manual$/) && method === "POST") {
+    return { attendance: startDemoCheckIn(activeOrg()?.name ?? null) } as T;
+  }
+  {
+    const planAssignMatch = pathname.match(/^\/orgs\/[^/]+\/plans\/([^/]+)\/assign$/);
+    if (planAssignMatch && method === "POST") {
+      const plan = demoWorkoutPlans.find((p) => p.id === planAssignMatch[1]);
+      return { assignment: { id: `assign-${Date.now()}`, planId: planAssignMatch[1], plan: plan ?? null, active: true, createdAt: nowIso() } } as T;
+    }
+  }
+  {
+    const planReviewMatch = pathname.match(/^\/orgs\/[^/]+\/plans\/([^/]+)\/review$/);
+    if (planReviewMatch && method === "POST") {
+      const plan = demoWorkoutPlans.find((p) => p.id === planReviewMatch[1]);
+      if (plan) plan.reviewed = true;
+      return { plan: plan ?? { id: planReviewMatch[1], reviewed: true } } as T;
+    }
+  }
+  {
+    const planEditMatch = pathname.match(/^\/orgs\/[^/]+\/plans\/([^/]+)$/);
+    if (planEditMatch) {
+      if (method === "DELETE") {
+        const idx = demoWorkoutPlans.findIndex((p) => p.id === planEditMatch[1]);
+        if (idx >= 0) demoWorkoutPlans.splice(idx, 1);
+        return { ok: true } as T;
+      }
+      if (method === "PATCH" || method === "PUT") {
+        const idx = demoWorkoutPlans.findIndex((p) => p.id === planEditMatch[1]);
+        const body = demoBody(init);
+        const updated = idx >= 0
+          ? Object.assign(demoWorkoutPlans[idx]!, body, { updatedAt: nowIso() })
+          : { id: planEditMatch[1], ...body };
+        if (idx >= 0) demoWorkoutPlans[idx] = updated as DemoWorkoutPlan;
+        return { plan: updated } as T;
+      }
+    }
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/plans$/)) {
+    if (method === "POST") {
+      const body = demoBody(init);
+      const plan: DemoWorkoutPlan = {
+        id: `plan-${Date.now()}`,
+        orgId: activeOrg()?.id ?? "org-demo",
+        creatorUserId: null,
+        type: String(body.type ?? "WORKOUT"),
+        title: String(body.title ?? "New plan"),
+        description: body.description ? String(body.description) : null,
+        content: (body.content as Record<string, unknown>) ?? {},
+        aiGenerated: Boolean(body.aiGenerated ?? false),
+        reviewed: false,
+        status: "DRAFT",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      demoWorkoutPlans.unshift(plan);
+      return { plan } as T;
+    }
+    return { plans: demoWorkoutPlans } as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/subscriptions$/) && method === "POST") {
+    return {
+      checkoutUrl: "/checkout/mock/offline-membership",
+      session: { id: `offline-sub-${Date.now()}`, status: "CREATED", provider: "mock" },
+    } as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/manual-payments$/) && method === "POST") {
+    const body = demoBody(init);
+    const payment = {
+      id: `payment-manual-${Date.now()}`,
+      orgId: activeOrg()?.id ?? "org-demo",
+      memberUserId: String(body.memberUserId ?? "user-aarav"),
+      purpose: String(body.purpose ?? "MEMBERSHIP"),
+      amountPaise: Number(body.amountPaise) || 0,
+      status: "SUCCEEDED",
+      mode: String(body.paymentMode ?? body.mode ?? "CASH"),
+      receiptNumber: `RC-DEMO-${String(Date.now()).slice(-6)}`,
+      createdAt: nowIso(),
+      recordedAt: nowIso(),
+    };
+    demoRecentPayments.unshift(payment);
+    return { payment } as T;
+  }
+  if (pathname === "/me/profile-photo" && method === "PATCH") {
+    return { user: { profilePhotoUrl: null } } as T;
   }
 
   throw new Error("This action is not available in local test mode.");

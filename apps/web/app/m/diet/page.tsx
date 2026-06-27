@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppHandoffCard } from "@/components/app-handoff-card";
 import { GlassCard } from "@/components/glass-card";
+import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { resolvePublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
@@ -22,7 +23,9 @@ export default async function MemberDietPage({
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <PublicNav locale={locale} />
+        <PublicNav locale={locale}>
+          <AccountAwareNav locale={locale} />
+        </PublicNav>
         <GlassCard variant="strong" className="p-6 md:p-8">
           <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">My diet plan</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/58">

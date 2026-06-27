@@ -42,8 +42,17 @@ function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
   }
 }
 
+function normalizeSearchPhone(value: string) {
+  try {
+    return normalizePhoneNumber(value) ?? value;
+  } catch {
+    return value;
+  }
+}
+
 async function listOrganizationMembersPage(orgId: string, request: NextRequest, branchId?: string) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const phoneQuery = q ? normalizeSearchPhone(q) : "";
   const { limit, cursor } = parseCursorPagination(request, q ? 20 : 50, 100);
   const scopedUserIds = branchId
     ? await (async () => {
@@ -79,21 +88,29 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
         );
       })()
     : undefined;
+  const searchUserIds = q
+    ? (
+        await prisma.user.findMany({
+          where: {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { email: { startsWith: q, mode: "insensitive" } },
+              { phone: { startsWith: phoneQuery } },
+            ],
+          },
+          select: { id: true },
+          take: 500,
+        })
+      ).map((user) => user.id)
+    : undefined;
+  const constrainedUserIds =
+    scopedUserIds && searchUserIds
+      ? scopedUserIds.filter((userId) => searchUserIds.includes(userId))
+      : scopedUserIds ?? searchUserIds;
   const profiles = await prisma.memberProfile.findMany({
     where: {
       orgId,
-      ...(scopedUserIds ? { userId: { in: scopedUserIds } } : {}),
-      ...(q
-        ? {
-            user: {
-              OR: [
-                { name: { contains: q, mode: "insensitive" } },
-                { email: { startsWith: q, mode: "insensitive" } },
-                { phone: { startsWith: normalizePhoneNumber(q) ?? q } },
-              ],
-            },
-          }
-        : {}),
+      ...(constrainedUserIds ? { userId: { in: constrainedUserIds } } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: limit + 1,

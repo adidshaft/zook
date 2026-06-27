@@ -5,6 +5,9 @@ import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { MemberContactCompletionPanel } from "@/components/member-contact-completion-panel";
 import { MemberPrivateLink } from "@/components/member-private-link";
+import { MemberRenewButton } from "@/components/member-renew-button";
+import { MemberSubscriptionActions } from "@/components/member-subscription-actions";
+import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
 import { destinationToUrl } from "@/lib/auth-destinations";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
@@ -37,7 +40,12 @@ export async function renderMembershipSurface(
   });
   const [plans, organizations, latestPayments, mandates] = await Promise.all([
     prisma.membershipPlan.findMany({
-      where: { id: { in: subscriptions.map((subscription) => subscription.planId) } },
+      where: {
+        OR: [
+          { id: { in: subscriptions.map((subscription) => subscription.planId) } },
+          { orgId: { in: subscriptions.map((subscription) => subscription.orgId) } },
+        ],
+      },
     }),
     prisma.organization.findMany({
       where: { id: { in: subscriptions.map((subscription) => subscription.orgId) } },
@@ -57,7 +65,9 @@ export async function renderMembershipSurface(
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-screen px-5 py-5">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <PublicNav locale={locale} />
+        <PublicNav locale={locale}>
+          <AccountAwareNav locale={locale} />
+        </PublicNav>
 
         <GlassCard variant="strong" className="p-6 md:p-8">
           {session.user.privateHandle ? (
@@ -92,6 +102,15 @@ export async function renderMembershipSurface(
                   mandate.sourceSubscriptionId === subscription.id ||
                   mandate.latestSubscriptionId === subscription.id,
               );
+              const isRenewable = toneForMemberSubscriptionStatus(subscription.status) === "red";
+              const switchablePlans = plans
+                .filter((candidate) => candidate.orgId === subscription.orgId)
+                .filter((candidate) => candidate.active && candidate.id !== subscription.planId)
+                .map((candidate) => ({
+                  id: candidate.id,
+                  name: candidate.name,
+                  pricePaise: candidate.pricePaise,
+                }));
               return (
                 <GlassCard key={subscription.id} className="p-5 md:p-6">
                   <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
@@ -151,15 +170,28 @@ export async function renderMembershipSurface(
                     </div>
                   </div>
 
-                  {organization?.username ? (
-                    <Link
-                      href={localizedPath(`/g/${organization.username}`, locale)}
-                      className="zook-focus mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/72 transition hover:bg-white/8 hover:text-white"
-                    >
-                      <MapPin size={16} aria-hidden="true" />
-                      View gym page
-                    </Link>
+                  {organization?.username || isRenewable ? (
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      {organization?.username ? (
+                        <Link
+                          href={localizedPath(`/g/${organization.username}`, locale)}
+                          className="zook-focus inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/72 transition hover:bg-white/8 hover:text-white"
+                        >
+                          <MapPin size={16} aria-hidden="true" />
+                          View gym page
+                        </Link>
+                      ) : null}
+                      {isRenewable ? (
+                        <MemberRenewButton subscriptionId={subscription.id} />
+                      ) : null}
+                    </div>
                   ) : null}
+
+                  <MemberSubscriptionActions
+                    subscriptionId={subscription.id}
+                    status={subscription.status}
+                    availablePlans={switchablePlans}
+                  />
                 </GlassCard>
               );
             })}

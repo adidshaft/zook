@@ -6,7 +6,7 @@ import { UserCircle2 } from "lucide-react";
 import { DashboardLocaleToggle } from "../../dashboard-locale-toggle";
 import { DashboardSignOutButton } from "../../dashboard-sign-out-button";
 import { ThemePreferenceSwitcher } from "../../theme-preference-switcher";
-import type { DashboardCopy } from "./types";
+import type { UserMenuCopy } from "./types";
 
 export function UserMenu({
   user,
@@ -16,7 +16,7 @@ export function UserMenu({
 }: {
   user: { name: string; email: string; preferredLocale?: string | null };
   roleLabel?: string | undefined;
-  copy: DashboardCopy;
+  copy: UserMenuCopy;
   showSwitchOrganization: boolean;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);

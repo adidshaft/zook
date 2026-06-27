@@ -45,6 +45,12 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
       initialOrderId: search.orderId,
       canOpenManagement: true,
       redirectedFromDashboard: false,
+      user: {
+        name: session.user.name,
+        email: session.user.email,
+        preferredLocale: session.user.preferredLocale ?? null,
+      },
+      showSwitchOrganization: data.orgs.length > 1,
     };
   }
 
@@ -83,5 +89,11 @@ export async function getDeskRouteContext(search: DeskSearch, redirectPath: stri
     initialOrderId: search.orderId,
     canOpenManagement: false,
     redirectedFromDashboard: search.from === "dashboard",
+    user: {
+      name: session.user.name,
+      email: session.user.email,
+      preferredLocale: session.user.preferredLocale ?? null,
+    },
+    showSwitchOrganization: data.orgs.length > 1,
   };
 }

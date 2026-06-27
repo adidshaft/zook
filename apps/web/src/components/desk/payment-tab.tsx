@@ -1,14 +1,40 @@
 import { type FormEvent, useState } from "react";
 import { CreditCard } from "lucide-react";
-import { formatInr } from "@/lib/format";
+import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
 import { GlassCard } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
-import type { MemberRow, PaymentFormState, PaymentPurpose, PlanRow, ReceiptDetails, ShopOrder } from "./types";
+import type {
+  DeskPaymentRow,
+  MemberRow,
+  PaymentFormState,
+  PaymentPurpose,
+  PlanRow,
+  ReceiptDetails,
+  ShopOrder,
+} from "./types";
 import { memberLabel, orderItemsSummary } from "./utils";
 import { ReceiptCard } from "./receipt-card";
 import { PaymentProofUpload } from "../payment-proof-upload";
+
+function refundedAmountFor(payment: DeskPaymentRow) {
+  return (
+    payment.refundedAmountPaise ??
+    payment.refunds
+      ?.filter((refund) => !["FAILED", "CANCELLED"].includes(refund.status))
+      .reduce((total, refund) => total + refund.amountPaise, 0) ??
+    0
+  );
+}
+
+function isRefundable(payment: DeskPaymentRow) {
+  return (
+    ["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status) &&
+    refundedAmountFor(payment) < payment.amountPaise
+  );
+}
 
 export function PaymentTab({
   copy,
@@ -19,12 +45,21 @@ export function PaymentTab({
   payAtDeskOrders,
   orgId,
   lastReceipt,
+  recentPayments,
+  recentPaymentsLoading,
+  recentPaymentsError,
+  refundDraft,
+  refundError,
   onSubmit,
   onPurposeChange,
   onMemberChange,
   onOrderChange,
   onPlanChange,
   onFormChange,
+  onStartRefund,
+  onCancelRefund,
+  onRefundReasonChange,
+  onSubmitRefund,
 }: {
   copy: DeskCopy;
   busyId: string;
@@ -34,12 +69,21 @@ export function PaymentTab({
   payAtDeskOrders: ShopOrder[];
   orgId: string;
   lastReceipt: ReceiptDetails | null;
+  recentPayments: DeskPaymentRow[];
+  recentPaymentsLoading: boolean;
+  recentPaymentsError: string;
+  refundDraft: { payment: DeskPaymentRow; reason: string } | null;
+  refundError: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onPurposeChange: (purpose: PaymentPurpose) => void;
   onMemberChange: (userId: string) => void;
   onOrderChange: (orderId: string) => void;
   onPlanChange: (planId: string) => void;
   onFormChange: (patch: Partial<PaymentFormState>) => void;
+  onStartRefund: (payment: DeskPaymentRow) => void;
+  onCancelRefund: () => void;
+  onRefundReasonChange: (reason: string) => void;
+  onSubmitRefund: () => void | Promise<void>;
 }) {
   const [amountTouched, setAmountTouched] = useState(false);
   const amountError = getRupeeAmountError(paymentForm.amountRupees);
@@ -287,6 +331,159 @@ export function PaymentTab({
         </ZookButton>
       </form>
       {lastReceipt ? <ReceiptCard copy={copy} receipt={lastReceipt} /> : null}
+      <RecentPaymentsList
+        copy={copy}
+        busyId={busyId}
+        payments={recentPayments}
+        loading={recentPaymentsLoading}
+        error={recentPaymentsError}
+        refundDraft={refundDraft}
+        refundError={refundError}
+        onStartRefund={onStartRefund}
+        onCancelRefund={onCancelRefund}
+        onRefundReasonChange={onRefundReasonChange}
+        onSubmitRefund={onSubmitRefund}
+      />
     </GlassCard>
+  );
+}
+
+function RecentPaymentsList({
+  copy,
+  busyId,
+  payments,
+  loading,
+  error,
+  refundDraft,
+  refundError,
+  onStartRefund,
+  onCancelRefund,
+  onRefundReasonChange,
+  onSubmitRefund,
+}: {
+  copy: DeskCopy;
+  busyId: string;
+  payments: DeskPaymentRow[];
+  loading: boolean;
+  error: string;
+  refundDraft: { payment: DeskPaymentRow; reason: string } | null;
+  refundError: string;
+  onStartRefund: (payment: DeskPaymentRow) => void;
+  onCancelRefund: () => void;
+  onRefundReasonChange: (reason: string) => void;
+  onSubmitRefund: () => void | Promise<void>;
+}) {
+  return (
+    <div className="mt-8 border-t border-[var(--border)] pt-6">
+      <h2 className="text-lg font-semibold text-[var(--text-primary)]">{copy.recentPayments}</h2>
+      <p className="mt-1 text-sm text-[var(--text-tertiary)]">{copy.recentPaymentsDescription}</p>
+
+      {refundDraft ? (
+        <form
+          className="mt-4 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onSubmitRefund();
+          }}
+        >
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
+            {copy.refund} {formatInr(refundDraft.payment.amountPaise - refundedAmountFor(refundDraft.payment))} ·{" "}
+            {refundDraft.payment.user?.name ?? formatEnumLabel(refundDraft.payment.purpose)}
+          </p>
+          {refundError ? (
+            <p className="mt-2 rounded-2xl border border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]">
+              {refundError}
+            </p>
+          ) : null}
+          <label className="mt-3 grid gap-2 text-xs font-medium text-[var(--text-secondary)]">
+            {copy.refundReason}
+            <textarea
+              value={refundDraft.reason}
+              onChange={(event) => onRefundReasonChange(event.target.value)}
+              placeholder={copy.refundReasonPlaceholder}
+              rows={3}
+              maxLength={240}
+              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
+            <ZookButton type="button" tone="ghost" size="sm" onClick={onCancelRefund}>
+              {copy.common.cancel}
+            </ZookButton>
+            <ConfirmActionButton
+              className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              title={copy.refundConfirmTitle}
+              description={copy.refundConfirmDescription}
+              confirmLabel={copy.submitRefund}
+              confirmTone="danger"
+              onConfirm={() => onSubmitRefund()}
+              disabled={!refundDraft.reason.trim() || busyId === `refund:${refundDraft.payment.id}`}
+            >
+              {busyId === `refund:${refundDraft.payment.id}` ? copy.refunding : copy.submitRefund}
+            </ConfirmActionButton>
+          </div>
+        </form>
+      ) : null}
+
+      {error ? (
+        <p className="mt-4 rounded-2xl border border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]">
+          {copy.unableRecentPayments}
+        </p>
+      ) : null}
+
+      <div className="mt-4 grid gap-3">
+        {loading && !payments.length ? (
+          <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
+            {copy.loadingRecentPayments}
+          </p>
+        ) : null}
+        {!loading && !payments.length && !error ? (
+          <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
+            {copy.noRecentPayments}
+          </p>
+        ) : null}
+        {payments.map((payment) => {
+          const refunded = refundedAmountFor(payment);
+          const refundable = isRefundable(payment);
+          const recordedAt = payment.recordedAt ?? payment.createdAt;
+          return (
+            <div
+              key={payment.id}
+              className="flex flex-col justify-between gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 sm:flex-row sm:items-center"
+            >
+              <div>
+                <p className="font-medium text-[var(--text-primary)]">
+                  {payment.user?.name ?? formatEnumLabel(payment.purpose)}
+                </p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                  {formatInr(payment.amountPaise)} · {formatEnumLabel(payment.mode)} ·{" "}
+                  {formatDate(recordedAt)}
+                  {refunded > 0 ? (
+                    <>
+                      {" "}
+                      ·{" "}
+                      {refunded >= payment.amountPaise ? copy.refunded : copy.partiallyRefunded} (
+                      {formatInr(refunded)})
+                    </>
+                  ) : null}
+                </p>
+              </div>
+              {refundable ? (
+                <ZookButton
+                  type="button"
+                  size="sm"
+                  tone="ghost"
+                  onClick={() => onStartRefund(payment)}
+                  disabled={busyId === `refund:${payment.id}`}
+                  state={busyId === `refund:${payment.id}` ? "loading" : "idle"}
+                >
+                  {busyId === `refund:${payment.id}` ? copy.refunding : copy.refund}
+                </ZookButton>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

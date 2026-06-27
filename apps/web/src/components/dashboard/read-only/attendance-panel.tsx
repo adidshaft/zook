@@ -1,6 +1,7 @@
 "use client";
 
 import { AttendanceApprovalsPanel } from "../../attendance-approvals-panel";
+import { AttendanceManualCheckinForm } from "../attendance-manual-checkin-form";
 import { AttendanceQrPanel } from "../../attendance-qr-panel";
 import {
   DataTable,
@@ -46,7 +47,14 @@ export function AttendancePanel({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <AttendanceApprovalsPanel orgId={orgId} />
+        <div className="grid gap-4">
+          <AttendanceManualCheckinForm
+            orgId={orgId}
+            branchId={branchScope.selectedBranch?.id}
+            onCheckedIn={() => void attendanceState.reload?.()}
+          />
+          <AttendanceApprovalsPanel orgId={orgId} />
+        </div>
         <div className="grid gap-4">
           <AttendanceQrPanel
             orgId={orgId}

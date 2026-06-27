@@ -30,6 +30,8 @@ export default async function DeskPage({
       locale={desk.locale}
       permissions={desk.permissions}
       canOpenManagement={desk.canOpenManagement}
+      user={desk.user}
+      showSwitchOrganization={desk.showSwitchOrganization}
     >
       <DeskWorkspace {...desk} activeTab="queue" />
     </DeskChrome>

@@ -1,6 +1,6 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 import {
   AppHeader,
@@ -66,12 +66,14 @@ function ClassCard({
   entry,
   busy,
   cancelling,
+  onOpen,
   onBook,
   onCancel,
 }: {
   entry: MemberClassRecord;
   busy: boolean;
   cancelling: boolean;
+  onOpen: () => void;
   onBook: () => void;
   onCancel: () => void;
 }) {
@@ -104,24 +106,26 @@ function ClassCard({
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.classContent}>
-        <View style={styles.classHeader}>
-          <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
-          <View style={styles.classTitleBlock}>
-            <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
-            <Text style={[styles.classTime, { color: palette.text.secondary }]}>
-              {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
-            </Text>
+        <Pressable accessibilityRole="button" onPress={onOpen} style={styles.detailPressable}>
+          <View style={styles.classHeader}>
+            <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
+            <View style={styles.classTitleBlock}>
+              <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
+              <Text style={[styles.classTime, { color: palette.text.secondary }]}>
+                {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+              </Text>
+            </View>
+            <Pill tone={pill.tone}>{pill.label}</Pill>
           </View>
-          <Pill tone={pill.tone}>{pill.label}</Pill>
-        </View>
-        {meta ? (
-          <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
-        ) : null}
-        {entry.description ? (
-          <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
-            {entry.description}
-          </Text>
-        ) : null}
+          {meta ? (
+            <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
+          ) : null}
+          {entry.description ? (
+            <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
+              {entry.description}
+            </Text>
+          ) : null}
+        </Pressable>
         {booked || waitlisted ? (
           <View style={styles.actionRow}>
             <View style={styles.bookedBadge}>
@@ -140,11 +144,19 @@ function ClassCard({
             </ZookButton>
           </View>
         ) : pendingPayment ? (
-          <ZookButton onPress={onBook} disabled={busy} variant="primary">
+          <ZookButton
+            onPress={onBook}
+            disabled={busy}
+            variant="primary"
+          >
             {busy ? t("member.classes.opening") : bookingLabel(entry, t)}
           </ZookButton>
         ) : (
-          <ZookButton onPress={onBook} disabled={busy} variant="primary">
+          <ZookButton
+            onPress={onBook}
+            disabled={busy}
+            variant="primary"
+          >
             {busy ? t("common.saving") : bookingLabel(entry, t)}
           </ZookButton>
         )}
@@ -155,6 +167,7 @@ function ClassCard({
 
 export default function ClassesRoute() {
   const { palette } = useTheme();
+  const router = useRouter();
   const t = useT();
   const { selectedBranch } = useBranchSelection();
   const classesQuery = useMyClasses();
@@ -244,6 +257,7 @@ export default function ClassesRoute() {
                       entry={entry}
                       busy={busy}
                       cancelling={cancelling}
+                      onOpen={() => router.push(`/classes/${entry.id}` as never)}
                       onBook={() => enrollMutation.mutate({ classId: entry.id })}
                       onCancel={() => cancelMutation.mutate({ classId: entry.id })}
                     />
@@ -286,6 +300,9 @@ const styles = StyleSheet.create({
   classContent: {
     gap: spacing.sm,
     padding: spacing.lg,
+  },
+  detailPressable: {
+    gap: spacing.sm,
   },
   classHeader: {
     alignItems: "center",

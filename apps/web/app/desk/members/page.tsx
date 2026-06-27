@@ -23,6 +23,8 @@ export default async function DeskMembersPage({
       locale={desk.locale}
       permissions={desk.permissions}
       canOpenManagement={desk.canOpenManagement}
+      user={desk.user}
+      showSwitchOrganization={desk.showSwitchOrganization}
     >
       <DeskWorkspace {...desk} activeTab="member" />
     </DeskChrome>

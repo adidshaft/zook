@@ -13,7 +13,7 @@
     },
     {
       "path": "/api/cron/refund-reconcile",
-      "schedule": "*/10 * * * *"
+      "schedule": "15 3 * * *"
     },
     {
       "path": "/api/cron/trainer-payouts-draft",

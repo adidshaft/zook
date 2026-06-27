@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Globe2, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { DashboardSignOutButton } from "../../dashboard-sign-out-button";
 import { useModalFocusTrap } from "@/components/ui/use-modal-focus-trap";
 import { translatedGroupLabel, translatedNavLabel } from "./copy";
 import { isActiveNav, NAV_ICONS } from "./nav";
@@ -140,10 +139,6 @@ export function MobileDashboardMenu({
                   <ExternalLink size={18} />
                   Pricing
                 </Link>
-                <DashboardSignOutButton
-                  label={copy.common.signOut}
-                  busyLabel={copy.common.signingOut}
-                />
               </div>
             </div>
           </div>

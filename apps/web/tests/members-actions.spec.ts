@@ -161,4 +161,89 @@ test.describe("members actions", () => {
       .toBe("inactive");
     await expect(page.getByText("1 member archived.")).toBeVisible({ timeout: 15_000 });
   });
+
+  test("member list q search finds members beyond the first page", async ({ page }) => {
+    test.setTimeout(150_000);
+    await loginWithSessionCookie(page, "owner@zook.local");
+    const org = await seedAndGetOrg({ username: "aarogya-strength" });
+    const suffix = Date.now();
+    const targetEmail = `beyond-first-100-${suffix}@zook.local`;
+    const targetPhone = `+9198123${String(suffix).slice(-5)}`;
+    const oldCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60_000);
+    const recentCreatedAt = new Date();
+    const target = await prisma.user.create({
+      data: {
+        email: targetEmail,
+        emailVerifiedAt: new Date(),
+        name: `Beyond First Hundred ${suffix}`,
+        phone: targetPhone,
+      },
+    });
+    await prisma.memberProfile.create({
+      data: { orgId: org.id, userId: target.id, createdAt: oldCreatedAt },
+    });
+    await prisma.organizationUser.create({
+      data: { orgId: org.id, userId: target.id, status: "active", createdAt: oldCreatedAt },
+    });
+    await prisma.organizationRoleAssignment.create({
+      data: { orgId: org.id, userId: target.id, role: "MEMBER" },
+    });
+
+    const fillerUsers = Array.from({ length: 105 }, (_, index) => ({
+      email: `member-search-filler-${suffix}-${index}@zook.local`,
+      emailVerifiedAt: new Date(),
+      name: `Search Filler ${suffix}-${index}`,
+      phone: `+9199000${String(suffix).slice(-4)}${String(index).padStart(3, "0")}`,
+    }));
+    await prisma.user.createMany({ data: fillerUsers });
+    const createdFillers = await prisma.user.findMany({
+      where: { email: { in: fillerUsers.map((user) => user.email) } },
+      select: { id: true },
+    });
+    await prisma.memberProfile.createMany({
+      data: createdFillers.map((user, index) => ({
+        orgId: org.id,
+        userId: user.id,
+        createdAt: new Date(recentCreatedAt.getTime() + index),
+      })),
+    });
+    await prisma.organizationUser.createMany({
+      data: createdFillers.map((user, index) => ({
+        orgId: org.id,
+        userId: user.id,
+        status: "active",
+        createdAt: new Date(recentCreatedAt.getTime() + index),
+      })),
+    });
+    await prisma.organizationRoleAssignment.createMany({
+      data: createdFillers.map((user) => ({ orgId: org.id, userId: user.id, role: "MEMBER" })),
+    });
+
+    const firstPage = await expectApiOk<{
+      members: Array<{ user: { id: string; email: string } | null }>;
+    }>(await page.request.get(`/api/orgs/${org.id}/members?limit=100`));
+    expect(firstPage.data.members.some((member) => member.user?.id === target.id)).toBe(false);
+
+    const byName = await expectApiOk<{
+      members: Array<{ user: { id: string; email: string; phone?: string | null } | null }>;
+    }>(
+      await page.request.get(
+        `/api/orgs/${org.id}/members?limit=20&q=${encodeURIComponent("Beyond First Hundred")}`,
+      ),
+    );
+    expect(byName.data.members).toEqual(
+      expect.arrayContaining([expect.objectContaining({ user: expect.objectContaining({ id: target.id }) })]),
+    );
+
+    const byPhone = await expectApiOk<{
+      members: Array<{ user: { id: string; email: string; phone?: string | null } | null }>;
+    }>(
+      await page.request.get(
+        `/api/orgs/${org.id}/members?limit=20&q=${encodeURIComponent(targetPhone.slice(0, 8))}`,
+      ),
+    );
+    expect(byPhone.data.members).toEqual(
+      expect.arrayContaining([expect.objectContaining({ user: expect.objectContaining({ id: target.id }) })]),
+    );
+  });
 });

@@ -23,5 +23,18 @@ export default async function CoachLayout({ children }: { children: ReactNode })
     redirect(destinationToHref(resolvePostLoginDestination(session), "dashboard", origins));
   }
 
-  return <CoachChrome>{children}</CoachChrome>;
+  return (
+    <CoachChrome
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        preferredLocale: session.user.preferredLocale ?? null,
+      }}
+      roleLabel="Trainer"
+      locale={session.user.preferredLocale ?? null}
+      showSwitchOrganization={session.organizations.length > 1}
+    >
+      {children}
+    </CoachChrome>
+  );
 }

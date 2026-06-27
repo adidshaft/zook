@@ -9,10 +9,8 @@ import {
   Search,
   ShoppingBag,
 } from "lucide-react";
-import { DashboardLocaleToggle } from "@/components/dashboard-locale-toggle";
-import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
+import { UserMenu } from "@/components/dashboard/shell/user-menu";
 import { ZookButtonLink } from "@/components/zook-button";
-import { ThemeToggleButton } from "@/components/theme-preference-switcher";
 import { deskTranslations } from "./copy";
 import { DeskPendingBadge } from "./desk-pending-badge";
 
@@ -73,6 +71,9 @@ export function DeskChrome({
   locale,
   permissions,
   canOpenManagement,
+  user,
+  roleLabel = "Reception",
+  showSwitchOrganization = false,
 }: {
   children: ReactNode;
   orgId: string;
@@ -82,6 +83,9 @@ export function DeskChrome({
   locale?: string | null;
   permissions: Permission[];
   canOpenManagement?: boolean;
+  user?: { name: string; email: string; preferredLocale?: string | null };
+  roleLabel?: string | undefined;
+  showSwitchOrganization?: boolean;
 }) {
   const copy = deskTranslations[locale === "hi" ? "hi" : "en"];
   const visibleTabs = tabs.filter((tab) =>
@@ -107,12 +111,11 @@ export function DeskChrome({
                 {copy.backToManagement}
               </ZookButtonLink>
             ) : null}
-            <ThemeToggleButton />
-            <DashboardLocaleToggle locale={locale ?? undefined} labels={copy.common} />
-            <DashboardSignOutButton
-              compact
-              label={copy.common.signOut}
-              busyLabel={copy.common.signingOut}
+            <UserMenu
+              user={user ?? { name: orgName, email: "", preferredLocale: locale ?? null }}
+              roleLabel={roleLabel}
+              copy={copy}
+              showSwitchOrganization={showSwitchOrganization}
             />
           </div>
         </div>

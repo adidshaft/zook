@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@zook/db";
 import { getRequestContext, requireOrgAnyPermission, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
-import { notFoundError } from "../errors";
+import { forbiddenError, notFoundError } from "../errors";
 import { getOrganizationRecentPayments } from "../domains/payments/read-models";
 import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";
@@ -23,6 +23,8 @@ import {
   refundPaymentForActor,
   subscriptionReminderResolveSchema,
 } from "./core";
+
+const DESK_REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export async function handleOrganizationPayments(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "payments", "recent"])) {
@@ -169,6 +171,16 @@ export async function handleOrganizationPayments(request: NextRequest, path: str
     const payment = await prisma.payment.findFirst({ where: { id: paymentId, orgId } });
     if (!payment) {
       throw notFoundError("Payment not found");
+    }
+    const isManagementActor = ctx.roles.some((role) => role === "OWNER");
+    if (!isManagementActor) {
+      const referenceDate = payment.recordedAt ?? payment.createdAt;
+      const ageMs = Date.now() - new Date(referenceDate).getTime();
+      if (ageMs > DESK_REFUND_WINDOW_MS) {
+        throw forbiddenError(
+          "Desk staff can only refund payments made within the last 24 hours. Ask an admin or owner for older refunds.",
+        );
+      }
     }
     const result = await refundPaymentForActor({
       request,

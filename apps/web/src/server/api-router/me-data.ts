@@ -109,7 +109,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
       where: {
         memberUserId: userId,
         ...(orgId ? { orgId } : {}),
-        status: { in: ["ACTIVE", "PENDING_PAYMENT"] },
+        status: { in: ["ACTIVE", "PENDING_APPROVAL", "PENDING_PAYMENT"] },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -177,7 +177,7 @@ export async function handleMeData(request: NextRequest, path: string[]) {
       throw validationError("Trainer does not own this PT plan.");
     }
     await assertRateLimit(
-      "subscriptionChangeByActor",
+      "ptSubscriptionRequestByMember",
       `pt-request:${userId}:${orgId}`,
       "Too many PT subscription requests.",
     );

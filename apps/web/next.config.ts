@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
       // Add your CDN or custom storage domain here if needed
     ],
   },
+  async redirects() {
+    return [
+      { source: "/plans/:path*", destination: "/dashboard/plans/:path*", permanent: false },
+      { source: "/shop/:path*", destination: "/dashboard/shop/:path*", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

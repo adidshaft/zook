@@ -3,12 +3,26 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardSignOutButton } from "@/components/dashboard-sign-out-button";
+import { dashboardMessages, isHindi } from "@/components/dashboard/shell/copy";
+import { UserMenu } from "@/components/dashboard/shell/user-menu";
 
-export function CoachChrome({ children }: { children: ReactNode }) {
+export function CoachChrome({
+  children,
+  user,
+  roleLabel,
+  locale,
+  showSwitchOrganization = false,
+}: {
+  children: ReactNode;
+  user?: { name: string; email: string; preferredLocale?: string | null };
+  roleLabel?: string | undefined;
+  locale?: string | null;
+  showSwitchOrganization?: boolean;
+}) {
   const pathname = usePathname();
   const onCoachHome = pathname === "/coach";
   const onClientWorkspace = pathname.startsWith("/coach/clients/");
+  const copy = dashboardMessages[isHindi(locale) ? "hi" : "en"];
 
   return (
     <div className="min-h-dvh px-5 py-5">
@@ -41,7 +55,12 @@ export function CoachChrome({ children }: { children: ReactNode }) {
               ) : null}
             </nav>
           </div>
-          <DashboardSignOutButton compact />
+          <UserMenu
+            user={user ?? { name: "Zook coach", email: "", preferredLocale: locale ?? null }}
+            roleLabel={roleLabel}
+            copy={copy}
+            showSwitchOrganization={showSwitchOrganization}
+          />
         </header>
         <main className="grid gap-5">{children}</main>
       </div>

@@ -97,8 +97,13 @@ export function ReportsPanel({
     { fileName: "members.csv", label: "Members" },
     { fileName: "attendance.csv", label: "Attendance" },
     { fileName: "payments.csv", label: "Payments" },
+    { fileName: "revenue.csv", label: "Revenue" },
+    { fileName: "manual-cash.csv", label: "Cash reconciliation" },
     { fileName: "membership-sales.csv", label: "Membership sales" },
     { fileName: "expiring-members.csv", label: "Expiry" },
+    { fileName: "invoices.csv", label: "Invoices" },
+    { fileName: "referrals.csv", label: "Referrals" },
+    { fileName: "ai-usage.csv", label: "AI usage" },
   ];
   const buildExportHref = (fileName: string) => {
     const params = new URLSearchParams({

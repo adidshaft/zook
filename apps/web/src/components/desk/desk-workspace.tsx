@@ -126,12 +126,23 @@ export function DeskWorkspace({
           payAtDeskOrders={state.payAtDeskOrders}
           orgId={orgId}
           lastReceipt={state.lastReceipt}
+          recentPayments={state.recentPayments}
+          recentPaymentsLoading={state.recentPaymentsLoading}
+          recentPaymentsError={state.recentPaymentsError}
+          refundDraft={state.refundDraft}
+          refundError={state.refundError}
           onSubmit={(event) => void actions.recordPayment(event)}
           onPurposeChange={actions.handlePurposeChange}
           onMemberChange={actions.handlePaymentMemberChange}
           onOrderChange={actions.handlePaymentOrderChange}
           onPlanChange={actions.handlePaymentPlanChange}
           onFormChange={actions.updatePaymentForm}
+          onStartRefund={actions.startRefund}
+          onCancelRefund={() => actions.setRefundDraft(null)}
+          onRefundReasonChange={(reason) =>
+            actions.setRefundDraft((current) => (current ? { ...current, reason } : current))
+          }
+          onSubmitRefund={() => actions.submitRefund()}
         />
       ) : null}
 

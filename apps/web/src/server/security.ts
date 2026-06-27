@@ -100,14 +100,7 @@ export function assertSafeMutationRequest(
   const originCandidate = origin ?? referer;
   const allBrowserHintsAbsent =
     origin === null && referer === null && fetchSite === null;
-  const requestOriginUrl = parseUrl(requestOrigin);
-  const isLocalNonProductionRequest =
-    requestOriginUrl !== null &&
-    isLoopbackHost(requestOriginUrl.hostname) &&
-    process.env.APP_ENV !== "production" &&
-    process.env.ENV_PROFILE !== "production";
-
-  if (allBrowserHintsAbsent && !intent && !isLocalNonProductionRequest) {
+  if (allBrowserHintsAbsent && !intent) {
     throw forbiddenError("Cross-site mutation blocked. Include the x-zook-intent header.");
   }
   const originMatches = originCandidate

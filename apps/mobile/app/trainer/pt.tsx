@@ -11,6 +11,7 @@ import {
   Pill,
   QueryErrorState,
   SectionHeader,
+  Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -286,6 +287,13 @@ export default function TrainerPersonalTraining() {
         >
           <AppHeader title={t("trainer.pt.title")} subtitle={t("trainer.pt.subtitle")} showBack />
 
+          {plansQuery.isLoading || subscriptionsQuery.isLoading ? (
+            <Card variant="compact" contentStyle={styles.loadingCard}>
+              <Skeleton width="55%" height={18} borderRadius={9} />
+              <Skeleton width="40%" height={14} borderRadius={7} />
+            </Card>
+          ) : null}
+
           <View style={styles.statRow}>
             <Card variant="compact" contentStyle={styles.statCard}>
               <Text style={[styles.statValue, { color: palette.text.primary }]}>{activeClients}</Text>
@@ -484,6 +492,7 @@ const styles = StyleSheet.create({
   statValue: { ...typography.metric },
   statLabel: { ...typography.small },
   formCard: { gap: spacing.md },
+  loadingCard: { gap: spacing.md },
   formLabel: { ...typography.caption },
   formRow: { flexDirection: "row", gap: spacing.sm },
   formField: { flex: 1 },

@@ -87,7 +87,7 @@ export interface DemoMembership {
   branchId: string;
   memberUserId: string;
   planId: string;
-  status: "ACTIVE" | "PENDING_PAYMENT" | "EXPIRED";
+  status: "ACTIVE" | "PENDING_PAYMENT" | "EXPIRED" | "PAUSED" | "CANCELLED";
   daysLeft: number;
   remainingVisits: number;
   lastCheckInLabel: string;

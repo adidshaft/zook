@@ -69,6 +69,7 @@ export const defaultRolePermissions: Record<OrgRole, Permission[]> = {
   RECEPTIONIST: [
     "MEMBERS_VIEW",
     "PAYMENTS_RECORD_OFFLINE",
+    "PAYMENTS_REFUND",
     "ATTENDANCE_QR_DISPLAY",
     "ATTENDANCE_APPROVE",
     "ATTENDANCE_MANUAL_OVERRIDE",

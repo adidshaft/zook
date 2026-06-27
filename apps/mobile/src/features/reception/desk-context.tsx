@@ -41,10 +41,10 @@ import {
   FormField,
   Card,
   AnimatedAppear,
+  HeaderActions,
   HeaderMeta,
   IconBubble,
   PrimaryButton,
-  ProfileShortcut,
   ScreenHeader,
   SecondaryButton,
   ZookScreen,
@@ -928,7 +928,7 @@ export function ReceptionWorkspace({
                     <Ionicons name="chevron-back" size={22} color={palette.text.primary} />
                   </Pressable>
                 ) : (
-                  <ProfileShortcut />
+                  <HeaderActions />
                 )
               }
             />

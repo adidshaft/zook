@@ -9,6 +9,18 @@ export type DashboardMessages = typeof enMessages;
 
 export type DashboardCopy = DashboardMessages;
 
+export type UserMenuCopy = {
+  common: {
+    account: string;
+    language: string;
+    english: string;
+    hindi: string;
+    switchOrganization: string;
+    signOut: string;
+    signingOut: string;
+  };
+};
+
 export type NavItem = {
   key: string;
   label: string;
