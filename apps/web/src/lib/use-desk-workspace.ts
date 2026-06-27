@@ -36,6 +36,7 @@ export function useDeskWorkspace({
   const [busyId, setBusyId] = useState("");
   const [toast, setToast] = useState("");
   const [memberQuery, setMemberQuery] = useState("");
+  const [debouncedMemberQuery, setDebouncedMemberQuery] = useState("");
   const [orderSort, setOrderSort] = useState<"newest" | "oldest" | "status">("newest");
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>({
@@ -72,8 +73,23 @@ export function useDeskWorkspace({
     path: withBranch(`/api/orgs/${orgId}/attendance/today`, branch),
     refreshMs: 30_000,
   });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMemberQuery(memberQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [memberQuery]);
+
+  const membersPath = useMemo(() => {
+    const params = new URLSearchParams({ limit: "20" });
+    if (debouncedMemberQuery) {
+      params.set("q", debouncedMemberQuery);
+    }
+    return withBranch(`/api/orgs/${orgId}/members?${params.toString()}`, branch);
+  }, [branch, debouncedMemberQuery, orgId]);
+
   const membersState = useOperationalResource<{ members: MemberRow[] }>({
-    path: withBranch(`/api/orgs/${orgId}/members?limit=100`, branch),
+    path: membersPath,
   });
   const plansState = useOperationalResource<{ plans: PlanRow[] }>({
     path: withBranch(`/api/orgs/${orgId}/membership-plans`, branch),
@@ -129,18 +145,10 @@ export function useDeskWorkspace({
   const activePlans = (plansState.data?.plans ?? []).filter((plan) => plan.active);
   const recentPayments = recentPaymentsState.data?.payments ?? [];
 
-  const filteredMembers = useMemo(() => {
-    const query = memberQuery.trim().toLowerCase();
-    if (!query) return members.slice(0, 8);
-    return members
-      .filter((member) => {
-        const user = member.user;
-        return [user?.name, user?.email, user?.phone, user?.privateHandle]
-          .filter(Boolean)
-          .some((value) => value!.toLowerCase().includes(query));
-      })
-      .slice(0, 12);
-  }, [memberQuery, members]);
+  const filteredMembers = useMemo(() => members.slice(0, debouncedMemberQuery ? 20 : 8), [
+    debouncedMemberQuery,
+    members,
+  ]);
 
   useEffect(() => {
     if (!selectedMember?.user?.id) return;
