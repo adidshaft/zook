@@ -39,6 +39,10 @@ vi.mock("@/lib/domains/member", () => ({
   useMemberHome: () => ({ data: null }),
 }));
 
+vi.mock("@/lib/i18n", () => ({
+  useT: () => (key: string) => key,
+}));
+
 vi.mock("@/lib/toast", () => ({
   showToast: vi.fn(),
 }));

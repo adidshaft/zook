@@ -28,11 +28,21 @@ vi.mock("expo-constants", () => ({
 }));
 
 vi.mock("react-native", () => ({
-  Platform: { OS: "ios" },
+  NativeModules: {},
+  Platform: { OS: "ios", select: (values: Record<string, unknown>) => values.ios ?? values.default },
+  TurboModuleRegistry: {
+    get: vi.fn(() => null),
+    getEnforcing: vi.fn(() => ({})),
+  },
+}));
+
+vi.mock("./i18n", () => ({
+  translate: (key: string) => key,
 }));
 
 describe("mobile API transport", () => {
   beforeEach(() => {
+    vi.stubGlobal("__DEV__", true);
     runtimeMode.offlineDemo = false;
     runtimeMode.configError = undefined;
     demoRequest.mockClear();
