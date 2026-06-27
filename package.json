@@ -69,17 +69,6 @@
     "account-deletion:purge": "tsx scripts/account-deletion-purge.ts",
     "format": "prettier --write ."
   },
-  "pnpm": {
-    "overrides": {
-      "fast-xml-builder": ">=1.1.7",
-      "shell-quote": "1.8.4",
-      "undici": "6.27.0",
-      "vite@<=6.4.2": "6.4.3",
-      "ws@>=6.0.0 <6.2.4": "6.2.4",
-      "ws@>=7.0.0 <7.5.11": "7.5.11",
-      "ws@>=8.0.0 <8.21.0": "8.21.0"
-    }
-  },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
     "@eslint/js": "^9.18.0",
