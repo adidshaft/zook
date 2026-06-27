@@ -58,6 +58,47 @@ const planFeedbackSchema = z.object({
   message: z.string().trim().min(1).max(500),
 });
 
+const challengeInputSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(1000).optional(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+  optInOnly: z.boolean().default(true),
+  leaderboardEnabled: z.boolean().default(false),
+  active: z.boolean().default(true),
+});
+
+const challengeUpdateSchema = challengeInputSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "Provide at least one challenge field to update.");
+
+const challengeProgressSchema = z.object({
+  value: z.number().int().min(0),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+function parseChallengeDates(input: { startsAt?: string; endsAt?: string }) {
+  const startsAt = input.startsAt ? new Date(input.startsAt) : undefined;
+  const endsAt = input.endsAt ? new Date(input.endsAt) : undefined;
+  if (startsAt && endsAt && startsAt >= endsAt) {
+    throw validationError("Challenge end date must be after start date.");
+  }
+  return { startsAt, endsAt };
+}
+
+async function getActiveChallengeOrThrow(input: { orgId: string; challengeId: string }) {
+  const challenge = await prisma.challenge.findFirst({
+    where: { id: input.challengeId, orgId: input.orgId, active: true },
+  });
+  if (!challenge) {
+    throw notFoundError("Challenge not found.");
+  }
+  if (challenge.endsAt < new Date()) {
+    throw validationError("Challenge has ended.");
+  }
+  return challenge;
+}
+
 export async function handlePlansChallenges(request: NextRequest, path: string[]) {
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "plans"])) {
     const orgId = path[1]!;
@@ -450,6 +491,191 @@ export async function handlePlansChallenges(request: NextRequest, path: string[]
       });
     }
     return ok({ ok: true, progress, notified: recipientIds.length });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "challenges"])) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const body = challengeInputSchema.parse(await readJson(request));
+    const { startsAt, endsAt } = parseChallengeDates(body);
+    const challenge = await prisma.challenge.create({
+      data: clean({
+        orgId,
+        createdById: userId,
+        title: body.title,
+        description: sanitizeRichText(body.description),
+        startsAt: startsAt!,
+        endsAt: endsAt!,
+        optInOnly: body.optInOnly,
+        leaderboardEnabled: body.leaderboardEnabled,
+        active: body.active,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "challenge.created",
+      entityType: "challenge",
+      entityId: challenge.id,
+      metadata: { title: challenge.title },
+    });
+    return ok({ challenge });
+  }
+
+  if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "challenges", /.+/])) {
+    const orgId = path[1]!;
+    const challengeId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const existing = await prisma.challenge.findFirst({ where: { id: challengeId, orgId } });
+    if (!existing) {
+      throw notFoundError("Challenge not found.");
+    }
+    const body = challengeUpdateSchema.parse(await readJson(request));
+    const dates = parseChallengeDates({
+      startsAt: body.startsAt ?? existing.startsAt.toISOString(),
+      endsAt: body.endsAt ?? existing.endsAt.toISOString(),
+    });
+    const challenge = await prisma.challenge.update({
+      where: { id: existing.id },
+      data: clean({
+        title: body.title,
+        description: sanitizeRichText(body.description),
+        startsAt: dates.startsAt,
+        endsAt: dates.endsAt,
+        optInOnly: body.optInOnly,
+        leaderboardEnabled: body.leaderboardEnabled,
+        active: body.active,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "challenge.updated",
+      entityType: "challenge",
+      entityId: challenge.id,
+    });
+    return ok({ challenge });
+  }
+
+  if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "challenges", /.+/])) {
+    const orgId = path[1]!;
+    const challengeId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    const existing = await prisma.challenge.findFirst({ where: { id: challengeId, orgId } });
+    if (!existing) {
+      throw notFoundError("Challenge not found.");
+    }
+    const challenge = await prisma.challenge.update({
+      where: { id: existing.id },
+      data: { active: false },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "challenge.deleted",
+      entityType: "challenge",
+      entityId: challenge.id,
+    });
+    return ok({ challenge });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "challenges", /.+/, "opt-in"])) {
+    const orgId = path[1]!;
+    const challengeId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    await assertOrgUser({ orgId, userId });
+    const challenge = await getActiveChallengeOrThrow({ orgId, challengeId });
+    const participant = await prisma.challengeParticipant.upsert({
+      where: { challengeId_userId: { challengeId, userId } },
+      update: { visibleOnLeaderboard: challenge.leaderboardEnabled },
+      create: {
+        orgId,
+        challengeId,
+        userId,
+        visibleOnLeaderboard: challenge.leaderboardEnabled,
+      },
+    });
+    return ok({ participant });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "challenges", /.+/, "progress"])) {
+    const orgId = path[1]!;
+    const challengeId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    await assertOrgUser({ orgId, userId });
+    const challenge = await getActiveChallengeOrThrow({ orgId, challengeId });
+    const body = challengeProgressSchema.parse(await readJson(request));
+    if (challenge.optInOnly) {
+      const participant = await prisma.challengeParticipant.findUnique({
+        where: { challengeId_userId: { challengeId, userId } },
+      });
+      if (!participant) {
+        throw validationError("Opt in to this challenge before posting progress.");
+      }
+    }
+    const progress = await prisma.challengeProgress.upsert({
+      where: { challengeId_userId: { challengeId, userId } },
+      update: clean({
+        value: body.value,
+        metadata: body.metadata as Prisma.InputJsonValue | undefined,
+      }),
+      create: clean({
+        orgId,
+        challengeId,
+        userId,
+        value: body.value,
+        metadata: body.metadata as Prisma.InputJsonValue | undefined,
+      }),
+    });
+    return ok({ progress });
+  }
+
+  if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges", /.+/, "leaderboard"])) {
+    const orgId = path[1]!;
+    const challengeId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireAuth(ctx);
+    await assertOrgUser({ orgId, userId });
+    const challenge = await prisma.challenge.findFirst({ where: { id: challengeId, orgId, active: true } });
+    if (!challenge) {
+      throw notFoundError("Challenge not found.");
+    }
+    const progress = await prisma.challengeProgress.findMany({
+      where: {
+        orgId,
+        challengeId,
+        ...(challenge.leaderboardEnabled
+          ? { userId: { in: (await prisma.challengeParticipant.findMany({
+              where: { orgId, challengeId, visibleOnLeaderboard: true },
+              select: { userId: true },
+            })).map((participant) => participant.userId) } }
+          : {}),
+      },
+      orderBy: [{ value: "desc" }, { updatedAt: "asc" }],
+      take: ADMIN_DETAIL_LIST_LIMIT,
+    });
+    const users = await prisma.user.findMany({
+      where: { id: { in: progress.map((entry) => entry.userId) } },
+      select: { id: true, name: true, email: true },
+    });
+    const userById = new Map(users.map((user) => [user.id, user]));
+    return ok({
+      leaderboard: progress.map((entry, index) => ({
+        rank: index + 1,
+        userId: entry.userId,
+        displayName: userById.get(entry.userId)?.name ?? userById.get(entry.userId)?.email ?? "Member",
+        progressValue: entry.value,
+        updatedAt: entry.updatedAt,
+      })),
+    });
   }
 
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "challenges"])) {

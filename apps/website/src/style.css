@@ -236,7 +236,7 @@ h1, h2, h3, p { text-wrap: pretty; }
 .price-card { border-radius: 30px; padding: 26px; min-height: 300px; display: flex; flex-direction: column; align-items: flex-start; }
 .price-card .button { margin-top: auto; }
 .price-card.featured { border-color: rgba(185,244,85,.38); background: linear-gradient(145deg, rgba(185,244,85,.14), rgba(255,255,255,.045)); }
-.billing-toggle { justify-content: center; margin: 22px 0 0; }
+.billing-toggle { display: flex; gap: 10px; justify-content: center; margin: 22px 0 0; }
 .billing-toggle button {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -252,7 +252,7 @@ h1, h2, h3, p { text-wrap: pretty; }
 .price-amount { color: var(--text); font-size: 34px; font-weight: 800; letter-spacing: -0.04em; margin: 16px 0 0; }
 .price-amount small { color: var(--muted); font-size: 13px; letter-spacing: 0; }
 .popular-pill { border: 1px solid rgba(210,251,102,.36); border-radius: 999px; color: var(--lime); font-size: 11px; font-weight: 800; padding: 5px 9px; text-transform: uppercase; }
-.proof-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.proof-stats { display: grid; gap: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat-num { color: var(--lime); display: block; font-size: 36px; font-weight: 800; letter-spacing: -0.04em; }
 .stat-label { color: rgba(244,247,239,.64); }
 .app-badges { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }

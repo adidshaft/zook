@@ -63,6 +63,23 @@ function defaultClassForm(trainerId?: string) {
   };
 }
 
+function classFormFromEntry(entry: ClassRow) {
+  return {
+    name: entry.name,
+    classType: entry.classType,
+    description: entry.description ?? "",
+    trainerId: entry.trainerId,
+    maxCapacity: String(entry.maxCapacity),
+    priceRupees: String((entry.pricePaise ?? 0) / 100),
+    trainerCommissionPercent:
+      entry.trainerCommissionBps === null || entry.trainerCommissionBps === undefined
+        ? ""
+        : String(entry.trainerCommissionBps / 100),
+    startTime: toDateTimeLocalValue(new Date(entry.startTime)),
+    endTime: toDateTimeLocalValue(new Date(entry.endTime)),
+  };
+}
+
 function classStatusTone(status: string) {
   const value = status.toLowerCase();
   if (value === "scheduled") return "lime" as const;
@@ -87,6 +104,9 @@ export function ClassesDashboardRoute({
   const defaultTrainerId =
     (canManageAllTrainers ? trainerOptions[0]?.id : currentUserId) ?? trainerOptions[0]?.id ?? "";
   const [form, setForm] = useState(() => defaultClassForm(defaultTrainerId));
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(() => defaultClassForm(defaultTrainerId));
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [openRosterId, setOpenRosterId] = useState<string | null>(null);
   const [rosters, setRosters] = useState<Record<string, ClassRosterState>>({});
   const classesQuery = useClasses(orgId, selectedBranchId);
@@ -120,6 +140,46 @@ export function ClassesDashboardRoute({
         queryKey: ["classes", orgId, selectedBranchId ?? "all"],
       });
       setForm(defaultClassForm(canManageAllTrainers ? form.trainerId : currentUserId));
+    },
+  });
+  const updateClassMutation = useMutation({
+    mutationFn: async (classId: string) =>
+      webApiFetch<{ class: ClassRow }>(`/api/orgs/${orgId}/classes/${classId}`, {
+        method: "PATCH",
+        body: {
+          branchId: selectedBranchId ?? undefined,
+          trainerId: canManageAllTrainers ? editForm.trainerId : currentUserId,
+          name: editForm.name.trim(),
+          description: editForm.description.trim() || null,
+          classType: editForm.classType.trim(),
+          maxCapacity: Number(editForm.maxCapacity),
+          pricePaise: Math.max(0, Math.round((Number.parseFloat(editForm.priceRupees) || 0) * 100)),
+          trainerCommissionBps: editForm.trainerCommissionPercent.trim()
+            ? Math.max(0, Math.round((Number.parseFloat(editForm.trainerCommissionPercent) || 0) * 100))
+            : null,
+          startTime: new Date(editForm.startTime).toISOString(),
+          endTime: new Date(editForm.endTime).toISOString(),
+        },
+        feedback: { success: "Class updated." },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["classes", orgId, selectedBranchId ?? "all"],
+      });
+      setEditingClassId(null);
+    },
+  });
+  const cancelClassMutation = useMutation({
+    mutationFn: async (classId: string) =>
+      webApiFetch<{ class: ClassRow }>(`/api/orgs/${orgId}/classes/${classId}/cancel`, {
+        method: "POST",
+        feedback: { success: "Class cancelled." },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["classes", orgId, selectedBranchId ?? "all"],
+      });
+      setConfirmCancelId(null);
     },
   });
   const trainerChoices = useMemo(
@@ -359,6 +419,27 @@ export function ClassesDashboardRoute({
               rosterState={rosters[entry.id]}
               rosterOpen={openRosterId === entry.id}
               onToggleRoster={() => void loadRoster(entry.id)}
+              canManage={canManageAllTrainers}
+              editing={editingClassId === entry.id}
+              editForm={editForm}
+              trainerChoices={trainerChoices}
+              confirmCancel={confirmCancelId === entry.id}
+              updatePending={updateClassMutation.isPending}
+              cancelPending={cancelClassMutation.isPending}
+              onStartEdit={() => {
+                setEditingClassId(entry.id);
+                setEditForm(classFormFromEntry(entry));
+                setConfirmCancelId(null);
+              }}
+              onCancelEdit={() => setEditingClassId(null)}
+              onEditFormChange={(patch) => setEditForm((current) => ({ ...current, ...patch }))}
+              onSaveEdit={() => updateClassMutation.mutate(entry.id)}
+              onAskCancel={() => {
+                setConfirmCancelId(entry.id);
+                setEditingClassId(null);
+              }}
+              onDismissCancel={() => setConfirmCancelId(null)}
+              onConfirmCancel={() => cancelClassMutation.mutate(entry.id)}
             />
           ))}
         </div>
@@ -373,13 +454,42 @@ function ClassScheduleCard({
   rosterState,
   rosterOpen,
   onToggleRoster,
+  canManage,
+  editing,
+  editForm,
+  trainerChoices,
+  confirmCancel,
+  updatePending,
+  cancelPending,
+  onStartEdit,
+  onCancelEdit,
+  onEditFormChange,
+  onSaveEdit,
+  onAskCancel,
+  onDismissCancel,
+  onConfirmCancel,
 }: {
   entry: ClassRow;
   selectedBranchName: string;
   rosterState?: ClassRosterState | undefined;
   rosterOpen: boolean;
   onToggleRoster: () => void;
+  canManage: boolean;
+  editing: boolean;
+  editForm: ReturnType<typeof defaultClassForm>;
+  trainerChoices: TrainerOption[];
+  confirmCancel: boolean;
+  updatePending: boolean;
+  cancelPending: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onEditFormChange: (patch: Partial<ReturnType<typeof defaultClassForm>>) => void;
+  onSaveEdit: () => void;
+  onAskCancel: () => void;
+  onDismissCancel: () => void;
+  onConfirmCancel: () => void;
 }) {
+  const isCancelled = entry.status.toLowerCase() === "cancelled";
   return (
     <div className="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -429,11 +539,157 @@ function ClassScheduleCard({
           {entry.description}
         </p>
       ) : null}
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {canManage && !isCancelled ? (
+          <>
+            <ZookButton type="button" size="sm" tone="ghost" onClick={onStartEdit}>
+              Edit
+            </ZookButton>
+            <ZookButton type="button" size="sm" tone="ghost" onClick={onAskCancel}>
+              Cancel class
+            </ZookButton>
+          </>
+        ) : null}
         <ZookButton type="button" size="sm" tone="ghost" onClick={onToggleRoster}>
           {rosterOpen ? "Hide roster" : "View roster"}
         </ZookButton>
       </div>
+      {editing ? (
+        <div className="mt-4 grid gap-3 rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Class name
+              <input
+                value={editForm.name}
+                onChange={(event) => onEditFormChange({ name: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Class type
+              <input
+                value={editForm.classType}
+                onChange={(event) => onEditFormChange({ classType: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Starts
+              <input
+                type="datetime-local"
+                value={editForm.startTime}
+                onChange={(event) => onEditFormChange({ startTime: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Ends
+              <input
+                type="datetime-local"
+                value={editForm.endTime}
+                onChange={(event) => onEditFormChange({ endTime: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Capacity
+              <input
+                type="number"
+                min={1}
+                value={editForm.maxCapacity}
+                onChange={(event) => onEditFormChange({ maxCapacity: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Price (₹)
+              <input
+                type="number"
+                min={0}
+                value={editForm.priceRupees}
+                onChange={(event) => onEditFormChange({ priceRupees: event.target.value })}
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              Commission (%)
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={editForm.trainerCommissionPercent}
+                onChange={(event) =>
+                  onEditFormChange({ trainerCommissionPercent: event.target.value })
+                }
+                className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+          </div>
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+            Trainer
+            <select
+              value={editForm.trainerId}
+              onChange={(event) => onEditFormChange({ trainerId: event.target.value })}
+              className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+            >
+              {trainerChoices.map((trainer) => (
+                <option key={trainer.id} value={trainer.id}>
+                  {trainer.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+            Notes
+            <textarea
+              value={editForm.description}
+              onChange={(event) => onEditFormChange({ description: event.target.value })}
+              rows={3}
+              className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
+            />
+          </label>
+          <div className="flex flex-wrap justify-end gap-2">
+            <ZookButton type="button" size="sm" tone="ghost" onClick={onCancelEdit}>
+              Close
+            </ZookButton>
+            <ZookButton
+              type="button"
+              size="sm"
+              onClick={onSaveEdit}
+              state={updatePending ? "loading" : "idle"}
+              disabled={updatePending || !editForm.name.trim() || !editForm.trainerId}
+            >
+              Save
+            </ZookButton>
+          </div>
+        </div>
+      ) : null}
+      {confirmCancel ? (
+        <div className="mt-4 rounded-[22px] border border-[color-mix(in_srgb,var(--feedback-danger)_34%,transparent)] bg-[var(--surface-danger-soft)] p-4">
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            Cancel this class? Enrolments will stop and the card will show as cancelled.
+          </p>
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
+            <ZookButton type="button" size="sm" tone="ghost" onClick={onDismissCancel}>
+              Keep class
+            </ZookButton>
+            <ZookButton
+              type="button"
+              size="sm"
+              tone="danger"
+              onClick={onConfirmCancel}
+              state={cancelPending ? "loading" : "idle"}
+              disabled={cancelPending}
+            >
+              Confirm cancel
+            </ZookButton>
+          </div>
+        </div>
+      ) : null}
       {rosterOpen ? (
         <div className="mt-4 rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">

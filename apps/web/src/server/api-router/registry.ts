@@ -48,6 +48,7 @@ import { handlePrivacy } from "./privacy";
 import { handlePublicOrganizations } from "./public-organizations";
 import { handlePushDevices } from "./push-devices";
 import { handleReports } from "./reports";
+import { handleResources } from "./resources";
 import { handleRewards } from "./rewards";
 import { handleReviews } from "./reviews";
 import { handleStaff } from "./staff";
@@ -75,6 +76,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleTracking, firstSegments: ["me"] },
   { handler: handleMemberPlansGoals, firstSegments: ["me"] },
   { handler: handleMemberMemberships, firstSegments: ["me"] },
+  { handler: handleResources, firstSegments: ["me", "orgs"] },
   { handler: handlePushDevices, firstSegments: ["me", "push"] },
   { handler: handlePrivacy, firstSegments: ["guardian-consent", "me"] },
   { handler: handleNotificationsInbox, firstSegments: ["me"] },

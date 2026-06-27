@@ -42,6 +42,11 @@ const whatsappUnregisterDeviceSchema = z.object({
   phone: z.string().trim().min(8).max(20),
 });
 
+const meWhatsAppDeviceSchema = z.object({
+  phone: z.string().trim().min(8).max(20),
+  orgId: z.string().optional(),
+});
+
 function getPushProviderOrThrow() {
   const diagnostics = getPushProviderDiagnostics();
   if (
@@ -64,6 +69,17 @@ function getWhatsAppProviderOrThrow() {
     throw validationError("WhatsApp alerts are not available right now.");
   }
   return getWhatsAppProvider();
+}
+
+function normalizeIndianWhatsAppPhone(phone: string) {
+  const digits = phone.trim().replace(/\D/g, "");
+  if (digits.length === 10) {
+    return normalizeWhatsAppPhone(digits);
+  }
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return normalizeWhatsAppPhone(`+${digits}`);
+  }
+  return "";
 }
 
 export async function handlePushDevices(request: NextRequest, path: string[]) {
@@ -199,6 +215,78 @@ export async function handlePushDevices(request: NextRequest, path: string[]) {
       await getPushProvider().unregisterDevice({ token: device.token });
     }
     const updated = await prisma.pushDevice.update({
+      where: { id: device.id },
+      data: {
+        status: "REVOKED",
+        revokedAt: new Date(),
+        failureReason: null,
+      },
+    });
+    return ok({ device: updated });
+  }
+  if (request.method === "GET" && pathMatches(path, ["me", "whatsapp-devices"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    return ok({
+      devices: await prisma.whatsAppDevice.findMany({
+        where: { userId },
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      }),
+    });
+  }
+  if (request.method === "POST" && pathMatches(path, ["me", "whatsapp-devices"])) {
+    const body = meWhatsAppDeviceSchema.parse(await readJson(request));
+    const ctx = await getRequestContext(request, body.orgId ? { orgId: body.orgId } : {});
+    const userId = requireAuth(ctx);
+    assertActiveContextOrg(ctx, body.orgId);
+    await assertRateLimit(
+      "pushRegisterByActor",
+      `${body.orgId ?? "global"}:${userId}:me-whatsapp`,
+      "Too many WhatsApp registrations from this account.",
+    );
+    const normalizedPhone = normalizeIndianWhatsAppPhone(body.phone);
+    if (!normalizedPhone) {
+      throw validationError("Enter a valid Indian WhatsApp phone number.");
+    }
+    // TODO: Require OTP verification once WhatsApp Business API onboarding is complete.
+    const device = await prisma.whatsAppDevice.upsert({
+      where: {
+        provider_phone_userId: {
+          provider: "manual",
+          phone: normalizedPhone,
+          userId,
+        },
+      },
+      update: clean({
+        orgId: body.orgId ?? null,
+        status: "ACTIVE",
+        optedInAt: new Date(),
+        revokedAt: null,
+        failureReason: null,
+        lastRegisteredAt: new Date(),
+        lastSeenAt: new Date(),
+      }),
+      create: clean({
+        orgId: body.orgId ?? null,
+        userId,
+        provider: "manual",
+        phone: normalizedPhone,
+        status: "ACTIVE",
+        optedInAt: new Date(),
+        lastRegisteredAt: new Date(),
+        lastSeenAt: new Date(),
+      }),
+    });
+    return ok({ device });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["me", "whatsapp-devices", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const device = await prisma.whatsAppDevice.findFirst({
+      where: { id: path[2]!, userId },
+    });
+    if (!device) {
+      throw notFoundError("WhatsApp device not found");
+    }
+    const updated = await prisma.whatsAppDevice.update({
       where: { id: device.id },
       data: {
         status: "REVOKED",
