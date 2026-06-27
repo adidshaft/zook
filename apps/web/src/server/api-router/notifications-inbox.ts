@@ -34,14 +34,19 @@ export async function handleNotificationsInbox(request: NextRequest, path: strin
     const notificationId = path[2]!;
     const record = await prisma.notificationRecipient.findFirst({
       where: { userId, notificationId, deliveryStatus: { not: "scheduled" } },
-      include: { notification: true },
     });
     if (!record) {
       throw notFoundError("Notification not found");
     }
+    const notification = await prisma.notification.findUnique({
+      where: { id: record.notificationId },
+    });
+    if (!notification) {
+      throw notFoundError("Notification not found");
+    }
     return ok({
       notification: {
-        ...record.notification,
+        ...notification,
         recipientId: record.id,
         readAt: record.readAt,
         deliveryStatus: record.deliveryStatus,
@@ -74,7 +79,7 @@ export async function handleNotificationsInbox(request: NextRequest, path: strin
           notifications.find((notification) => notification.id === recipient.notificationId) ??
           null,
       })),
-      nextCursor: recipients.length > limit ? page[page.length - 1]?.id ?? null : null,
+      nextCursor: recipients.length > limit ? (page[page.length - 1]?.id ?? null) : null,
       limit,
     });
   }

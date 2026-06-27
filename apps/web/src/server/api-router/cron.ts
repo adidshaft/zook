@@ -112,8 +112,7 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
             status: "FAILED",
             completedAt: new Date(),
             errorCode: "ACCOUNT_DELETION_PURGE_FAILED",
-            errorMessage:
-              error instanceof Error ? error.message : "Unknown account deletion error",
+            errorMessage: error instanceof Error ? error.message : "Unknown account deletion error",
           },
         });
       }
@@ -425,22 +424,25 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
     return ok({ ok: true, ...result });
   }
 
-  if (
-    request.method === "POST" &&
-    pathMatches(path, ["cron", "send-scheduled-notifications"])
-  ) {
+  if (request.method === "POST" && pathMatches(path, ["cron", "send-scheduled-notifications"])) {
     requireCronSecret(request);
     const now = new Date();
     const due = await prisma.notification.findMany({
       where: { status: "SCHEDULED", scheduledAt: { lte: now } },
       orderBy: { scheduledAt: "asc" },
       take: 50,
-      include: { recipients: true },
     });
+    const recipients = due.length
+      ? await prisma.notificationRecipient.findMany({
+          where: { notificationId: { in: due.map((notification) => notification.id) } },
+        })
+      : [];
     let processed = 0;
     let delivered = 0;
     for (const notification of due) {
-      const userIds = notification.recipients.map((recipient) => recipient.userId);
+      const userIds = recipients
+        .filter((recipient) => recipient.notificationId === notification.id)
+        .map((recipient) => recipient.userId);
       if (notification.pushEnabled && notification.orgId && userIds.length) {
         await deliverPushForNotification({
           orgId: notification.orgId,

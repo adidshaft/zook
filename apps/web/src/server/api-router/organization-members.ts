@@ -12,6 +12,7 @@ import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";
 import {
   assertBranchAccessForContext,
+  assertOrgUser,
   attendanceWithEntryCode,
   clean,
   createDirectNotification,
@@ -110,7 +111,7 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
   const constrainedUserIds =
     scopedUserIds && searchUserIds
       ? scopedUserIds.filter((userId) => searchUserIds.includes(userId))
-      : scopedUserIds ?? searchUserIds;
+      : (scopedUserIds ?? searchUserIds);
   const profiles = await prisma.memberProfile.findMany({
     where: {
       orgId,
@@ -351,11 +352,12 @@ export async function handleOrganizationMembers(request: NextRequest, path: stri
     const body = assignTrainerBodySchema.parse(await readJson(request));
     const [member, trainer] = await Promise.all([
       prisma.organizationUser.findFirst({
-        where: { orgId, userId: memberUserId, role: "MEMBER", status: "active" },
+        where: { orgId, userId: memberUserId, status: "active" },
       }),
-      prisma.organizationUser.findFirst({
-        where: { orgId, userId: body.trainerUserId, role: "TRAINER", status: "active" },
-      }),
+      assertOrgUser({ orgId, userId: body.trainerUserId, role: "TRAINER" }).then(
+        () => true,
+        () => false,
+      ),
     ]);
     if (!member) {
       throw notFoundError("Member not found");
