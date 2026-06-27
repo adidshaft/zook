@@ -4,13 +4,9 @@ import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
 import { withBranchScope, type DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
-import {
-  cachedJson,
-  getServerCacheDiagnostics,
-  getServerCacheStore,
-} from "@/server/server-cache";
+import { cachedJson, getServerCacheDiagnostics, getServerCacheStore } from "@/server/server-cache";
 import { getRateLimitDiagnostics } from "@/server/rate-limit";
-import { buildOrganizationDashboardCharts, dayWindow } from "./chart-series";
+import { buildOrganizationDashboardCharts, dateRangeWindow, dayWindow } from "./chart-series";
 
 function organizationDashboardCacheKeys(orgId: string, branchId?: string | null) {
   const branchKeys = branchId ? [branchId] : [];
@@ -36,11 +32,15 @@ export async function invalidateOrganizationDashboardCache(
 export async function getOrganizationDashboardData(
   orgId: string,
   filters: DashboardBranchFilter = {},
+  input: { chartRange?: { from: Date; to: Date } } = {},
 ) {
+  const rangeKey = input.chartRange
+    ? `${input.chartRange.from.toISOString().slice(0, 10)}:${input.chartRange.to.toISOString().slice(0, 10)}`
+    : "default";
   return cachedJson(
-    `org-dashboard:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}`,
+    `org-dashboard:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}:${rangeKey}`,
     45,
-    () => getOrganizationDashboardDataUncached(orgId, filters),
+    () => getOrganizationDashboardDataUncached(orgId, filters, input),
   );
 }
 
@@ -218,11 +218,22 @@ async function getOrganizationDashboardFastDataUncached(
 async function getOrganizationDashboardDataUncached(
   orgId: string,
   filters: DashboardBranchFilter = {},
+  input: { chartRange?: { from: Date; to: Date } } = {},
 ) {
   const today = startOfToday();
   const nextWeek = endOfWindow(7);
-  const sevenDayWindow = dayWindow(7);
-  const thirtyDayWindow = dayWindow(30);
+  const thirtyDayWindow = input.chartRange
+    ? dateRangeWindow(input.chartRange.from, input.chartRange.to)
+    : dayWindow(30);
+  const sevenDayWindow =
+    input.chartRange && thirtyDayWindow.days.length <= 7
+      ? thirtyDayWindow
+      : input.chartRange
+        ? dateRangeWindow(
+            new Date(input.chartRange.to.getTime() - 6 * 24 * 60 * 60 * 1000),
+            input.chartRange.to,
+          )
+        : dayWindow(7);
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -525,8 +536,7 @@ function normalizePlatformProviderDiagnostics(
   };
   const selectedProvider =
     typeof record.selectedProvider === "string" ? record.selectedProvider : name;
-  const activeProvider =
-    typeof record.activeProvider === "string" ? record.activeProvider : null;
+  const activeProvider = typeof record.activeProvider === "string" ? record.activeProvider : null;
   const missingEnv = Array.isArray(record.missingEnv)
     ? record.missingEnv.filter((item): item is string => typeof item === "string")
     : [];
@@ -538,9 +548,7 @@ function normalizePlatformProviderDiagnostics(
     configured: Boolean(record.configured),
     missingEnv,
     env:
-      record.env && typeof record.env === "object"
-        ? (record.env as Record<string, boolean>)
-        : {},
+      record.env && typeof record.env === "object" ? (record.env as Record<string, boolean>) : {},
     provider: typeof record.provider === "string" ? record.provider : selectedProvider,
     mode: typeof record.mode === "string" ? record.mode : selectedProvider,
     ...(typeof record.lastCheckedAt === "string" ? { lastCheckedAt: record.lastCheckedAt } : {}),

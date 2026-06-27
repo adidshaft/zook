@@ -46,6 +46,17 @@ export function dayWindow(days: number) {
   return { start, end, days: daysInWindow };
 }
 
+export function dateRangeWindow(from: Date, to: Date) {
+  const start = new Date(from);
+  start.setHours(0, 0, 0, 0);
+  const endDay = new Date(to);
+  endDay.setHours(0, 0, 0, 0);
+  const end = addDays(endDay, 1);
+  const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
+  const daysInWindow = Array.from({ length: days }, (_, index) => addDays(start, index));
+  return { start, end, days: daysInWindow };
+}
+
 function formatShortWeekday(date: Date) {
   return new Intl.DateTimeFormat("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" }).format(
     date,

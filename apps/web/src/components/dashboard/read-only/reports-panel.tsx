@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  BarChart3, 
-  Calendar, 
-  CircleAlert, 
+import { useEffect, useState } from "react";
+import {
+  BarChart3,
+  Calendar,
+  CircleAlert,
   TrendingUp,
   IndianRupee,
   Users,
   ClipboardList,
-  CalendarDays
+  CalendarDays,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
-import {
-  BarChart,
-  DeltaChip,
-  Donut,
-  LegendItem,
-  LineChart,
-  SectionHero,
-} from "../charts";
+import { BarChart, DeltaChip, Donut, LegendItem, LineChart, SectionHero } from "../charts";
 import {
   formatCompactNumber,
   formatDate,
@@ -30,7 +23,12 @@ import {
   formatInr,
   formatInrCompact,
 } from "@/lib/format";
-import type { DashboardCharts, OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
+import type {
+  DashboardCharts,
+  OrganizationSnapshot,
+  OrganizationSummary,
+} from "@/components/dashboard/types";
+import { webApiFetch } from "@/lib/api-client";
 import { CsvExportButton } from "../operational-shared";
 
 type TabId = "financials" | "attendance" | "members" | "snapshot";
@@ -51,26 +49,61 @@ export function ReportsPanel({
   auditLogCount: number;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const [dateRange, setDateRange] = useState({ from: sevenDaysAgo, to: today });
   const invalidRange = dateRange.to < dateRange.from;
   const [revenueWindow, setRevenueWindow] = useState<"7d" | "30d">("7d");
   const [activeTab, setActiveTab] = useState<TabId>("financials");
+  const [reportCharts, setReportCharts] = useState(charts);
+  const [chartsLoading, setChartsLoading] = useState(false);
+  const [chartsError, setChartsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (invalidRange) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      from: dateRange.from,
+      to: dateRange.to,
+    });
+    if (selectedBranchId) {
+      params.set("branchId", selectedBranchId);
+    }
+    setChartsLoading(true);
+    setChartsError(null);
+    webApiFetch<{ charts: DashboardCharts }>(
+      `/api/orgs/${organization.id}/reports/summary?${params.toString()}`,
+      { signal: controller.signal },
+    )
+      .then((payload) => {
+        setReportCharts(payload.charts);
+      })
+      .catch((cause) => {
+        if (controller.signal.aborted) return;
+        setChartsError(cause instanceof Error ? cause.message : "Unable to load report charts.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setChartsLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [dateRange.from, dateRange.to, invalidRange, organization.id, selectedBranchId]);
 
   const revenueRupees = Math.round(summary.revenuePaise / 100);
   const cashRupees = Math.round(summary.cashCollectedPaise / 100);
   const onlineRupees = Math.max(0, revenueRupees - cashRupees);
 
-  const revenuePoints = revenueWindow === "7d" ? charts.revenue7d : charts.revenue30d;
+  const revenuePoints = revenueWindow === "7d" ? reportCharts.revenue7d : reportCharts.revenue30d;
   const revenueSeries = revenuePoints.map((point) => point.value);
-  const revenueLabels =
-    revenuePoints.map((point) => (revenueWindow === "30d" && point.label === "30d" ? "30d ago" : point.label));
-  const attendance7d = charts.attendance7d.map((point) => point.value);
-  const attendanceLabels = charts.attendance7d.map((point) => point.label);
-  const memberGrowth = charts.memberGrowth30d.map((point) => point.value);
-  const memberLabels = charts.memberGrowth30d.map((point) => point.label === "Today" ? "Now" : point.label);
+  const revenueLabels = revenuePoints.map((point) =>
+    revenueWindow === "30d" && point.label === "30d" ? "30d ago" : point.label,
+  );
+  const attendance7d = reportCharts.attendance7d.map((point) => point.value);
+  const attendanceLabels = reportCharts.attendance7d.map((point) => point.label);
+  const memberGrowth = reportCharts.memberGrowth30d.map((point) => point.value);
+  const memberLabels = reportCharts.memberGrowth30d.map((point) =>
+    point.label === "Today" ? "Now" : point.label,
+  );
 
   const actionTips = [
     summary.lowStockProducts > 0
@@ -166,6 +199,15 @@ export function ReportsPanel({
               />
             </label>
           </div>
+          {chartsLoading || chartsError ? (
+            <p
+              className={`mt-3 text-xs ${
+                chartsError ? "text-[var(--feedback-danger)]" : "text-[var(--text-secondary)]"
+              }`}
+            >
+              {chartsError ?? "Updating report charts..."}
+            </p>
+          ) : null}
         </GlassCard>
 
         {/* Sub Tabs Pill Selector */}
@@ -251,8 +293,16 @@ export function ReportsPanel({
                         <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                           {formatInr(summary.revenuePaise)}
                         </span>
-                        <DeltaChip delta={revenueWindow === "7d" ? charts.deltas.revenue7d : charts.deltas.revenue30d} />
-                        <span className="text-xs text-[var(--text-tertiary)]">{revenueWindow === "7d" ? "last 7 days" : "last 30 days"}</span>
+                        <DeltaChip
+                          delta={
+                            revenueWindow === "7d"
+                              ? reportCharts.deltas.revenue7d
+                              : reportCharts.deltas.revenue30d
+                          }
+                        />
+                        <span className="text-xs text-[var(--text-tertiary)]">
+                          {revenueWindow === "7d" ? "last 7 days" : "last 30 days"}
+                        </span>
                       </div>
                     </div>
                     <div className="inline-flex rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] p-1 text-xs">
@@ -278,7 +328,9 @@ export function ReportsPanel({
                       labels={revenueLabels}
                       tone="sky"
                       formatY={(v) => formatInrCompact(v * 100)}
-                      formatTooltip={(v, label) => (label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100))}
+                      formatTooltip={(v, label) =>
+                        label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100)
+                      }
                       ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
                     />
                   </div>
@@ -290,7 +342,9 @@ export function ReportsPanel({
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                       Payment channels
                     </p>
-                    <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">How money flows in</h2>
+                    <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
+                      How money flows in
+                    </h2>
                   </div>
                   <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
                     <Donut
@@ -300,7 +354,9 @@ export function ReportsPanel({
                       thickness={14}
                       tone="violet"
                       centerLabel={
-                        <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">{cashShare}%</span>
+                        <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
+                          {cashShare}%
+                        </span>
                       }
                       centerSub="cash"
                     />
@@ -341,24 +397,27 @@ export function ReportsPanel({
                     </div>
                   </div>
                   <div className="mt-4 h-56">
-                    <BarChart
-                      series={attendance7d}
-                      labels={attendanceLabels}
-                      tone="violet"
-                    />
+                    <BarChart series={attendance7d} labels={attendanceLabels} tone="violet" />
                   </div>
                 </GlassCard>
 
                 <GlassCard className="p-5 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Attendance Insights</h3>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                      Attendance Insights
+                    </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      QR entry points at reception are processing checks smoothly. Active check-ins peak during late evening and early morning hours.
+                      QR entry points at reception are processing checks smoothly. Active check-ins
+                      peak during late evening and early morning hours.
                     </p>
                   </div>
                   <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Today's Total</p>
-                    <p className="mt-1 text-2xl font-bold text-[var(--accent-strong)]">{summary.todayAttendance} Members</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      Today's Total
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-[var(--accent-strong)]">
+                      {summary.todayAttendance} Members
+                    </p>
                   </div>
                 </GlassCard>
               </div>
@@ -377,7 +436,7 @@ export function ReportsPanel({
                           {summary.activeMembers}
                         </span>
                         <span className="text-xs text-[var(--text-secondary)]">active members</span>
-                        <DeltaChip delta={charts.deltas.memberGrowth30d} />
+                        <DeltaChip delta={reportCharts.deltas.memberGrowth30d} />
                       </div>
                     </div>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
@@ -392,19 +451,30 @@ export function ReportsPanel({
 
                 <GlassCard className="p-5 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Demand Funnel</h3>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                      Demand Funnel
+                    </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      Public registration links are generating active join requests. Review pending inquiries under the member tab.
+                      Public registration links are generating active join requests. Review pending
+                      inquiries under the member tab.
                     </p>
                   </div>
                   <div className="grid gap-2">
                     <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
-                      <span className="font-medium text-[var(--text-secondary)]">Active memberships</span>
-                      <span className="font-bold text-[var(--text-primary)]">{summary.activeMembers}</span>
+                      <span className="font-medium text-[var(--text-secondary)]">
+                        Active memberships
+                      </span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {summary.activeMembers}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
-                      <span className="font-medium text-[var(--text-secondary)]">Pending join requests</span>
-                      <span className="font-bold text-[var(--feedback-warning)]">{summary.joinRequests}</span>
+                      <span className="font-medium text-[var(--text-secondary)]">
+                        Pending join requests
+                      </span>
+                      <span className="font-bold text-[var(--feedback-warning)]">
+                        {summary.joinRequests}
+                      </span>
                     </div>
                   </div>
                 </GlassCard>
@@ -415,9 +485,7 @@ export function ReportsPanel({
               <div className="grid gap-5">
                 <div className="grid gap-5 lg:grid-cols-2">
                   <GlassCard className="p-5">
-                    <SectionHeader
-                      title="By the numbers"
-                    />
+                    <SectionHeader title="By the numbers" />
                     <ReadoutGrid
                       className="mt-4"
                       columns={2}
@@ -471,10 +539,7 @@ export function ReportsPanel({
 
                   <div className="grid gap-5">
                     <GlassCard className="p-5">
-                      <SectionHeader
-                        eyebrow="Governance"
-                        title="Control status"
-                      />
+                      <SectionHeader eyebrow="Governance" title="Control status" />
                       <ReadoutGrid
                         className="mt-4"
                         columns={2}
@@ -496,7 +561,9 @@ export function ReportsPanel({
                     <GlassCard className="p-5">
                       <div className="flex items-center gap-2">
                         <CircleAlert size={16} className="text-[var(--accent)]" />
-                        <h2 className="text-base font-semibold text-[var(--text-primary)]">What deserves a second look</h2>
+                        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                          What deserves a second look
+                        </h2>
                       </div>
                       <div className="mt-4 grid gap-2">
                         {actionTips.map((note) => (
@@ -504,7 +571,10 @@ export function ReportsPanel({
                             key={note}
                             className="flex items-start gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 text-sm leading-6 text-[var(--text-secondary)]"
                           >
-                            <CircleAlert size={14} className="mt-0.5 shrink-0 text-[var(--feedback-warning)]" />
+                            <CircleAlert
+                              size={14}
+                              className="mt-0.5 shrink-0 text-[var(--feedback-warning)]"
+                            />
                             <span>{note}</span>
                           </div>
                         ))}
