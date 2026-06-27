@@ -215,7 +215,7 @@ export default function HomeScreen() {
         >
           <ScreenHeader
             title={t("member.home.greeting", { name: firstName })}
-            trailing={<HeaderActions showBell />}
+            trailing={<HeaderActions showBell showProfileShortcut={false} showShopShortcut />}
             meta={
               streakDays > 0 ? (
                 <HeaderMeta icon="flame" tone="accent">

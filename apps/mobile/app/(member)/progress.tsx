@@ -57,7 +57,7 @@ export default function ProgressScreen() {
           scrollEventThrottle={16}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <ScreenHeader title={t("member.progress.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
+          <ScreenHeader title={t("member.progress.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell showProfileShortcut={false} />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <View style={styles.actions}>
               <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>

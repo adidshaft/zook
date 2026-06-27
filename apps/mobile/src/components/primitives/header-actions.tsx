@@ -14,9 +14,13 @@ import { ProfileShortcut } from "./profile-shortcut";
  */
 export function HeaderActions({
   showBell = false,
+  showProfileShortcut = true,
+  showShopShortcut = false,
   accessibilityLabel,
 }: {
   showBell?: boolean;
+  showProfileShortcut?: boolean;
+  showShopShortcut?: boolean;
   accessibilityLabel?: string;
 }) {
   const router = useRouter();
@@ -50,7 +54,22 @@ export function HeaderActions({
           ) : null}
         </Pressable>
       ) : null}
-      <ProfileShortcut accessibilityLabel={accessibilityLabel} />
+      {showShopShortcut ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open shop"
+          hitSlop={8}
+          onPress={() => router.push("/shop" as never)}
+          style={({ pressed }) => [
+            styles.bell,
+            { backgroundColor: palette.surface.default, borderColor: palette.border.subtle },
+            pressed ? styles.pressed : null,
+          ]}
+        >
+          <Ionicons name="bag-outline" size={20} color={palette.text.primary} />
+        </Pressable>
+      ) : null}
+      {showProfileShortcut ? <ProfileShortcut accessibilityLabel={accessibilityLabel} /> : null}
     </View>
   );
 }

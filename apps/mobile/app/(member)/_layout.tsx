@@ -79,8 +79,19 @@ export default function MemberLayout() {
           name="shop"
           options={{
             title: t("nav.shop"),
+            href: null,
+            tabBarItemStyle: { display: "none" },
             tabBarIcon: ({ color, focused, size }) => (
               <Icon name="shop" focused={focused} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="you"
+          options={{
+            title: t("nav.profile"),
+            tabBarIcon: ({ color, focused, size }) => (
+              <Icon name="you" focused={focused} size={size} color={color} />
             ),
           }}
         />
@@ -91,6 +102,10 @@ export default function MemberLayout() {
         <Tabs.Screen
           name="coaching"
           options={{ title: t("nav.coaching"), href: null, tabBarItemStyle: { display: "none" } }}
+        />
+        <Tabs.Screen
+          name="classes/[id]"
+          options={{ title: "", href: null, tabBarItemStyle: { display: "none" } }}
         />
       </Tabs>
       {geofenceCheckout.permissionSheet}

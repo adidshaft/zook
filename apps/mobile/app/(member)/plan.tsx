@@ -88,7 +88,7 @@ export default function MemberPlanScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <ScreenHeader title={t("member.plan.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell />} scrollY={scrollY} />
+          <ScreenHeader title={t("member.plan.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell showProfileShortcut={false} />} scrollY={scrollY} />
           <AnimatedAppear delay={0}>
             <SegmentedControl
               options={[
