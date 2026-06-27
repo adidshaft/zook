@@ -87,17 +87,20 @@ function checkHandoffDeploymentArtifacts(profile: ReturnType<typeof resolveEnvPr
     results.push(pass("Marketing website app URL", `VITE_ZOOK_APP_URL is ${websiteAppUrl}.`));
   }
 
-  const ogImagePath = join(rootDir, "apps/website/public/og-image.jpg");
-  if (!existsSync(ogImagePath)) {
-    results.push(fail("Marketing OG image", "apps/website/public/og-image.jpg is missing."));
-  } else {
+  const ogImagePaths = ["apps/website/public/og-image.jpg", "apps/web/public/og-image.jpg"];
+  for (const relativePath of ogImagePaths) {
+    const ogImagePath = join(rootDir, relativePath);
+    if (!existsSync(ogImagePath)) {
+      results.push(fail("Marketing OG image", `${relativePath} is missing.`));
+      continue;
+    }
     const size = statSync(ogImagePath).size;
     results.push(
       size <= 200_000
-        ? pass("Marketing OG image", `og-image.jpg exists at ${Math.round(size / 1024)}KB.`)
+        ? pass("Marketing OG image", `${relativePath} exists at ${Math.round(size / 1024)}KB.`)
         : fail(
             "Marketing OG image",
-            `og-image.jpg is ${Math.round(size / 1024)}KB.`,
+            `${relativePath} is ${Math.round(size / 1024)}KB.`,
             "Keep the social card below 200KB.",
           ),
     );
