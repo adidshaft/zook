@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { translate } from "./i18n";
 
 /**
  * Native Google / Apple sign-in, loaded lazily so the bundle still runs in
@@ -10,7 +11,7 @@ import { Platform } from "react-native";
 
 export class SocialAuthUnavailableError extends Error {
   constructor(provider: string) {
-    super(`${provider} sign-in needs the installed Zook app (not available in Expo Go).`);
+    super(translate("auth.socialUnavailable", { provider }));
     this.name = "SocialAuthUnavailableError";
   }
 }
@@ -42,7 +43,7 @@ export async function signInWithGoogleNative(): Promise<string> {
   // v13+ nests under `.data`; older returns top-level `.idToken`.
   const idToken = result.data?.idToken ?? result.idToken ?? null;
   if (!idToken) {
-    throw new Error("Google did not return a sign-in token. Try again.");
+    throw new Error(translate("auth.socialNoToken", { provider: "Google" }));
   }
   return idToken;
 }
@@ -68,7 +69,7 @@ export async function signInWithAppleNative(): Promise<{ identityToken: string; 
     ],
   });
   if (!credential.identityToken) {
-    throw new Error("Apple did not return a sign-in token. Try again.");
+    throw new Error(translate("auth.socialNoToken", { provider: "Apple" }));
   }
   const name = [credential.fullName?.givenName, credential.fullName?.familyName]
     .filter(Boolean)

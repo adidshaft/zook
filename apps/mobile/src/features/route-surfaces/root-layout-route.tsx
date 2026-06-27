@@ -215,16 +215,16 @@ function LayoutContent() {
           error.code === "SAAS_PAYMENT_REQUIRED"
         ) {
           showToast({
-            title: "Billing setup required",
-            message: "Open billing to set up the trial mandate before continuing.",
+            title: t("owner.home.billingSetupRequired"),
+            message: t("routeGuard.billingSetupRequiredBody"),
             tone: "amber",
           });
           router.replace("/owner/billing" as never);
           return;
         }
         showToast({
-          title: "Permission denied",
-          message: "You don't have permission for that action.",
+          title: t("routeGuard.permissionDeniedTitle"),
+          message: t("routeGuard.permissionDeniedBody"),
           tone: "amber",
         });
         if (router.canGoBack()) {
@@ -250,7 +250,7 @@ function LayoutContent() {
         queryClient.invalidateQueries({ queryKey: ["org"] }),
         queryClient.invalidateQueries({ queryKey: ["org", activeOrgId, "billing"] }),
       ]).finally(() => {
-        showToast({ title: "Payment status refreshed" });
+        showToast({ title: t("payments.statusRefreshed") });
         if (target === "owner-billing") {
           router.replace("/owner/billing" as never);
           return;
@@ -266,7 +266,7 @@ function LayoutContent() {
     const subscription = Linking.addEventListener("url", (event) => handleUrl(event.url));
     void Linking.getInitialURL().then(handleUrl);
     return () => subscription.remove();
-  }, [activeOrgId, queryClient, router]);
+  }, [activeOrgId, queryClient, router, t]);
 
   useEffect(() => {
     if (status !== "authenticated" || !token) {

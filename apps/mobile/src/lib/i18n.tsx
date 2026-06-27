@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { mobileApiFetch } from "./api";
 import { getStoredValue, setStoredValue } from "./storage";
 
 const LOCALE_STORAGE_KEY = "zook_mobile_locale";
@@ -30,6 +29,24 @@ export type TranslationKey =
   | "common.closeSheet"
   | "common.dismissNotification"
   | "common.tryAgain"
+  | "common.tryAgainMoment"
+  | "common.ok"
+  | "common.notNow"
+  | "common.enable"
+  | "network.timeout"
+  | "network.connectionUnavailable"
+  | "auth.biometricPromptBody"
+  | "auth.biometricPromptTitle"
+  | "auth.gymUnavailableForAccount"
+  | "auth.roleUnavailableForOrg"
+  | "auth.socialNoToken"
+  | "auth.socialUnavailable"
+  | "branch.removedSwitched"
+  | "privilegedAction.pinLoading"
+  | "payments.statusRefreshed"
+  | "routeGuard.billingSetupRequiredBody"
+  | "routeGuard.permissionDeniedBody"
+  | "routeGuard.permissionDeniedTitle"
   | "webHandoff.copyLink"
   | "webHandoff.linkCopied"
   | "webHandoff.manageOnWeb"
@@ -798,6 +815,8 @@ export type TranslationKey =
   | "member.attendance.checkOut"
   | "member.attendance.checkedIn"
   | "member.attendance.checkedOut"
+  | "member.attendance.checkedOutAutomatically"
+  | "member.attendance.couldNotCheckOut"
   | "member.attendance.copyCodeFailed"
   | "member.attendance.copyEntryCodeAccessibility"
   | "member.attendance.deskCanHelp"
@@ -810,6 +829,7 @@ export type TranslationKey =
   | "member.attendance.entryCodeCopied"
   | "member.attendance.entryCodeUnavailable"
   | "member.attendance.gymTimeRecorded"
+  | "member.attendance.sessionStopped"
   | "member.attendance.inProgress"
   | "member.attendance.mainBranch"
   | "member.attendance.membershipActive"
@@ -2305,6 +2325,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.closeSheet": "Close sheet",
     "common.dismissNotification": "Dismiss notification",
     "common.tryAgain": "Try again",
+    "common.tryAgainMoment": "Try again in a moment.",
+    "common.ok": "OK",
+    "common.notNow": "Not now",
+    "common.enable": "Enable",
+    "network.timeout": "Request timed out. Try again in a moment.",
+    "network.connectionUnavailable": "We cannot connect right now. Check your internet connection or try again.",
+    "auth.biometricPromptBody": "Use Face ID or your device biometrics next time.",
+    "auth.biometricPromptTitle": "Unlock Zook faster?",
+    "auth.gymUnavailableForAccount": "Gym not available for this account",
+    "auth.roleUnavailableForOrg": "Role not available in active org",
+    "auth.socialNoToken": "{{provider}} did not return a sign-in token. Try again.",
+    "auth.socialUnavailable": "{{provider}} sign-in needs the installed Zook app (not available in Expo Go).",
+    "branch.removedSwitched": "Your branch was removed - switched to {{name}}.",
+    "privilegedAction.pinLoading": "PIN entry is still loading. Try again after the app finishes opening.",
+    "payments.statusRefreshed": "Payment status refreshed",
+    "routeGuard.billingSetupRequiredBody": "Open billing to set up the trial mandate before continuing.",
+    "routeGuard.permissionDeniedBody": "You don't have permission for that action.",
+    "routeGuard.permissionDeniedTitle": "Permission denied",
     "webHandoff.copyLink": "Copy link",
     "webHandoff.linkCopied": "Link copied.",
     "webHandoff.manageOnWeb": "{{title}}, manage on web",
@@ -3081,6 +3119,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.checkOut": "Check-out",
     "member.attendance.checkedIn": "Checked in",
     "member.attendance.checkedOut": "Checked out",
+    "member.attendance.checkedOutAutomatically": "Checked out automatically",
+    "member.attendance.couldNotCheckOut": "Could not check out",
     "member.attendance.copyCodeFailed": "Could not copy code.",
     "member.attendance.copyEntryCodeAccessibility": "Copy entry code {{code}}",
     "member.attendance.deskCanHelp": "The desk can help you complete this check-in.",
@@ -3093,6 +3133,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.entryCodeCopied": "Entry code copied.",
     "member.attendance.entryCodeUnavailable": "Entry code unavailable - please ask reception to check you in manually.",
     "member.attendance.gymTimeRecorded": "Your gym time was recorded.",
+    "member.attendance.sessionStopped": "Session stopped",
     "member.attendance.inProgress": "In progress",
     "member.attendance.mainBranch": "Main branch",
     "member.attendance.membershipActive": "Membership active",
@@ -4588,6 +4629,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.closeSheet": "शीट बंद करें",
     "common.dismissNotification": "नोटिफिकेशन हटाएं",
     "common.tryAgain": "फिर कोशिश करें",
+    "common.tryAgainMoment": "थोड़ी देर में फिर कोशिश करें.",
+    "common.ok": "OK",
+    "common.notNow": "अभी नहीं",
+    "common.enable": "Enable",
+    "network.timeout": "Request timed out. थोड़ी देर में फिर कोशिश करें.",
+    "network.connectionUnavailable": "अभी connect नहीं हो पा रहा. Internet connection check करें या फिर कोशिश करें.",
+    "auth.biometricPromptBody": "अगली बार Face ID या device biometrics इस्तेमाल करें.",
+    "auth.biometricPromptTitle": "Zook जल्दी unlock करें?",
+    "auth.gymUnavailableForAccount": "इस account के लिए gym available नहीं है",
+    "auth.roleUnavailableForOrg": "Active org में यह role available नहीं है",
+    "auth.socialNoToken": "{{provider}} ने sign-in token return नहीं किया. फिर कोशिश करें.",
+    "auth.socialUnavailable": "{{provider}} sign-in के लिए installed Zook app चाहिए (Expo Go में available नहीं).",
+    "branch.removedSwitched": "आपकी branch remove हो गई - {{name}} पर switch किया.",
+    "privilegedAction.pinLoading": "PIN entry अभी load हो रही है. App खुलने के बाद फिर कोशिश करें.",
+    "payments.statusRefreshed": "Payment status refresh हो गया",
+    "routeGuard.billingSetupRequiredBody": "Continue करने से पहले trial mandate set up करने के लिए billing खोलें.",
+    "routeGuard.permissionDeniedBody": "आपके पास इस action की permission नहीं है.",
+    "routeGuard.permissionDeniedTitle": "Permission denied",
     "webHandoff.copyLink": "Link copy करें",
     "webHandoff.linkCopied": "Link copy हो गया.",
     "webHandoff.manageOnWeb": "{{title}}, web पर manage करें",
@@ -5366,6 +5425,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.checkOut": "Check-out",
     "member.attendance.checkedIn": "Checked in",
     "member.attendance.checkedOut": "Checked out",
+    "member.attendance.checkedOutAutomatically": "Automatically checked out",
+    "member.attendance.couldNotCheckOut": "Check out नहीं हो सका",
     "member.attendance.copyCodeFailed": "Code copy नहीं हो सका.",
     "member.attendance.copyEntryCodeAccessibility": "Entry code {{code}} copy करें",
     "member.attendance.deskCanHelp": "Desk इस check-in को पूरा करने में मदद कर सकता है.",
@@ -5378,6 +5439,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.entryCodeCopied": "Entry code copy हुआ.",
     "member.attendance.entryCodeUnavailable": "Entry code unavailable - reception से manual check-in करने को कहें.",
     "member.attendance.gymTimeRecorded": "आपका gym time record हो गया.",
+    "member.attendance.sessionStopped": "Session stop हो गया",
     "member.attendance.inProgress": "चल रहा है",
     "member.attendance.mainBranch": "Main branch",
     "member.attendance.membershipActive": "मेंबरशिप सक्रिय है",
@@ -6890,6 +6952,7 @@ async function patchProfileLocale(preference: LocalePreference) {
   if (!token) {
     return;
   }
+  const { mobileApiFetch } = await import("./api");
   await mobileApiFetch("/me/profile", {
     method: "PATCH",
     token,

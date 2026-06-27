@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { mobileApiFetch } from "./api";
 import { useAuth } from "./auth";
+import { useT } from "./i18n";
 import { getStoredValue, setStoredValue } from "./storage";
 import { showToast } from "./toast";
 
@@ -83,6 +84,7 @@ function nearestBranch(
 
 export function BranchSelectionProvider({ children }: { children: ReactNode }) {
   const { activeOrgId, session, status, token } = useAuth();
+  const t = useT();
   const activeOrganization =
     session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
     session?.activeOrganization ??
@@ -150,12 +152,12 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
       showToast({
         tone: "amber",
         haptic: "warning",
-        message: `Your branch was removed - switched to ${nextBranch.name}.`,
+        message: t("branch.removedSwitched", { name: nextBranch.name }),
       });
       setStoredBranchId(nextBranch.id);
       void setStoredValue(storageKey(activeOrgId), nextBranch.id);
     }
-  }, [activeOrgId, branches, hydratedOrgId, storedBranch, storedBranchId]);
+  }, [activeOrgId, branches, hydratedOrgId, storedBranch, storedBranchId, t]);
 
   useEffect(() => {
     if (

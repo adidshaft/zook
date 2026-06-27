@@ -1,5 +1,6 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import { Alert } from "react-native";
+import { translate } from "./i18n";
 
 type PrivilegedPinPrompt = (label: string) => Promise<boolean>;
 
@@ -14,8 +15,8 @@ async function promptForOrgPin(label: string): Promise<boolean> {
     return privilegedPinPrompt(label);
   }
   return new Promise((resolve) => {
-    Alert.alert(label, "PIN entry is still loading. Try again after the app finishes opening.", [
-      { text: "OK", onPress: () => resolve(false) },
+    Alert.alert(label, translate("privilegedAction.pinLoading"), [
+      { text: translate("common.ok"), onPress: () => resolve(false) },
     ]);
   });
 }
@@ -32,7 +33,7 @@ export async function requirePrivilegedAuth(label: string): Promise<boolean> {
 
   const result = await LocalAuthentication.authenticateAsync({
     promptMessage: label,
-    cancelLabel: "Cancel",
+    cancelLabel: translate("common.cancel"),
     disableDeviceFallback: false,
   }).catch(() => ({ success: false }));
 

@@ -8,6 +8,7 @@ import {
   getMobileRuntimeConfigError,
   isOfflineDemoMode,
 } from "./runtime-mode";
+import { translate } from "./i18n";
 
 type MobileReleaseProfile = "local" | "staging" | "production";
 type MobilePushEnvironment = "development" | "preview" | "production";
@@ -219,10 +220,10 @@ function createHttpTransport(): MobileApiTransport {
         throw error;
       }
       if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("Request timed out. Try again in a moment.");
+        throw new Error(translate("network.timeout"));
       }
       if (error instanceof Error && isLocalAddress(apiBaseUrl)) {
-        throw new Error("We cannot connect right now. Check your internet connection or try again.");
+        throw new Error(translate("network.connectionUnavailable"));
       }
       throw error;
     } finally {
@@ -248,7 +249,7 @@ export async function mobileApiFetch<T>(
 ): Promise<T> {
   const configError = getMobileRuntimeConfigError();
   if (configError) {
-    throw new Error("Zook can’t open in this build. Please update the app or contact support.");
+    throw new Error(translate("app.configErrorBody"));
   }
   return currentTransport().request<T>(path, init);
 }

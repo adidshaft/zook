@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains/member";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 import { showToast } from "@/lib/toast";
 
 const DEFAULT_GEOFENCE_RADIUS_METERS = 150;
@@ -60,6 +61,7 @@ function geofenceTargetFor(activeCheckIn?: ActiveCheckIn | null): Coordinates | 
 
 function useCheckoutActiveCheckIn() {
   const { activeOrgId, token } = useAuth();
+  const t = useT();
   const queryClient = useQueryClient();
   const homeQuery = useMemberHome();
   const activeCheckIn = homeQuery.data?.activeCheckIn ?? null;
@@ -125,22 +127,25 @@ function useCheckoutActiveCheckIn() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showToast({
           tone: "success",
-          title: reason === "geofence" ? "Checked out automatically" : "Session stopped",
-          message: "Your gym time was recorded.",
+          title:
+            reason === "geofence"
+              ? t("member.attendance.checkedOutAutomatically")
+              : t("member.attendance.sessionStopped"),
+          message: t("member.attendance.gymTimeRecorded"),
         });
       } catch (error) {
         checkoutStartedRef.current = null;
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         showToast({
           tone: "danger",
-          title: "Could not check out",
-          message: error instanceof Error ? error.message : "Try again in a moment.",
+          title: t("member.attendance.couldNotCheckOut"),
+          message: error instanceof Error ? error.message : t("common.tryAgainMoment"),
         });
       } finally {
         setCheckoutBusy(false);
       }
     },
-    [activeCheckIn, activeOrgId, applyCheckoutToCache, queryClient, token],
+    [activeCheckIn, activeOrgId, applyCheckoutToCache, queryClient, t, token],
   );
 
   useEffect(() => {

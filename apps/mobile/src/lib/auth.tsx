@@ -23,7 +23,7 @@ import {
   isOfflineDemoMode,
 } from "./demo-mode";
 import { titleCaseFromCode } from "./formatting";
-import { applySessionLocalePreference } from "./i18n";
+import { applySessionLocalePreference, translate } from "./i18n";
 import { sanitizeOtpValue } from "./otp";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 import { typography, useTheme } from "./theme";
@@ -402,10 +402,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     await setStoredValue(BIOMETRIC_PROMPTED_STORAGE_KEY, "1");
-    Alert.alert("Unlock Zook faster?", "Use Face ID or your device biometrics next time.", [
-      { text: "Not now", style: "cancel" },
+    Alert.alert(translate("auth.biometricPromptTitle"), translate("auth.biometricPromptBody"), [
+      { text: translate("common.notNow"), style: "cancel" },
       {
-        text: "Enable",
+        text: translate("common.enable"),
         onPress: () => {
           void setStoredBiometricUnlockEnabled(true).then((enabled) => {
             setBiometricEnabledState(enabled);
@@ -667,7 +667,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!targetOrg) {
-        throw new Error("Gym not available for this account");
+        throw new Error(translate("auth.gymUnavailableForAccount"));
       }
       const correctedRole = defaultRoleForOrg(targetOrg.roles);
       await Promise.all([
@@ -701,7 +701,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!isOrgRole(role) || !activeOrg?.roles.includes(role)) {
-        throw new Error("Role not available in active org");
+        throw new Error(translate("auth.roleUnavailableForOrg"));
       }
       if (roleSwitchOverlayTimerRef.current) {
         clearTimeout(roleSwitchOverlayTimerRef.current);
@@ -737,7 +737,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (organization) => organization.orgId === currentOrgId,
       );
       if (!isOrgRole(role) || !activeOrg?.roles.includes(role)) {
-        throw new Error("Role not available in active org");
+        throw new Error(translate("auth.roleUnavailableForOrg"));
       }
       await setStoredValue(DEFAULT_ROLE_PREFERENCE_STORAGE_KEY, role);
       defaultRolePreferenceRef.current = role;
