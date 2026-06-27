@@ -637,8 +637,9 @@ export const trainerApi = {
 };
 
 export const dietApi = {
-  getMine<T = unknown>(options: RequestOptions) {
-    return mobileApiFetch<T>("/me/diet", {
+  getMine<T = unknown>(options: RequestOptions & { date?: string }) {
+    const query = options.date ? `?date=${encodeURIComponent(options.date)}` : "";
+    return mobileApiFetch<T>(`/me/diet${query}`, {
       token: options.token,
       ...(options.orgId ? { orgId: options.orgId } : {}),
     });

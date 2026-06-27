@@ -13,6 +13,7 @@ import {
   Pill,
   QueryErrorState,
   SectionHeader,
+  Skeleton,
   ZookButton,
   ZookScreen,
   useConfirmSheet,
@@ -298,8 +299,17 @@ export default function TrainerClasses() {
 
           <SectionHeader title={t("trainer.classes.upcomingClasses")} />
           {classesQuery.isLoading ? (
-            <Card variant="compact">
-              <EmptyState icon="hourglass-outline" title={t("trainer.classes.loadingClasses")} body={t("trainer.classes.loadingClassesBody")} />
+            <Card variant="compact" contentStyle={styles.stack}>
+              {[0, 1, 2].map((item) => (
+                <View key={item} style={styles.classCard}>
+                  <Skeleton width={42} height={42} borderRadius={21} />
+                  <View style={styles.classCopy}>
+                    <Skeleton width="74%" height={16} borderRadius={8} />
+                    <Skeleton width="88%" height={12} borderRadius={6} />
+                  </View>
+                  <Skeleton width={44} height={26} borderRadius={13} />
+                </View>
+              ))}
             </Card>
           ) : null}
           {!classesQuery.isLoading && classes.length === 0 ? (

@@ -1,5 +1,6 @@
 import { indianMealPresets } from "@zook/core";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -10,6 +11,7 @@ import {
   ProgressBar,
   QueryErrorState,
   SectionHeader,
+  Skeleton,
   StatusChip,
   ZookButton,
 } from "@/components/primitives";
@@ -26,6 +28,7 @@ export function DietPanel() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const t = useT();
+  const router = useRouter();
   const dietQuery = useMyDiet();
   const plan = dietQuery.data?.plan ?? null;
   const logs = dietQuery.data?.logs ?? [];
@@ -92,10 +95,20 @@ export function DietPanel() {
 
   return (
     <View style={styles.stack}>
+      {dietQuery.isLoading ? (
+        <Card variant="compact" contentStyle={styles.stack}>
+          <Skeleton width="46%" height={14} borderRadius={7} />
+          <Skeleton width="72%" height={24} borderRadius={12} />
+          <Skeleton width="100%" height={10} borderRadius={5} />
+          <Skeleton width="88%" height={42} borderRadius={18} />
+          <Skeleton width="64%" height={42} borderRadius={18} />
+        </Card>
+      ) : null}
       {dietQuery.isError ? (
         <QueryErrorState error={dietQuery.error} onRetry={() => void dietQuery.refetch()} />
       ) : null}
 
+      {!dietQuery.isLoading ? (
       <Card variant="compact" contentStyle={styles.stack}>
         <View style={styles.rollupRow}>
           <View>
@@ -125,8 +138,17 @@ export function DietPanel() {
         ) : (
           <EmptyState icon="restaurant-outline" title={t("member.diet.noDietPlan")} body={t("member.diet.noDietPlanBody")} />
         )}
+        <ZookButton
+          variant="secondary"
+          icon="calendar-outline"
+          onPress={() => router.push("/diet-history" as never)}
+        >
+          View diet history
+        </ZookButton>
       </Card>
+      ) : null}
 
+      {!dietQuery.isLoading ? (
       <Card contentStyle={styles.stack}>
         <SectionHeader title={t("member.diet.logMeal")} />
         <View style={styles.presetRow}>
@@ -163,6 +185,7 @@ export function DietPanel() {
           {t("member.diet.logMeal")}
         </ZookButton>
       </Card>
+      ) : null}
     </View>
   );
 }

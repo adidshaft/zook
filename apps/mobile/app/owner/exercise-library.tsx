@@ -11,6 +11,7 @@ import {
   Pill,
   QueryErrorState,
   SectionHeader,
+  Skeleton,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
@@ -222,14 +223,28 @@ export default function OwnerExerciseLibraryScreen() {
             </Card>
           ) : null}
           {templatesQuery.isError ? <QueryErrorState error={templatesQuery.error} onRetry={() => void templatesQuery.refetch()} /> : null}
+          {templatesQuery.isLoading ? (
+            <Card variant="compact" contentStyle={styles.stack}>
+              {[0, 1, 2, 3, 4].map((item) => (
+                <View key={item} style={styles.templateMain}>
+                  <Skeleton width={42} height={42} borderRadius={21} />
+                  <View style={styles.templateCopy}>
+                    <Skeleton width="70%" height={16} borderRadius={8} />
+                    <Skeleton width="52%" height={12} borderRadius={6} />
+                  </View>
+                  <Skeleton width={58} height={26} borderRadius={13} />
+                </View>
+              ))}
+            </Card>
+          ) : null}
           {!templatesQuery.isLoading && !orgTemplates.length ? (
             <Card variant="compact">
               <EmptyState icon="barbell-outline" title={t("owner.exerciseLibrary.noSharedTemplates")} body={t("owner.exerciseLibrary.noSharedTemplatesBody")} />
             </Card>
           ) : null}
-          <View style={styles.stack}>{orgTemplates.map(renderTemplate)}</View>
+          {!templatesQuery.isLoading ? <View style={styles.stack}>{orgTemplates.map(renderTemplate)}</View> : null}
           <SectionHeader title={t("owner.exerciseLibrary.starters")} />
-          <View style={styles.stack}>{starters.map(renderTemplate)}</View>
+          {!templatesQuery.isLoading ? <View style={styles.stack}>{starters.map(renderTemplate)}</View> : null}
         </ScrollView>
       </ZookScreen>
     </>

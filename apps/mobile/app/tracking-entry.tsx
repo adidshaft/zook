@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import {
   FormField,
@@ -27,9 +27,7 @@ export default function TrackingEntryScreen() {
   const { activeOrgId, token } = useAuth();
   const t = useT();
   const [title, setTitle] = useState("");
-  const [exerciseName, setExerciseName] = useState("");
-  const [sets, setSets] = useState("");
-  const [reps, setReps] = useState("");
+  const [exercises, setExercises] = useState([{ name: "", sets: "", reps: "" }]);
   const [durationMinutes, setDurationMinutes] = useState("45");
   const [mode, setMode] = useState<"workout" | "body">("workout");
   const [weightKg, setWeightKg] = useState("");
@@ -69,15 +67,13 @@ export default function TrackingEntryScreen() {
           endedAt: endedAt.toISOString(),
           intensity: "Moderate",
           visibility: "TRAINER_VISIBLE",
-          exercises: [
-            {
-              exerciseName: exerciseName.trim() || t("tracking.workoutSet"),
-              orderIndex: 0,
-              setsCompleted: Number.parseInt(sets, 10) || 0,
-              reps: Number.parseInt(reps, 10) || 0,
-              completed: true,
-            },
-          ],
+          exercises: exercises.map((exercise, index) => ({
+            exerciseName: exercise.name.trim() || t("tracking.workoutSet"),
+            orderIndex: index,
+            setsCompleted: Number.parseInt(exercise.sets, 10) || 0,
+            reps: Number.parseInt(exercise.reps, 10) || 0,
+            completed: true,
+          })),
         },
       });
       await Promise.all([
@@ -98,6 +94,22 @@ export default function TrackingEntryScreen() {
   function numeric(value: string) {
     const parsed = Number.parseFloat(value);
     return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  function updateExercise(index: number, patch: Partial<(typeof exercises)[number]>) {
+    setExercises((current) =>
+      current.map((exercise, candidateIndex) =>
+        candidateIndex === index ? { ...exercise, ...patch } : exercise,
+      ),
+    );
+  }
+
+  function addExercise() {
+    setExercises((current) => [...current, { name: "", sets: "", reps: "" }]);
+  }
+
+  function removeExercise(index: number) {
+    setExercises((current) => current.filter((_, candidateIndex) => candidateIndex !== index));
   }
 
   async function saveBodyProgress() {
@@ -164,9 +176,50 @@ export default function TrackingEntryScreen() {
               <FormField testID="tracking-entry-title" label={t("tracking.workoutTitle")} value={title} onChangeText={setTitle} placeholder={t("tracking.workoutTitlePlaceholder")} />
               <FormField testID="tracking-entry-duration" label={t("tracking.durationMinutes")} value={durationMinutes} onChangeText={setDurationMinutes} keyboardType="number-pad" placeholder="45" />
               <SectionHeader title={t("tracking.exercise")} />
-              <FormField testID="tracking-entry-exercise-0-name" label={t("tracking.exerciseName")} value={exerciseName} onChangeText={setExerciseName} placeholder={t("tracking.exerciseNamePlaceholder")} />
-              <FormField testID="tracking-entry-exercise-0-sets" label={t("tracking.sets")} value={sets} onChangeText={setSets} keyboardType="number-pad" placeholder="3" />
-              <FormField testID="tracking-entry-exercise-0-reps" label={t("tracking.reps")} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="8" />
+              {exercises.map((exercise, index) => (
+                <View key={index} style={styles.exerciseGroup}>
+                  <FormField
+                    testID={`tracking-entry-exercise-${index}-name`}
+                    label={t("tracking.exerciseName")}
+                    value={exercise.name}
+                    onChangeText={(value) => updateExercise(index, { name: value })}
+                    placeholder={t("tracking.exerciseNamePlaceholder")}
+                  />
+                  <View style={styles.exerciseNumbers}>
+                    <FormField
+                      testID={`tracking-entry-exercise-${index}-sets`}
+                      label={t("tracking.sets")}
+                      value={exercise.sets}
+                      onChangeText={(value) => updateExercise(index, { sets: value })}
+                      keyboardType="number-pad"
+                      placeholder="3"
+                      style={styles.exerciseNumberField}
+                    />
+                    <FormField
+                      testID={`tracking-entry-exercise-${index}-reps`}
+                      label={t("tracking.reps")}
+                      value={exercise.reps}
+                      onChangeText={(value) => updateExercise(index, { reps: value })}
+                      keyboardType="number-pad"
+                      placeholder="8"
+                      style={styles.exerciseNumberField}
+                    />
+                  </View>
+                  {exercises.length > 1 ? (
+                    <ZookButton
+                      variant="ghost"
+                      size="sm"
+                      icon="trash-outline"
+                      onPress={() => removeExercise(index)}
+                    >
+                      Remove exercise
+                    </ZookButton>
+                  ) : null}
+                </View>
+              ))}
+              <ZookButton variant="secondary" icon="add-outline" onPress={addExercise}>
+                Add exercise
+              </ZookButton>
               <ZookButton testID="tracking-entry-save" onPress={() => void saveWorkout()} busy={saving} busyLabel={t("settings.saving")} icon="save-outline">
                 {t("tracking.saveWorkout")}
               </ZookButton>
@@ -207,5 +260,15 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
+  },
+  exerciseGroup: {
+    gap: spacing.sm,
+  },
+  exerciseNumbers: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  exerciseNumberField: {
+    flex: 1,
   },
 });

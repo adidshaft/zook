@@ -5,6 +5,7 @@ import {
   ListRow,
   AppHeader,
   SegmentedControl,
+  Skeleton,
   StatusChip,
   ZookScreen,
 } from "@/components/primitives";
@@ -67,6 +68,15 @@ export default function TrainerClientSessionsScreen() {
             }
           />
           <SegmentedControl options={translatedClientDetailTabs} value="sessions" onChange={selectTab} />
+          {clientsQuery.isLoading ? (
+            <Card variant="compact" contentStyle={styles.stack}>
+              <Skeleton width="42%" height={16} borderRadius={8} />
+              <Skeleton width="100%" height={44} borderRadius={18} />
+              <Skeleton width="92%" height={44} borderRadius={18} />
+              <Skeleton width="84%" height={44} borderRadius={18} />
+            </Card>
+          ) : null}
+          {!clientsQuery.isLoading ? (
           <Card variant="compact" contentStyle={styles.stack}>
             <ListRow
               title={t("trainer.clientSessions.adherence")}
@@ -94,6 +104,7 @@ export default function TrainerClientSessionsScreen() {
               }
             />
           </Card>
+          ) : null}
         </ScrollView>
       </ZookScreen>
     </>

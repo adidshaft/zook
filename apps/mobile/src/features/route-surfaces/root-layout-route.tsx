@@ -486,6 +486,7 @@ function LayoutContent() {
         <Stack.Screen name="tracking" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="tracking-history" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="tracking-entry" options={{ animation: "slide_from_right", headerShown: false }} />
+        <Stack.Screen name="diet-history" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen name="plan/[assignmentId]" options={{ animation: "slide_from_right", headerShown: false }} />
         <Stack.Screen
           name="attendance/[attendanceRecordId]"

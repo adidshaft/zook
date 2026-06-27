@@ -17,6 +17,14 @@ const DEMO_SEEDED_IDENTIFIERS = new Set([
   "platform@zook.local",
 ]);
 
+let demoNotificationPreferences = {
+  transactional: true,
+  operational: true,
+  engagement: true,
+  promotional: true,
+  pushEnabled: false,
+};
+
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
 }
@@ -2608,7 +2616,20 @@ export async function demoMobileApiFetch<T>(
   if (pathname === "/me/orgs")
     return { organizations: session.organizations, activeOrgId: session.activeOrgId } as T;
   if (pathname === "/me/profile") return demoProfile() as T;
-  if (pathname === "/me/notification-preferences") return { preferences: [] } as T;
+  if (pathname === "/me/notification-preferences") {
+    if (method === "PATCH") {
+      const body = demoBody(init);
+      const patch =
+        Array.isArray(body.preferences) && typeof body.preferences[0] === "object"
+          ? (body.preferences[0] as Record<string, unknown>)
+          : body;
+      demoNotificationPreferences = {
+        ...demoNotificationPreferences,
+        ...patch,
+      };
+    }
+    return { preferences: [demoNotificationPreferences] } as T;
+  }
   if (pathname === "/me/push-devices") return { devices: [] } as T;
 
   if (pathname === "/me/dashboard") {
