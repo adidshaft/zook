@@ -21,6 +21,14 @@
     {
       "path": "/api/cron/rewards-settle",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/send-scheduled-notifications",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/subscription-expiry",
+      "schedule": "0 * * * *"
     }
   ]
 }
