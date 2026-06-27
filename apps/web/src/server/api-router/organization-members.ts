@@ -33,6 +33,10 @@ const orgMemberStatusBodySchema = z.object({
   status: z.enum(["active", "inactive"]),
 });
 
+const assignTrainerBodySchema = z.object({
+  trainerUserId: z.string().trim().min(1),
+});
+
 function appendToMapList<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const existing = map.get(key);
   if (existing) {
@@ -334,6 +338,87 @@ async function listOrganizationMembersPage(orgId: string, request: NextRequest, 
 }
 
 export async function handleOrganizationMembers(request: NextRequest, path: string[]) {
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "members", /.+/, "assign-trainer"])
+  ) {
+    const { orgId, memberUserId } = orgMemberDetailParamsSchema.parse({
+      orgId: path[1],
+      memberUserId: path[3],
+    });
+    const ctx = await getRequestContext(request, { orgId });
+    const actorUserId = requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    const body = assignTrainerBodySchema.parse(await readJson(request));
+    const [member, trainer] = await Promise.all([
+      prisma.organizationUser.findFirst({
+        where: { orgId, userId: memberUserId, role: "MEMBER", status: "active" },
+      }),
+      prisma.organizationUser.findFirst({
+        where: { orgId, userId: body.trainerUserId, role: "TRAINER", status: "active" },
+      }),
+    ]);
+    if (!member) {
+      throw notFoundError("Member not found");
+    }
+    if (!trainer) {
+      throw validationError("User is not a trainer in this org.");
+    }
+    const assignment = await prisma.trainerAssignment.upsert({
+      where: {
+        orgId_trainerUserId_memberUserId: {
+          orgId,
+          trainerUserId: body.trainerUserId,
+          memberUserId,
+        },
+      },
+      create: {
+        orgId,
+        trainerUserId: body.trainerUserId,
+        memberUserId,
+        assignedById: actorUserId,
+        active: true,
+      },
+      update: { active: true, assignedById: actorUserId },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "trainer_assignment.created",
+      entityType: "trainer_assignment",
+      entityId: assignment.id,
+      metadata: { memberUserId, trainerUserId: body.trainerUserId },
+    });
+    return ok({ ok: true, assignment });
+  }
+
+  if (
+    request.method === "DELETE" &&
+    pathMatches(path, ["orgs", /.+/, "members", /.+/, "assign-trainer"])
+  ) {
+    const { orgId, memberUserId } = orgMemberDetailParamsSchema.parse({
+      orgId: path[1],
+      memberUserId: path[3],
+    });
+    const ctx = await getRequestContext(request, { orgId });
+    const actorUserId = requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    const body = assignTrainerBodySchema.parse(await readJson(request));
+    const result = await prisma.trainerAssignment.updateMany({
+      where: { orgId, memberUserId, trainerUserId: body.trainerUserId },
+      data: { active: false },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId,
+      action: "trainer_assignment.removed",
+      entityType: "trainer_assignment",
+      entityId: `${memberUserId}:${body.trainerUserId}`,
+      metadata: { memberUserId, trainerUserId: body.trainerUserId, updated: result.count },
+    });
+    return ok({ ok: true });
+  }
+
   if (request.method === "POST" && pathMatches(path, ["orgs", /.+/, "members", "import"])) {
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });

@@ -8,8 +8,10 @@ import {
   accruePtSessionFee,
   accruePtSubscriptionCommission,
 } from "../domains/payouts";
-import { forbiddenError, notFoundError, validationError } from "../errors";
+import { writeAuditLog } from "../audit";
+import { conflictError, forbiddenError, notFoundError, validationError } from "../errors";
 import { assertMinorConsentGranted } from "../minor-gates";
+import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";
 import {
   assertOrgUser,
@@ -34,6 +36,14 @@ const ptSessionLogSchema = z.object({
   subscriptionId: z.string(),
   sessionAt: z.string().datetime().optional(),
   notes: z.string().max(500).optional(),
+});
+
+const ptSubscriptionPatchSchema = z.object({
+  totalSessions: z.number().int().positive().optional(),
+  remainingSessions: z.number().int().min(0).optional(),
+  endsAt: z.string().datetime().optional(),
+  notes: z.string().max(500).optional(),
+  amountPaise: z.number().int().positive().optional(),
 });
 
 export async function handlePersonalTraining(request: NextRequest, path: string[]) {
@@ -193,6 +203,11 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    await assertRateLimit(
+      "ptSubscriptionByOrg",
+      orgId,
+      "Too many PT subscription requests.",
+    );
     const body = ptSubscriptionSchema.parse(await readJson(request));
     const memberUser = await prisma.user.findUniqueOrThrow({ where: { id: body.memberUserId } });
     await Promise.all([
@@ -239,7 +254,92 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
       amountPaise: sub.amountPaise,
       createdById: userId,
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "pt_subscription.created",
+      entityType: "pt_subscription",
+      entityId: sub.id,
+      metadata: { memberUserId: sub.memberUserId, trainerUserId: sub.trainerUserId },
+    });
     return ok({ subscription: sub });
+  }
+
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["orgs", /.+/, "pt-subscriptions", /.+/])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const body = ptSubscriptionPatchSchema.parse(await readJson(request));
+    const subscription = await prisma.personalTrainingSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
+    if (!subscription) {
+      throw notFoundError("PT subscription not found.");
+    }
+    if (ctx.roles.includes("TRAINER") && subscription.trainerUserId !== userId) {
+      throw forbiddenError("You can only edit your own PT subscriptions.");
+    }
+    const updated = await prisma.personalTrainingSubscription.update({
+      where: { id: subscription.id },
+      data: clean({
+        totalSessions: body.totalSessions,
+        remainingSessions: body.remainingSessions,
+        endsAt: body.endsAt ? new Date(body.endsAt) : undefined,
+        notes: body.notes ? sanitizeRichText(body.notes) : body.notes,
+        amountPaise: body.amountPaise,
+      }),
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "pt_subscription.updated",
+      entityType: "pt_subscription",
+      entityId: subscription.id,
+      metadata: { before: subscription, after: updated },
+    });
+    return ok({ subscription: updated });
+  }
+
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "pt-subscriptions", /.+/, "cancel"])
+  ) {
+    const orgId = path[1]!;
+    const subscriptionId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    const subscription = await prisma.personalTrainingSubscription.findFirst({
+      where: { id: subscriptionId, orgId },
+    });
+    if (!subscription) {
+      throw notFoundError("PT subscription not found.");
+    }
+    if (["CANCELLED", "REFUNDED"].includes(subscription.status)) {
+      throw conflictError("Subscription is already cancelled or refunded.");
+    }
+    if (ctx.roles.includes("TRAINER") && subscription.trainerUserId !== userId) {
+      throw forbiddenError("You can only cancel your own PT subscriptions.");
+    }
+    const updated = await prisma.personalTrainingSubscription.update({
+      where: { id: subscription.id },
+      data: { status: "CANCELLED" },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "pt_subscription.cancelled",
+      riskLevel: "MEDIUM",
+      entityType: "pt_subscription",
+      entityId: subscription.id,
+    });
+    return ok({ subscription: updated });
   }
 
   if (
@@ -273,6 +373,14 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
       amountPaise: sub.amountPaise,
       createdById: userId,
     });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "pt_subscription.approved",
+      entityType: "pt_subscription",
+      entityId: sub.id,
+    });
     return ok({ subscription: updated });
   }
 
@@ -280,6 +388,7 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
     const orgId = path[1]!;
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireOrgPermission(ctx, orgId, "PT_RECORD");
+    await assertRateLimit("ptSessionByOrg", orgId, "Too many PT session logs.");
     const body = ptSessionLogSchema.parse(await readJson(request));
     const subscription = await prisma.personalTrainingSubscription.findFirst({
       where: { id: body.subscriptionId, orgId, status: "ACTIVE" },
@@ -345,6 +454,16 @@ export async function handlePersonalTraining(request: NextRequest, path: string[
       subscriptionId: subscription.id,
       amountPaise: subscription.amountPaise,
       createdById: userId,
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "pt_subscription.refunded",
+      riskLevel: "HIGH",
+      entityType: "pt_subscription",
+      entityId: subscription.id,
+      metadata: { amountPaise: subscription.amountPaise },
     });
     return ok({ refunded: true, line });
   }

@@ -2091,6 +2091,7 @@ model ClassEnrollment {
   classId     String
   memberId    String
   status      String    @default("confirmed")
+  attendanceStatus String?
   paymentId   String?
   paymentSessionId String?
   paidAt      DateTime?

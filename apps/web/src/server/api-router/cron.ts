@@ -6,8 +6,17 @@ import { prisma, Prisma } from "@zook/db";
 import { draftPayoutsForMonth } from "../domains/payouts";
 import { settleReadyRewards } from "../domains/rewards/ledger";
 import { forbiddenError } from "../errors";
+import { deliverPushForNotification } from "../push-runtime";
 import { ok } from "../response";
 import { createDirectNotification, jsonObject, pathMatches } from "./core";
+
+function requireCronSecret(request: NextRequest) {
+  const cronSecret = getCronSecret();
+  const authHeader = request.headers.get("authorization");
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    throw forbiddenError("Invalid cron authorization.");
+  }
+}
 
 export async function handleCronJobs(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
@@ -414,6 +423,61 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
     }
     const result = await settleReadyRewards();
     return ok({ ok: true, ...result });
+  }
+
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["cron", "send-scheduled-notifications"])
+  ) {
+    requireCronSecret(request);
+    const now = new Date();
+    const due = await prisma.notification.findMany({
+      where: { status: "SCHEDULED", scheduledAt: { lte: now } },
+      orderBy: { scheduledAt: "asc" },
+      take: 50,
+      include: { recipients: true },
+    });
+    let processed = 0;
+    let delivered = 0;
+    for (const notification of due) {
+      const userIds = notification.recipients.map((recipient) => recipient.userId);
+      if (notification.pushEnabled && notification.orgId && userIds.length) {
+        await deliverPushForNotification({
+          orgId: notification.orgId,
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            body: notification.body,
+            pushEnabled: notification.pushEnabled,
+            metadata: notification.metadata,
+          },
+          userIds,
+        });
+      }
+      await prisma.$transaction([
+        prisma.notification.update({
+          where: { id: notification.id },
+          data: { status: "SENT", sentAt: now },
+        }),
+        prisma.notificationRecipient.updateMany({
+          where: { notificationId: notification.id, deliveredAt: null },
+          data: { deliveryStatus: "in_app", deliveredAt: now },
+        }),
+      ]);
+      processed++;
+      delivered += userIds.length;
+    }
+    return ok({ ok: true, processed, delivered });
+  }
+
+  if (request.method === "POST" && pathMatches(path, ["cron", "subscription-expiry"])) {
+    requireCronSecret(request);
+    const result = await prisma.memberSubscription.updateMany({
+      where: { status: "ACTIVE", endsAt: { lt: new Date() } },
+      data: { status: "EXPIRED" },
+    });
+    return ok({ ok: true, expired: result.count });
   }
 
   return undefined;

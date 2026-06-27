@@ -1,0 +1,8 @@
+{
+  "name": "Zook",
+  "short_name": "Zook",
+  "theme_color": "#070908",
+  "background_color": "#070908",
+  "display": "standalone",
+  "icons": []
+}

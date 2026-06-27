@@ -18,6 +18,12 @@ import {
 } from "./core";
 
 const personalTrackingService = new PersonalTrackingService();
+const bodyProgressPatchSchema = bodyProgressEntrySchema.partial();
+const memberHabitPatchSchema = memberHabitSchema.partial();
+
+function decimalField(value: unknown) {
+  return value !== undefined ? new Prisma.Decimal(value as string | number) : undefined;
+}
 
 async function listTrackingWorkouts(userId: string) {
   const workouts = await prisma.workoutSession.findMany({
@@ -362,6 +368,55 @@ export async function handleTracking(request: NextRequest, path: string[]) {
     });
     return ok({ entry });
   }
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["me", "tracking", "body-progress", /.+/])
+  ) {
+    const userId = requireAuth(await getRequestContext(request));
+    const entryId = path[3]!;
+    const existing = await prisma.bodyProgressEntry.findFirst({ where: { id: entryId, userId } });
+    if (!existing) {
+      throw notFoundError("Body progress entry not found");
+    }
+    const body = bodyProgressPatchSchema.parse(await readJson(request));
+    const entry = await prisma.bodyProgressEntry.update({
+      where: { id: existing.id },
+      data: clean({
+        organizationId: body.organizationId,
+        measuredAt: body.measuredAt ? new Date(body.measuredAt) : undefined,
+        weightKg: decimalField(body.weightKg),
+        waistCm: decimalField(body.waistCm),
+        hipCm: decimalField(body.hipCm),
+        chestCm: decimalField(body.chestCm),
+        shoulderCm: decimalField(body.shoulderCm),
+        armCm: decimalField(body.armCm),
+        forearmCm: decimalField(body.forearmCm),
+        thighCm: decimalField(body.thighCm),
+        calfCm: decimalField(body.calfCm),
+        neckCm: decimalField(body.neckCm),
+        bodyFatPercent: decimalField(body.bodyFatPercent),
+        muscleMassKg: decimalField(body.muscleMassKg),
+        visceralFatRating: body.visceralFatRating,
+        restingHeartRate: body.restingHeartRate,
+        photoAssetId: body.photoAssetId,
+        notes: body.notes,
+        visibility: body.visibility,
+      }),
+    });
+    return ok({ entry });
+  }
+  if (
+    request.method === "DELETE" &&
+    pathMatches(path, ["me", "tracking", "body-progress", /.+/])
+  ) {
+    const userId = requireAuth(await getRequestContext(request));
+    const entry = await prisma.bodyProgressEntry.findFirst({ where: { id: path[3]!, userId } });
+    if (!entry) {
+      throw notFoundError("Body progress entry not found");
+    }
+    await prisma.bodyProgressEntry.delete({ where: { id: entry.id } });
+    return ok({ deleted: true });
+  }
   if (request.method === "GET" && pathMatches(path, ["me", "tracking", "body-progress"])) {
     const userId = requireAuth(await getRequestContext(request));
     return ok({
@@ -470,6 +525,41 @@ export async function handleTracking(request: NextRequest, path: string[]) {
       },
     });
     return ok({ habit });
+  }
+  if (request.method === "PATCH" && pathMatches(path, ["me", "tracking", "habits", /.+/])) {
+    const ctx = await getRequestContext(request);
+    const userId = requireAuth(ctx);
+    const habit = await prisma.memberHabit.findFirst({
+      where: { id: path[3]!, userId, active: true },
+    });
+    if (!habit) {
+      throw notFoundError("Habit not found");
+    }
+    const body = memberHabitPatchSchema.parse(await readJson(request));
+    const updated = await prisma.memberHabit.update({
+      where: { id: habit.id },
+      data: clean({
+        organizationId: body.organizationId,
+        title: body.title,
+        category: body.category,
+        targetValue: body.targetValue,
+        unit: body.unit,
+        frequency: body.frequency,
+        visibility: body.visibility,
+      }),
+    });
+    return ok({ habit: updated });
+  }
+  if (request.method === "DELETE" && pathMatches(path, ["me", "tracking", "habits", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const habit = await prisma.memberHabit.findFirst({
+      where: { id: path[3]!, userId, active: true },
+    });
+    if (!habit) {
+      throw notFoundError("Habit not found");
+    }
+    await prisma.memberHabit.update({ where: { id: habit.id }, data: { active: false } });
+    return ok({ deleted: true });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "tracking", "habits", /.+/, "log"])) {
     const userId = requireAuth(await getRequestContext(request));

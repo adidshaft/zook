@@ -9,6 +9,7 @@ import { getRequestContext, requireAuth, requireOrgPermission } from "../access"
 import { writeAuditLog } from "../audit";
 import { getOrganizationActiveShopOrders } from "../domains/shop-orders/read-models";
 import { notFoundError, validationError } from "../errors";
+import { assertRateLimit } from "../rate-limit";
 import { ok, readJson } from "../response";
 import {
   assertBranchAccessForContext,
@@ -37,6 +38,7 @@ const shopOrderSchema = z.object({
 export async function handleShopOrders(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["shop", "orders"])) {
     const userId = requireAuth(await getRequestContext(request));
+    await assertRateLimit("shopOrderByUser", userId, "Too many order requests.");
     const body = shopOrderSchema.parse(await readJson(request));
     getPaymentProviderOrThrow();
     const [products, user] = await Promise.all([

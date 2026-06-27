@@ -21,23 +21,61 @@ const notificationBulkReadSchema = z.object({
 });
 
 export async function handleNotificationsInbox(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["me", "notifications", "unread-count"])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const unreadCount = await prisma.notificationRecipient.count({
+      where: { userId, readAt: null, deliveryStatus: { not: "scheduled" } },
+    });
+    return ok({ unreadCount });
+  }
+
+  if (request.method === "GET" && pathMatches(path, ["me", "notifications", /.+/])) {
+    const userId = requireAuth(await getRequestContext(request));
+    const notificationId = path[2]!;
+    const record = await prisma.notificationRecipient.findFirst({
+      where: { userId, notificationId, deliveryStatus: { not: "scheduled" } },
+      include: { notification: true },
+    });
+    if (!record) {
+      throw notFoundError("Notification not found");
+    }
+    return ok({
+      notification: {
+        ...record.notification,
+        recipientId: record.id,
+        readAt: record.readAt,
+        deliveryStatus: record.deliveryStatus,
+        deliveredAt: record.deliveredAt,
+      },
+    });
+  }
+
   if (request.method === "GET" && pathMatches(path, ["me", "notifications"])) {
     const userId = requireAuth(await getRequestContext(request));
+    const limit = Math.min(
+      Math.max(Number(request.nextUrl.searchParams.get("limit") ?? 50) || 50, 1),
+      100,
+    );
+    const cursor = request.nextUrl.searchParams.get("cursor")?.trim();
     const recipients = await prisma.notificationRecipient.findMany({
       where: { userId, deliveryStatus: { not: "scheduled" } },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
+    const page = recipients.slice(0, limit);
     const notifications = await prisma.notification.findMany({
-      where: { id: { in: recipients.map((recipient) => recipient.notificationId) } },
+      where: { id: { in: page.map((recipient) => recipient.notificationId) } },
     });
     return ok({
-      notifications: recipients.map((recipient) => ({
+      notifications: page.map((recipient) => ({
         ...recipient,
         notification:
           notifications.find((notification) => notification.id === recipient.notificationId) ??
           null,
       })),
+      nextCursor: recipients.length > limit ? page[page.length - 1]?.id ?? null : null,
+      limit,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["me", "notifications", /.+/, "read"])) {

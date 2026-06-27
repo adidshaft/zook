@@ -292,7 +292,13 @@ async function getOrganizationDashboardDataUncached(
     prisma.notification.findMany({ where: { orgId }, take: 8, orderBy: { createdAt: "desc" } }),
     prisma.aIUsageLog.findMany({ where: { orgId }, take: 8, orderBy: { createdAt: "desc" } }),
     prisma.aIUsageLog.count({ where: { orgId, createdAt: { gte: monthStart } } }),
-    prisma.notification.count({ where: { orgId, status: { in: ["FAILED", "SCHEDULED"] } } }),
+    prisma.notification.count({
+      where: {
+        orgId,
+        status: "FAILED",
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    }),
     prisma.auditLog.count({ where: { orgId } }),
     prisma.organizationRoleAssignment.count({
       where: { orgId, role: { in: ["OWNER", "ADMIN", "TRAINER", "RECEPTIONIST"] } },

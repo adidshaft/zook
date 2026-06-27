@@ -52,6 +52,25 @@ const trainerClientNoteSchema = z.object({
 
 export async function handleTrainerOperations(request: NextRequest, path: string[]) {
   if (
+    request.method === "GET" &&
+    pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "profile"])
+  ) {
+    const orgId = path[1]!;
+    const trainerUserId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const actorUserId = requireAuth(ctx);
+    if (actorUserId === trainerUserId) {
+      requireOrgPermission(ctx, orgId, "PLANS_CREATE");
+    } else {
+      requireOrgPermission(ctx, orgId, "TRAINERS_MANAGE");
+    }
+    const profile = await prisma.trainerProfile.findFirst({
+      where: { orgId, userId: trainerUserId },
+    });
+    return ok({ profile });
+  }
+
+  if (
     request.method === "PATCH" &&
     pathMatches(path, ["orgs", /.+/, "trainers", /.+/, "profile"])
   ) {

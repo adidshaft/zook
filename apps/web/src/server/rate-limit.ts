@@ -73,6 +73,10 @@ export const defaultRateLimitRules = {
   notificationSenderDaily: { limit: 25, windowMs: 24 * 60 * 60 * 1000 },
   notificationSenderMinute: { limit: 4, windowMs: 60 * 1000 },
   notificationRecipientDaily: { limit: 4, windowMs: 24 * 60 * 60 * 1000 },
+  ptSessionByOrg: { limit: 100, windowMs: 60 * 60 * 1000 },
+  ptSubscriptionByOrg: { limit: 20, windowMs: 60 * 60 * 1000 },
+  classEnrollmentByUser: { limit: 10, windowMs: 60 * 1000 },
+  shopOrderByUser: { limit: 20, windowMs: 60 * 60 * 1000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export class InMemoryRateLimitStore implements RateLimitStore {

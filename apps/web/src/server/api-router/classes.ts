@@ -5,7 +5,8 @@ import { z } from "zod";
 
 import { getRequestContext, requireAuth, requireOrgAnyPermission } from "../access";
 import { writeAuditLog } from "../audit";
-import { conflictError, forbiddenError, notFoundError } from "../errors";
+import { conflictError, forbiddenError, notFoundError, validationError } from "../errors";
+import { assertRateLimit } from "../rate-limit";
 import { createDirectNotification } from "./core";
 import { ok, readJson } from "../response";
 import {
@@ -42,6 +43,10 @@ const classUpdateSchema = z.object({
   pricePaise: z.number().int().min(0).max(1_000_000).optional(),
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),
+});
+
+const classAttendanceSchema = z.object({
+  status: z.enum(["PENDING", "ATTENDED", "NO_SHOW"]),
 });
 
 const CLASS_REFUND_CUTOFF_HOURS = 6;
@@ -336,6 +341,11 @@ export async function handleClasses(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     const userId = requireAuth(ctx);
     assertActiveContextOrg(ctx, orgId);
+    await assertRateLimit(
+      "classEnrollmentByUser",
+      userId,
+      "Too many enrollment requests.",
+    );
     await assertOrgUser({ orgId, userId, role: "MEMBER" });
     const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
     if (!classRecord) {
@@ -476,6 +486,44 @@ export async function handleClasses(request: NextRequest, path: string[]) {
     });
     return ok({ enrollment, remainingCapacity: decision.remainingCapacity });
   }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "classes", /.+/, "roster", /.+/, "attendance"])
+  ) {
+    const orgId = path[1]!;
+    const classId = path[3]!;
+    const memberId = path[5]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgAnyPermission(ctx, orgId, ["ATTENDANCE_APPROVE"]);
+    const body = classAttendanceSchema.parse(await readJson(request));
+    const classRecord = await prisma.class.findFirst({ where: { id: classId, orgId } });
+    if (!classRecord) {
+      throw notFoundError("Class not found");
+    }
+    if (classRecord.status === "cancelled") {
+      throw validationError("Cannot mark attendance for a cancelled class.");
+    }
+    const enrollment = await prisma.classEnrollment.findUnique({
+      where: { classId_memberId: { classId, memberId } },
+    });
+    if (!enrollment || enrollment.status === "cancelled") {
+      throw notFoundError("Member is not enrolled in this class.");
+    }
+    const updated = await prisma.classEnrollment.update({
+      where: { id: enrollment.id },
+      data: { attendanceStatus: body.status },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "class.attendance_marked",
+      entityType: "class_enrollment",
+      entityId: enrollment.id,
+      metadata: { memberId, classId, status: body.status },
+    });
+    return ok({ ok: true, memberId, attendanceStatus: updated.attendanceStatus });
+  }
   if (request.method === "DELETE" && pathMatches(path, ["orgs", /.+/, "classes", /.+/, "enroll"])) {
     const orgId = path[1]!;
     const classId = path[3]!;
@@ -573,6 +621,7 @@ export async function handleClasses(request: NextRequest, path: string[]) {
         memberId: entry.memberId,
         name: memberNames.get(entry.memberId) ?? null,
         status: entry.status,
+        attendanceStatus: entry.attendanceStatus ?? "PENDING",
         paymentStatus: entry.paidAt ? "paid" : classRecord.pricePaise > 0 ? "unpaid" : "comp",
         paidAt: entry.paidAt,
         enrolledAt: entry.enrolledAt,
