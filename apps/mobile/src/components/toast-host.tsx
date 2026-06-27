@@ -10,11 +10,13 @@ import Reanimated, {
 } from "@/lib/reanimated-lite";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { elevation, spacing, typography, useTheme } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
 
 export function ToastHost() {
   const insets = useSafeAreaInsets();
   const { palette, mode } = useTheme();
+  const t = useT();
   const isAndroid = Platform.OS === "android";
   const [toast, setToast] = useState<ToastPayload | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -143,7 +145,7 @@ export function ToastHost() {
           pressed ? styles.toastPressed : null,
         ]}
         accessibilityRole="button"
-        accessibilityLabel="Dismiss notification"
+        accessibilityLabel={t("common.dismissNotification")}
       >
         <Reanimated.View
           accessibilityRole="alert"

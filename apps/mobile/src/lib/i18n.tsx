@@ -12,6 +12,7 @@ export type LocalePreference = "system" | AppLocale;
 
 export type TranslationKey =
   | "app.loadingSession"
+  | "app.launchTagline"
   | "app.configErrorTitle"
   | "app.configErrorBody"
   | "common.cancel"
@@ -23,6 +24,9 @@ export type TranslationKey =
   | "common.done"
   | "common.or"
   | "common.saving"
+  | "common.closeSheet"
+  | "common.dismissNotification"
+  | "common.tryAgain"
   | "network.offline"
   | "notFound.body"
   | "notFound.goWorkspace"
@@ -421,6 +425,13 @@ export type TranslationKey =
   | "rewards.title"
   | "rewards.yourEarnings"
   | "referral.opening"
+  | "referral.card.copyCodeAccessibility"
+  | "referral.card.referFriend"
+  | "referral.card.rewardCount"
+  | "referral.card.rewardCount_plural"
+  | "referral.card.shareCode"
+  | "referral.card.unlimited"
+  | "referral.card.used"
   | "branch.switch"
   | "branch.current"
   | "branch.allBranches"
@@ -609,6 +620,23 @@ export type TranslationKey =
   | "gymProfile.validityDays"
   | "gymProfile.visitsRemaining"
   | "gymProfile.whatsInside"
+  | "gymReviews.beFirst"
+  | "gymReviews.cancel"
+  | "gymReviews.edit"
+  | "gymReviews.editReview"
+  | "gymReviews.empty"
+  | "gymReviews.membersSay"
+  | "gymReviews.onlyMembers"
+  | "gymReviews.postReview"
+  | "gymReviews.posting"
+  | "gymReviews.reviews"
+  | "gymReviews.reviewsCount"
+  | "gymReviews.sharePlaceholder"
+  | "gymReviews.starsAccessibility"
+  | "gymReviews.update"
+  | "gymReviews.write"
+  | "gymReviews.writeReview"
+  | "gallery.closePhotoViewer"
   | "empty.loading"
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
@@ -1051,6 +1079,17 @@ export type TranslationKey =
   | "member.profile.visitsReferralBenefit"
   | "member.profile.visitsRemaining"
   | "member.profile.workoutPlan"
+  | "roleSwitcher.active"
+  | "roleSwitcher.currentRoleAccessibility"
+  | "roleSwitcher.currentWorkspace"
+  | "roleSwitcher.currentWorkspaceAccessibility"
+  | "roleSwitcher.roleUnavailable"
+  | "roleSwitcher.roleUnavailableBody"
+  | "roleSwitcher.subtitle"
+  | "roleSwitcher.switching"
+  | "roleSwitcher.switchToWorkspace"
+  | "roleSwitcher.title"
+  | "roleSwitcher.use"
   | "member.profileExtra.addDateOfBirth"
   | "member.profileExtra.aiConsent"
   | "member.profileExtra.aiConsentBody"
@@ -1674,10 +1713,13 @@ export type TranslationKey =
   | "reception.desk.verifyCode"
   | "reception.desk.verifyEntryCode"
   | "reception.desk.viewRosterFor"
+  | "reception.workspace.backToOwnerTools"
+  | "reception.workspace.goBack"
   | "reception.home.title"
   | "reception.members.attendanceNote"
   | "reception.members.auditReason"
   | "reception.members.clearSelectedMember"
+  | "reception.members.clear"
   | "reception.members.deskActions"
   | "reception.members.generalFitness"
   | "reception.members.hiddenHint"
@@ -1750,6 +1792,15 @@ export type TranslationKey =
   | "reception.payments.subtitle"
   | "reception.payments.verified"
   | "reception.verification.title"
+  | "reception.decision.addDeskNote"
+  | "reception.decision.approve"
+  | "reception.decision.approving"
+  | "reception.decision.close"
+  | "reception.decision.closeSheet"
+  | "reception.decision.memberCheckIn"
+  | "reception.decision.reason"
+  | "reception.decision.reject"
+  | "reception.decision.rejecting"
   | "owner.referrals.allowTrainerReferrals"
   | "owner.referrals.codeExpiryDays"
   | "owner.referrals.creditInr"
@@ -1835,6 +1886,9 @@ export type TranslationKey =
   | "trainer.clients.subtitle"
   | "trainer.clients.title"
   | "trainer.clients.tryAnotherSearch"
+  | "trainer.aiDraft.body"
+  | "trainer.aiDraft.createManual"
+  | "trainer.aiDraft.title"
   | "trainer.classes.cancelBody"
   | "trainer.classes.cancelClass"
   | "trainer.classes.cancelled"
@@ -2070,6 +2124,7 @@ type TranslationValues = Record<string, string | number>;
 const translations: Record<AppLocale, Record<TranslationKey, string>> = {
   en: {
     "app.loadingSession": "Restoring your Zook session...",
+    "app.launchTagline": "Gym ops, without the clutter.",
     "app.configErrorTitle": "Zook can't open in this build.",
     "app.configErrorBody": "Please update the app or contact support if this keeps happening.",
     "common.cancel": "Cancel",
@@ -2081,6 +2136,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "Done",
     "common.or": "or",
     "common.saving": "Saving...",
+    "common.closeSheet": "Close sheet",
+    "common.dismissNotification": "Dismiss notification",
+    "common.tryAgain": "Try again",
     "network.offline": "Working offline. Data may be stale.",
     "notFound.body": "The link may be old, or this role may not have access to that workflow.",
     "notFound.goWorkspace": "Go to my workspace",
@@ -2481,6 +2539,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "rewards.title": "Refer & earn",
     "rewards.yourEarnings": "Your earnings",
     "referral.opening": "Opening referral...",
+    "referral.card.copyCodeAccessibility": "Copy referral code {{code}}",
+    "referral.card.referFriend": "Refer a friend",
+    "referral.card.rewardCount": "{{count}} reward",
+    "referral.card.rewardCount_plural": "{{count}} rewards",
+    "referral.card.shareCode": "Share referral code",
+    "referral.card.unlimited": "unlimited",
+    "referral.card.used": "{{used}}/{{max}} used · {{rewards}}",
     "branch.switch": "Switch branch",
     "branch.current": "Current branch",
     "branch.allBranches": "All branches",
@@ -2675,6 +2740,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.validityDays": "{{count}} validity days",
     "gymProfile.visitsRemaining": "{{count}} visits remaining",
     "gymProfile.whatsInside": "What's inside",
+    "gymReviews.beFirst": "Be the first member to leave a review.",
+    "gymReviews.cancel": "Cancel",
+    "gymReviews.edit": "Edit",
+    "gymReviews.editReview": "Edit your review",
+    "gymReviews.empty": "No reviews yet",
+    "gymReviews.membersSay": "Members say",
+    "gymReviews.onlyMembers": "Only members can review this gym.",
+    "gymReviews.postReview": "Post review",
+    "gymReviews.posting": "Posting...",
+    "gymReviews.reviews": "Reviews",
+    "gymReviews.reviewsCount": "{{count}} reviews",
+    "gymReviews.sharePlaceholder": "Share what you like about this gym...",
+    "gymReviews.starsAccessibility": "{{count}} stars",
+    "gymReviews.update": "Update",
+    "gymReviews.write": "Write",
+    "gymReviews.writeReview": "Write a review",
+    "gallery.closePhotoViewer": "Close photo viewer",
     "empty.loading": "Loading",
     "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
@@ -3119,6 +3201,17 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "You'll get {{count}} visits for every friend who joins.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "roleSwitcher.active": "Active",
+    "roleSwitcher.currentRoleAccessibility": "Switch role. Current role: {{role}}",
+    "roleSwitcher.currentWorkspace": "Current workspace",
+    "roleSwitcher.currentWorkspaceAccessibility": "Switch role. Current workspace: {{workspace}}",
+    "roleSwitcher.roleUnavailable": "Role unavailable",
+    "roleSwitcher.roleUnavailableBody": "That role is not available here.",
+    "roleSwitcher.subtitle": "Choose the gym and role for this workspace.",
+    "roleSwitcher.switching": "Switching...",
+    "roleSwitcher.switchToWorkspace": "Switch to this workspace",
+    "roleSwitcher.title": "Switch role",
+    "roleSwitcher.use": "Use",
     "member.profileExtra.addDateOfBirth": "Add date of birth",
     "member.profileExtra.aiConsent": "AI consent",
     "member.profileExtra.aiConsentBody": "Allow AI features to use your profile context.",
@@ -3743,10 +3836,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.verifyCode": "Verify Code",
     "reception.desk.verifyEntryCode": "Verify Entry Code",
     "reception.desk.viewRosterFor": "View roster for {{name}}",
+    "reception.workspace.backToOwnerTools": "Back to owner tools",
+    "reception.workspace.goBack": "Go back",
     "reception.home.title": "Front desk",
     "reception.members.attendanceNote": "Attendance note",
     "reception.members.auditReason": "Add a reason so the gym has a clear record.",
     "reception.members.clearSelectedMember": "Clear selected member",
+    "reception.members.clear": "Clear",
     "reception.members.deskActions": "Desk actions",
     "reception.members.generalFitness": "General fitness",
     "reception.members.hiddenHint": "Showing {{visible}} of {{total}} matches. Refine the search to find a specific member faster.",
@@ -3819,6 +3915,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.payments.subtitle": "Reception",
     "reception.payments.verified": "Verified",
     "reception.verification.title": "Verification",
+    "reception.decision.addDeskNote": "Add the desk note before approving or rejecting this scan.",
+    "reception.decision.approve": "Approve",
+    "reception.decision.approving": "Approving...",
+    "reception.decision.close": "Close",
+    "reception.decision.closeSheet": "Close decision sheet",
+    "reception.decision.memberCheckIn": "Member check-in",
+    "reception.decision.reason": "Decision reason",
+    "reception.decision.reject": "Reject",
+    "reception.decision.rejecting": "Rejecting...",
     "owner.referrals.allowTrainerReferrals": "Allow trainer referrals",
     "owner.referrals.codeExpiryDays": "Code expiry (days)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -3904,6 +4009,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · client list is access-controlled",
     "trainer.clients.title": "Clients",
     "trainer.clients.tryAnotherSearch": "Try another search or filter.",
+    "trainer.aiDraft.body": "Your gym owner can turn on AI plan drafting in settings. You can still create and edit plans manually.",
+    "trainer.aiDraft.createManual": "Create plan manually",
+    "trainer.aiDraft.title": "AI drafting is off",
     "trainer.classes.cancelBody": "Members who booked this class will be notified right away. This can't be undone.",
     "trainer.classes.cancelClass": "Cancel class",
     "trainer.classes.cancelled": "Cancelled",
@@ -4136,6 +4244,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
   },
   hi: {
     "app.loadingSession": "आपका Zook सेशन वापस लाया जा रहा है...",
+    "app.launchTagline": "Gym ops, बिना clutter के.",
     "app.configErrorTitle": "इस बिल्ड में Zook नहीं खुल सकता.",
     "app.configErrorBody": "कृपया ऐप अपडेट करें या समस्या बनी रहे तो सपोर्ट से संपर्क करें.",
     "common.cancel": "रद्द करें",
@@ -4147,6 +4256,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.done": "हो गया",
     "common.or": "या",
     "common.saving": "सेव हो रहा है...",
+    "common.closeSheet": "शीट बंद करें",
+    "common.dismissNotification": "नोटिफिकेशन हटाएं",
+    "common.tryAgain": "फिर कोशिश करें",
     "network.offline": "आप ऑफलाइन हैं. डेटा पुराना हो सकता है.",
     "notFound.body": "लिंक पुराना हो सकता है, या इस रोल को उस वर्कफ्लो का एक्सेस नहीं है.",
     "notFound.goWorkspace": "मेरे वर्कस्पेस पर जाएं",
@@ -4549,6 +4661,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "rewards.title": "Refer & earn",
     "rewards.yourEarnings": "आपकी earnings",
     "referral.opening": "Referral खुल रहा है...",
+    "referral.card.copyCodeAccessibility": "Referral code {{code}} copy करें",
+    "referral.card.referFriend": "Friend refer करें",
+    "referral.card.rewardCount": "{{count}} reward",
+    "referral.card.rewardCount_plural": "{{count}} rewards",
+    "referral.card.shareCode": "Referral code share करें",
+    "referral.card.unlimited": "unlimited",
+    "referral.card.used": "{{used}}/{{max}} used · {{rewards}}",
     "branch.switch": "ब्रांच बदलें",
     "branch.current": "मौजूदा ब्रांच",
     "branch.allBranches": "सभी ब्रांच",
@@ -4743,6 +4862,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.validityDays": "{{count}} validity days",
     "gymProfile.visitsRemaining": "{{count}} visits बाकी",
     "gymProfile.whatsInside": "अंदर क्या है",
+    "gymReviews.beFirst": "Review छोड़ने वाले पहले member बनें.",
+    "gymReviews.cancel": "रद्द करें",
+    "gymReviews.edit": "Edit",
+    "gymReviews.editReview": "अपना review edit करें",
+    "gymReviews.empty": "अभी कोई review नहीं",
+    "gymReviews.membersSay": "Members कहते हैं",
+    "gymReviews.onlyMembers": "सिर्फ members इस gym को review कर सकते हैं.",
+    "gymReviews.postReview": "Review post करें",
+    "gymReviews.posting": "Post हो रहा है...",
+    "gymReviews.reviews": "Reviews",
+    "gymReviews.reviewsCount": "{{count}} reviews",
+    "gymReviews.sharePlaceholder": "इस gym के बारे में आपको क्या पसंद है...",
+    "gymReviews.starsAccessibility": "{{count}} stars",
+    "gymReviews.update": "Update",
+    "gymReviews.write": "Write",
+    "gymReviews.writeReview": "Review लिखें",
+    "gallery.closePhotoViewer": "Photo viewer बंद करें",
     "empty.loading": "लोड हो रहा है",
     "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",
@@ -5187,6 +5323,17 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.visitsReferralBenefit": "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
+    "roleSwitcher.active": "Active",
+    "roleSwitcher.currentRoleAccessibility": "Role बदलें. Current role: {{role}}",
+    "roleSwitcher.currentWorkspace": "Current workspace",
+    "roleSwitcher.currentWorkspaceAccessibility": "Role बदलें. Current workspace: {{workspace}}",
+    "roleSwitcher.roleUnavailable": "Role unavailable",
+    "roleSwitcher.roleUnavailableBody": "यह role यहां उपलब्ध नहीं है.",
+    "roleSwitcher.subtitle": "इस workspace के लिए gym और role चुनें.",
+    "roleSwitcher.switching": "Switch हो रहा है...",
+    "roleSwitcher.switchToWorkspace": "इस workspace पर switch करें",
+    "roleSwitcher.title": "Role बदलें",
+    "roleSwitcher.use": "Use",
     "member.profileExtra.addDateOfBirth": "Date of birth जोड़ें",
     "member.profileExtra.aiConsent": "AI consent",
     "member.profileExtra.aiConsentBody": "AI features को आपका profile context use करने दें.",
@@ -5811,10 +5958,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.verifyCode": "Code verify करें",
     "reception.desk.verifyEntryCode": "Entry code verify करें",
     "reception.desk.viewRosterFor": "{{name}} का roster देखें",
+    "reception.workspace.backToOwnerTools": "Owner tools पर वापस",
+    "reception.workspace.goBack": "वापस जाएं",
     "reception.home.title": "Front desk",
     "reception.members.attendanceNote": "Attendance note",
     "reception.members.auditReason": "Reason जोड़ें ताकि gym के पास clear record रहे.",
     "reception.members.clearSelectedMember": "Selected member clear करें",
+    "reception.members.clear": "Clear",
     "reception.members.deskActions": "Desk actions",
     "reception.members.generalFitness": "General fitness",
     "reception.members.hiddenHint": "{{visible}} of {{total}} matches दिख रहे हैं. Specific member जल्दी ढूंढने के लिए search refine करें.",
@@ -5887,6 +6037,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.payments.subtitle": "Reception",
     "reception.payments.verified": "Verified",
     "reception.verification.title": "Verification",
+    "reception.decision.addDeskNote": "इस scan को approve या reject करने से पहले desk note जोड़ें.",
+    "reception.decision.approve": "Approve",
+    "reception.decision.approving": "Approve हो रहा है...",
+    "reception.decision.close": "Close",
+    "reception.decision.closeSheet": "Decision sheet बंद करें",
+    "reception.decision.memberCheckIn": "Member check-in",
+    "reception.decision.reason": "Decision reason",
+    "reception.decision.reject": "Reject",
+    "reception.decision.rejecting": "Reject हो रहा है...",
     "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
     "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
     "owner.referrals.creditInr": "Credit (₹)",
@@ -5972,6 +6131,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clients.subtitle": "{{name}} · क्लाइंट सूची access-controlled है",
     "trainer.clients.title": "क्लाइंट",
     "trainer.clients.tryAnotherSearch": "दूसरी खोज या फिल्टर आजमाएं.",
+    "trainer.aiDraft.body": "आपके gym owner settings में AI plan drafting चालू कर सकते हैं. तब तक आप plans manually create और edit कर सकते हैं.",
+    "trainer.aiDraft.createManual": "Plan manually create करें",
+    "trainer.aiDraft.title": "AI drafting off है",
     "trainer.classes.cancelBody": "जिन members ने यह class book की है उन्हें तुरंत notify किया जाएगा. यह undo नहीं हो सकता.",
     "trainer.classes.cancelClass": "Class cancel करें",
     "trainer.classes.cancelled": "Cancelled",

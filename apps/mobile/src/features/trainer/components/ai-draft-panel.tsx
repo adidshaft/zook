@@ -2,10 +2,12 @@ import { useRouter } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, SecondaryButton } from "@/components/primitives";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function AiDraftPanel({ clientId }: { clientId: string }) {
   const { mode, palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const isDark = mode === "dark";
 
@@ -24,16 +26,16 @@ export function AiDraftPanel({ clientId }: { clientId: string }) {
       >
         <Ionicons name="lock-closed-outline" size={28} color={palette.accent.base} />
       </View>
-      <Text style={[styles.title, { color: palette.text.primary }]}>AI drafting is off</Text>
+      <Text style={[styles.title, { color: palette.text.primary }]}>{t("trainer.aiDraft.title")}</Text>
       <Text style={[styles.body, { color: palette.text.secondary }]}>
-        Your gym owner can turn on AI plan drafting in settings. You can still create and edit plans manually.
+        {t("trainer.aiDraft.body")}
       </Text>
       <SecondaryButton
         testID="trainer-create-manual-plan"
         icon="reader-outline"
         onPress={() => router.push(`/trainer/clients/${clientId}/plan` as never)}
       >
-        Create plan manually
+        {t("trainer.aiDraft.createManual")}
       </SecondaryButton>
     </Card>
   );

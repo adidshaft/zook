@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { ProfileShortcut } from "./profile-shortcut";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 export function AppHeader({
@@ -34,6 +35,7 @@ export function AppHeader({
   style?: StyleProp<ViewStyle>;
 }) {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
 
   // Leading-slot rule (keeps the back/profile control consistent across every
@@ -50,7 +52,7 @@ export function AppHeader({
       <Pressable
         onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
         accessibilityRole="button"
-        accessibilityLabel="Back"
+        accessibilityLabel={t("common.back")}
         hitSlop={12}
         style={({ pressed }) => [
           styles.appHeaderBack,

@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { normalizeWebUrl } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { spacing, typography } from "@/lib/theme";
 
 const { width } = Dimensions.get("window");
@@ -33,6 +34,7 @@ export function GalleryViewer({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const t = useT();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(initialIndex ?? 0);
   const visible = initialIndex != null;
@@ -68,7 +70,7 @@ export function GalleryViewer({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close photo viewer"
+          accessibilityLabel={t("gallery.closePhotoViewer")}
           onPress={onClose}
           hitSlop={12}
           style={[styles.close, { top: insets.top + spacing.sm }]}

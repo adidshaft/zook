@@ -68,6 +68,7 @@ import { useReceptionQueue } from "@/lib/domains/reception";
 import { useFulfillShopOrder, useOrgActiveShopOrders } from "@/lib/domains/shop";
 import type { ReceptionQueueRecord } from "@/lib/domains/shared/types";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
@@ -852,6 +853,7 @@ export function ReceptionWorkspace({
 }) {
   const state = useReceptionWorkspaceState({ initialMemberId, initialRecordId });
   const { mode, palette } = useTheme();
+  const t = useT();
   const scrollY = useSharedValue(0);
   const isDark = mode === "dark";
   const isHomeScreen =
@@ -892,7 +894,7 @@ export function ReceptionWorkspace({
         >
           <View style={noScroll ? styles.contentNoScroll : undefined}>
             <ScreenHeader
-              title={isHomeScreen ? "Today" : title}
+              title={isHomeScreen ? t("reception.desk.today") : title}
               subtitle={isHomeScreen ? undefined : subtitle}
               meta={
                 isHomeScreen ? (
@@ -910,7 +912,7 @@ export function ReceptionWorkspace({
                     testID="reception-back"
                     onPress={() => (state.router.canGoBack() ? state.router.back() : state.router.replace("/reception"))}
                     accessibilityRole="button"
-                    accessibilityLabel="Go back"
+                    accessibilityLabel={t("reception.workspace.goBack")}
                     hitSlop={12}
                     style={[styles.backButton, headerControlStyle]}
                   >
@@ -921,7 +923,7 @@ export function ReceptionWorkspace({
                     testID="reception-back"
                     onPress={() => state.router.replace("/owner")}
                     accessibilityRole="button"
-                    accessibilityLabel="Back to owner tools"
+                    accessibilityLabel={t("reception.workspace.backToOwnerTools")}
                     hitSlop={12}
                     style={[styles.backButton, headerControlStyle]}
                   >
@@ -942,7 +944,7 @@ export function ReceptionWorkspace({
                 testID="reception-gym-selector"
                 onPress={state.openBranchSwitcher}
                 accessibilityRole="button"
-                accessibilityLabel={state.canSwitchBranches ? "Switch branch" : "Active branch"}
+                accessibilityLabel={state.canSwitchBranches ? t("branch.switch") : t("branch.current")}
                 disabled={!state.canSwitchBranches}
                 style={({ pressed }) => [
                   styles.gymSelector,
@@ -977,10 +979,10 @@ export function ReceptionWorkspace({
                 />
                 <View style={styles.memberContextCopy}>
                   <Text style={[styles.memberContextTitle, { color: palette.text.primary }]}>
-                    {state.member?.name ?? "No member selected"}
+                    {state.member?.name ?? t("reception.payments.selectMemberFirst")}
                   </Text>
                   <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
-                    {state.member?.email ?? "Search members before recording payments or attendance"}
+                    {state.member?.email ?? t("reception.members.searchOrSelect")}
                     {state.membership?.status ? ` · ${titleCaseFromCode(state.membership.status)}` : ""}
                   </Text>
                 </View>
@@ -988,10 +990,12 @@ export function ReceptionWorkspace({
                   <Pressable
                     onPress={() => state.setSelectedMemberId(null)}
                     accessibilityRole="button"
-                    accessibilityLabel="Clear selected member"
+                    accessibilityLabel={t("reception.members.clearSelectedMember")}
                     style={[styles.clearMemberButton, { borderColor: palette.border.default }]}
                   >
-                    <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>Clear</Text>
+                    <Text style={[styles.clearMemberText, { color: palette.text.tertiary }]}>
+                      {t("reception.members.clear")}
+                    </Text>
                   </Pressable>
                 ) : null}
               </Card>
@@ -1010,6 +1014,7 @@ export function ReceptionWorkspace({
 
 function ApprovalDecisionSheet() {
   const { mode, palette } = useTheme();
+  const t = useT();
   const isDark = mode === "dark";
   const {
     approveAttendance,
@@ -1069,20 +1074,22 @@ function ApprovalDecisionSheet() {
         <BottomSheetView style={styles.decisionSheetContent}>
           <View style={styles.sheetHeader}>
             <View style={styles.sheetTitleCopy}>
-              <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>Decision reason</Text>
+              <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>
+                {t("reception.decision.reason")}
+              </Text>
               <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
                 {selectedDecisionAttempt?.user?.name ??
                   selectedDecisionAttempt?.user?.email ??
-                  "Member check-in"}
+                  t("reception.decision.memberCheckIn")}
               </Text>
               <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                Add the desk note before approving or rejecting this scan.
+                {t("reception.decision.addDeskNote")}
               </Text>
             </View>
             <Pressable
               onPress={closeDecisionSheet}
               accessibilityRole="button"
-              accessibilityLabel="Close decision sheet"
+              accessibilityLabel={t("reception.decision.closeSheet")}
               style={({ pressed }) => [
                 styles.sheetCloseButton,
                 { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
@@ -1090,11 +1097,13 @@ function ApprovalDecisionSheet() {
               ]}
             >
               <Ionicons name="close-outline" size={16} color={palette.text.secondary} />
-              <Text style={[styles.sheetCloseText, { color: palette.text.secondary }]}>Close</Text>
+              <Text style={[styles.sheetCloseText, { color: palette.text.secondary }]}>
+                {t("reception.decision.close")}
+              </Text>
             </Pressable>
           </View>
           <FormField
-            label="Decision reason"
+            label={t("reception.decision.reason")}
             value={decisionReason}
             onChangeText={setDecisionReason}
             multiline
@@ -1146,7 +1155,9 @@ function ApprovalDecisionSheet() {
               }}
               style={styles.actionHalf}
             >
-              {approveAttendanceMutation.isPending ? "Approving..." : "Approve"}
+              {approveAttendanceMutation.isPending
+                ? t("reception.decision.approving")
+                : t("reception.decision.approve")}
             </PrimaryButton>
             <SecondaryButton
               testID="reception-decision-reject"
@@ -1159,7 +1170,9 @@ function ApprovalDecisionSheet() {
               }}
               style={styles.actionHalf}
             >
-              {rejectAttendanceMutation.isPending ? "Rejecting..." : "Reject"}
+              {rejectAttendanceMutation.isPending
+                ? t("reception.decision.rejecting")
+                : t("reception.decision.reject")}
             </SecondaryButton>
           </View>
         </BottomSheetView>

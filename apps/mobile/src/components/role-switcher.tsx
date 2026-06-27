@@ -17,6 +17,7 @@ import { normalizeWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
 import { gymBrandColor } from "@/lib/gym-brand";
+import { useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -32,6 +33,7 @@ type RoleCombo = {
 
 export function RoleSwitcherChip() {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -87,8 +89,8 @@ export function RoleSwitcherChip() {
         router.replace(routeForRole(combo.role) as never);
       } catch (error) {
         showToast({
-          title: "Role unavailable",
-          message: error instanceof Error ? error.message : "That role is not available here.",
+          title: t("roleSwitcher.roleUnavailable"),
+          message: error instanceof Error ? error.message : t("roleSwitcher.roleUnavailableBody"),
           tone: "danger",
           haptic: "error",
         });
@@ -127,7 +129,7 @@ export function RoleSwitcherChip() {
       <Pressable
         testID="role-switcher-chip"
         accessibilityRole="button"
-        accessibilityLabel={`Switch role. Current role: ${currentLabel}`}
+        accessibilityLabel={t("roleSwitcher.currentRoleAccessibility", { role: currentLabel })}
         onPress={() => sheetRef.current?.present()}
         hitSlop={6}
         style={({ pressed }) => [
@@ -154,9 +156,9 @@ export function RoleSwitcherChip() {
       >
         <BottomSheetView style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>Switch role</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>{t("roleSwitcher.title")}</Text>
             <Text style={[styles.sheetSubtitle, { color: palette.text.secondary }]}>
-              Choose the gym and role for this workspace.
+              {t("roleSwitcher.subtitle")}
             </Text>
           </View>
           <View style={styles.optionStack}>
@@ -188,7 +190,7 @@ export function RoleSwitcherChip() {
                 >
                   <ListRow
                     title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
-                    subtitle={selected ? "Current workspace" : "Switch to this workspace"}
+                    subtitle={selected ? t("roleSwitcher.currentWorkspace") : t("roleSwitcher.switchToWorkspace")}
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
@@ -204,7 +206,7 @@ export function RoleSwitcherChip() {
                           },
                         ]}
                       >
-                        {busy ? "Switching..." : selected ? "Active" : "Use"}
+                        {busy ? t("roleSwitcher.switching") : selected ? t("roleSwitcher.active") : t("roleSwitcher.use")}
                       </Text>
                     }
                   />
@@ -220,6 +222,7 @@ export function RoleSwitcherChip() {
 
 export function RoleSwitcherContextPill() {
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -277,8 +280,8 @@ export function RoleSwitcherContextPill() {
         router.replace(routeForRole(combo.role) as never);
       } catch (error) {
         showToast({
-          title: "Role unavailable",
-          message: error instanceof Error ? error.message : "That role is not available here.",
+          title: t("roleSwitcher.roleUnavailable"),
+          message: error instanceof Error ? error.message : t("roleSwitcher.roleUnavailableBody"),
           tone: "danger",
           haptic: "error",
         });
@@ -329,7 +332,7 @@ export function RoleSwitcherContextPill() {
       <Pressable
         testID="role-switcher-context-pill"
         accessibilityRole="button"
-        accessibilityLabel={`Switch role. Current workspace: ${currentOrgName}`}
+        accessibilityLabel={t("roleSwitcher.currentWorkspaceAccessibility", { workspace: currentOrgName })}
         onPress={() => sheetRef.current?.present()}
         hitSlop={6}
         style={({ pressed }) => (pressed ? styles.contextTriggerPressed : null)}
@@ -350,9 +353,9 @@ export function RoleSwitcherContextPill() {
       >
         <BottomSheetView style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>Switch role</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>{t("roleSwitcher.title")}</Text>
             <Text style={[styles.sheetSubtitle, { color: palette.text.secondary }]}>
-              Choose the gym and role for this workspace.
+              {t("roleSwitcher.subtitle")}
             </Text>
           </View>
           <View style={styles.optionStack}>
@@ -384,7 +387,7 @@ export function RoleSwitcherContextPill() {
                 >
                   <ListRow
                     title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
-                    subtitle={selected ? "Current workspace" : "Switch to this workspace"}
+                    subtitle={selected ? t("roleSwitcher.currentWorkspace") : t("roleSwitcher.switchToWorkspace")}
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
@@ -400,7 +403,7 @@ export function RoleSwitcherContextPill() {
                           },
                         ]}
                       >
-                        {busy ? "Switching..." : selected ? "Active" : "Use"}
+                        {busy ? t("roleSwitcher.switching") : selected ? t("roleSwitcher.active") : t("roleSwitcher.use")}
                       </Text>
                     }
                   />

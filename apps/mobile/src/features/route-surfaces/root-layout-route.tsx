@@ -608,11 +608,13 @@ export default function Layout() {
 }
 
 function LaunchFallbackScreen() {
-  return <LaunchSurface subtitle="Loading Zook…" />;
+  const { t } = useI18n();
+  return <LaunchSurface subtitle={t("app.loadingSession")} />;
 }
 
 function LaunchSurface({ subtitle }: { subtitle: string }) {
   const { mode, palette } = useTheme();
+  const { t } = useI18n();
   return (
     <View style={[styles.loading, { backgroundColor: palette.bg.app }]}>
       <View
@@ -647,7 +649,7 @@ function LaunchSurface({ subtitle }: { subtitle: string }) {
           </Text>
         </View>
         <Text style={[styles.loadingSubtitle, { color: palette.text.secondary }]}>
-          Gym ops, without the clutter.
+          {t("app.launchTagline")}
         </Text>
         <View style={styles.loadingFooter}>
           <ActivityIndicator color={palette.accent.base} />
@@ -660,20 +662,18 @@ function LaunchSurface({ subtitle }: { subtitle: string }) {
 
 function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   return (
     <View style={[styles.configError, { backgroundColor: palette.bg.app }]}>
-      <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>Something went wrong</Text>
-      <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>
-        Zook hit an unexpected error and reported it to our team. Try again, or restart the app if
-        the problem continues.
-      </Text>
+      <Text style={[styles.configErrorTitle, { color: palette.text.primary }]}>{t("app.configErrorTitle")}</Text>
+      <Text style={[styles.configErrorBody, { color: palette.text.secondary }]}>{t("app.configErrorBody")}</Text>
       <Pressable
         onPress={onRetry}
         accessibilityRole="button"
-        accessibilityLabel="Try again"
+        accessibilityLabel={t("common.tryAgain")}
         style={[styles.retryButton, { backgroundColor: palette.accent.base }]}
       >
-        <Text style={[styles.retryButtonText, { color: palette.text.onAccent }]}>Try again</Text>
+        <Text style={[styles.retryButtonText, { color: palette.text.onAccent }]}>{t("common.tryAgain")}</Text>
       </Pressable>
     </View>
   );

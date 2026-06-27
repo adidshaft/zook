@@ -12,6 +12,7 @@ import {
   type DimensionValue,
   type ViewStyle,
 } from "react-native";
+import { useT } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { elevation } from "@/lib/theme";
 
@@ -63,6 +64,7 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
     ref,
   ) {
     const { palette, mode } = useTheme();
+    const t = useT();
     const [visible, setVisible] = useState(false);
     const [snapIndex, setSnapIndex] = useState(0);
     const dismissNotifiedRef = useRef(false);
@@ -151,7 +153,7 @@ export const BottomSheetModal = forwardRef<BottomSheetModal, BottomSheetModalPro
           ) : (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close sheet"
+              accessibilityLabel={t("common.closeSheet")}
               style={[
                 styles.backdrop,
                 { backgroundColor: sheetScrim },

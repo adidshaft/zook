@@ -6,6 +6,7 @@ import { Card, IconBubble, SectionHeader, ZookButton } from "@/components/primit
 import { useGymReviews, useSubmitReview, type GymReview } from "@/lib/domains/gym";
 import { gymBrandColor } from "@/lib/gym-brand";
 import { formatRelativeDate } from "@/lib/formatting";
+import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
 function Stars({ value, size = 14 }: { value: number; size?: number }) {
@@ -48,6 +49,7 @@ function ReviewRow({ review }: { review: GymReview }) {
 
 export function GymReviews({ orgId }: { orgId?: string | null }) {
   const { palette } = useTheme();
+  const t = useT();
   const reviewsQuery = useGymReviews(orgId);
   const submitReview = useSubmitReview(orgId);
   const [composing, setComposing] = useState(false);
@@ -76,12 +78,12 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
   return (
     <>
       <SectionHeader
-        eyebrow="Members say"
-        title="Reviews"
+        eyebrow={t("gymReviews.membersSay")}
+        title={t("gymReviews.reviews")}
         action={
           canReview ? (
             <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={openCompose}>
-              {myReview ? "Edit" : "Write"}
+              {myReview ? t("gymReviews.edit") : t("gymReviews.write")}
             </ZookButton>
           ) : undefined
         }
@@ -93,7 +95,9 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
             <View style={styles.summaryScore}>
               <Text style={[styles.summaryAvg, { color: palette.text.primary }]}>{summary.average.toFixed(1)}</Text>
               <Stars value={summary.average} size={16} />
-              <Text style={[styles.summaryCount, { color: palette.text.secondary }]}>{summary.count} reviews</Text>
+              <Text style={[styles.summaryCount, { color: palette.text.secondary }]}>
+                {t("gymReviews.reviewsCount", { count: summary.count })}
+              </Text>
             </View>
             <View style={styles.breakdown}>
               {[5, 4, 3, 2, 1].map((star) => {
@@ -113,9 +117,9 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
         ) : (
           <View style={styles.emptyReviews}>
             <IconBubble icon="star-outline" tone="neutral" size={40} />
-            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>No reviews yet</Text>
+            <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>{t("gymReviews.empty")}</Text>
             <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
-              {canReview ? "Be the first member to leave a review." : "Only members can review this gym."}
+              {canReview ? t("gymReviews.beFirst") : t("gymReviews.onlyMembers")}
             </Text>
           </View>
         )}
@@ -130,10 +134,18 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
       <Modal visible={composing} transparent animationType="slide" onRequestClose={() => setComposing(false)}>
         <View style={[styles.modalBackdrop, { backgroundColor: palette.bg.overlay }]}>
           <View style={[styles.modalCard, { backgroundColor: palette.bg.elevated, borderColor: palette.border.default }]}>
-            <Text style={[styles.modalTitle, { color: palette.text.primary }]}>{myReview ? "Edit your review" : "Write a review"}</Text>
+            <Text style={[styles.modalTitle, { color: palette.text.primary }]}>
+              {myReview ? t("gymReviews.editReview") : t("gymReviews.writeReview")}
+            </Text>
             <View style={styles.starPicker}>
               {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable key={n} accessibilityRole="button" accessibilityLabel={`${n} stars`} onPress={() => setRating(n)} hitSlop={6}>
+                <Pressable
+                  key={n}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("gymReviews.starsAccessibility", { count: n })}
+                  onPress={() => setRating(n)}
+                  hitSlop={6}
+                >
                   <Ionicons name={n <= rating ? "star" : "star-outline"} size={34} color={n <= rating ? palette.accent.base : palette.text.tertiary} />
                 </Pressable>
               ))}
@@ -141,15 +153,23 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
             <TextInput
               value={body}
               onChangeText={setBody}
-              placeholder="Share what you like about this gym…"
+              placeholder={t("gymReviews.sharePlaceholder")}
               placeholderTextColor={palette.text.tertiary}
               multiline
               style={[styles.input, { backgroundColor: palette.bg.sunken, borderColor: palette.border.default, color: palette.text.primary }]}
             />
             <View style={styles.modalActions}>
-              <ZookButton variant="secondary" onPress={() => setComposing(false)} style={styles.modalBtn}>Cancel</ZookButton>
-              <ZookButton onPress={submit} busy={submitReview.isPending} busyLabel="Posting..." icon="send-outline" style={styles.modalBtn}>
-                {myReview ? "Update" : "Post review"}
+              <ZookButton variant="secondary" onPress={() => setComposing(false)} style={styles.modalBtn}>
+                {t("gymReviews.cancel")}
+              </ZookButton>
+              <ZookButton
+                onPress={submit}
+                busy={submitReview.isPending}
+                busyLabel={t("gymReviews.posting")}
+                icon="send-outline"
+                style={styles.modalBtn}
+              >
+                {myReview ? t("gymReviews.update") : t("gymReviews.postReview")}
               </ZookButton>
             </View>
           </View>
