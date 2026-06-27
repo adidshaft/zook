@@ -1732,6 +1732,63 @@ export type TranslationKey =
   | "reception.desk.viewRosterFor"
   | "reception.workspace.backToOwnerTools"
   | "reception.workspace.goBack"
+  | "reception.workspace.activeBranchSuffix"
+  | "reception.workspace.activeGymFallback"
+  | "reception.workspace.addAttendanceNote"
+  | "reception.workspace.alreadyCheckedInToday"
+  | "reception.workspace.approveFailed"
+  | "reception.workspace.approvedScanReason"
+  | "reception.workspace.authenticationRequiredAction"
+  | "reception.workspace.bulkRecorded"
+  | "reception.workspace.bulkRecordedPartial"
+  | "reception.workspace.checkInApproved"
+  | "reception.workspace.checkInNotValid"
+  | "reception.workspace.checkInRejected"
+  | "reception.workspace.checkInVerified"
+  | "reception.workspace.couldNotRecordOne"
+  | "reception.workspace.deskApprovalRequired"
+  | "reception.workspace.enterCodeFirst"
+  | "reception.workspace.entryCode"
+  | "reception.workspace.entryCodeInvalidMessage"
+  | "reception.workspace.fulfillFailed"
+  | "reception.workspace.fulfillPickupAuth"
+  | "reception.workspace.fulfillPickupReason"
+  | "reception.workspace.mainBranchFallback"
+  | "reception.workspace.manualAttendanceRecorded"
+  | "reception.workspace.memberCheckInFallback"
+  | "reception.workspace.memberFallback"
+  | "reception.workspace.membershipAlreadyActive"
+  | "reception.workspace.membershipFallback"
+  | "reception.workspace.noActiveCode"
+  | "reception.workspace.notValidForEntry"
+  | "reception.workspace.onlyOneBranchBody"
+  | "reception.workspace.onlyOneBranchTitle"
+  | "reception.workspace.orderTotalDetail"
+  | "reception.workspace.ownerApprovalRequired"
+  | "reception.workspace.ownerDesk"
+  | "reception.workspace.paymentRecorded"
+  | "reception.workspace.pickedBadge"
+  | "reception.workspace.pickupFulfilled"
+  | "reception.workspace.pickupNotReady"
+  | "reception.workspace.pickupStatusTitle"
+  | "reception.workspace.pickupVerified"
+  | "reception.workspace.pickupVerifiedFor"
+  | "reception.workspace.recordManualAttendanceAuth"
+  | "reception.workspace.recordManualPaymentAuth"
+  | "reception.workspace.recording"
+  | "reception.workspace.receptionDesk"
+  | "reception.workspace.rejectFailed"
+  | "reception.workspace.rejectedScanReason"
+  | "reception.workspace.selectedBadge"
+  | "reception.workspace.signInSelectGymVerify"
+  | "reception.workspace.statusDetail"
+  | "reception.workspace.switchBranchBody"
+  | "reception.workspace.switchBranchTitle"
+  | "reception.workspace.verifiedName"
+  | "reception.workspace.verifyCodeFailed"
+  | "reception.workspace.verifyFailedTitle"
+  | "reception.workspace.verificationFailed"
+  | "reception.workspace.verificationSuccessful"
   | "reception.home.title"
   | "reception.members.attendanceNote"
   | "reception.members.auditReason"
@@ -3877,6 +3934,63 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.viewRosterFor": "View roster for {{name}}",
     "reception.workspace.backToOwnerTools": "Back to owner tools",
     "reception.workspace.goBack": "Go back",
+    "reception.workspace.activeBranchSuffix": "{{name}} (active)",
+    "reception.workspace.activeGymFallback": "Active gym",
+    "reception.workspace.addAttendanceNote": "Add an attendance note before recording.",
+    "reception.workspace.alreadyCheckedInToday": "This member is already checked in today.",
+    "reception.workspace.approveFailed": "Could not approve. Please try again.",
+    "reception.workspace.approvedScanReason": "Reception approved scan after review",
+    "reception.workspace.authenticationRequiredAction": "Authentication required to perform this action.",
+    "reception.workspace.bulkRecorded": "Recorded attendance for {{count}} {{memberLabel}}.",
+    "reception.workspace.bulkRecordedPartial": "Recorded {{successes}} of {{total}}. {{failures}} failed.",
+    "reception.workspace.checkInApproved": "Check-in approved.",
+    "reception.workspace.checkInNotValid": "Check-in not valid",
+    "reception.workspace.checkInRejected": "Check-in rejected.",
+    "reception.workspace.checkInVerified": "Check-in verified",
+    "reception.workspace.couldNotRecordOne": "Could not record one entry.",
+    "reception.workspace.deskApprovalRequired": "Desk approval required.",
+    "reception.workspace.enterCodeFirst": "Enter a code first.",
+    "reception.workspace.entryCode": "Entry code",
+    "reception.workspace.entryCodeInvalidMessage": "Entry code found for {{name}}, but it is not valid for entry.",
+    "reception.workspace.fulfillFailed": "Could not fulfill this order.",
+    "reception.workspace.fulfillPickupAuth": "Fulfill pickup without code",
+    "reception.workspace.fulfillPickupReason": "Reception manually fulfilled pickup after local re-auth.",
+    "reception.workspace.mainBranchFallback": "Main branch",
+    "reception.workspace.manualAttendanceRecorded": "Manual attendance recorded.",
+    "reception.workspace.memberCheckInFallback": "Member check-in",
+    "reception.workspace.memberFallback": "Member",
+    "reception.workspace.membershipAlreadyActive": "This membership is already active. Choose a pending subscription or create a new manual activation.",
+    "reception.workspace.membershipFallback": "Membership",
+    "reception.workspace.noActiveCode": "No active entry or pickup code.",
+    "reception.workspace.notValidForEntry": "Not valid for entry",
+    "reception.workspace.onlyOneBranchBody": "This gym has no other branches to switch to.",
+    "reception.workspace.onlyOneBranchTitle": "Only one branch",
+    "reception.workspace.orderTotalDetail": "Order total: {{amount}}",
+    "reception.workspace.ownerApprovalRequired": "Owner approval required",
+    "reception.workspace.ownerDesk": "Owner desk",
+    "reception.workspace.paymentRecorded": "Recorded {{amount}} by {{mode}}.",
+    "reception.workspace.pickedBadge": "Picked",
+    "reception.workspace.pickupFulfilled": "Pickup fulfilled.",
+    "reception.workspace.pickupNotReady": "Pickup not ready",
+    "reception.workspace.pickupStatusTitle": "Pickup {{status}}",
+    "reception.workspace.pickupVerified": "Pickup verified",
+    "reception.workspace.pickupVerifiedFor": "Pickup verified for {{name}}",
+    "reception.workspace.recordManualAttendanceAuth": "Record manual attendance",
+    "reception.workspace.recordManualPaymentAuth": "Record manual payment",
+    "reception.workspace.recording": "Recording...",
+    "reception.workspace.receptionDesk": "Reception desk",
+    "reception.workspace.rejectFailed": "Could not reject. Please try again.",
+    "reception.workspace.rejectedScanReason": "Reception rejected scan after review",
+    "reception.workspace.selectedBadge": "Selected",
+    "reception.workspace.signInSelectGymVerify": "Sign in and select a gym before verifying.",
+    "reception.workspace.statusDetail": "Status: {{status}}",
+    "reception.workspace.switchBranchBody": "Choose the branch you are at.",
+    "reception.workspace.switchBranchTitle": "Switch branch",
+    "reception.workspace.verifiedName": "Verified {{name}}",
+    "reception.workspace.verifyCodeFailed": "Could not verify this code.",
+    "reception.workspace.verifyFailedTitle": "Verify failed",
+    "reception.workspace.verificationFailed": "Verification failed.",
+    "reception.workspace.verificationSuccessful": "Verification successful.",
     "reception.home.title": "Front desk",
     "reception.members.attendanceNote": "Attendance note",
     "reception.members.auditReason": "Add a reason so the gym has a clear record.",
@@ -6021,6 +6135,63 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.viewRosterFor": "{{name}} का roster देखें",
     "reception.workspace.backToOwnerTools": "Owner tools पर वापस",
     "reception.workspace.goBack": "वापस जाएं",
+    "reception.workspace.activeBranchSuffix": "{{name}} (active)",
+    "reception.workspace.activeGymFallback": "Active gym",
+    "reception.workspace.addAttendanceNote": "Attendance note जोड़ें, फिर record करें.",
+    "reception.workspace.alreadyCheckedInToday": "यह member आज पहले से checked in है.",
+    "reception.workspace.approveFailed": "Approve नहीं हो सका. फिर कोशिश करें.",
+    "reception.workspace.approvedScanReason": "Reception ने review के बाद scan approve किया",
+    "reception.workspace.authenticationRequiredAction": "यह action करने के लिए authentication जरूरी है.",
+    "reception.workspace.bulkRecorded": "{{count}} {{memberLabel}} के लिए attendance record हुई.",
+    "reception.workspace.bulkRecordedPartial": "{{total}} में से {{successes}} record हुए. {{failures}} failed.",
+    "reception.workspace.checkInApproved": "Check-in approve हो गया.",
+    "reception.workspace.checkInNotValid": "Check-in valid नहीं है",
+    "reception.workspace.checkInRejected": "Check-in reject हो गया.",
+    "reception.workspace.checkInVerified": "Check-in verified",
+    "reception.workspace.couldNotRecordOne": "एक entry record नहीं हो सकी.",
+    "reception.workspace.deskApprovalRequired": "Desk approval जरूरी है.",
+    "reception.workspace.enterCodeFirst": "पहले code डालें.",
+    "reception.workspace.entryCode": "Entry code",
+    "reception.workspace.entryCodeInvalidMessage": "{{name}} का entry code मिला, पर entry के लिए valid नहीं है.",
+    "reception.workspace.fulfillFailed": "यह order fulfill नहीं हो सका.",
+    "reception.workspace.fulfillPickupAuth": "Code के बिना pickup fulfill करें",
+    "reception.workspace.fulfillPickupReason": "Reception ने local re-auth के बाद pickup manually fulfill किया.",
+    "reception.workspace.mainBranchFallback": "Main branch",
+    "reception.workspace.manualAttendanceRecorded": "Manual attendance record हो गई.",
+    "reception.workspace.memberCheckInFallback": "Member check-in",
+    "reception.workspace.memberFallback": "Member",
+    "reception.workspace.membershipAlreadyActive": "यह membership पहले से active है. Pending subscription चुनें या नया manual activation बनाएं.",
+    "reception.workspace.membershipFallback": "Membership",
+    "reception.workspace.noActiveCode": "कोई active entry या pickup code नहीं.",
+    "reception.workspace.notValidForEntry": "Entry के लिए valid नहीं",
+    "reception.workspace.onlyOneBranchBody": "इस gym में switch करने के लिए कोई और branch नहीं है.",
+    "reception.workspace.onlyOneBranchTitle": "सिर्फ एक branch",
+    "reception.workspace.orderTotalDetail": "Order total: {{amount}}",
+    "reception.workspace.ownerApprovalRequired": "Owner approval जरूरी है",
+    "reception.workspace.ownerDesk": "Owner desk",
+    "reception.workspace.paymentRecorded": "{{amount}} {{mode}} से record हुआ.",
+    "reception.workspace.pickedBadge": "Picked",
+    "reception.workspace.pickupFulfilled": "Pickup fulfill हो गया.",
+    "reception.workspace.pickupNotReady": "Pickup ready नहीं है",
+    "reception.workspace.pickupStatusTitle": "Pickup {{status}}",
+    "reception.workspace.pickupVerified": "Pickup verified",
+    "reception.workspace.pickupVerifiedFor": "{{name}} का pickup verified",
+    "reception.workspace.recordManualAttendanceAuth": "Manual attendance record करें",
+    "reception.workspace.recordManualPaymentAuth": "Manual payment record करें",
+    "reception.workspace.recording": "Record हो रहा है...",
+    "reception.workspace.receptionDesk": "Reception desk",
+    "reception.workspace.rejectFailed": "Reject नहीं हो सका. फिर कोशिश करें.",
+    "reception.workspace.rejectedScanReason": "Reception ने review के बाद scan reject किया",
+    "reception.workspace.selectedBadge": "Selected",
+    "reception.workspace.signInSelectGymVerify": "Verify करने से पहले sign in करें और gym select करें.",
+    "reception.workspace.statusDetail": "Status: {{status}}",
+    "reception.workspace.switchBranchBody": "आप जिस branch पर हैं उसे चुनें.",
+    "reception.workspace.switchBranchTitle": "Branch बदलें",
+    "reception.workspace.verifiedName": "{{name}} verified",
+    "reception.workspace.verifyCodeFailed": "यह code verify नहीं हो सका.",
+    "reception.workspace.verifyFailedTitle": "Verify failed",
+    "reception.workspace.verificationFailed": "Verification failed.",
+    "reception.workspace.verificationSuccessful": "Verification successful.",
     "reception.home.title": "Front desk",
     "reception.members.attendanceNote": "Attendance note",
     "reception.members.auditReason": "Reason जोड़ें ताकि gym के पास clear record रहे.",

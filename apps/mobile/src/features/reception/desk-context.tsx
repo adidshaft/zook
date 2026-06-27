@@ -132,6 +132,7 @@ function useReceptionWorkspaceState({
   const queryClient = useQueryClient();
   const { activeOrgId, session, token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const roleContext = useRoleContext();
   const { branches, selectedBranch, selectBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
@@ -151,7 +152,7 @@ function useReceptionWorkspaceState({
   const [amount, setAmount] = useState("");
   const [referenceId, setReferenceId] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
-  const [paymentReason, setPaymentReason] = useState("Desk collected payment");
+  const [paymentReason, setPaymentReason] = useState(t("reception.payments.desk"));
   const [paymentStatus, setPaymentStatus] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -246,7 +247,7 @@ function useReceptionWorkspaceState({
         const isSelectedSingle = record.profile.userId === selectedMemberId;
         return {
           id: record.profile.userId,
-          name: record.user?.name ?? "Member",
+          name: record.user?.name ?? t("reception.workspace.memberFallback"),
           email: record.user?.email,
           phone: record.user?.phone,
           avatarUrl: record.user?.profilePhotoUrl ?? record.profile.profilePhotoUrl,
@@ -255,13 +256,13 @@ function useReceptionWorkspaceState({
           phoneRevealed: revealedPhones.has(record.profile.userId),
           badges:
             multiSelectMode && isMultiChecked
-              ? [{ label: "Picked", tone: "neutral" }]
+              ? [{ label: t("reception.workspace.pickedBadge"), tone: "neutral" }]
               : !multiSelectMode && isSelectedSingle
-                ? [{ label: "Selected", tone: "neutral" }]
+                ? [{ label: t("reception.workspace.selectedBadge"), tone: "neutral" }]
                 : undefined,
         };
       }),
-    [multiSelectMode, revealedPhones, selectedMemberId, selectedMemberIds, visibleMembers],
+    [multiSelectMode, revealedPhones, selectedMemberId, selectedMemberIds, t, visibleMembers],
   );
   const approvalItems = useMemo<ApprovalItem[]>(
     () =>
@@ -276,12 +277,15 @@ function useReceptionWorkspaceState({
           : [attempt.source ?? "scan"];
         return {
           id: attempt.id,
-          primaryText: attempt.user?.name ?? attempt.user?.email ?? "Member check-in",
-          secondaryText: `${attempt.branchName ?? "Main branch"} · ${attempt.plan?.name ?? "Membership"}`,
+          primaryText:
+            attempt.user?.name ?? attempt.user?.email ?? t("reception.workspace.memberCheckInFallback"),
+          secondaryText: `${attempt.branchName ?? t("reception.workspace.mainBranchFallback")} · ${
+            attempt.plan?.name ?? t("reception.workspace.membershipFallback")
+          }`,
           metaText: titleCaseFromCode(attempt.status),
           reason: formatReviewReason(
             Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
-            "Desk approval required.",
+            t("reception.workspace.deskApprovalRequired"),
           ),
           context: (
             <View style={styles.auditTrail}>
@@ -294,7 +298,7 @@ function useReceptionWorkspaceState({
           ),
         };
       }),
-    [approvalQueue, palette.text.secondary],
+    [approvalQueue, palette.text.secondary, t],
   );
   const selectedMemberRecord =
     (membersQuery.data?.members ?? []).find(
@@ -320,29 +324,35 @@ function useReceptionWorkspaceState({
   const activeRole = roleContext?.role;
   const isDemo = Boolean(roleContext?.isDemo);
   const canSwitchBranches = branches.length > 1;
-  const activeOrganizationName = activeOrganization?.name ?? "Active gym";
+  const activeOrganizationName = activeOrganization?.name ?? t("reception.workspace.activeGymFallback");
   const activeOrgLabel = activeOrganization
     ? `${activeOrganization.name} · ${activeOrganization.city}`
-    : "Active gym";
+    : t("reception.workspace.activeGymFallback");
   const gymSelectorLabel = selectedBranch?.name ?? activeOrgLabel;
 
   function openBranchSwitcher() {
     if (!canSwitchBranches) {
-      Alert.alert("Only one branch", "This gym has no other branches to switch to.");
+      Alert.alert(
+        t("reception.workspace.onlyOneBranchTitle"),
+        t("reception.workspace.onlyOneBranchBody"),
+      );
       return;
     }
     Alert.alert(
-      "Switch branch",
-      "Choose the branch you are at.",
+      t("reception.workspace.switchBranchTitle"),
+      t("reception.workspace.switchBranchBody"),
       [
         ...branches.map((branch) => ({
-          text: branch.id === selectedBranch?.id ? `${branch.name} (active)` : branch.name,
+          text:
+            branch.id === selectedBranch?.id
+              ? t("reception.workspace.activeBranchSuffix", { name: branch.name })
+              : branch.name,
           onPress: () => {
             if (branch.id === selectedBranch?.id) return;
             void selectBranch(branch.id);
           },
         })),
-        { text: "Cancel", style: "cancel" as const },
+        { text: t("common.cancel"), style: "cancel" as const },
       ],
     );
   }
@@ -364,14 +374,14 @@ function useReceptionWorkspaceState({
       return;
     }
     if (attendanceReason.length < 2) {
-      setBulkAttendanceStatus("Add an attendance note before recording.");
+      setBulkAttendanceStatus(t("reception.workspace.addAttendanceNote"));
       return;
     }
-    if (!(await requirePrivilegedAuth("Record manual attendance"))) {
+    if (!(await requirePrivilegedAuth(t("reception.workspace.recordManualAttendanceAuth")))) {
       showAuthenticationRequired();
       return;
     }
-    setBulkAttendanceStatus("Recording...");
+    setBulkAttendanceStatus(t("reception.workspace.recording"));
     const ids = Array.from(selectedMemberIds);
     let successes = 0;
     const failures: string[] = [];
@@ -383,12 +393,19 @@ function useReceptionWorkspaceState({
         });
         successes += 1;
       } catch (error) {
-        failures.push(getApiErrorMessage(error) || "Could not record one entry.");
+        failures.push(getApiErrorMessage(error) || t("reception.workspace.couldNotRecordOne"));
       }
     }
     const summary = failures.length
-      ? `Recorded ${successes} of ${ids.length}. ${failures.length} failed.`
-      : `Recorded attendance for ${successes} member${successes === 1 ? "" : "s"}.`;
+      ? t("reception.workspace.bulkRecordedPartial", {
+          successes,
+          total: ids.length,
+          failures: failures.length,
+        })
+      : t("reception.workspace.bulkRecorded", {
+          count: successes,
+          memberLabel: successes === 1 ? "member" : "members",
+        });
     setBulkAttendanceStatus(summary);
     showToast({
       tone: failures.length ? "amber" : "success",
@@ -410,10 +427,10 @@ function useReceptionWorkspaceState({
   const amountInvalid =
     amount.trim().length > 0 && (!Number.isFinite(amountPaise) || amountPaise <= 0);
   const showOwnerApprovalRequired = () => {
-    showToast({ title: "Owner approval required", tone: "amber" });
+    showToast({ title: t("reception.workspace.ownerApprovalRequired"), tone: "amber" });
   };
   const showAuthenticationRequired = () => {
-    showToast({ title: "Authentication required to perform this action." });
+    showToast({ title: t("reception.workspace.authenticationRequiredAction") });
   };
 
   const renderDecisionBackdrop = useCallback(
@@ -434,7 +451,7 @@ function useReceptionWorkspaceState({
       attempt.rejectionReason ??
         formatReviewReason(
           Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags.join(", ") : null,
-          "Desk approval required.",
+          t("reception.workspace.deskApprovalRequired"),
         ),
     );
   }
@@ -531,16 +548,16 @@ function useReceptionWorkspaceState({
     try {
       await approveAttendanceMutation.mutateAsync({
         recordId: attemptId,
-        reason: approvalReason || "Reception approved scan after review",
+        reason: approvalReason || t("reception.workspace.approvedScanReason"),
       });
-      const message = "Check-in approved.";
+      const message = t("reception.workspace.checkInApproved");
       setAttendanceStatus(message);
       showToast({ tone: "success", haptic: "success", message });
       closeDecisionSheet();
     } catch (error) {
-      const message = getApiErrorMessage(error) || "Could not approve. Please try again.";
+      const message = getApiErrorMessage(error) || t("reception.workspace.approveFailed");
       setAttendanceStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -548,16 +565,16 @@ function useReceptionWorkspaceState({
     try {
       await rejectAttendanceMutation.mutateAsync({
         recordId: attemptId,
-        reason: rejectionReason || "Reception rejected scan after review",
+        reason: rejectionReason || t("reception.workspace.rejectedScanReason"),
       });
-      const message = "Check-in rejected.";
+      const message = t("reception.workspace.checkInRejected");
       setAttendanceStatus(message);
       showToast({ tone: "success", haptic: "success", message });
       closeDecisionSheet();
     } catch (error) {
-      const message = getApiErrorMessage(error) || "Could not reject. Please try again.";
+      const message = getApiErrorMessage(error) || t("reception.workspace.rejectFailed");
       setAttendanceStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -565,12 +582,12 @@ function useReceptionWorkspaceState({
     if (verifyingCode) return;
     const normalized = (codeOverride ?? verifyCode).trim().toUpperCase();
     if (!normalized) {
-      const message = "Enter a code first.";
+      const message = t("reception.workspace.enterCodeFirst");
       presentVerificationResult({ tone: "danger", message });
       return;
     }
     if (!token || !activeOrgId) {
-      const message = "Sign in and select a gym before verifying.";
+      const message = t("reception.workspace.signInSelectGymVerify");
       presentVerificationResult({ tone: "danger", message });
       return;
     }
@@ -585,18 +602,24 @@ function useReceptionWorkspaceState({
           code: normalized,
         });
       } catch (error) {
-        const message = getApiErrorMessage(error) || "Could not verify this code.";
+        const message = getApiErrorMessage(error) || t("reception.workspace.verifyCodeFailed");
         presentVerificationResult({ tone: "danger", message });
-        showToast({ tone: "danger", haptic: "error", title: "Verify failed", message });
+        showToast({
+          tone: "danger",
+          haptic: "error",
+          title: t("reception.workspace.verifyFailedTitle"),
+          message,
+        });
         return;
       }
       if (!result.match) {
-        const message = "No active entry or pickup code.";
+        const message = t("reception.workspace.noActiveCode");
         presentVerificationResult({ tone: "danger", message });
         showToast({ tone: "amber", haptic: "warning", message });
         return;
       }
-      const name = result.match.user?.name ?? result.match.user?.email ?? "member";
+      const name =
+        result.match.user?.name ?? result.match.user?.email ?? t("reception.workspace.memberFallback");
       if (result.match.type === "attendance") {
         if (result.match.valid) {
           const status = titleCaseFromCode(result.match.record?.status ?? "approved");
@@ -605,21 +628,30 @@ function useReceptionWorkspaceState({
             type: "attendance",
             name,
             photoUrl: result.match.user?.profilePhotoUrl,
-            message: "Check-in verified",
-            detail: `Status: ${status}`,
+            message: t("reception.workspace.checkInVerified"),
+            detail: t("reception.workspace.statusDetail", { status }),
           });
-          showToast({ tone: "success", haptic: "success", message: `Verified ${name}` });
+          showToast({
+            tone: "success",
+            haptic: "success",
+            message: t("reception.workspace.verifiedName", { name }),
+          });
         } else {
-          const message = `Entry code found for ${name}, but it is not valid for entry.`;
+          const message = t("reception.workspace.entryCodeInvalidMessage", { name });
           presentVerificationResult({
             tone: "danger",
             type: "attendance",
             name,
             photoUrl: result.match.user?.profilePhotoUrl,
-            message: "Check-in not valid",
+            message: t("reception.workspace.checkInNotValid"),
             detail: message,
           });
-          showToast({ tone: "amber", haptic: "warning", title: "Not valid for entry", message: name });
+          showToast({
+            tone: "amber",
+            haptic: "warning",
+            title: t("reception.workspace.notValidForEntry"),
+            message: name,
+          });
         }
         return;
       }
@@ -629,22 +661,33 @@ function useReceptionWorkspaceState({
           type: "pickup",
           name,
           photoUrl: result.match.user?.profilePhotoUrl,
-          message: "Pickup verified",
-          detail: `Order total: ${formatInr(result.match.order?.totalPaise ?? 0)}`,
+          message: t("reception.workspace.pickupVerified"),
+          detail: t("reception.workspace.orderTotalDetail", {
+            amount: formatInr(result.match.order?.totalPaise ?? 0),
+          }),
         });
-        showToast({ tone: "success", haptic: "success", message: `Pickup verified for ${name}` });
+        showToast({
+          tone: "success",
+          haptic: "success",
+          message: t("reception.workspace.pickupVerifiedFor", { name }),
+        });
       } else {
         const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
-        const message = `Pickup code found for ${name}, but status is ${status}.`;
+        const message = t("reception.workspace.pickupStatusTitle", { status });
         presentVerificationResult({
           tone: "danger",
           type: "pickup",
           name,
           photoUrl: result.match.user?.profilePhotoUrl,
-          message: "Pickup not ready",
+          message: t("reception.workspace.pickupNotReady"),
           detail: message,
         });
-        showToast({ tone: "amber", haptic: "warning", title: `Pickup ${status}`, message: name });
+        showToast({
+          tone: "amber",
+          haptic: "warning",
+          title: t("reception.workspace.pickupStatusTitle", { status }),
+          message: name,
+        });
       }
     } finally {
       setVerifyingCode(false);
@@ -655,7 +698,7 @@ function useReceptionWorkspaceState({
     if (!member?.id || !membership?.id) return;
     Keyboard.dismiss();
     setPaymentStatus("");
-    if (!(await requirePrivilegedAuth("Record manual payment"))) {
+    if (!(await requirePrivilegedAuth(t("reception.workspace.recordManualPaymentAuth")))) {
       showAuthenticationRequired();
       return;
     }
@@ -668,23 +711,26 @@ function useReceptionWorkspaceState({
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      const message = `Recorded ${formatInr(payment.payment.amountPaise)} by ${titleCaseFromCode(payment.payment.mode)}.`;
+      const message = t("reception.workspace.paymentRecorded", {
+        amount: formatInr(payment.payment.amountPaise),
+        mode: titleCaseFromCode(payment.payment.mode),
+      });
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
       const statusMessage =
         /already active/i.test(message)
-          ? "This membership is already active. Choose a pending subscription or create a new manual activation."
+          ? t("reception.workspace.membershipAlreadyActive")
           : message;
       setPaymentStatus(statusMessage);
-      showToast({ title: "Action failed", message: statusMessage, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message: statusMessage, tone: "danger", haptic: "error" });
     }
   }
 
   async function fulfillOrder(orderId: string) {
     Keyboard.dismiss();
-    if (!(await requirePrivilegedAuth("Fulfill pickup without code"))) {
+    if (!(await requirePrivilegedAuth(t("reception.workspace.fulfillPickupAuth")))) {
       showAuthenticationRequired();
       return;
     }
@@ -692,15 +738,15 @@ function useReceptionWorkspaceState({
       await fulfillOrderMutation.mutateAsync({
         orderId,
         skipCode: true,
-        skipReason: "Reception manually fulfilled pickup after local re-auth.",
+        skipReason: t("reception.workspace.fulfillPickupReason"),
       });
-      const message = "Pickup fulfilled.";
+      const message = t("reception.workspace.pickupFulfilled");
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
-      const message = getApiErrorMessage(error) || "Could not fulfill this order.";
+      const message = getApiErrorMessage(error) || t("reception.workspace.fulfillFailed");
       setPaymentStatus(message);
-      showToast({ title: "Action failed", message, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
     }
   }
 
@@ -710,26 +756,26 @@ function useReceptionWorkspaceState({
     }
     setAttendanceStatus("");
     if (attendanceReason.length < 2) {
-      setAttendanceStatus("Add an attendance note before recording.");
+      setAttendanceStatus(t("reception.workspace.addAttendanceNote"));
       return;
     }
-    if (!(await requirePrivilegedAuth("Record manual attendance"))) {
+    if (!(await requirePrivilegedAuth(t("reception.workspace.recordManualAttendanceAuth")))) {
       showAuthenticationRequired();
       return;
     }
     try {
       await manualAttendanceMutation.mutateAsync({ memberUserId: member.id, reason: attendanceReason });
-      const message = "Manual attendance recorded.";
+      const message = t("reception.workspace.manualAttendanceRecorded");
       setAttendanceStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
       const statusMessage =
         /already has an attendance record/i.test(message)
-          ? "This member is already checked in today."
+          ? t("reception.workspace.alreadyCheckedInToday")
           : message;
       setAttendanceStatus(statusMessage);
-      showToast({ title: "Action failed", message: statusMessage, tone: "danger", haptic: "error" });
+      showToast({ title: t("common.actionFailed"), message: statusMessage, tone: "danger", haptic: "error" });
     }
   }
 
@@ -867,7 +913,9 @@ export function ReceptionWorkspace({
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
   const deskLabel =
-    state.activeRole === "OWNER" || state.activeRole === "ADMIN" ? "Owner desk" : "Reception desk";
+    state.activeRole === "OWNER" || state.activeRole === "ADMIN"
+      ? t("reception.workspace.ownerDesk")
+      : t("reception.workspace.receptionDesk");
 
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
@@ -1182,6 +1230,7 @@ function ApprovalDecisionSheet() {
 
 function VerificationResultModal() {
   const { palette } = useTheme();
+  const t = useT();
   const { dismissVerificationResult, verificationResult } = useReceptionWorkspace();
   const success = verificationResult?.tone === "success";
   const { animatedStyle: shakeStyle, shake } = useShake();
@@ -1190,7 +1239,9 @@ function VerificationResultModal() {
     if (!success) shake();
     AccessibilityInfo.announceForAccessibility(
       [
-        success ? "Verification successful." : "Verification failed.",
+        success
+          ? t("reception.workspace.verificationSuccessful")
+          : t("reception.workspace.verificationFailed"),
         verificationResult.message,
         verificationResult.name,
         verificationResult.detail,
@@ -1200,7 +1251,7 @@ function VerificationResultModal() {
     );
     const timer = setTimeout(dismissVerificationResult, success ? 1400 : 4000);
     return () => clearTimeout(timer);
-  }, [dismissVerificationResult, shake, success, verificationResult]);
+  }, [dismissVerificationResult, shake, success, t, verificationResult]);
   const photo = verificationResult?.photoUrl;
   const backdropColor = success ? "rgba(17,21,15,0.94)" : `${palette.feedback.danger}E6`;
   return (
@@ -1239,7 +1290,9 @@ function VerificationResultModal() {
             </View>
           )}
           <Text style={[styles.verificationModalEyebrow, { color: palette.text.inverse }]}>
-            {verificationResult?.type === "pickup" ? "Pickup code" : "Entry code"}
+            {verificationResult?.type === "pickup"
+              ? t("reception.orders.pickupCode")
+              : t("reception.workspace.entryCode")}
           </Text>
           <Text style={[styles.verificationModalTitle, { color: palette.text.inverse }]}>
             {verificationResult?.message}
