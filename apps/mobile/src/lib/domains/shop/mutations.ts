@@ -98,6 +98,7 @@ export function useCreateShopOrder(orgId?: string) {
     mutationFn: (input: {
       items: Array<{ productId: string; quantity: number }>;
       branchId?: string;
+      paymentMode?: "ONLINE" | "DESK";
     }) => {
       const ctx = getMutationContext(token, resolvedOrgId);
       const branchId = input.branchId ?? selectedBranchId;
@@ -105,13 +106,19 @@ export function useCreateShopOrder(orgId?: string) {
         order: ShopOrderRecord;
         checkoutUrl?: string;
         checkoutData?: Record<string, unknown> | null;
-        session: { id: string; status: string; provider?: string };
+        session: { id: string; status: string; provider?: string } | null;
+        paymentMode?: "ONLINE" | "DESK";
       }>("/shop/orders", {
         method: "POST",
         token: ctx.token,
         orgId: ctx.orgId,
         ...(branchId ? { branchId } : {}),
-        body: { orgId: ctx.orgId, items: input.items, ...(branchId ? { branchId } : {}) },
+        body: {
+          orgId: ctx.orgId,
+          items: input.items,
+          paymentMode: input.paymentMode ?? "ONLINE",
+          ...(branchId ? { branchId } : {}),
+        },
       });
     },
     onSuccess: async () => {

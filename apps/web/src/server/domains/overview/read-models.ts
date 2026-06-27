@@ -77,6 +77,7 @@ async function getOrganizationDashboardFastDataUncached(
     expiringMemberships,
     todayAttendance,
     pendingAttendanceApprovals,
+    openOrders,
     manualPaymentsToday,
     successfulPaymentsToday,
     aiUsageThisMonth,
@@ -97,6 +98,9 @@ async function getOrganizationDashboardFastDataUncached(
     }),
     prisma.attendanceRecord.count({
       where: { orgId, status: "PENDING_APPROVAL", ...branchWhere },
+    }),
+    prisma.shopOrder.count({
+      where: { orgId, status: "READY_FOR_PICKUP", ...branchWhere },
     }),
     prisma.payment.aggregate({
       where: {
@@ -211,6 +215,11 @@ async function getOrganizationDashboardFastDataUncached(
       trialDaysRemaining,
       staffCount,
       plansCount,
+    },
+    today: {
+      checkIns: todayAttendance,
+      pendingApprovals: pendingAttendanceApprovals,
+      openOrders,
     },
   };
 }

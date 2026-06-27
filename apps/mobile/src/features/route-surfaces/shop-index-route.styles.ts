@@ -216,6 +216,15 @@ export const shopStyles = StyleSheet.create({
   checkoutContent: {
     gap: 10,
   },
+  paymentActionStack: {
+    gap: spacing.sm,
+  },
+  paymentMethodContent: {
+    gap: spacing.sm,
+  },
+  paymentMethodTitle: {
+    ...typography.cardTitle,
+  },
   checkoutTotal: {
     borderTopWidth: 1,
     paddingTop: 14,

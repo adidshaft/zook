@@ -282,6 +282,13 @@ export async function handleMembershipSubscriptionActions(request: NextRequest, 
       throw notFoundError("Membership not found");
     }
     assertActiveContextOrg(ctx, subscription.orgId);
+    const org = await prisma.organization.findUnique({
+      where: { id: subscription.orgId },
+      select: { allowSelfServePause: true },
+    });
+    if (!org?.allowSelfServePause) {
+      throw validationError("Contact your gym to pause this membership.");
+    }
     return ok(
       await pauseSubscription({
         request,

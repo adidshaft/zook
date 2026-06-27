@@ -17,6 +17,7 @@ export type ApprovalQueueProps = {
   onApprove: (id: string) => void;
   onReject?: (id: string) => void;
   approvingId?: string;
+  highlightedId?: string;
   rejectingId?: string;
   emptyState?: { title: string; subtitle?: string };
   testID?: string;

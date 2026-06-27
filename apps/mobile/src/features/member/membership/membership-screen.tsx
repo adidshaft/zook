@@ -147,6 +147,8 @@ function pauseDefaultDate() {
   return date;
 }
 
+const pauseReasonOptions = ["Medical", "Travel", "Injury", "Other"];
+
 function planIdFor(subscription?: MembershipRecord | null) {
   return subscription?.plan?.id ?? subscription?.planId ?? undefined;
 }
@@ -240,6 +242,7 @@ export default function MembershipScreen() {
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
   const [documentBusyKey, setDocumentBusyKey] = useState<string | null>(null);
   const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
+  const [pauseReason, setPauseReason] = useState(pauseReasonOptions[0]!);
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -533,7 +536,7 @@ export default function MembershipScreen() {
           ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
           subscriptionId: subscription.id,
           resumesAt: pauseResumesAt.toISOString(),
-          reason: t("member.membership.pauseReason"),
+          reason: pauseReason,
         });
         setMembershipActionStatus(t("member.membership.pausedUntil", { date: formatLongDate(pauseResumesAt.toISOString()) }));
         showToast({
@@ -793,9 +796,12 @@ export default function MembershipScreen() {
                 daysLeft={latestDaysLeft}
                 onOpenRenewal={openRenewal}
                 onPauseDateChange={setPauseResumesAt}
+                onPauseReasonChange={setPauseReason}
                 onPauseOrResume={(subscription) => void pauseOrResumeMembership(subscription)}
                 onTerminate={(subscription) => cancelMembership(subscription)}
                 pauseMinimumDate={pauseMinimumDate}
+                pauseReason={pauseReason}
+                pauseReasonOptions={pauseReasonOptions}
                 pauseResumesAt={pauseResumesAt}
                 subscription={latestSubscription}
                 terminateBusy={terminateBusy}

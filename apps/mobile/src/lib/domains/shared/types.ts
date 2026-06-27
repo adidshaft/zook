@@ -606,6 +606,11 @@ export interface OwnerDashboardData {
     aiUsageThisMonth?: number;
     trialDaysRemaining?: number;
   };
+  today?: {
+    checkIns?: number;
+    pendingApprovals?: number;
+    openOrders?: number;
+  };
   branchScope?: {
     selectedBranch?: {
       id: string;

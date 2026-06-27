@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Card, IconBubble, ZookButton } from "@/components/primitives";
+import { getTonePalette, type PillTone } from "@/components/primitives/tone-palette";
 import { useMyShopOrders } from "@/lib/domains/shop";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { useT } from "@/lib/i18n";
@@ -45,7 +46,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
     (order) => order.pickupCode && !order.fulfilledAt && !/CANCEL|FULFILLED/i.test(order.status),
   );
   const daysLeft = home?.activeMembership?.daysLeft;
-  const membershipExpiring = typeof daysLeft === "number" && daysLeft >= 0 && daysLeft <= 7;
+  const membershipExpiring = typeof daysLeft === "number" && daysLeft <= 7;
 
   // Most actionable / time-sensitive first. The Shop tab and the header
   // notification bell already cover shop + unread-update prompts, so those
@@ -66,10 +67,15 @@ export function Banners({ home }: { home?: MemberHomeData }) {
       <Banner
         key="renew"
         icon="warning-outline"
-        title={daysLeft === 0 ? t("member.home.membershipEndsToday") : t("member.home.daysLeft", { count: daysLeft ?? 0 })}
+        title={
+          (daysLeft ?? 0) <= 0
+            ? t("member.home.membershipEndsToday")
+            : t("member.home.daysLeft", { count: daysLeft ?? 0 })
+        }
         body={t("member.home.renewNowBody")}
-        actionHref="/membership?focus=buy"
+        actionHref="/membership/buy"
         actionLabel={t("member.home.renew")}
+        tone={(daysLeft ?? 0) <= 0 ? "red" : "amber"}
       />
     ) : null,
     showProfile ? (
@@ -107,6 +113,7 @@ function Banner({
   body,
   icon,
   onDismiss,
+  tone = "neutral",
   title,
 }: {
   actionHref: string;
@@ -114,13 +121,27 @@ function Banner({
   body: string;
   icon: keyof typeof Ionicons.glyphMap;
   onDismiss?: () => void;
+  tone?: PillTone;
   title: string;
 }) {
-  const { palette } = useTheme();
+  const { palette, mode } = useTheme();
+  const tonePalette = getTonePalette(tone, mode, palette);
   const t = useT();
   return (
-    <Card variant="compact" contentStyle={styles.banner}>
-      <IconBubble icon={icon} tone="neutral" size={34} />
+    <Card
+      variant="compact"
+      contentStyle={[
+        styles.banner,
+        tone !== "neutral"
+          ? {
+              backgroundColor: tonePalette.backgroundColor,
+              borderColor: tonePalette.borderColor,
+              borderWidth: StyleSheet.hairlineWidth,
+            }
+          : null,
+      ]}
+    >
+      <IconBubble icon={icon} tone={tone} size={34} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
           {title}

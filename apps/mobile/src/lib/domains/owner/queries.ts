@@ -349,6 +349,9 @@ export type AttendanceQrToken = {
   qrPayload: string;
   checkInCode?: string | null;
   expiresAt: string;
+  branchId?: string | null;
+  isStatic?: boolean;
+  qrMode?: "ROLLING" | "STATIC";
 };
 
 export function useAttendanceQrToken(branchId?: string | null) {

@@ -4427,6 +4427,50 @@ export async function applyAttendanceUsage(input: {
         ),
       },
     });
+    if (updated.remainingVisits === 3 || updated.remainingVisits === 1) {
+      const visits = updated.remainingVisits;
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const title = visits === 1 ? "Last visit remaining" : `${visits} visits remaining`;
+      const recentNotifications = await prisma.notification.findMany({
+        where: {
+          orgId: input.orgId,
+          type: "TRANSACTIONAL",
+          title,
+          createdAt: { gte: dayStart },
+        },
+        select: { id: true },
+        take: 10,
+      });
+      const duplicate = recentNotifications.length
+        ? await prisma.notificationRecipient.findFirst({
+            where: {
+              userId: input.subscription.memberUserId,
+              notificationId: { in: recentNotifications.map((notification) => notification.id) },
+            },
+            select: { id: true },
+          })
+        : null;
+      if (!duplicate) {
+        await createDirectNotification({
+          orgId: input.orgId,
+          type: "TRANSACTIONAL",
+          title,
+          body:
+            visits === 1
+              ? "This is your last visit on your current pack. Renew before your next session."
+              : `You have ${visits} visits left on your pack. Consider renewing soon.`,
+          audience: "membership_visit_alert",
+          userIds: [input.subscription.memberUserId],
+          metadata: {
+            kind: "visit_threshold",
+            subscriptionId: input.subscription.id,
+            remainingVisits: visits,
+            actionUrl: "/membership",
+          },
+        });
+      }
+    }
   }
   return updated;
 }

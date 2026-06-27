@@ -2,10 +2,19 @@ import type { NotificationType } from "@zook/core";
 import { getPushProvider, getPushProviderDiagnostics } from "@zook/core/providers";
 import { prisma, type Prisma } from "@zook/db";
 
-function notificationData(notification: { id: string; type: NotificationType }) {
+function metadataActionUrl(metadata?: Prisma.JsonValue | null) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return undefined;
+  }
+  const actionUrl = (metadata as Record<string, unknown>).actionUrl;
+  return typeof actionUrl === "string" ? actionUrl : undefined;
+}
+
+function notificationData(notification: { id: string; type: NotificationType; metadata?: Prisma.JsonValue | null }) {
   return {
     notificationId: notification.id,
     type: notification.type,
+    ...(metadataActionUrl(notification.metadata) ? { actionUrl: metadataActionUrl(notification.metadata) } : {}),
   };
 }
 

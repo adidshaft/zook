@@ -11,6 +11,7 @@ export type { ApprovalItem } from "./types";
 export function ApprovalQueue({
   approvingId,
   emptyState = { title: "All caught up" },
+  highlightedId,
   isError,
   isLoading,
   items,
@@ -35,6 +36,7 @@ export function ApprovalQueue({
               key={item.id}
               item={item}
               approving={approvingId === item.id}
+              highlighted={highlightedId === item.id}
               rejecting={rejectingId === item.id}
               onApprove={() => onApprove(item.id)}
               onReject={onReject ? () => onReject(item.id) : undefined}

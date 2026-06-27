@@ -482,5 +482,23 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
     return ok({ ok: true, expired: result.count });
   }
 
+  if (request.method === "POST" && pathMatches(path, ["cron", "auto-checkout"])) {
+    requireCronSecret(request);
+    const closedAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result = await prisma.attendanceRecord.updateMany({
+      where: {
+        checkedOutAt: null,
+        checkedInAt: { lt: closedAt },
+        status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
+      },
+      data: {
+        checkedOutAt: closedAt,
+        checkoutReason: "auto-checkout after stale open session",
+        source: "AUTO_CHECKOUT",
+      },
+    });
+    return ok({ ok: true, autoclosed: result.count });
+  }
+
   return undefined;
 }

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
 import { formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
@@ -14,9 +14,12 @@ export function ActiveMembershipCard({
   daysLeft,
   onOpenRenewal,
   onPauseDateChange,
+  onPauseReasonChange,
   onPauseOrResume,
   onTerminate,
   pauseMinimumDate,
+  pauseReason,
+  pauseReasonOptions,
   pauseResumesAt,
   subscription,
   terminateBusy,
@@ -28,9 +31,12 @@ export function ActiveMembershipCard({
   daysLeft: number | null;
   onOpenRenewal: (subscription: MembershipRecord) => void;
   onPauseDateChange: (date: Date) => void;
+  onPauseReasonChange: (reason: string) => void;
   onPauseOrResume: (subscription: MembershipRecord) => void;
   onTerminate?: (subscription: MembershipRecord) => void;
   pauseMinimumDate: () => Date;
+  pauseReason: string;
+  pauseReasonOptions: string[];
   pauseResumesAt: Date;
   subscription: MembershipRecord;
   terminateBusy?: boolean;
@@ -173,6 +179,30 @@ export function ActiveMembershipCard({
           <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
             {t("member.membership.pauseHelp")}
           </Text>
+          <View style={styles.pauseReasons}>
+            {pauseReasonOptions.map((reason) => {
+              const selected = reason === pauseReason;
+              return (
+                <Pressable
+                  key={reason}
+                  accessibilityRole="button"
+                  onPress={() => onPauseReasonChange(reason)}
+                  style={({ pressed }) => [
+                    styles.pauseReason,
+                    {
+                      backgroundColor: selected ? palette.surface.accentSoft : palette.bg.sunken,
+                      borderColor: selected ? palette.border.focus : palette.border.subtle,
+                    },
+                    pressed ? styles.pauseReasonPressed : null,
+                  ]}
+                >
+                  <Text style={[styles.pauseReasonText, { color: selected ? palette.accent.base : palette.text.secondary }]}>
+                    {reason}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       ) : null}
       <ZookButton
@@ -282,6 +312,23 @@ const styles = StyleSheet.create({
   },
   pauseHelp: {
     ...typography.small,
+  },
+  pauseReasons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  pauseReason: {
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  pauseReasonPressed: {
+    opacity: 0.82,
+  },
+  pauseReasonText: {
+    ...typography.caption,
   },
   statusMessage: {
     ...typography.small,

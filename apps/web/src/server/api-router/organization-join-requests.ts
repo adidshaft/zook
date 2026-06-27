@@ -86,6 +86,26 @@ export async function handleOrganizationJoinRequests(request: NextRequest, path:
         message: body.message,
       }),
     });
+    const ownerRecipients = await prisma.organizationRoleAssignment.findMany({
+      where: { orgId, role: { in: ["OWNER", "ADMIN"] } },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+    if (ownerRecipients.length) {
+      await createDirectNotification({
+        orgId,
+        type: "OPERATIONAL",
+        title: "New member approval needed",
+        body: "A member is waiting for approval to join your gym.",
+        audience: "owners",
+        userIds: ownerRecipients.map((recipient) => recipient.userId),
+        metadata: {
+          joinRequestId: requestRow.id,
+          actionUrl: `/owner/approvals?highlight=${requestRow.id}`,
+        },
+        pushEnabled: true,
+      });
+    }
     return ok({ joinRequest: requestRow });
   }
   if (request.method === "GET" && pathMatches(path, ["orgs", /.+/, "join-requests"])) {

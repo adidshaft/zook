@@ -564,10 +564,14 @@ export type TranslationKey =
   | "shop.checking"
   | "shop.checkoutConsequence"
   | "shop.checkoutCreated"
+  | "shop.deskPaymentOrderCreated"
   | "shop.codeWithValue"
   | "shop.continuePayment"
   | "shop.continueInBrowser"
   | "shop.confirming"
+  | "shop.awaitingDeskPayment"
+  | "shop.choosePaymentMethod"
+  | "shop.choosePaymentMethodSubtitle"
   | "shop.copyPickupCodeAccessibility"
   | "shop.couldNotCreateCheckout"
   | "shop.backToShop"
@@ -576,6 +580,13 @@ export type TranslationKey =
   | "shop.paymentConfirmed"
   | "shop.paymentCouldNotComplete"
   | "shop.paymentStillPending"
+  | "shop.paymentPending"
+  | "shop.payAtDesk"
+  | "shop.payAtDeskBody"
+  | "shop.payAtDeskInstructions"
+  | "shop.payAtDeskSubtitle"
+  | "shop.payOnline"
+  | "shop.payOnlineBody"
   | "shop.paySecurely"
   | "shop.confirmOrder"
   | "shop.getPickupCode"
@@ -2862,10 +2873,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.checking": "Checking...",
     "shop.checkoutConsequence": "After payment, Zook creates a pickup code for desk verification. Do not collect without the code.",
     "shop.checkoutCreated": "Checkout created.",
+    "shop.deskPaymentOrderCreated": "Order sent to the desk.",
     "shop.codeWithValue": "Code: {{code}}",
     "shop.continuePayment": "Continue to payment",
     "shop.continueInBrowser": "Continue in browser",
     "shop.confirming": "Confirming...",
+    "shop.awaitingDeskPayment": "Awaiting desk payment",
+    "shop.choosePaymentMethod": "Choose payment method",
+    "shop.choosePaymentMethodSubtitle": "Pay online now or pay at the gym desk.",
     "shop.copyPickupCodeAccessibility": "Copy pickup code {{code}}",
     "shop.couldNotCreateCheckout": "Could not create checkout.",
     "shop.backToShop": "Back to Shop",
@@ -2874,6 +2889,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.paymentConfirmed": "Payment confirmed.",
     "shop.paymentCouldNotComplete": "Payment could not be completed.",
     "shop.paymentStillPending": "Payment is still pending. Try again in a moment.",
+    "shop.paymentPending": "Payment pending",
+    "shop.payAtDesk": "Pay at Desk",
+    "shop.payAtDeskBody": "The desk team records cash, UPI, card, or bank transfer and then issues your pickup code.",
+    "shop.payAtDeskInstructions": "Ask the front desk to collect this order payment. Once they record it, Zook will create your pickup code.",
+    "shop.payAtDeskSubtitle": "Pay at the front desk to unlock your pickup code.",
+    "shop.payOnline": "Pay Online",
+    "shop.payOnlineBody": "Open secure online checkout and return here for your pickup code.",
     "shop.paySecurely": "Pay securely",
     "shop.confirmOrder": "Confirm the order",
     "shop.getPickupCode": "Get pickup code",
@@ -5168,10 +5190,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.checking": "Check हो रहा है...",
     "shop.checkoutConsequence": "पेमेंट के बाद Zook desk verification के लिए pickup code बनाता है. Code के बिना collect न करें.",
     "shop.checkoutCreated": "Checkout बन गया.",
+    "shop.deskPaymentOrderCreated": "Order desk को भेज दिया गया.",
     "shop.codeWithValue": "Code: {{code}}",
     "shop.continuePayment": "पेमेंट जारी रखें",
     "shop.continueInBrowser": "Browser में जारी रखें",
     "shop.confirming": "कन्फर्म हो रहा है...",
+    "shop.awaitingDeskPayment": "Desk payment pending",
+    "shop.choosePaymentMethod": "Payment method चुनें",
+    "shop.choosePaymentMethodSubtitle": "अभी online pay करें या gym desk पर pay करें.",
     "shop.copyPickupCodeAccessibility": "Pickup code {{code}} copy करें",
     "shop.couldNotCreateCheckout": "Checkout नहीं बन सका.",
     "shop.backToShop": "शॉप पर वापस",
@@ -5180,6 +5206,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.paymentConfirmed": "Payment confirmed.",
     "shop.paymentCouldNotComplete": "Payment पूरा नहीं हो सका.",
     "shop.paymentStillPending": "Payment अभी pending है. थोड़ी देर में फिर कोशिश करें.",
+    "shop.paymentPending": "Payment pending",
+    "shop.payAtDesk": "Desk पर Pay करें",
+    "shop.payAtDeskBody": "Desk team cash, UPI, card या bank transfer record करेगी और फिर pickup code issue होगा.",
+    "shop.payAtDeskInstructions": "Front desk से इस order का payment collect करने को कहें. Record होते ही Zook आपका pickup code बनाएगा.",
+    "shop.payAtDeskSubtitle": "Pickup code unlock करने के लिए front desk पर pay करें.",
+    "shop.payOnline": "Online Pay करें",
+    "shop.payOnlineBody": "Secure online checkout खोलें और pickup code के लिए वापस आएं.",
     "shop.paySecurely": "सुरक्षित भुगतान",
     "shop.confirmOrder": "ऑर्डर कन्फर्म करें",
     "shop.getPickupCode": "पिकअप कोड पाएं",

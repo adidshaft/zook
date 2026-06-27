@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Clock3, QrCode, RefreshCcw, ShieldCheck, Users } from "lucide-react";
+import { CheckCircle2, Clock3, Printer, QrCode, RefreshCcw, ShieldCheck, Users } from "lucide-react";
 import { ZookButton } from "@/components/zook-button";
 import QRCode from "qrcode";
 import { GlassCard, Pill } from "./glass-card";
@@ -45,6 +45,7 @@ export function AttendanceQrPanel({
   const [checkInCode, setCheckInCode] = useState<string>("");
   const [qrImageUrl, setQrImageUrl] = useState<string>("");
   const [expiresAt, setExpiresAt] = useState<string>("");
+  const [isStatic, setIsStatic] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(30);
   const [queueRecords, setQueueRecords] = useState<PendingAttendanceRecord[]>([]);
@@ -59,6 +60,8 @@ export function AttendanceQrPanel({
         qrPayload: string;
         checkInCode?: string;
         expiresAt: string;
+        isStatic?: boolean;
+        qrMode?: "ROLLING" | "STATIC";
       }>(
         `/api/orgs/${orgId}/attendance/qr-token${query}`,
         { method: "POST" },
@@ -66,6 +69,7 @@ export function AttendanceQrPanel({
       setQrPayload(payload.qrPayload);
       setCheckInCode(payload.checkInCode ?? "");
       setExpiresAt(payload.expiresAt);
+      setIsStatic(Boolean(payload.isStatic || payload.qrMode === "STATIC"));
       setLastRefreshedAt(new Date());
       setSecondsRemaining(30);
     } catch (cause) {
@@ -89,11 +93,13 @@ export function AttendanceQrPanel({
     void loadToken();
     void loadQueue();
     const timer = window.setInterval(() => {
-      void loadToken();
+      if (!isStatic) {
+        void loadToken();
+      }
       void loadQueue();
     }, 30_000);
     return () => window.clearInterval(timer);
-  }, [loadQueue, loadToken]);
+  }, [isStatic, loadQueue, loadToken]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -152,8 +158,44 @@ export function AttendanceQrPanel({
     };
   }, [qrPayload, checkInCode]);
 
+  const updateQrMode = useCallback(
+    async (qrMode: "ROLLING" | "STATIC") => {
+      if (!branchId) {
+        setError("Select a branch before changing QR mode.");
+        return;
+      }
+      try {
+        setError("");
+        await webApiFetch(`/api/orgs/${orgId}/branches/${branchId}/qr-settings`, {
+          method: "PATCH",
+          body: {
+            qrMode,
+            staticQrExpiryDays: qrMode === "STATIC" ? 30 : undefined,
+          },
+        });
+        await loadToken();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Unable to update QR mode.");
+      }
+    },
+    [branchId, loadToken, orgId],
+  );
+
+  const regenerateQr = useCallback(async () => {
+    try {
+      setError("");
+      const query = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
+      await webApiFetch(`/api/orgs/${orgId}/attendance/qr-token/regenerate${query}`, {
+        method: "POST",
+      });
+      await loadToken();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to regenerate the QR.");
+    }
+  }, [branchId, loadToken, orgId]);
+
   return (
-    <GlassCard variant="strong" className="rounded-[24px] border-[var(--border)] bg-[var(--bg-sunken)] shadow-none">
+    <GlassCard variant="strong" className="attendance-qr-panel rounded-[24px] border-[var(--border)] bg-[var(--bg-sunken)] shadow-none">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Live Attendance QR</h2>
@@ -173,7 +215,45 @@ export function AttendanceQrPanel({
       <div className="mt-5 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)]/60 p-5">
         <div className="flex items-center gap-2 text-[var(--accent-strong)]">
           <QrCode size={18} />
-          <span className="text-sm font-medium">Rolling signed QR token · Refreshes every 30 seconds</span>
+          <span className="text-sm font-medium">
+            {isStatic ? "Static printable QR token" : "Rolling signed QR token · Refreshes every 30 seconds"}
+          </span>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <ZookButton
+            tone={isStatic ? "ghost" : "lime"}
+            size="sm"
+            onClick={() => void updateQrMode("ROLLING")}
+          >
+            Rolling
+          </ZookButton>
+          <ZookButton
+            tone={isStatic ? "lime" : "ghost"}
+            size="sm"
+            onClick={() => void updateQrMode("STATIC")}
+          >
+            Static (printable)
+          </ZookButton>
+          {isStatic ? (
+            <>
+              <ZookButton
+                tone="ghost"
+                size="sm"
+                onClick={() => window.print()}
+                leadingIcon={<Printer size={16} />}
+              >
+                Print QR
+              </ZookButton>
+              <ZookButton
+                tone="ghost"
+                size="sm"
+                onClick={() => void regenerateQr()}
+                leadingIcon={<RefreshCcw size={16} />}
+              >
+                Regenerate
+              </ZookButton>
+            </>
+          ) : null}
         </div>
         {error ? <p className="mt-4 text-sm text-[var(--feedback-danger)]">{error}</p> : null}
         {!error ? (
@@ -211,12 +291,14 @@ export function AttendanceQrPanel({
               <div>
                 <p className="text-sm leading-6 text-[var(--text-secondary)]">
                   Display this at reception or the entry gate. Members can scan the QR or type the
-                  short code in the mobile app. The token is generated by the server and refreshes
-                  automatically every 30 seconds in this console.
+                  short code in the mobile app.{" "}
+                  {isStatic
+                    ? "Static mode keeps this QR valid until the date shown below."
+                    : "The token is generated by the server and refreshes automatically every 30 seconds in this console."}
                 </p>
                 <div className="mt-5 rounded-2xl border border-[color-mix(in_srgb,var(--accent)_20%,transparent)] bg-[var(--surface-accent-soft)] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]/70">
-                    Rolling signed QR token
+                    {isStatic ? "Static printable QR token" : "Rolling signed QR token"}
                   </p>
                   <p className="mt-2 break-all font-mono text-3xl font-black tracking-[0.12em] text-[var(--accent-strong)] sm:text-4xl">
                     {checkInCode || "-- ----"}
@@ -237,13 +319,15 @@ export function AttendanceQrPanel({
                         stroke="var(--accent)"
                         strokeLinecap="round"
                         strokeWidth="8"
-                        strokeDasharray={`${(Math.max(secondsRemaining, 0) / 30) * 314} 314`}
+                        strokeDasharray={`${(isStatic ? 1 : Math.max(secondsRemaining, 0) / 30) * 314} 314`}
                       />
                     </svg>
                     <div className="absolute inset-0 grid place-items-center text-center">
                       <div>
-                        <p className="text-3xl font-black tabular-nums text-[var(--text-primary)]">{secondsRemaining}</p>
-                        <p className="text-xs text-[var(--text-tertiary)]">sec</p>
+                        <p className="text-3xl font-black tabular-nums text-[var(--text-primary)]">
+                          {isStatic ? "QR" : secondsRemaining}
+                        </p>
+                        <p className="text-xs text-[var(--text-tertiary)]">{isStatic ? "valid" : "sec"}</p>
                       </div>
                     </div>
                   </div>
@@ -254,7 +338,13 @@ export function AttendanceQrPanel({
               </div>
               <div className="flex flex-wrap gap-2">
                 {branchName ? <Pill>{branchName}</Pill> : null}
-                {expiresAt ? <Pill>Expires {formatTime(expiresAt)}</Pill> : null}
+                {expiresAt ? (
+                  <Pill>
+                    {isStatic
+                      ? `Valid until ${new Date(expiresAt).toLocaleDateString()}`
+                      : `Expires ${formatTime(expiresAt)}`}
+                  </Pill>
+                ) : null}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)]/60 p-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
@@ -338,6 +428,28 @@ export function AttendanceQrPanel({
           <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> Refresh
         </button>
       </div>
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .attendance-qr-panel,
+          .attendance-qr-panel * {
+            visibility: visible;
+          }
+          .attendance-qr-panel {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            background: white !important;
+            color: black !important;
+          }
+          .attendance-qr-panel img {
+            max-height: 70vh !important;
+            max-width: 70vh !important;
+          }
+        }
+      `}</style>
     </GlassCard>
   );
 }

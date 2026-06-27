@@ -1,6 +1,8 @@
 "use client";
 
 import { Pill } from "@/components/glass-card";
+import Link from "next/link";
+import { CalendarDays, CreditCard, PackageCheck, QrCode } from "lucide-react";
 import { useDeskWorkspace } from "@/lib/use-desk-workspace";
 import { DeskMetrics } from "./desk-metrics";
 import { DeskClassesPanel } from "./DeskClassesPanel";
@@ -35,6 +37,13 @@ export function DeskWorkspace({
     locale,
     initialMemberUserId,
   });
+  const branchQuery = branch?.id ? `?branchId=${encodeURIComponent(branch.id)}` : "";
+  const quickActions = [
+    { href: `/desk/members${branchQuery}`, label: "Check in", icon: <QrCode size={16} /> },
+    { href: `/desk/payments${branchQuery}`, label: "New payment", icon: <CreditCard size={16} /> },
+    { href: `/desk/classes${branchQuery}`, label: "Classes", icon: <CalendarDays size={16} /> },
+    { href: `/desk/orders${branchQuery}`, label: "Pickup", icon: <PackageCheck size={16} /> },
+  ];
 
   return (
     <div className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
@@ -43,6 +52,19 @@ export function DeskWorkspace({
         <Pill>
           {state.todayRecords.length} {copy.checkInsToday}
         </Pill>
+      </div>
+
+      <div className="flex flex-wrap gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2">
+        {quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="zook-focus inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]"
+          >
+            {action.icon}
+            {action.label}
+          </Link>
+        ))}
       </div>
 
       <DeskMetrics

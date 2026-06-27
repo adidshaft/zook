@@ -25,6 +25,7 @@ import {
 const shopOrderSchema = z.object({
   orgId: z.string(),
   branchId: z.string().optional(),
+  paymentMode: z.enum(["ONLINE", "DESK"]).default("ONLINE"),
   items: z
     .array(
       z.object({
@@ -40,7 +41,9 @@ export async function handleShopOrders(request: NextRequest, path: string[]) {
     const userId = requireAuth(await getRequestContext(request));
     await assertRateLimit("shopOrderByUser", userId, "Too many order requests.");
     const body = shopOrderSchema.parse(await readJson(request));
-    getPaymentProviderOrThrow();
+    if (body.paymentMode === "ONLINE") {
+      getPaymentProviderOrThrow();
+    }
     const [products, user] = await Promise.all([
       prisma.product.findMany({
         where: { id: { in: body.items.map((item) => item.productId) }, orgId: body.orgId },
@@ -53,27 +56,70 @@ export async function handleShopOrders(request: NextRequest, path: string[]) {
     if (products.some((product) => product.branchId && product.branchId !== branch.id)) {
       throw validationError("Shop products must belong to the selected branch.");
     }
-    const calculation = calculateShopOrder({
-      products: products.map((product) => ({
-        id: product.id,
-        stock: product.stock,
-        pricePaise: product.pricePaise,
-        active: product.active,
-      })),
-      items: body.items,
+    const { order, calculation } = await prisma.$transaction(async (tx) => {
+      const lockedProducts = await tx.product.findMany({
+        where: { id: { in: body.items.map((item) => item.productId) }, orgId: body.orgId },
+      });
+      const lockedCalculation = calculateShopOrder({
+        products: lockedProducts.map((product) => ({
+          id: product.id,
+          stock: product.stock,
+          pricePaise: product.pricePaise,
+          active: product.active,
+        })),
+        items: body.items,
+      });
+      const newOrder = await tx.shopOrder.create({
+        data: {
+          orgId: body.orgId,
+          branchId: branch.id,
+          userId,
+          totalPaise: lockedCalculation.totalPaise,
+        },
+      });
+      await tx.shopOrderItem.createMany({
+        data: body.items.map((item) => ({
+          orgId: body.orgId,
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPaise: lockedProducts.find((product) => product.id === item.productId)?.pricePaise ?? 0,
+        })),
+      });
+      await Promise.all(
+        body.items.map(async (item) => {
+          const update = await tx.product.updateMany({
+            where: { id: item.productId, orgId: body.orgId, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          });
+          if (update.count !== 1) {
+            throw validationError("Product out of stock");
+          }
+        }),
+      );
+      await tx.inventoryMovement.createMany({
+        data: lockedCalculation.stockDeltas.map((delta) => ({
+          orgId: body.orgId,
+          branchId: branch.id,
+          productId: delta.productId,
+          delta: delta.delta,
+          reason: "shop_order_reserved",
+          orderId: newOrder.id,
+          createdById: userId,
+        })),
+      });
+      return { order: newOrder, calculation: lockedCalculation };
     });
-    const order = await prisma.shopOrder.create({
-      data: { orgId: body.orgId, branchId: branch.id, userId, totalPaise: calculation.totalPaise },
-    });
-    await prisma.shopOrderItem.createMany({
-      data: body.items.map((item) => ({
-        orgId: body.orgId,
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPaise: products.find((product) => product.id === item.productId)?.pricePaise ?? 0,
-      })),
-    });
+    if (body.paymentMode === "DESK") {
+      return ok({
+        order,
+        checkoutUrl: null,
+        checkoutData: null,
+        session: null,
+        paymentMode: "DESK",
+      });
+    }
+
     const session = await prisma.paymentSession.create({
       data: {
         orgId: body.orgId,
@@ -111,6 +157,25 @@ export async function handleShopOrders(request: NextRequest, path: string[]) {
           where: { id: order.id },
           data: { status: "CANCELLED", paymentSessionId: session.id },
         }),
+        ...calculation.stockDeltas.map((delta) =>
+          prisma.product.update({
+            where: { id: delta.productId },
+            data: { stock: { increment: Math.abs(delta.delta) } },
+          }),
+        ),
+        ...calculation.stockDeltas.map((delta) =>
+          prisma.inventoryMovement.create({
+            data: {
+              orgId: body.orgId,
+              branchId: branch.id,
+              productId: delta.productId,
+              delta: Math.abs(delta.delta),
+              reason: "shop_order_reservation_released",
+              orderId: order.id,
+              createdById: userId,
+            },
+          }),
+        ),
       ]);
       throw error;
     }

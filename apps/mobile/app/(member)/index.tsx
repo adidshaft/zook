@@ -235,6 +235,9 @@ export default function HomeScreen() {
               <AnimatedAppear delay={0}>
                 <MembershipAccessCard home={home} />
               </AnimatedAppear>
+              <AnimatedAppear delay={20}>
+                <Banners home={home} />
+              </AnimatedAppear>
               {activeCheckIn ? (
                 <AnimatedAppear delay={40}>
                   <ActiveCheckInCard
@@ -267,9 +270,6 @@ export default function HomeScreen() {
                     ]}
                   />
                 </Pressable>
-              </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 200 : 160}>
-                <Banners home={home} />
               </AnimatedAppear>
             </>
           ) : null}

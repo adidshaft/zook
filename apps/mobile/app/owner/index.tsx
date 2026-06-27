@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { RefreshControl, Share, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
@@ -204,6 +204,23 @@ export default function OwnerCommandScreen() {
       onPress: () => router.push("/owner/approvals"),
     },
   ];
+  const todayItems = [
+    {
+      label: t("owner.home.todayCheckIns"),
+      value: formatCompactNumber(dashboard?.today?.checkIns ?? dashboard?.summary?.todayAttendance ?? 0),
+      onPress: () => router.push("/owner/approvals"),
+    },
+    {
+      label: t("owner.home.approvals"),
+      value: formatCompactNumber(dashboard?.today?.pendingApprovals ?? dashboard?.summary?.pendingAttendanceApprovals ?? 0),
+      onPress: () => router.push("/owner/approvals"),
+    },
+    {
+      label: t("shop.pickupLabel"),
+      value: formatCompactNumber(dashboard?.today?.openOrders ?? 0),
+      onPress: () => router.push("/owner/orders" as never),
+    },
+  ];
 
   const onRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
@@ -275,6 +292,37 @@ export default function OwnerCommandScreen() {
                   </Card>
                 </AnimatedAppear>
               ) : null}
+              <AnimatedAppear delay={60}>
+                <Card variant="compact" contentStyle={styles.todayCard}>
+                  <Text style={[styles.todayTitle, { color: palette.text.primary }]}>
+                    {t("owner.home.today")}
+                  </Text>
+                  <View style={styles.todayRow}>
+                    {todayItems.map((item) => (
+                      <Pressable
+                        key={item.label}
+                        accessibilityRole="button"
+                        onPress={item.onPress}
+                        style={({ pressed }) => [
+                          styles.todayChip,
+                          {
+                            backgroundColor: palette.bg.sunken,
+                            borderColor: palette.border.subtle,
+                          },
+                          pressed ? styles.todayChipPressed : null,
+                        ]}
+                      >
+                        <Text style={[styles.todayValue, { color: palette.text.primary }]}>
+                          {item.value}
+                        </Text>
+                        <Text numberOfLines={1} style={[styles.todayLabel, { color: palette.text.secondary }]}>
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Card>
+              </AnimatedAppear>
               <AnimatedAppear delay={80}>
                 <MetricGrid testID="owner-view-command" items={metrics} />
               </AnimatedAppear>
@@ -327,5 +375,33 @@ const styles = StyleSheet.create({
   },
   billingBody: {
     ...typography.body,
+  },
+  todayCard: {
+    gap: spacing.sm,
+  },
+  todayTitle: {
+    ...typography.cardTitle,
+  },
+  todayRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  todayChip: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
+    minHeight: 72,
+    justifyContent: "center",
+    padding: spacing.sm,
+  },
+  todayChipPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }],
+  },
+  todayValue: {
+    ...typography.metric,
+  },
+  todayLabel: {
+    ...typography.caption,
   },
 });

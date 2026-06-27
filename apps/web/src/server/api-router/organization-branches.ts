@@ -82,6 +82,11 @@ const branchManageSchema = branchManageBaseSchema.superRefine((value, ctx) => {
   }
 });
 
+const branchQrSettingsSchema = z.object({
+  qrMode: z.enum(["ROLLING", "STATIC"]),
+  staticQrExpiryDays: z.number().int().min(1).max(90).optional(),
+});
+
 const pincodeStatePrefixes: Record<string, string[]> = {
   Maharashtra: ["40", "41", "42", "43", "44"],
   Karnataka: ["56", "57", "58", "59"],
@@ -323,6 +328,48 @@ export async function handleOrganizationBranches(request: NextRequest, path: str
     await invalidateOrganizationDashboardCache(orgId, { branchId: branch.id });
     return ok({ branch, warnings });
   }
+  if (
+    request.method === "PATCH" &&
+    pathMatches(path, ["orgs", /.+/, "branches", /.+/, "qr-settings"])
+  ) {
+    const orgId = path[1]!;
+    const branchId = path[3]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ORG_MANAGE_LOCATION");
+    const body = branchQrSettingsSchema.parse(await readJson(request));
+    const existing = await prisma.branch.findFirst({ where: { id: branchId, orgId } });
+    if (!existing) {
+      throw notFoundError("Branch not found");
+    }
+    const branch = await prisma.$transaction(async (tx) => {
+      const updated = await tx.branch.update({
+        where: { id: branchId },
+        data: clean({
+          qrMode: body.qrMode,
+          staticQrExpiryDays: body.staticQrExpiryDays,
+        }),
+      });
+      await tx.attendanceQrToken.updateMany({
+        where: { orgId, branchId, expiresAt: { gt: new Date() } },
+        data: { expiresAt: new Date() },
+      });
+      return updated;
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "branch.qr_settings_updated",
+      entityType: "branch",
+      entityId: branch.id,
+      metadata: {
+        qrMode: branch.qrMode,
+        staticQrExpiryDays: branch.staticQrExpiryDays,
+      },
+    });
+    return ok({ branch });
+  }
+
   if (request.method === "PATCH" && pathMatches(path, ["orgs", /.+/, "branches", /.+/])) {
     const orgId = path[1]!;
     const branchId = path[3]!;

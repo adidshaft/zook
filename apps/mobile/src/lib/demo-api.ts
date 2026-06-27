@@ -24,6 +24,8 @@ let demoNotificationPreferences = {
   promotional: true,
   pushEnabled: false,
 };
+let demoBranchQrMode: "ROLLING" | "STATIC" = "ROLLING";
+let demoStaticQrToken: { qrPayload: string; checkInCode: string; expiresAt: string } | null = null;
 
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
@@ -1939,7 +1941,7 @@ type DemoCreatedOrder = {
   memberUserId: string;
   status: string;
   totalPaise: number;
-  pickupCode: string;
+  pickupCode: string | null;
   createdAt: string;
   items: Array<{ productId: string; quantity: number; unitPaise: number }>;
 };
@@ -1966,6 +1968,7 @@ function enrichOrder<
 
 function demoCreateShopOrder(body: Record<string, unknown>) {
   const session = getOfflineDemoSession();
+  const paymentMode = String(body.paymentMode ?? "ONLINE").toUpperCase();
   const rawItems = Array.isArray(body.items) ? body.items : [];
   const items = rawItems
     .map((entry) => {
@@ -1985,14 +1988,20 @@ function demoCreateShopOrder(body: Record<string, unknown>) {
     id: `order-${Date.now()}`,
     orgId: activeOrg()?.id ?? "org-demo",
     memberUserId: session.user.id,
-    status: "READY_FOR_PICKUP",
+    status: paymentMode === "DESK" ? "PENDING_PAYMENT" : "READY_FOR_PICKUP",
     totalPaise,
-    pickupCode: `PU-${String(1000 + Math.floor(Math.random() * 9000))}`,
+    pickupCode: paymentMode === "DESK" ? null : `PU-${String(1000 + Math.floor(Math.random() * 9000))}`,
     createdAt: nowIso(),
     items: items.length
       ? items
       : [{ productId: zookDemoFixtures.shopProducts[0]?.id ?? "product", quantity: 1, unitPaise: 14900 }],
   };
+  for (const item of order.items) {
+    const product = zookDemoFixtures.shopProducts.find((candidate) => candidate.id === item.productId);
+    if (product) {
+      product.stock = Math.max(0, product.stock - item.quantity);
+    }
+  }
   demoCreatedOrders.unshift(order);
   return enrichOrder(order);
 }
@@ -2833,13 +2842,46 @@ export async function demoMobileApiFetch<T>(
     return { attendance } as T;
   }
   if (pathname.match(/^\/orgs\/[^/]+\/attendance\/qr-token$/)) {
+    if (demoBranchQrMode === "STATIC" && demoStaticQrToken) {
+      return {
+        ...demoStaticQrToken,
+        branchId: "branch-default",
+        isStatic: true,
+        qrMode: "STATIC",
+      } as T;
+    }
     const nonce = Math.random().toString(36).slice(2, 14);
     const letters = String.fromCharCode(65 + Math.floor(Math.random() * 26), 65 + Math.floor(Math.random() * 26));
     const digits = String(Math.floor(1000 + Math.random() * 9000));
-    return {
+    const tokenPayload = {
       qrPayload: `demo.${activeOrg()?.id ?? "org-demo"}.${nonce}`,
       checkInCode: `${letters}-${digits}`,
-      expiresAt: new Date(Date.now() + 180000).toISOString(),
+      expiresAt: new Date(Date.now() + (demoBranchQrMode === "STATIC" ? 30 * 24 * 60 * 60 * 1000 : 180000)).toISOString(),
+    };
+    if (demoBranchQrMode === "STATIC") {
+      demoStaticQrToken = tokenPayload;
+    }
+    return {
+      ...tokenPayload,
+      branchId: "branch-default",
+      isStatic: demoBranchQrMode === "STATIC",
+      qrMode: demoBranchQrMode,
+    } as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/attendance\/qr-token\/regenerate$/)) {
+    demoStaticQrToken = null;
+    return { ok: true } as T;
+  }
+  if (pathname.match(/^\/orgs\/[^/]+\/branches\/[^/]+\/qr-settings$/) && method === "PATCH") {
+    const body = demoBody(init);
+    demoBranchQrMode = String(body.qrMode ?? "ROLLING").toUpperCase() === "STATIC" ? "STATIC" : "ROLLING";
+    demoStaticQrToken = null;
+    return {
+      branch: {
+        id: "branch-default",
+        qrMode: demoBranchQrMode,
+        staticQrExpiryDays: Number(body.staticQrExpiryDays ?? 30),
+      },
     } as T;
   }
   if (pathname === "/attendance/scan" || pathname === "/attendance/dev-scan") {
@@ -3240,19 +3282,47 @@ export async function demoMobileApiFetch<T>(
   if (pathname.endsWith("/shop/orders/active")) {
     return {
       orders: demoShopOrders().filter(
-        (order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID",
+        (order) => order.status === "READY_FOR_PICKUP" || order.status === "PAID" || order.status === "PENDING_PAYMENT",
       ),
     } as T;
   }
 
   if (pathname === "/shop/orders") {
-    const order = demoCreateShopOrder(demoBody(init));
+    const body = demoBody(init);
+    const order = demoCreateShopOrder(body);
+    const paymentMode = String(body.paymentMode ?? "ONLINE").toUpperCase();
     return {
       order,
-      checkoutUrl: "",
+      checkoutUrl: paymentMode === "DESK" ? null : "",
       checkoutData: null,
-      session: { id: `offline-payment-${order.id}`, status: "SUCCEEDED", provider: "mock" },
+      session:
+        paymentMode === "DESK"
+          ? null
+          : { id: `offline-payment-${order.id}`, status: "SUCCEEDED", provider: "mock" },
+      paymentMode,
     } as T;
+  }
+
+  const shopManualPaymentMatch = pathname.match(/^\/orgs\/[^/]+\/shop\/orders\/([^/]+)\/manual-payment$/);
+  if (shopManualPaymentMatch && method === "POST") {
+    const order = demoCreatedOrders.find((candidate) => candidate.id === shopManualPaymentMatch[1]);
+    if (!order) throw new Error("Shop order not found.");
+    order.status = "READY_FOR_PICKUP";
+    order.pickupCode = order.pickupCode ?? `PU-${String(1000 + Math.floor(Math.random() * 9000))}`;
+    const payment = {
+      id: `payment-shop-${Date.now()}`,
+      orgId: activeOrg()?.id ?? "org-demo",
+      memberUserId: order.memberUserId,
+      purpose: "SHOP_ORDER",
+      amountPaise: order.totalPaise,
+      status: "SUCCEEDED",
+      mode: String(demoBody(init).mode ?? "CASH"),
+      receiptNumber: `RC-DEMO-${String(Date.now()).slice(-6)}`,
+      createdAt: nowIso(),
+      recordedAt: nowIso(),
+    };
+    demoRecentPayments.unshift(payment);
+    return { payment, order: enrichOrder(order) } as T;
   }
 
   if (pathname.startsWith("/payments/mock/")) {

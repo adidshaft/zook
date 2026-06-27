@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import type { ReactNode } from "react";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
@@ -38,7 +38,7 @@ import {
   ZookScreen,
   type PillTone,
 } from "@/components/primitives";
-import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { formatDateTime, formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
@@ -62,6 +62,7 @@ import { shopStyles as styles } from "./shop-index-route.styles";
 
 type Category = "ALL" | "WATER" | "PROTEIN_SHAKE" | "SHAKER" | "TOWEL" | "SUPPLEMENT" | "OTHER";
 type CheckoutState = "browse" | "cart" | "checkout" | "pickup";
+type ShopPaymentMode = "ONLINE" | "DESK";
 type PersistedCheckoutContext = {
   checkoutSession: {
     id: string;
@@ -539,11 +540,12 @@ export default function Shop() {
     });
   }
 
-  async function createCheckout() {
+  async function createCheckout(paymentMode: ShopPaymentMode) {
     try {
       const result = await createOrder.mutateAsync({
         items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
         ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        paymentMode,
       });
       setOrder({
         ...result.order,
@@ -554,13 +556,21 @@ export default function Shop() {
           product: item.product,
         })),
       });
+      if (paymentMode === "DESK" || !result.session) {
+        setCheckoutSession(null);
+        setCart({});
+        void deleteStoredValue(cartStorageKey);
+        showToast({ tone: "success", haptic: "success", message: t("shop.deskPaymentOrderCreated") });
+        router.replace(`/shop/pickup/${result.order.id}` as never);
+        return;
+      }
       setCheckoutSession({
         id: result.session.id,
         provider: result.session.provider,
         ...(result.checkoutUrl ? { checkoutUrl: result.checkoutUrl } : {}),
       });
       showToast({ tone: "success", haptic: "success", message: t("shop.checkoutCreated") });
-      router.push({
+      router.replace({
         pathname: "/shop/checkout",
         params: {
           orderId: result.order.id,
@@ -663,6 +673,7 @@ export default function Shop() {
 
   if (checkoutState === "pickup" && order) {
     const canContinuePayment = order.status === "PENDING_PAYMENT" && Boolean(checkoutSession);
+    const waitingForDeskPayment = order.status === "PENDING_PAYMENT" && !checkoutSession;
     const canShowPickupQr = order.status === "READY_FOR_PICKUP" || order.status === "FULFILLED";
     return (
       <ShopShell
@@ -682,8 +693,8 @@ export default function Shop() {
         }
       >
         <AppHeader
-          title={t("shop.readyForPickup")}
-          subtitle={t("shop.readyForPickupSubtitle")}
+          title={waitingForDeskPayment ? t("shop.paymentPending") : t("shop.readyForPickup")}
+          subtitle={waitingForDeskPayment ? t("shop.payAtDeskSubtitle") : t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
           chip={<BranchSelectorChip />}
           showProfileShortcut={false}
@@ -693,6 +704,13 @@ export default function Shop() {
             checking={checkingCheckoutStatus}
             onCheckStatus={() => void refreshShopCheckoutStatus()}
           />
+        ) : null}
+        {waitingForDeskPayment ? (
+          <Card variant="compact" contentStyle={styles.paymentMethodContent}>
+            <Text style={[styles.paymentMethodTitle, { color: palette.text.primary }]}>{t("shop.payAtDesk")}</Text>
+            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.payAtDeskInstructions")}</Text>
+            <StatusChip status={t("shop.awaitingDeskPayment")} tone="amber" />
+          </Card>
         ) : null}
         <Card variant="compact" contentStyle={styles.pickupContent}>
           <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
@@ -827,6 +845,89 @@ export default function Shop() {
     );
   }
 
+  if (checkoutState === "checkout") {
+    return (
+      <ShopShell
+        selectedPath="/shop"
+        refreshControl={refreshControl}
+        stickyAction={
+          <View style={styles.paymentActionStack}>
+            <ZookButton
+              testID="shop-pay-online"
+              onPress={() => void createCheckout("ONLINE")}
+              disabled={!cartItems.length || createOrder.isPending}
+              busy={createOrder.isPending}
+              busyLabel={t("shop.creating")}
+              icon="card-outline"
+              fullWidth
+            >
+              {t("shop.payOnline")}
+            </ZookButton>
+            <ZookButton
+              testID="shop-pay-at-desk"
+              onPress={() => void createCheckout("DESK")}
+              disabled={!cartItems.length || createOrder.isPending}
+              variant="secondary"
+              icon="storefront-outline"
+              fullWidth
+            >
+              {t("shop.payAtDesk")}
+            </ZookButton>
+          </View>
+        }
+      >
+        <AppHeader
+          eyebrow={t("shop.payment")}
+          title={t("shop.choosePaymentMethod")}
+          subtitle={t("shop.choosePaymentMethodSubtitle")}
+          leading={headerBackButton}
+          chip={<BranchSelectorChip />}
+          showProfileShortcut={false}
+        />
+        <MoneySummaryCard
+          title={t("shop.pickupCheckout")}
+          amount={formatInr(totalPaise)}
+          rows={[
+            { label: t("shop.itemsLabel"), value: t(itemCount === 1 ? "shop.itemCount" : "shop.itemsCount", { count: itemCount }) },
+            { label: t("shop.pickupLabel"), value: t("shop.availableAtGymDesk") },
+            { label: t("shop.branchLabel"), value: activeOrganization?.name ?? t("shop.selectedGym") },
+          ]}
+          consequence={t("shop.checkoutConsequence")}
+        />
+        <Card contentStyle={styles.checkoutContent}>
+          {cartItems.map((item) => (
+            <ListRow
+              key={item.product.id}
+              title={item.product.name}
+              subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${t("shop.inStockCount", { count: item.product.stock })}`}
+              trailing={
+                <Text style={[styles.cartLinePrice, { color: palette.text.primary }]}>
+                  {formatInr(item.product.pricePaise * item.quantity)}
+                </Text>
+              }
+            />
+          ))}
+          <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
+            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
+            <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
+          </View>
+        </Card>
+        <Card contentStyle={styles.paymentMethodContent}>
+          <ListRow
+            title={t("shop.payOnline")}
+            subtitle={t("shop.payOnlineBody")}
+            trailing={<Ionicons name="card-outline" size={20} color={palette.accent.strong} />}
+          />
+          <ListRow
+            title={t("shop.payAtDesk")}
+            subtitle={t("shop.payAtDeskBody")}
+            trailing={<Ionicons name="storefront-outline" size={20} color={palette.accent.strong} />}
+          />
+        </Card>
+      </ShopShell>
+    );
+  }
+
   if (checkoutState === "cart") {
     return (
       <ShopShell
@@ -835,7 +936,7 @@ export default function Shop() {
         stickyAction={
           <ZookButton
             testID="shop-cart-checkout"
-            onPress={() => void createCheckout()}
+            onPress={() => router.push("/shop/checkout" as never)}
             disabled={!cartItems.length || createOrder.isPending}
             fullWidth
           >
@@ -1225,13 +1326,12 @@ function ShopShell({
   refreshControl?: ScrollViewProps["refreshControl"];
   noScroll?: boolean;
 }) {
+  useHideBottomNav();
   const insets = useSafeAreaInsets();
-  const { visible: bottomNavVisible } = useContext(BottomNavVisibilityContext);
   const contentPaddingBottom = useBottomScrollPadding({
     hasStickyAction: Boolean(floatingAction || stickyAction),
   });
-  const floatingBottom =
-    (bottomNavVisible ? layout.bottomNavHeight : 0) + Math.max(insets.bottom, 12) + 18;
+  const floatingBottom = Math.max(insets.bottom, 12) + 18;
 
   return (
     <>
@@ -1260,7 +1360,7 @@ function ShopShell({
             {floatingAction}
           </View>
         ) : null}
-        {stickyAction ? <StickyActionBar>{stickyAction}</StickyActionBar> : null}
+        {stickyAction ? <StickyActionBar bottomOffset={0}>{stickyAction}</StickyActionBar> : null}
       </ZookScreen>
     </>
   );

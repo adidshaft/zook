@@ -4,6 +4,7 @@ import {
   assertManualPaymentRecordContext,
   computeSubscriptionWindow,
   MANUAL_MEMBERSHIP_PAYMENT_TOLERANCE_PAISE,
+  markShopOrderPaid,
   validateManualMembershipPaymentAmount,
 } from "@zook/core/services";
 import { prisma } from "@zook/db";
@@ -83,38 +84,100 @@ async function handleManualPaymentRequest(request: NextRequest, orgId: string, r
     if (order.paymentId || order.status !== "PENDING_PAYMENT") {
       throw conflictError("This shop order cannot be paid at the desk.");
     }
-    const payment = await prisma.payment.create({
-      data: clean({
-        orgId,
-        branchId: order.branchId,
-        userId: order.userId,
-        purpose: "SHOP_ORDER",
-        amountPaise: body.amountPaise,
-        status: "SUCCEEDED",
-        mode: body.mode,
-        proofAssetId: proofAsset?.id,
-        receiptNumber: body.receiptNumber,
-        notes: body.notes,
-        recordedById: userId,
-        recordedAt: new Date(),
-      }),
-    });
-    const updatedOrder = await prisma.shopOrder.update({
-      where: { id: order.id },
-      data: {
-        paymentId: payment.id,
-        status: order.status === "PENDING_PAYMENT" ? "READY_FOR_PICKUP" : order.status,
+    const items = await prisma.shopOrderItem.findMany({ where: { orderId: order.id } });
+    if (!items.length) {
+      throw validationError("Shop order has no items.");
+    }
+    const itemTotalPaise = items.reduce(
+      (total, item) => total + item.unitPaise * item.quantity,
+      0,
+    );
+    if (itemTotalPaise !== order.totalPaise || body.amountPaise !== order.totalPaise) {
+      throw validationError("Payment amount must match the shop order total.");
+    }
+    const readyOrder = markShopOrderPaid(
+      {
+        id: order.id,
+        status: order.status,
+        totalPaise: order.totalPaise,
       },
+      `ZK-${order.id.slice(-6).toUpperCase()}`,
+    );
+    const pickupCode = readyOrder.pickupCode!;
+    const { payment, updatedOrder } = await prisma.$transaction(async (tx) => {
+      const createdPayment = await tx.payment.create({
+        data: clean({
+          orgId,
+          branchId: order.branchId,
+          userId: order.userId,
+          purpose: "SHOP_ORDER",
+          amountPaise: body.amountPaise,
+          status: "SUCCEEDED",
+          mode: body.mode,
+          proofAssetId: proofAsset?.id,
+          receiptNumber: body.receiptNumber,
+          notes: body.notes,
+          recordedById: userId,
+          recordedAt: new Date(),
+        }),
+      });
+      const settledOrder = await tx.shopOrder.update({
+        where: { id: order.id },
+        data: {
+          paymentId: createdPayment.id,
+          status: readyOrder.status,
+          pickupCode,
+        },
+      });
+      const reservation = await tx.inventoryMovement.findFirst({
+        where: { orderId: order.id, reason: "shop_order_reserved" },
+        select: { id: true },
+      });
+      if (!reservation) {
+        await Promise.all(
+          items.map(async (item) => {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { decrement: item.quantity } },
+            });
+            await tx.inventoryMovement.create({
+              data: {
+                orgId,
+                branchId: order.branchId,
+                productId: item.productId,
+                delta: -item.quantity,
+                reason: "shop_order_paid",
+                orderId: order.id,
+                createdById: userId,
+              },
+            });
+          }),
+        );
+      }
+      await tx.pickupCode.upsert({
+        where: { orderId: order.id },
+        update: {
+          code: pickupCode,
+          status: readyOrder.status,
+        },
+        create: {
+          orgId,
+          orderId: order.id,
+          code: pickupCode,
+          status: readyOrder.status,
+        },
+      });
+      return { payment: createdPayment, updatedOrder: settledOrder };
     });
     await createDirectNotification({
       orgId,
       createdById: userId,
       type: "TRANSACTIONAL",
       title: "Order available for pickup",
-      body: "Your desk payment is recorded. Show the pickup code at the gym.",
+      body: `Your desk payment is recorded. Show pickup code ${pickupCode} at the gym.`,
       audience: "selected_member",
       userIds: [order.userId],
-      metadata: clean({ paymentId: payment.id, shopOrderId: order.id }),
+      metadata: clean({ paymentId: payment.id, shopOrderId: order.id, pickupCode }),
     });
     await writeAuditLog({
       request,

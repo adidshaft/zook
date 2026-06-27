@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { Alert, RefreshControl, StyleSheet } from "react-native";
 import { useState } from "react";
 import { View } from "react-native";
@@ -23,6 +23,7 @@ export default function OwnerApprovalsScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const { t } = useI18n();
+  const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const joinRequestsQuery = useOrgJoinRequests();
   const attentionQuery = useOrgAttendancePending();
@@ -184,6 +185,7 @@ export default function OwnerApprovalsScreen() {
               <ApprovalQueue
                 testID="pending-approvals-list"
                 items={joinItems}
+                highlightedId={highlight}
                 onApprove={(id) => approveJoinRequestMutation.mutate(id)}
                 onReject={(id) => confirmRejectJoinRequest(id)}
               />
@@ -194,6 +196,7 @@ export default function OwnerApprovalsScreen() {
               <SectionHeader title={t("owner.approvals.scanReviewQueueCount", { count: attendanceItems.length })} />
               <ApprovalQueue
                 items={attendanceItems}
+                highlightedId={highlight}
                 onApprove={(id) => {
                   if (!canApproveAttendance) {
                     showToast({ title: t("owner.approvals.ownerApprovalRequired"), tone: "amber" });

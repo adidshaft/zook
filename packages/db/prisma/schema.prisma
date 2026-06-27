@@ -220,6 +220,7 @@ enum AttendanceSource {
   QR_SCAN
   MANUAL
   IMPORT
+  AUTO_CHECKOUT
 }
 
 enum NotificationType {
@@ -682,6 +683,7 @@ model Organization {
   legalName             String?
   attendanceMode        AttendanceMode     @default(EXCEPTION_APPROVAL)
   multiEntryConsumes    Boolean            @default(false)
+  allowSelfServePause   Boolean            @default(true)
   settings              Json?
   createdByUserId       String
   deletedAt             DateTime?
@@ -724,6 +726,8 @@ model Branch {
   logoAssetId    String?
   coverAssetId   String?
   whatsappNumber String?
+  qrMode         String         @default("ROLLING")
+  staticQrExpiryDays Int       @default(30)
   isDefault      Boolean        @default(false)
   active         Boolean        @default(true)
   createdAt      DateTime       @default(now())

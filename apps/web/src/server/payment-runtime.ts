@@ -1,7 +1,6 @@
 import type { MembershipPlan, PaymentMandateStatus, PaymentMode, PaymentStatus } from "@zook/core";
 import type { ParsedPaymentWebhookEvent } from "@zook/core/providers";
 import {
-  calculateShopOrder,
   createSubscriptionReminder,
   computeSubscriptionWindow,
   markShopOrderPaid,
@@ -902,18 +901,13 @@ export async function applyPaymentSessionStatus(input: {
         existingOrder.totalPaise === session.amountPaise
       ) {
         const items = await prisma.shopOrderItem.findMany({ where: { orderId: existingOrder.id } });
-        const orderProducts = await prisma.product.findMany({
-          where: { id: { in: items.map((item) => item.productId) } },
-        });
-        const calculation = calculateShopOrder({
-          products: orderProducts.map((product) => ({
-            id: product.id,
-            stock: product.stock,
-            pricePaise: product.pricePaise,
-            active: product.active,
-          })),
-          items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
-        });
+        const itemTotalPaise = items.reduce(
+          (total, item) => total + item.unitPaise * item.quantity,
+          0,
+        );
+        if (itemTotalPaise !== existingOrder.totalPaise) {
+          throw new Error("Shop order total mismatch");
+        }
         const readyOrder = markShopOrderPaid(
           {
             id: existingOrder.id,
@@ -939,25 +933,31 @@ export async function applyPaymentSessionStatus(input: {
           }
           orderActivated = true;
 
-          await Promise.all(
-            calculation.stockDeltas.map(async (delta) => {
-              await tx.product.update({
-                where: { id: delta.productId },
-                data: { stock: { increment: delta.delta } },
-              });
-              await tx.inventoryMovement.create({
-                data: {
-                  orgId: existingOrder.orgId,
-                  branchId: existingOrder.branchId,
-                  productId: delta.productId,
-                  delta: delta.delta,
-                  reason: "shop_order_paid",
-                  orderId: existingOrder.id,
-                  ...(session.userId ? { createdById: session.userId } : {}),
-                },
-              });
-            }),
-          );
+          const reservation = await tx.inventoryMovement.findFirst({
+            where: { orderId: existingOrder.id, reason: "shop_order_reserved" },
+            select: { id: true },
+          });
+          if (!reservation) {
+            await Promise.all(
+              items.map(async (item) => {
+                await tx.product.update({
+                  where: { id: item.productId },
+                  data: { stock: { decrement: item.quantity } },
+                });
+                await tx.inventoryMovement.create({
+                  data: {
+                    orgId: existingOrder.orgId,
+                    branchId: existingOrder.branchId,
+                    productId: item.productId,
+                    delta: -item.quantity,
+                    reason: "shop_order_paid",
+                    orderId: existingOrder.id,
+                    ...(session.userId ? { createdById: session.userId } : {}),
+                  },
+                });
+              }),
+            );
+          }
 
           await tx.pickupCode.upsert({
             where: { orderId: existingOrder.id },

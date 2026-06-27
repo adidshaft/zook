@@ -7,6 +7,7 @@ import type { ApprovalItem } from "./types";
 
 export function ApprovalQueueCard({
   approving,
+  highlighted,
   item,
   onApprove,
   onReject,
@@ -14,6 +15,7 @@ export function ApprovalQueueCard({
   testID,
 }: {
   approving?: boolean;
+  highlighted?: boolean;
   item: ApprovalItem;
   onApprove: () => void;
   onReject?: () => void;
@@ -22,7 +24,19 @@ export function ApprovalQueueCard({
 }) {
   const { palette } = useTheme();
   return (
-    <Card testID={testID} variant="compact" contentStyle={styles.card}>
+    <Card
+      testID={testID}
+      variant="compact"
+      contentStyle={[
+        styles.card,
+        highlighted
+          ? {
+              borderColor: palette.accent.base,
+              borderWidth: 1.5,
+            }
+          : null,
+      ]}
+    >
       <ListRow
         title={item.primaryText}
         subtitle={[item.secondaryText, item.metaText].filter(Boolean).join(" · ")}

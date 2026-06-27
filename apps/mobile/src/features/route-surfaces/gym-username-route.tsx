@@ -15,6 +15,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -106,6 +107,14 @@ export default function GymProfileScreen() {
       : [];
   const coverImageUrl = normalizeWebUrl(gym?.coverImageUrl);
   const logoUrl = normalizeWebUrl(gym?.logoUrl);
+  const shareGym = useCallback(async () => {
+    if (!gym?.username) return;
+    const url = toWebUrl(`/g/${gym.username}`);
+    await Share.share({
+      message: `Check out ${gym.name} on Zook - ${url}`,
+      url,
+    });
+  }, [gym?.name, gym?.username]);
   const viewerState = gymQuery.data?.viewerState;
   const distanceKm = useGymDistanceKm(gym?.latitude, gym?.longitude);
   const distanceLabel = formatDistanceKm(distanceKm);
@@ -322,7 +331,21 @@ export default function GymProfileScreen() {
               </Pressable>
             }
             trailing={
-              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
+              <View style={styles.headerActions}>
+                <Pressable
+                  onPress={() => void shareGym()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share gym profile"
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                    pressed ? styles.iconButtonPressed : null,
+                  ]}
+                >
+                  <Ionicons name="share-outline" size={20} color={palette.text.primary} />
+                </Pressable>
+                <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabel(gym.joinMode)}</Pill>
+              </View>
             }
           />
         ) : (
@@ -934,6 +957,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
+  },
+  headerActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
   },
   iconButton: {
     width: 44,

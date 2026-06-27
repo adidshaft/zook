@@ -74,12 +74,48 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_QR_DISPLAY");
     const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
     const branch = await resolveOrgBranch(orgId, branchId);
+    const now = new Date();
+    const staticQrExpiryDays =
+      typeof branch.staticQrExpiryDays === "number"
+        ? Math.min(Math.max(branch.staticQrExpiryDays, 1), 90)
+        : 30;
+    if (branch.qrMode === "STATIC") {
+      const existingToken = await prisma.attendanceQrToken.findFirst({
+        where: {
+          orgId,
+          branchId: branch.id,
+          expiresAt: { gt: now },
+        },
+        orderBy: { issuedAt: "desc" },
+      });
+      if (existingToken) {
+        return ok({
+          qrPayload: encodeQrPayload({
+            orgId,
+            branchId: branch.id,
+            nonce: existingToken.nonce,
+            timestamp: existingToken.issuedAt.getTime(),
+            expiry: existingToken.expiresAt.getTime(),
+            signature: existingToken.signature,
+          }),
+          checkInCode: checkInCodeForQrNonce(existingToken.nonce),
+          expiresAt: existingToken.expiresAt,
+          branchId: branch.id,
+          isStatic: true,
+          qrMode: "STATIC",
+        });
+      }
+    }
     const payload = createSignedQrToken({
       orgId,
       branchId: branch.id,
       secret: getQrSigningSecret(),
+      now,
+      ...(branch.qrMode === "STATIC"
+        ? { ttlSeconds: staticQrExpiryDays * 24 * 60 * 60 }
+        : {}),
     });
-    await prisma.attendanceQrToken.create({
+    const token = await prisma.attendanceQrToken.create({
       data: {
         orgId,
         branchId: branch.id,
@@ -93,7 +129,70 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     return ok({
       qrPayload: encodeQrPayload(payload),
       checkInCode: checkInCodeForQrNonce(payload.nonce),
-      expiresAt: new Date(payload.expiry),
+      expiresAt: token.expiresAt,
+      branchId: branch.id,
+      isStatic: branch.qrMode === "STATIC",
+      qrMode: branch.qrMode,
+    });
+  }
+  if (
+    request.method === "POST" &&
+    pathMatches(path, ["orgs", /.+/, "attendance", "qr-token", "regenerate"])
+  ) {
+    const orgId = path[1]!;
+    const ctx = await getRequestContext(request, { orgId });
+    const userId = requireOrgPermission(ctx, orgId, "ATTENDANCE_QR_DISPLAY");
+    const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
+    const branch = await resolveOrgBranch(orgId, branchId);
+    const now = new Date();
+    await prisma.attendanceQrToken.updateMany({
+      where: {
+        orgId,
+        branchId: branch.id,
+        expiresAt: { gt: now },
+      },
+      data: { expiresAt: now },
+    });
+    await writeAuditLog({
+      request,
+      orgId,
+      actorUserId: userId,
+      action: "attendance.qr_regenerated",
+      entityType: "Branch",
+      entityId: branch.id,
+      metadata: { branchId: branch.id, qrMode: branch.qrMode },
+    });
+    const staticQrExpiryDays =
+      typeof branch.staticQrExpiryDays === "number"
+        ? Math.min(Math.max(branch.staticQrExpiryDays, 1), 90)
+        : 30;
+    const payload = createSignedQrToken({
+      orgId,
+      branchId: branch.id,
+      secret: getQrSigningSecret(),
+      now,
+      ...(branch.qrMode === "STATIC"
+        ? { ttlSeconds: staticQrExpiryDays * 24 * 60 * 60 }
+        : {}),
+    });
+    const token = await prisma.attendanceQrToken.create({
+      data: {
+        orgId,
+        branchId: branch.id,
+        nonce: payload.nonce,
+        issuedAt: new Date(payload.timestamp),
+        expiresAt: new Date(payload.expiry),
+        signature: payload.signature,
+        createdById: userId,
+      },
+    });
+    return ok({
+      qrPayload: encodeQrPayload(payload),
+      checkInCode: checkInCodeForQrNonce(payload.nonce),
+      expiresAt: token.expiresAt,
+      branchId: branch.id,
+      isStatic: branch.qrMode === "STATIC",
+      qrMode: branch.qrMode,
     });
   }
   if (request.method === "POST" && pathMatches(path, ["attendance", "dev-scan"])) {
@@ -115,6 +214,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         branchId: branch.id,
         userId,
         checkedOutAt: null,
+        dateKey,
         status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },
@@ -263,8 +363,9 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     ) {
       throw validationError("QR token is invalid or expired.");
     }
+    const isStaticToken = qrToken.expiresAt.getTime() - qrToken.issuedAt.getTime() > 60 * 60 * 1000;
     const scanReservation = await prisma.attendanceQrToken.updateMany({
-      where: { nonce: decoded.nonce, scanCount: { lt: 200 } },
+      where: { nonce: decoded.nonce, ...(isStaticToken ? {} : { scanCount: { lt: 200 } }) },
       data: { scanCount: { increment: 1 }, lastScannedAt: now },
     });
     if (scanReservation.count !== 1) {
@@ -305,6 +406,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
           orgId: decoded.orgId,
           userId,
           checkedOutAt: null,
+          dateKey: operationalDateKey(now),
           status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
         },
         orderBy: { checkedInAt: "desc" },
@@ -334,6 +436,13 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     }
     if (!branch) {
       return fail("BRANCH_NOT_FOUND", "Branch not found", 404);
+    }
+    if (subscription?.branchId != null && subscription.branchId !== decoded.branchId) {
+      return fail(
+        "WRONG_BRANCH",
+        "Your membership is for a different branch. Please visit your registered branch.",
+        400,
+      );
     }
     if (openCheckIn) {
       if (openCheckIn.branchId !== decoded.branchId) {
@@ -425,7 +534,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
       orgStatus: org.status,
       hasProfilePhoto,
       alreadyCheckedInToday: false,
-      wrongBranch: false,
+      wrongBranch: subscription.branchId != null && subscription.branchId !== decoded.branchId,
       multiEntryConsumes: org.multiEntryConsumes,
       now,
     });
@@ -835,6 +944,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
         branchId: branch.id,
         userId: body.memberUserId,
         checkedOutAt: null,
+        dateKey: operationalDateKey(),
         status: { in: ["APPROVED", "PENDING_APPROVAL", "FLAGGED"] },
       },
       orderBy: { checkedInAt: "desc" },
