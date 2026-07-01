@@ -2,9 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, IndianRupee, MapPin, UserRound, Users } from "lucide-react";
+import { CalendarDays, IndianRupee, UserRound, Users } from "lucide-react";
 import type { Permission } from "@zook/core";
-import { DashboardPageShell, SectionHeader, StatusPill } from "@/components/dashboard-primitives/layout";
+import {
+  DashboardPageShell,
+  SectionHeader,
+  StatusPill,
+} from "@/components/dashboard-primitives/layout";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButton } from "@/components/zook-button";
 import type { BranchScopeSnapshot, ClassRow } from "@/components/dashboard/types";
@@ -39,6 +43,8 @@ type ClassesDashboardRouteProps = {
   currentUserId?: string;
   permissions: Permission[];
 };
+
+const EMPTY_CLASSES: ClassRow[] = [];
 
 function toDateTimeLocalValue(value: Date) {
   const adjusted = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
@@ -88,6 +94,70 @@ function classStatusTone(status: string) {
   return "neutral" as const;
 }
 
+function classStatusLabel(status: string) {
+  const value = status.toLowerCase();
+  if (value === "scheduled") return "Scheduled";
+  if (value === "cancelled") return "Cancelled";
+  if (value === "completed") return "Completed";
+  return "Review";
+}
+
+function statusMarkClass(tone: ReturnType<typeof classStatusTone>) {
+  if (tone === "lime") return "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]";
+  if (tone === "red") return "border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)]";
+  if (tone === "blue") return "border-[color-mix(in_srgb,var(--feedback-info)_36%,transparent)] bg-[var(--surface-info-soft)] text-[var(--feedback-info)]";
+  return "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)]";
+}
+
+function ClassStatusMark({ status }: { status: string }) {
+  const label = classStatusLabel(status);
+  const tone = classStatusTone(status);
+  const value = status.toLowerCase();
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.65rem] font-bold ${statusMarkClass(tone)}`}
+    >
+      <span aria-hidden>{value === "scheduled" || value === "completed" ? "✓" : "!"}</span>
+    </span>
+  );
+}
+
+function classTypeLabel(type: string) {
+  const value = type.toLowerCase();
+  if (value === "hiit") return "HIIT";
+  if (value === "strength") return "Strength";
+  if (value === "yoga") return "Yoga";
+  if (value === "boxing") return "Boxing";
+  if (value === "cycling") return "Cycling";
+  if (value === "dance") return "Dance";
+  if (value === "mobility") return "Mobility";
+  return formatEnumLabel(type);
+}
+
+function rosterStatusLabel(status: string) {
+  const value = status.toLowerCase();
+  if (value === "enrolled") return "Enrolled";
+  if (value === "waitlisted") return "Waitlisted";
+  if (value === "cancelled") return "Cancelled";
+  if (value === "attended") return "Attended";
+  if (value === "no_show") return "No-show";
+  return formatEnumLabel(status);
+}
+
+function classPaymentStatusLabel(status: string) {
+  const value = status.toLowerCase();
+  if (value === "paid") return "Paid";
+  if (value === "comp") return "Comped";
+  if (value === "pending") return "Payment pending";
+  return formatEnumLabel(status);
+}
+
+function hoursUntil(value: string | Date) {
+  return (new Date(value).getTime() - Date.now()) / 3_600_000;
+}
+
 export function ClassesDashboardRoute({
   orgId,
   branchScope,
@@ -96,10 +166,12 @@ export function ClassesDashboardRoute({
   permissions,
 }: ClassesDashboardRouteProps) {
   const queryClient = useQueryClient();
-  const selectedBranchId = branchScope.allBranches ? null : branchScope.selectedBranch?.id ?? null;
+  const selectedBranchId = branchScope.allBranches
+    ? null
+    : (branchScope.selectedBranch?.id ?? null);
   const selectedBranchName = branchScope.allBranches
     ? "All branches"
-    : branchScope.selectedBranch?.name ?? "Select a branch";
+    : (branchScope.selectedBranch?.name ?? "Select a branch");
   const canManageAllTrainers = permissions.includes("TRAINERS_MANAGE");
   const defaultTrainerId =
     (canManageAllTrainers ? trainerOptions[0]?.id : currentUserId) ?? trainerOptions[0]?.id ?? "";
@@ -110,7 +182,35 @@ export function ClassesDashboardRoute({
   const [openRosterId, setOpenRosterId] = useState<string | null>(null);
   const [rosters, setRosters] = useState<Record<string, ClassRosterState>>({});
   const classesQuery = useClasses(orgId, selectedBranchId);
-  const classes = classesQuery.data?.classes ?? [];
+  const classes = classesQuery.data?.classes ?? EMPTY_CLASSES;
+  const hasScheduleSurface = classes.length > 0 || classesQuery.isLoading;
+  const trainerChoices = useMemo(
+    () =>
+      canManageAllTrainers
+        ? trainerOptions
+        : trainerOptions.filter((trainer) => trainer.id === currentUserId),
+    [canManageAllTrainers, currentUserId, trainerOptions],
+  );
+  const scheduledClasses = useMemo(
+    () => classes.filter((entry) => entry.status.toLowerCase() === "scheduled"),
+    [classes],
+  );
+  const startingSoonCount = scheduledClasses.filter((entry) => {
+    const hours = hoursUntil(entry.startTime);
+    return hours >= 0 && hours <= 24;
+  }).length;
+  const nextClass = [...scheduledClasses].sort(
+    (left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime(),
+  )[0];
+  const totalOpenSeats = scheduledClasses.reduce(
+    (total, entry) => total + Math.max(entry.remainingCapacity ?? 0, 0),
+    0,
+  );
+  const scheduleBlockedReason = !selectedBranchId
+    ? "Choose one branch before scheduling."
+    : !trainerChoices.length
+      ? "Add a trainer before scheduling."
+      : "";
   const createClassMutation = useMutation({
     mutationFn: async () => {
       if (!selectedBranchId) {
@@ -155,7 +255,10 @@ export function ClassesDashboardRoute({
           maxCapacity: Number(editForm.maxCapacity),
           pricePaise: Math.max(0, Math.round((Number.parseFloat(editForm.priceRupees) || 0) * 100)),
           trainerCommissionBps: editForm.trainerCommissionPercent.trim()
-            ? Math.max(0, Math.round((Number.parseFloat(editForm.trainerCommissionPercent) || 0) * 100))
+            ? Math.max(
+                0,
+                Math.round((Number.parseFloat(editForm.trainerCommissionPercent) || 0) * 100),
+              )
             : null,
           startTime: new Date(editForm.startTime).toISOString(),
           endTime: new Date(editForm.endTime).toISOString(),
@@ -182,13 +285,6 @@ export function ClassesDashboardRoute({
       setConfirmCancelId(null);
     },
   });
-  const trainerChoices = useMemo(
-    () =>
-      canManageAllTrainers
-        ? trainerOptions
-        : trainerOptions.filter((trainer) => trainer.id === currentUserId),
-    [canManageAllTrainers, currentUserId, trainerOptions],
-  );
   const loadRoster = async (classId: string) => {
     setOpenRosterId((current) => (current === classId ? null : classId));
     if (rosters[classId]?.roster.length || rosters[classId]?.loading) {
@@ -220,22 +316,59 @@ export function ClassesDashboardRoute({
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+    <div className="grid gap-4">
+      <GlassCard variant={scheduleBlockedReason ? "warning" : "strong"}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              Class operations
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-primary)]">
+              {scheduleBlockedReason
+                ? "Finish setup before publishing classes"
+                : nextClass
+                  ? `Next up: ${nextClass.name}`
+                  : "Build the first class for this branch"}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+              {scheduleBlockedReason ||
+                (nextClass
+                  ? `${formatDateTime(nextClass.startTime)} with ${nextClass.trainerName ?? "trainer pending"}. Check roster, room setup, and payment status before members arrive.`
+                  : "Choose a trainer, capacity, time, and price so members can book from their app.")}
+            </p>
+          </div>
+          <Pill tone={scheduleBlockedReason ? "amber" : nextClass ? "blue" : "neutral"}>
+            {selectedBranchName}
+          </Pill>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Pill tone={scheduledClasses.length ? "blue" : "neutral"}>
+            {scheduledClasses.length} scheduled
+          </Pill>
+          <Pill tone={totalOpenSeats ? "neutral" : "amber"}>
+            {totalOpenSeats} open seats
+          </Pill>
+          <Pill tone={startingSoonCount ? "amber" : "neutral"}>
+            {startingSoonCount} soon
+          </Pill>
+          <Pill tone={trainerChoices.length ? "neutral" : "amber"}>
+            {trainerChoices.length} trainers
+          </Pill>
+        </div>
+      </GlassCard>
+      <div className={`grid gap-4 ${hasScheduleSurface ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}>
       <DashboardPageShell
         eyebrow="Classes"
         title="Schedule a group class"
-        action={
-          <Pill tone={selectedBranchId ? "blue" : "amber"}>
-            <MapPin className="h-3.5 w-3.5" />
-            {selectedBranchName}
-          </Pill>
-        }
+        className={hasScheduleSurface ? "xl:order-2" : undefined}
+        action={!selectedBranchId ? <Pill tone="amber">Choose a branch</Pill> : undefined}
       >
         <div className="grid gap-3">
           {!selectedBranchId ? (
             <GlassCard variant="warning">
               <p className="text-sm leading-6 text-[var(--text-primary)]">
-                Pick one branch from the header before creating a class. The schedule stays with that branch.
+                Pick one branch from the header before creating a class. The schedule stays with
+                that branch.
               </p>
             </GlassCard>
           ) : null}
@@ -327,7 +460,10 @@ export function ClassesDashboardRoute({
                 step="0.1"
                 value={form.trainerCommissionPercent}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, trainerCommissionPercent: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    trainerCommissionPercent: event.target.value,
+                  }))
                 }
                 placeholder="Use trainer default"
                 className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-focus)]"
@@ -337,7 +473,11 @@ export function ClassesDashboardRoute({
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             Trainer
             <select
-              value={canManageAllTrainers ? form.trainerId : currentUserId ?? trainerChoices[0]?.id ?? ""}
+              value={
+                canManageAllTrainers
+                  ? form.trainerId
+                  : (currentUserId ?? trainerChoices[0]?.id ?? "")
+              }
               disabled={!canManageAllTrainers}
               onChange={(event) =>
                 setForm((current) => ({ ...current, trainerId: event.target.value }))
@@ -380,7 +520,7 @@ export function ClassesDashboardRoute({
         </div>
       </DashboardPageShell>
 
-      <GlassCard variant="strong">
+      <GlassCard variant="strong" className={hasScheduleSurface ? "xl:order-1" : undefined}>
         <SectionHeader
           eyebrow="Upcoming"
           title="Scheduled classes"
@@ -391,7 +531,7 @@ export function ClassesDashboardRoute({
             </Pill>
           }
         />
-        <div className="mt-5 grid gap-3">
+        <div className="mt-4 grid gap-3">
           {classesQuery.isLoading ? (
             <GlassCard variant="muted">
               <p className="text-sm text-[var(--text-secondary)]">Loading upcoming classes.</p>
@@ -407,7 +547,8 @@ export function ClassesDashboardRoute({
           {!classesQuery.isLoading && !classes.length ? (
             <GlassCard variant="muted">
               <p className="text-sm text-[var(--text-secondary)]">
-                No classes scheduled.
+                No classes scheduled. Use the form on this page to add the first session for this
+                branch.
               </p>
             </GlassCard>
           ) : null}
@@ -415,7 +556,7 @@ export function ClassesDashboardRoute({
             <ClassScheduleCard
               key={entry.id}
               entry={entry}
-              selectedBranchName={selectedBranchName}
+              showBranchName={!selectedBranchId}
               rosterState={rosters[entry.id]}
               rosterOpen={openRosterId === entry.id}
               onToggleRoster={() => void loadRoster(entry.id)}
@@ -444,13 +585,14 @@ export function ClassesDashboardRoute({
           ))}
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 }
 
 function ClassScheduleCard({
   entry,
-  selectedBranchName,
+  showBranchName,
   rosterState,
   rosterOpen,
   onToggleRoster,
@@ -470,7 +612,7 @@ function ClassScheduleCard({
   onConfirmCancel,
 }: {
   entry: ClassRow;
-  selectedBranchName: string;
+  showBranchName: boolean;
   rosterState?: ClassRosterState | undefined;
   rosterOpen: boolean;
   onToggleRoster: () => void;
@@ -494,14 +636,18 @@ function ClassScheduleCard({
     <div className="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              {entry.name}
-            </h3>
-            <Pill tone="neutral">{formatEnumLabel(entry.classType)}</Pill>
-            <StatusPill value={entry.status} tone={classStatusTone(entry.status)} />
+          <div className="flex items-start gap-2">
+            <ClassStatusMark status={entry.status} />
+            <div className="min-w-0">
+              <h3 className="truncate text-lg font-semibold text-[var(--text-primary)]">
+                {entry.name}
+              </h3>
+              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                {classTypeLabel(entry.classType)}
+              </p>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+          <p className="mt-2 pl-9 text-sm text-[var(--text-secondary)]">
             {formatDateTime(entry.startTime)} to {formatDateTime(entry.endTime)}
           </p>
         </div>
@@ -513,31 +659,27 @@ function ClassScheduleCard({
           <Pill tone={entry.pricePaise && entry.pricePaise > 0 ? "lime" : "neutral"}>
             <IndianRupee className="h-3.5 w-3.5" />
             {entry.pricePaise && entry.pricePaise > 0
-              ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(entry.pricePaise / 100)
+              ? new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+                  entry.pricePaise / 100,
+                )
               : "Free"}
           </Pill>
           <Pill tone="neutral">
             <UserRound className="h-3.5 w-3.5" />
             {entry.trainerName ?? "Trainer pending"}
           </Pill>
+          {showBranchName && entry.branchName ? <Pill tone="neutral">{entry.branchName}</Pill> : null}
         </div>
       </div>
-      <div className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)] md:grid-cols-2">
-        <p>
-          Branch:{" "}
-          <span className="text-[var(--text-primary)]">
-            {entry.branchName ?? selectedBranchName}
-          </span>
+      {entry.remainingCapacity <= 3 && !isCancelled ? (
+        <p className="mt-3 text-sm font-medium text-[var(--feedback-warning)]">
+          {entry.remainingCapacity > 0
+            ? `${entry.remainingCapacity} spot${entry.remainingCapacity === 1 ? "" : "s"} left`
+            : "Waitlist only"}
         </p>
-        <p>
-          Remaining spots:{" "}
-          <span className="text-[var(--text-primary)]">{entry.remainingCapacity}</span>
-        </p>
-      </div>
+      ) : null}
       {entry.description ? (
-        <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
-          {entry.description}
-        </p>
+        <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">{entry.description}</p>
       ) : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         {canManage && !isCancelled ? (
@@ -716,7 +858,10 @@ function ClassScheduleCard({
           {rosterState?.roster.length ? (
             <div className="mt-4 divide-y divide-[var(--border-subtle)]">
               {rosterState.roster.map((member) => (
-                <div key={member.memberId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div
+                  key={member.memberId}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
                   <div>
                     <p className="text-sm font-medium text-[var(--text-primary)]">{member.name}</p>
                     <p className="text-xs text-[var(--text-tertiary)]">
@@ -724,7 +869,7 @@ function ClassScheduleCard({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill value={member.status} />
+                    <StatusPill value={rosterStatusLabel(member.status)} />
                     {member.paymentStatus ? (
                       <Pill
                         tone={
@@ -735,7 +880,7 @@ function ClassScheduleCard({
                               : "amber"
                         }
                       >
-                        {member.paymentStatus}
+                        {classPaymentStatusLabel(member.paymentStatus)}
                       </Pill>
                     ) : null}
                   </div>

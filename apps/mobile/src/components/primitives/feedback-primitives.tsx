@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Reanimated, {
   Easing,
   interpolate,
@@ -10,31 +10,73 @@ import Reanimated, {
 import { useEffect, type ReactNode } from "react";
 
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
-import { ZookButton } from "./buttons";
 import { IconBubble } from "./icon-bubble";
+import { Ionicons } from "@expo/vector-icons";
 
 export function ErrorState({
   title = "Something needs attention",
   body,
   action,
+  compact = false,
+  onPress,
+  accessibilityLabel,
 }: {
   title?: string;
   body: string;
   action?: ReactNode;
+  compact?: boolean;
+  onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   const { palette } = useTheme();
+  const stateStyle = [
+    styles.emptyState,
+    styles.errorState,
+    compact ? styles.errorStateCompact : null,
+    {
+      borderColor: palette.feedback.danger,
+      backgroundColor: compact ? palette.surface.default : palette.surface.dangerSoft,
+    },
+  ];
+  const content = (
+    <>
+      <IconBubble icon="alert-circle-outline" tone="red" size={compact ? 20 : 40} />
+      <View style={compact ? styles.compactCopy : null}>
+        <Text
+          numberOfLines={compact ? 1 : undefined}
+          style={[styles.stateTitle, compact ? styles.stateTitleCompact : null, { color: palette.text.primary }]}
+        >
+          {title}
+        </Text>
+        <Text
+          numberOfLines={compact ? 2 : undefined}
+          adjustsFontSizeToFit={compact}
+          minimumFontScale={0.9}
+          style={[styles.stateBody, compact ? styles.stateBodyCompact : null, { color: palette.text.secondary }]}
+        >
+          {body}
+        </Text>
+      </View>
+      {action ? <View style={compact ? styles.stateActionCompact : styles.stateAction}>{action}</View> : null}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        onPress={onPress}
+        style={({ pressed }) => [stateStyle, pressed ? styles.errorStatePressed : null]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.emptyState,
-        styles.errorState,
-        { borderColor: palette.feedback.danger, backgroundColor: palette.surface.dangerSoft },
-      ]}
-    >
-      <IconBubble icon="alert-circle-outline" tone="red" />
-      <Text style={[styles.stateTitle, { color: palette.text.primary }]}>{title}</Text>
-      <Text style={[styles.stateBody, { color: palette.text.secondary }]}>{body}</Text>
-      {action ? <View style={styles.stateAction}>{action}</View> : null}
+    <View style={stateStyle}>
+      {content}
     </View>
   );
 }
@@ -50,21 +92,31 @@ export function QueryErrorState({
   title?: string;
   retryLabel?: string;
 }) {
+  const { palette } = useTheme();
   const message =
     error instanceof Error && error.message.trim()
       ? error.message
       : "Pull to refresh or try again in a moment.";
+  const compactRetry = onRetry ? (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.retryIconButton,
+        { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+      ]}
+    >
+      <Ionicons name="refresh-outline" size={14} color={palette.text.primary} />
+    </View>
+  ) : undefined;
   return (
     <ErrorState
+      compact
       title={title}
       body={message}
-      action={
-        onRetry ? (
-          <ZookButton variant="secondary" icon="refresh-outline" onPress={onRetry}>
-            {retryLabel}
-          </ZookButton>
-        ) : undefined
-      }
+      action={compactRetry}
+      onPress={onRetry}
+      accessibilityLabel={retryLabel}
     />
   );
 }
@@ -124,13 +176,35 @@ const styles = StyleSheet.create({
     ...typography.headerTitle,
     textAlign: "center",
   },
+  stateTitleCompact: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    letterSpacing: 0,
+    lineHeight: 15,
+    textAlign: "left",
+  },
   stateBody: {
     ...typography.body,
     marginTop: 4,
     textAlign: "center",
   },
+  stateBodyCompact: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    letterSpacing: 0,
+    lineHeight: 15,
+    marginTop: 1,
+    textAlign: "left",
+  },
   stateAction: {
     marginTop: spacing.md,
+  },
+  stateActionCompact: {
+    flexShrink: 0,
+  },
+  compactCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   emptyState: {
     padding: spacing.xxxl,
@@ -142,6 +216,28 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   errorState: {},
+  errorStateCompact: {
+    alignItems: "center",
+    borderStyle: "solid",
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  errorStatePressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.99 }],
+  },
+  retryIconButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   skeletonShimmer: {
     position: "absolute",
     top: 0,

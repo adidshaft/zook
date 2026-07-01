@@ -1,7 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { SearchableSelect } from "../../ui";
-import type { MembershipPlanType } from "@/components/dashboard/types";
-import { formatEnumLabel } from "@/lib/format";
+import { membershipPlanTypeLabel, type MembershipPlanType } from "@/components/dashboard/types";
 import type { PlanFormState } from "./types";
 
 const membershipPlanTypes: MembershipPlanType[] = [
@@ -37,11 +36,14 @@ type PlanFormFieldsProps = {
 export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFormFieldsProps) {
   const showDurationDays = usesDurationDays(form.type);
   const showVisitLimit = usesVisitLimit(form.type);
+  const inputClass =
+    "zook-focus rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none";
+  const labelClass = "grid gap-1.5 text-sm text-white/55";
 
   return (
     <>
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="grid gap-2 text-sm text-white/55">
+        <label className={labelClass}>
           Plan name
           <input
             value={form.name}
@@ -50,7 +52,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
             maxLength={60}
             pattern="^(?!.*\\d{8,}).{1,60}$"
             title="Use 60 characters or fewer and avoid raw numeric IDs."
-            className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+            className={inputClass}
           />
         </label>
         <SearchableSelect
@@ -68,7 +70,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
           }
           options={membershipPlanTypes.map((type) => ({
             value: type,
-            label: formatEnumLabel(type),
+            label: membershipPlanTypeLabel(type),
             description: showShapeHint ? planTypeDescription(type) : undefined,
           }))}
         />
@@ -77,7 +79,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
             Plan shape controls expiry, visits, and public join copy.
           </p>
         ) : null}
-        <label className="grid gap-2 text-sm text-white/55">
+        <label className={labelClass}>
           Price
           <input
             type="number"
@@ -89,11 +91,11 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
             }
             placeholder="2499"
             inputMode="decimal"
-            className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+            className={inputClass}
           />
         </label>
         {showDurationDays ? (
-          <label className="grid gap-2 text-sm text-white/55">
+          <label className={labelClass}>
             Duration days
             <input
               type="number"
@@ -105,12 +107,12 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
               }
               placeholder="30"
               inputMode="numeric"
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              className={inputClass}
             />
           </label>
         ) : null}
         {showVisitLimit ? (
-          <label className="grid gap-2 text-sm text-white/55">
+          <label className={labelClass}>
             Visit limit
             <input
               type="number"
@@ -122,11 +124,11 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
               }
               placeholder="12"
               inputMode="numeric"
-              className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+              className={inputClass}
             />
           </label>
         ) : null}
-        <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/55">
+        <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white/55">
           Public
           <input
             type="checkbox"
@@ -138,7 +140,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
           />
         </label>
       </div>
-      <label className="grid gap-2 text-sm text-white/55">
+      <label className={labelClass}>
         Short public description
         <input
           value={form.description}
@@ -146,7 +148,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
             setForm((current) => ({ ...current, description: event.target.value }))
           }
           placeholder="Best for regular members who want a monthly routine."
-          className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
+          className={inputClass}
         />
       </label>
     </>

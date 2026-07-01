@@ -75,12 +75,12 @@ export function StickyActionBar({
       style={[
         styles.stickyActionBar,
         {
-          backgroundColor: mode === "dark" ? "rgba(7,8,7,0.92)" : "rgba(255,255,255,0.94)",
+          backgroundColor: mode === "dark" ? "rgba(7,8,7,0.86)" : "rgba(255,255,255,0.92)",
           borderTopWidth: 1,
           borderTopColor: palette.border.subtle,
-          paddingTop: 14,
+          paddingTop: 10,
           bottom: bottomNavVisible ? (bottomOffset ?? computedBottomOffset) : 0,
-          paddingBottom: Math.max(insets.bottom, 14),
+          paddingBottom: Math.max(insets.bottom, 10),
         },
         elevated ? platformSurfaceShadow(mode, true, palette.bg.sunken) : null,
         style,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   scannerFrameContent: {
     alignItems: "center",
     justifyContent: "center",
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   scannerCorner: {
     position: "absolute",

@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { NotificationComposerPanel } from "../../notifications/composer-wizard";
 import { NotificationHistoryPanel } from "../../notifications/history-panel";
+import {
+  notificationAudienceLabel,
+  notificationStatusLabel,
+  notificationTypeLabel,
+} from "../../notifications/shared";
 import { NotificationTemplateManagerPanel } from "../../notifications/template-manager";
-import { EmptyState, ReadoutGrid, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { EmptyState, ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
-import { formatCompactNumber, formatDateTime, formatEnumLabel } from "@/lib/format";
+import { formatCompactNumber, formatDateTime } from "@/lib/format";
 import type {
   NotificationSnapshot,
-  OrganizationSnapshot,
   OrganizationSummary,
 } from "@/components/dashboard/types";
 import type { Permission } from "@zook/core";
@@ -17,14 +22,12 @@ import { HelpHint } from "../../ui";
 
 export function NotificationsPanel({
   orgId,
-  organization,
   summary,
   initialNotifications,
   permissions = [],
   view = "compose",
 }: {
   orgId: string;
-  organization: OrganizationSnapshot;
   summary: OrganizationSummary;
   initialNotifications: NotificationSnapshot[];
   permissions?: Permission[];
@@ -84,9 +87,9 @@ export function NotificationsPanel({
             className="mt-5"
             items={[
               {
-                label: "Gym status",
-                value: formatEnumLabel(organization.status),
-                meta: "Messages follow gym availability",
+                label: "Needs attention",
+                value: formatCompactNumber(summary.notificationQueueCount),
+                meta: "Scheduled or failed messages",
               },
               {
                 label: "Recent sends",
@@ -133,21 +136,31 @@ export function NotificationsPanel({
                       ? "/dashboard/notifications/history?status=attention"
                       : `/dashboard/notifications/history?status=${encodeURIComponent(notification.status)}`
                   }
-                  className="rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
+                  className="zook-focus group rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2.5 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-[var(--text-primary)]">{notification.title}</p>
-                    <StatusPill value={formatEnumLabel(notification.status)} />
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                          {notification.title}
+                        </p>
+                        <ChevronRight
+                          className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition group-hover:translate-x-0.5 group-hover:text-[var(--text-secondary)]"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                        {notificationTypeLabel(notification.type)}
+                        {notification.audience
+                          ? ` · ${notificationAudienceLabel(notification.audience)}`
+                          : ""}
+                        {" · "}
+                        {formatDateTime(notification.createdAt)}
+                        {" · "}
+                        {notificationStatusLabel(notification.status)}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs text-[var(--text-tertiary)]">
-                    {formatEnumLabel(notification.type)}
-                    {notification.audience ? ` · ${formatEnumLabel(notification.audience)}` : ""}
-                    {" · "}
-                    {formatDateTime(notification.createdAt)}
-                  </p>
-                  <span className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)]">
-                    Open history →
-                  </span>
                 </Link>
               ))
             ) : (

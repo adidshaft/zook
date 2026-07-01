@@ -22,6 +22,9 @@ export type TranslationKey =
   | "common.back"
   | "common.dismiss"
   | "common.done"
+  | "common.scheduled"
+  | "common.today"
+  | "common.tomorrow"
   | "common.or"
   | "common.saving"
   | "common.authenticationRequired"
@@ -33,6 +36,7 @@ export type TranslationKey =
   | "common.ok"
   | "common.notNow"
   | "common.enable"
+  | "common.plusCount"
   | "network.timeout"
   | "network.connectionUnavailable"
   | "auth.biometricPromptBody"
@@ -41,6 +45,10 @@ export type TranslationKey =
   | "auth.roleUnavailableForOrg"
   | "auth.socialNoToken"
   | "auth.socialUnavailable"
+  | "approvalQueue.approve"
+  | "approvalQueue.approving"
+  | "approvalQueue.reject"
+  | "approvalQueue.rejecting"
   | "branch.removedSwitched"
   | "privilegedAction.pinLoading"
   | "payments.statusRefreshed"
@@ -162,6 +170,7 @@ export type TranslationKey =
   | "nav.stock"
   | "nav.profile"
   | "nav.payouts"
+  | "nav.entryQr"
   | "notifications.today"
   | "notifications.yesterday"
   | "notifications.earlierThisWeek"
@@ -170,12 +179,16 @@ export type TranslationKey =
   | "notifications.allCaughtUpRecent"
   | "notifications.allMarkedRead"
   | "notifications.attendanceAlertReceived"
+  | "notifications.backToInbox"
   | "notifications.closeDetails"
   | "notifications.couldNotUpdate"
   | "notifications.couldNotUpdateMany"
+  | "notifications.done"
   | "notifications.emptyBody"
   | "notifications.emptyTitle"
   | "notifications.fallbackTitle"
+  | "notifications.linkedActions"
+  | "notifications.linkedActionsBody"
   | "notifications.markAllRead"
   | "notifications.markRead"
   | "notifications.markedRead"
@@ -187,6 +200,14 @@ export type TranslationKey =
   | "notifications.showFewerOlder"
   | "notifications.showOlder"
   | "notifications.showOlderCount"
+  | "notifications.timeDays"
+  | "notifications.timeHours"
+  | "notifications.timeMinutes"
+  | "notifications.timeNow"
+  | "notifications.totalMessages"
+  | "notifications.totalMessagesBody"
+  | "notifications.unread"
+  | "notifications.unreadBody"
   | "notifications.unreadCount"
   | "notifications.unreadRecent"
   | "platform.billing"
@@ -215,6 +236,12 @@ export type TranslationKey =
   | "auth.verifyCode"
   | "auth.identifierSubtitle"
   | "auth.otpSubtitle"
+  | "auth.memberPathBody"
+  | "auth.memberPathTitle"
+  | "auth.staffPathBody"
+  | "auth.staffPathTitle"
+  | "auth.trainerPathBody"
+  | "auth.trainerPathTitle"
   | "auth.identifierLabel"
   | "auth.identifierPlaceholder"
   | "auth.useMobile"
@@ -293,6 +320,7 @@ export type TranslationKey =
   | "assistant.unavailableBody"
   | "assistant.unavailableTitle"
   | "classRoster.attendanceHint"
+  | "classRoster.bookedCount"
   | "classRoster.confirmed"
   | "classRoster.confirmedCount"
   | "classRoster.markedNoShowAccessibility"
@@ -312,11 +340,15 @@ export type TranslationKey =
   | "entryQr.loadingQr"
   | "entryQr.manualCode"
   | "entryQr.noQr"
+  | "entryQr.print"
+  | "entryQr.regenerate"
   | "entryQr.refreshesIn"
   | "entryQr.refreshing"
   | "entryQr.refreshNow"
+  | "entryQr.rollingMode"
   | "entryQr.secureToken"
   | "entryQr.secureTokenBody"
+  | "entryQr.staticMode"
   | "entryQr.subtitle"
   | "entryQr.title"
   | "onboarding.allInOne"
@@ -518,6 +550,7 @@ export type TranslationKey =
   | "rewards.requestWithdrawalBody"
   | "rewards.requestWithdrawalTitle"
   | "rewards.shareMessage"
+  | "rewards.shareHint"
   | "rewards.shareYourLink"
   | "rewards.status.clearing"
   | "rewards.status.paid"
@@ -537,12 +570,27 @@ export type TranslationKey =
   | "referral.card.unlimited"
   | "referral.card.used"
   | "branch.switch"
+  | "branch.switchGym"
   | "branch.current"
+  | "branch.currentGym"
+  | "branch.branchPrefix"
   | "branch.allBranches"
+  | "branch.branches"
+  | "branch.enrolledGyms"
+  | "branch.gymSubscriptionScope"
+  | "branch.manageGym"
+  | "branch.openMap"
+  | "branch.mapReady"
+  | "branch.mapMissing"
+  | "branch.selectorSubtitle"
+  | "branch.useBranch"
+  | "branch.useGym"
   | "shop.readyForPickup"
   | "shop.readyForPickupSubtitle"
+  | "shop.addShort"
   | "shop.addProductAccessibility"
   | "shop.availableAtGymDesk"
+  | "shop.deskPickup"
   | "shop.pickupCode"
   | "shop.pickupCodeCopied"
   | "shop.pickupCodeCopyFailed"
@@ -567,6 +615,7 @@ export type TranslationKey =
   | "shop.deskPaymentOrderCreated"
   | "shop.codeWithValue"
   | "shop.continuePayment"
+  | "shop.continueWithTotal"
   | "shop.continueInBrowser"
   | "shop.confirming"
   | "shop.awaitingDeskPayment"
@@ -587,6 +636,10 @@ export type TranslationKey =
   | "shop.payAtDeskSubtitle"
   | "shop.payOnline"
   | "shop.payOnlineBody"
+  | "shop.payAmountNow"
+  | "shop.payNow"
+  | "shop.payAtDeskInstead"
+  | "shop.otherPaymentOptions"
   | "shop.paySecurely"
   | "shop.confirmOrder"
   | "shop.getPickupCode"
@@ -610,7 +663,23 @@ export type TranslationKey =
   | "shop.mockPaymentUnavailable"
   | "shop.onlyLeft"
   | "shop.orderHistory"
+  | "shop.orderHistorySubtitle"
+  | "shop.activeOrders"
+  | "shop.activeOrdersShort"
+  | "shop.activeOrdersBody"
+  | "shop.cartStatus"
+  | "shop.cartStatusBody"
+  | "shop.readyStock"
+  | "shop.readyStockShort"
+  | "shop.readyStockBody"
+  | "shop.orderBeingPrepared"
+  | "shop.orderCancelled"
+  | "shop.orderNeedsPayment"
+  | "shop.orderPickedUp"
+  | "shop.orderReady"
+  | "shop.orderReadyWithCode"
   | "shop.outOfStock"
+  | "shop.outShort"
   | "shop.yourCartEmpty"
   | "shop.subtotal"
   | "shop.openMiniCart"
@@ -621,6 +690,7 @@ export type TranslationKey =
   | "shop.removeProductAccessibility"
   | "shop.searchEssentials"
   | "shop.availableNow"
+  | "shop.searchResults"
   | "shop.title"
   | "shop.item"
   | "shop.items"
@@ -633,12 +703,15 @@ export type TranslationKey =
   | "findGyms.deviceLocation"
   | "findGyms.recentSearches"
   | "findGyms.availableGyms"
+  | "findGyms.allAreas"
   | "findGyms.city"
   | "findGyms.coverPhoto"
   | "findGyms.discovery"
   | "findGyms.gymNameOrUsername"
   | "findGyms.noGyms"
   | "findGyms.noGymsBody"
+  | "findGyms.logo"
+  | "findGyms.loadError"
   | "findGyms.openGym"
   | "findGyms.referralApplied"
   | "findGyms.referralPrefix"
@@ -646,8 +719,10 @@ export type TranslationKey =
   | "findGyms.resultCountMany"
   | "findGyms.resultCountOne"
   | "findGyms.searching"
+  | "findGyms.searchLabel"
   | "findGyms.title"
   | "findGyms.view"
+  | "findGyms.viewProfile"
   | "gymProfile.activeUntil"
   | "gymProfile.address"
   | "gymProfile.alreadyActive"
@@ -663,6 +738,10 @@ export type TranslationKey =
   | "gymProfile.currentMembership"
   | "gymProfile.dateRange"
   | "gymProfile.daysCount"
+  | "gymProfile.demoTagline"
+  | "gymProfile.distanceKm"
+  | "gymProfile.distanceMeters"
+  | "gymProfile.distanceUnavailable"
   | "gymProfile.equipment"
   | "gymProfile.eyebrow"
   | "gymProfile.flexibleMembership"
@@ -676,6 +755,9 @@ export type TranslationKey =
   | "gymProfile.inviteReferralRequired"
   | "gymProfile.inviteReferralRequiredBody"
   | "gymProfile.joinFlow"
+  | "gymProfile.joinModeApproval"
+  | "gymProfile.joinModeInvite"
+  | "gymProfile.joinModeOpen"
   | "gymProfile.joinPath"
   | "gymProfile.joinRequest"
   | "gymProfile.location"
@@ -693,11 +775,24 @@ export type TranslationKey =
   | "gymProfile.notFoundBody"
   | "gymProfile.openTrainerProfile"
   | "gymProfile.openingPayment"
+  | "gymProfile.overview"
+  | "gymProfile.payAmountNow"
   | "gymProfile.paymentStarted"
   | "gymProfile.pendingSince"
   | "gymProfile.photoOf"
   | "gymProfile.planAvailableMany"
   | "gymProfile.planAvailableOne"
+  | "gymProfile.planDescriptionHybrid"
+  | "gymProfile.planDescriptionMonthly"
+  | "gymProfile.planDescriptionTrial"
+  | "gymProfile.planNameHybrid"
+  | "gymProfile.planNameMonthly"
+  | "gymProfile.planNameTrial"
+  | "gymProfile.quickCheckout"
+  | "gymProfile.quickCheckoutHint"
+  | "gymProfile.tapPlanToChange"
+  | "gymProfile.readyToJoin"
+  | "gymProfile.recommendedCheckoutAbove"
   | "gymProfile.referralApplied"
   | "gymProfile.referralInviteRequired"
   | "gymProfile.referralPrice"
@@ -705,7 +800,11 @@ export type TranslationKey =
   | "gymProfile.requestMembershipFirstBody"
   | "gymProfile.reviewed"
   | "gymProfile.securePayment"
+  | "gymProfile.selectPlanForCheckout"
+  | "gymProfile.selectedForCheckout"
+  | "gymProfile.selectedPlanHint"
   | "gymProfile.sendMembershipRequest"
+  | "gymProfile.shareProfile"
   | "gymProfile.staffApprovalBeforePayment"
   | "gymProfile.standardMembershipPlan"
   | "gymProfile.stepActivatePlan"
@@ -733,6 +832,8 @@ export type TranslationKey =
   | "gymProfile.unableSubmitMembershipRequest"
   | "gymProfile.updatingMembershipStatus"
   | "gymProfile.validityDays"
+  | "gymProfile.visitCountMany"
+  | "gymProfile.visitCountOne"
   | "gymProfile.visitsRemaining"
   | "gymProfile.whatsInside"
   | "gymReviews.beFirst"
@@ -756,12 +857,15 @@ export type TranslationKey =
   | "empty.loadingBody"
   | "tracking.bodyTimeline"
   | "tracking.bodyTimelineSubtitle"
+  | "tracking.addExercise"
   | "tracking.armsCm"
   | "tracking.body"
   | "tracking.bodyFatPercent"
   | "tracking.bodyMeasurements"
   | "tracking.bodyMeasurementsSaved"
   | "tracking.bodyProgress"
+  | "tracking.moreMeasurements"
+  | "tracking.hideMeasurements"
   | "tracking.calfCm"
   | "tracking.calvesCm"
   | "tracking.chestCm"
@@ -771,6 +875,7 @@ export type TranslationKey =
   | "tracking.exercise"
   | "tracking.exerciseName"
   | "tracking.exerciseNamePlaceholder"
+  | "tracking.addExerciseToSave"
   | "tracking.forearmsCm"
   | "tracking.hipsCm"
   | "tracking.historyTitle"
@@ -783,6 +888,7 @@ export type TranslationKey =
   | "tracking.noWorkoutsYetBody"
   | "tracking.notes"
   | "tracking.notesPlaceholder"
+  | "tracking.removeExercise"
   | "tracking.reps"
   | "tracking.restingHeartRate"
   | "tracking.saveMeasurements"
@@ -796,6 +902,13 @@ export type TranslationKey =
   | "tracking.waist"
   | "tracking.waistCm"
   | "tracking.weightKg"
+  | "tracking.activeTime"
+  | "tracking.activeHabits"
+  | "tracking.addOne"
+  | "tracking.loggedSessions"
+  | "tracking.noSessions"
+  | "tracking.workoutTime"
+  | "tracking.addMeasurementToSave"
   | "tracking.workout"
   | "tracking.workoutSaved"
   | "tracking.workoutSet"
@@ -865,15 +978,19 @@ export type TranslationKey =
   | "member.attendance.whyConfirmationBody"
   | "member.coaching.active"
   | "member.coaching.browsePtPackages"
-  | "member.coaching.completedCount"
+  | "member.coaching.currentTab"
   | "member.coaching.ends"
+  | "member.coaching.flexibleSessions"
   | "member.coaching.noActiveCoaching"
   | "member.coaching.noActiveCoachingBody"
   | "member.coaching.noPackagesAvailable"
   | "member.coaching.noPackagesAvailableBody"
+  | "member.coaching.packagesTab"
+  | "member.coaching.payAfterApproval"
   | "member.coaching.noSessionsYet"
   | "member.coaching.noSessionsYetBody"
   | "member.coaching.pending"
+  | "member.coaching.requestPackage"
   | "member.coaching.recentSessions"
   | "member.coaching.requesting"
   | "member.coaching.requestSent"
@@ -889,6 +1006,7 @@ export type TranslationKey =
   | "member.coaching.yourTrainer"
   | "member.classDetail.bookClass"
   | "member.classDetail.booked"
+  | "member.classDetail.bookedHint"
   | "member.classDetail.bookWithPrice"
   | "member.classDetail.cancelBooking"
   | "member.classDetail.cancelling"
@@ -897,13 +1015,20 @@ export type TranslationKey =
   | "member.classDetail.coachName"
   | "member.classDetail.continuePayment"
   | "member.classDetail.full"
+  | "member.classDetail.fullHint"
+  | "member.classDetail.freeBookingHint"
   | "member.classDetail.joinWaitlist"
   | "member.classDetail.left"
+  | "member.classDetail.nextStep"
   | "member.classDetail.notFound"
+  | "member.classDetail.paidBookingHint"
+  | "member.classDetail.payAmountNow"
   | "member.classDetail.paymentDue"
+  | "member.classDetail.paymentDueHint"
   | "member.classDetail.spots"
   | "member.classDetail.spotsBooked"
   | "member.classDetail.waitlisted"
+  | "member.classDetail.waitlistedHint"
   | "member.classes.bookClass"
   | "member.classes.bookWithPrice"
   | "member.classes.booked"
@@ -914,17 +1039,26 @@ export type TranslationKey =
   | "member.classes.couldNotLoad"
   | "member.classes.free"
   | "member.classes.full"
+  | "member.classes.filterAll"
+  | "member.classes.filterBooked"
+  | "member.classes.filterOpen"
   | "member.classes.joinWaitlist"
   | "member.classes.left"
+  | "member.classes.noBookedClasses"
+  | "member.classes.noBookedClassesBody"
   | "member.classes.noClasses"
   | "member.classes.noClassesBody"
+  | "member.classes.noOpenClasses"
+  | "member.classes.noOpenClassesBody"
   | "member.classes.onWaitlist"
   | "member.classes.opening"
+  | "member.classes.payAmountNow"
   | "member.classes.paymentDue"
   | "member.classes.spots"
   | "member.classes.subtitle"
   | "member.classes.title"
   | "member.classes.waitlisted"
+  | "member.classes.yourBookings"
   | "member.mutation.bookingCancelled"
   | "member.mutation.bookingCancelFailed"
   | "member.mutation.classBooked"
@@ -937,18 +1071,35 @@ export type TranslationKey =
   | "member.mutation.signInRequestPt"
   | "member.mutation.waitlistAdded"
   | "member.you.accountCenter"
+  | "member.you.activeMembership"
   | "member.you.appearance"
   | "member.you.backToOwnerMode"
+  | "member.you.browsePlans"
+  | "member.you.findMembershipPlan"
   | "member.you.gymShop"
+  | "member.you.assistant"
+  | "member.you.editProfile"
+  | "member.you.gymProfile"
   | "member.you.helpSupport"
+  | "member.you.memberFallback"
   | "member.you.membership"
+  | "member.you.membershipNeedsAttention"
+  | "member.you.noGymSelected"
+  | "member.you.notifications"
+  | "member.you.noActiveMembership"
   | "member.you.privacy"
   | "member.you.quickActions"
+  | "member.you.referrals"
   | "member.you.switchGym"
   | "member.you.switchToRole"
   | "member.you.theme.dark"
   | "member.you.theme.light"
   | "member.you.theme.system"
+  | "member.you.trackingHistory"
+  | "member.you.unreadCount"
+  | "member.you.validUntil"
+  | "member.you.viewMembership"
+  | "member.you.visitsLeft"
   | "member.home.accessActive"
   | "member.home.active"
   | "member.home.activeCheckIn"
@@ -960,7 +1111,9 @@ export type TranslationKey =
   | "member.home.classOpen"
   | "member.home.classSpotsLeft"
   | "member.home.classWaitlisted"
+  | "member.home.classesTab"
   | "member.home.coachName"
+  | "member.home.coachingTab"
   | "member.home.completeProfile"
   | "member.home.completeProfileBody"
   | "member.home.currentBranch"
@@ -969,11 +1122,16 @@ export type TranslationKey =
   | "member.home.dismissBanner"
   | "member.home.estimatedMinutes"
   | "member.home.exerciseCount"
+  | "member.home.exerciseCountOne"
+  | "member.home.exerciseCountOther"
   | "member.home.expiredBody"
   | "member.home.expiredTitle"
   | "member.home.findYourGym"
   | "member.home.finishLoggingWork"
   | "member.home.firstRunBody"
+  | "member.home.firstRunStepChoosePlan"
+  | "member.home.firstRunStepFindGym"
+  | "member.home.firstRunStepStartTraining"
   | "member.home.firstRunTitle"
   | "member.home.getMembership"
   | "member.home.greeting"
@@ -1014,31 +1172,39 @@ export type TranslationKey =
   | "member.home.scanIntoGym"
   | "member.home.seeAll"
   | "member.home.seeAllClasses"
-  | "member.home.sessionsDone"
+  | "member.home.upcomingClasses"
   | "member.home.sessionsLeftShort"
   | "member.home.startWorkout"
   | "member.home.stopSession"
   | "member.home.stoppingSession"
   | "member.home.todaysWorkout"
   | "member.home.tomorrowPlan"
-  | "member.home.trainerAssigned"
   | "member.home.update"
   | "member.home.viewMembership"
   | "member.home.viewPlan"
   | "member.home.visits"
   | "member.home.visitsLeft"
+  | "member.home.weekTab"
   | "member.home.workoutInProgress"
   | "member.home.workoutLogged"
   | "member.home.workouts"
   | "member.home.yourCoaching"
   | "member.home.yourTrainer"
+  | "member.membership.active"
   | "member.membership.activePlan"
   | "member.membership.autopayActive"
   | "member.membership.autopay"
   | "member.membership.autopayCancelled"
+  | "member.membership.autopayEnabledTitle"
+  | "member.membership.autopayPromptBody"
+  | "member.membership.autopayPromptTitle"
+  | "member.membership.autopayRenewalChoiceBody"
+  | "member.membership.autopayRenewalChoiceTitle"
+  | "member.membership.autopaySetupAction"
   | "member.membership.authorizeAutopay"
   | "member.membership.browseGymsBody"
   | "member.membership.browserReturnBody"
+  | "member.membership.browserReturnHint"
   | "member.membership.cancelConfirmBody"
   | "member.membership.cancelConfirmTitle"
   | "member.membership.cancelMembership"
@@ -1055,6 +1221,9 @@ export type TranslationKey =
   | "member.membership.documentsAfterSuccess"
   | "member.membership.downloadInvoice"
   | "member.membership.enableAutopay"
+  | "member.membership.enabled"
+  | "member.membership.endMembershipOptions"
+  | "member.membership.endMembershipBody"
   | "member.membership.eyebrow"
   | "member.membership.findGyms"
   | "member.membership.gymDefinedValidity"
@@ -1068,6 +1237,8 @@ export type TranslationKey =
   | "member.membership.guidanceExpiredTitle"
   | "member.membership.guidanceFailedBody"
   | "member.membership.guidanceFailedTitle"
+  | "member.membership.guidanceCancelledBody"
+  | "member.membership.guidanceCancelledTitle"
   | "member.membership.guidanceInactiveBody"
   | "member.membership.guidanceInactiveTitle"
   | "member.membership.guidancePastDueBody"
@@ -1079,7 +1250,11 @@ export type TranslationKey =
   | "member.membership.guidanceRenewNow"
   | "member.membership.guidanceRenewOrChangePlan"
   | "member.membership.guidanceRenewTodayBody"
+  | "member.membership.guidancePausedBody"
+  | "member.membership.guidancePausedTitle"
   | "member.membership.guidanceTryPaymentAgain"
+  | "member.membership.joinDifferentGym"
+  | "member.membership.generatedInvoices"
   | "member.membership.history"
   | "member.membership.historyJumpBody"
   | "member.membership.invoiceGenerated"
@@ -1087,6 +1262,10 @@ export type TranslationKey =
   | "member.membership.invoicesAndReceipts"
   | "member.membership.invoiceUnavailable"
   | "member.membership.keepMembership"
+  | "member.membership.manageMembership"
+  | "member.membership.manageMembershipBody"
+  | "member.membership.manualRenewalTitle"
+  | "member.membership.manualRenewalBody"
   | "member.membership.noActivePlans"
   | "member.membership.noAlternatePlans"
   | "member.membership.noMemberships"
@@ -1098,13 +1277,20 @@ export type TranslationKey =
   | "member.membership.pauseEndDateAccessibility"
   | "member.membership.pauseHelp"
   | "member.membership.pauseMembership"
+  | "member.membership.pauseDisclosureBody"
   | "member.membership.pauseConfirmBody"
   | "member.membership.pauseConfirmTitle"
   | "member.membership.pauseReason"
+  | "member.membership.pauseReasonInjury"
+  | "member.membership.pauseReasonMedical"
+  | "member.membership.pauseReasonOther"
+  | "member.membership.pauseReasonTravel"
   | "member.membership.pausedToast"
   | "member.membership.pausedUntil"
   | "member.membership.pauseUntil"
   | "member.membership.paySecurely"
+  | "member.membership.payAmountNow"
+  | "member.membership.payNow"
   | "member.membership.payments"
   | "member.membership.paymentDocuments"
   | "member.membership.paymentDocumentsBody"
@@ -1130,13 +1316,25 @@ export type TranslationKey =
   | "member.membership.statusBelow"
   | "member.membership.subscriptionUpdated"
   | "member.membership.summary"
+  | "member.membership.tabCurrent"
+  | "member.membership.expiringSoon"
+  | "member.membership.total"
+  | "member.membership.tabHistory"
+  | "member.membership.tabPayments"
   | "member.membership.switchNow"
+  | "member.membership.switchWithoutCheckoutBody"
+  | "member.membership.switchWithoutCheckoutTitle"
   | "member.membership.title"
+  | "member.membership.typeDuration"
+  | "member.membership.typeHybrid"
+  | "member.membership.typeMembership"
+  | "member.membership.typeTrial"
   | "member.membership.update"
   | "member.membership.updating"
   | "member.membership.validity"
   | "member.membership.visits"
   | "member.membership.visitsRemaining"
+  | "member.membership.visitCount"
   | "member.membership.yourGym"
   | "member.profile.active"
   | "member.profile.activeGymOption"
@@ -1157,6 +1355,9 @@ export type TranslationKey =
   | "member.profile.friendsStat"
   | "member.profile.membership"
   | "member.profile.membershipDetailsUnavailable"
+  | "member.profile.accountTab"
+  | "member.profile.detailsTab"
+  | "member.profile.rewardsTab"
   | "member.profile.memberFallback"
   | "member.profile.myGym"
   | "member.profile.noActiveMembership"
@@ -1173,7 +1374,16 @@ export type TranslationKey =
   | "member.profile.percentCompleteWithDate"
   | "member.profile.qaShortcuts"
   | "member.profile.quickActions"
+  | "member.profile.finishProfile"
   | "member.profile.recentActivity"
+  | "member.profile.readinessContact"
+  | "member.profile.readinessMembership"
+  | "member.profile.readinessMore"
+  | "member.profile.readinessNeedsBody"
+  | "member.profile.readinessNeedsTitle"
+  | "member.profile.readinessPhoto"
+  | "member.profile.readinessReadyBody"
+  | "member.profile.readinessReadyTitle"
   | "member.profile.referGymAccessibility"
   | "member.profile.referGymBody"
   | "member.profile.referGymTitle"
@@ -1215,6 +1425,12 @@ export type TranslationKey =
   | "roleSwitcher.currentRoleAccessibility"
   | "roleSwitcher.currentWorkspace"
   | "roleSwitcher.currentWorkspaceAccessibility"
+  | "roleSwitcher.role.admin"
+  | "roleSwitcher.role.member"
+  | "roleSwitcher.role.owner"
+  | "roleSwitcher.role.platformAdmin"
+  | "roleSwitcher.role.receptionist"
+  | "roleSwitcher.role.trainer"
   | "roleSwitcher.roleUnavailable"
   | "roleSwitcher.roleUnavailableBody"
   | "roleSwitcher.subtitle"
@@ -1270,6 +1486,10 @@ export type TranslationKey =
   | "memberList.reveal"
   | "memberList.revealPhoneFor"
   | "memberList.searchMembers"
+  | "memberList.status.active"
+  | "memberList.status.expired"
+  | "memberList.status.expiring"
+  | "memberList.status.pending"
   | "memberList.tryDifferentSearch"
   | "privilegedPin.body"
   | "privilegedPin.confirmAction"
@@ -1282,15 +1502,20 @@ export type TranslationKey =
   | "member.diet.carbs"
   | "member.diet.couldNotLogMeal"
   | "member.diet.fats"
+  | "member.diet.historyTitle"
   | "member.diet.kcalRemainingToday"
   | "member.diet.logMeal"
   | "member.diet.logging"
   | "member.diet.meal"
   | "member.diet.mealLogged"
   | "member.diet.mealPlaceholder"
+  | "member.diet.nextDay"
   | "member.diet.noDietPlan"
   | "member.diet.noDietPlanBody"
+  | "member.diet.noMealsLogged"
+  | "member.diet.noMealsLoggedBody"
   | "member.diet.noPlan"
+  | "member.diet.previousDay"
   | "member.diet.protein"
   | "member.diet.today"
   | "member.habits.add"
@@ -1321,9 +1546,11 @@ export type TranslationKey =
   | "member.plan.assignedPlan"
   | "member.plan.coachGuided"
   | "member.plan.couldNotLoadExercises"
+  | "member.plan.dietKind"
   | "member.plan.dietTab"
   | "member.plan.insideThisPlan"
   | "member.plan.morePlans"
+  | "member.plan.nextWorkout"
   | "member.plan.noExercises"
   | "member.plan.noPlanAssigned"
   | "member.plan.noPlanAssignedBody"
@@ -1335,6 +1562,7 @@ export type TranslationKey =
   | "member.plan.todaysWorkout"
   | "member.plan.trainerAssigned"
   | "member.plan.viewFullExerciseList"
+  | "member.plan.workoutKind"
   | "member.plan.workoutTab"
   | "member.planDetail.actionFailed"
   | "member.planDetail.active"
@@ -1345,6 +1573,7 @@ export type TranslationKey =
   | "member.planDetail.completedCount"
   | "member.planDetail.completeWorkout"
   | "member.planDetail.completing"
+  | "member.planDetail.finishMoreExercises"
   | "member.planDetail.defaultSets"
   | "member.planDetail.dietFilter"
   | "member.planDetail.done"
@@ -1384,11 +1613,14 @@ export type TranslationKey =
   | "member.receipt.amount"
   | "member.receipt.downloadInvoice"
   | "member.receipt.generating"
+  | "member.receipt.gst"
   | "member.receipt.invoice"
   | "member.receipt.invoiceNo"
   | "member.receipt.issued"
   | "member.receipt.membership"
   | "member.receipt.mode"
+  | "member.receipt.modeCash"
+  | "member.receipt.modeOnline"
   | "member.receipt.notFound"
   | "member.receipt.notFoundBody"
   | "member.receipt.paymentDetails"
@@ -1397,6 +1629,14 @@ export type TranslationKey =
   | "member.receipt.receiptNumber"
   | "member.receipt.recorded"
   | "member.receipt.status"
+  | "member.receipt.statusCancelled"
+  | "member.receipt.statusCreated"
+  | "member.receipt.statusFailed"
+  | "member.receipt.statusIssued"
+  | "member.receipt.statusPaused"
+  | "member.receipt.statusRefunded"
+  | "member.receipt.statusSucceeded"
+  | "member.receipt.taxableAmount"
   | "member.receipt.title"
   | "member.receipt.total"
   | "member.scan.addPhoto"
@@ -1476,6 +1716,7 @@ export type TranslationKey =
   | "more.fallbackName"
   | "owner.home.activeMembers"
   | "owner.home.allClear"
+  | "owner.home.allClearBody"
   | "owner.home.approvals"
   | "owner.home.approvalsWaiting"
   | "owner.home.approvalsWaitingSubtitle"
@@ -1506,6 +1747,7 @@ export type TranslationKey =
   | "owner.home.request"
   | "owner.home.requests"
   | "owner.home.revenue"
+  | "owner.home.reviewMembers"
   | "owner.home.review"
   | "owner.home.reviews"
   | "owner.home.scan"
@@ -1516,11 +1758,14 @@ export type TranslationKey =
   | "owner.home.todayCheckIns"
   | "owner.home.transactionNeeds"
   | "owner.home.transactionsNeed"
+  | "owner.members.active"
   | "owner.members.day"
   | "owner.members.days"
   | "owner.members.daysLeft"
+  | "owner.members.expiring"
   | "owner.members.expiringReminderBody"
   | "owner.members.expiringReminderTitle"
+  | "owner.members.missingContact"
   | "owner.members.reminderNotSent"
   | "owner.members.reminderSent"
   | "owner.members.sendReminder"
@@ -1529,10 +1774,19 @@ export type TranslationKey =
   | "owner.members.total"
   | "owner.members.tryAgain"
   | "owner.member.couldNotLoadMember"
+  | "owner.member.actionContactBody"
+  | "owner.member.actionContactTitle"
+  | "owner.member.actionExpiringBody"
+  | "owner.member.actionExpiringTitle"
+  | "owner.member.actionHealthyBody"
+  | "owner.member.actionHealthyTitle"
+  | "owner.member.actionPlanBody"
+  | "owner.member.actionPlanTitle"
   | "owner.member.email"
   | "owner.member.fitnessGoal"
   | "owner.member.memberFallback"
   | "owner.member.memberSince"
+  | "owner.member.nextBestAction"
   | "owner.member.noActivePlan"
   | "owner.member.notes"
   | "owner.member.notAvailable"
@@ -1565,6 +1819,7 @@ export type TranslationKey =
   | "owner.approvals.none"
   | "owner.approvals.ownerApprovalRequired"
   | "owner.approvals.pending"
+  | "owner.approvals.pendingReviews"
   | "owner.approvals.referral"
   | "owner.approvals.reject"
   | "owner.approvals.rejectBody"
@@ -1575,6 +1830,8 @@ export type TranslationKey =
   | "owner.approvals.scanReviewQueueCount"
   | "owner.approvals.scanReviews"
   | "owner.approvals.title"
+  | "owner.more.approvals"
+  | "owner.more.approvalsSubtitle"
   | "owner.more.billing"
   | "owner.more.billingSubtitle"
   | "owner.more.branches"
@@ -1589,6 +1846,12 @@ export type TranslationKey =
   | "owner.more.membershipPlansSubtitle"
   | "owner.more.notificationTemplates"
   | "owner.more.notificationTemplatesSubtitle"
+  | "owner.more.groupCatalog"
+  | "owner.more.groupDailyWork"
+  | "owner.more.groupFinance"
+  | "owner.more.groupOperations"
+  | "owner.more.members"
+  | "owner.more.membersSubtitle"
   | "owner.more.ownerTools"
   | "owner.more.referGym"
   | "owner.more.referGymSubtitle"
@@ -1596,6 +1859,8 @@ export type TranslationKey =
   | "owner.more.referralProgramSubtitle"
   | "owner.more.reports"
   | "owner.more.reportsSubtitle"
+  | "owner.more.revenue"
+  | "owner.more.revenueSubtitle"
   | "owner.more.staff"
   | "owner.more.staffSubtitle"
   | "owner.more.stock"
@@ -1612,6 +1877,7 @@ export type TranslationKey =
   | "owner.exerciseLibrary.exerciseName"
   | "owner.exerciseLibrary.exerciseNamePlaceholder"
   | "owner.exerciseLibrary.featured"
+  | "owner.exerciseLibrary.featuredTemplates"
   | "owner.exerciseLibrary.muscle"
   | "owner.exerciseLibrary.musclePlaceholder"
   | "owner.exerciseLibrary.new"
@@ -1620,6 +1886,7 @@ export type TranslationKey =
   | "owner.exerciseLibrary.noSharedTemplatesBody"
   | "owner.exerciseLibrary.notes"
   | "owner.exerciseLibrary.notesPlaceholder"
+  | "owner.exerciseLibrary.programmingDefaults"
   | "owner.exerciseLibrary.remove"
   | "owner.exerciseLibrary.removeTemplateBody"
   | "owner.exerciseLibrary.removeTemplateTitle"
@@ -1631,12 +1898,15 @@ export type TranslationKey =
   | "owner.exerciseLibrary.setsCount"
   | "owner.exerciseLibrary.shared"
   | "owner.exerciseLibrary.sharedLibrary"
+  | "owner.exerciseLibrary.sharedTemplates"
   | "owner.exerciseLibrary.starter"
+  | "owner.exerciseLibrary.starterTemplates"
   | "owner.exerciseLibrary.starters"
   | "owner.exerciseLibrary.subtitle"
   | "owner.exerciseLibrary.tempo"
   | "owner.exerciseLibrary.title"
   | "owner.coupons.active"
+  | "owner.coupons.activeOffers"
   | "owner.coupons.amountOffInput"
   | "owner.coupons.amountOffValue"
   | "owner.coupons.code"
@@ -1652,11 +1922,14 @@ export type TranslationKey =
   | "owner.coupons.noCouponsYet"
   | "owner.coupons.noCouponsYetBody"
   | "owner.coupons.paused"
+  | "owner.coupons.pausedOffers"
   | "owner.coupons.perMember"
   | "owner.coupons.perMemberLimit"
   | "owner.coupons.percentOff"
   | "owner.coupons.percentOffInput"
   | "owner.coupons.percentOffValue"
+  | "owner.coupons.redemptions"
+  | "owner.coupons.redemptionLimits"
   | "owner.coupons.remove"
   | "owner.coupons.removeCouponBody"
   | "owner.coupons.removeCouponTitle"
@@ -1675,14 +1948,17 @@ export type TranslationKey =
   | "owner.plans.editAccessibility"
   | "owner.plans.editPlan"
   | "owner.plans.hidden"
+  | "owner.plans.hiddenDrafts"
   | "owner.plans.hybrid"
   | "owner.plans.newPlan"
   | "owner.plans.noPlansYet"
   | "owner.plans.noPlansYetBody"
+  | "owner.plans.planLimits"
   | "owner.plans.planName"
   | "owner.plans.planNamePlaceholder"
   | "owner.plans.plans"
   | "owner.plans.priceInr"
+  | "owner.plans.publicPlans"
   | "owner.plans.remove"
   | "owner.plans.removePlanBody"
   | "owner.plans.removePlanTitle"
@@ -1690,6 +1966,7 @@ export type TranslationKey =
   | "owner.plans.showPublicly"
   | "owner.plans.subtitle"
   | "owner.plans.title"
+  | "owner.plans.totalPlans"
   | "owner.plans.trial"
   | "owner.plans.type"
   | "owner.plans.visitPack"
@@ -1699,6 +1976,7 @@ export type TranslationKey =
   | "owner.billing.activeMembersCopy"
   | "owner.billing.aiImages"
   | "owner.billing.aiText"
+  | "owner.billing.autopay"
   | "owner.billing.branches"
   | "owner.billing.cancel"
   | "owner.billing.cancelAtPeriodEnd"
@@ -1721,6 +1999,7 @@ export type TranslationKey =
   | "owner.billing.monthly"
   | "owner.billing.nextBilling"
   | "owner.billing.nextCharge"
+  | "owner.billing.needsSetup"
   | "owner.billing.noPaymentMandate"
   | "owner.billing.notAvailable"
   | "owner.billing.openingBillingSetup"
@@ -1735,7 +2014,19 @@ export type TranslationKey =
   | "owner.billing.setUpMandate"
   | "owner.billing.sixMonths"
   | "owner.billing.staff"
+  | "owner.billing.ready"
+  | "owner.billing.statusActive"
+  | "owner.billing.statusCancelled"
+  | "owner.billing.statusDeleted"
+  | "owner.billing.statusMissing"
+  | "owner.billing.statusPaymentPending"
+  | "owner.billing.statusPaused"
+  | "owner.billing.statusSuspended"
+  | "owner.billing.statusTrialActive"
+  | "owner.billing.statusTrialExpired"
+  | "owner.billing.statusTrialExpiring"
   | "owner.billing.support"
+  | "owner.billing.subscription"
   | "owner.billing.title"
   | "owner.billing.trainers"
   | "owner.billing.trialEnds"
@@ -1754,6 +2045,7 @@ export type TranslationKey =
   | "owner.payouts.marking"
   | "owner.payouts.outstanding"
   | "owner.payouts.paid"
+  | "owner.payouts.payableTrainers"
   | "owner.payouts.payDay"
   | "owner.payouts.perSession"
   | "owner.payouts.ptCommission"
@@ -1767,7 +2059,11 @@ export type TranslationKey =
   | "owner.payouts.trainerLower"
   | "owner.stock.allInStock"
   | "owner.stock.allInStockBody"
+  | "owner.stock.collectPayment"
+  | "owner.stock.collectPaymentBody"
+  | "owner.stock.collectPaymentDone"
   | "owner.stock.leftThreshold"
+  | "owner.stock.left"
   | "owner.stock.lowStock"
   | "owner.stock.memberPickup"
   | "owner.stock.noPickups"
@@ -1781,9 +2077,19 @@ export type TranslationKey =
   | "owner.stock.reorderAccessibility"
   | "owner.stock.reorderBody"
   | "owner.stock.reorderSubject"
+  | "owner.stock.reorderStock"
+  | "owner.stock.reorderStockBody"
+  | "owner.stock.reorderStockDone"
+  | "owner.stock.reorderNow"
+  | "owner.stock.todayWork"
+  | "owner.stock.thresholdShort"
   | "owner.stock.title"
   | "owner.stock.underThreshold"
+  | "owner.stock.verifyPickup"
+  | "owner.stock.verifyPickupBody"
+  | "owner.stock.verifyPickupDone"
   | "owner.staff.admin"
+  | "owner.staff.admins"
   | "owner.staff.changeRole"
   | "owner.staff.email"
   | "owner.staff.invite"
@@ -1792,6 +2098,7 @@ export type TranslationKey =
   | "owner.staff.noStaffBody"
   | "owner.staff.noStaffYet"
   | "owner.staff.owner"
+  | "owner.staff.pendingInvites"
   | "owner.staff.reception"
   | "owner.staff.receptionWebHint"
   | "owner.staff.remove"
@@ -1804,10 +2111,14 @@ export type TranslationKey =
   | "owner.staff.subtitle"
   | "owner.staff.team"
   | "owner.staff.title"
+  | "owner.staff.totalStaff"
   | "owner.staff.trainer"
+  | "owner.staff.trainers"
   | "owner.dashboard.activeCount"
   | "owner.dashboard.attendance7Days"
   | "owner.dashboard.chartAccessibility"
+  | "owner.dashboard.collapseTrends"
+  | "owner.dashboard.expandTrends"
   | "owner.dashboard.members30Days"
   | "owner.dashboard.noActiveMemberPlans"
   | "owner.dashboard.planMix"
@@ -1838,6 +2149,11 @@ export type TranslationKey =
   | "reception.desk.referGymAccessibility"
   | "reception.desk.referGymBody"
   | "reception.desk.reviewRequired"
+  | "reception.desk.statusApproved"
+  | "reception.desk.statusFailed"
+  | "reception.desk.statusPendingApproval"
+  | "reception.desk.statusRejected"
+  | "reception.desk.statusRecorded"
   | "reception.desk.today"
   | "reception.desk.todayCount"
   | "reception.desk.todaysClasses"
@@ -1855,6 +2171,8 @@ export type TranslationKey =
   | "reception.workspace.approvedScanReason"
   | "reception.workspace.authenticationRequiredAction"
   | "reception.workspace.bulkRecorded"
+  | "reception.workspace.bulkRecordedMany"
+  | "reception.workspace.bulkRecordedOne"
   | "reception.workspace.bulkRecordedPartial"
   | "reception.workspace.checkInApproved"
   | "reception.workspace.checkInNotValid"
@@ -1938,14 +2256,22 @@ export type TranslationKey =
   | "reception.orders.pickupVerification"
   | "reception.orders.pickupVerificationBody"
   | "reception.orders.ready"
+  | "reception.orders.statusCancelled"
+  | "reception.orders.statusFailed"
+  | "reception.orders.statusFulfilled"
+  | "reception.orders.statusPaid"
+  | "reception.orders.statusPendingPayment"
+  | "reception.orders.statusRefunded"
   | "reception.orders.thisMember"
   | "reception.orders.title"
   | "reception.orders.verifyPickupCode"
   | "reception.payments.activeDesk"
+  | "reception.payments.additionalDetails"
   | "reception.payments.amount"
   | "reception.payments.amountInvalid"
   | "reception.payments.amountReceived"
   | "reception.payments.auditWarning"
+  | "reception.payments.changeMember"
   | "reception.payments.collection"
   | "reception.payments.collectionMode"
   | "reception.payments.desk"
@@ -1966,6 +2292,7 @@ export type TranslationKey =
   | "reception.payments.modeUpi"
   | "reception.payments.newPayment"
   | "reception.payments.noContact"
+  | "reception.payments.noAdditionalDetails"
   | "reception.payments.noMembershipSelected"
   | "reception.payments.noPlan"
   | "reception.payments.recordPayment"
@@ -2003,34 +2330,52 @@ export type TranslationKey =
   | "owner.referrals.discountPercent"
   | "owner.referrals.enabled"
   | "owner.referrals.enabledBody"
+  | "owner.referrals.enabledShort"
   | "owner.referrals.flatInr"
   | "owner.referrals.freeDays"
   | "owner.referrals.limits"
+  | "owner.referrals.limitSummary"
   | "owner.referrals.maxPerMemberMonth"
   | "owner.referrals.memberGymCreditBody"
   | "owner.referrals.memberRefersMember"
   | "owner.referrals.memberRefersNewGym"
+  | "owner.referrals.moreRules"
+  | "owner.referrals.moreRulesBody"
   | "owner.referrals.newMemberGets"
   | "owner.referrals.none"
+  | "owner.referrals.off"
+  | "owner.referrals.paused"
   | "owner.referrals.percent"
+  | "owner.referrals.program"
   | "owner.referrals.referrerEarns"
   | "owner.referrals.saveSettings"
   | "owner.referrals.subtitle"
   | "owner.referrals.title"
   | "owner.referrals.trainerEarns"
   | "owner.referrals.trainerRefersMember"
+  | "owner.referrals.trainers"
   | "owner.referrals.visits"
   | "owner.revenue.noPaymentsYet"
   | "owner.revenue.noPaymentsYetBody"
   | "owner.revenue.paymentFallback"
   | "owner.revenue.pickupPending"
+  | "owner.revenue.pickupValue"
+  | "owner.revenue.pickupValueBody"
+  | "owner.revenue.pickupValueDone"
   | "owner.revenue.recentTransactions"
   | "owner.revenue.refund"
   | "owner.revenue.refundAccessibility"
   | "owner.revenue.refundPaymentBody"
   | "owner.revenue.refundPaymentTitle"
+  | "owner.revenue.refundReview"
+  | "owner.revenue.refundReviewBody"
+  | "owner.revenue.refundReviewDone"
   | "owner.revenue.refundedByGym"
+  | "owner.revenue.financeWork"
   | "owner.revenue.manualRecords"
+  | "owner.revenue.manualRecordsBody"
+  | "owner.revenue.manualRecordsDone"
+  | "owner.revenue.manualRecordsWithAmount"
   | "owner.revenue.revenueToday"
   | "owner.revenue.shopPickupOrder"
   | "owner.revenue.tapToRefund"
@@ -2074,12 +2419,18 @@ export type TranslationKey =
   | "trainer.home.trainerFallback"
   | "trainer.home.trainerPlanningQueue"
   | "trainer.clients.activePlanCount"
+  | "trainer.clients.coachingFocus"
+  | "trainer.clients.coachingFocusBody"
   | "trainer.clients.generalFitness"
+  | "trainer.clients.nextClient"
   | "trainer.clients.noClients"
   | "trainer.clients.noClientsBody"
   | "trainer.clients.noMatchingClients"
+  | "trainer.clients.openNextClient"
+  | "trainer.clients.searchClients"
   | "trainer.clients.subtitle"
   | "trainer.clients.title"
+  | "trainer.clients.total"
   | "trainer.clients.tryAnotherSearch"
   | "trainer.aiDraft.body"
   | "trainer.aiDraft.createManual"
@@ -2158,6 +2509,12 @@ export type TranslationKey =
   | "trainer.clientDetail.overviewTab"
   | "trainer.clientDetail.planTab"
   | "trainer.clientDetail.sessionsTab"
+  | "trainer.clientOverview.nextStep"
+  | "trainer.clientOverview.nextStepBody"
+  | "trainer.clientOverview.reviewFeedback"
+  | "trainer.clientOverview.reviewFeedbackBody"
+  | "trainer.clientOverview.reviewSessions"
+  | "trainer.clientOverview.reviewSessionsBody"
   | "trainer.clientPlan.assignedStatus"
   | "trainer.clientPlan.calories"
   | "trainer.clientPlan.clientDietPlanPlaceholder"
@@ -2294,19 +2651,24 @@ export type TranslationKey =
   | "trainer.payoutSettings.footnote"
   | "trainer.payoutSettings.payDay"
   | "trainer.payoutSettings.payDayHint"
+  | "trainer.payoutSettings.payDayInvalid"
   | "trainer.payoutSettings.perSessionFee"
   | "trainer.payoutSettings.perSessionFeeHint"
   | "trainer.payoutSettings.profileUpi"
   | "trainer.payoutSettings.ptCommission"
   | "trainer.payoutSettings.ptCommissionHint"
+  | "trainer.payoutSettings.ptCommissionInvalid"
   | "trainer.payoutSettings.saveChanges"
   | "trainer.payoutSettings.subtitle"
   | "trainer.payoutSettings.title"
   | "trainer.payoutSettings.upiHint"
   | "trainer.payoutSettings.upiId"
   | "trainer.plans.activePlanWork"
+  | "trainer.plans.createPlan"
   | "trainer.plans.emptyBody"
   | "trainer.plans.emptyTitle"
+  | "trainer.plans.needsFirstPlan"
+  | "trainer.plans.needsFirstPlanBody"
   | "trainer.plans.queueClear"
   | "trainer.plans.queueClearBody"
   | "trainer.plans.clientDetail"
@@ -2329,6 +2691,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.back": "Back",
     "common.dismiss": "Dismiss",
     "common.done": "Done",
+    "common.scheduled": "Scheduled",
+    "common.today": "Today",
+    "common.tomorrow": "Tomorrow",
     "common.or": "or",
     "common.saving": "Saving...",
     "common.authenticationRequired": "Authentication is required.",
@@ -2340,18 +2705,26 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.ok": "OK",
     "common.notNow": "Not now",
     "common.enable": "Enable",
+    "common.plusCount": "+{{count}} more",
     "network.timeout": "Request timed out. Try again in a moment.",
-    "network.connectionUnavailable": "We cannot connect right now. Check your internet connection or try again.",
+    "network.connectionUnavailable": "Connection failed. Try again.",
     "auth.biometricPromptBody": "Use Face ID or your device biometrics next time.",
     "auth.biometricPromptTitle": "Unlock Zook faster?",
     "auth.gymUnavailableForAccount": "Gym not available for this account",
     "auth.roleUnavailableForOrg": "Role not available in active org",
     "auth.socialNoToken": "{{provider}} did not return a sign-in token. Try again.",
-    "auth.socialUnavailable": "{{provider}} sign-in needs the installed Zook app (not available in Expo Go).",
+    "auth.socialUnavailable":
+      "{{provider}} sign-in needs the installed Zook app (not available in Expo Go).",
+    "approvalQueue.approve": "Approve",
+    "approvalQueue.approving": "Approving...",
+    "approvalQueue.reject": "Reject",
+    "approvalQueue.rejecting": "Rejecting...",
     "branch.removedSwitched": "Your branch was removed - switched to {{name}}.",
-    "privilegedAction.pinLoading": "PIN entry is still loading. Try again after the app finishes opening.",
+    "privilegedAction.pinLoading":
+      "PIN entry is still loading. Try again after the app finishes opening.",
     "payments.statusRefreshed": "Payment status refreshed",
-    "routeGuard.billingSetupRequiredBody": "Open billing to set up the trial mandate before continuing.",
+    "routeGuard.billingSetupRequiredBody":
+      "Open billing to set up the trial mandate before continuing.",
     "routeGuard.permissionDeniedBody": "You don't have permission for that action.",
     "routeGuard.permissionDeniedTitle": "Permission denied",
     "webHandoff.copyLink": "Copy link",
@@ -2376,7 +2749,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "plans.mutation.progressSaved": "Plan progress saved.",
     "rewards.mutation.signInWithdrawal": "Sign in again to request a withdrawal.",
     "rewards.mutation.withdrawalFailed": "Could not request a withdrawal.",
-    "rewards.mutation.withdrawalRequested": "Withdrawal requested. We'll review and pay it out shortly.",
+    "rewards.mutation.withdrawalRequested":
+      "Withdrawal requested. We'll review and pay it out shortly.",
     "exerciseTemplates.mutation.removeFailed": "Could not remove exercise template.",
     "exerciseTemplates.mutation.removeSuccess": "Exercise template removed.",
     "exerciseTemplates.mutation.saveFailed": "Could not save exercise template.",
@@ -2469,6 +2843,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.stock": "Stock",
     "nav.profile": "You",
     "nav.payouts": "Payouts",
+    "nav.entryQr": "Entry QR",
     "notifications.today": "Today",
     "notifications.yesterday": "Yesterday",
     "notifications.earlierThisWeek": "Earlier this week",
@@ -2477,12 +2852,16 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.allCaughtUpRecent": "All caught up · recent {{date}}",
     "notifications.allMarkedRead": "All notifications marked read.",
     "notifications.attendanceAlertReceived": "Attendance alert received",
+    "notifications.backToInbox": "Back to inbox",
     "notifications.closeDetails": "Close notification details",
     "notifications.couldNotUpdate": "Notification could not be updated.",
     "notifications.couldNotUpdateMany": "Notifications could not be updated.",
+    "notifications.done": "Done",
     "notifications.emptyBody": "New alerts about your membership, classes and coaching land here.",
     "notifications.emptyTitle": "You're all caught up",
     "notifications.fallbackTitle": "Notification",
+    "notifications.linkedActions": "Linked actions",
+    "notifications.linkedActionsBody": "Open details or next screens from here.",
     "notifications.markAllRead": "Mark all read",
     "notifications.markRead": "Mark read",
     "notifications.markedRead": "Notification marked read.",
@@ -2494,15 +2873,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "notifications.showFewerOlder": "Show fewer older notifications",
     "notifications.showOlder": "Show older notifications",
     "notifications.showOlderCount": "Show {{count}} older",
+    "notifications.timeDays": "{{count}}d",
+    "notifications.timeHours": "{{count}}h",
+    "notifications.timeMinutes": "{{count}}m",
+    "notifications.timeNow": "now",
+    "notifications.totalMessages": "Total",
+    "notifications.totalMessagesBody": "Grouped by when they arrived.",
+    "notifications.unread": "Unread",
+    "notifications.unreadBody": "Read these first.",
     "notifications.unreadCount": "{{count}} unread",
     "notifications.unreadRecent": "{{count}} unread · recent {{date}}",
     "platform.billing": "Platform billing",
-    "platform.gymSubtitle": "{{tier}} {{cycle}} · {{amount}} · next {{next}} · {{referrals}} referrals",
+    "platform.gymSubtitle":
+      "{{tier}} {{cycle}} · {{amount}} · next {{next}} · {{referrals}} referrals",
     "platform.gyms": "gyms",
     "platform.loadingSubscriptionHealth": "Loading subscription health...",
     "platform.mandateMeta": "Mandate {{status}} · {{count}} paid",
     "platform.missing": "missing",
-    "platform.mobileVisibilityBody": "Pricing edits, trial extensions, credits, notes, and policy changes still open in the web console for full review.",
+    "platform.mobileVisibilityBody":
+      "Pricing edits, trial extensions, credits, notes, and policy changes still open in the web console for full review.",
     "platform.mobileVisibilityTitle": "SaaS subscriptions are visible on mobile.",
     "platform.notScheduled": "Not scheduled",
     "platform.openWebDashboard": "Open Web Dashboard",
@@ -2522,6 +2911,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.verifyCode": "Verify Code",
     "auth.identifierSubtitle": "Use your registered email or mobile number.",
     "auth.otpSubtitle": "Check your messages.",
+    "auth.memberPathBody": "Membership, QR entry, classes, shop orders, and checkout.",
+    "auth.memberPathTitle": "Members",
+    "auth.staffPathBody": "Desk payments, approvals, class rosters, clients, and owner tools.",
+    "auth.staffPathTitle": "Owners and staff",
+    "auth.trainerPathBody": "Client plans, sessions, classes, payouts, and coaching notes.",
+    "auth.trainerPathTitle": "Trainers",
     "auth.identifierLabel": "Email or mobile number",
     "auth.identifierPlaceholder": "you@example.com or 98765 43210",
     "auth.useMobile": "Use mobile number",
@@ -2580,7 +2975,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "assistant.memberPromptFocus": "What should I focus on today?",
     "assistant.memberPromptFood": "What should I eat after training?",
     "assistant.memberPromptWorkout": "Make my workout easier to follow.",
-    "assistant.memberStarter": "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
+    "assistant.memberStarter":
+      "Ask in any language. I can help with your assigned plans, diet preferences, recovery, and gym routine.",
     "assistant.memberSubtitle": "Ask in any language — answers are tied to your profile.",
     "assistant.memberTitle": "Talk through training",
     "assistant.myProfile": "My profile",
@@ -2594,12 +2990,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "assistant.trainerPromptPlan": "Draft a 4-week hypertrophy plan.",
     "assistant.trainerPromptSummary": "Summarize this client's progress.",
     "assistant.trainerPromptSwaps": "Suggest safe exercise swaps.",
-    "assistant.trainerStarter": "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance.",
+    "assistant.trainerStarter":
+      "Send a client summary, workout data, or a natural-language question. I can help draft plans, diet notes, and recovery guidance.",
     "assistant.trainerSubtitle": "Attach client summaries, import notes, draft plans.",
     "assistant.trainerTitle": "Coach with context",
     "assistant.unavailableBody": "Owner and desk operations stay in the web dashboard.",
     "assistant.unavailableTitle": "Plan assistant",
-    "classRoster.attendanceHint": "Tap the check or cross next to a member to mark them present or no-show.",
+    "classRoster.attendanceHint":
+      "Tap the check or cross next to a member to mark them present or no-show.",
+    "classRoster.bookedCount": "{{count}}/{{capacity}} booked",
     "classRoster.confirmed": "Confirmed",
     "classRoster.confirmedCount": "Confirmed ({{count}})",
     "classRoster.markedNoShowAccessibility": "{{name}} marked no-show",
@@ -2613,21 +3012,29 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "classRoster.title": "Class roster",
     "classRoster.waitlist": "Waitlist",
     "classRoster.waitlistCount": "Waitlist ({{count}})",
-    "classRoster.waitlistHint": "Waitlisted members are promoted automatically when someone cancels.",
+    "classRoster.waitlistHint":
+      "Waitlisted members are promoted automatically when someone cancels.",
     "entryQr.branchAware": "Branch-aware",
-    "entryQr.branchAwareBody": "This QR is tied to your active branch. Only members with a valid membership at this gym can check in — others are turned away automatically.",
+    "entryQr.branchAwareBody":
+      "This QR is tied to your active branch. Only members with a valid membership at this gym can check in — others are turned away automatically.",
     "entryQr.loadingQr": "Loading QR...",
     "entryQr.manualCode": "Manual check-in code",
     "entryQr.noQr": "No QR",
+    "entryQr.print": "Print",
+    "entryQr.regenerate": "Regenerate",
     "entryQr.refreshesIn": "Refreshes in {{seconds}}s",
     "entryQr.refreshing": "Refreshing...",
     "entryQr.refreshNow": "Refresh now",
+    "entryQr.rollingMode": "Rolling",
     "entryQr.secureToken": "Secure rolling token",
-    "entryQr.secureTokenBody": "The code rotates automatically and is single-use. Members can scan the QR with their phone camera or type the code in the Zook app.",
+    "entryQr.secureTokenBody":
+      "Rotates automatically. Members scan the QR or type the code in Zook.",
+    "entryQr.staticMode": "Static",
     "entryQr.subtitle": "Display this at your entrance. Members scan it to check in.",
     "entryQr.title": "Entry QR",
     "onboarding.allInOne": "All in one",
-    "onboarding.allInOneCopy": "Memberships, classes, payments and store pickup — all in one place.",
+    "onboarding.allInOneCopy":
+      "Memberships, classes, payments and store pickup — all in one place.",
     "onboarding.brand": "Zook",
     "onboarding.builtForGymDays": "Built for gym days",
     "onboarding.changeLanguageAnytime": "You can change this any time in Settings.",
@@ -2636,15 +3043,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "onboarding.couldNotSaveLanguage": "Couldn't save language",
     "onboarding.couldNotSavePreference": "Couldn't save preference",
     "onboarding.findGym": "Find your gym",
-    "onboarding.findGymCopy": "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
+    "onboarding.findGymCopy":
+      "Discover gyms near you across Pune, Mumbai, Bengaluru, Delhi and 50+ cities.",
     "onboarding.pickLanguage": "Pick your language",
     "onboarding.skip": "Skip",
     "onboarding.skipIntro": "Skip intro",
     "onboarding.skipOnboarding": "Skip onboarding",
     "onboarding.splashBadge": "Gym ops, without the clutter.",
-    "onboarding.splashSubtitle": "Check-ins, memberships, plans, and the front desk flow in one place.",
+    "onboarding.splashSubtitle":
+      "Check-ins, memberships, plans, and the front desk flow in one place.",
     "onboarding.trainTrack": "Train & track",
-    "onboarding.trainTrackCopy": "Scan in seconds, follow your plan, and watch every workout add up.",
+    "onboarding.trainTrackCopy":
+      "Scan in seconds, follow your plan, and watch every workout add up.",
     "qa.aarogyaGym": "Aarogya gym",
     "qa.adminApprovals": "Admin approvals",
     "qa.adminHome": "Admin home",
@@ -2776,16 +3186,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.languageHindi": "Hindi",
     "settings.privacyData": "Privacy & data",
     "settings.privacySubtitle": "Export or delete data",
-    "settings.privacyRequestBody": "Request a copy of your Zook data or start an account deletion request.",
+    "settings.privacyRequestBody":
+      "Request a copy of your Zook data or start an account deletion request.",
     "settings.privacyWarning": "These requests are saved and reviewed before anything changes.",
     "settings.requestAccountDeletion": "Request account deletion",
     "settings.requestDataExport": "Request data export",
     "settings.requestDeletion": "Request deletion",
     "settings.deleteConfirmTitle": "Request account deletion?",
-    "settings.deleteConfirmBody": "Zook support will review this request before any account data is removed.",
+    "settings.deleteConfirmBody":
+      "Zook support will review this request before any account data is removed.",
     "settings.export": "Export",
     "settings.delete": "Delete",
-    "settings.exportRequested": "Export requested. You'll receive an email when the file is available.",
+    "settings.exportRequested":
+      "Export requested. You'll receive an email when the file is available.",
     "settings.deletionRequested": "Deletion requested. This is being reviewed before execution.",
     "settings.noExport": "No export request",
     "settings.noDeletion": "No deletion request",
@@ -2814,7 +3227,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "rewards.activity": "Activity",
     "rewards.earnCashPerGym": "Earn {{amount}} per gym",
     "rewards.earnDaysPerGym": "Earn {{count}} free days per gym",
-    "rewards.freeDaysAdded": "Free Zook days are added to your subscription automatically once a referred gym subscribes.",
+    "rewards.freeDaysAdded":
+      "Free Zook days are added to your subscription automatically once a referred gym subscribes.",
     "rewards.lifetime": "Lifetime",
     "rewards.minToWithdraw": "Min {{amount}} to withdraw",
     "rewards.noEarningsYet": "No earnings yet",
@@ -2827,6 +3241,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "We'll review and pay out {{amount}} to you. You'll get a confirmation once it's sent.",
     "rewards.requestWithdrawalTitle": "Request withdrawal?",
     "rewards.shareMessage": "Run your gym on Zook — sign up with my link: {{url}}",
+    "rewards.shareHint": "Share with gym owners",
     "rewards.shareYourLink": "Share your link",
     "rewards.status.clearing": "Clearing",
     "rewards.status.paid": "Paid",
@@ -2846,10 +3261,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "referral.card.unlimited": "unlimited",
     "referral.card.used": "{{used}}/{{max}} used · {{rewards}}",
     "branch.switch": "Switch branch",
+    "branch.switchGym": "Switch gym",
     "branch.current": "Current branch",
+    "branch.currentGym": "Current gym",
+    "branch.branchPrefix": "Branch:",
     "branch.allBranches": "All branches",
+    "branch.branches": "Branches",
+    "branch.enrolledGyms": "Gyms you manage",
+    "branch.gymSubscriptionScope":
+      "Choose the gym you operate here. Billing stays on the owner account, and each gym can manage its own branches.",
+    "branch.manageGym": "Manage gym",
+    "branch.openMap": "Open map",
+    "branch.mapReady": "Map ready",
+    "branch.mapMissing": "Map missing",
+    "branch.selectorSubtitle": "Choose where this app session should point.",
+    "branch.useBranch": "Use",
+    "branch.useGym": "Use",
     "shop.readyForPickup": "Ready for pickup",
     "shop.readyForPickupSubtitle": "Show this code at the front desk.",
+    "shop.addShort": "Add",
     "shop.addProductAccessibility": "Add {{name}}",
     "shop.availableAtGymDesk": "Available at gym desk after payment",
     "shop.pickupCode": "Pickup code",
@@ -2860,7 +3290,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.paid": "Paid",
     "shop.signedPickupQrCode": "Signed pickup QR code",
     "shop.branchLabel": "Branch",
-    "shop.browserReturnBody": "Come back after payment. Zook refreshes your order status automatically.",
+    "shop.browserReturnBody":
+      "Come back after payment. Zook refreshes your order status automatically.",
     "shop.cartReset": "Cart reset",
     "shop.cartResetBody": "We could not restore your saved cart.",
     "shop.categoryAll": "All",
@@ -2871,11 +3302,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.categoryWater": "Water",
     "shop.checkStatus": "Check status",
     "shop.checking": "Checking...",
-    "shop.checkoutConsequence": "After payment, Zook creates a pickup code for desk verification. Do not collect without the code.",
+    "shop.checkoutConsequence":
+      "After payment, Zook creates a pickup code for desk verification. Do not collect without the code.",
     "shop.checkoutCreated": "Checkout created.",
     "shop.deskPaymentOrderCreated": "Order sent to the desk.",
     "shop.codeWithValue": "Code: {{code}}",
     "shop.continuePayment": "Continue to payment",
+    "shop.continueWithTotal": "Continue · {{amount}}",
     "shop.continueInBrowser": "Continue in browser",
     "shop.confirming": "Confirming...",
     "shop.awaitingDeskPayment": "Awaiting desk payment",
@@ -2885,17 +3318,22 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.couldNotCreateCheckout": "Could not create checkout.",
     "shop.backToShop": "Back to Shop",
     "shop.payment": "Payment",
-    "shop.paymentSubtitle": "Your item is ready at the desk after payment.",
+    "shop.paymentSubtitle": "Pickup unlocks after payment.",
     "shop.paymentConfirmed": "Payment confirmed.",
     "shop.paymentCouldNotComplete": "Payment could not be completed.",
     "shop.paymentStillPending": "Payment is still pending. Try again in a moment.",
     "shop.paymentPending": "Payment pending",
     "shop.payAtDesk": "Pay at Desk",
-    "shop.payAtDeskBody": "The desk team records cash, UPI, card, or bank transfer and then issues your pickup code.",
-    "shop.payAtDeskInstructions": "Ask the front desk to collect this order payment. Once they record it, Zook will create your pickup code.",
+    "shop.payAtDeskBody": "Cash, UPI, card, or bank transfer at the front desk.",
+    "shop.payAtDeskInstructions":
+      "Ask the front desk to collect this order payment. Once they record it, Zook will create your pickup code.",
     "shop.payAtDeskSubtitle": "Pay at the front desk to unlock your pickup code.",
     "shop.payOnline": "Pay Online",
     "shop.payOnlineBody": "Open secure online checkout and return here for your pickup code.",
+    "shop.payAmountNow": "Pay {{amount}} now",
+    "shop.payNow": "Pay now",
+    "shop.payAtDeskInstead": "Pay at desk instead",
+    "shop.otherPaymentOptions": "Other payment options",
     "shop.paySecurely": "Pay securely",
     "shop.confirmOrder": "Confirm the order",
     "shop.getPickupCode": "Get pickup code",
@@ -2919,7 +3357,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.mockPaymentUnavailable": "Mock payment completion is not available in backend builds.",
     "shop.onlyLeft": "Only {{count}} left",
     "shop.orderHistory": "Order history",
+    "shop.orderHistorySubtitle": "Pickup and payment orders appear first.",
+    "shop.activeOrders": "Active orders",
+    "shop.activeOrdersShort": "Orders",
+    "shop.activeOrdersBody": "Payment or pickup items waiting.",
+    "shop.cartStatus": "Cart",
+    "shop.cartStatusBody": "{{amount}} ready for checkout.",
+    "shop.readyStock": "Ready stock",
+    "shop.readyStockShort": "Stock",
+    "shop.readyStockBody": "Items available for desk pickup.",
+    "shop.orderBeingPrepared": "Paid. The desk is preparing your order.",
+    "shop.orderCancelled": "This order was cancelled.",
+    "shop.orderNeedsPayment": "Payment is pending. Open this order to continue.",
+    "shop.orderPickedUp": "Picked up at the desk.",
+    "shop.orderReady": "Ready for pickup at the desk.",
+    "shop.orderReadyWithCode": "Code {{code}}",
     "shop.outOfStock": "Out of stock",
+    "shop.outShort": "Out",
     "shop.yourCartEmpty": "Your cart is empty",
     "shop.subtotal": "Subtotal",
     "shop.openMiniCart": "Open mini cart",
@@ -2930,6 +3384,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.removeProductAccessibility": "Remove {{name}}",
     "shop.searchEssentials": "Search essentials",
     "shop.availableNow": "Available now",
+    "shop.searchResults": "Search results",
     "shop.title": "Shop",
     "shop.item": "item",
     "shop.items": "items",
@@ -2943,12 +3398,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.deviceLocation": "Use device location",
     "findGyms.recentSearches": "Recent searches",
     "findGyms.availableGyms": "Available gyms",
+    "findGyms.allAreas": "All areas",
     "findGyms.city": "City",
     "findGyms.coverPhoto": "{{name}} cover photo",
     "findGyms.discovery": "Discovery",
     "findGyms.gymNameOrUsername": "Gym name or username",
     "findGyms.noGyms": "No gyms",
     "findGyms.noGymsBody": "Try widening the city or clearing the search.",
+    "findGyms.logo": "{{name}} logo",
+    "findGyms.loadError": "Gyms did not load",
     "findGyms.openGym": "Open {{name}}",
     "findGyms.referralApplied": "Referral code applied",
     "findGyms.referralPrefix": "Code",
@@ -2956,8 +3414,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.resultCountMany": "{{count}} results",
     "findGyms.resultCountOne": "1 result",
     "findGyms.searching": "Searching...",
+    "findGyms.searchLabel": "Search gyms",
     "findGyms.title": "Find your gym",
     "findGyms.view": "View",
+    "findGyms.viewProfile": "View profile",
     "gymProfile.activeUntil": "Active until {{date}}",
     "gymProfile.address": "Address",
     "gymProfile.alreadyActive": "Already active",
@@ -2973,6 +3433,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.currentMembership": "Current membership",
     "gymProfile.dateRange": "{{start}} to {{end}}",
     "gymProfile.daysCount": "{{count}} days",
+    "gymProfile.demoTagline": "Strength, PT, and recovery in one gym workspace.",
+    "gymProfile.distanceKm": "{{distance}} km away",
+    "gymProfile.distanceMeters": "{{distance}} m away",
+    "gymProfile.distanceUnavailable": "Distance unavailable",
     "gymProfile.equipment": "Equipment",
     "gymProfile.eyebrow": "Gym profile",
     "gymProfile.flexibleMembership": "Flexible membership",
@@ -2987,6 +3451,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.inviteReferralRequiredBody":
       "Open this gym from a referral link or ask the gym team for a code to continue.",
     "gymProfile.joinFlow": "Join flow",
+    "gymProfile.joinModeApproval": "Approval required",
+    "gymProfile.joinModeInvite": "Invite only",
+    "gymProfile.joinModeOpen": "Anyone can join",
     "gymProfile.joinPath": "Join path",
     "gymProfile.joinRequest": "Join request",
     "gymProfile.location": "Location",
@@ -3005,11 +3472,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.notFoundBody": "This link may be expired or the gym may have moved.",
     "gymProfile.openTrainerProfile": "Open {{name}} profile",
     "gymProfile.openingPayment": "Opening payment...",
+    "gymProfile.overview": "Overview",
+    "gymProfile.payAmountNow": "Pay {{amount}} now",
     "gymProfile.paymentStarted": "Payment started. Complete it to activate your membership.",
     "gymProfile.pendingSince": "Pending since {{date}}",
     "gymProfile.photoOf": "Photo {{index}} of {{count}}",
     "gymProfile.planAvailableMany": "{{count}} plans available",
     "gymProfile.planAvailableOne": "1 plan available",
+    "gymProfile.planDescriptionHybrid": "30 days with 12 visits and coach plan access.",
+    "gymProfile.planDescriptionMonthly": "30 days of gym access for regular training.",
+    "gymProfile.planDescriptionTrial": "One supervised visit for new members.",
+    "gymProfile.planNameHybrid": "Hybrid Pro",
+    "gymProfile.planNameMonthly": "Monthly Active",
+    "gymProfile.planNameTrial": "Trial Pass",
+    "gymProfile.quickCheckout": "Fast membership checkout",
+    "gymProfile.quickCheckoutHint":
+      "Secure checkout. Membership starts after payment confirmation.",
+    "gymProfile.tapPlanToChange": "Tap another plan below to change.",
+    "gymProfile.readyToJoin": "Ready to join",
+    "gymProfile.recommendedCheckoutAbove": "Fast checkout is above",
     "gymProfile.referralApplied": "Referral applied",
     "gymProfile.referralInviteRequired": "Referral or invite is required.",
     "gymProfile.referralPrice": "Referral price",
@@ -3018,7 +3499,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
       "This gym reviews new members before payment. Submit your request and the owner can approve it from the web dashboard.",
     "gymProfile.reviewed": "Reviewed",
     "gymProfile.securePayment": "Secure payment",
+    "gymProfile.selectPlanForCheckout": "Select for checkout",
+    "gymProfile.selectedForCheckout": "Selected for checkout",
+    "gymProfile.selectedPlanHint": "{{plan}} selected. You can compare plans below.",
     "gymProfile.sendMembershipRequest": "Send membership request",
+    "gymProfile.shareProfile": "Share gym profile",
     "gymProfile.staffApprovalBeforePayment": "Staff approval happens before payment.",
     "gymProfile.standardMembershipPlan": "Standard membership plan.",
     "gymProfile.stepActivatePlan": "Activate plan",
@@ -3029,14 +3514,16 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.stepPayInstantly": "Pay instantly",
     "gymProfile.stepPayInstantlyBody": "Pay securely from mobile.",
     "gymProfile.stepPaySecurely": "Pay securely",
-    "gymProfile.stepPaySecurelyBody": "Payment activates the membership once the invite rules are met.",
+    "gymProfile.stepPaySecurelyBody":
+      "Payment activates the membership once the invite rules are met.",
     "gymProfile.stepReferralAttached": "Referral {{code}} is attached.",
     "gymProfile.stepReferralRequired": "A referral or invite is required before you can continue.",
     "gymProfile.stepReviewPlans": "Review plans",
     "gymProfile.stepReviewPlansBody": "Once the code is accepted, plans can be joined.",
     "gymProfile.stepSecureReferral": "Secure a referral",
     "gymProfile.stepSendRequest": "Send request",
-    "gymProfile.stepSendRequestBody": "Send your request before payment if this gym reviews new members.",
+    "gymProfile.stepSendRequestBody":
+      "Send your request before payment if this gym reviews new members.",
     "gymProfile.stepStaffReview": "Staff review",
     "gymProfile.stepStaffReviewBody": "The gym team reviews your request.",
     "gymProfile.stepStartTraining": "Start training",
@@ -3048,6 +3535,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.unableSubmitMembershipRequest": "Unable to submit membership request.",
     "gymProfile.updatingMembershipStatus": "Updating membership status...",
     "gymProfile.validityDays": "{{count}} validity days",
+    "gymProfile.visitCountMany": "{{count}} visits",
+    "gymProfile.visitCountOne": "1 visit",
     "gymProfile.visitsRemaining": "{{count}} visits remaining",
     "gymProfile.whatsInside": "What's inside",
     "gymReviews.beFirst": "Be the first member to leave a review.",
@@ -3071,12 +3560,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "empty.loadingBody": "Loading details from your gym.",
     "tracking.bodyTimeline": "Photo timeline",
     "tracking.bodyTimelineSubtitle": "{{count}} body composition entries",
+    "tracking.addExercise": "Add exercise",
     "tracking.armsCm": "Arms cm",
     "tracking.body": "Body",
     "tracking.bodyFatPercent": "Body fat %",
     "tracking.bodyMeasurements": "Body measurements",
     "tracking.bodyMeasurementsSaved": "Body measurements saved.",
     "tracking.bodyProgress": "Body progress",
+    "tracking.moreMeasurements": "More measurements",
+    "tracking.hideMeasurements": "Hide measurements",
     "tracking.calfCm": "Calf cm",
     "tracking.calvesCm": "Calves cm",
     "tracking.chestCm": "Chest cm",
@@ -3086,9 +3578,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.exercise": "Exercise",
     "tracking.exerciseName": "Exercise name",
     "tracking.exerciseNamePlaceholder": "Push press",
+    "tracking.addExerciseToSave": "Add one exercise name to save this workout.",
     "tracking.forearmsCm": "Forearms cm",
     "tracking.hipsCm": "Hips cm",
-    "tracking.historyTitle": "Workout history",
+    "tracking.historyTitle": "Progress history",
     "tracking.loggedWorkout": "Logged workout",
     "tracking.muscleMassKg": "Muscle mass kg",
     "tracking.neckCm": "Neck cm",
@@ -3098,6 +3591,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.noWorkoutsYetBody": "Your logged workouts will show up here.",
     "tracking.notes": "Notes",
     "tracking.notesPlaceholder": "Front/side/back photos can be attached from progress photos.",
+    "tracking.removeExercise": "Remove exercise",
     "tracking.reps": "Reps",
     "tracking.restingHeartRate": "Resting heart rate",
     "tracking.saveMeasurements": "Save measurements",
@@ -3111,6 +3605,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.waist": "Waist",
     "tracking.waistCm": "Waist cm",
     "tracking.weightKg": "Weight kg",
+    "tracking.activeTime": "Active time",
+    "tracking.activeHabits": "Active habits",
+    "tracking.addOne": "Add one",
+    "tracking.loggedSessions": "Logged sessions",
+    "tracking.noSessions": "No sessions",
+    "tracking.workoutTime": "Workout time",
+    "tracking.addMeasurementToSave": "Add at least one measurement to save.",
     "tracking.workout": "Workout",
     "tracking.workoutSaved": "Workout saved.",
     "tracking.workoutSet": "Workout set",
@@ -3153,7 +3654,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.entryApproved": "Entry approved for your gym",
     "member.attendance.entryCode": "Entry Code",
     "member.attendance.entryCodeCopied": "Entry code copied.",
-    "member.attendance.entryCodeUnavailable": "Entry code unavailable - please ask reception to check you in manually.",
+    "member.attendance.entryCodeUnavailable":
+      "Entry code unavailable - please ask reception to check you in manually.",
     "member.attendance.gymTimeRecorded": "Your gym time was recorded.",
     "member.attendance.sessionStopped": "Session stopped",
     "member.attendance.inProgress": "In progress",
@@ -3166,7 +3668,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.openAssignedPlanBody": "Open your current assigned plan.",
     "member.attendance.openPlan": "Open Plan",
     "member.attendance.pendingApproval": "Pending approval",
-    "member.attendance.pendingBody": "Your check-in was received. Show this code at the front desk.",
+    "member.attendance.pendingBody":
+      "Your check-in was received. Show this code at the front desk.",
     "member.attendance.plan": "Plan",
     "member.attendance.profilePhotoRecommended": "Profile photo recommended",
     "member.attendance.refreshStatus": "Refresh status",
@@ -3177,20 +3680,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.attendance.updating": "Updating...",
     "member.attendance.waitingDeskApproval": "Waiting for desk approval",
     "member.attendance.whyConfirmation": "Why confirmation?",
-    "member.attendance.whyConfirmationBody": "Your gym asks the desk to confirm some check-ins before entry is marked approved.",
+    "member.attendance.whyConfirmationBody":
+      "Your gym asks the desk to confirm some check-ins before entry is marked approved.",
     "member.coaching.active": "Active",
     "member.coaching.browsePtPackages": "Browse PT packages",
-    "member.coaching.completedCount": "{{count}} completed",
+    "member.coaching.currentTab": "Coaching",
     "member.coaching.ends": "Ends {{date}}",
+    "member.coaching.flexibleSessions": "Flexible sessions",
     "member.coaching.noActiveCoaching": "No active coaching",
     "member.coaching.noActiveCoachingBody":
-      "Browse PT packages below and request one — a trainer will confirm and collect payment.",
+      "Browse packages when you are ready. A trainer confirms the request, then payment is one step.",
     "member.coaching.noPackagesAvailable": "No packages available",
     "member.coaching.noPackagesAvailableBody":
       "Check back later — trainers haven't published PT packages yet.",
+    "member.coaching.packagesTab": "Packages",
+    "member.coaching.payAfterApproval": "Pay after trainer approval",
     "member.coaching.noSessionsYet": "No sessions yet",
     "member.coaching.noSessionsYetBody": "Your logged sessions will appear here.",
     "member.coaching.pending": "Pending",
+    "member.coaching.requestPackage": "Request",
     "member.coaching.recentSessions": "Recent sessions",
     "member.coaching.requesting": "Requesting...",
     "member.coaching.requestSent": "Request sent — a trainer will confirm",
@@ -3206,6 +3714,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.coaching.yourTrainer": "Your trainer",
     "member.classDetail.bookClass": "Book class",
     "member.classDetail.booked": "Booked",
+    "member.classDetail.bookedHint":
+      "You are in. Keep this booking, or cancel if your plans change.",
     "member.classDetail.bookWithPrice": "Book · {{price}}",
     "member.classDetail.cancelBooking": "Cancel booking",
     "member.classDetail.cancelling": "Cancelling...",
@@ -3214,13 +3724,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classDetail.coachName": "Coach {{name}}",
     "member.classDetail.continuePayment": "Continue payment",
     "member.classDetail.full": "Full",
+    "member.classDetail.fullHint":
+      "This class is full. Join the waitlist and we will update your status if a spot opens.",
+    "member.classDetail.freeBookingHint":
+      "Reserve your spot now. You can cancel from this screen if your plans change.",
     "member.classDetail.joinWaitlist": "Join waitlist",
     "member.classDetail.left": "{{count}} left",
+    "member.classDetail.nextStep": "Next step",
     "member.classDetail.notFound": "Class not found",
+    "member.classDetail.paidBookingHint":
+      "Pay now to reserve your spot. Unpaid bookings stay marked as payment due.",
+    "member.classDetail.payAmountNow": "Pay {{amount}} now",
     "member.classDetail.paymentDue": "Payment due",
-    "member.classDetail.spots": "{{count}} spots",
+    "member.classDetail.paymentDueHint":
+      "Finish payment to confirm your spot before the class fills up.",
+    "member.classDetail.spots": "{{count}} left",
     "member.classDetail.spotsBooked": "spots booked",
     "member.classDetail.waitlisted": "Waitlisted",
+    "member.classDetail.waitlistedHint":
+      "You are on the waitlist. Cancel from here if you no longer want the spot.",
     "member.classes.bookClass": "Book class",
     "member.classes.bookWithPrice": "Book · {{price}}",
     "member.classes.booked": "Booked",
@@ -3229,19 +3751,28 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.classes.coachName": "Coach {{name}}",
     "member.classes.continuePayment": "Continue payment",
     "member.classes.couldNotLoad": "Classes could not load.",
+    "member.classes.filterAll": "All {{count}}",
+    "member.classes.filterBooked": "Booked {{count}}",
+    "member.classes.filterOpen": "Open {{count}}",
     "member.classes.free": "Free",
     "member.classes.full": "Full",
     "member.classes.joinWaitlist": "Join waitlist",
     "member.classes.left": "{{count}} left",
+    "member.classes.noBookedClasses": "No bookings yet",
+    "member.classes.noBookedClassesBody": "Book a class from the open tab when you are ready.",
     "member.classes.noClasses": "No classes scheduled",
     "member.classes.noClassesBody": "Check back soon - new group sessions are added every week.",
+    "member.classes.noOpenClasses": "No open classes",
+    "member.classes.noOpenClassesBody": "All upcoming classes are booked or waitlisted right now.",
     "member.classes.onWaitlist": "On waitlist",
     "member.classes.opening": "Opening...",
+    "member.classes.payAmountNow": "Pay {{amount}} now",
     "member.classes.paymentDue": "Payment due",
     "member.classes.spots": "{{count}} spots",
     "member.classes.subtitle": "Reserve your spot in upcoming group sessions.",
     "member.classes.title": "Classes",
     "member.classes.waitlisted": "Waitlisted",
+    "member.classes.yourBookings": "Your bookings",
     "member.mutation.bookingCancelled": "Booking cancelled.",
     "member.mutation.bookingCancelFailed": "Could not cancel your booking.",
     "member.mutation.classBooked": "Class booked.",
@@ -3254,18 +3785,35 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.mutation.signInRequestPt": "Sign in again to request personal training.",
     "member.mutation.waitlistAdded": "Added to waitlist. We'll prompt payment when a spot opens.",
     "member.you.accountCenter": "Zook account center",
+    "member.you.activeMembership": "Active membership",
     "member.you.appearance": "Appearance",
-    "member.you.backToOwnerMode": "Back to Owner mode",
+    "member.you.backToOwnerMode": "Switch to owner",
+    "member.you.browsePlans": "Plans",
+    "member.you.findMembershipPlan": "Find a plan to start training.",
     "member.you.gymShop": "Gym shop",
+    "member.you.assistant": "Assistant",
+    "member.you.editProfile": "Edit",
+    "member.you.gymProfile": "Gym profile",
     "member.you.helpSupport": "Help & support",
+    "member.you.memberFallback": "Member",
     "member.you.membership": "Membership",
+    "member.you.membershipNeedsAttention": "Membership needs attention",
+    "member.you.noGymSelected": "No gym selected",
+    "member.you.notifications": "Notifications",
+    "member.you.noActiveMembership": "No active membership",
     "member.you.privacy": "Privacy",
     "member.you.quickActions": "Quick actions",
+    "member.you.referrals": "Referrals",
     "member.you.switchGym": "Switch gym",
     "member.you.switchToRole": "Switch to {{role}}",
     "member.you.theme.dark": "Dark",
     "member.you.theme.light": "Light",
     "member.you.theme.system": "System",
+    "member.you.trackingHistory": "Tracking history",
+    "member.you.unreadCount": "{{count}} unread",
+    "member.you.validUntil": "Valid until {{date}}",
+    "member.you.viewMembership": "View",
+    "member.you.visitsLeft": "{{count}} visits left",
     "member.home.accessActive": "Access active",
     "member.home.active": "Active",
     "member.home.activeCheckIn": "Active check-in",
@@ -3277,7 +3825,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.classOpen": "Open",
     "member.home.classSpotsLeft": "{{count}} left",
     "member.home.classWaitlisted": "Waitlisted",
+    "member.home.classesTab": "Classes",
     "member.home.coachName": "Coach {{name}}",
+    "member.home.coachingTab": "Coaching",
     "member.home.completeProfile": "Complete your profile",
     "member.home.completeProfileBody": "Add your details so staff and trainers can help faster.",
     "member.home.currentBranch": "Current branch",
@@ -3286,11 +3836,17 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.dismissBanner": "Dismiss {{title}}",
     "member.home.estimatedMinutes": "~{{minutes}} min",
     "member.home.exerciseCount": "{{count}} exercise",
+    "member.home.exerciseCountOne": "1 exercise",
+    "member.home.exerciseCountOther": "{{count}} exercises",
     "member.home.expiredBody": "Renew your membership to keep check-ins and plan access moving.",
     "member.home.expiredTitle": "Your membership expired",
     "member.home.findYourGym": "Find your gym",
     "member.home.finishLoggingWork": "Finish logging your work.",
-    "member.home.firstRunBody": "Your membership, workouts, and check-ins collect here once your gym adds you.",
+    "member.home.firstRunBody":
+      "Your membership, workouts, and check-ins collect here once your gym adds you.",
+    "member.home.firstRunStepChoosePlan": "Pick a plan or send a request",
+    "member.home.firstRunStepFindGym": "Open your gym profile",
+    "member.home.firstRunStepStartTraining": "Check in and start training",
     "member.home.firstRunTitle": "Welcome to Zook",
     "member.home.getMembership": "Get membership",
     "member.home.greeting": "Hello, {{name}}",
@@ -3299,10 +3855,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.inviteFriend": "Invite a friend",
     "member.home.inviteFriendBody": "Share Zook with someone who should train with you.",
     "member.home.joinGym": "Join a gym",
-    "member.home.joinGymBody": "Find your gym to unlock membership, plans, check-ins, and trainer updates.",
+    "member.home.joinGymBody":
+      "Find your gym to unlock membership, plans, check-ins, and trainer updates.",
     "member.home.membershipDaysLeft": "{{count}} membership days left.",
     "member.home.membershipEndsToday": "Membership ends today",
-    "member.home.membershipPendingBody": "Your payment is linked to {{gym}}. The front desk still needs to activate your membership before check-ins and plans unlock.",
+    "member.home.membershipPendingBody":
+      "Your payment is linked to {{gym}}. The front desk still needs to activate your membership before check-ins and plans unlock.",
     "member.home.membershipPendingTitle": "Membership pending activation",
     "member.home.membershipStatusActive": "Membership status is active.",
     "member.home.membershipAccess": "Membership access",
@@ -3326,37 +3884,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.renewNowBody": "Renew now to keep check-ins and plan access moving.",
     "member.home.renewalNeeded": "Renewal needed",
     "member.home.restDay": "Rest day",
-    "member.home.restDayBody": "{{plan}} has no workout scheduled today. Recover well and keep the routine warm.",
+    "member.home.restDayBody":
+      "{{plan}} has no workout scheduled today. Recover well and keep the routine warm.",
     "member.home.resume": "Resume",
     "member.home.scanIntoGym": "Scan into gym",
     "member.home.seeAll": "See all",
     "member.home.seeAllClasses": "See all classes",
-    "member.home.sessionsDone": "{{used}} of {{total}} sessions done",
+    "member.home.upcomingClasses": "Upcoming classes",
     "member.home.sessionsLeftShort": "{{count}} left",
     "member.home.startWorkout": "Start workout",
     "member.home.stopSession": "Stop session",
     "member.home.stoppingSession": "Stopping...",
     "member.home.todaysWorkout": "TODAY'S WORKOUT",
     "member.home.tomorrowPlan": "Tomorrow: {{name}}.",
-    "member.home.trainerAssigned": "Trainer assigned",
     "member.home.update": "Update",
     "member.home.viewMembership": "View membership",
     "member.home.viewPlan": "View plan",
     "member.home.visits": "Visits",
     "member.home.visitsLeft": "{{count}} visits left",
+    "member.home.weekTab": "Week",
     "member.home.workoutInProgress": "Workout in progress",
     "member.home.workoutLogged": "Workout logged",
     "member.home.workouts": "Workouts",
     "member.home.yourCoaching": "Your coaching",
     "member.home.yourTrainer": "Your trainer",
+    "member.membership.active": "Active",
     "member.membership.activePlan": "Active plan",
     "member.membership.autopay": "Autopay",
     "member.membership.autopayActive": "Autopay is active.",
     "member.membership.autopayCancelled": "Autopay cancelled.",
-    "member.membership.authorizeAutopay": "Authorize automatic renewal to renew this plan automatically.",
+    "member.membership.autopayEnabledTitle": "Autopay ready",
+    "member.membership.autopayPromptBody": "Set it once. Cancel anytime.",
+    "member.membership.autopayPromptTitle": "Auto-renew in one tap",
+    "member.membership.autopayRenewalChoiceBody": "Optional. Set it after this payment so the next renewal is automatic.",
+    "member.membership.autopayRenewalChoiceTitle": "After payment: autopay",
+    "member.membership.autopaySetupAction": "Enable",
+    "member.membership.authorizeAutopay": "Renew this plan automatically.",
     "member.membership.browseGymsBody": "Browse gyms and purchase a membership to get started.",
-    "member.membership.browserReturnBody": "Return after checkout. Zook refreshes your membership when you come back.",
-    "member.membership.cancelConfirmBody": "You'll keep access until your current term ends, but it won't renew and can't be resumed afterwards. This can't be undone.",
+    "member.membership.browserReturnBody":
+      "Return after checkout. Zook refreshes your membership when you come back.",
+    "member.membership.browserReturnHint":
+      "If the browser already closed, tap Check status to refresh payment confirmation.",
+    "member.membership.cancelConfirmBody":
+      "You'll keep access until your current term ends, but it won't renew and can't be resumed afterwards. This can't be undone.",
     "member.membership.cancelConfirmTitle": "Cancel membership?",
     "member.membership.cancelMembership": "Cancel membership",
     "member.membership.cancelAutopay": "Cancel autopay",
@@ -3369,34 +3939,49 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.currentPlan": "Current plan",
     "member.membership.days": "{{count}} days",
     "member.membership.daysOfDurationLeft": "{{daysLeft}} of {{durationDays}} days left",
-    "member.membership.documentsAfterSuccess": "Documents are available after payment succeeds. Status: {{status}}.",
+    "member.membership.documentsAfterSuccess": "Documents after {{status}}.",
     "member.membership.downloadInvoice": "Download invoice",
     "member.membership.enableAutopay": "Enable autopay",
     "member.membership.eyebrow": "Membership",
     "member.membership.findGyms": "Find gyms",
     "member.membership.generateDocument": "Generate {{label}}",
     "member.membership.generateReceiptOrInvoice": "Generate a receipt or invoice.",
-    "member.membership.guidanceActiveBody": "Your QR entry and member benefits are active for this gym.",
+    "member.membership.guidanceActiveBody":
+      "Your QR entry and member benefits are active for this gym.",
     "member.membership.guidanceActiveTitle": "Membership active",
     "member.membership.guidanceCompletePayment": "Complete payment",
-    "member.membership.guidanceDaysLeftBody": "{{count}} days left. Renew early to keep entry uninterrupted.",
-    "member.membership.guidanceExpiredBody": "Renew this plan or choose a new plan to restore QR entry and member benefits.",
+    "member.membership.guidanceDaysLeftBody":
+      "{{count}} days left. Renew early to keep entry uninterrupted.",
+    "member.membership.guidanceExpiredBody":
+      "Renew this plan or choose a new plan to restore QR entry and member benefits.",
     "member.membership.guidanceExpiredTitle": "Membership expired",
-    "member.membership.guidanceFailedBody": "No money was confirmed for this membership. Try again or ask the desk for help.",
+    "member.membership.guidanceFailedBody":
+      "No money was confirmed for this membership. Try again or ask the desk for help.",
     "member.membership.guidanceFailedTitle": "Payment failed",
-    "member.membership.guidanceInactiveBody": "This membership cannot be used for entry. Contact the gym or choose another plan.",
+    "member.membership.guidanceCancelledBody":
+      "Your membership has ended. Rejoin this gym or explore a new one to restore your access.",
+    "member.membership.guidanceCancelledTitle": "Membership cancelled",
+    "member.membership.guidanceInactiveBody":
+      "This membership cannot be used for entry. Contact the gym or choose another plan.",
     "member.membership.guidanceInactiveTitle": "Membership not active",
-    "member.membership.guidancePastDueBody": "Your membership needs payment confirmation before the gym can treat it as active.",
+    "member.membership.guidancePastDueBody":
+      "Your membership needs payment confirmation before the gym can treat it as active.",
     "member.membership.guidancePastDueTitle": "Renewal overdue",
-    "member.membership.guidancePaymentPendingBody": "Complete payment or ask the desk to record an offline payment before using entry.",
+    "member.membership.guidancePaymentPendingBody":
+      "Complete payment or ask the desk to record an offline payment before using entry.",
     "member.membership.guidancePaymentPendingTitle": "Payment pending",
     "member.membership.guidancePayNow": "Pay now",
     "member.membership.guidanceRenewalWindowTitle": "Renewal window",
     "member.membership.guidanceRenewNow": "Renew now",
     "member.membership.guidanceRenewOrChangePlan": "Renew or change plan",
     "member.membership.guidanceRenewTodayBody": "Renew today to avoid an entry interruption.",
+    "member.membership.guidancePausedBody":
+      "Access is frozen until your pause date. Resume any time to restore entry.",
+    "member.membership.guidancePausedTitle": "Membership paused",
     "member.membership.guidanceTryPaymentAgain": "Try payment again",
+    "member.membership.joinDifferentGym": "Join a different gym",
     "member.membership.gymDefinedValidity": "Gym-defined validity",
+    "member.membership.generatedInvoices": "Generated invoices",
     "member.membership.history": "Membership history",
     "member.membership.invoice": "Invoice",
     "member.membership.historyJumpBody": "Jumped to your previous memberships and payment trail.",
@@ -3404,24 +3989,42 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.invoicesAndReceipts": "Invoices and receipts",
     "member.membership.invoiceUnavailable": "Invoice unavailable",
     "member.membership.keepMembership": "Keep membership",
+    "member.membership.manageMembership": "Manage membership",
+    "member.membership.manageMembershipBody":
+      "Pause or cancel only when you need to change access.",
+    "member.membership.manualRenewalTitle": "Manual renewal",
+    "member.membership.manualRenewalBody": "Renew from the current plan card when your next payment is due.",
     "member.membership.noActivePlans": "No active plans",
-    "member.membership.noAlternatePlans": "No alternate plans are published. Same-plan renewal is requested.",
+    "member.membership.noAlternatePlans":
+      "No alternate plans are published. Same-plan renewal is requested.",
     "member.membership.noExpiry": "No expiry",
     "member.membership.noMemberships": "No memberships",
     "member.membership.noPayments": "No payments",
     "member.membership.nextRenewalDate": "Next renewal {{date}}",
     "member.membership.off": "Off",
+    "member.membership.enabled": "Enabled",
+    "member.membership.endMembershipOptions": "End membership",
+    "member.membership.endMembershipBody": "Cancel only if you do not want this access anymore.",
     "member.membership.pause": "Pause",
     "member.membership.pauseEndDateAccessibility": "Membership pause end date",
-    "member.membership.pauseHelp": "Pausing freezes check-ins until this date, and your remaining days carry over.",
+    "member.membership.pauseHelp":
+      "Pausing freezes check-ins until this date, and your remaining days carry over.",
     "member.membership.pauseMembership": "Pause membership",
-    "member.membership.pauseConfirmBody": "Your access stays frozen until {{date}}. You can resume anytime before then.",
+    "member.membership.pauseDisclosureBody": "Freeze access only for travel, injury, or a planned break.",
+    "member.membership.pauseConfirmBody":
+      "Your access stays frozen until {{date}}. You can resume anytime before then.",
     "member.membership.pauseConfirmTitle": "Pause membership?",
     "member.membership.pauseReason": "Member selected a membership pause date from mobile.",
+    "member.membership.pauseReasonInjury": "Injury",
+    "member.membership.pauseReasonMedical": "Medical",
+    "member.membership.pauseReasonOther": "Other",
+    "member.membership.pauseReasonTravel": "Travel",
     "member.membership.pausedToast": "Paused until {{date}}.",
     "member.membership.pausedUntil": "Membership paused until {{date}}.",
     "member.membership.pauseUntil": "Pause until",
     "member.membership.payments": "Payments",
+    "member.membership.payAmountNow": "Pay {{amount}} now",
+    "member.membership.payNow": "Pay now",
     "member.membership.paySecurely": "Pay securely",
     "member.membership.paymentDocuments": "Payment documents",
     "member.membership.paymentDocumentsBody": "Receipts and invoices are below.",
@@ -3434,10 +4037,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.recurringRenewalEnabled": "Recurring renewal is enabled.",
     "member.membership.renewMembership": "Renew membership",
     "member.membership.renewalConfirmed": "Renewal confirmed.",
-    "member.membership.renewalConsequence": "The renewed membership activates after payment confirmation from the payment service or gym desk.",
+    "member.membership.renewalConsequence":
+      "The renewed membership activates after payment confirmation from the payment service or gym desk.",
     "member.membership.renewalFlowOpened": "We opened the renewal flow for this membership.",
     "member.membership.renewalRequestSent": "Renewal request sent.",
-    "member.membership.renewalSheetBody": "Continue at {{gym}} with the same plan or choose another available option.",
+    "member.membership.renewalSheetBody":
+      "Continue at {{gym}} with the same plan or choose another available option.",
     "member.membership.renewalSummary": "Renewal summary",
     "member.membership.resumed": "Membership resumed.",
     "member.membership.resumeMembership": "Resume membership",
@@ -3447,13 +4052,26 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.membership.statusBelow": "Membership status is below.",
     "member.membership.subscriptionUpdated": "Your subscription has been updated.",
     "member.membership.summary": "{{active}} active · {{expiring}} expiring soon · {{total}} total",
+    "member.membership.tabCurrent": "Current",
+    "member.membership.expiringSoon": "Ending soon",
+    "member.membership.total": "Total",
+    "member.membership.tabHistory": "History",
+    "member.membership.tabPayments": "Payments",
     "member.membership.switchNow": "Switch now",
+    "member.membership.switchWithoutCheckoutBody":
+      "Use this only if your gym approved a plan change without a fresh checkout.",
+    "member.membership.switchWithoutCheckoutTitle": "Change active plan without checkout",
     "member.membership.title": "Your plans",
+    "member.membership.typeDuration": "Duration",
+    "member.membership.typeHybrid": "Hybrid",
+    "member.membership.typeMembership": "Membership",
+    "member.membership.typeTrial": "Trial",
     "member.membership.update": "Membership update",
     "member.membership.updating": "Updating...",
     "member.membership.validity": "Validity",
     "member.membership.visits": "Visits",
     "member.membership.visitsRemaining": "{{visits}} remaining",
+    "member.membership.visitCount": "{{count}} visits",
     "member.membership.yourGym": "your gym",
     "member.profile.active": "Active",
     "member.profile.activeGymOption": "{{gym}} (active)",
@@ -3464,16 +4082,21 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.biometricUnlockBody": "Set up Face ID or device biometrics to enable this.",
     "member.profile.checkedIn": "Checked in",
     "member.profile.classes": "Classes",
-    "member.profile.daysReferralBenefit": "You'll get {{count}} free days for every friend who joins.",
+    "member.profile.daysReferralBenefit":
+      "You'll get {{count}} free days for every friend who joins.",
     "member.profile.daysRemaining": "{{count}} days remaining",
     "member.profile.daysRemainingOf": "{{remaining}} of {{total}} days remaining",
-    "member.profile.defaultReferralBenefit": "Share your code so the gym can track friends you bring in.",
+    "member.profile.defaultReferralBenefit":
+      "Share your code so the gym can track friends you bring in.",
     "member.profile.earnedCredit": "{{amount}} earned",
     "member.profile.expires": "Expires {{date}}",
     "member.profile.findGyms": "Find gyms",
     "member.profile.friendsStat": "Your friends: {{joined}} joined, {{pending}} pending",
     "member.profile.membership": "Membership",
     "member.profile.membershipDetailsUnavailable": "Membership details unavailable",
+    "member.profile.accountTab": "Account",
+    "member.profile.detailsTab": "Details",
+    "member.profile.rewardsTab": "Rewards",
     "member.profile.memberFallback": "Zook member",
     "member.profile.myGym": "my gym",
     "member.profile.noActiveMembership": "No active membership",
@@ -3490,9 +4113,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.percentCompleteWithDate": "{{percent}}% complete - {{date}}",
     "member.profile.qaShortcuts": "QA shortcuts",
     "member.profile.quickActions": "Quick actions",
+    "member.profile.finishProfile": "Finish profile",
+    "member.profile.readinessContact": "Reachable phone or email",
+    "member.profile.readinessMembership": "Active membership on file",
+    "member.profile.readinessMore": "+{{count}} more",
+    "member.profile.readinessNeedsBody": "{{count}} left.",
+    "member.profile.readinessNeedsTitle": "Make check-ins easier",
+    "member.profile.readinessPhoto": "Clear profile photo",
+    "member.profile.readinessReadyBody":
+      "Desk staff can verify you quickly and your gym has the basics it needs.",
+    "member.profile.readinessReadyTitle": "Profile ready for the desk",
     "member.profile.recentActivity": "Recent activity",
     "member.profile.referGymAccessibility": "Refer a gym to Zook and earn",
-    "member.profile.referGymBody": "Earn when a gym you refer subscribes to Zook on a 6-month or yearly plan.",
+    "member.profile.referGymBody": "Earn when a referred gym joins Zook.",
     "member.profile.referGymTitle": "Refer a gym & earn cash",
     "member.profile.referralCodeCopied": "Your referral code is copied.",
     "member.profile.referralCopied": "Referral copied",
@@ -3521,17 +4154,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profile.switchRoleConfirmTitle": "Switch to {{role}}?",
     "member.profile.switching": "Switching...",
     "member.profile.title": "Profile",
-    "member.profile.trainerReferralBenefit": "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link.",
+    "member.profile.trainerReferralBenefit":
+      "Trainer referrals are tracked for commission review when a member joins or a gym signs up through your link.",
     "member.profile.updating": "Updating",
     "member.profile.useRoleAccessibility": "Use Zook as {{role}}",
     "member.profile.viewHistory": "View history",
-    "member.profile.visitsReferralBenefit": "You'll get {{count}} visits for every friend who joins.",
+    "member.profile.visitsReferralBenefit":
+      "You'll get {{count}} visits for every friend who joins.",
     "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
     "member.profile.workoutPlan": "Workout plan",
     "roleSwitcher.active": "Active",
     "roleSwitcher.currentRoleAccessibility": "Switch role. Current role: {{role}}",
     "roleSwitcher.currentWorkspace": "Current workspace",
     "roleSwitcher.currentWorkspaceAccessibility": "Switch role. Current workspace: {{workspace}}",
+    "roleSwitcher.role.admin": "Admin",
+    "roleSwitcher.role.member": "Member",
+    "roleSwitcher.role.owner": "Owner",
+    "roleSwitcher.role.platformAdmin": "Platform Admin",
+    "roleSwitcher.role.receptionist": "Reception",
+    "roleSwitcher.role.trainer": "Trainer",
     "roleSwitcher.roleUnavailable": "Role unavailable",
     "roleSwitcher.roleUnavailableBody": "That role is not available here.",
     "roleSwitcher.subtitle": "Choose the gym and role for this workspace.",
@@ -3542,7 +4183,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profileExtra.addDateOfBirth": "Add date of birth",
     "member.profileExtra.aiConsent": "AI consent",
     "member.profileExtra.aiConsentBody": "Allow AI features to use your profile context.",
-    "member.profileExtra.completedFields": "{{completed}}/{{total}} safety and KYC fields complete.",
+    "member.profileExtra.completedFields":
+      "{{completed}}/{{total}} safety and KYC fields complete.",
     "member.profileExtra.dateOfBirth": "Date of birth",
     "member.profileExtra.decreaseWeeklyWorkoutGoal": "Decrease weekly workout goal",
     "member.profileExtra.emergencyContact": "Emergency contact",
@@ -3561,12 +4203,16 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.profileExtra.weeklyGoalValue": "{{count}} / week",
     "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
     "member.profilePhoto.addProfilePhoto": "Add profile photo",
-    "member.profilePhoto.cameraPrimer": "Zook needs camera access so you can take a profile photo for check-ins and your member profile.",
-    "member.profilePhoto.cameraSettingsPrompt": "Camera access is off. Enable it in Settings to take a profile photo.",
+    "member.profilePhoto.cameraPrimer":
+      "Zook needs camera access so you can take a profile photo for check-ins and your member profile.",
+    "member.profilePhoto.cameraSettingsPrompt":
+      "Camera access is off. Enable it in Settings to take a profile photo.",
     "member.profilePhoto.chooseFromLibrary": "Choose from library",
     "member.profilePhoto.continue": "Continue",
-    "member.profilePhoto.libraryPrimer": "Zook needs photo access so you can choose a profile photo for check-ins and your member profile.",
-    "member.profilePhoto.librarySettingsPrompt": "Photo access is off. Enable it in Settings to choose a profile photo.",
+    "member.profilePhoto.libraryPrimer":
+      "Zook needs photo access so you can choose a profile photo for check-ins and your member profile.",
+    "member.profilePhoto.librarySettingsPrompt":
+      "Photo access is off. Enable it in Settings to choose a profile photo.",
     "member.profilePhoto.noFileId": "Photo uploaded, but no file ID was returned.",
     "member.profilePhoto.notNow": "Not now",
     "member.profilePhoto.permissionNeeded": "Permission needed",
@@ -3584,9 +4230,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "memberList.noEmail": "No email",
     "memberList.noMembers": "No members",
     "memberList.noPhone": "No phone",
-    "memberList.reveal": "Reveal",
-    "memberList.revealPhoneFor": "Reveal phone for {{name}}",
+    "memberList.reveal": "View contact",
+    "memberList.revealPhoneFor": "View contact for {{name}}",
     "memberList.searchMembers": "Search members",
+    "memberList.status.active": "Active",
+    "memberList.status.expired": "Expired",
+    "memberList.status.expiring": "Expiring",
+    "memberList.status.pending": "Pending",
     "memberList.tryDifferentSearch": "Try a different search or filter.",
     "privilegedPin.body": "Enter the 4-digit org PIN to continue.",
     "privilegedPin.confirmAction": "Confirm action",
@@ -3599,15 +4249,20 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.diet.carbs": "Carbs",
     "member.diet.couldNotLogMeal": "Could not log meal",
     "member.diet.fats": "Fats",
+    "member.diet.historyTitle": "Diet history",
     "member.diet.kcalRemainingToday": "{{kcal}} kcal remaining today",
     "member.diet.logMeal": "Log meal",
     "member.diet.logging": "Logging...",
     "member.diet.meal": "Meal",
     "member.diet.mealLogged": "Meal logged.",
     "member.diet.mealPlaceholder": "Paneer sandwich",
+    "member.diet.nextDay": "Next day",
     "member.diet.noDietPlan": "No diet plan",
     "member.diet.noDietPlanBody": "Your trainer will publish your meal plan here.",
+    "member.diet.noMealsLogged": "No meals logged",
+    "member.diet.noMealsLoggedBody": "Meals you log for this day will appear here.",
     "member.diet.noPlan": "No plan",
+    "member.diet.previousDay": "Previous day",
     "member.diet.protein": "Protein",
     "member.diet.today": "Today",
     "member.habits.add": "Add",
@@ -3638,9 +4293,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.assignedPlan": "Assigned plan",
     "member.plan.coachGuided": "Coach guided",
     "member.plan.couldNotLoadExercises": "Could not load exercises",
+    "member.plan.dietKind": "Diet plan",
     "member.plan.dietTab": "Diet",
     "member.plan.insideThisPlan": "Inside this plan",
     "member.plan.morePlans": "More plans",
+    "member.plan.nextWorkout": "Next workout",
     "member.plan.noExercises": "No exercises",
     "member.plan.noPlanAssigned": "No plan assigned",
     "member.plan.noPlanAssignedBody": "Your trainer will assign a workout plan here.",
@@ -3650,8 +4307,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.progress": "Progress",
     "member.plan.title": "Plan",
     "member.plan.todaysWorkout": "Today's workout",
-    "member.plan.trainerAssigned": "trainer assigned",
+    "member.plan.trainerAssigned": "Assigned by trainer",
     "member.plan.viewFullExerciseList": "View full exercise list",
+    "member.plan.workoutKind": "Workout plan",
     "member.plan.workoutTab": "Workout",
     "member.planDetail.actionFailed": "Action failed",
     "member.planDetail.active": "ACTIVE",
@@ -3662,6 +4320,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.planDetail.completedCount": "{{completed}} of {{total}} completed",
     "member.planDetail.completeWorkout": "Complete workout",
     "member.planDetail.completing": "Completing...",
+    "member.planDetail.finishMoreExercises": "Finish {{count}} more",
     "member.planDetail.defaultSets": "3 sets",
     "member.planDetail.dietFilter": "Diet",
     "member.planDetail.done": "Done",
@@ -3671,7 +4330,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.planDetail.feedbackSent": "Feedback sent to coach.",
     "member.planDetail.feedbackSheetBody": "Send a note about this assignment.",
     "member.planDetail.needSwap": "Need swap",
-    "member.planDetail.noPlanAssignedBody": "Your trainer will assign a workout plan here. Check back soon.",
+    "member.planDetail.noPlanAssignedBody":
+      "Your trainer will assign a workout plan here. Check back soon.",
     "member.planDetail.pain": "Pain",
     "member.planDetail.pickNoteFirst": "Pick one note first.",
     "member.planDetail.progressNotSaved": "Progress not saved",
@@ -3693,19 +4353,24 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.progress.history": "History",
     "member.progress.logWorkout": "Log workout",
     "member.progress.noWorkoutsLogged": "No workouts logged",
-    "member.progress.noWorkoutsLoggedBody": "Log your first workout to start tracking your progress.",
-    "member.progress.privacyNote": "Private entries stay with you unless you choose trainer visibility.",
+    "member.progress.noWorkoutsLoggedBody":
+      "Log your first workout to start tracking your progress.",
+    "member.progress.privacyNote":
+      "Private entries stay with you unless you choose trainer visibility.",
     "member.progress.recentWorkouts": "Recent workouts",
     "member.progress.thisWeek": "This week",
     "member.progress.title": "Progress",
     "member.receipt.amount": "Amount",
     "member.receipt.downloadInvoice": "Download invoice",
     "member.receipt.generating": "Generating after confirmation",
+    "member.receipt.gst": "GST",
     "member.receipt.invoice": "Invoice",
     "member.receipt.invoiceNo": "Invoice no.",
     "member.receipt.issued": "Issued",
     "member.receipt.membership": "Membership",
     "member.receipt.mode": "Mode",
+    "member.receipt.modeCash": "Cash",
+    "member.receipt.modeOnline": "Online",
     "member.receipt.notFound": "Receipt not found",
     "member.receipt.notFoundBody": "We couldn't find that payment in your membership history.",
     "member.receipt.paymentDetails": "Payment details",
@@ -3714,6 +4379,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.receipt.receiptNumber": "Receipt {{number}}",
     "member.receipt.recorded": "Recorded",
     "member.receipt.status": "Status",
+    "member.receipt.statusCancelled": "Cancelled",
+    "member.receipt.statusCreated": "Created",
+    "member.receipt.statusFailed": "Failed",
+    "member.receipt.statusIssued": "Issued",
+    "member.receipt.statusPaused": "Paused",
+    "member.receipt.statusRefunded": "Refunded",
+    "member.receipt.statusSucceeded": "Paid",
+    "member.receipt.taxableAmount": "Taxable amount",
     "member.receipt.title": "Receipt",
     "member.receipt.total": "Total",
     "member.scan.addPhoto": "Add photo",
@@ -3727,7 +4400,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.scan.cameraAccessBlocked": "Camera access blocked",
     "member.scan.cameraAvailable": "Camera available",
     "member.scan.cameraAvailableAnnouncement": "Camera available. Point it at your gym QR code.",
-    "member.scan.cameraBlockedAnnouncement": "Camera access blocked. Open device settings to allow QR scanning.",
+    "member.scan.cameraBlockedAnnouncement":
+      "Camera access blocked. Open device settings to allow QR scanning.",
     "member.scan.cameraNeeded": "Camera needed",
     "member.scan.cameraNeededAnnouncement": "Camera permission needed before scanning.",
     "member.scan.cameraPreviewAccessibility": "QR scanner camera preview",
@@ -3743,18 +4417,20 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.scan.enterCheckInCode": "Enter check-in code",
     "member.scan.enterCode": "Enter code",
     "member.scan.enterCodeManually": "Enter code manually",
-    "member.scan.enterDeskCodeManually": "Enter the desk code manually.",
+    "member.scan.enterDeskCodeManually": "Use the code shown near the QR.",
     "member.scan.enterManualCodeAccessibility": "Enter manual check-in code",
     "member.scan.membershipExpired": "Membership expired. Renew before checking in.",
     "member.scan.needFourNumbers": "Need 4 numbers (e.g. 1234)",
     "member.scan.needTwoLetters": "Need 2 letters (e.g. AB)",
     "member.scan.notVerified": "Not verified",
-    "member.scan.offlineSavedBody": "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
+    "member.scan.offlineSavedBody":
+      "No connection. Your scan is saved to retry, but entry is not confirmed yet.",
     "member.scan.offlineSavedTitle": "Scan saved for retry",
     "member.scan.offlineSavedToast": "Entry is not confirmed until the server accepts it.",
     "member.scan.openDeviceSettings": "Open device settings to allow QR scanning.",
     "member.scan.openSettings": "Open settings",
-    "member.scan.profilePhotoRecommended": "Add a profile photo after check-in so the desk can verify you faster next time.",
+    "member.scan.profilePhotoRecommended":
+      "Add a profile photo after check-in so the desk can verify you faster next time.",
     "member.scan.queuedScanWaiting": "{{count}} scan waiting for server confirmation.",
     "member.scan.queuedScansWaiting": "{{count}} scans waiting for server confirmation.",
     "member.scan.retryNow": "Retry now",
@@ -3793,9 +4469,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.fallbackName": "Member",
     "owner.home.activeMembers": "Active members",
     "owner.home.allClear": "All clear",
+    "owner.home.allClearBody":
+      "No urgent approvals, payment exceptions, low-stock items, or expiring plans need action right now.",
     "owner.home.approvals": "Approvals",
     "owner.home.approvalsWaiting": "Approvals waiting",
-    "owner.home.approvalsWaitingSubtitle": "{{join}} join {{joinLabel}} · {{scans}} scan {{scanLabel}}",
+    "owner.home.approvalsWaitingSubtitle":
+      "{{join}} join {{joinLabel}} · {{scans}} scan {{scanLabel}}",
     "owner.home.billingSetupBody":
       "Trial access is on, but owner/admin writes need a SaaS mandate before the gym can operate normally.",
     "owner.home.billingSetupRequired": "Billing setup required",
@@ -3824,6 +4503,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.request": "request",
     "owner.home.requests": "requests",
     "owner.home.revenue": "Revenue",
+    "owner.home.reviewMembers": "Review members",
     "owner.home.review": "review",
     "owner.home.reviews": "reviews",
     "owner.home.scan": "scan",
@@ -3834,11 +4514,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.todayCheckIns": "Today check-ins",
     "owner.home.transactionNeeds": "transaction needs",
     "owner.home.transactionsNeed": "transactions need",
+    "owner.members.active": "Active",
     "owner.members.day": "day",
     "owner.members.days": "days",
     "owner.members.daysLeft": "{{count}} {{label}} left",
+    "owner.members.expiring": "Expiring",
     "owner.members.expiringReminderBody": "Your membership ends on {{date}}. Renew in the app.",
     "owner.members.expiringReminderTitle": "Membership expiring soon",
+    "owner.members.missingContact": "Missing contact",
     "owner.members.reminderNotSent": "Reminder not sent",
     "owner.members.reminderSent": "Reminder sent to {{name}}.",
     "owner.members.sendReminder": "Send reminder",
@@ -3847,10 +4530,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.total": "{{count}} total",
     "owner.members.tryAgain": "Try again.",
     "owner.member.couldNotLoadMember": "Could not load member",
+    "owner.member.actionContactBody":
+      "Add a phone and email before assigning offers or sending reminders.",
+    "owner.member.actionContactTitle": "Complete contact details",
+    "owner.member.actionExpiringBody":
+      "Plan ends in {{count}} days. Send a reminder before access lapses.",
+    "owner.member.actionExpiringTitle": "Renewal window is open",
+    "owner.member.actionHealthyBody":
+      "Profile, contact, and membership status look ready for daily operations.",
+    "owner.member.actionHealthyTitle": "Member is in good shape",
+    "owner.member.actionPlanBody":
+      "No active membership is ready. Record payment or assign a plan before check-ins.",
+    "owner.member.actionPlanTitle": "Set up an active plan",
     "owner.member.email": "Email",
     "owner.member.fitnessGoal": "Fitness goal",
     "owner.member.memberFallback": "Member",
     "owner.member.memberSince": "Member since",
+    "owner.member.nextBestAction": "Next best action",
     "owner.member.noActivePlan": "No active plan",
     "owner.member.notes": "Notes",
     "owner.member.notAvailable": "Not available",
@@ -3860,10 +4556,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.member.phone": "Phone",
     "owner.member.recordPayment": "Record payment",
     "owner.member.reminderComingSoon": "Reminder feature coming soon.",
-    "owner.member.reveal": "Reveal",
-    "owner.member.revealNotLogged": "Reveal not logged",
-    "owner.member.revealNotLoggedBody": "The phone was shown, but the audit log could not be saved.",
-    "owner.member.revealPhoneFor": "Reveal phone for {{name}}",
+    "owner.member.reveal": "View contact",
+    "owner.member.revealNotLogged": "Contact view not logged",
+    "owner.member.revealNotLoggedBody":
+      "The phone was shown, but the audit log could not be saved.",
+    "owner.member.revealPhoneFor": "View contact for {{name}}",
     "owner.member.sendReminder": "Send reminder",
     "owner.member.subscriptionHistory": "Subscription history",
     "owner.member.untilDate": "Until {{date}}",
@@ -3883,9 +4580,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.approvals.none": "none",
     "owner.approvals.ownerApprovalRequired": "Owner approval required",
     "owner.approvals.pending": "Pending",
+    "owner.approvals.pendingReviews": "Pending reviews",
     "owner.approvals.referral": "Referral",
     "owner.approvals.reject": "Reject",
-    "owner.approvals.rejectBody": "This person won't be added to the gym and would need to request again.",
+    "owner.approvals.rejectBody":
+      "This person won't be added to the gym and would need to request again.",
     "owner.approvals.rejected": "Join request rejected.",
     "owner.approvals.rejectFailed": "Unable to reject join request.",
     "owner.approvals.rejectTitle": "Reject join request?",
@@ -3893,6 +4592,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.approvals.scanReviewQueueCount": "Scan review queue ({{count}})",
     "owner.approvals.scanReviews": "Scan reviews",
     "owner.approvals.title": "Approvals",
+    "owner.more.approvals": "Approvals",
+    "owner.more.approvalsSubtitle": "Review join requests and flagged scans",
     "owner.more.billing": "Billing",
     "owner.more.billingSubtitle": "Trial and subscription",
     "owner.more.branches": "Branches",
@@ -3907,6 +4608,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.membershipPlansSubtitle": "Create and price the plans members buy",
     "owner.more.notificationTemplates": "Notification templates",
     "owner.more.notificationTemplatesSubtitle": "Reusable message drafts",
+    "owner.more.groupCatalog": "Catalog",
+    "owner.more.groupDailyWork": "Daily work",
+    "owner.more.groupFinance": "Finance & growth",
+    "owner.more.groupOperations": "Operations",
+    "owner.more.members": "Members",
+    "owner.more.membersSubtitle": "Find profiles, renewals, and expiring plans",
     "owner.more.ownerTools": "Owner tools",
     "owner.more.referGym": "Refer a gym & earn",
     "owner.more.referGymSubtitle": "Get free Zook days when a gym you refer subscribes",
@@ -3914,6 +4621,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.more.referralProgramSubtitle": "Set rewards for members, trainers & gym referrals",
     "owner.more.reports": "Reports",
     "owner.more.reportsSubtitle": "Revenue, attendance, and member movement",
+    "owner.more.revenue": "Revenue",
+    "owner.more.revenueSubtitle": "Track collections, receipts, and failed payments",
     "owner.more.staff": "Staff",
     "owner.more.staffSubtitle": "Invite and manage admins and trainers",
     "owner.more.stock": "Stock",
@@ -3930,16 +4639,20 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.exerciseLibrary.exerciseName": "Exercise name",
     "owner.exerciseLibrary.exerciseNamePlaceholder": "Bench press",
     "owner.exerciseLibrary.featured": "Featured",
+    "owner.exerciseLibrary.featuredTemplates": "Featured",
     "owner.exerciseLibrary.muscle": "Muscle",
     "owner.exerciseLibrary.musclePlaceholder": "Chest",
     "owner.exerciseLibrary.new": "New",
     "owner.exerciseLibrary.newTemplate": "New template",
     "owner.exerciseLibrary.noSharedTemplates": "No shared templates",
-    "owner.exerciseLibrary.noSharedTemplatesBody": "Add starters or create your own house favorites.",
+    "owner.exerciseLibrary.noSharedTemplatesBody":
+      "Add starters or create your own house favorites.",
     "owner.exerciseLibrary.notes": "Notes",
     "owner.exerciseLibrary.notesPlaceholder": "Coaching cues",
+    "owner.exerciseLibrary.programmingDefaults": "Programming defaults",
     "owner.exerciseLibrary.remove": "Remove",
-    "owner.exerciseLibrary.removeTemplateBody": "\"{{name}}\" will be hidden from the shared library.",
+    "owner.exerciseLibrary.removeTemplateBody":
+      '"{{name}}" will be hidden from the shared library.',
     "owner.exerciseLibrary.removeTemplateTitle": "Remove template?",
     "owner.exerciseLibrary.reps": "Reps",
     "owner.exerciseLibrary.repsCount": "{{count}} reps",
@@ -3949,12 +4662,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.exerciseLibrary.setsCount": "{{count}} sets",
     "owner.exerciseLibrary.shared": "Shared",
     "owner.exerciseLibrary.sharedLibrary": "Shared library",
+    "owner.exerciseLibrary.sharedTemplates": "Shared",
     "owner.exerciseLibrary.starter": "Starter",
+    "owner.exerciseLibrary.starterTemplates": "Starters",
     "owner.exerciseLibrary.starters": "Starters",
     "owner.exerciseLibrary.subtitle": "Shared workout templates your trainers can reuse.",
     "owner.exerciseLibrary.tempo": "Tempo",
     "owner.exerciseLibrary.title": "Exercise library",
     "owner.coupons.active": "Active",
+    "owner.coupons.activeOffers": "{{count}} active",
     "owner.coupons.amountOffInput": "Amount off (₹)",
     "owner.coupons.amountOffValue": "{{amount}} off",
     "owner.coupons.code": "Code",
@@ -3970,13 +4686,16 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.coupons.noCouponsYet": "No coupons yet",
     "owner.coupons.noCouponsYetBody": "Create a discount code to run a campaign.",
     "owner.coupons.paused": "Paused",
+    "owner.coupons.pausedOffers": "{{count}} paused",
     "owner.coupons.perMember": "Per member",
     "owner.coupons.perMemberLimit": "{{count}}/member",
     "owner.coupons.percentOff": "Percent off",
     "owner.coupons.percentOffInput": "Percent off (%)",
     "owner.coupons.percentOffValue": "{{value}}% off",
+    "owner.coupons.redemptions": "Redemptions",
+    "owner.coupons.redemptionLimits": "Redemption limits",
     "owner.coupons.remove": "Remove",
-    "owner.coupons.removeCouponBody": "\"{{code}}\" will no longer be redeemable.",
+    "owner.coupons.removeCouponBody": '"{{code}}" will no longer be redeemable.',
     "owner.coupons.removeCouponTitle": "Remove coupon?",
     "owner.coupons.saveChanges": "Save changes",
     "owner.coupons.subtitle": "Discount codes members can apply at checkout.",
@@ -3993,21 +4712,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.plans.editAccessibility": "Edit {{name}}",
     "owner.plans.editPlan": "Edit plan",
     "owner.plans.hidden": "Hidden",
+    "owner.plans.hiddenDrafts": "Hidden drafts",
     "owner.plans.hybrid": "Hybrid",
     "owner.plans.newPlan": "New plan",
     "owner.plans.noPlansYet": "No plans yet",
     "owner.plans.noPlansYetBody": "Create your first membership plan.",
+    "owner.plans.planLimits": "Plan limits",
     "owner.plans.planName": "Plan name",
     "owner.plans.planNamePlaceholder": "Monthly Active",
     "owner.plans.plans": "Plans",
     "owner.plans.priceInr": "Price (₹)",
+    "owner.plans.publicPlans": "Public plans",
     "owner.plans.remove": "Remove",
-    "owner.plans.removePlanBody": "Members won't be able to buy \"{{name}}\" anymore.",
+    "owner.plans.removePlanBody": 'Members won\'t be able to buy "{{name}}" anymore.',
     "owner.plans.removePlanTitle": "Remove plan?",
     "owner.plans.saveChanges": "Save changes",
     "owner.plans.showPublicly": "Show publicly",
     "owner.plans.subtitle": "The plans members can buy at your gym.",
     "owner.plans.title": "Membership plans",
+    "owner.plans.totalPlans": "{{count}} total",
     "owner.plans.trial": "Trial",
     "owner.plans.type": "Type",
     "owner.plans.visitPack": "Visit pack",
@@ -4017,6 +4740,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.billing.activeMembersCopy": "{{count}} {{noun}} {{verb}} toward your plan limits",
     "owner.billing.aiImages": "AI images",
     "owner.billing.aiText": "AI text",
+    "owner.billing.autopay": "Autopay",
     "owner.billing.branches": "Branches",
     "owner.billing.cancel": "Cancel",
     "owner.billing.cancelAtPeriodEnd": "Cancel at period end",
@@ -4029,7 +4753,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.billing.count": "count",
     "owner.billing.counts": "counts",
     "owner.billing.currentPlanLimits": "Current plan limits",
-    "owner.billing.currentPlanLimitsBody": "Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.",
+    "owner.billing.currentPlanLimitsBody":
+      "Limits are enforced for gym size, team size, branches, inventory, messages, and AI usage.",
     "owner.billing.keep": "Keep",
     "owner.billing.mandate": "Mandate",
     "owner.billing.member": "member",
@@ -4039,6 +4764,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.billing.monthly": "Monthly",
     "owner.billing.nextBilling": "Next billing",
     "owner.billing.nextCharge": "Next charge",
+    "owner.billing.needsSetup": "Needs setup",
     "owner.billing.noPaymentMandate": "No payment mandate is set up.",
     "owner.billing.notAvailable": "Not available",
     "owner.billing.openingBillingSetup": "Opening billing setup.",
@@ -4053,7 +4779,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.billing.setUpMandate": "Set up mandate",
     "owner.billing.sixMonths": "6 months",
     "owner.billing.staff": "Staff",
+    "owner.billing.ready": "Ready",
+    "owner.billing.statusActive": "Active",
+    "owner.billing.statusCancelled": "Cancelled",
+    "owner.billing.statusDeleted": "Deleted",
+    "owner.billing.statusMissing": "Missing",
+    "owner.billing.statusPaymentPending": "Payment pending",
+    "owner.billing.statusPaused": "Paused",
+    "owner.billing.statusSuspended": "Suspended",
+    "owner.billing.statusTrialActive": "Trial active",
+    "owner.billing.statusTrialExpired": "Trial expired",
+    "owner.billing.statusTrialExpiring": "Trial expiring",
     "owner.billing.support": "Support",
+    "owner.billing.subscription": "Subscription",
     "owner.billing.title": "Billing",
     "owner.billing.trainers": "Trainers",
     "owner.billing.trialEnds": "Trial ends",
@@ -4072,6 +4810,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.payouts.marking": "Marking...",
     "owner.payouts.outstanding": "Outstanding this month",
     "owner.payouts.paid": "Paid",
+    "owner.payouts.payableTrainers": "Payable trainers",
     "owner.payouts.payDay": "Pay day (1-28)",
     "owner.payouts.perSession": "Per session (₹)",
     "owner.payouts.ptCommission": "PT commission (%)",
@@ -4085,7 +4824,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.payouts.trainerLower": "trainer",
     "owner.stock.allInStock": "All products in stock",
     "owner.stock.allInStockBody": "Items running low on inventory will appear here.",
+    "owner.stock.collectPayment": "Collect payment",
+    "owner.stock.collectPaymentBody": "{{count}} orders still need payment before pickup.",
+    "owner.stock.collectPaymentDone": "No unpaid shop orders are waiting.",
     "owner.stock.leftThreshold": "{{stock}} left · threshold {{threshold}}",
+    "owner.stock.left": "left",
     "owner.stock.lowStock": "Low stock",
     "owner.stock.memberPickup": "Member pickup",
     "owner.stock.noPickups": "No pickups waiting",
@@ -4097,11 +4840,22 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.stock.productsToReorder": "Products to reorder",
     "owner.stock.reorder": "Reorder",
     "owner.stock.reorderAccessibility": "Reorder {{name}}",
-    "owner.stock.reorderBody": "Hi,\n\nPlease share supplier options for {{name}}.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
+    "owner.stock.reorderBody":
+      "Hi,\n\nPlease share supplier options for {{name}}.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
     "owner.stock.reorderSubject": "Reorder {{name}}",
+    "owner.stock.reorderStock": "Reorder stock",
+    "owner.stock.reorderStockBody": "{{count}} products are at or below threshold.",
+    "owner.stock.reorderStockDone": "No products are below threshold.",
+    "owner.stock.reorderNow": "Reorder now",
+    "owner.stock.todayWork": "Today's stock work",
+    "owner.stock.thresholdShort": "Min {{threshold}}",
     "owner.stock.title": "Stock",
     "owner.stock.underThreshold": "Under threshold",
+    "owner.stock.verifyPickup": "Verify pickup",
+    "owner.stock.verifyPickupBody": "{{count}} paid orders are ready for handoff.",
+    "owner.stock.verifyPickupDone": "No member pickups are waiting.",
     "owner.staff.admin": "Admin",
+    "owner.staff.admins": "Admins",
     "owner.staff.changeRole": "Change role",
     "owner.staff.email": "Email",
     "owner.staff.invite": "Invite",
@@ -4110,8 +4864,10 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.staff.noStaffBody": "Invite your first admin or trainer.",
     "owner.staff.noStaffYet": "No staff yet",
     "owner.staff.owner": "Owner",
+    "owner.staff.pendingInvites": "{{count}} pending",
     "owner.staff.reception": "Reception",
-    "owner.staff.receptionWebHint": "Reception staff are assigned to a branch from the web dashboard.",
+    "owner.staff.receptionWebHint":
+      "Reception staff are assigned to a branch from the web dashboard.",
     "owner.staff.remove": "Remove",
     "owner.staff.removeBody": "{{name}} will lose access to this gym.",
     "owner.staff.removeTitle": "Remove staff member?",
@@ -4122,10 +4878,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.staff.subtitle": "Admins, trainers and reception at your gym.",
     "owner.staff.team": "Team",
     "owner.staff.title": "Staff",
+    "owner.staff.totalStaff": "{{count}} total",
     "owner.staff.trainer": "Trainer",
+    "owner.staff.trainers": "Trainers",
     "owner.dashboard.activeCount": "{{count}} active",
     "owner.dashboard.attendance7Days": "Attendance · 7 days",
     "owner.dashboard.chartAccessibility": "Dashboard chart",
+    "owner.dashboard.collapseTrends": "Hide trend details",
+    "owner.dashboard.expandTrends": "Show trend details",
     "owner.dashboard.members30Days": "Members · 30 days",
     "owner.dashboard.noActiveMemberPlans": "No active member plans.",
     "owner.dashboard.planMix": "Plan mix",
@@ -4136,7 +4896,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",
     "reception.desk.code": "Code",
-    "reception.desk.displayEntryQr": "Display entry QR",
+    "reception.desk.displayEntryQr": "Entry QR",
     "reception.desk.enterCode": "Enter code",
     "reception.desk.flagged": "Flagged",
     "reception.desk.gateQueueClear": "Gate queue clear",
@@ -4150,12 +4910,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.queueClearBody": "No pending or flagged scans need the desk.",
     "reception.desk.queueMeta": "{{pending}} pending · {{flagged}} flagged",
     "reception.desk.queueNeedsAction": "Desk queue needs action",
-    "reception.desk.queueNeedsActionBody": "Review pending and flagged entry attempts before they age out.",
+    "reception.desk.queueNeedsActionBody":
+      "Review pending and flagged entry attempts before they age out.",
     "reception.desk.recentActivity": "Recent activity",
     "reception.desk.referGym": "Refer a gym & earn",
     "reception.desk.referGymAccessibility": "Refer a gym to Zook and earn",
     "reception.desk.referGymBody": "Earn cash when a gym you refer subscribes to Zook",
     "reception.desk.reviewRequired": "Review required",
+    "reception.desk.statusApproved": "Approved",
+    "reception.desk.statusFailed": "Failed",
+    "reception.desk.statusPendingApproval": "Needs review",
+    "reception.desk.statusRejected": "Rejected",
+    "reception.desk.statusRecorded": "Recorded",
     "reception.desk.today": "Today",
     "reception.desk.todayCount": "{{count}} today",
     "reception.desk.todaysClasses": "Today's classes",
@@ -4171,9 +4937,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.workspace.alreadyCheckedInToday": "This member is already checked in today.",
     "reception.workspace.approveFailed": "Could not approve. Please try again.",
     "reception.workspace.approvedScanReason": "Reception approved scan after review",
-    "reception.workspace.authenticationRequiredAction": "Authentication required to perform this action.",
+    "reception.workspace.authenticationRequiredAction":
+      "Authentication required to perform this action.",
     "reception.workspace.bulkRecorded": "Recorded attendance for {{count}} {{memberLabel}}.",
-    "reception.workspace.bulkRecordedPartial": "Recorded {{successes}} of {{total}}. {{failures}} failed.",
+    "reception.workspace.bulkRecordedMany": "Recorded attendance for {{count}} members.",
+    "reception.workspace.bulkRecordedOne": "Recorded attendance for 1 member.",
+    "reception.workspace.bulkRecordedPartial":
+      "Recorded {{successes}} of {{total}}. {{failures}} failed.",
     "reception.workspace.checkInApproved": "Check-in approved.",
     "reception.workspace.checkInNotValid": "Check-in not valid",
     "reception.workspace.checkInRejected": "Check-in rejected.",
@@ -4182,15 +4952,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.workspace.deskApprovalRequired": "Desk approval required.",
     "reception.workspace.enterCodeFirst": "Enter a code first.",
     "reception.workspace.entryCode": "Entry code",
-    "reception.workspace.entryCodeInvalidMessage": "Entry code found for {{name}}, but it is not valid for entry.",
+    "reception.workspace.entryCodeInvalidMessage":
+      "Entry code found for {{name}}, but it is not valid for entry.",
     "reception.workspace.fulfillFailed": "Could not fulfill this order.",
     "reception.workspace.fulfillPickupAuth": "Fulfill pickup without code",
-    "reception.workspace.fulfillPickupReason": "Reception manually fulfilled pickup after local re-auth.",
+    "reception.workspace.fulfillPickupReason":
+      "Reception manually fulfilled pickup after local re-auth.",
     "reception.workspace.mainBranchFallback": "Main branch",
     "reception.workspace.manualAttendanceRecorded": "Manual attendance recorded.",
     "reception.workspace.memberCheckInFallback": "Member check-in",
     "reception.workspace.memberFallback": "Member",
-    "reception.workspace.membershipAlreadyActive": "This membership is already active. Choose a pending subscription or create a new manual activation.",
+    "reception.workspace.membershipAlreadyActive":
+      "This membership is already active. Choose a pending subscription or create a new manual activation.",
     "reception.workspace.membershipFallback": "Membership",
     "reception.workspace.noActiveCode": "No active entry or pickup code.",
     "reception.workspace.notValidForEntry": "Not valid for entry",
@@ -4209,7 +4982,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.workspace.recordManualAttendanceAuth": "Record manual attendance",
     "reception.workspace.recordManualPaymentAuth": "Record manual payment",
     "reception.workspace.recording": "Recording...",
-    "reception.workspace.receptionDesk": "Reception desk",
+    "reception.workspace.receptionDesk": "Front desk",
     "reception.workspace.rejectFailed": "Could not reject. Please try again.",
     "reception.workspace.rejectedScanReason": "Reception rejected scan after review",
     "reception.workspace.selectedBadge": "Selected",
@@ -4229,7 +5002,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.members.clear": "Clear",
     "reception.members.deskActions": "Desk actions",
     "reception.members.generalFitness": "General fitness",
-    "reception.members.hiddenHint": "Showing {{visible}} of {{total}} matches. Refine the search to find a specific member faster.",
+    "reception.members.hiddenHint":
+      "Showing {{visible}} of {{total}} matches. Refine the search to find a specific member faster.",
     "reception.members.memberTitle": "Member",
     "reception.members.membership": "Membership",
     "reception.members.multiSelectCount": "Multi-select · {{count}}",
@@ -4248,22 +5022,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.orders.confirmPickedUpTitle": "Mark order picked up?",
     "reception.orders.done": "Done",
     "reception.orders.enterPickupCode": "Enter pickup code",
-    "reception.orders.fulfillmentQueue": "Fulfillment Queue",
+    "reception.orders.fulfillmentQueue": "Fulfillment queue",
     "reception.orders.itemCount": "{{count}} items",
     "reception.orders.markPickedUp": "Mark picked up",
     "reception.orders.noPickupsBody": "Paid shop orders ready for collection will appear here.",
     "reception.orders.pickupCode": "Pickup code",
-    "reception.orders.pickupVerification": "Pickup Verification",
-    "reception.orders.pickupVerificationBody": "Match the code and member before giving out the order.",
+    "reception.orders.pickupVerification": "Pickup verification",
+    "reception.orders.pickupVerificationBody":
+      "Match the code and member before giving out the order.",
     "reception.orders.ready": "Ready",
+    "reception.orders.statusCancelled": "Cancelled",
+    "reception.orders.statusFailed": "Failed",
+    "reception.orders.statusFulfilled": "Picked up",
+    "reception.orders.statusPaid": "Paid",
+    "reception.orders.statusPendingPayment": "Payment pending",
+    "reception.orders.statusRefunded": "Refunded",
     "reception.orders.thisMember": "This member",
     "reception.orders.title": "Orders",
-    "reception.orders.verifyPickupCode": "Verify Pickup Code",
+    "reception.orders.verifyPickupCode": "Verify pickup code",
     "reception.payments.activeDesk": "Active desk",
+    "reception.payments.additionalDetails": "Additional details",
     "reception.payments.amount": "Amount",
     "reception.payments.amountInvalid": "Enter an amount greater than 0.",
     "reception.payments.amountReceived": "Amount received",
-    "reception.payments.auditWarning": "All offline payments are recorded with audit logs. Ensure payment is received before recording.",
+    "reception.payments.auditWarning":
+      "All offline payments are recorded with audit logs. Ensure payment is received before recording.",
+    "reception.payments.changeMember": "Change member",
     "reception.payments.collection": "Payment collection",
     "reception.payments.collectionMode": "Collection mode",
     "reception.payments.desk": "Desk",
@@ -4284,12 +5068,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.payments.modeUpi": "Direct UPI",
     "reception.payments.newPayment": "New Payment",
     "reception.payments.noContact": "No contact",
+    "reception.payments.noAdditionalDetails": "No reference or note",
     "reception.payments.noMembershipSelected": "No membership selected",
     "reception.payments.noPlan": "No plan",
     "reception.payments.recordPayment": "Record Payment",
     "reception.payments.reference": "Receipt or reference",
     "reception.payments.referencePlaceholder": "UPI ref, bank UTR, card slip",
-    "reception.payments.reviewConsequence": "Only record this after cash, UPI, card, or bank transfer is actually received at the desk.",
+    "reception.payments.reviewConsequence":
+      "Only record this after cash, UPI, card, or bank transfer is actually received at the desk.",
     "reception.payments.reviewTitle": "Desk payment review",
     "reception.payments.searchPlaceholder": "Name, email, or phone",
     "reception.payments.selectMember": "Select a member",
@@ -4321,34 +5107,56 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.referrals.discountPercent": "Discount %",
     "owner.referrals.enabled": "Referrals enabled",
     "owner.referrals.enabledBody": "Turn the whole referral program on or off.",
+    "owner.referrals.enabledShort": "Enabled",
     "owner.referrals.flatInr": "Flat ₹",
     "owner.referrals.freeDays": "Free days",
     "owner.referrals.limits": "Limits",
+    "owner.referrals.limitSummary": "{{count}}/month · {{days}} days",
     "owner.referrals.maxPerMemberMonth": "Max / member / month",
-    "owner.referrals.memberGymCreditBody": "Account credit a member earns when a gym they refer signs up.",
+    "owner.referrals.memberGymCreditBody":
+      "Account credit a member earns when a gym they refer signs up.",
     "owner.referrals.memberRefersMember": "Member refers a member",
     "owner.referrals.memberRefersNewGym": "Member refers a new gym",
+    "owner.referrals.moreRules": "More referral rules",
+    "owner.referrals.moreRulesBody": "Trainer rewards, new-gym credit, and monthly limits",
     "owner.referrals.newMemberGets": "New member gets",
     "owner.referrals.none": "None",
+    "owner.referrals.off": "Off",
+    "owner.referrals.paused": "Paused",
     "owner.referrals.percent": "Percent",
+    "owner.referrals.program": "Program",
     "owner.referrals.referrerEarns": "Referrer earns",
     "owner.referrals.saveSettings": "Save referral settings",
     "owner.referrals.subtitle": "Set how much everyone earns for referrals.",
     "owner.referrals.title": "Referral program",
     "owner.referrals.trainerEarns": "Trainer earns",
     "owner.referrals.trainerRefersMember": "Trainer refers a member",
+    "owner.referrals.trainers": "Trainers",
     "owner.referrals.visits": "Visits",
     "owner.revenue.noPaymentsYet": "No payments yet",
-    "owner.revenue.noPaymentsYetBody": "Payments and shop pickups will appear here as they come in.",
+    "owner.revenue.noPaymentsYetBody":
+      "Payments and shop pickups will appear here as they come in.",
     "owner.revenue.paymentFallback": "payment",
     "owner.revenue.pickupPending": "Pickup pending",
+    "owner.revenue.pickupValue": "Pickup value",
+    "owner.revenue.pickupValueBody": "{{count}} shop pickups hold {{amount}} in member orders.",
+    "owner.revenue.pickupValueDone": "No pickup value is waiting at the desk.",
     "owner.revenue.recentTransactions": "Recent transactions",
     "owner.revenue.refund": "Refund",
     "owner.revenue.refundAccessibility": "Refund {{name}}",
     "owner.revenue.refundPaymentBody": "Refund {{amount}} to {{name}}. This can't be undone.",
     "owner.revenue.refundPaymentTitle": "Refund payment?",
+    "owner.revenue.refundReview": "Refund review",
+    "owner.revenue.refundReviewBody":
+      "{{count}} successful payments can still be refunded from the feed.",
+    "owner.revenue.refundReviewDone": "No successful payments need refund review.",
     "owner.revenue.refundedByGym": "Refunded by gym",
+    "owner.revenue.financeWork": "Finance work",
     "owner.revenue.manualRecords": "Manual records",
+    "owner.revenue.manualRecordsBody":
+      "{{count}} desk-recorded payments need daily reconciliation.",
+    "owner.revenue.manualRecordsDone": "No manual payments need reconciliation.",
+    "owner.revenue.manualRecordsWithAmount": "Desk records {{amount}}",
     "owner.revenue.revenueToday": "Revenue today",
     "owner.revenue.shopPickupOrder": "Shop pickup order",
     "owner.revenue.tapToRefund": "Tap to refund",
@@ -4370,7 +5178,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.createPlanNext": "Create plan next",
     "trainer.home.createPlansManually": "Create plans manually",
     "trainer.home.noCoachingActions": "No coaching actions today",
-    "trainer.home.noCoachingActionsBody": "You're on top of your clients. New tasks will show up here.",
+    "trainer.home.noCoachingActionsBody":
+      "You're on top of your clients. New tasks will show up here.",
     "trainer.home.noRecentFeedback": "No recent feedback",
     "trainer.home.noRecentFeedbackBody": "Client workout feedback will appear here.",
     "trainer.home.needsPlan": "Needs plan",
@@ -4392,17 +5201,25 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.trainerFallback": "Trainer",
     "trainer.home.trainerPlanningQueue": "Trainer planning queue",
     "trainer.clients.activePlanCount": "{{count}} active {{label}}",
+    "trainer.clients.coachingFocus": "Coaching focus",
+    "trainer.clients.coachingFocusBody": "Start with clients who need a plan or feedback review.",
     "trainer.clients.generalFitness": "General fitness",
+    "trainer.clients.nextClient": "Next client",
     "trainer.clients.noClients": "No clients",
     "trainer.clients.noClientsBody": "No clients added by your gym.",
     "trainer.clients.noMatchingClients": "No matching clients",
-    "trainer.clients.subtitle": "{{name}} · client list is access-controlled",
+    "trainer.clients.openNextClient": "Open",
+    "trainer.clients.searchClients": "Search clients",
+    "trainer.clients.subtitle": "Your assigned clients",
     "trainer.clients.title": "Clients",
+    "trainer.clients.total": "{{count}} total",
     "trainer.clients.tryAnotherSearch": "Try another search or filter.",
-    "trainer.aiDraft.body": "Your gym owner can turn on AI plan drafting in settings. You can still create and edit plans manually.",
+    "trainer.aiDraft.body":
+      "Your gym owner can turn on AI plan drafting in settings. You can still create and edit plans manually.",
     "trainer.aiDraft.createManual": "Create plan manually",
     "trainer.aiDraft.title": "AI drafting is off",
-    "trainer.classes.cancelBody": "Members who booked this class will be notified right away. This can't be undone.",
+    "trainer.classes.cancelBody":
+      "Members who booked this class will be notified right away. This can't be undone.",
     "trainer.classes.cancelClass": "Cancel class",
     "trainer.classes.cancelled": "Cancelled",
     "trainer.classes.cancelTitle": "Cancel {{name}}?",
@@ -4436,7 +5253,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.classes.typeYoga": "Yoga",
     "trainer.classes.upcomingClasses": "Upcoming classes",
     "trainer.clientSessions.adherence": "Adherence",
-    "trainer.clientSessions.averageCompletion": "{{percent}}% average completion across recent plan feedback.",
+    "trainer.clientSessions.averageCompletion":
+      "{{percent}}% average completion across recent plan feedback.",
     "trainer.clientSessions.backToClients": "Back to clients",
     "trainer.clientSessions.completePercent": "{{percent}}% complete",
     "trainer.clientSessions.durationMinutes": "{{minutes}} min",
@@ -4445,7 +5263,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientSessions.noPlans": "No plans",
     "trainer.clientSessions.planFeedback": "Plan feedback",
     "trainer.clientSessions.planProgress": "Plan progress",
-    "trainer.clientSessions.title": "Client Detail",
+    "trainer.clientSessions.title": "Client detail",
     "trainer.clientSessions.waitingForFeedback": "Waiting for member feedback and workout logs.",
     "trainer.clientDiet.addMeal": "Add meal",
     "trainer.clientDiet.breakfast": "Breakfast",
@@ -4461,7 +5279,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientDiet.dinner": "Dinner",
     "trainer.clientDiet.lunch": "Lunch",
     "trainer.clientDiet.midMorning": "Mid-morning",
-    "trainer.clientDiet.noPreviousPlan": "No plan published yet for this client. Build the first one below.",
+    "trainer.clientDiet.noPreviousPlan":
+      "No plan published yet for this client. Build the first one below.",
     "trainer.clientDiet.planTitle": "Plan title",
     "trainer.clientDiet.planTitlePlaceholder": "Muscle gain · Vegetarian",
     "trainer.clientDiet.preWorkout": "Pre-workout",
@@ -4476,6 +5295,14 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientDetail.overviewTab": "Overview",
     "trainer.clientDetail.planTab": "Plan",
     "trainer.clientDetail.sessionsTab": "Sessions",
+    "trainer.clientOverview.nextStep": "Next coaching step",
+    "trainer.clientOverview.nextStepBody": "Pick the action that moves this client forward today.",
+    "trainer.clientOverview.reviewFeedback": "Review feedback",
+    "trainer.clientOverview.reviewFeedbackBody":
+      "Check completion and recent workout notes before changing the plan.",
+    "trainer.clientOverview.reviewSessions": "Review sessions",
+    "trainer.clientOverview.reviewSessionsBody":
+      "No workout is logged yet. Open sessions to capture the latest training work.",
     "trainer.clientPlan.assignedStatus": "{{title}} assigned. {{name}} can now see it.",
     "trainer.clientPlan.calories": "Calories",
     "trainer.clientPlan.clientDietPlanPlaceholder": "{{name}} diet plan",
@@ -4490,7 +5317,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientPlan.exerciseRecoveryMobility": "Recovery mobility flow",
     "trainer.clientPlan.exerciseTemplates": "Exercise templates",
     "trainer.clientPlan.exerciseWeeklyRoutineReview": "Weekly routine review",
-    "trainer.clientPlan.noDietPlanForClient": "No diet plan published yet for {{name}}. You are starting fresh below.",
+    "trainer.clientPlan.noDietPlanForClient":
+      "No diet plan published yet for {{name}}. You are starting fresh below.",
     "trainer.clientPlan.planAssigned": "Plan assigned.",
     "trainer.clientPlan.planBuilder": "Plan builder",
     "trainer.clientPlan.planCouldNotBeCreated": "Plan could not be created.",
@@ -4528,10 +5356,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.clientOverview.noLog": "No log",
     "trainer.clientOverview.noneAdded": "None added",
     "trainer.clientOverview.noMeasurements": "No measurements yet",
-    "trainer.clientOverview.noMeasurementsBody": "Record body progress above to start tracking this client's trend.",
+    "trainer.clientOverview.noMeasurementsBody":
+      "Record body progress above to start tracking this client's trend.",
     "trainer.clientOverview.noWorkoutLogged": "No workout logged",
     "trainer.clientOverview.notAdded": "Not added",
-    "trainer.clientOverview.noteAudit": "Only assigned trainers and owners/admins can see trainer notes.",
+    "trainer.clientOverview.noteAudit":
+      "Only assigned trainers and owners/admins can see trainer notes.",
     "trainer.clientOverview.noteSavedToast": "Trainer note saved.",
     "trainer.clientOverview.notShared": "Not shared",
     "trainer.clientOverview.paused": "Paused",
@@ -4612,24 +5442,30 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.payoutSettings.footnote": "Changes apply from your next payout cycle.",
     "trainer.payoutSettings.payDay": "Pay day of month",
     "trainer.payoutSettings.payDayHint": "Day of the month your payout is processed (1-28).",
+    "trainer.payoutSettings.payDayInvalid": "Enter a day from 1 to 28.",
     "trainer.payoutSettings.perSessionFee": "Per-session fee (₹)",
     "trainer.payoutSettings.perSessionFeeHint": "Flat amount credited for every session you log.",
     "trainer.payoutSettings.profileUpi": "Profile & UPI",
     "trainer.payoutSettings.ptCommission": "PT commission (%)",
     "trainer.payoutSettings.ptCommissionHint": "Share of personal training revenue you earn.",
+    "trainer.payoutSettings.ptCommissionInvalid": "Enter a commission from 0 to 100.",
     "trainer.payoutSettings.saveChanges": "Save changes",
     "trainer.payoutSettings.subtitle": "Set how you get paid and your UPI details.",
     "trainer.payoutSettings.title": "Payout settings",
     "trainer.payoutSettings.upiHint": "Used by the gym to pay you directly when needed.",
     "trainer.payoutSettings.upiId": "UPI ID",
     "trainer.plans.activePlanWork": "Active plan work",
+    "trainer.plans.createPlan": "Create plan",
     "trainer.plans.emptyBody": "Clients who need a plan or an update will appear here.",
     "trainer.plans.emptyTitle": "No active plan work",
+    "trainer.plans.needsFirstPlan": "Needs first plan",
+    "trainer.plans.needsFirstPlanBody": "Start with clients who do not have any active plan yet.",
     "trainer.plans.queueClear": "Planning queue clear",
     "trainer.plans.queueClearBody": "No client plans need assignment.",
     "trainer.plans.clientDetail": "Client Detail",
     "trainer.plans.reviewActivePlans": "Review active plans",
-    "trainer.plans.reviewActivePlansBody": "Open each client to adjust workouts, diet notes, and feedback before publishing changes.",
+    "trainer.plans.reviewActivePlansBody":
+      "Open each client to adjust workouts, diet notes, and feedback before publishing changes.",
     "trainer.plans.title": "Plan work",
   },
   hi: {
@@ -4644,38 +5480,48 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "common.back": "वापस",
     "common.dismiss": "बंद करें",
     "common.done": "हो गया",
+    "common.scheduled": "शेड्यूल्ड",
+    "common.today": "आज",
+    "common.tomorrow": "कल",
     "common.or": "या",
     "common.saving": "सेव हो रहा है...",
-    "common.authenticationRequired": "Authentication जरूरी है.",
-    "common.activeGymRequired": "Active gym जरूरी है.",
+    "common.authenticationRequired": "लॉगिन जरूरी है.",
+    "common.activeGymRequired": "सक्रिय जिम जरूरी है.",
     "common.closeSheet": "शीट बंद करें",
     "common.dismissNotification": "नोटिफिकेशन हटाएं",
     "common.tryAgain": "फिर कोशिश करें",
     "common.tryAgainMoment": "थोड़ी देर में फिर कोशिश करें.",
     "common.ok": "OK",
     "common.notNow": "अभी नहीं",
-    "common.enable": "Enable",
-    "network.timeout": "Request timed out. थोड़ी देर में फिर कोशिश करें.",
-    "network.connectionUnavailable": "अभी connect नहीं हो पा रहा. Internet connection check करें या फिर कोशिश करें.",
-    "auth.biometricPromptBody": "अगली बार Face ID या device biometrics इस्तेमाल करें.",
-    "auth.biometricPromptTitle": "Zook जल्दी unlock करें?",
-    "auth.gymUnavailableForAccount": "इस account के लिए gym available नहीं है",
-    "auth.roleUnavailableForOrg": "Active org में यह role available नहीं है",
-    "auth.socialNoToken": "{{provider}} ने sign-in token return नहीं किया. फिर कोशिश करें.",
-    "auth.socialUnavailable": "{{provider}} sign-in के लिए installed Zook app चाहिए (Expo Go में available नहीं).",
-    "branch.removedSwitched": "आपकी branch remove हो गई - {{name}} पर switch किया.",
-    "privilegedAction.pinLoading": "PIN entry अभी load हो रही है. App खुलने के बाद फिर कोशिश करें.",
-    "payments.statusRefreshed": "Payment status refresh हो गया",
-    "routeGuard.billingSetupRequiredBody": "Continue करने से पहले trial mandate set up करने के लिए billing खोलें.",
-    "routeGuard.permissionDeniedBody": "आपके पास इस action की permission नहीं है.",
-    "routeGuard.permissionDeniedTitle": "Permission denied",
-    "webHandoff.copyLink": "Link copy करें",
-    "webHandoff.linkCopied": "Link copy हो गया.",
-    "webHandoff.manageOnWeb": "{{title}}, web पर manage करें",
-    "webHandoff.open": "Open",
-    "webHandoff.subtitleDefault": "zookfit.in dashboard",
-    "payments.mutation.paymentRecordFailed": "Payment record नहीं हो सका.",
-    "payments.mutation.paymentRecorded": "Payment record हो गया.",
+    "common.enable": "चालू करें",
+    "common.plusCount": "+{{count}} और",
+    "network.timeout": "अनुरोध पूरा नहीं हुआ. थोड़ी देर में फिर कोशिश करें.",
+    "network.connectionUnavailable": "कनेक्शन नहीं हो पाया. फिर कोशिश करें.",
+    "auth.biometricPromptBody": "अगली बार Face ID या डिवाइस बायोमेट्रिक इस्तेमाल करें.",
+    "auth.biometricPromptTitle": "Zook जल्दी खोलें?",
+    "auth.gymUnavailableForAccount": "इस अकाउंट के लिए जिम उपलब्ध नहीं है",
+    "auth.roleUnavailableForOrg": "सक्रिय जिम में यह भूमिका उपलब्ध नहीं है",
+    "auth.socialNoToken": "{{provider}} ने साइन-इन टोकन नहीं दिया. फिर कोशिश करें.",
+    "auth.socialUnavailable":
+      "{{provider}} साइन-इन के लिए इंस्टॉल किया हुआ Zook ऐप चाहिए (Expo Go में उपलब्ध नहीं).",
+    "approvalQueue.approve": "मंजूर करें",
+    "approvalQueue.approving": "मंजूर हो रहा है...",
+    "approvalQueue.reject": "अस्वीकार करें",
+    "approvalQueue.rejecting": "अस्वीकार हो रहा है...",
+    "branch.removedSwitched": "आपकी ब्रांच हट गई - {{name}} पर बदला गया.",
+    "privilegedAction.pinLoading": "PIN एंट्री अभी लोड हो रही है. ऐप खुलने के बाद फिर कोशिश करें.",
+    "payments.statusRefreshed": "भुगतान स्थिति अपडेट हो गई",
+    "routeGuard.billingSetupRequiredBody":
+      "जारी रखने से पहले ट्रायल मैंडेट सेटअप करने के लिए बिलिंग खोलें.",
+    "routeGuard.permissionDeniedBody": "आपके पास इस काम की अनुमति नहीं है.",
+    "routeGuard.permissionDeniedTitle": "अनुमति नहीं है",
+    "webHandoff.copyLink": "लिंक कॉपी करें",
+    "webHandoff.linkCopied": "लिंक कॉपी हो गया.",
+    "webHandoff.manageOnWeb": "{{title}}, वेब पर मैनेज करें",
+    "webHandoff.open": "खोलें",
+    "webHandoff.subtitleDefault": "zookfit.in डैशबोर्ड",
+    "payments.mutation.paymentRecordFailed": "भुगतान रिकॉर्ड नहीं हो सका.",
+    "payments.mutation.paymentRecorded": "भुगतान रिकॉर्ड हो गया.",
     "payments.mutation.refundFailed": "Refund issue नहीं हो सका.",
     "payments.mutation.refundIssued": "Refund issue हो गया.",
     "payments.mutation.testCompleted": "Test payment complete हो गया.",
@@ -4691,7 +5537,8 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "plans.mutation.progressSaved": "Plan progress save हो गया.",
     "rewards.mutation.signInWithdrawal": "Withdrawal request करने के लिए फिर से sign in करें.",
     "rewards.mutation.withdrawalFailed": "Withdrawal request नहीं हो सकी.",
-    "rewards.mutation.withdrawalRequested": "Withdrawal request हो गई. हम review करके payout करेंगे.",
+    "rewards.mutation.withdrawalRequested":
+      "Withdrawal request हो गई. हम review करके payout करेंगे.",
     "exerciseTemplates.mutation.removeFailed": "Exercise template remove नहीं हो सका.",
     "exerciseTemplates.mutation.removeSuccess": "Exercise template remove हो गया.",
     "exerciseTemplates.mutation.saveFailed": "Exercise template save नहीं हो सका.",
@@ -4784,59 +5631,79 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "nav.stock": "स्टॉक",
     "nav.profile": "आप",
     "nav.payouts": "पेयआउट",
+    "nav.entryQr": "एंट्री QR",
     "notifications.today": "आज",
     "notifications.yesterday": "कल",
     "notifications.earlierThisWeek": "इस हफ्ते पहले",
     "notifications.older": "पुराने",
-    "notifications.allCaughtUp": "सब देखा जा चुका है",
-    "notifications.allCaughtUpRecent": "सब देखा जा चुका है · हाल का {{date}}",
-    "notifications.allMarkedRead": "सभी notifications read mark हो गए.",
-    "notifications.attendanceAlertReceived": "Attendance alert मिला",
-    "notifications.closeDetails": "Notification details बंद करें",
-    "notifications.couldNotUpdate": "Notification update नहीं हो सका.",
-    "notifications.couldNotUpdateMany": "Notifications update नहीं हो सके.",
-    "notifications.emptyBody": "Membership, classes और coaching से जुड़े नए alerts यहां आएंगे.",
-    "notifications.emptyTitle": "आप all caught up हैं",
-    "notifications.fallbackTitle": "Notification",
-    "notifications.markAllRead": "सभी read mark करें",
-    "notifications.markRead": "Read mark करें",
-    "notifications.markedRead": "Notification read mark हो गया.",
-    "notifications.noDetails": "कोई details उपलब्ध नहीं.",
-    "notifications.openedFromPush": "Push notification से खोला गया",
+    "notifications.allCaughtUp": "सब पढ़ लिया गया",
+    "notifications.allCaughtUpRecent": "सब पढ़ लिया गया · हाल का {{date}}",
+    "notifications.allMarkedRead": "सभी सूचनाएं पढ़ी हुई मार्क हो गईं.",
+    "notifications.attendanceAlertReceived": "अटेंडेंस अलर्ट मिला",
+    "notifications.backToInbox": "इनबॉक्स पर लौटें",
+    "notifications.closeDetails": "सूचना विवरण बंद करें",
+    "notifications.couldNotUpdate": "सूचना अपडेट नहीं हो सकी.",
+    "notifications.couldNotUpdateMany": "सूचनाएं अपडेट नहीं हो सकीं.",
+    "notifications.done": "हो गया",
+    "notifications.emptyBody": "मेंबरशिप, क्लास और कोचिंग से जुड़ी नई सूचनाएं यहां आएंगी.",
+    "notifications.emptyTitle": "कोई नई सूचना नहीं",
+    "notifications.fallbackTitle": "सूचना",
+    "notifications.linkedActions": "जुड़ी हुई कार्रवाई",
+    "notifications.linkedActionsBody": "विवरण या अगली स्क्रीन यहीं से खोलें.",
+    "notifications.markAllRead": "सभी पढ़ी हुई मार्क करें",
+    "notifications.markRead": "पढ़ी हुई मार्क करें",
+    "notifications.markedRead": "सूचना पढ़ी हुई मार्क हो गई.",
+    "notifications.noDetails": "कोई विवरण उपलब्ध नहीं.",
+    "notifications.openedFromPush": "पुश सूचना से खोला गया",
     "notifications.openingSuffix": " · खुल रहा है...",
-    "notifications.openLinkedScreen": "Linked screen खोलें",
+    "notifications.openLinkedScreen": "जुड़ी स्क्रीन खोलें",
     "notifications.showFewer": "कम दिखाएं",
-    "notifications.showFewerOlder": "पुराने notifications कम दिखाएं",
-    "notifications.showOlder": "पुराने notifications दिखाएं",
+    "notifications.showFewerOlder": "पुरानी सूचनाएं कम दिखाएं",
+    "notifications.showOlder": "पुरानी सूचनाएं दिखाएं",
     "notifications.showOlderCount": "{{count}} पुराने दिखाएं",
-    "notifications.unreadCount": "{{count}} unread",
-    "notifications.unreadRecent": "{{count}} unread · हाल का {{date}}",
-    "platform.billing": "Platform billing",
-    "platform.gymSubtitle": "{{tier}} {{cycle}} · {{amount}} · next {{next}} · {{referrals}} referrals",
-    "platform.gyms": "gyms",
-    "platform.loadingSubscriptionHealth": "Subscription health load हो रही है...",
-    "platform.mandateMeta": "Mandate {{status}} · {{count}} paid",
-    "platform.missing": "missing",
-    "platform.mobileVisibilityBody": "Pricing edits, trial extensions, credits, notes और policy changes full review के लिए web console में खुलते हैं.",
-    "platform.mobileVisibilityTitle": "SaaS subscriptions mobile पर visible हैं.",
-    "platform.notScheduled": "Scheduled नहीं",
-    "platform.openWebDashboard": "Web Dashboard खोलें",
-    "platform.operator": "Platform operator",
-    "platform.paying": "paying",
-    "platform.recentGyms": "Recent gyms",
-    "platform.referrals": "referrals",
-    "platform.saasHealth": "SaaS health",
-    "platform.signOut": "Sign out",
-    "platform.subtitle": "{{name}} · SaaS health और mandate state",
-    "platform.team": "Platform team",
-    "platform.trial": "trial",
-    "platform.updating": "Updating",
+    "notifications.timeDays": "{{count}} दिन",
+    "notifications.timeHours": "{{count}} घं",
+    "notifications.timeMinutes": "{{count}} मि",
+    "notifications.timeNow": "अभी",
+    "notifications.totalMessages": "कुल",
+    "notifications.totalMessagesBody": "आने के समय के हिसाब से समूहित.",
+    "notifications.unread": "अपठित",
+    "notifications.unreadBody": "इन्हें पहले पढ़ें.",
+    "notifications.unreadCount": "{{count}} अपठित",
+    "notifications.unreadRecent": "{{count}} अपठित · हाल का {{date}}",
+    "platform.billing": "प्लेटफॉर्म बिलिंग",
+    "platform.gymSubtitle": "{{tier}} {{cycle}} · {{amount}} · अगला {{next}} · {{referrals}} रेफरल",
+    "platform.gyms": "जिम",
+    "platform.loadingSubscriptionHealth": "सब्सक्रिप्शन स्वास्थ्य लोड हो रहा है...",
+    "platform.mandateMeta": "मैंडेट {{status}} · {{count}} भुगतान",
+    "platform.missing": "नहीं मिला",
+    "platform.mobileVisibilityBody":
+      "कीमत, ट्रायल, क्रेडिट, नोट्स और पॉलिसी बदलाव पूरे रिव्यू के लिए वेब कंसोल में खुलते हैं.",
+    "platform.mobileVisibilityTitle": "SaaS सब्सक्रिप्शन मोबाइल पर दिखते हैं.",
+    "platform.notScheduled": "शेड्यूल नहीं",
+    "platform.openWebDashboard": "वेब डैशबोर्ड खोलें",
+    "platform.operator": "प्लेटफॉर्म ऑपरेटर",
+    "platform.paying": "भुगतान कर रहे",
+    "platform.recentGyms": "हाल के जिम",
+    "platform.referrals": "रेफरल",
+    "platform.saasHealth": "SaaS स्वास्थ्य",
+    "platform.signOut": "साइन आउट",
+    "platform.subtitle": "{{name}} · SaaS स्वास्थ्य और मैंडेट स्थिति",
+    "platform.team": "प्लेटफॉर्म टीम",
+    "platform.trial": "ट्रायल",
+    "platform.updating": "अपडेट हो रहा है",
     "auth.heroEyebrow": "फिटनेस ऑपरेटिंग सिस्टम",
     "auth.heroBody": "आपका जिम, आपकी मेंबरशिप, आपकी लय. शुरू करने के लिए साइन इन करें.",
     "auth.signIn": "साइन इन",
     "auth.verifyCode": "कोड वेरिफाई करें",
-    "auth.identifierSubtitle": "अपना registered ईमेल या मोबाइल नंबर इस्तेमाल करें.",
+    "auth.identifierSubtitle": "अपना रजिस्टर्ड ईमेल या मोबाइल नंबर इस्तेमाल करें.",
     "auth.otpSubtitle": "अपने संदेश देखें.",
+    "auth.memberPathBody": "मेंबरशिप, QR एंट्री, क्लास, शॉप ऑर्डर और चेकआउट.",
+    "auth.memberPathTitle": "मेंबर",
+    "auth.staffPathBody": "डेस्क पेमेंट, अप्रूवल, क्लास रोस्टर, क्लाइंट और ओनर टूल.",
+    "auth.staffPathTitle": "ओनर और स्टाफ",
+    "auth.trainerPathBody": "क्लाइंट प्लान, सेशन, क्लास, पेआउट और कोचिंग नोट्स.",
+    "auth.trainerPathTitle": "ट्रेनर",
     "auth.identifierLabel": "ईमेल या मोबाइल नंबर",
     "auth.identifierPlaceholder": "you@example.com या 98765 43210",
     "auth.useMobile": "मोबाइल नंबर इस्तेमाल करें",
@@ -4853,13 +5720,13 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.continueWithApple": "Apple के साथ जारी रखें",
     "auth.continueWithGoogle": "Google के साथ जारी रखें",
     "auth.legalPrefix": "जारी रखकर आप हमारी",
-    "auth.legalTerms": "Terms",
+    "auth.legalTerms": "शर्तें",
     "auth.legalJoiner": "और",
-    "auth.legalPrivacy": "Privacy Policy",
-    "auth.openTerms": "Zook terms खोलें",
-    "auth.openPrivacy": "Zook privacy policy खोलें",
+    "auth.legalPrivacy": "प्राइवेसी पॉलिसी",
+    "auth.openTerms": "Zook की शर्तें खोलें",
+    "auth.openPrivacy": "Zook की प्राइवेसी पॉलिसी खोलें",
     "auth.resendCode": "कोड फिर भेजें",
-    "auth.resendIn": "{{seconds}}s में फिर भेजें",
+    "auth.resendIn": "{{seconds}} सेकंड में फिर भेजें",
     "auth.changeSignIn": "साइन-इन बदलें",
     "auth.testCode": "टेस्ट कोड",
     "auth.enterIdentifier": "अपना ईमेल या मोबाइल नंबर डालें.",
@@ -4868,98 +5735,108 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "auth.signedIn": "साइन इन हो गया.",
     "auth.invalidEmail": "मान्य ईमेल या मोबाइल नंबर दर्ज करें.",
     "auth.invalidEmailOnly": "मान्य ईमेल पता दर्ज करें.",
-    "auth.invalidMobile": "मान्य 10-digit मोबाइल नंबर दर्ज करें.",
-    "auth.sessionExpired": "आपका session expire हो गया है. जारी रखने के लिए फिर से sign in करें.",
-    "auth.sessionExpiredTitle": "Session expire हो गया",
-    "auth.sessionExpiredBody": "जारी रखने के लिए फिर से sign in करें.",
-    "auth.verifyToContinue": "जारी रखने के लिए verify करें.",
-    "auth.tooManyAttempts": "बहुत ज़्यादा attempts. {{seconds}}s में फिर कोशिश करें.",
+    "auth.invalidMobile": "मान्य 10 अंकों का मोबाइल नंबर दर्ज करें.",
+    "auth.sessionExpired": "आपका सेशन खत्म हो गया है. जारी रखने के लिए फिर से साइन इन करें.",
+    "auth.sessionExpiredTitle": "सेशन खत्म हो गया",
+    "auth.sessionExpiredBody": "जारी रखने के लिए फिर से साइन इन करें.",
+    "auth.verifyToContinue": "जारी रखने के लिए अपनी पहचान वेरिफाई करें.",
+    "auth.tooManyAttempts": "बहुत ज़्यादा कोशिशें. {{seconds}} सेकंड में फिर कोशिश करें.",
     "auth.qaShortcuts": "QA shortcuts",
-    "assistant.attachSummary": "Summary जोड़ें",
-    "assistant.attachedClientData": "जुड़ा हुआ client data",
-    "assistant.attachedProfile": "जुड़ी हुई profile",
-    "assistant.clear": "Clear",
-    "assistant.clearConversation": "Conversation clear करें",
-    "assistant.clientData": "Client data",
-    "assistant.contextActivePlans": "Active plans",
-    "assistant.contextAllergies": "Allergies",
-    "assistant.contextClient": "Client",
-    "assistant.contextDiet": "Diet",
-    "assistant.contextGoal": "Goal",
-    "assistant.contextPlans": "Plans",
-    "assistant.contextWeight": "Weight",
-    "assistant.copied": "Copied",
-    "assistant.copyHint": "Copy करने के लिए long press करें",
+    "assistant.attachSummary": "सारांश जोड़ें",
+    "assistant.attachedClientData": "क्लाइंट डेटा जुड़ा है",
+    "assistant.attachedProfile": "प्रोफाइल जुड़ी है",
+    "assistant.clear": "साफ करें",
+    "assistant.clearConversation": "बातचीत साफ करें",
+    "assistant.clientData": "क्लाइंट डेटा",
+    "assistant.contextActivePlans": "सक्रिय प्लान",
+    "assistant.contextAllergies": "एलर्जी",
+    "assistant.contextClient": "क्लाइंट",
+    "assistant.contextDiet": "डाइट",
+    "assistant.contextGoal": "लक्ष्य",
+    "assistant.contextPlans": "प्लान",
+    "assistant.contextWeight": "वजन",
+    "assistant.copied": "कॉपी हुआ",
+    "assistant.copyHint": "कॉपी करने के लिए देर तक दबाएं",
     "assistant.inputPlaceholder": "किसी भी भाषा में पूछें...",
-    "assistant.memberEyebrow": "Plan assistant",
-    "assistant.memberPromptFocus": "आज मुझे किस पर focus करना चाहिए?",
-    "assistant.memberPromptFood": "Training के बाद मुझे क्या खाना चाहिए?",
-    "assistant.memberPromptWorkout": "मेरा workout follow करना आसान बनाएं.",
-    "assistant.memberStarter": "किसी भी भाषा में पूछें. मैं assigned plans, diet preferences, recovery और gym routine में मदद कर सकता हूं.",
-    "assistant.memberSubtitle": "किसी भी भाषा में पूछें — answers आपकी profile से जुड़े होते हैं.",
-    "assistant.memberTitle": "Training पर बात करें",
-    "assistant.myProfile": "मेरी profile",
-    "assistant.notSavedToastBody": "नए messages अगली बार restore नहीं हो सकते.",
-    "assistant.notSavedToastTitle": "Assistant save नहीं हुआ",
-    "assistant.resetToastBody": "Saved messages पढ़े नहीं जा सके.",
-    "assistant.resetToastTitle": "Assistant reset हुआ",
+    "assistant.memberEyebrow": "प्लान असिस्टेंट",
+    "assistant.memberPromptFocus": "आज मुझे किस पर फोकस करना चाहिए?",
+    "assistant.memberPromptFood": "ट्रेनिंग के बाद मुझे क्या खाना चाहिए?",
+    "assistant.memberPromptWorkout": "मेरा वर्कआउट समझना आसान बनाएं.",
+    "assistant.memberStarter":
+      "किसी भी भाषा में पूछें. मैं असाइन किए प्लान, डाइट पसंद, रिकवरी और जिम रूटीन में मदद कर सकता हूं.",
+    "assistant.memberSubtitle": "किसी भी भाषा में पूछें — जवाब आपकी प्रोफाइल से जुड़े होते हैं.",
+    "assistant.memberTitle": "ट्रेनिंग पर बात करें",
+    "assistant.myProfile": "मेरी प्रोफाइल",
+    "assistant.notSavedToastBody": "नए मैसेज अगली बार वापस नहीं आ सकते.",
+    "assistant.notSavedToastTitle": "असिस्टेंट सेव नहीं हुआ",
+    "assistant.resetToastBody": "सेव किए मैसेज पढ़े नहीं जा सके.",
+    "assistant.resetToastTitle": "असिस्टेंट रीसेट हुआ",
     "assistant.send": "भेजें",
     "assistant.thinking": "सोच रहा है...",
-    "assistant.trainerEyebrow": "Trainer assistant",
-    "assistant.trainerPromptPlan": "4-week hypertrophy plan draft करें.",
-    "assistant.trainerPromptSummary": "इस client की progress summarize करें.",
-    "assistant.trainerPromptSwaps": "Safe exercise swaps suggest करें.",
-    "assistant.trainerStarter": "Client summary, workout data, या natural-language question भेजें. मैं plans, diet notes और recovery guidance draft करने में मदद कर सकता हूं.",
-    "assistant.trainerSubtitle": "Client summaries जोड़ें, notes import करें, plans draft करें.",
-    "assistant.trainerTitle": "Context के साथ coach करें",
-    "assistant.unavailableBody": "Owner और desk operations web dashboard में रहते हैं.",
-    "assistant.unavailableTitle": "Plan assistant",
-    "classRoster.attendanceHint": "Member को present या no-show mark करने के लिए check या cross tap करें.",
-    "classRoster.confirmed": "Confirmed",
-    "classRoster.confirmedCount": "Confirmed ({{count}})",
+    "assistant.trainerEyebrow": "ट्रेनर असिस्टेंट",
+    "assistant.trainerPromptPlan": "4-हफ्ते का हाइपरट्रॉफी प्लान ड्राफ्ट करें.",
+    "assistant.trainerPromptSummary": "इस क्लाइंट की प्रगति का सार दें.",
+    "assistant.trainerPromptSwaps": "सुरक्षित एक्सरसाइज बदलाव सुझाएं.",
+    "assistant.trainerStarter":
+      "क्लाइंट सार, वर्कआउट डेटा या सामान्य भाषा में सवाल भेजें. मैं प्लान, डाइट नोट्स और रिकवरी गाइड ड्राफ्ट करने में मदद कर सकता हूं.",
+    "assistant.trainerSubtitle": "क्लाइंट सार जोड़ें, नोट्स लाएं, प्लान ड्राफ्ट करें.",
+    "assistant.trainerTitle": "संदर्भ के साथ कोच करें",
+    "assistant.unavailableBody": "ओनर और डेस्क ऑपरेशन वेब डैशबोर्ड में रहते हैं.",
+    "assistant.unavailableTitle": "प्लान असिस्टेंट",
+    "classRoster.attendanceHint":
+      "Member को present या no-show mark करने के लिए check या cross tap करें.",
+    "classRoster.bookedCount": "{{count}}/{{capacity}} बुक्ड",
+    "classRoster.confirmed": "कन्फर्म",
+    "classRoster.confirmedCount": "कन्फर्म ({{count}})",
     "classRoster.markedNoShowAccessibility": "{{name}} no-show mark है",
     "classRoster.markedPresentAccessibility": "{{name}} present mark है",
     "classRoster.markNoShowAccessibility": "{{name}} को no-show mark करें",
     "classRoster.markPresentAccessibility": "{{name}} को present mark करें",
-    "classRoster.memberFallback": "Member",
-    "classRoster.noBookings": "अभी कोई booking नहीं",
-    "classRoster.noBookingsBody": "इस class को book करने वाले members यहां दिखेंगे.",
-    "classRoster.subtitle": "इस class में कौन आ रहा है",
-    "classRoster.title": "Class roster",
-    "classRoster.waitlist": "Waitlist",
-    "classRoster.waitlistCount": "Waitlist ({{count}})",
-    "classRoster.waitlistHint": "किसी के cancel करने पर waitlisted members automatic promote होते हैं.",
-    "entryQr.branchAware": "Branch-aware",
-    "entryQr.branchAwareBody": "यह QR आपकी active branch से जुड़ा है. सिर्फ इस gym की valid membership वाले members check in कर सकते हैं — बाकी automatically turned away होंगे.",
-    "entryQr.loadingQr": "QR load हो रहा है...",
-    "entryQr.manualCode": "Manual check-in code",
-    "entryQr.noQr": "No QR",
-    "entryQr.refreshesIn": "{{seconds}}s में refresh होगा",
-    "entryQr.refreshing": "Refresh हो रहा है...",
-    "entryQr.refreshNow": "अब refresh करें",
-    "entryQr.secureToken": "Secure rolling token",
-    "entryQr.secureTokenBody": "Code automatic rotate होता है और single-use है. Members phone camera से QR scan कर सकते हैं या Zook app में code type कर सकते हैं.",
-    "entryQr.subtitle": "इसे entrance पर दिखाएं. Members check in करने के लिए इसे scan करते हैं.",
-    "entryQr.title": "Entry QR",
+    "classRoster.memberFallback": "मेंबर",
+    "classRoster.noBookings": "अभी कोई बुकिंग नहीं",
+    "classRoster.noBookingsBody": "इस क्लास को बुक करने वाले मेंबर यहां दिखेंगे.",
+    "classRoster.subtitle": "इस क्लास में कौन आ रहा है",
+    "classRoster.title": "क्लास रोस्टर",
+    "classRoster.waitlist": "वेटलिस्ट",
+    "classRoster.waitlistCount": "वेटलिस्ट ({{count}})",
+    "classRoster.waitlistHint": "किसी के कैंसल करने पर वेटलिस्ट मेंबर अपने आप promote होते हैं.",
+    "entryQr.branchAware": "शाखा से जुड़ा",
+    "entryQr.branchAwareBody":
+      "यह QR आपकी active branch से जुड़ा है. सिर्फ इस gym की valid membership वाले member check in कर सकते हैं.",
+    "entryQr.loadingQr": "QR लोड हो रहा है...",
+    "entryQr.manualCode": "मैनुअल check-in कोड",
+    "entryQr.noQr": "QR नहीं मिला",
+    "entryQr.print": "प्रिंट",
+    "entryQr.regenerate": "नया बनाएं",
+    "entryQr.refreshesIn": "{{seconds}}s में बदलेगा",
+    "entryQr.refreshing": "बदला जा रहा है...",
+    "entryQr.refreshNow": "अभी बदलें",
+    "entryQr.rollingMode": "रोलिंग",
+    "entryQr.secureToken": "सुरक्षित रोलिंग टोकन",
+    "entryQr.secureTokenBody": "Code अपने आप बदलता है. Member QR scan करें या Zook में code डालें.",
+    "entryQr.staticMode": "स्टैटिक",
+    "entryQr.subtitle": "इसे एंट्री पर दिखाएं. सदस्य check-in के लिए इसे scan करते हैं.",
+    "entryQr.title": "एंट्री QR",
     "onboarding.allInOne": "सब एक जगह",
-    "onboarding.allInOneCopy": "Memberships, classes, payments और store pickup — सब एक जगह.",
+    "onboarding.allInOneCopy": "मेंबरशिप, क्लास, पेमेंट और स्टोर पिकअप — सब एक जगह.",
     "onboarding.brand": "Zook",
-    "onboarding.builtForGymDays": "Gym days के लिए बनाया गया",
-    "onboarding.changeLanguageAnytime": "आप इसे Settings में कभी भी बदल सकते हैं.",
+    "onboarding.builtForGymDays": "जिम वाले दिनों के लिए बनाया गया",
+    "onboarding.changeLanguageAnytime": "आप इसे सेटिंग्स में कभी भी बदल सकते हैं.",
     "onboarding.continue": "जारी रखें",
-    "onboarding.continueToSignIn": "Sign in पर जाएं",
+    "onboarding.continueToSignIn": "साइन इन पर जाएं",
     "onboarding.couldNotSaveLanguage": "भाषा सेव नहीं हो सकी",
-    "onboarding.couldNotSavePreference": "Preference सेव नहीं हो सकी",
+    "onboarding.couldNotSavePreference": "पसंद सेव नहीं हो सकी",
     "onboarding.findGym": "अपना जिम खोजें",
-    "onboarding.findGymCopy": "Pune, Mumbai, Bengaluru, Delhi और 50+ cities में अपने पास gyms खोजें.",
+    "onboarding.findGymCopy": "Pune, Mumbai, Bengaluru, Delhi और 50+ शहरों में अपने पास जिम खोजें.",
     "onboarding.pickLanguage": "अपनी भाषा चुनें",
-    "onboarding.skip": "Skip",
-    "onboarding.skipIntro": "Intro skip करें",
-    "onboarding.skipOnboarding": "Onboarding skip करें",
-    "onboarding.splashBadge": "Gym ops, बिना clutter.",
-    "onboarding.splashSubtitle": "Check-ins, memberships, plans और front desk flow एक जगह.",
-    "onboarding.trainTrack": "Train और track",
-    "onboarding.trainTrackCopy": "Seconds में scan करें, अपना plan follow करें, और हर workout जुड़ता देखें.",
+    "onboarding.skip": "छोड़ें",
+    "onboarding.skipIntro": "परिचय छोड़ें",
+    "onboarding.skipOnboarding": "ऑनबोर्डिंग छोड़ें",
+    "onboarding.splashBadge": "जिम ऑप्स, बिना भीड़भाड़.",
+    "onboarding.splashSubtitle": "चेक-इन, मेंबरशिप, प्लान और फ्रंट डेस्क फ्लो एक जगह.",
+    "onboarding.trainTrack": "ट्रेन करें और ट्रैक करें",
+    "onboarding.trainTrackCopy":
+      "सेकंडों में स्कैन करें, अपना प्लान फॉलो करें, और हर वर्कआउट जुड़ता देखें.",
     "qa.aarogyaGym": "Aarogya gym",
     "qa.adminApprovals": "Admin approvals",
     "qa.adminHome": "Admin home",
@@ -5046,9 +5923,9 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.sendReport": "रिपोर्ट भेजें",
     "settings.signInAgainContact": "कॉन्टैक्ट विवरण अपडेट करने के लिए फिर से साइन इन करें.",
     "settings.supportContext": "{{role}} · {{gym}} · {{version}}",
-    "settings.supportDetailsPrompt": "क्या गलत हुआ बताएं ताकि सपोर्ट follow up कर सके.",
-    "settings.terms": "Terms",
-    "settings.termsSubtitle": "Terms of service देखें",
+    "settings.supportDetailsPrompt": "क्या गलत हुआ बताएं ताकि सपोर्ट आगे बात कर सके.",
+    "settings.terms": "शर्तें",
+    "settings.termsSubtitle": "सेवा की शर्तें देखें",
     "settings.updateContact": "{{contact}} अपडेट करें",
     "settings.sendEmailCode": "ईमेल कोड भेजें",
     "settings.sendPhoneCode": "फोन कोड भेजें",
@@ -5090,14 +5967,16 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.languageHindi": "हिंदी",
     "settings.privacyData": "प्राइवेसी और डेटा",
     "settings.privacySubtitle": "डेटा एक्सपोर्ट या डिलीट करें",
-    "settings.privacyRequestBody": "अपने Zook डेटा की कॉपी मांगें या अकाउंट डिलीशन अनुरोध शुरू करें.",
+    "settings.privacyRequestBody":
+      "अपने Zook डेटा की कॉपी मांगें या अकाउंट डिलीशन अनुरोध शुरू करें.",
     "settings.privacyWarning":
       "इन अनुरोधों को सेव किया जाता है और बदलाव से पहले रिव्यू किया जाता है.",
     "settings.requestAccountDeletion": "अकाउंट डिलीशन अनुरोध करें",
     "settings.requestDataExport": "डेटा एक्सपोर्ट अनुरोध करें",
     "settings.requestDeletion": "डिलीशन अनुरोध करें",
     "settings.deleteConfirmTitle": "अकाउंट डिलीशन अनुरोध करें?",
-    "settings.deleteConfirmBody": "कोई भी अकाउंट डेटा हटाने से पहले Zook support इस अनुरोध को रिव्यू करेगा.",
+    "settings.deleteConfirmBody":
+      "कोई भी अकाउंट डेटा हटाने से पहले Zook support इस अनुरोध को रिव्यू करेगा.",
     "settings.export": "एक्सपोर्ट",
     "settings.delete": "डिलीट",
     "settings.exportRequested": "एक्सपोर्ट अनुरोध भेजा गया. फ़ाइल उपलब्ध होने पर आपको ईमेल मिलेगा.",
@@ -5130,45 +6009,63 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "settings.share": "शेयर",
     "rewards.activity": "Activity",
     "rewards.earnCashPerGym": "हर जिम पर {{amount}} कमाएं",
-    "rewards.earnDaysPerGym": "हर जिम पर {{count}} free days पाएं",
-    "rewards.freeDaysAdded": "Referred gym subscribe करने पर free Zook days आपकी subscription में अपने आप जुड़ जाते हैं.",
-    "rewards.lifetime": "Lifetime",
-    "rewards.minToWithdraw": "Withdraw के लिए minimum {{amount}}",
-    "rewards.noEarningsYet": "अभी कोई earning नहीं",
-    "rewards.noEarningsYetBody": "अपना link share करें — referred gym subscribe करने पर आप earn करेंगे.",
-    "rewards.readyToWithdraw": "Withdraw के लिए ready",
-    "rewards.request": "Request",
-    "rewards.requesting": "Request हो रहा है...",
-    "rewards.requestWithdrawal": "Withdrawal request करें",
+    "rewards.earnDaysPerGym": "हर जिम पर {{count}} मुफ्त दिन पाएं",
+    "rewards.freeDaysAdded":
+      "Referred gym subscribe करने पर free Zook days आपकी subscription में अपने आप जुड़ जाते हैं.",
+    "rewards.lifetime": "कुल",
+    "rewards.minToWithdraw": "निकासी के लिए कम से कम {{amount}}",
+    "rewards.noEarningsYet": "अभी कोई कमाई नहीं",
+    "rewards.noEarningsYetBody":
+      "अपना link share करें — referred gym subscribe करने पर आप earn करेंगे.",
+    "rewards.readyToWithdraw": "निकासी के लिए तैयार",
+    "rewards.request": "अनुरोध करें",
+    "rewards.requesting": "अनुरोध भेजा जा रहा है...",
+    "rewards.requestWithdrawal": "निकासी अनुरोध करें",
     "rewards.requestWithdrawalBody":
       "हम review करके आपको {{amount}} payout करेंगे. भेजे जाने पर confirmation मिलेगा.",
-    "rewards.requestWithdrawalTitle": "Withdrawal request करें?",
+    "rewards.requestWithdrawalTitle": "निकासी अनुरोध करें?",
     "rewards.shareMessage": "Zook पर अपना gym चलाएं — मेरे link से sign up करें: {{url}}",
-    "rewards.shareYourLink": "अपना link share करें",
-    "rewards.status.clearing": "Clearing",
-    "rewards.status.paid": "Paid",
-    "rewards.status.pending": "Pending",
-    "rewards.status.ready": "Ready",
-    "rewards.status.requested": "Requested",
-    "rewards.status.reversed": "Reversed",
-    "rewards.subtitle": "नए gyms को Zook पर लाएं और reward पाएं.",
-    "rewards.title": "Refer & earn",
-    "rewards.yourEarnings": "आपकी earnings",
-    "referral.opening": "Referral खुल रहा है...",
-    "referral.card.copyCodeAccessibility": "Referral code {{code}} copy करें",
-    "referral.card.referFriend": "Friend refer करें",
-    "referral.card.rewardCount": "{{count}} reward",
-    "referral.card.rewardCount_plural": "{{count}} rewards",
-    "referral.card.shareCode": "Referral code share करें",
-    "referral.card.unlimited": "unlimited",
-    "referral.card.used": "{{used}}/{{max}} used · {{rewards}}",
+    "rewards.shareHint": "जिम मालिकों के साथ शेयर करें",
+    "rewards.shareYourLink": "अपना लिंक शेयर करें",
+    "rewards.status.clearing": "क्लियरिंग",
+    "rewards.status.paid": "भुगतान हुआ",
+    "rewards.status.pending": "पेंडिंग",
+    "rewards.status.ready": "तैयार",
+    "rewards.status.requested": "अनुरोध भेजा",
+    "rewards.status.reversed": "रिवर्स",
+    "rewards.subtitle": "नए जिम को Zook पर लाएं और रिवॉर्ड पाएं.",
+    "rewards.title": "रेफर करें और कमाएं",
+    "rewards.yourEarnings": "आपकी कमाई",
+    "referral.opening": "रेफरल खुल रहा है...",
+    "referral.card.copyCodeAccessibility": "रेफरल कोड {{code}} कॉपी करें",
+    "referral.card.referFriend": "दोस्त को रेफर करें",
+    "referral.card.rewardCount": "{{count}} रिवॉर्ड",
+    "referral.card.rewardCount_plural": "{{count}} रिवॉर्ड",
+    "referral.card.shareCode": "रेफरल कोड शेयर करें",
+    "referral.card.unlimited": "असीमित",
+    "referral.card.used": "{{used}}/{{max}} इस्तेमाल · {{rewards}}",
     "branch.switch": "ब्रांच बदलें",
+    "branch.switchGym": "जिम बदलें",
     "branch.current": "मौजूदा ब्रांच",
+    "branch.currentGym": "मौजूदा जिम",
+    "branch.branchPrefix": "ब्रांच:",
     "branch.allBranches": "सभी ब्रांच",
+    "branch.branches": "ब्रांच",
+    "branch.enrolledGyms": "आपके मैनेज किए गए जिम",
+    "branch.gymSubscriptionScope":
+      "यहां वह gym चुनें जिसे आप चला रहे हैं. Billing owner account पर रहती है, और हर gym अपनी branches manage कर सकता है.",
+    "branch.manageGym": "जिम मैनेज करें",
+    "branch.openMap": "मैप खोलें",
+    "branch.mapReady": "मैप तैयार",
+    "branch.mapMissing": "मैप बाकी",
+    "branch.selectorSubtitle": "इस ऐप सेशन के लिए सक्रिय जिम या ब्रांच चुनें.",
+    "branch.useBranch": "चुनें",
+    "branch.useGym": "चुनें",
     "shop.readyForPickup": "पिकअप के लिए तैयार",
     "shop.readyForPickupSubtitle": "यह कोड फ्रंट डेस्क पर दिखाएं.",
+    "shop.addShort": "जोड़ें",
     "shop.addProductAccessibility": "{{name}} जोड़ें",
-    "shop.availableAtGymDesk": "पेमेंट के बाद gym desk पर उपलब्ध",
+    "shop.availableAtGymDesk": "पेमेंट के बाद जिम डेस्क पर उपलब्ध",
     "shop.pickupCode": "पिकअप कोड",
     "shop.pickupCodeCopied": "पिकअप कोड कॉपी हुआ।",
     "shop.pickupCodeCopyFailed": "पिकअप कोड कॉपी नहीं हो सका।",
@@ -5177,66 +6074,90 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.paid": "पेड",
     "shop.signedPickupQrCode": "साइन किया हुआ पिकअप QR कोड",
     "shop.branchLabel": "ब्रांच",
-    "shop.browserReturnBody": "पेमेंट के बाद वापस आएं. Zook आपका order status automatically refresh करेगा.",
-    "shop.cartReset": "Cart reset हुआ",
-    "shop.cartResetBody": "आपका saved cart restore नहीं हो सका.",
+    "shop.browserReturnBody":
+      "पेमेंट के बाद वापस आएं. Zook आपके ऑर्डर की स्थिति अपने-आप रीफ्रेश करेगा.",
+    "shop.cartReset": "कार्ट रीसेट हुआ",
+    "shop.cartResetBody": "आपका सेव कार्ट वापस नहीं आ सका.",
     "shop.categoryAll": "सभी",
-    "shop.categoryCups": "कप",
+    "shop.categoryCups": "शेकर",
     "shop.categoryShake": "शेक",
-    "shop.categorySupplements": "Supplements",
+    "shop.categorySupplements": "सप्लीमेंट",
     "shop.categoryTowel": "टॉवल",
     "shop.categoryWater": "पानी",
-    "shop.checkStatus": "Status check करें",
-    "shop.checking": "Check हो रहा है...",
-    "shop.checkoutConsequence": "पेमेंट के बाद Zook desk verification के लिए pickup code बनाता है. Code के बिना collect न करें.",
-    "shop.checkoutCreated": "Checkout बन गया.",
-    "shop.deskPaymentOrderCreated": "Order desk को भेज दिया गया.",
-    "shop.codeWithValue": "Code: {{code}}",
+    "shop.checkStatus": "स्थिति जांचें",
+    "shop.checking": "जांच हो रही है...",
+    "shop.checkoutConsequence":
+      "पेमेंट के बाद Zook डेस्क वेरिफिकेशन के लिए पिकअप कोड बनाता है. कोड के बिना सामान न लें.",
+    "shop.checkoutCreated": "चेकआउट बन गया.",
+    "shop.deskPaymentOrderCreated": "ऑर्डर डेस्क को भेज दिया गया.",
+    "shop.codeWithValue": "कोड: {{code}}",
     "shop.continuePayment": "पेमेंट जारी रखें",
-    "shop.continueInBrowser": "Browser में जारी रखें",
+    "shop.continueWithTotal": "{{amount}} के साथ जारी रखें",
+    "shop.continueInBrowser": "ब्राउजर में जारी रखें",
     "shop.confirming": "कन्फर्म हो रहा है...",
-    "shop.awaitingDeskPayment": "Desk payment pending",
-    "shop.choosePaymentMethod": "Payment method चुनें",
-    "shop.choosePaymentMethodSubtitle": "अभी online pay करें या gym desk पर pay करें.",
-    "shop.copyPickupCodeAccessibility": "Pickup code {{code}} copy करें",
-    "shop.couldNotCreateCheckout": "Checkout नहीं बन सका.",
+    "shop.awaitingDeskPayment": "डेस्क पेमेंट बाकी",
+    "shop.choosePaymentMethod": "पेमेंट तरीका चुनें",
+    "shop.choosePaymentMethodSubtitle": "अभी ऑनलाइन पे करें या जिम डेस्क पर भुगतान करें.",
+    "shop.copyPickupCodeAccessibility": "पिकअप कोड {{code}} कॉपी करें",
+    "shop.couldNotCreateCheckout": "चेकआउट नहीं बन सका.",
     "shop.backToShop": "शॉप पर वापस",
     "shop.payment": "पेमेंट",
-    "shop.paymentSubtitle": "भुगतान के बाद आपका आइटम डेस्क पर मिलेगा.",
-    "shop.paymentConfirmed": "Payment confirmed.",
-    "shop.paymentCouldNotComplete": "Payment पूरा नहीं हो सका.",
-    "shop.paymentStillPending": "Payment अभी pending है. थोड़ी देर में फिर कोशिश करें.",
-    "shop.paymentPending": "Payment pending",
-    "shop.payAtDesk": "Desk पर Pay करें",
-    "shop.payAtDeskBody": "Desk team cash, UPI, card या bank transfer record करेगी और फिर pickup code issue होगा.",
-    "shop.payAtDeskInstructions": "Front desk से इस order का payment collect करने को कहें. Record होते ही Zook आपका pickup code बनाएगा.",
-    "shop.payAtDeskSubtitle": "Pickup code unlock करने के लिए front desk पर pay करें.",
-    "shop.payOnline": "Online Pay करें",
-    "shop.payOnlineBody": "Secure online checkout खोलें और pickup code के लिए वापस आएं.",
+    "shop.paymentSubtitle": "पेमेंट के बाद पिकअप शुरू होगा.",
+    "shop.paymentConfirmed": "पेमेंट कन्फर्म हो गया.",
+    "shop.paymentCouldNotComplete": "पेमेंट पूरा नहीं हो सका.",
+    "shop.paymentStillPending": "पेमेंट अभी बाकी है. थोड़ी देर में फिर कोशिश करें.",
+    "shop.paymentPending": "पेमेंट बाकी",
+    "shop.payAtDesk": "डेस्क पर भुगतान",
+    "shop.payAtDeskBody": "फ्रंट डेस्क पर cash, UPI, card या bank transfer.",
+    "shop.payAtDeskInstructions":
+      "फ्रंट डेस्क से इस ऑर्डर का पेमेंट कलेक्ट करने को कहें. रिकॉर्ड होते ही Zook पिकअप कोड बनाएगा.",
+    "shop.payAtDeskSubtitle": "पिकअप कोड पाने के लिए फ्रंट डेस्क पर भुगतान करें.",
+    "shop.payOnline": "ऑनलाइन पे करें",
+    "shop.payOnlineBody": "सुरक्षित ऑनलाइन चेकआउट खोलें और पिकअप कोड के लिए वापस आएं.",
+    "shop.payAmountNow": "अभी {{amount}} पे करें",
+    "shop.payNow": "अभी पे करें",
+    "shop.payAtDeskInstead": "डेस्क पर भुगतान करें",
+    "shop.otherPaymentOptions": "दूसरे पेमेंट विकल्प",
     "shop.paySecurely": "सुरक्षित भुगतान",
     "shop.confirmOrder": "ऑर्डर कन्फर्म करें",
     "shop.getPickupCode": "पिकअप कोड पाएं",
     "shop.makeDeskCode": "हम डेस्क के लिए कोड बनाएंगे",
     "shop.collectAtDesk": "डेस्क से लें",
     "shop.showPickupCode": "लेने के लिए कोड दिखाएं",
-    "shop.showThisToCollect": "Order collect करने के लिए यह दिखाएं",
+    "shop.showThisToCollect": "ऑर्डर लेने के लिए यह दिखाएं",
     "shop.orderTotal": "ऑर्डर कुल",
-    "shop.pickupCheckout": "Pickup checkout",
-    "shop.itemsLabel": "Items",
-    "shop.itemCount": "{{count}} item",
-    "shop.itemsCount": "{{count}} items",
-    "shop.pickupLabel": "Pickup",
-    "shop.selectedGym": "चुना हुआ gym",
+    "shop.pickupCheckout": "पिकअप चेकआउट",
+    "shop.itemsLabel": "आइटम",
+    "shop.itemCount": "{{count}} आइटम",
+    "shop.itemsCount": "{{count}} आइटम",
+    "shop.pickupLabel": "पिकअप",
+    "shop.selectedGym": "चुना हुआ जिम",
     "shop.cart": "कार्ट",
     "shop.reviewOrder": "ऑर्डर देखें",
     "shop.reviewOrderSubtitle": "पेमेंट के बाद फ्रंट डेस्क से पिकअप करें.",
     "shop.back": "वापस",
     "shop.creating": "बन रहा है...",
-    "shop.inStockCount": "{{count}} stock में",
-    "shop.mockPaymentUnavailable": "Backend builds में mock payment completion available नहीं है.",
+    "shop.inStockCount": "{{count}} स्टॉक में",
+    "shop.mockPaymentUnavailable": "बैकएंड बिल्ड में टेस्ट भुगतान पूरा करना उपलब्ध नहीं है.",
     "shop.onlyLeft": "सिर्फ {{count}} बचे हैं",
-    "shop.orderHistory": "Order history",
-    "shop.outOfStock": "Out of stock",
+    "shop.orderHistory": "ऑर्डर हिस्ट्री",
+    "shop.orderHistorySubtitle": "पिकअप और पेमेंट वाले ऑर्डर पहले दिखते हैं.",
+    "shop.activeOrders": "सक्रिय ऑर्डर",
+    "shop.activeOrdersShort": "ऑर्डर",
+    "shop.activeOrdersBody": "पेमेंट या पिकअप आइटम बाकी हैं.",
+    "shop.cartStatus": "कार्ट",
+    "shop.cartStatusBody": "{{amount}} चेकआउट के लिए तैयार.",
+    "shop.readyStock": "तैयार स्टॉक",
+    "shop.readyStockShort": "स्टॉक",
+    "shop.readyStockBody": "डेस्क पिकअप के लिए आइटम उपलब्ध.",
+    "shop.orderBeingPrepared": "पेमेंट हो गया. डेस्क आपका ऑर्डर तैयार कर रहा है.",
+    "shop.orderCancelled": "यह ऑर्डर कैंसल हो चुका है.",
+    "shop.orderNeedsPayment": "पेमेंट बाकी है. जारी रखने के लिए ऑर्डर खोलें.",
+    "shop.orderPickedUp": "डेस्क से पिकअप हो गया.",
+    "shop.orderReady": "डेस्क पर पिकअप के लिए तैयार.",
+    "shop.orderReadyWithCode": "कोड {{code}}",
+    "shop.outOfStock": "स्टॉक खत्म",
+    "shop.outShort": "खत्म",
     "shop.yourCartEmpty": "आपका कार्ट खाली है",
     "shop.subtotal": "सबटोटल",
     "shop.openMiniCart": "मिनी कार्ट खोलें",
@@ -5247,6 +6168,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "shop.removeProductAccessibility": "{{name}} हटाएं",
     "shop.searchEssentials": "जरूरी सामान खोजें",
     "shop.availableNow": "अभी उपलब्ध",
+    "shop.searchResults": "खोज परिणाम",
     "shop.title": "शॉप",
     "shop.item": "आइटम",
     "shop.items": "आइटम",
@@ -5260,27 +6182,32 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "findGyms.deviceLocation": "डिवाइस लोकेशन इस्तेमाल करें",
     "findGyms.recentSearches": "हाल की खोजें",
     "findGyms.availableGyms": "उपलब्ध जिम",
+    "findGyms.allAreas": "सभी क्षेत्र",
     "findGyms.city": "शहर",
-    "findGyms.coverPhoto": "{{name}} cover photo",
+    "findGyms.coverPhoto": "{{name}} की कवर फोटो",
     "findGyms.discovery": "डिस्कवरी",
-    "findGyms.gymNameOrUsername": "जिम का नाम या username",
+    "findGyms.gymNameOrUsername": "जिम का नाम या यूज़रनेम",
     "findGyms.noGyms": "कोई जिम नहीं",
     "findGyms.noGymsBody": "शहर को व्यापक करें या खोज साफ करें.",
+    "findGyms.logo": "{{name}} का लोगो",
+    "findGyms.loadError": "जिम लोड नहीं हुए",
     "findGyms.openGym": "{{name}} खोलें",
-    "findGyms.referralApplied": "Referral code लागू हुआ",
+    "findGyms.referralApplied": "रेफरल कोड लागू हुआ",
     "findGyms.referralPrefix": "कोड",
     "findGyms.referralSuffix": "जुड़ा है. इसे इस्तेमाल करने के लिए कोई भी जिम खोलें.",
-    "findGyms.resultCountMany": "{{count}} results",
-    "findGyms.resultCountOne": "1 result",
+    "findGyms.resultCountMany": "{{count}} नतीजे",
+    "findGyms.resultCountOne": "1 नतीजा",
     "findGyms.searching": "खोज हो रही है...",
+    "findGyms.searchLabel": "जिम खोजें",
     "findGyms.title": "अपना जिम खोजें",
     "findGyms.view": "देखें",
+    "findGyms.viewProfile": "प्रोफाइल देखें",
     "gymProfile.activeUntil": "{{date}} तक सक्रिय",
     "gymProfile.address": "पता",
     "gymProfile.alreadyActive": "पहले से सक्रिय",
     "gymProfile.apply": "लागू करें",
-    "gymProfile.approvedDate": "{{date}} को approved",
-    "gymProfile.approvedForPayment": "पेमेंट के लिए approved",
+    "gymProfile.approvedDate": "{{date}} को मंजूर",
+    "gymProfile.approvedForPayment": "पेमेंट के लिए मंजूर",
     "gymProfile.atAGlance": "एक नजर में",
     "gymProfile.choosePlan": "प्लान चुनें",
     "gymProfile.choosePlanToContinue": "जारी रखने के लिए प्लान चुनें.",
@@ -5290,148 +6217,188 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "gymProfile.currentMembership": "मौजूदा मेंबरशिप",
     "gymProfile.dateRange": "{{start}} से {{end}}",
     "gymProfile.daysCount": "{{count}} दिन",
+    "gymProfile.demoTagline": "स्ट्रेंथ, पीटी और रिकवरी एक ही जिम वर्कस्पेस में.",
+    "gymProfile.distanceKm": "{{distance}} किमी दूर",
+    "gymProfile.distanceMeters": "{{distance}} मीटर दूर",
+    "gymProfile.distanceUnavailable": "दूरी उपलब्ध नहीं",
     "gymProfile.equipment": "उपकरण",
     "gymProfile.eyebrow": "जिम प्रोफाइल",
-    "gymProfile.flexibleMembership": "Flexible membership",
-    "gymProfile.getDirections": "Directions पाएं",
+    "gymProfile.flexibleMembership": "लचीली मेंबरशिप",
+    "gymProfile.getDirections": "रास्ता देखें",
     "gymProfile.gettingThere": "वहां पहुंचना",
     "gymProfile.howToJoin": "कैसे जुड़ें",
     "gymProfile.inside": "अंदर",
     "gymProfile.instant": "तुरंत",
-    "gymProfile.inviteCode": "Invite code",
-    "gymProfile.inviteOnly": "Invite only",
-    "gymProfile.inviteReferralRequired": "Invite या referral जरूरी",
+    "gymProfile.inviteCode": "इनवाइट कोड",
+    "gymProfile.inviteOnly": "सिर्फ इनवाइट",
+    "gymProfile.inviteReferralRequired": "इनवाइट या रेफरल जरूरी",
     "gymProfile.inviteReferralRequiredBody":
-      "इस जिम को referral link से खोलें या जारी रखने के लिए gym team से code मांगें.",
-    "gymProfile.joinFlow": "Join flow",
-    "gymProfile.joinPath": "Join path",
-    "gymProfile.joinRequest": "Join request",
+      "इस जिम को रेफरल लिंक से खोलें या जारी रखने के लिए जिम टीम से कोड मांगें.",
+    "gymProfile.joinFlow": "जुड़ने की प्रक्रिया",
+    "gymProfile.joinModeApproval": "मंजूरी जरूरी",
+    "gymProfile.joinModeInvite": "सिर्फ इनवाइट",
+    "gymProfile.joinModeOpen": "कोई भी जुड़ सकता है",
+    "gymProfile.joinPath": "जुड़ने का तरीका",
+    "gymProfile.joinRequest": "जुड़ने का अनुरोध",
     "gymProfile.location": "लोकेशन",
     "gymProfile.membershipOptions": "मेंबरशिप विकल्प",
     "gymProfile.membershipProfile": "मेंबरशिप प्रोफाइल",
     "gymProfile.membershipRequestSubmitted": "मेंबरशिप अनुरोध भेजा गया.",
     "gymProfile.membershipRequestSubmittedBody":
-      "मेंबरशिप अनुरोध भेजा गया. जिम टीम अब इसे अपने dashboard से review कर सकती है.",
+      "मेंबरशिप अनुरोध भेजा गया. जिम टीम अब इसे अपने डैशबोर्ड से देख सकती है.",
     "gymProfile.membershipState": "मेंबरशिप स्थिति",
-    "gymProfile.moveStraightToPayment": "आप सीधे पेमेंट पर जा सकते हैं.",
-    "gymProfile.noBioAdded": "Bio नहीं जोड़ा गया.",
-    "gymProfile.noPublicPlans": "कोई public plan नहीं",
-    "gymProfile.noPublicTrainerProfiles": "कोई public trainer profile नहीं",
-    "gymProfile.noTrainerBioPublished": "Trainer bio प्रकाशित नहीं है.",
+    "gymProfile.moveStraightToPayment": "आप सीधे भुगतान पर जा सकते हैं.",
+    "gymProfile.noBioAdded": "बायो नहीं जोड़ा गया.",
+    "gymProfile.noPublicPlans": "कोई सार्वजनिक प्लान नहीं",
+    "gymProfile.noPublicTrainerProfiles": "कोई सार्वजनिक ट्रेनर प्रोफाइल नहीं",
+    "gymProfile.noTrainerBioPublished": "ट्रेनर बायो प्रकाशित नहीं है.",
     "gymProfile.notFound": "जिम नहीं मिला",
-    "gymProfile.notFoundBody": "यह लिंक expire हो सकता है या जिम move हो गया हो सकता है.",
-    "gymProfile.openTrainerProfile": "{{name}} profile खोलें",
-    "gymProfile.openingPayment": "पेमेंट खुल रहा है...",
-    "gymProfile.paymentStarted": "पेमेंट शुरू हुआ. मेंबरशिप activate करने के लिए इसे पूरा करें.",
-    "gymProfile.pendingSince": "{{date}} से pending",
+    "gymProfile.notFoundBody": "यह लिंक समाप्त हो सकता है या जिम स्थान बदल चुका हो सकता है.",
+    "gymProfile.openTrainerProfile": "{{name}} प्रोफाइल खोलें",
+    "gymProfile.openingPayment": "भुगतान खुल रहा है...",
+    "gymProfile.overview": "ओवरव्यू",
+    "gymProfile.payAmountNow": "अभी {{amount}} भुगतान करें",
+    "gymProfile.paymentStarted": "भुगतान शुरू हुआ. मेंबरशिप चालू करने के लिए इसे पूरा करें.",
+    "gymProfile.pendingSince": "{{date}} से लंबित",
     "gymProfile.photoOf": "फोटो {{index}} / {{count}}",
-    "gymProfile.planAvailableMany": "{{count}} plans उपलब्ध",
-    "gymProfile.planAvailableOne": "1 plan उपलब्ध",
-    "gymProfile.referralApplied": "Referral लागू",
-    "gymProfile.referralInviteRequired": "Referral या invite जरूरी है.",
-    "gymProfile.referralPrice": "Referral price",
+    "gymProfile.planAvailableMany": "{{count}} प्लान उपलब्ध",
+    "gymProfile.planAvailableOne": "1 प्लान उपलब्ध",
+    "gymProfile.planDescriptionHybrid": "30 दिन, 12 विजिट और कोच प्लान एक्सेस.",
+    "gymProfile.planDescriptionMonthly": "नियमित ट्रेनिंग के लिए 30 दिन का जिम एक्सेस.",
+    "gymProfile.planDescriptionTrial": "नए मेंबरों के लिए एक सुपरवाइज्ड विजिट.",
+    "gymProfile.planNameHybrid": "हाइब्रिड प्रो",
+    "gymProfile.planNameMonthly": "मंथली एक्टिव",
+    "gymProfile.planNameTrial": "ट्रायल पास",
+    "gymProfile.quickCheckout": "तेज मेंबरशिप भुगतान",
+    "gymProfile.quickCheckoutHint": "सुरक्षित चेकआउट. भुगतान कन्फर्म होते ही मेंबरशिप शुरू होगी.",
+    "gymProfile.tapPlanToChange": "बदलने के लिए नीचे दूसरा प्लान चुनें.",
+    "gymProfile.readyToJoin": "जुड़ने के लिए तैयार",
+    "gymProfile.recommendedCheckoutAbove": "तेज चेकआउट ऊपर है",
+    "gymProfile.referralApplied": "रेफरल लागू",
+    "gymProfile.referralInviteRequired": "रेफरल या इनवाइट जरूरी है.",
+    "gymProfile.referralPrice": "रेफरल कीमत",
     "gymProfile.requestMembershipFirst": "पहले मेंबरशिप अनुरोध करें",
     "gymProfile.requestMembershipFirstBody":
-      "यह जिम पेमेंट से पहले नए members को review करता है. अपना request भेजें और owner web dashboard से approve कर सकता है.",
-    "gymProfile.reviewed": "Reviewed",
-    "gymProfile.securePayment": "Secure payment",
+      "यह जिम भुगतान से पहले नए मेंबरों की समीक्षा करता है. अपना अनुरोध भेजें, फिर जिम टीम मंजूरी दे सकती है.",
+    "gymProfile.reviewed": "समीक्षा हो चुकी",
+    "gymProfile.securePayment": "सुरक्षित भुगतान",
+    "gymProfile.selectPlanForCheckout": "चेकआउट के लिए चुनें",
+    "gymProfile.selectedForCheckout": "चेकआउट के लिए चुना",
+    "gymProfile.selectedPlanHint": "{{plan}} चुना है. नीचे प्लान की तुलना कर सकते हैं.",
     "gymProfile.sendMembershipRequest": "मेंबरशिप अनुरोध भेजें",
-    "gymProfile.staffApprovalBeforePayment": "पेमेंट से पहले staff approval होता है.",
-    "gymProfile.standardMembershipPlan": "Standard membership plan.",
-    "gymProfile.stepActivatePlan": "प्लान activate करें",
-    "gymProfile.stepActivatePlanBody": "Approved होने के बाद यहां लौटकर payment पूरा करें.",
-    "gymProfile.stepBrowsePublicPlans": "Public plans देखें",
+    "gymProfile.shareProfile": "जिम प्रोफाइल शेयर करें",
+    "gymProfile.staffApprovalBeforePayment": "भुगतान से पहले स्टाफ मंजूरी होती है.",
+    "gymProfile.standardMembershipPlan": "स्टैंडर्ड मेंबरशिप प्लान.",
+    "gymProfile.stepActivatePlan": "प्लान चालू करें",
+    "gymProfile.stepActivatePlanBody": "मंजूरी के बाद यहां लौटकर भुगतान पूरा करें.",
+    "gymProfile.stepBrowsePublicPlans": "सार्वजनिक प्लान देखें",
     "gymProfile.stepBrowsePublicPlansBody":
-      "Staff का इंतजार किए बिना price, access, trainer support और plan format compare करें.",
-    "gymProfile.stepPayInstantly": "तुरंत पेमेंट करें",
-    "gymProfile.stepPayInstantlyBody": "मोबाइल से सुरक्षित पेमेंट करें.",
-    "gymProfile.stepPaySecurely": "सुरक्षित पेमेंट करें",
-    "gymProfile.stepPaySecurelyBody": "Invite rules पूरी होने पर payment membership activate करता है.",
-    "gymProfile.stepReferralAttached": "Referral {{code}} जुड़ा है.",
-    "gymProfile.stepReferralRequired": "जारी रखने से पहले referral या invite जरूरी है.",
-    "gymProfile.stepReviewPlans": "Plans review करें",
-    "gymProfile.stepReviewPlansBody": "Code accept होने के बाद plans join किए जा सकते हैं.",
-    "gymProfile.stepSecureReferral": "Referral सुरक्षित करें",
-    "gymProfile.stepSendRequest": "Request भेजें",
-    "gymProfile.stepSendRequestBody": "अगर यह जिम नए members review करता है, तो payment से पहले request भेजें.",
-    "gymProfile.stepStaffReview": "Staff review",
-    "gymProfile.stepStaffReviewBody": "Gym team आपका request review करती है.",
-    "gymProfile.stepStartTraining": "Training शुरू करें",
+      "स्टाफ का इंतजार किए बिना कीमत, एक्सेस, ट्रेनर सपोर्ट और प्लान प्रारूप की तुलना करें.",
+    "gymProfile.stepPayInstantly": "तुरंत भुगतान करें",
+    "gymProfile.stepPayInstantlyBody": "मोबाइल से सुरक्षित भुगतान करें.",
+    "gymProfile.stepPaySecurely": "सुरक्षित भुगतान करें",
+    "gymProfile.stepPaySecurelyBody": "इनवाइट नियम पूरे होने पर भुगतान से मेंबरशिप चालू होती है.",
+    "gymProfile.stepReferralAttached": "रेफरल {{code}} जुड़ा है.",
+    "gymProfile.stepReferralRequired": "जारी रखने से पहले रेफरल या इनवाइट जरूरी है.",
+    "gymProfile.stepReviewPlans": "प्लान देखें",
+    "gymProfile.stepReviewPlansBody": "कोड स्वीकार होने के बाद प्लान लिए जा सकते हैं.",
+    "gymProfile.stepSecureReferral": "रेफरल पाएं",
+    "gymProfile.stepSendRequest": "अनुरोध भेजें",
+    "gymProfile.stepSendRequestBody":
+      "अगर यह जिम नए मेंबरों की समीक्षा करता है, तो भुगतान से पहले अनुरोध भेजें.",
+    "gymProfile.stepStaffReview": "स्टाफ समीक्षा",
+    "gymProfile.stepStaffReviewBody": "जिम टीम आपका अनुरोध देखती है.",
+    "gymProfile.stepStartTraining": "ट्रेनिंग शुरू करें",
     "gymProfile.stepStartTrainingBody":
-      "Gym QR scan करें, unique entry code लें, और floor या desk पर दिखाएं.",
+      "जिम QR स्कैन करें, एंट्री कोड लें, और फ्लोर या डेस्क पर दिखाएं.",
     "gymProfile.submitting": "भेजा जा रहा है...",
-    "gymProfile.trainerTeam": "Trainer team",
+    "gymProfile.trainerTeam": "ट्रेनर टीम",
     "gymProfile.unableStartPayment": "पेमेंट शुरू नहीं हो सका.",
     "gymProfile.unableSubmitMembershipRequest": "मेंबरशिप अनुरोध नहीं भेजा जा सका.",
-    "gymProfile.updatingMembershipStatus": "मेंबरशिप status update हो रहा है...",
-    "gymProfile.validityDays": "{{count}} validity days",
-    "gymProfile.visitsRemaining": "{{count}} visits बाकी",
+    "gymProfile.updatingMembershipStatus": "मेंबरशिप स्थिति अपडेट हो रही है...",
+    "gymProfile.validityDays": "{{count}} वैधता दिन",
+    "gymProfile.visitCountMany": "{{count}} विजिट",
+    "gymProfile.visitCountOne": "1 विजिट",
+    "gymProfile.visitsRemaining": "{{count}} विजिट बाकी",
     "gymProfile.whatsInside": "अंदर क्या है",
-    "gymReviews.beFirst": "Review छोड़ने वाले पहले member बनें.",
+    "gymReviews.beFirst": "रिव्यू छोड़ने वाले पहले मेंबर बनें.",
     "gymReviews.cancel": "रद्द करें",
-    "gymReviews.edit": "Edit",
-    "gymReviews.editReview": "अपना review edit करें",
-    "gymReviews.empty": "अभी कोई review नहीं",
-    "gymReviews.membersSay": "Members कहते हैं",
-    "gymReviews.onlyMembers": "सिर्फ members इस gym को review कर सकते हैं.",
-    "gymReviews.postReview": "Review post करें",
-    "gymReviews.posting": "Post हो रहा है...",
-    "gymReviews.reviews": "Reviews",
-    "gymReviews.reviewsCount": "{{count}} reviews",
-    "gymReviews.sharePlaceholder": "इस gym के बारे में आपको क्या पसंद है...",
-    "gymReviews.starsAccessibility": "{{count}} stars",
-    "gymReviews.update": "Update",
-    "gymReviews.write": "Write",
-    "gymReviews.writeReview": "Review लिखें",
-    "gallery.closePhotoViewer": "Photo viewer बंद करें",
+    "gymReviews.edit": "संपादित करें",
+    "gymReviews.editReview": "अपना रिव्यू संपादित करें",
+    "gymReviews.empty": "अभी कोई रिव्यू नहीं",
+    "gymReviews.membersSay": "मेंबर क्या कहते हैं",
+    "gymReviews.onlyMembers": "सिर्फ मेंबर इस जिम को रिव्यू कर सकते हैं.",
+    "gymReviews.postReview": "रिव्यू पोस्ट करें",
+    "gymReviews.posting": "पोस्ट हो रहा है...",
+    "gymReviews.reviews": "रिव्यू",
+    "gymReviews.reviewsCount": "{{count}} रिव्यू",
+    "gymReviews.sharePlaceholder": "इस जिम के बारे में आपको क्या पसंद है...",
+    "gymReviews.starsAccessibility": "{{count}} स्टार",
+    "gymReviews.update": "अपडेट करें",
+    "gymReviews.write": "लिखें",
+    "gymReviews.writeReview": "रिव्यू लिखें",
+    "gallery.closePhotoViewer": "फोटो व्यूअर बंद करें",
     "empty.loading": "लोड हो रहा है",
     "empty.loadingBody": "आपके जिम की जानकारी लाई जा रही है.",
     "tracking.bodyTimeline": "फोटो टाइमलाइन",
     "tracking.bodyTimelineSubtitle": "{{count}} बॉडी कंपोजिशन एंट्री",
-    "tracking.armsCm": "Arms cm",
-    "tracking.body": "Body",
-    "tracking.bodyFatPercent": "Body fat %",
-    "tracking.bodyMeasurements": "Body measurements",
-    "tracking.bodyMeasurementsSaved": "Body measurements सेव हो गईं.",
-    "tracking.bodyProgress": "Body progress",
-    "tracking.calfCm": "Calf cm",
-    "tracking.calvesCm": "Calves cm",
-    "tracking.chestCm": "Chest cm",
-    "tracking.couldNotSaveMeasurements": "Measurements सेव नहीं हो सकीं",
-    "tracking.couldNotSaveWorkout": "Workout सेव नहीं हो सका",
-    "tracking.durationMinutes": "Duration (minutes)",
-    "tracking.exercise": "Exercise",
-    "tracking.exerciseName": "Exercise name",
+    "tracking.addExercise": "एक्सरसाइज जोड़ें",
+    "tracking.armsCm": "बांहें सेमी",
+    "tracking.body": "शरीर",
+    "tracking.bodyFatPercent": "बॉडी फैट %",
+    "tracking.bodyMeasurements": "शरीर के माप",
+    "tracking.bodyMeasurementsSaved": "शरीर के माप सेव हो गए.",
+    "tracking.bodyProgress": "शरीर की प्रगति",
+    "tracking.moreMeasurements": "और माप",
+    "tracking.hideMeasurements": "माप छिपाएं",
+    "tracking.calfCm": "पिंडली सेमी",
+    "tracking.calvesCm": "पिंडलियां सेमी",
+    "tracking.chestCm": "छाती सेमी",
+    "tracking.couldNotSaveMeasurements": "माप सेव नहीं हो सके",
+    "tracking.couldNotSaveWorkout": "वर्कआउट सेव नहीं हो सका",
+    "tracking.durationMinutes": "अवधि (मिनट)",
+    "tracking.exercise": "एक्सरसाइज",
+    "tracking.exerciseName": "एक्सरसाइज का नाम",
     "tracking.exerciseNamePlaceholder": "Push press",
-    "tracking.forearmsCm": "Forearms cm",
-    "tracking.hipsCm": "Hips cm",
-    "tracking.historyTitle": "Workout history",
-    "tracking.loggedWorkout": "Logged workout",
-    "tracking.muscleMassKg": "Muscle mass kg",
-    "tracking.neckCm": "Neck cm",
-    "tracking.noBodyMeasurements": "Body measurements नहीं हैं",
-    "tracking.noBodyMeasurementsBody": "समय के साथ trends देखने के लिए measurements log करें.",
-    "tracking.noWorkoutsYet": "अभी कोई workout नहीं",
-    "tracking.noWorkoutsYetBody": "आपके logged workouts यहां दिखेंगे.",
-    "tracking.notes": "Notes",
-    "tracking.notesPlaceholder": "Front/side/back photos progress photos से attach की जा सकती हैं.",
-    "tracking.reps": "Reps",
-    "tracking.restingHeartRate": "Resting heart rate",
-    "tracking.saveMeasurements": "Measurements सेव करें",
-    "tracking.saveWorkout": "Workout सेव करें",
-    "tracking.session": "Session",
-    "tracking.sets": "Sets",
-    "tracking.shouldersCm": "Shoulders cm",
-    "tracking.strength": "Strength",
-    "tracking.thighsCm": "Thighs cm",
-    "tracking.visceralFatRating": "Visceral fat rating",
-    "tracking.waist": "Waist",
-    "tracking.waistCm": "Waist cm",
-    "tracking.weightKg": "Weight kg",
-    "tracking.workout": "Workout",
-    "tracking.workoutSaved": "Workout सेव हो गया.",
-    "tracking.workoutSet": "Workout set",
-    "tracking.workoutTitle": "Workout title",
+    "tracking.addExerciseToSave": "वर्कआउट सेव करने के लिए एक एक्सरसाइज नाम जोड़ें.",
+    "tracking.forearmsCm": "फोरआर्म सेमी",
+    "tracking.hipsCm": "कूल्हे सेमी",
+    "tracking.historyTitle": "प्रगति इतिहास",
+    "tracking.loggedWorkout": "लॉग किया गया वर्कआउट",
+    "tracking.muscleMassKg": "मांसपेशी वजन किलो",
+    "tracking.neckCm": "गर्दन सेमी",
+    "tracking.noBodyMeasurements": "शरीर के माप नहीं हैं",
+    "tracking.noBodyMeasurementsBody": "समय के साथ बदलाव देखने के लिए माप लॉग करें.",
+    "tracking.noWorkoutsYet": "अभी कोई वर्कआउट नहीं",
+    "tracking.noWorkoutsYetBody": "आपके लॉग किए गए वर्कआउट यहां दिखेंगे.",
+    "tracking.notes": "नोट्स",
+    "tracking.notesPlaceholder":
+      "प्रोग्रेस फोटो में सामने, साइड और पीछे की तस्वीरें जोड़ी जा सकती हैं.",
+    "tracking.removeExercise": "एक्सरसाइज हटाएं",
+    "tracking.reps": "रेप्स",
+    "tracking.restingHeartRate": "आराम की हृदय गति",
+    "tracking.saveMeasurements": "माप सेव करें",
+    "tracking.saveWorkout": "वर्कआउट सेव करें",
+    "tracking.session": "सेशन",
+    "tracking.sets": "सेट्स",
+    "tracking.shouldersCm": "कंधे सेमी",
+    "tracking.strength": "स्ट्रेंथ",
+    "tracking.thighsCm": "जांघें सेमी",
+    "tracking.visceralFatRating": "विसरल फैट रेटिंग",
+    "tracking.waist": "कमर",
+    "tracking.waistCm": "कमर सेमी",
+    "tracking.weightKg": "वजन किलो",
+    "tracking.activeTime": "सक्रिय समय",
+    "tracking.activeHabits": "सक्रिय आदतें",
+    "tracking.addOne": "एक जोड़ें",
+    "tracking.loggedSessions": "लॉग सेशन",
+    "tracking.noSessions": "कोई सेशन नहीं",
+    "tracking.workoutTime": "वर्कआउट समय",
+    "tracking.addMeasurementToSave": "सेव करने के लिए कम से कम एक माप जोड़ें.",
+    "tracking.workout": "वर्कआउट",
+    "tracking.workoutSaved": "वर्कआउट सेव हो गया.",
+    "tracking.workoutSet": "वर्कआउट सेट",
+    "tracking.workoutTitle": "वर्कआउट शीर्षक",
     "tracking.workoutTitlePlaceholder": "जैसे Push day",
     "tracking.mutation.habitAdded": "Habit जोड़ दी गई.",
     "tracking.mutation.habitAddFailed": "Habit जोड़ी नहीं जा सकी.",
@@ -5450,68 +6417,75 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "tracking.sessions": "सेशन",
     "common.seeAll": "सभी देखें",
     "member.attendance.activeMembership": "सक्रिय मेंबरशिप",
-    "member.attendance.approved": "Approved",
-    "member.attendance.assignedBranch": "Assigned branch",
-    "member.attendance.backToHome": "Home पर वापस",
+    "member.attendance.approved": "स्वीकृत",
+    "member.attendance.assignedBranch": "असाइन ब्रांच",
+    "member.attendance.backToHome": "होम पर वापस",
     "member.attendance.branch": "ब्रांच",
-    "member.attendance.checkIn": "Check-in",
-    "member.attendance.checkOut": "Check-out",
-    "member.attendance.checkedIn": "Checked in",
-    "member.attendance.checkedOut": "Checked out",
-    "member.attendance.checkedOutAutomatically": "Automatically checked out",
-    "member.attendance.couldNotCheckOut": "Check out नहीं हो सका",
-    "member.attendance.copyCodeFailed": "Code copy नहीं हो सका.",
-    "member.attendance.copyEntryCodeAccessibility": "Entry code {{code}} copy करें",
-    "member.attendance.deskCanHelp": "Desk इस check-in को पूरा करने में मदद कर सकता है.",
-    "member.attendance.deskConfirmationNeeded": "Desk confirmation चाहिए",
-    "member.attendance.deskHelpNeeded": "Desk help चाहिए",
-    "member.attendance.dismissDetails": "Attendance details बंद करें",
+    "member.attendance.checkIn": "चेक-इन",
+    "member.attendance.checkOut": "चेक-आउट",
+    "member.attendance.checkedIn": "चेक-इन हुआ",
+    "member.attendance.checkedOut": "चेक-आउट हुआ",
+    "member.attendance.checkedOutAutomatically": "अपने आप चेक-आउट हुआ",
+    "member.attendance.couldNotCheckOut": "चेक-आउट नहीं हो सका",
+    "member.attendance.copyCodeFailed": "कोड कॉपी नहीं हो सका.",
+    "member.attendance.copyEntryCodeAccessibility": "एंट्री कोड {{code}} कॉपी करें",
+    "member.attendance.deskCanHelp": "डेस्क इस चेक-इन को पूरा करने में मदद कर सकता है.",
+    "member.attendance.deskConfirmationNeeded": "डेस्क पुष्टि चाहिए",
+    "member.attendance.deskHelpNeeded": "डेस्क मदद चाहिए",
+    "member.attendance.dismissDetails": "अटेंडेंस विवरण बंद करें",
     "member.attendance.duration": "अवधि",
-    "member.attendance.entryApproved": "आपके gym के लिए entry approved है",
-    "member.attendance.entryCode": "Entry Code",
-    "member.attendance.entryCodeCopied": "Entry code copy हुआ.",
-    "member.attendance.entryCodeUnavailable": "Entry code unavailable - reception से manual check-in करने को कहें.",
-    "member.attendance.gymTimeRecorded": "आपका gym time record हो गया.",
-    "member.attendance.sessionStopped": "Session stop हो गया",
+    "member.attendance.entryApproved": "आपके जिम के लिए एंट्री स्वीकृत है",
+    "member.attendance.entryCode": "एंट्री कोड",
+    "member.attendance.entryCodeCopied": "एंट्री कोड कॉपी हुआ.",
+    "member.attendance.entryCodeUnavailable":
+      "एंट्री कोड उपलब्ध नहीं - रिसेप्शन से मैन्युअल चेक-इन करने को कहें.",
+    "member.attendance.gymTimeRecorded": "आपका जिम समय दर्ज हो गया.",
+    "member.attendance.sessionStopped": "सेशन रुक गया",
     "member.attendance.inProgress": "चल रहा है",
-    "member.attendance.mainBranch": "Main branch",
+    "member.attendance.mainBranch": "मुख्य ब्रांच",
     "member.attendance.membershipActive": "मेंबरशिप सक्रिय है",
-    "member.attendance.nextUp": "Next up",
-    "member.attendance.notApproved": "Check-in approved नहीं हुआ",
+    "member.attendance.nextUp": "अगला कदम",
+    "member.attendance.notApproved": "चेक-इन approve नहीं हुआ",
     "member.attendance.notFound": "यह record आपकी history में नहीं मिला",
-    "member.attendance.openAssignedPlanAccessibility": "Assigned plan खोलें",
-    "member.attendance.openAssignedPlanBody": "अपना current assigned plan खोलें.",
-    "member.attendance.openPlan": "Plan खोलें",
-    "member.attendance.pendingApproval": "Pending approval",
-    "member.attendance.pendingBody": "आपका check-in receive हो गया है. यह code front desk पर दिखाएं.",
+    "member.attendance.openAssignedPlanAccessibility": "असाइन किया गया प्लान खोलें",
+    "member.attendance.openAssignedPlanBody": "अपना मौजूदा असाइन किया गया प्लान खोलें.",
+    "member.attendance.openPlan": "प्लान खोलें",
+    "member.attendance.pendingApproval": "मंज़ूरी बाकी",
+    "member.attendance.pendingBody":
+      "आपका check-in receive हो गया है. यह code front desk पर दिखाएं.",
     "member.attendance.plan": "प्लान",
-    "member.attendance.profilePhotoRecommended": "Profile photo recommended",
-    "member.attendance.refreshStatus": "Status refresh करें",
-    "member.attendance.reviewAtDesk": "Front desk से इस check-in को review करने को कहें.",
-    "member.attendance.showToDesk": "पूछे जाने पर इसे front desk को दिखाएं.",
-    "member.attendance.status": "Status",
-    "member.attendance.title": "Attendance",
-    "member.attendance.updating": "Update हो रहा है...",
-    "member.attendance.waitingDeskApproval": "Desk approval का इंतज़ार",
+    "member.attendance.profilePhotoRecommended": "प्रोफाइल फोटो सुझाई गई",
+    "member.attendance.refreshStatus": "स्थिति रीफ्रेश करें",
+    "member.attendance.reviewAtDesk": "फ्रंट डेस्क से इस चेक-इन को रिव्यू करने को कहें.",
+    "member.attendance.showToDesk": "पूछे जाने पर इसे फ्रंट डेस्क को दिखाएं.",
+    "member.attendance.status": "स्टेटस",
+    "member.attendance.title": "अटेंडेंस",
+    "member.attendance.updating": "अपडेट हो रहा है...",
+    "member.attendance.waitingDeskApproval": "डेस्क मंज़ूरी का इंतज़ार",
     "member.attendance.whyConfirmation": "Confirmation क्यों?",
-    "member.attendance.whyConfirmationBody": "आपका gym कुछ check-ins को approved mark करने से पहले desk confirmation मांगता है.",
+    "member.attendance.whyConfirmationBody":
+      "आपका gym कुछ check-ins को approved mark करने से पहले desk confirmation मांगता है.",
     "member.coaching.active": "सक्रिय",
     "member.coaching.browsePtPackages": "PT पैकेज देखें",
-    "member.coaching.completedCount": "{{count}} पूरे हुए",
+    "member.coaching.currentTab": "कोचिंग",
     "member.coaching.ends": "{{date}} खत्म",
+    "member.coaching.flexibleSessions": "Flexible sessions",
     "member.coaching.noActiveCoaching": "कोई सक्रिय कोचिंग नहीं",
     "member.coaching.noActiveCoachingBody":
-      "नीचे PT पैकेज देखें और अनुरोध करें — ट्रेनर पुष्टि करके भुगतान लेगा.",
+      "तैयार होने पर पैकेज देखें. ट्रेनर request confirm करेगा, फिर payment एक step में होगा.",
     "member.coaching.noPackagesAvailable": "कोई पैकेज उपलब्ध नहीं",
     "member.coaching.noPackagesAvailableBody":
       "बाद में देखें — ट्रेनरों ने अभी PT पैकेज प्रकाशित नहीं किए हैं.",
+    "member.coaching.packagesTab": "पैकेज",
+    "member.coaching.payAfterApproval": "Trainer approval के बाद payment",
     "member.coaching.noSessionsYet": "अभी कोई सेशन नहीं",
     "member.coaching.noSessionsYetBody": "आपके लॉग किए हुए सेशन यहां दिखेंगे.",
     "member.coaching.pending": "पेंडिंग",
+    "member.coaching.requestPackage": "Request",
     "member.coaching.recentSessions": "हाल के सेशन",
-    "member.coaching.requesting": "अनुरोध भेजा जा रहा है...",
-    "member.coaching.requestSent": "अनुरोध भेजा गया — ट्रेनर पुष्टि करेगा",
-    "member.coaching.requestThisPackage": "यह पैकेज अनुरोध करें",
+    "member.coaching.requesting": "Request भेजी जा रही है...",
+    "member.coaching.requestSent": "Request भेजी गई — ट्रेनर पुष्टि करेगा",
+    "member.coaching.requestThisPackage": "यह पैकेज request करें",
     "member.coaching.sessionsCount": "{{count}} सेशन",
     "member.coaching.sessionsLeft": "{{remaining}} में से {{total}} सेशन बाकी",
     "member.coaching.subtitle": "अपने कोच के साथ पर्सनल ट्रेनिंग.",
@@ -5522,67 +6496,106 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.coaching.yourCoach": "आपके कोच",
     "member.coaching.yourTrainer": "आपके ट्रेनर",
     "member.classDetail.bookClass": "क्लास बुक करें",
-    "member.classDetail.booked": "बुक्ड",
+    "member.classDetail.booked": "बुक हो चुकी",
+    "member.classDetail.bookedHint": "आपकी बुकिंग हो गई है. प्लान बदलें तो यहीं से रद्द करें.",
     "member.classDetail.bookWithPrice": "बुक करें · {{price}}",
     "member.classDetail.cancelBooking": "बुकिंग रद्द करें",
     "member.classDetail.cancelling": "रद्द हो रहा है...",
     "member.classDetail.classDetails": "क्लास विवरण",
     "member.classDetail.classFallback": "क्लास",
     "member.classDetail.coachName": "कोच {{name}}",
-    "member.classDetail.continuePayment": "पेमेंट जारी रखें",
-    "member.classDetail.full": "फुल",
+    "member.classDetail.continuePayment": "भुगतान जारी रखें",
+    "member.classDetail.full": "भरी हुई",
+    "member.classDetail.fullHint":
+      "यह क्लास भर चुकी है. वेटलिस्ट में जुड़ें, जगह खुली तो आपकी स्थिति अपडेट होगी.",
+    "member.classDetail.freeBookingHint":
+      "अभी अपनी जगह पक्की करें. प्लान बदलें तो इसी स्क्रीन से रद्द करें.",
     "member.classDetail.joinWaitlist": "वेटलिस्ट में जुड़ें",
     "member.classDetail.left": "{{count}} बाकी",
+    "member.classDetail.nextStep": "अगला कदम",
     "member.classDetail.notFound": "क्लास नहीं मिली",
-    "member.classDetail.paymentDue": "पेमेंट बाकी",
-    "member.classDetail.spots": "{{count}} स्पॉट",
-    "member.classDetail.spotsBooked": "स्पॉट बुक",
-    "member.classDetail.waitlisted": "वेटलिस्टेड",
+    "member.classDetail.paidBookingHint":
+      "अपनी जगह पक्की करने के लिए अभी भुगतान करें. भुगतान बाकी होने पर बुकिंग अधूरी रहेगी.",
+    "member.classDetail.payAmountNow": "अभी {{amount}} भुगतान करें",
+    "member.classDetail.paymentDue": "भुगतान बाकी",
+    "member.classDetail.paymentDueHint":
+      "क्लास भरने से पहले अपनी जगह पक्की करने के लिए भुगतान पूरा करें.",
+    "member.classDetail.spots": "{{count}} जगह बाकी",
+    "member.classDetail.spotsBooked": "जगह बुक",
+    "member.classDetail.waitlisted": "वेटलिस्ट पर",
+    "member.classDetail.waitlistedHint": "आप वेटलिस्ट पर हैं. जगह नहीं चाहिए तो यहीं से रद्द करें.",
     "member.classes.bookClass": "क्लास बुक करें",
     "member.classes.bookWithPrice": "बुक करें · {{price}}",
-    "member.classes.booked": "बुक्ड",
-    "member.classes.branchSchedule": "{{branch}} schedule",
+    "member.classes.booked": "बुक हो चुकी",
+    "member.classes.branchSchedule": "{{branch}} शेड्यूल",
     "member.classes.cancelling": "रद्द हो रहा है...",
     "member.classes.coachName": "कोच {{name}}",
-    "member.classes.continuePayment": "पेमेंट जारी रखें",
-    "member.classes.couldNotLoad": "Classes लोड नहीं हो सकीं.",
-    "member.classes.free": "फ्री",
-    "member.classes.full": "फुल",
+    "member.classes.continuePayment": "भुगतान जारी रखें",
+    "member.classes.couldNotLoad": "क्लासेस लोड नहीं हो सकीं.",
+    "member.classes.filterAll": "सभी {{count}}",
+    "member.classes.filterBooked": "बुक्ड {{count}}",
+    "member.classes.filterOpen": "ओपन {{count}}",
+    "member.classes.free": "मुफ्त",
+    "member.classes.full": "भरी हुई",
     "member.classes.joinWaitlist": "वेटलिस्ट में जुड़ें",
     "member.classes.left": "{{count}} बाकी",
-    "member.classes.noClasses": "कोई क्लास scheduled नहीं",
-    "member.classes.noClassesBody": "जल्द फिर देखें - हर हफ्ते नए group sessions जोड़े जाते हैं.",
+    "member.classes.noBookedClasses": "अभी कोई बुकिंग नहीं",
+    "member.classes.noBookedClassesBody": "तैयार हों तो ओपन टैब से क्लास बुक करें.",
+    "member.classes.noClasses": "कोई क्लास शेड्यूल नहीं",
+    "member.classes.noClassesBody": "जल्द फिर देखें - हर हफ्ते नए ग्रुप सेशन जोड़े जाते हैं.",
+    "member.classes.noOpenClasses": "कोई ओपन क्लास नहीं",
+    "member.classes.noOpenClassesBody": "अभी आने वाली क्लासेस बुक या वेटलिस्टेड हैं.",
     "member.classes.onWaitlist": "वेटलिस्ट पर",
     "member.classes.opening": "खुल रहा है...",
-    "member.classes.paymentDue": "पेमेंट बाकी",
-    "member.classes.spots": "{{count}} स्पॉट",
-    "member.classes.subtitle": "Upcoming group sessions में अपनी spot reserve करें.",
+    "member.classes.payAmountNow": "अभी {{amount}} भुगतान करें",
+    "member.classes.paymentDue": "भुगतान बाकी",
+    "member.classes.spots": "{{count}} जगह",
+    "member.classes.subtitle": "आने वाले ग्रुप सेशन में अपनी जगह पक्की करें.",
     "member.classes.title": "क्लासेस",
-    "member.classes.waitlisted": "वेटलिस्टेड",
-    "member.mutation.bookingCancelled": "Booking रद्द हो गई.",
-    "member.mutation.bookingCancelFailed": "आपकी booking रद्द नहीं हो सकी.",
-    "member.mutation.classBooked": "Class book हो गई.",
-    "member.mutation.classBookingFailed": "Class booking पूरी नहीं हो सकी.",
-    "member.mutation.classCheckoutStarted": "Class checkout शुरू हुआ.",
-    "member.mutation.membershipCancelFailed": "Membership cancel नहीं हो सकी.",
-    "member.mutation.ptRequestFailed": "आपका PT request भेजा नहीं जा सका.",
-    "member.mutation.signInBookClass": "Class book करने के लिए फिर से sign in करें.",
-    "member.mutation.signInManageBooking": "Booking manage करने के लिए फिर से sign in करें.",
-    "member.mutation.signInRequestPt": "Personal training request करने के लिए फिर से sign in करें.",
-    "member.mutation.waitlistAdded": "Waitlist में जोड़ दिया गया. Spot खुलने पर payment prompt करेंगे.",
-    "member.you.accountCenter": "Zook अकाउंट सेंटर",
+    "member.classes.waitlisted": "वेटलिस्ट पर",
+    "member.classes.yourBookings": "आपकी बुकिंग",
+    "member.mutation.bookingCancelled": "बुकिंग रद्द हो गई.",
+    "member.mutation.bookingCancelFailed": "आपकी बुकिंग रद्द नहीं हो सकी.",
+    "member.mutation.classBooked": "क्लास बुक हो गई.",
+    "member.mutation.classBookingFailed": "क्लास बुकिंग पूरी नहीं हो सकी.",
+    "member.mutation.classCheckoutStarted": "क्लास चेकआउट शुरू हुआ.",
+    "member.mutation.membershipCancelFailed": "मेंबरशिप कैंसल नहीं हो सकी.",
+    "member.mutation.ptRequestFailed": "आपका PT अनुरोध भेजा नहीं जा सका.",
+    "member.mutation.signInBookClass": "क्लास बुक करने के लिए फिर से साइन इन करें.",
+    "member.mutation.signInManageBooking": "बुकिंग प्रबंधित करने के लिए फिर से साइन इन करें.",
+    "member.mutation.signInRequestPt": "पर्सनल ट्रेनिंग अनुरोध के लिए फिर से साइन इन करें.",
+    "member.mutation.waitlistAdded":
+      "वेटलिस्ट में जोड़ दिया गया. जगह खुलने पर भुगतान के लिए बताया जाएगा.",
+    "member.you.accountCenter": "Zook खाता केंद्र",
+    "member.you.activeMembership": "सक्रिय मेंबरशिप",
     "member.you.appearance": "दिखावट",
-    "member.you.backToOwnerMode": "Owner मोड पर वापस",
+    "member.you.backToOwnerMode": "ओनर मोड पर स्विच करें",
+    "member.you.browsePlans": "प्लान",
+    "member.you.findMembershipPlan": "ट्रेनिंग शुरू करने के लिए प्लान चुनें.",
     "member.you.gymShop": "जिम शॉप",
+    "member.you.assistant": "असिस्टेंट",
+    "member.you.editProfile": "बदलें",
+    "member.you.gymProfile": "जिम प्रोफाइल",
     "member.you.helpSupport": "मदद और सपोर्ट",
+    "member.you.memberFallback": "मेंबर",
     "member.you.membership": "मेंबरशिप",
+    "member.you.membershipNeedsAttention": "मेंबरशिप पर ध्यान दें",
+    "member.you.noGymSelected": "कोई जिम चयनित नहीं",
+    "member.you.notifications": "नोटिफिकेशन",
+    "member.you.noActiveMembership": "कोई सक्रिय मेंबरशिप नहीं",
     "member.you.privacy": "प्राइवेसी",
     "member.you.quickActions": "त्वरित एक्शन",
+    "member.you.referrals": "रेफरल",
     "member.you.switchGym": "जिम बदलें",
     "member.you.switchToRole": "{{role}} पर स्विच करें",
     "member.you.theme.dark": "डार्क",
     "member.you.theme.light": "लाइट",
     "member.you.theme.system": "सिस्टम",
+    "member.you.trackingHistory": "ट्रैकिंग हिस्ट्री",
+    "member.you.unreadCount": "{{count}} अपठित",
+    "member.you.validUntil": "{{date}} तक मान्य",
+    "member.you.viewMembership": "देखें",
+    "member.you.visitsLeft": "{{count}} विजिट बाकी",
     "member.home.accessActive": "एक्सेस सक्रिय है",
     "member.home.active": "सक्रिय",
     "member.home.activeCheckIn": "सक्रिय चेक-इन",
@@ -5594,338 +6607,446 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.home.classOpen": "ओपन",
     "member.home.classSpotsLeft": "{{count}} बाकी",
     "member.home.classWaitlisted": "वेटलिस्टेड",
+    "member.home.classesTab": "क्लासेस",
     "member.home.coachName": "कोच {{name}}",
+    "member.home.coachingTab": "कोचिंग",
     "member.home.completeProfile": "अपनी प्रोफाइल पूरी करें",
-    "member.home.completeProfileBody": "अपनी details जोड़ें ताकि staff और trainers तेजी से मदद कर सकें.",
+    "member.home.completeProfileBody":
+      "अपनी जानकारी जोड़ें ताकि स्टाफ और ट्रेनर तेजी से मदद कर सकें.",
     "member.home.currentBranch": "मौजूदा ब्रांच",
     "member.home.daysLeft": "{{count}} दिन बाकी",
     "member.home.dayStreak": "{{count}} दिन की स्ट्रीक",
-    "member.home.dismissBanner": "{{title}} dismiss करें",
+    "member.home.dismissBanner": "{{title}} हटाएं",
     "member.home.estimatedMinutes": "~{{minutes}} मिनट",
-    "member.home.exerciseCount": "{{count}} exercise",
-    "member.home.expiredBody": "Check-ins और plan access जारी रखने के लिए membership renew करें.",
-    "member.home.expiredTitle": "आपकी membership expire हो गई",
+    "member.home.exerciseCount": "{{count}} एक्सरसाइज",
+    "member.home.exerciseCountOne": "1 एक्सरसाइज",
+    "member.home.exerciseCountOther": "{{count}} एक्सरसाइज",
+    "member.home.expiredBody": "चेक-इन और प्लान एक्सेस जारी रखने के लिए मेंबरशिप रिन्यू करें.",
+    "member.home.expiredTitle": "आपकी मेंबरशिप खत्म हो गई",
     "member.home.findYourGym": "अपना जिम ढूंढें",
-    "member.home.finishLoggingWork": "अपना work log पूरा करें.",
-    "member.home.firstRunBody": "आपका gym जोड़ने के बाद membership, workouts और check-ins यहां दिखेंगे.",
+    "member.home.finishLoggingWork": "अपना वर्कआउट लॉग पूरा करें.",
+    "member.home.firstRunBody": "आपका जिम जोड़ने के बाद मेंबरशिप, वर्कआउट और चेक-इन यहां दिखेंगे.",
+    "member.home.firstRunStepChoosePlan": "प्लान चुनें या अनुरोध भेजें",
+    "member.home.firstRunStepFindGym": "अपनी जिम प्रोफाइल खोलें",
+    "member.home.firstRunStepStartTraining": "चेक-इन करें और ट्रेनिंग शुरू करें",
     "member.home.firstRunTitle": "Zook में स्वागत है",
     "member.home.getMembership": "मेंबरशिप लें",
     "member.home.greeting": "नमस्ते, {{name}}",
     "member.home.gymFallback": "जिम",
     "member.home.habits": "आदतें",
-    "member.home.inviteFriend": "दोस्त को invite करें",
-    "member.home.inviteFriendBody": "Zook किसी ऐसे व्यक्ति से share करें जिसे आपके साथ train करना चाहिए.",
+    "member.home.inviteFriend": "दोस्त को बुलाएं",
+    "member.home.inviteFriendBody":
+      "Zook किसी ऐसे व्यक्ति से शेयर करें जिसे आपके साथ ट्रेन करना चाहिए.",
     "member.home.joinGym": "जिम जॉइन करें",
-    "member.home.joinGymBody": "Membership, plans, check-ins और trainer updates unlock करने के लिए अपना gym ढूंढें.",
-    "member.home.membershipDaysLeft": "{{count}} membership दिन बाकी.",
-    "member.home.membershipEndsToday": "Membership आज खत्म होती है",
-    "member.home.membershipPendingBody": "आपका payment {{gym}} से linked है. Check-ins और plans unlock होने से पहले front desk को membership activate करनी होगी.",
-    "member.home.membershipPendingTitle": "Membership activation pending है",
-    "member.home.membershipStatusActive": "Membership status active है.",
+    "member.home.joinGymBody":
+      "मेंबरशिप, प्लान, चेक-इन और ट्रेनर अपडेट शुरू करने के लिए अपना जिम ढूंढें.",
+    "member.home.membershipDaysLeft": "{{count}} मेंबरशिप दिन बाकी.",
+    "member.home.membershipEndsToday": "मेंबरशिप आज खत्म होती है",
+    "member.home.membershipPendingBody":
+      "आपका भुगतान {{gym}} से जुड़ा है. चेक-इन और प्लान शुरू होने से पहले फ्रंट डेस्क को मेंबरशिप सक्रिय करनी होगी.",
+    "member.home.membershipPendingTitle": "मेंबरशिप सक्रिय होना बाकी है",
+    "member.home.membershipStatusActive": "मेंबरशिप स्थिति सक्रिय है.",
     "member.home.membershipAccess": "मेंबरशिप एक्सेस",
     "member.home.membershipAccessibility": "{{status}}. {{detail}}. {{gym}}.",
-    "member.home.membershipActive": "मेंबरशिप सक्रिय है",
+    "member.home.membershipActive": "मेंबरशिप सक्रिय",
     "member.home.noActiveMembership": "कोई सक्रिय मेंबरशिप नहीं",
-    "member.home.noNextWorkout": "बढ़िया काम. अगला workout schedule नहीं है.",
-    "member.home.noPlanAssigned": "कोई plan assigned नहीं",
-    "member.home.noPlanBody": "आप {{gym}} में active हैं. Workout plan के लिए अपने trainer से पूछें.",
+    "member.home.noNextWorkout": "बढ़िया काम. अगला वर्कआउट शेड्यूल नहीं है.",
+    "member.home.noPlanAssigned": "कोई प्लान असाइन नहीं",
+    "member.home.noPlanBody":
+      "आप {{gym}} में सक्रिय हैं. वर्कआउट प्लान के लिए अपने ट्रेनर से पूछें.",
     "member.home.open": "खोलें",
-    "member.home.openMembership": "Membership खोलें",
-    "member.home.openPlan": "Plan खोलें",
+    "member.home.openMembership": "मेंबरशिप खोलें",
+    "member.home.openPlan": "प्लान खोलें",
     "member.home.openProgress": "प्रोग्रेस खोलें",
-    "member.home.openYourCoaching": "अपनी coaching खोलें",
-    "member.home.personalTraining": "Personal training",
-    "member.home.pickupAvailable": "Pickup available",
-    "member.home.pickupCodeBody": "Desk पर pickup code {{code}} दिखाएं.",
-    "member.home.referral": "Referral",
-    "member.home.renew": "Renew",
+    "member.home.openYourCoaching": "अपनी कोचिंग खोलें",
+    "member.home.personalTraining": "पर्सनल ट्रेनिंग",
+    "member.home.pickupAvailable": "पिकअप उपलब्ध",
+    "member.home.pickupCodeBody": "डेस्क पर पिकअप कोड {{code}} दिखाएं.",
+    "member.home.referral": "रेफरल",
+    "member.home.renew": "रिन्यू करें",
     "member.home.renewMembership": "मेंबरशिप रिन्यू करें",
-    "member.home.renewNowBody": "Check-ins और plan access जारी रखने के लिए अभी renew करें.",
+    "member.home.renewNowBody": "चेक-इन और प्लान एक्सेस जारी रखने के लिए अभी रिन्यू करें.",
     "member.home.renewalNeeded": "रिन्यूअल जरूरी है",
-    "member.home.restDay": "Rest day",
-    "member.home.restDayBody": "{{plan}} में आज workout scheduled नहीं है. अच्छी recovery करें और routine बनाए रखें.",
-    "member.home.resume": "Resume",
-    "member.home.scanIntoGym": "Gym में scan करें",
+    "member.home.restDay": "आराम का दिन",
+    "member.home.restDayBody":
+      "{{plan}} में आज वर्कआउट शेड्यूल नहीं है. अच्छी रिकवरी करें और रूटीन बनाए रखें.",
+    "member.home.resume": "जारी रखें",
+    "member.home.scanIntoGym": "जिम में स्कैन करें",
     "member.home.seeAll": "सब देखें",
-    "member.home.seeAllClasses": "सभी classes देखें",
-    "member.home.sessionsDone": "{{used}} of {{total}} sessions done",
+    "member.home.seeAllClasses": "सभी क्लास देखें",
+    "member.home.upcomingClasses": "आने वाली क्लासेस",
     "member.home.sessionsLeftShort": "{{count}} बाकी",
-    "member.home.startWorkout": "Workout शुरू करें",
+    "member.home.startWorkout": "वर्कआउट शुरू करें",
     "member.home.stopSession": "सेशन रोकें",
     "member.home.stoppingSession": "रुक रहा है...",
-    "member.home.todaysWorkout": "आज का workout",
+    "member.home.todaysWorkout": "आज का वर्कआउट",
     "member.home.tomorrowPlan": "कल: {{name}}.",
-    "member.home.trainerAssigned": "Trainer assigned",
-    "member.home.update": "Update",
-    "member.home.viewMembership": "Membership देखें",
-    "member.home.viewPlan": "Plan देखें",
+    "member.home.update": "अपडेट",
+    "member.home.viewMembership": "मेंबरशिप देखें",
+    "member.home.viewPlan": "प्लान देखें",
     "member.home.visits": "विजिट",
     "member.home.visitsLeft": "{{count}} विजिट बाकी",
-    "member.home.workoutInProgress": "Workout चल रहा है",
-    "member.home.workoutLogged": "Workout logged",
+    "member.home.weekTab": "हफ्ता",
+    "member.home.workoutInProgress": "वर्कआउट चल रहा है",
+    "member.home.workoutLogged": "वर्कआउट लॉग हुआ",
     "member.home.workouts": "वर्कआउट",
-    "member.home.yourCoaching": "आपकी coaching",
-    "member.home.yourTrainer": "आपके trainer",
+    "member.home.yourCoaching": "आपकी कोचिंग",
+    "member.home.yourTrainer": "आपके ट्रेनर",
+    "member.membership.active": "सक्रिय",
     "member.membership.activePlan": "सक्रिय प्लान",
-    "member.membership.autopay": "Autopay",
-    "member.membership.autopayActive": "Autopay active है.",
-    "member.membership.autopayCancelled": "Autopay cancel हो गया.",
-    "member.membership.authorizeAutopay": "इस plan को automatically renew करने के लिए automatic renewal authorize करें.",
-    "member.membership.browseGymsBody": "शुरू करने के लिए gyms देखें और membership खरीदें.",
-    "member.membership.browserReturnBody": "Checkout के बाद वापस आएं. वापस आने पर Zook आपकी membership refresh करेगा.",
-    "member.membership.cancelConfirmBody": "आपका current term खत्म होने तक access रहेगा, लेकिन renew नहीं होगा और बाद में resume नहीं किया जा सकेगा. इसे undo नहीं किया जा सकता.",
-    "member.membership.cancelConfirmTitle": "Membership cancel करें?",
-    "member.membership.cancelMembership": "Membership cancel करें",
-    "member.membership.cancelAutopay": "Autopay cancel करें",
-    "member.membership.cancelled": "Membership cancel हो गई.",
-    "member.membership.checkingPaymentStatus": "Payment status check हो रहा है...",
-    "member.membership.choosePlan": "Plan चुनें",
-    "member.membership.continueCheckout": "Checkout जारी रखें",
-    "member.membership.continuingBrowser": "Browser में जारी है.",
-    "member.membership.continuingBrowserTitle": "Browser में जारी",
-    "member.membership.currentPlan": "Current plan",
+    "member.membership.autopay": "ऑटो-पे",
+    "member.membership.autopayActive": "ऑटो-पे चालू है.",
+    "member.membership.autopayCancelled": "ऑटो-पे बंद हो गया.",
+    "member.membership.autopayEnabledTitle": "ऑटो-पे तैयार है",
+    "member.membership.autopayPromptBody": "एक बार सेट करें. कभी भी बंद करें.",
+    "member.membership.autopayPromptTitle": "एक टैप में ऑटो-रिन्यू",
+    "member.membership.autopayRenewalChoiceBody": "वैकल्पिक. इस भुगतान के बाद सेट करें ताकि अगला रिन्यूअल अपने-आप हो.",
+    "member.membership.autopayRenewalChoiceTitle": "पेमेंट के बाद: ऑटो-पे",
+    "member.membership.autopaySetupAction": "चालू करें",
+    "member.membership.authorizeAutopay": "यह प्लान अपने-आप रिन्यू होगा.",
+    "member.membership.browseGymsBody": "शुरू करने के लिए जिम देखें और मेंबरशिप खरीदें.",
+    "member.membership.browserReturnBody":
+      "भुगतान के बाद वापस आएं. वापस आने पर Zook आपकी मेंबरशिप अपडेट करेगा.",
+    "member.membership.cancelConfirmBody":
+      "मौजूदा अवधि खत्म होने तक एक्सेस रहेगा, लेकिन रिन्यूअल नहीं होगा और बाद में फिर शुरू नहीं किया जा सकेगा. इसे वापस नहीं किया जा सकता.",
+    "member.membership.cancelConfirmTitle": "मेंबरशिप रद्द करें?",
+    "member.membership.cancelMembership": "मेंबरशिप रद्द करें",
+    "member.membership.cancelAutopay": "ऑटो-पे बंद करें",
+    "member.membership.cancelled": "मेंबरशिप रद्द हो गई.",
+    "member.membership.browserReturnHint":
+      "ब्राउजर बंद हो चुका है तो भुगतान पुष्टि अपडेट करने के लिए स्टेटस जांचें.",
+    "member.membership.checkingPaymentStatus": "भुगतान स्टेटस जांचा जा रहा है...",
+    "member.membership.choosePlan": "प्लान चुनें",
+    "member.membership.continueCheckout": "भुगतान जारी रखें",
+    "member.membership.continuingBrowser": "ब्राउजर में जारी है.",
+    "member.membership.continuingBrowserTitle": "ब्राउजर में जारी",
+    "member.membership.currentPlan": "मौजूदा प्लान",
     "member.membership.days": "{{count}} दिन",
     "member.membership.daysOfDurationLeft": "{{durationDays}} में से {{daysLeft}} दिन बाकी",
-    "member.membership.documentsAfterSuccess": "Payment success के बाद documents available होंगे. Status: {{status}}.",
-    "member.membership.downloadInvoice": "Invoice download करें",
-    "member.membership.enableAutopay": "Autopay enable करें",
-    "member.membership.eyebrow": "Membership",
-    "member.membership.findGyms": "Gyms खोजें",
-    "member.membership.generateDocument": "{{label}} generate करें",
-    "member.membership.generateReceiptOrInvoice": "Receipt या invoice generate करें.",
-    "member.membership.guidanceActiveBody": "इस gym के लिए आपकी QR entry और member benefits active हैं.",
-    "member.membership.guidanceActiveTitle": "Membership active है",
-    "member.membership.guidanceCompletePayment": "Payment complete करें",
-    "member.membership.guidanceDaysLeftBody": "{{count}} दिन बाकी. Entry uninterrupted रखने के लिए जल्दी renew करें.",
-    "member.membership.guidanceExpiredBody": "QR entry और member benefits restore करने के लिए इस plan को renew करें या नया plan चुनें.",
-    "member.membership.guidanceExpiredTitle": "Membership expired",
-    "member.membership.guidanceFailedBody": "इस membership के लिए money confirm नहीं हुई. फिर try करें या desk से मदद लें.",
-    "member.membership.guidanceFailedTitle": "Payment failed",
-    "member.membership.guidanceInactiveBody": "यह membership entry के लिए use नहीं हो सकती. Gym से संपर्क करें या दूसरा plan चुनें.",
-    "member.membership.guidanceInactiveTitle": "Membership active नहीं है",
-    "member.membership.guidancePastDueBody": "Gym इसे active मान सके उससे पहले आपकी membership को payment confirmation चाहिए.",
-    "member.membership.guidancePastDueTitle": "Renewal overdue",
-    "member.membership.guidancePaymentPendingBody": "Entry से पहले payment complete करें या desk से offline payment record करवाएं.",
-    "member.membership.guidancePaymentPendingTitle": "Payment pending",
-    "member.membership.guidancePayNow": "अभी pay करें",
-    "member.membership.guidanceRenewalWindowTitle": "Renewal window",
-    "member.membership.guidanceRenewNow": "अभी renew करें",
-    "member.membership.guidanceRenewOrChangePlan": "Renew या plan change करें",
-    "member.membership.guidanceRenewTodayBody": "Entry interruption से बचने के लिए आज renew करें.",
-    "member.membership.guidanceTryPaymentAgain": "Payment फिर try करें",
-    "member.membership.gymDefinedValidity": "Gym-defined validity",
-    "member.membership.history": "Membership history",
-    "member.membership.invoice": "Invoice",
-    "member.membership.historyJumpBody": "आपकी previous memberships और payment trail पर ले गए.",
-    "member.membership.invoiceGenerated": "Invoice generated.",
-    "member.membership.invoicesAndReceipts": "Invoices और receipts",
-    "member.membership.invoiceUnavailable": "Invoice unavailable",
-    "member.membership.keepMembership": "Membership रखें",
-    "member.membership.noActivePlans": "कोई active plan नहीं",
-    "member.membership.noAlternatePlans": "कोई alternate plan published नहीं है. Same-plan renewal request होगा.",
-    "member.membership.noExpiry": "कोई expiry नहीं",
-    "member.membership.noMemberships": "कोई membership नहीं",
-    "member.membership.noPayments": "कोई payments नहीं",
-    "member.membership.nextRenewalDate": "Next renewal {{date}}",
-    "member.membership.off": "Off",
-    "member.membership.pause": "Pause",
-    "member.membership.pauseEndDateAccessibility": "Membership pause end date",
-    "member.membership.pauseHelp": "Pause करने से इस date तक check-ins freeze रहते हैं, और remaining days carry over होते हैं.",
-    "member.membership.pauseMembership": "Membership pause करें",
-    "member.membership.pauseConfirmBody": "{{date}} तक आपका access frozen रहेगा. उससे पहले कभी भी resume कर सकते हैं.",
-    "member.membership.pauseConfirmTitle": "Membership pause करें?",
+    "member.membership.documentsAfterSuccess": "{{status}} के बाद दस्तावेज उपलब्ध होंगे.",
+    "member.membership.downloadInvoice": "इनवॉइस डाउनलोड करें",
+    "member.membership.enableAutopay": "ऑटो-पे चालू करें",
+    "member.membership.eyebrow": "मेंबरशिप",
+    "member.membership.findGyms": "जिम खोजें",
+    "member.membership.generateDocument": "{{label}} जनरेट करें",
+    "member.membership.generateReceiptOrInvoice": "रसीद या इनवॉइस जनरेट करें.",
+    "member.membership.guidanceActiveBody": "इस जिम के लिए आपकी QR एंट्री और मेंबर लाभ चालू हैं.",
+    "member.membership.guidanceActiveTitle": "मेंबरशिप सक्रिय है",
+    "member.membership.guidanceCompletePayment": "पेमेंट पूरी करें",
+    "member.membership.guidanceDaysLeftBody":
+      "{{count}} दिन बाकी. बिना रुकावट एंट्री जारी रखने के लिए जल्दी रिन्यू करें.",
+    "member.membership.guidanceExpiredBody":
+      "QR एंट्री और मेंबर लाभ वापस चालू करने के लिए यह प्लान रिन्यू करें या नया प्लान चुनें.",
+    "member.membership.guidanceExpiredTitle": "मेंबरशिप खत्म हो गई",
+    "member.membership.guidanceFailedBody":
+      "इस मेंबरशिप का भुगतान कन्फर्म नहीं हुआ. फिर कोशिश करें या डेस्क से मदद लें.",
+    "member.membership.guidanceFailedTitle": "पेमेंट फेल हुआ",
+    "member.membership.guidanceCancelledBody":
+      "आपकी मेंबरशिप समाप्त हो गई है. एक्सेस वापस पाने के लिए इस जिम में फिर जुड़ें या नया जिम खोजें.",
+    "member.membership.guidanceCancelledTitle": "मेंबरशिप रद्द हो गई",
+    "member.membership.guidanceInactiveBody":
+      "यह मेंबरशिप एंट्री के लिए इस्तेमाल नहीं हो सकती. जिम से संपर्क करें या दूसरा प्लान चुनें.",
+    "member.membership.guidanceInactiveTitle": "मेंबरशिप सक्रिय नहीं है",
+    "member.membership.guidancePastDueBody":
+      "जिम इसे सक्रिय मान सके, उससे पहले आपकी मेंबरशिप के भुगतान की पुष्टि जरूरी है.",
+    "member.membership.guidancePastDueTitle": "रिन्यूअल बाकी है",
+    "member.membership.guidancePaymentPendingBody":
+      "एंट्री से पहले पेमेंट पूरा करें या डेस्क से ऑफलाइन पेमेंट रिकॉर्ड करवाएं.",
+    "member.membership.guidancePaymentPendingTitle": "पेमेंट बाकी है",
+    "member.membership.guidancePayNow": "अभी पेमेंट करें",
+    "member.membership.guidanceRenewalWindowTitle": "रिन्यूअल विंडो",
+    "member.membership.guidanceRenewNow": "अभी रिन्यू करें",
+    "member.membership.guidanceRenewOrChangePlan": "रिन्यू करें या प्लान बदलें",
+    "member.membership.guidanceRenewTodayBody": "एंट्री में रुकावट से बचने के लिए आज रिन्यू करें.",
+    "member.membership.guidancePausedBody":
+      "चुनी गई तारीख तक जिम एक्सेस रुका है. एंट्री फिर चालू करने के लिए कभी भी फिर शुरू करें.",
+    "member.membership.guidancePausedTitle": "मेंबरशिप रुकी हुई है",
+    "member.membership.guidanceTryPaymentAgain": "पेमेंट फिर कोशिश करें",
+    "member.membership.joinDifferentGym": "दूसरे जिम में जुड़ें",
+    "member.membership.gymDefinedValidity": "जिम द्वारा तय वैधता",
+    "member.membership.generatedInvoices": "बनी हुई इनवॉइस",
+    "member.membership.history": "मेंबरशिप हिस्ट्री",
+    "member.membership.invoice": "इनवॉइस",
+    "member.membership.historyJumpBody": "आपकी पिछली मेंबरशिप और भुगतान हिस्ट्री पर ले गए.",
+    "member.membership.invoiceGenerated": "इनवॉइस जनरेट हुई.",
+    "member.membership.invoicesAndReceipts": "इनवॉइस और रसीदें",
+    "member.membership.invoiceUnavailable": "इनवॉइस उपलब्ध नहीं",
+    "member.membership.keepMembership": "मेंबरशिप रखें",
+    "member.membership.manageMembership": "मेंबरशिप प्रबंधित करें",
+    "member.membership.manageMembershipBody": "एक्सेस बदलना हो तभी रोकें या कैंसल करें.",
+    "member.membership.manualRenewalTitle": "मैनुअल रिन्यूअल",
+    "member.membership.manualRenewalBody": "अगला भुगतान देय होने पर वर्तमान प्लान कार्ड से रिन्यू करें.",
+    "member.membership.noActivePlans": "कोई सक्रिय प्लान नहीं",
+    "member.membership.noAlternatePlans":
+      "कोई दूसरा प्लान पब्लिश नहीं है. इसी प्लान के लिए रिन्यूअल अनुरोध भेजा जाएगा.",
+    "member.membership.noExpiry": "कोई समाप्ति तारीख नहीं",
+    "member.membership.noMemberships": "कोई मेंबरशिप नहीं",
+    "member.membership.noPayments": "कोई भुगतान नहीं",
+    "member.membership.nextRenewalDate": "अगला रिन्यूअल {{date}}",
+    "member.membership.off": "बंद",
+    "member.membership.enabled": "चालू",
+    "member.membership.endMembershipOptions": "मेंबरशिप समाप्त करें",
+    "member.membership.endMembershipBody": "जब यह एक्सेस आगे नहीं चाहिए तभी कैंसल करें.",
+    "member.membership.pause": "रोकें",
+    "member.membership.pauseEndDateAccessibility": "मेंबरशिप रोकने की अंतिम तारीख",
+    "member.membership.pauseHelp":
+      "रोकने पर इस तारीख तक चेक-इन बंद रहते हैं, और बचे हुए दिन आगे जुड़ जाते हैं.",
+    "member.membership.pauseMembership": "मेंबरशिप रोकें",
+    "member.membership.pauseDisclosureBody": "यात्रा, चोट या तय ब्रेक के लिए ही एक्सेस रोकें.",
+    "member.membership.pauseConfirmBody":
+      "{{date}} तक आपका एक्सेस रुका रहेगा. उससे पहले कभी भी फिर शुरू कर सकते हैं.",
+    "member.membership.pauseConfirmTitle": "मेंबरशिप रोकें?",
     "member.membership.pauseReason": "Member selected a membership pause date from mobile.",
-    "member.membership.pausedToast": "{{date}} तक paused.",
-    "member.membership.pausedUntil": "Membership {{date}} तक paused.",
-    "member.membership.pauseUntil": "Pause until",
-    "member.membership.payments": "Payments",
-    "member.membership.paySecurely": "Securely pay करें",
-    "member.membership.paymentDocuments": "Payment documents",
-    "member.membership.paymentDocumentsBody": "Receipts और invoices नीचे हैं.",
-    "member.membership.plan": "Plan",
-    "member.membership.planSwitched": "Plan switch हो गया.",
-    "member.membership.receipt": "Receipt",
-    "member.membership.receiptGenerated": "Receipt generated.",
-    "member.membership.receiptNumber": "Receipt {{number}}",
-    "member.membership.receiptUnavailable": "Receipt unavailable",
-    "member.membership.recurringRenewalEnabled": "Recurring renewal enabled है.",
-    "member.membership.renewMembership": "Membership renew करें",
-    "member.membership.renewalConfirmed": "Renewal confirmed.",
-    "member.membership.renewalConsequence": "Renewed membership payment service या gym desk से payment confirmation के बाद activate होती है.",
-    "member.membership.renewalFlowOpened": "इस membership के लिए renewal flow खोल दिया गया.",
-    "member.membership.renewalRequestSent": "Renewal request भेज दी गई.",
-    "member.membership.renewalSheetBody": "{{gym}} में same plan जारी रखें या दूसरा available option चुनें.",
-    "member.membership.renewalSummary": "Renewal summary",
-    "member.membership.resumed": "Membership resume हो गई.",
-    "member.membership.resumeMembership": "Membership resume करें",
-    "member.membership.selectedPlan": "Selected plan",
+    "member.membership.pauseReasonInjury": "चोट",
+    "member.membership.pauseReasonMedical": "मेडिकल",
+    "member.membership.pauseReasonOther": "अन्य",
+    "member.membership.pauseReasonTravel": "यात्रा",
+    "member.membership.pausedToast": "{{date}} तक रोकी गई.",
+    "member.membership.pausedUntil": "मेंबरशिप {{date}} तक रोकी गई.",
+    "member.membership.pauseUntil": "कब तक रोकें",
+    "member.membership.payments": "भुगतान",
+    "member.membership.payAmountNow": "अभी {{amount}} भुगतान करें",
+    "member.membership.payNow": "अभी भुगतान करें",
+    "member.membership.paySecurely": "सुरक्षित भुगतान करें",
+    "member.membership.paymentDocuments": "भुगतान दस्तावेज",
+    "member.membership.paymentDocumentsBody": "रसीदें और इनवॉइस नीचे हैं.",
+    "member.membership.plan": "प्लान",
+    "member.membership.planSwitched": "प्लान बदल गया.",
+    "member.membership.receipt": "रसीद",
+    "member.membership.receiptGenerated": "रसीद जनरेट हुई.",
+    "member.membership.receiptNumber": "रसीद {{number}}",
+    "member.membership.receiptUnavailable": "रसीद उपलब्ध नहीं",
+    "member.membership.recurringRenewalEnabled": "ऑटो रिन्यूअल चालू है.",
+    "member.membership.renewMembership": "मेंबरशिप रिन्यू करें",
+    "member.membership.renewalConfirmed": "रिन्यूअल कन्फर्म हुआ.",
+    "member.membership.renewalConsequence":
+      "रिन्यू की गई मेंबरशिप भुगतान सेवा या जिम डेस्क से भुगतान कन्फर्म होने के बाद सक्रिय होती है.",
+    "member.membership.renewalFlowOpened": "इस मेंबरशिप के लिए रिन्यूअल फ्लो खोल दिया गया.",
+    "member.membership.renewalRequestSent": "रिन्यूअल अनुरोध भेज दिया गया.",
+    "member.membership.renewalSheetBody":
+      "{{gym}} में यही प्लान जारी रखें या दूसरा उपलब्ध विकल्प चुनें.",
+    "member.membership.renewalSummary": "रिन्यूअल सारांश",
+    "member.membership.resumed": "मेंबरशिप फिर शुरू हो गई.",
+    "member.membership.resumeMembership": "मेंबरशिप फिर शुरू करें",
+    "member.membership.selectedPlan": "चुना गया प्लान",
     "member.membership.selectPlanAccessibility": "{{plan}} चुनें",
-    "member.membership.starting": "Start हो रहा है...",
-    "member.membership.statusBelow": "Membership status नीचे है.",
-    "member.membership.subscriptionUpdated": "आपकी subscription update हो गई.",
-    "member.membership.summary": "{{active}} active · {{expiring}} expiring soon · {{total}} total",
-    "member.membership.switchNow": "अब switch करें",
-    "member.membership.title": "आपके plans",
-    "member.membership.update": "Membership update",
-    "member.membership.updating": "Update हो रहा है...",
-    "member.membership.validity": "Validity",
-    "member.membership.visits": "Visits",
+    "member.membership.starting": "शुरू हो रहा है...",
+    "member.membership.statusBelow": "मेंबरशिप स्थिति नीचे है.",
+    "member.membership.subscriptionUpdated": "आपकी सदस्यता अपडेट हो गई.",
+    "member.membership.summary": "{{active}} सक्रिय · {{expiring}} जल्द खत्म · {{total}} कुल",
+    "member.membership.tabCurrent": "वर्तमान",
+    "member.membership.expiringSoon": "जल्द खत्म",
+    "member.membership.total": "कुल",
+    "member.membership.tabHistory": "हिस्ट्री",
+    "member.membership.tabPayments": "भुगतान",
+    "member.membership.switchNow": "अब बदलें",
+    "member.membership.switchWithoutCheckoutBody":
+      "इसे तभी चुनें जब जिम ने fresh checkout के बिना plan change approve किया हो.",
+    "member.membership.switchWithoutCheckoutTitle": "चेकआउट के बिना active plan बदलें",
+    "member.membership.title": "आपके प्लान",
+    "member.membership.typeDuration": "अवधि",
+    "member.membership.typeHybrid": "हाइब्रिड",
+    "member.membership.typeMembership": "मेंबरशिप",
+    "member.membership.typeTrial": "ट्रायल",
+    "member.membership.update": "मेंबरशिप अपडेट",
+    "member.membership.updating": "अपडेट हो रहा है...",
+    "member.membership.validity": "मान्यता",
+    "member.membership.visits": "विजिट",
     "member.membership.visitsRemaining": "{{visits}} बाकी",
-    "member.membership.yourGym": "आपका gym",
+    "member.membership.visitCount": "{{count}} विजिट",
+    "member.membership.yourGym": "आपका जिम",
     "member.profile.active": "सक्रिय",
     "member.profile.activeGymOption": "{{gym}} (active)",
     "member.profile.activeRoleOption": "{{role}} (active)",
     "member.profile.biometric": "Biometric",
     "member.profile.biometricOn": "Biometric on",
     "member.profile.biometricUnlock": "Biometric unlock",
-    "member.profile.biometricUnlockBody": "इसे enable करने के लिए Face ID या device biometrics set up करें.",
+    "member.profile.biometricUnlockBody":
+      "इसे enable करने के लिए Face ID या device biometrics set up करें.",
     "member.profile.checkedIn": "Checked in",
     "member.profile.classes": "क्लासेस",
-    "member.profile.daysReferralBenefit": "हर join करने वाले friend पर आपको {{count}} free days मिलेंगे.",
+    "member.profile.daysReferralBenefit":
+      "हर join करने वाले friend पर आपको {{count}} free days मिलेंगे.",
     "member.profile.daysRemaining": "{{count}} दिन बाकी",
     "member.profile.daysRemainingOf": "{{remaining}} में से {{total}} दिन बाकी",
-    "member.profile.defaultReferralBenefit": "अपना code share करें ताकि gym आपके लाए friends track कर सके.",
+    "member.profile.defaultReferralBenefit":
+      "अपना code share करें ताकि gym आपके लाए friends track कर सके.",
     "member.profile.earnedCredit": "{{amount}} earned",
     "member.profile.expires": "{{date}} expire",
-    "member.profile.findGyms": "Gyms खोजें",
-    "member.profile.friendsStat": "आपके friends: {{joined}} joined, {{pending}} pending",
+    "member.profile.findGyms": "जिम खोजें",
+    "member.profile.friendsStat": "आपके दोस्त: {{joined}} जुड़ चुके, {{pending}} बाकी",
     "member.profile.membership": "मेंबरशिप",
-    "member.profile.membershipDetailsUnavailable": "Membership details unavailable",
-    "member.profile.memberFallback": "Zook member",
-    "member.profile.myGym": "मेरा gym",
-    "member.profile.noActiveMembership": "कोई active membership नहीं",
-    "member.profile.noActivity": "कोई activity नहीं",
-    "member.profile.noGyms": "कोई gym नहीं",
-    "member.profile.noGymsBody": "पहले gym join करें या access request करें.",
-    "member.profile.noRoleAssigned": "कोई role assigned नहीं",
-    "member.profile.noRoles": "कोई roles नहीं",
-    "member.profile.noRolesBody": "इस account में active gym में दूसरा role नहीं है.",
-    "member.profile.otherGymRoleBody": "{{role}} tools खोलने से पहले gyms switch करें.",
-    "member.profile.otherGymRoleTitle": "{{role}} दूसरे gym में है",
+    "member.profile.membershipDetailsUnavailable": "सदस्यता विवरण उपलब्ध नहीं",
+    "member.profile.accountTab": "अकाउंट",
+    "member.profile.detailsTab": "विवरण",
+    "member.profile.rewardsTab": "रिवॉर्ड",
+    "member.profile.memberFallback": "Zook सदस्य",
+    "member.profile.myGym": "मेरा जिम",
+    "member.profile.noActiveMembership": "कोई सक्रिय सदस्यता नहीं",
+    "member.profile.noActivity": "कोई गतिविधि नहीं",
+    "member.profile.noGyms": "कोई जिम नहीं",
+    "member.profile.noGymsBody": "पहले जिम जॉइन करें या एक्सेस अनुरोध भेजें.",
+    "member.profile.noRoleAssigned": "कोई भूमिका असाइन नहीं",
+    "member.profile.noRoles": "कोई भूमिका नहीं",
+    "member.profile.noRolesBody": "इस अकाउंट में सक्रिय जिम में दूसरी भूमिका नहीं है.",
+    "member.profile.otherGymRoleBody": "{{role}} टूल्स खोलने से पहले जिम बदलें.",
+    "member.profile.otherGymRoleTitle": "{{role}} दूसरे जिम में है",
     "member.profile.pendingCredit": "{{amount}} pending",
-    "member.profile.percentComplete": "{{percent}}% complete",
-    "member.profile.percentCompleteWithDate": "{{percent}}% complete - {{date}}",
-    "member.profile.qaShortcuts": "QA shortcuts",
-    "member.profile.quickActions": "Quick actions",
-    "member.profile.recentActivity": "Recent activity",
-    "member.profile.referGymAccessibility": "Zook को gym refer करें और earn करें",
-    "member.profile.referGymBody": "आपके referred gym के 6-month या yearly plan पर Zook subscribe करने पर earn करें.",
-    "member.profile.referGymTitle": "Gym refer करें और cash earn करें",
-    "member.profile.referralCodeCopied": "आपका referral code copy हो गया.",
-    "member.profile.referralCopied": "Referral copy हुआ",
-    "member.profile.referralLinkCopied": "आपका referral link copy हो गया.",
-    "member.profile.renew": "Renew",
-    "member.profile.roleUnavailable": "Role unavailable",
-    "member.profile.roleUnavailableBody": "यह role यहां available नहीं है.",
+    "member.profile.percentComplete": "{{percent}}% पूरा",
+    "member.profile.percentCompleteWithDate": "{{percent}}% पूरा - {{date}}",
+    "member.profile.qaShortcuts": "QA शॉर्टकट",
+    "member.profile.quickActions": "त्वरित एक्शन",
+    "member.profile.finishProfile": "प्रोफाइल पूरी करें",
+    "member.profile.readinessContact": "चलता हुआ फोन या ईमेल",
+    "member.profile.readinessMembership": "सक्रिय सदस्यता जुड़ी है",
+    "member.profile.readinessMore": "+{{count}} और",
+    "member.profile.readinessNeedsBody": "{{count}} बाकी.",
+    "member.profile.readinessNeedsTitle": "चेक-इन आसान बनाएं",
+    "member.profile.readinessPhoto": "साफ प्रोफाइल फोटो",
+    "member.profile.readinessReadyBody":
+      "डेस्क स्टाफ आपको जल्दी वेरिफाई कर सकता है और जिम के पास जरूरी जानकारी है.",
+    "member.profile.readinessReadyTitle": "प्रोफाइल डेस्क के लिए तैयार है",
+    "member.profile.recentActivity": "हाल की गतिविधि",
+    "member.profile.referGymAccessibility": "Zook को जिम रेफर करें और कमाएं",
+    "member.profile.referGymBody": "रेफर किया गया जिम Zook जॉइन करे तो कमाएं.",
+    "member.profile.referGymTitle": "जिम रेफर करें और कैश कमाएं",
+    "member.profile.referralCodeCopied": "आपका रेफरल कोड कॉपी हो गया.",
+    "member.profile.referralCopied": "रेफरल कॉपी हुआ",
+    "member.profile.referralLinkCopied": "आपका रेफरल लिंक कॉपी हो गया.",
+    "member.profile.renew": "रिन्यू करें",
+    "member.profile.roleUnavailable": "भूमिका उपलब्ध नहीं है",
+    "member.profile.roleUnavailableBody": "यह भूमिका यहां उपलब्ध नहीं है.",
     "member.profile.roleAtGym": "{{gym}} में {{role}}",
-    "member.profile.settings": "Settings",
+    "member.profile.settings": "सेटिंग्स",
     "member.profile.shareReferralCode": "{{gym}} पर मेरा referral code {{code}} use करें.",
-    "member.profile.shareReferralWithLink": "{{gym}} join करें मेरे referral code {{code}} से: {{link}}",
-    "member.profile.signOut": "Sign out",
-    "member.profile.signOutConfirmBody": "आप OTP से कभी भी वापस sign in कर सकते हैं.",
-    "member.profile.signOutConfirmTitle": "Sign out करें?",
-    "member.profile.switch": "Switch",
-    "member.profile.switchFailed": "Switch failed",
-    "member.profile.switchFailedBody": "अभी gyms switch नहीं हो सके.",
-    "member.profile.switchGym": "Gym switch करें",
-    "member.profile.switchGymBody": "अपना active gym चुनें.",
-    "member.profile.switchGymConfirmBody": "आपका profile उस gym के लिए refresh होगा.",
-    "member.profile.switchGymConfirmTitle": "{{gym}} पर switch करें?",
-    "member.profile.switchGymForRole": "{{role}} tools access करने के लिए {{gym}} पर switch करें",
-    "member.profile.switchRole": "Role switch करें",
-    "member.profile.switchRoleBody": "इस gym में use करने वाला role चुनें.",
-    "member.profile.switchRoleConfirmBody": "Zook उस role के tools खोलेगा.",
-    "member.profile.switchRoleConfirmTitle": "{{role}} पर switch करें?",
-    "member.profile.switching": "Switch हो रहा है...",
-    "member.profile.title": "Profile",
-    "member.profile.trainerReferralBenefit": "Trainer referrals commission review के लिए track होते हैं जब member join करता है या gym आपके link से sign up करता है.",
-    "member.profile.updating": "Updating",
-    "member.profile.useRoleAccessibility": "Zook को {{role}} की तरह use करें",
-    "member.profile.viewHistory": "History देखें",
-    "member.profile.visitsReferralBenefit": "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
-    "member.profile.visitsRemaining": "{{remaining}} of {{total}} remaining",
-    "member.profile.workoutPlan": "Workout plan",
-    "roleSwitcher.active": "Active",
-    "roleSwitcher.currentRoleAccessibility": "Role बदलें. Current role: {{role}}",
-    "roleSwitcher.currentWorkspace": "Current workspace",
-    "roleSwitcher.currentWorkspaceAccessibility": "Role बदलें. Current workspace: {{workspace}}",
-    "roleSwitcher.roleUnavailable": "Role unavailable",
-    "roleSwitcher.roleUnavailableBody": "यह role यहां उपलब्ध नहीं है.",
-    "roleSwitcher.subtitle": "इस workspace के लिए gym और role चुनें.",
-    "roleSwitcher.switching": "Switch हो रहा है...",
-    "roleSwitcher.switchToWorkspace": "इस workspace पर switch करें",
-    "roleSwitcher.title": "Role बदलें",
-    "roleSwitcher.use": "Use",
-    "member.profileExtra.addDateOfBirth": "Date of birth जोड़ें",
-    "member.profileExtra.aiConsent": "AI consent",
-    "member.profileExtra.aiConsentBody": "AI features को आपका profile context use करने दें.",
-    "member.profileExtra.completedFields": "{{completed}}/{{total}} safety और KYC fields complete.",
-    "member.profileExtra.dateOfBirth": "Date of birth",
-    "member.profileExtra.decreaseWeeklyWorkoutGoal": "Weekly workout goal घटाएं",
-    "member.profileExtra.emergencyContact": "Emergency contact",
-    "member.profileExtra.gender": "Gender",
-    "member.profileExtra.genderFemale": "Female",
-    "member.profileExtra.genderMale": "Male",
-    "member.profileExtra.genderNonBinary": "Non-binary",
-    "member.profileExtra.genderNotSpecified": "Not specified",
-    "member.profileExtra.increaseWeeklyWorkoutGoal": "Weekly workout goal बढ़ाएं",
-    "member.profileExtra.locale": "Locale",
-    "member.profileExtra.marketingOptIn": "Marketing opt-in",
-    "member.profileExtra.name": "Name",
-    "member.profileExtra.phone": "Phone",
-    "member.profileExtra.saved": "Saved",
-    "member.profileExtra.title": "Profile details",
-    "member.profileExtra.weeklyGoalValue": "{{count}} / week",
-    "member.profileExtra.weeklyWorkoutGoal": "Weekly workout goal",
-    "member.profilePhoto.addProfilePhoto": "Profile photo जोड़ें",
-    "member.profilePhoto.cameraPrimer": "Check-ins और member profile के लिए profile photo लेने हेतु Zook को camera access चाहिए.",
-    "member.profilePhoto.cameraSettingsPrompt": "Camera access off है. Profile photo लेने के लिए Settings में enable करें.",
-    "member.profilePhoto.chooseFromLibrary": "Library से चुनें",
-    "member.profilePhoto.continue": "Continue",
-    "member.profilePhoto.libraryPrimer": "Check-ins और member profile के लिए profile photo चुनने हेतु Zook को photo access चाहिए.",
-    "member.profilePhoto.librarySettingsPrompt": "Photo access off है. Profile photo चुनने के लिए Settings में enable करें.",
-    "member.profilePhoto.noFileId": "Photo upload हुआ, लेकिन file ID वापस नहीं आई.",
+    "member.profile.shareReferralWithLink":
+      "{{gym}} join करें मेरे referral code {{code}} से: {{link}}",
+    "member.profile.signOut": "साइन आउट",
+    "member.profile.signOutConfirmBody": "आप OTP से कभी भी दोबारा साइन इन कर सकते हैं.",
+    "member.profile.signOutConfirmTitle": "साइन आउट करें?",
+    "member.profile.switch": "बदलें",
+    "member.profile.switchFailed": "बदल नहीं सके",
+    "member.profile.switchFailedBody": "अभी जिम नहीं बदला जा सका.",
+    "member.profile.switchGym": "जिम बदलें",
+    "member.profile.switchGymBody": "अपना सक्रिय जिम चुनें.",
+    "member.profile.switchGymConfirmBody": "आपकी प्रोफाइल उस जिम के हिसाब से रीफ्रेश होगी.",
+    "member.profile.switchGymConfirmTitle": "{{gym}} पर बदलें?",
+    "member.profile.switchGymForRole": "{{role}} टूल्स के लिए {{gym}} पर बदलें",
+    "member.profile.switchRole": "भूमिका बदलें",
+    "member.profile.switchRoleBody": "इस जिम में इस्तेमाल करने वाली भूमिका चुनें.",
+    "member.profile.switchRoleConfirmBody": "Zook उस भूमिका के टूल्स खोलेगा.",
+    "member.profile.switchRoleConfirmTitle": "{{role}} पर बदलें?",
+    "member.profile.switching": "बदला जा रहा है...",
+    "member.profile.title": "प्रोफाइल",
+    "member.profile.trainerReferralBenefit":
+      "Trainer referrals commission review के लिए track होते हैं जब member join करता है या gym आपके link से sign up करता है.",
+    "member.profile.updating": "अपडेट हो रहा है",
+    "member.profile.useRoleAccessibility": "Zook को {{role}} की तरह इस्तेमाल करें",
+    "member.profile.viewHistory": "हिस्ट्री देखें",
+    "member.profile.visitsReferralBenefit":
+      "हर join करने वाले friend पर आपको {{count}} visits मिलेंगे.",
+    "member.profile.visitsRemaining": "{{total}} में से {{remaining}} बाकी",
+    "member.profile.workoutPlan": "वर्कआउट प्लान",
+    "roleSwitcher.active": "सक्रिय",
+    "roleSwitcher.currentRoleAccessibility": "भूमिका बदलें. मौजूदा भूमिका: {{role}}",
+    "roleSwitcher.currentWorkspace": "मौजूदा वर्कस्पेस",
+    "roleSwitcher.currentWorkspaceAccessibility": "भूमिका बदलें. मौजूदा वर्कस्पेस: {{workspace}}",
+    "roleSwitcher.role.admin": "एडमिन",
+    "roleSwitcher.role.member": "मेंबर",
+    "roleSwitcher.role.owner": "ओनर",
+    "roleSwitcher.role.platformAdmin": "प्लैटफॉर्म एडमिन",
+    "roleSwitcher.role.receptionist": "रिसेप्शन",
+    "roleSwitcher.role.trainer": "ट्रेनर",
+    "roleSwitcher.roleUnavailable": "भूमिका उपलब्ध नहीं",
+    "roleSwitcher.roleUnavailableBody": "यह भूमिका यहां उपलब्ध नहीं है.",
+    "roleSwitcher.subtitle": "इस वर्कस्पेस के लिए जिम और भूमिका चुनें.",
+    "roleSwitcher.switching": "बदला जा रहा है...",
+    "roleSwitcher.switchToWorkspace": "इस वर्कस्पेस पर बदलें",
+    "roleSwitcher.title": "भूमिका बदलें",
+    "roleSwitcher.use": "इस्तेमाल करें",
+    "member.profileExtra.addDateOfBirth": "जन्म तारीख जोड़ें",
+    "member.profileExtra.aiConsent": "AI सहमति",
+    "member.profileExtra.aiConsentBody": "AI सुविधाओं को आपका प्रोफाइल संदर्भ इस्तेमाल करने दें.",
+    "member.profileExtra.completedFields": "{{completed}}/{{total}} सुरक्षा और KYC फ़ील्ड पूरे.",
+    "member.profileExtra.dateOfBirth": "जन्म तारीख",
+    "member.profileExtra.decreaseWeeklyWorkoutGoal": "साप्ताहिक वर्कआउट लक्ष्य घटाएं",
+    "member.profileExtra.emergencyContact": "आपातकालीन संपर्क",
+    "member.profileExtra.gender": "लिंग",
+    "member.profileExtra.genderFemale": "महिला",
+    "member.profileExtra.genderMale": "पुरुष",
+    "member.profileExtra.genderNonBinary": "नॉन-बाइनरी",
+    "member.profileExtra.genderNotSpecified": "नहीं बताया",
+    "member.profileExtra.increaseWeeklyWorkoutGoal": "साप्ताहिक वर्कआउट लक्ष्य बढ़ाएं",
+    "member.profileExtra.locale": "भाषा",
+    "member.profileExtra.marketingOptIn": "मार्केटिंग सहमति",
+    "member.profileExtra.name": "नाम",
+    "member.profileExtra.phone": "फोन",
+    "member.profileExtra.saved": "सेव हुआ",
+    "member.profileExtra.title": "प्रोफाइल विवरण",
+    "member.profileExtra.weeklyGoalValue": "{{count}} / हफ्ता",
+    "member.profileExtra.weeklyWorkoutGoal": "साप्ताहिक वर्कआउट लक्ष्य",
+    "member.profilePhoto.addProfilePhoto": "प्रोफाइल फोटो जोड़ें",
+    "member.profilePhoto.cameraPrimer":
+      "चेक-इन और सदस्य प्रोफाइल के लिए प्रोफाइल फोटो लेने हेतु Zook को कैमरा एक्सेस चाहिए.",
+    "member.profilePhoto.cameraSettingsPrompt":
+      "कैमरा एक्सेस बंद है. प्रोफाइल फोटो लेने के लिए सेटिंग्स में चालू करें.",
+    "member.profilePhoto.chooseFromLibrary": "लाइब्रेरी से चुनें",
+    "member.profilePhoto.continue": "जारी रखें",
+    "member.profilePhoto.libraryPrimer":
+      "चेक-इन और सदस्य प्रोफाइल के लिए प्रोफाइल फोटो चुनने हेतु Zook को फोटो एक्सेस चाहिए.",
+    "member.profilePhoto.librarySettingsPrompt":
+      "फोटो एक्सेस बंद है. प्रोफाइल फोटो चुनने के लिए सेटिंग्स में चालू करें.",
+    "member.profilePhoto.noFileId": "फोटो अपलोड हुई, लेकिन फाइल ID वापस नहीं आई.",
     "member.profilePhoto.notNow": "अभी नहीं",
-    "member.profilePhoto.permissionNeeded": "Permission चाहिए",
-    "member.profilePhoto.photoNotRemoved": "Photo remove नहीं हुआ",
-    "member.profilePhoto.photoNotSaved": "Photo save नहीं हुआ",
-    "member.profilePhoto.photoTooLarge": "5 MB से छोटी photo चुनें.",
-    "member.profilePhoto.profilePhoto": "Profile photo",
-    "member.profilePhoto.remove": "Remove",
-    "member.profilePhoto.signInAgain": "Profile photo update करने से पहले फिर sign in करें.",
-    "member.profilePhoto.takePhoto": "Photo लें",
+    "member.profilePhoto.permissionNeeded": "अनुमति चाहिए",
+    "member.profilePhoto.photoNotRemoved": "फोटो हट नहीं सकी",
+    "member.profilePhoto.photoNotSaved": "फोटो सेव नहीं हुई",
+    "member.profilePhoto.photoTooLarge": "5 MB से छोटी फोटो चुनें.",
+    "member.profilePhoto.profilePhoto": "प्रोफाइल फोटो",
+    "member.profilePhoto.remove": "हटाएं",
+    "member.profilePhoto.signInAgain": "प्रोफाइल फोटो अपडेट करने से पहले फिर साइन इन करें.",
+    "member.profilePhoto.takePhoto": "फोटो लें",
     "member.profilePhoto.tryAgain": "थोड़ी देर में फिर कोशिश करें.",
-    "member.profilePhoto.updateProfilePhoto": "Profile photo update करें",
+    "member.profilePhoto.updateProfilePhoto": "प्रोफाइल फोटो अपडेट करें",
     "memberList.all": "सभी",
-    "memberList.couldNotLoad": "Members load नहीं हो सके.",
-    "memberList.noEmail": "कोई email नहीं",
-    "memberList.noMembers": "कोई member नहीं",
-    "memberList.noPhone": "कोई phone नहीं",
-    "memberList.reveal": "Reveal",
-    "memberList.revealPhoneFor": "{{name}} का phone reveal करें",
-    "memberList.searchMembers": "Members search करें",
-    "memberList.tryDifferentSearch": "अलग search या filter try करें.",
-    "privilegedPin.body": "Continue करने के लिए 4-digit org PIN डालें.",
-    "privilegedPin.confirmAction": "Action confirm करें",
-    "privilegedPin.continue": "Continue",
-    "privilegedPin.orgPin": "Org PIN",
+    "memberList.couldNotLoad": "सदस्य लोड नहीं हो सके.",
+    "memberList.noEmail": "ईमेल नहीं है",
+    "memberList.noMembers": "कोई सदस्य नहीं",
+    "memberList.noPhone": "फोन नहीं है",
+    "memberList.reveal": "संपर्क देखें",
+    "memberList.revealPhoneFor": "{{name}} का संपर्क देखें",
+    "memberList.searchMembers": "सदस्य खोजें",
+    "memberList.status.active": "सक्रिय",
+    "memberList.status.expired": "समाप्त",
+    "memberList.status.expiring": "जल्द समाप्त",
+    "memberList.status.pending": "लंबित",
+    "memberList.tryDifferentSearch": "दूसरी खोज या फिल्टर आजमाएं.",
+    "privilegedPin.body": "जारी रखने के लिए 4 अंकों का जिम PIN डालें.",
+    "privilegedPin.confirmAction": "एक्शन कन्फर्म करें",
+    "privilegedPin.continue": "जारी रखें",
+    "privilegedPin.orgPin": "जिम PIN",
     "member.diet.activePlan": "Active plan",
     "member.diet.addCaloriesOrMacro": "Log करने से पहले calories या कम से कम एक macro जोड़ें.",
     "member.diet.addMealName": "Log करने से पहले meal name जोड़ें.",
-    "member.diet.calories": "Calories",
-    "member.diet.carbs": "Carbs",
-    "member.diet.couldNotLogMeal": "Meal log नहीं हो सका",
-    "member.diet.fats": "Fats",
+    "member.diet.calories": "कैलोरी",
+    "member.diet.carbs": "कार्ब्स",
+    "member.diet.couldNotLogMeal": "मील लॉग नहीं हो सका",
+    "member.diet.fats": "फैट",
+    "member.diet.historyTitle": "डाइट इतिहास",
     "member.diet.kcalRemainingToday": "आज {{kcal}} kcal बाकी",
-    "member.diet.logMeal": "Meal log करें",
-    "member.diet.logging": "Log हो रहा है...",
-    "member.diet.meal": "Meal",
-    "member.diet.mealLogged": "Meal log हो गया.",
+    "member.diet.logMeal": "मील लॉग करें",
+    "member.diet.logging": "लॉग हो रहा है...",
+    "member.diet.meal": "मील",
+    "member.diet.mealLogged": "मील लॉग हो गया.",
     "member.diet.mealPlaceholder": "Paneer sandwich",
-    "member.diet.noDietPlan": "कोई diet plan नहीं",
-    "member.diet.noDietPlanBody": "आपका trainer आपका meal plan यहां publish करेगा.",
-    "member.diet.noPlan": "No plan",
-    "member.diet.protein": "Protein",
+    "member.diet.nextDay": "अगला दिन",
+    "member.diet.noDietPlan": "कोई डाइट प्लान नहीं",
+    "member.diet.noDietPlanBody": "आपका ट्रेनर आपका मील प्लान यहां पब्लिश करेगा.",
+    "member.diet.noMealsLogged": "कोई मील लॉग नहीं",
+    "member.diet.noMealsLoggedBody": "इस दिन के लिए लॉग किए गए मील यहां दिखेंगे.",
+    "member.diet.noPlan": "कोई प्लान नहीं",
+    "member.diet.previousDay": "पिछला दिन",
+    "member.diet.protein": "प्रोटीन",
     "member.diet.today": "आज",
     "member.habits.add": "Add",
     "member.habits.addFirstHabit": "पहली habit जोड़ें",
@@ -5955,9 +7076,11 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.assignedPlan": "असाइन किया गया प्लान",
     "member.plan.coachGuided": "कोच गाइडेड",
     "member.plan.couldNotLoadExercises": "एक्सरसाइज लोड नहीं हो सकीं",
+    "member.plan.dietKind": "डाइट प्लान",
     "member.plan.dietTab": "डाइट",
     "member.plan.insideThisPlan": "इस प्लान में",
     "member.plan.morePlans": "और प्लान",
+    "member.plan.nextWorkout": "अगला वर्कआउट",
     "member.plan.noExercises": "कोई एक्सरसाइज नहीं",
     "member.plan.noPlanAssigned": "कोई प्लान असाइन नहीं",
     "member.plan.noPlanAssignedBody": "आपका ट्रेनर यहां वर्कआउट प्लान असाइन करेगा.",
@@ -5967,126 +7090,146 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "member.plan.progress": "प्रोग्रेस",
     "member.plan.title": "प्लान",
     "member.plan.todaysWorkout": "आज का वर्कआउट",
-    "member.plan.trainerAssigned": "ट्रेनर ने असाइन किया",
+    "member.plan.trainerAssigned": "ट्रेनर द्वारा असाइन",
     "member.plan.viewFullExerciseList": "पूरी एक्सरसाइज सूची देखें",
+    "member.plan.workoutKind": "वर्कआउट प्लान",
     "member.plan.workoutTab": "वर्कआउट",
-    "member.planDetail.actionFailed": "Action failed",
-    "member.planDetail.active": "ACTIVE",
-    "member.planDetail.addShortNote": "छोटा note जोड़ें",
-    "member.planDetail.assigned": "Assigned",
-    "member.planDetail.assignedByCoach": "Coach ने assign किया",
-    "member.planDetail.closeFeedback": "Feedback बंद करें",
-    "member.planDetail.completedCount": "{{completed}} of {{total}} complete",
-    "member.planDetail.completeWorkout": "Workout complete करें",
-    "member.planDetail.completing": "Complete हो रहा है...",
+    "member.planDetail.actionFailed": "कार्रवाई पूरी नहीं हुई",
+    "member.planDetail.active": "सक्रिय",
+    "member.planDetail.addShortNote": "छोटा नोट जोड़ें",
+    "member.planDetail.assigned": "असाइन किया गया",
+    "member.planDetail.assignedByCoach": "कोच ने असाइन किया",
+    "member.planDetail.closeFeedback": "फीडबैक बंद करें",
+    "member.planDetail.completedCount": "{{total}} में से {{completed}} पूरे",
+    "member.planDetail.completeWorkout": "वर्कआउट पूरा करें",
+    "member.planDetail.completing": "पूरा हो रहा है...",
+    "member.planDetail.finishMoreExercises": "{{count}} और पूरी करें",
     "member.planDetail.defaultSets": "3 sets",
     "member.planDetail.dietFilter": "डाइट",
-    "member.planDetail.done": "Done",
+    "member.planDetail.done": "हो गया",
     "member.planDetail.exercises": "एक्सरसाइज",
-    "member.planDetail.failedToSend": "Send नहीं हुआ. फिर कोशिश करें.",
-    "member.planDetail.feedback": "Feedback",
-    "member.planDetail.feedbackSent": "Feedback coach को भेजा गया.",
-    "member.planDetail.feedbackSheetBody": "इस assignment के बारे में note भेजें.",
-    "member.planDetail.needSwap": "Swap चाहिए",
-    "member.planDetail.noPlanAssignedBody": "आपका trainer यहां workout plan assign करेगा. फिर check करें.",
-    "member.planDetail.pain": "Pain",
-    "member.planDetail.pickNoteFirst": "पहले एक note चुनें.",
-    "member.planDetail.progressNotSaved": "Progress save नहीं हुई",
-    "member.planDetail.progressNotSavedBody": "यह device checkbox state restore नहीं कर पाएगा.",
-    "member.planDetail.seeWeeklyList": "Weekly list देखें",
-    "member.planDetail.send": "Send",
-    "member.planDetail.sending": "Send हो रहा है...",
-    "member.planDetail.sentToCoach": "Coach को भेजा गया.",
-    "member.planDetail.signInAgainFeedback": "Feedback भेजने के लिए फिर sign in करें.",
-    "member.planDetail.tellCoach": "Coach को बताएं",
-    "member.planDetail.tooHard": "Too hard",
+    "member.planDetail.failedToSend": "भेजा नहीं गया. फिर कोशिश करें.",
+    "member.planDetail.feedback": "फीडबैक",
+    "member.planDetail.feedbackSent": "फीडबैक कोच को भेज दिया गया.",
+    "member.planDetail.feedbackSheetBody": "इस असाइनमेंट के बारे में छोटा नोट भेजें.",
+    "member.planDetail.needSwap": "बदलाव चाहिए",
+    "member.planDetail.noPlanAssignedBody":
+      "आपका ट्रेनर यहां वर्कआउट प्लान असाइन करेगा. फिर देखें.",
+    "member.planDetail.pain": "दर्द",
+    "member.planDetail.pickNoteFirst": "पहले एक नोट चुनें.",
+    "member.planDetail.progressNotSaved": "प्रोग्रेस सेव नहीं हुई",
+    "member.planDetail.progressNotSavedBody": "यह डिवाइस checkbox state restore नहीं कर पाएगा.",
+    "member.planDetail.seeWeeklyList": "हफ्ते की सूची देखें",
+    "member.planDetail.send": "भेजें",
+    "member.planDetail.sending": "भेजा जा रहा है...",
+    "member.planDetail.sentToCoach": "कोच को भेज दिया गया.",
+    "member.planDetail.signInAgainFeedback": "फीडबैक भेजने के लिए फिर से साइन इन करें.",
+    "member.planDetail.tellCoach": "कोच को बताएं",
+    "member.planDetail.tooHard": "बहुत कठिन",
     "member.planDetail.upNextThisWeek": "इस हफ्ते आगे",
     "member.planDetail.workoutFilter": "वर्कआउट",
-    "member.planDetail.workoutMarkedComplete": "Workout complete mark हो गया.",
-    "member.planDetail.workoutProgress": "Workout progress",
-    "member.planDetail.workoutProgressNotSaved": "Workout progress save नहीं हो सकी.",
-    "member.planDetail.yourCoach": "आपका coach",
-    "member.planDetail.yourPlan": "आपका plan",
+    "member.planDetail.workoutMarkedComplete": "वर्कआउट पूरा मार्क हो गया.",
+    "member.planDetail.workoutProgress": "वर्कआउट प्रगति",
+    "member.planDetail.workoutProgressNotSaved": "वर्कआउट प्रोग्रेस सेव नहीं हो सकी.",
+    "member.planDetail.yourCoach": "आपका कोच",
+    "member.planDetail.yourPlan": "आपका प्लान",
     "member.progress.history": "हिस्ट्री",
     "member.progress.logWorkout": "वर्कआउट लॉग करें",
     "member.progress.noWorkoutsLogged": "कोई वर्कआउट लॉग नहीं",
-    "member.progress.noWorkoutsLoggedBody": "प्रोग्रेस ट्रैक करने के लिए अपना पहला वर्कआउट लॉग करें.",
-    "member.progress.privacyNote": "निजी एंट्री आपके पास रहती हैं जब तक आप ट्रेनर विजिबिलिटी नहीं चुनते.",
+    "member.progress.noWorkoutsLoggedBody":
+      "प्रोग्रेस ट्रैक करने के लिए अपना पहला वर्कआउट लॉग करें.",
+    "member.progress.privacyNote":
+      "निजी एंट्री आपके पास रहती हैं जब तक आप ट्रेनर विजिबिलिटी नहीं चुनते.",
     "member.progress.recentWorkouts": "हाल के वर्कआउट",
     "member.progress.thisWeek": "इस हफ्ते",
     "member.progress.title": "प्रोग्रेस",
     "member.receipt.amount": "राशि",
-    "member.receipt.downloadInvoice": "Invoice डाउनलोड करें",
-    "member.receipt.generating": "Confirmation के बाद generate होगा",
-    "member.receipt.invoice": "Invoice",
-    "member.receipt.invoiceNo": "Invoice no.",
-    "member.receipt.issued": "Issued",
+    "member.receipt.downloadInvoice": "इनवॉइस डाउनलोड करें",
+    "member.receipt.generating": "कन्फर्मेशन के बाद जनरेट होगा",
+    "member.receipt.gst": "GST",
+    "member.receipt.invoice": "इनवॉइस",
+    "member.receipt.invoiceNo": "इनवॉइस नं.",
+    "member.receipt.issued": "जारी",
     "member.receipt.membership": "मेंबरशिप",
-    "member.receipt.mode": "Mode",
-    "member.receipt.notFound": "Receipt नहीं मिली",
-    "member.receipt.notFoundBody": "आपकी membership history में यह payment नहीं मिला.",
-    "member.receipt.paymentDetails": "Payment details",
-    "member.receipt.purpose": "Purpose",
-    "member.receipt.receiptNo": "Receipt no.",
-    "member.receipt.receiptNumber": "Receipt {{number}}",
-    "member.receipt.recorded": "Recorded",
-    "member.receipt.status": "Status",
-    "member.receipt.title": "Receipt",
-    "member.receipt.total": "Total",
+    "member.receipt.mode": "मोड",
+    "member.receipt.modeCash": "कैश",
+    "member.receipt.modeOnline": "ऑनलाइन",
+    "member.receipt.notFound": "रसीद नहीं मिली",
+    "member.receipt.notFoundBody": "आपकी मेंबरशिप history में यह payment नहीं मिला.",
+    "member.receipt.paymentDetails": "पेमेंट विवरण",
+    "member.receipt.purpose": "उद्देश्य",
+    "member.receipt.receiptNo": "रसीद नं.",
+    "member.receipt.receiptNumber": "रसीद {{number}}",
+    "member.receipt.recorded": "रिकॉर्ड हुआ",
+    "member.receipt.status": "स्टेटस",
+    "member.receipt.statusCancelled": "रद्द",
+    "member.receipt.statusCreated": "बन गई",
+    "member.receipt.statusFailed": "असफल",
+    "member.receipt.statusIssued": "जारी",
+    "member.receipt.statusPaused": "रोकी गई",
+    "member.receipt.statusRefunded": "रिफंड",
+    "member.receipt.statusSucceeded": "भुगतान हो गया",
+    "member.receipt.taxableAmount": "कर योग्य राशि",
+    "member.receipt.title": "रसीद",
+    "member.receipt.total": "कुल",
     "member.scan.addPhoto": "फोटो जोड़ें",
-    "member.scan.allowCamera": "कैमरा allow करें",
-    "member.scan.allowCameraQr": "जिम QR स्कैन करने के लिए कैमरा access allow करें.",
-    "member.scan.allowCameraSettings": "QR code स्कैन करने के लिए Settings में camera access allow करें.",
+    "member.scan.allowCamera": "कैमरा अनुमति दें",
+    "member.scan.allowCameraQr": "जिम QR स्कैन करने के लिए कैमरा अनुमति दें.",
+    "member.scan.allowCameraSettings":
+      "QR code स्कैन करने के लिए Settings में camera access allow करें.",
     "member.scan.alreadyCheckedInToday": "आज पहले से चेक-इन हो चुका है.",
     "member.scan.awaitingQr": "QR का इंतज़ार",
-    "member.scan.awaitingSubmit": "Submit का इंतज़ार",
-    "member.scan.backToCameraScanner": "Camera scanner पर वापस",
-    "member.scan.cameraAccessBlocked": "Camera access blocked",
-    "member.scan.cameraAvailable": "Camera available",
-    "member.scan.cameraAvailableAnnouncement": "Camera available है. इसे gym QR code पर point करें.",
-    "member.scan.cameraBlockedAnnouncement": "Camera access blocked है. QR scanning allow करने के लिए device settings खोलें.",
-    "member.scan.cameraNeeded": "Camera चाहिए",
-    "member.scan.cameraNeededAnnouncement": "Scanning से पहले camera permission चाहिए.",
-    "member.scan.cameraPreviewAccessibility": "QR scanner camera preview",
-    "member.scan.cantScan": "Scan नहीं हो रहा?",
-    "member.scan.checkCodeAccessibility": "Code check करें",
-    "member.scan.checkedIn": "Checked in",
-    "member.scan.checkingCode": "Code check हो रहा है...",
-    "member.scan.codeCaptured": "Code captured",
-    "member.scan.codeEntered": "Code entered",
-    "member.scan.codeHint": "QR के साथ दिखाए गए दो letters और चार digits डालें.",
-    "member.scan.couldNotReadQr": "QR code पढ़ा नहीं जा सका. फिर कोशिश करें.",
-    "member.scan.enableCamera": "Camera enable करें",
-    "member.scan.enterCheckInCode": "Check-in code डालें",
-    "member.scan.enterCode": "Code डालें",
-    "member.scan.enterCodeManually": "Code manually डालें",
-    "member.scan.enterDeskCodeManually": "Desk code manually डालें.",
-    "member.scan.enterManualCodeAccessibility": "Manual check-in code डालें",
-    "member.scan.membershipExpired": "Membership expire हो गई है. Check-in से पहले renew करें.",
-    "member.scan.needFourNumbers": "4 numbers चाहिए (जैसे 1234)",
-    "member.scan.needTwoLetters": "2 letters चाहिए (जैसे AB)",
-    "member.scan.notVerified": "Verified नहीं",
-    "member.scan.offlineSavedBody": "Connection नहीं है. आपका scan retry के लिए save है, लेकिन entry अभी confirm नहीं है.",
-    "member.scan.offlineSavedTitle": "Scan retry के लिए save हुआ",
-    "member.scan.offlineSavedToast": "Server accept करने तक entry confirm नहीं है.",
-    "member.scan.openDeviceSettings": "QR scanning allow करने के लिए device settings खोलें.",
-    "member.scan.openSettings": "Settings खोलें",
-    "member.scan.profilePhotoRecommended": "Check-in के बाद profile photo जोड़ें ताकि desk अगली बार आपको जल्दी verify कर सके.",
-    "member.scan.queuedScanWaiting": "{{count}} scan server confirmation का इंतज़ार कर रहा है.",
-    "member.scan.queuedScansWaiting": "{{count}} scans server confirmation का इंतज़ार कर रहे हैं.",
-    "member.scan.retryNow": "अब retry करें",
+    "member.scan.awaitingSubmit": "सबमिट का इंतज़ार",
+    "member.scan.backToCameraScanner": "कैमरा स्कैनर पर वापस",
+    "member.scan.cameraAccessBlocked": "कैमरा access बंद है",
+    "member.scan.cameraAvailable": "कैमरा उपलब्ध है",
+    "member.scan.cameraAvailableAnnouncement": "कैमरा उपलब्ध है. इसे जिम QR कोड पर पॉइंट करें.",
+    "member.scan.cameraBlockedAnnouncement":
+      "कैमरा एक्सेस बंद है. QR स्कैनिंग की अनुमति देने के लिए डिवाइस सेटिंग्स खोलें.",
+    "member.scan.cameraNeeded": "कैमरा चाहिए",
+    "member.scan.cameraNeededAnnouncement": "स्कैन करने से पहले कैमरा अनुमति चाहिए.",
+    "member.scan.cameraPreviewAccessibility": "QR स्कैनर कैमरा प्रीव्यू",
+    "member.scan.cantScan": "स्कैन नहीं हो रहा?",
+    "member.scan.checkCodeAccessibility": "कोड जांचें",
+    "member.scan.checkedIn": "चेक-इन हुआ",
+    "member.scan.checkingCode": "कोड जांचा जा रहा है...",
+    "member.scan.codeCaptured": "कोड कैप्चर हुआ",
+    "member.scan.codeEntered": "कोड दर्ज हुआ",
+    "member.scan.codeHint": "QR के साथ दिखाए गए दो अक्षर और चार अंक डालें.",
+    "member.scan.couldNotReadQr": "QR कोड पढ़ा नहीं जा सका. फिर कोशिश करें.",
+    "member.scan.enableCamera": "कैमरा चालू करें",
+    "member.scan.enterCheckInCode": "चेक-इन कोड डालें",
+    "member.scan.enterCode": "कोड डालें",
+    "member.scan.enterCodeManually": "कोड मैन्युअली डालें",
+    "member.scan.enterDeskCodeManually": "QR के पास दिखा कोड डालें.",
+    "member.scan.enterManualCodeAccessibility": "मैनुअल चेक-इन कोड डालें",
+    "member.scan.membershipExpired": "सदस्यता खत्म हो गई है. चेक-इन से पहले रिन्यू करें.",
+    "member.scan.needFourNumbers": "4 नंबर चाहिए (जैसे 1234)",
+    "member.scan.needTwoLetters": "2 अक्षर चाहिए (जैसे AB)",
+    "member.scan.notVerified": "वेरिफाई नहीं हुआ",
+    "member.scan.offlineSavedBody":
+      "कनेक्शन नहीं है. आपका स्कैन फिर कोशिश के लिए सेव है, लेकिन एंट्री अभी कन्फर्म नहीं है.",
+    "member.scan.offlineSavedTitle": "स्कैन फिर कोशिश के लिए सेव हुआ",
+    "member.scan.offlineSavedToast": "सर्वर स्वीकार करने तक एंट्री कन्फर्म नहीं है.",
+    "member.scan.openDeviceSettings": "QR स्कैनिंग की अनुमति देने के लिए डिवाइस सेटिंग्स खोलें.",
+    "member.scan.openSettings": "सेटिंग्स खोलें",
+    "member.scan.profilePhotoRecommended":
+      "चेक-इन के बाद प्रोफाइल फोटो जोड़ें ताकि डेस्क अगली बार आपको जल्दी वेरिफाई कर सके.",
+    "member.scan.queuedScanWaiting": "{{count}} स्कैन सर्वर पुष्टि का इंतज़ार कर रहा है.",
+    "member.scan.queuedScansWaiting": "{{count}} स्कैन सर्वर पुष्टि का इंतज़ार कर रहे हैं.",
+    "member.scan.retryNow": "अब फिर कोशिश करें",
     "member.scan.returnToQrScannerAccessibility": "QR scanner पर वापस जाएं",
-    "member.scan.savedCheckInConfirmed": "Saved check-in confirmed.",
-    "member.scan.savedCheckInsConfirmed": "{{count}} saved check-ins confirmed.",
+    "member.scan.savedCheckInConfirmed": "Saved check-in confirm हुआ.",
+    "member.scan.savedCheckInsConfirmed": "{{count}} saved check-ins confirm हुए.",
     "member.scan.scanAgain": "फिर scan करें",
-    "member.scan.searchingForCode": "Code खोज रहा है...",
+    "member.scan.searchingForCode": "कोड खोज रहा है...",
     "member.scan.serverCheck": "Server check",
     "member.scan.serverVerified": "Server verified",
-    "member.scan.signInAgain": "Scanning से पहले फिर sign in करें.",
-    "member.scan.signInSelectGym": "Scanning से पहले sign in करें और gym चुनें.",
+    "member.scan.signInAgain": "स्कैन करने से पहले फिर sign in करें.",
+    "member.scan.signInSelectGym": "स्कैन करने से पहले sign in करें और gym चुनें.",
     "member.scan.subtitle": "अपने gym के QR code पर camera point करें",
     "member.scan.title": "Check-in scan करें",
-    "member.scan.tryCameraAgain": "Camera फिर try करें",
+    "member.scan.tryCameraAgain": "कैमरा फिर try करें",
     "member.scan.tryCheckIn": "Check-in try करें",
     "member.scan.verifying": "Verify हो रहा है",
     "member.scan.yourGym": "आपका gym",
@@ -6110,9 +7253,12 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "more.fallbackName": "मेंबर",
     "owner.home.activeMembers": "सक्रिय मेंबर",
     "owner.home.allClear": "सब ठीक",
+    "owner.home.allClearBody":
+      "अभी कोई urgent approval, payment exception, low-stock item या expiring plan action में नहीं है.",
     "owner.home.approvals": "मंजूरी",
     "owner.home.approvalsWaiting": "मंजूरी बाकी",
-    "owner.home.approvalsWaitingSubtitle": "{{join}} जॉइन {{joinLabel}} · {{scans}} स्कैन {{scanLabel}}",
+    "owner.home.approvalsWaitingSubtitle":
+      "{{join}} जॉइन {{joinLabel}} · {{scans}} स्कैन {{scanLabel}}",
     "owner.home.billingSetupBody":
       "ट्रायल एक्सेस चालू है, लेकिन जिम सामान्य रूप से चलाने से पहले owner/admin बदलावों के लिए SaaS mandate चाहिए.",
     "owner.home.billingSetupRequired": "बिलिंग सेटअप जरूरी",
@@ -6141,6 +7287,7 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.request": "रिक्वेस्ट",
     "owner.home.requests": "रिक्वेस्ट",
     "owner.home.revenue": "रेवेन्यू",
+    "owner.home.reviewMembers": "Members review करें",
     "owner.home.review": "रिव्यू",
     "owner.home.reviews": "रिव्यू",
     "owner.home.scan": "स्कैन",
@@ -6151,11 +7298,15 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.home.todayCheckIns": "आज के चेक-इन",
     "owner.home.transactionNeeds": "ट्रांजैक्शन को चाहिए",
     "owner.home.transactionsNeed": "ट्रांजैक्शन को चाहिए",
+    "owner.members.active": "Active",
     "owner.members.day": "दिन",
     "owner.members.days": "दिन",
     "owner.members.daysLeft": "{{count}} {{label}} बाकी",
-    "owner.members.expiringReminderBody": "आपकी मेंबरशिप {{date}} को खत्म होती है. ऐप में रिन्यू करें.",
+    "owner.members.expiring": "Expiring",
+    "owner.members.expiringReminderBody":
+      "आपकी मेंबरशिप {{date}} को खत्म होती है. ऐप में रिन्यू करें.",
     "owner.members.expiringReminderTitle": "मेंबरशिप जल्द खत्म हो रही है",
+    "owner.members.missingContact": "Missing contact",
     "owner.members.reminderNotSent": "रिमाइंडर नहीं भेजा गया",
     "owner.members.reminderSent": "{{name}} को रिमाइंडर भेजा गया.",
     "owner.members.sendReminder": "रिमाइंडर भेजें",
@@ -6164,10 +7315,23 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.members.total": "कुल {{count}}",
     "owner.members.tryAgain": "फिर कोशिश करें.",
     "owner.member.couldNotLoadMember": "मेंबर load नहीं हो सका",
+    "owner.member.actionContactBody":
+      "Offers assign करने या reminders भेजने से पहले phone और email जोड़ें.",
+    "owner.member.actionContactTitle": "Contact details complete करें",
+    "owner.member.actionExpiringBody":
+      "Plan {{count}} दिनों में खत्म होगा. Access lapse होने से पहले reminder भेजें.",
+    "owner.member.actionExpiringTitle": "Renewal window खुली है",
+    "owner.member.actionHealthyBody":
+      "Profile, contact और membership status daily operations के लिए ready हैं.",
+    "owner.member.actionHealthyTitle": "मेंबर अच्छी स्थिति में है",
+    "owner.member.actionPlanBody":
+      "कोई active membership ready नहीं है. Check-ins से पहले payment record करें या plan assign करें.",
+    "owner.member.actionPlanTitle": "Active plan सेट करें",
     "owner.member.email": "ईमेल",
     "owner.member.fitnessGoal": "फिटनेस लक्ष्य",
     "owner.member.memberFallback": "मेंबर",
     "owner.member.memberSince": "मेंबर since",
+    "owner.member.nextBestAction": "Next best action",
     "owner.member.noActivePlan": "कोई active plan नहीं",
     "owner.member.notes": "नोट्स",
     "owner.member.notAvailable": "उपलब्ध नहीं",
@@ -6177,67 +7341,80 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.member.phone": "फोन",
     "owner.member.recordPayment": "पेमेंट record करें",
     "owner.member.reminderComingSoon": "Reminder feature जल्द आ रहा है.",
-    "owner.member.reveal": "दिखाएं",
-    "owner.member.revealNotLogged": "Reveal log नहीं हुआ",
+    "owner.member.reveal": "Contact देखें",
+    "owner.member.revealNotLogged": "Contact view log नहीं हुआ",
     "owner.member.revealNotLoggedBody": "फोन दिखा दिया गया, लेकिन audit log save नहीं हो सका.",
-    "owner.member.revealPhoneFor": "{{name}} का फोन दिखाएं",
+    "owner.member.revealPhoneFor": "{{name}} का contact देखें",
     "owner.member.sendReminder": "रिमाइंडर भेजें",
     "owner.member.subscriptionHistory": "Subscription history",
     "owner.member.untilDate": "{{date}} तक",
     "owner.member.viewFullProfile": "पूरा profile देखें",
     "owner.member.visitsLeft": "{{count}} visits बाकी",
-    "owner.approvals.allCaughtUp": "सब caught up",
-    "owner.approvals.allCaughtUpBody": "कोई join request या flagged check-in review नहीं चाहता.",
-    "owner.approvals.approveAll": "सभी approve करें",
-    "owner.approvals.approveAllBody": "{{count}} pending members इस gym में जोड़े जाएंगे.",
-    "owner.approvals.approveAllTitle": "सभी join requests approve करें?",
-    "owner.approvals.approveFailed": "Join requests approve नहीं हो सकीं.",
-    "owner.approvals.approvedJoinRequests": "{{count}} join requests approve हुईं.",
-    "owner.approvals.approvedPartial": "{{approved}} of {{total}} approve हुए.",
-    "owner.approvals.joinRequest": "Join request",
-    "owner.approvals.joinRequests": "Join requests",
-    "owner.approvals.memberCheckIn": "Member check-in",
-    "owner.approvals.none": "none",
-    "owner.approvals.ownerApprovalRequired": "Owner approval required",
-    "owner.approvals.pending": "Pending",
-    "owner.approvals.referral": "Referral",
-    "owner.approvals.reject": "Reject",
-    "owner.approvals.rejectBody": "यह व्यक्ति gym में add नहीं होगा और उसे फिर request करनी होगी.",
-    "owner.approvals.rejected": "Join request reject हो गई.",
-    "owner.approvals.rejectFailed": "Join request reject नहीं हो सकी.",
-    "owner.approvals.rejectTitle": "Join request reject करें?",
-    "owner.approvals.requestListCount": "Request list ({{count}})",
-    "owner.approvals.scanReviewQueueCount": "Scan review queue ({{count}})",
-    "owner.approvals.scanReviews": "Scan reviews",
-    "owner.approvals.title": "Approvals",
-    "owner.more.billing": "Billing",
-    "owner.more.billingSubtitle": "Trial और subscription",
-    "owner.more.branches": "Branches",
-    "owner.more.branchesSubtitle": "Locations और operating details",
-    "owner.more.couponsOffers": "Coupons & offers",
-    "owner.more.couponsOffersSubtitle": "Checkout campaigns के discount codes",
-    "owner.more.entryQr": "Entry QR",
-    "owner.more.entryQrSubtitle": "Door पर rolling check-in QR दिखाएं",
-    "owner.more.exerciseLibrary": "Exercise library",
-    "owner.more.exerciseLibrarySubtitle": "Trainers के लिए shared workout templates",
-    "owner.more.membershipPlans": "Membership plans",
-    "owner.more.membershipPlansSubtitle": "Members जो plans खरीदते हैं उन्हें create और price करें",
-    "owner.more.notificationTemplates": "Notification templates",
-    "owner.more.notificationTemplatesSubtitle": "Reusable message drafts",
-    "owner.more.ownerTools": "Owner tools",
-    "owner.more.referGym": "Gym refer करें और earn करें",
-    "owner.more.referGymSubtitle": "आपके refer किए gym के subscribe करने पर free Zook days पाएं",
-    "owner.more.referralProgram": "Referral program",
-    "owner.more.referralProgramSubtitle": "Members, trainers और gym referrals के rewards set करें",
-    "owner.more.reports": "Reports",
-    "owner.more.reportsSubtitle": "Revenue, attendance और member movement",
-    "owner.more.staff": "Staff",
-    "owner.more.staffSubtitle": "Admins और trainers invite/manage करें",
-    "owner.more.stock": "Stock",
-    "owner.more.stockSubtitle": "Products और pickups",
-    "owner.more.trainerPayouts": "Trainer payouts",
-    "owner.more.trainerPayoutsSubtitle": "अपने coaches को review और pay करें",
-    "owner.more.webControlRoom": "Web control room",
+    "owner.approvals.allCaughtUp": "सब पूरा है",
+    "owner.approvals.allCaughtUpBody":
+      "कोई जॉइन रिक्वेस्ट या फ्लैग किया गया चेक-इन रिव्यू में नहीं है.",
+    "owner.approvals.approveAll": "सभी मंजूर करें",
+    "owner.approvals.approveAllBody": "{{count}} लंबित सदस्य इस जिम में जोड़े जाएंगे.",
+    "owner.approvals.approveAllTitle": "सभी जॉइन रिक्वेस्ट मंजूर करें?",
+    "owner.approvals.approveFailed": "जॉइन रिक्वेस्ट मंजूर नहीं हो सकीं.",
+    "owner.approvals.approvedJoinRequests": "{{count}} जॉइन रिक्वेस्ट मंजूर हुईं.",
+    "owner.approvals.approvedPartial": "{{total}} में से {{approved}} मंजूर हुए.",
+    "owner.approvals.joinRequest": "जॉइन रिक्वेस्ट",
+    "owner.approvals.joinRequests": "जॉइन रिक्वेस्ट",
+    "owner.approvals.memberCheckIn": "मेंबर चेक-इन",
+    "owner.approvals.none": "नहीं है",
+    "owner.approvals.ownerApprovalRequired": "ओनर की मंजूरी जरूरी है",
+    "owner.approvals.pending": "लंबित",
+    "owner.approvals.pendingReviews": "लंबित रिव्यू",
+    "owner.approvals.referral": "रेफरल",
+    "owner.approvals.reject": "अस्वीकार करें",
+    "owner.approvals.rejectBody":
+      "यह व्यक्ति जिम में नहीं जोड़ा जाएगा और उसे फिर से रिक्वेस्ट करनी होगी.",
+    "owner.approvals.rejected": "जॉइन रिक्वेस्ट अस्वीकार हो गई.",
+    "owner.approvals.rejectFailed": "जॉइन रिक्वेस्ट अस्वीकार नहीं हो सकी.",
+    "owner.approvals.rejectTitle": "जॉइन रिक्वेस्ट अस्वीकार करें?",
+    "owner.approvals.requestListCount": "रिक्वेस्ट ({{count}})",
+    "owner.approvals.scanReviewQueueCount": "स्कैन रिव्यू ({{count}})",
+    "owner.approvals.scanReviews": "स्कैन रिव्यू",
+    "owner.approvals.title": "मंजूरी",
+    "owner.more.approvals": "स्वीकृतियां",
+    "owner.more.approvalsSubtitle": "जॉइन अनुरोध और flagged scan देखें",
+    "owner.more.billing": "बिलिंग",
+    "owner.more.billingSubtitle": "ट्रायल और सब्सक्रिप्शन",
+    "owner.more.branches": "शाखाएं",
+    "owner.more.branchesSubtitle": "लोकेशन और संचालन जानकारी",
+    "owner.more.couponsOffers": "कूपन और ऑफर",
+    "owner.more.couponsOffersSubtitle": "चेकआउट कैंपेन के छूट कोड",
+    "owner.more.entryQr": "एंट्री QR",
+    "owner.more.entryQrSubtitle": "दरवाजे पर चेक-इन QR दिखाएं",
+    "owner.more.exerciseLibrary": "एक्सरसाइज लाइब्रेरी",
+    "owner.more.exerciseLibrarySubtitle": "ट्रेनर के लिए साझा वर्कआउट टेम्पलेट",
+    "owner.more.membershipPlans": "सदस्यता प्लान",
+    "owner.more.membershipPlansSubtitle": "सदस्य जो प्लान खरीदते हैं उन्हें बनाएं और कीमत दें",
+    "owner.more.notificationTemplates": "नोटिफिकेशन टेम्पलेट",
+    "owner.more.notificationTemplatesSubtitle": "बार-बार इस्तेमाल होने वाले मैसेज ड्राफ्ट",
+    "owner.more.groupCatalog": "कैटलॉग",
+    "owner.more.groupDailyWork": "रोज़ का काम",
+    "owner.more.groupFinance": "फाइनेंस और ग्रोथ",
+    "owner.more.groupOperations": "ऑपरेशंस",
+    "owner.more.members": "सदस्य",
+    "owner.more.membersSubtitle": "प्रोफाइल, रिन्यूअल और जल्द खत्म होने वाले प्लान खोजें",
+    "owner.more.ownerTools": "ओनर टूल्स",
+    "owner.more.referGym": "जिम रेफर करें",
+    "owner.more.referGymSubtitle": "रेफर किए गए जिम के सब्सक्राइब करने पर मुफ्त Zook दिन पाएं",
+    "owner.more.referralProgram": "रेफरल प्रोग्राम",
+    "owner.more.referralProgramSubtitle": "सदस्य, ट्रेनर और जिम रेफरल के reward सेट करें",
+    "owner.more.reports": "रिपोर्ट",
+    "owner.more.reportsSubtitle": "कमाई, हाज़िरी और सदस्य बदलाव",
+    "owner.more.revenue": "कमाई",
+    "owner.more.revenueSubtitle": "कलेक्शन, receipt और failed payment देखें",
+    "owner.more.staff": "स्टाफ",
+    "owner.more.staffSubtitle": "एडमिन और ट्रेनर आमंत्रित या manage करें",
+    "owner.more.stock": "स्टॉक",
+    "owner.more.stockSubtitle": "प्रोडक्ट और पिकअप",
+    "owner.more.trainerPayouts": "ट्रेनर पेआउट",
+    "owner.more.trainerPayoutsSubtitle": "अपने कोच की payout समीक्षा और भुगतान करें",
+    "owner.more.webControlRoom": "वेब कंट्रोल रूम",
     "owner.exerciseLibrary.add": "Add",
     "owner.exerciseLibrary.customExercise": "Custom exercise",
     "owner.exerciseLibrary.edit": "Edit",
@@ -6247,16 +7424,19 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.exerciseLibrary.exerciseName": "Exercise name",
     "owner.exerciseLibrary.exerciseNamePlaceholder": "Bench press",
     "owner.exerciseLibrary.featured": "Featured",
+    "owner.exerciseLibrary.featuredTemplates": "Featured",
     "owner.exerciseLibrary.muscle": "Muscle",
     "owner.exerciseLibrary.musclePlaceholder": "Chest",
     "owner.exerciseLibrary.new": "New",
     "owner.exerciseLibrary.newTemplate": "New template",
     "owner.exerciseLibrary.noSharedTemplates": "अभी कोई shared template नहीं",
-    "owner.exerciseLibrary.noSharedTemplatesBody": "Starter add करें या अपने house favorites बनाएं.",
+    "owner.exerciseLibrary.noSharedTemplatesBody":
+      "Starter add करें या अपने house favorites बनाएं.",
     "owner.exerciseLibrary.notes": "Notes",
     "owner.exerciseLibrary.notesPlaceholder": "Coaching cues",
+    "owner.exerciseLibrary.programmingDefaults": "प्रोग्रामिंग डिफॉल्ट",
     "owner.exerciseLibrary.remove": "Remove",
-    "owner.exerciseLibrary.removeTemplateBody": "\"{{name}}\" shared library से hidden हो जाएगा.",
+    "owner.exerciseLibrary.removeTemplateBody": '"{{name}}" shared library से hidden हो जाएगा.',
     "owner.exerciseLibrary.removeTemplateTitle": "Template remove करें?",
     "owner.exerciseLibrary.reps": "Reps",
     "owner.exerciseLibrary.repsCount": "{{count}} reps",
@@ -6266,194 +7446,242 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.exerciseLibrary.setsCount": "{{count}} sets",
     "owner.exerciseLibrary.shared": "Shared",
     "owner.exerciseLibrary.sharedLibrary": "Shared library",
+    "owner.exerciseLibrary.sharedTemplates": "Shared",
     "owner.exerciseLibrary.starter": "Starter",
+    "owner.exerciseLibrary.starterTemplates": "Starters",
     "owner.exerciseLibrary.starters": "Starters",
-    "owner.exerciseLibrary.subtitle": "Shared workout templates जिन्हें trainers reuse कर सकते हैं.",
+    "owner.exerciseLibrary.subtitle":
+      "Shared workout templates जिन्हें trainers reuse कर सकते हैं.",
     "owner.exerciseLibrary.tempo": "Tempo",
     "owner.exerciseLibrary.title": "Exercise library",
-    "owner.coupons.active": "Active",
-    "owner.coupons.amountOffInput": "Amount off (₹)",
-    "owner.coupons.amountOffValue": "{{amount}} off",
-    "owner.coupons.code": "Code",
-    "owner.coupons.coupons": "Coupons",
-    "owner.coupons.createCoupon": "Coupon बनाएं",
-    "owner.coupons.discount": "Discount",
-    "owner.coupons.edit": "Edit",
-    "owner.coupons.editAccessibility": "{{code}} edit करें",
-    "owner.coupons.editCoupon": "Coupon edit करें",
-    "owner.coupons.flatInrOff": "Flat ₹ off",
-    "owner.coupons.maxRedemptions": "Max redemptions",
-    "owner.coupons.newCoupon": "New coupon",
-    "owner.coupons.noCouponsYet": "अभी कोई coupon नहीं",
-    "owner.coupons.noCouponsYetBody": "Campaign चलाने के लिए discount code बनाएं.",
-    "owner.coupons.paused": "Paused",
-    "owner.coupons.perMember": "Per member",
-    "owner.coupons.perMemberLimit": "{{count}}/member",
-    "owner.coupons.percentOff": "Percent off",
-    "owner.coupons.percentOffInput": "Percent off (%)",
-    "owner.coupons.percentOffValue": "{{value}}% off",
-    "owner.coupons.remove": "Remove",
-    "owner.coupons.removeCouponBody": "\"{{code}}\" अब redeem नहीं होगा.",
-    "owner.coupons.removeCouponTitle": "Coupon remove करें?",
-    "owner.coupons.saveChanges": "Changes save करें",
-    "owner.coupons.subtitle": "Members checkout पर जो discount codes apply कर सकते हैं.",
-    "owner.coupons.title": "Coupons और offers",
-    "owner.coupons.unlimited": "Unlimited",
-    "owner.coupons.usedCount": "{{count}} used",
-    "owner.coupons.usedWithLimit": "{{used}}/{{limit}} used",
-    "owner.plans.createPlan": "Plan बनाएं",
-    "owner.plans.dateRange": "Date range",
-    "owner.plans.daysCount": "{{count}} days",
-    "owner.plans.duration": "Duration",
-    "owner.plans.durationDays": "Duration (days)",
-    "owner.plans.edit": "Edit",
+    "owner.coupons.active": "सक्रिय",
+    "owner.coupons.activeOffers": "{{count}} सक्रिय",
+    "owner.coupons.amountOffInput": "छूट राशि (₹)",
+    "owner.coupons.amountOffValue": "{{amount}} छूट",
+    "owner.coupons.code": "कोड",
+    "owner.coupons.coupons": "कूपन",
+    "owner.coupons.createCoupon": "कूपन बनाएं",
+    "owner.coupons.discount": "छूट",
+    "owner.coupons.edit": "बदलें",
+    "owner.coupons.editAccessibility": "{{code}} बदलें",
+    "owner.coupons.editCoupon": "कूपन बदलें",
+    "owner.coupons.flatInrOff": "फ्लैट ₹ छूट",
+    "owner.coupons.maxRedemptions": "अधिकतम उपयोग",
+    "owner.coupons.newCoupon": "नया कूपन",
+    "owner.coupons.noCouponsYet": "अभी कोई कूपन नहीं",
+    "owner.coupons.noCouponsYetBody": "ऑफर चलाने के लिए छूट कोड बनाएं.",
+    "owner.coupons.paused": "रोका गया",
+    "owner.coupons.pausedOffers": "{{count}} रुके",
+    "owner.coupons.perMember": "प्रति सदस्य",
+    "owner.coupons.perMemberLimit": "{{count}}/सदस्य",
+    "owner.coupons.percentOff": "प्रतिशत छूट",
+    "owner.coupons.percentOffInput": "प्रतिशत छूट (%)",
+    "owner.coupons.percentOffValue": "{{value}}% छूट",
+    "owner.coupons.redemptions": "उपयोग",
+    "owner.coupons.redemptionLimits": "उपयोग सीमा",
+    "owner.coupons.remove": "हटाएं",
+    "owner.coupons.removeCouponBody": '"{{code}}" अब इस्तेमाल नहीं होगा.',
+    "owner.coupons.removeCouponTitle": "कूपन हटाएं?",
+    "owner.coupons.saveChanges": "बदलाव सेव करें",
+    "owner.coupons.subtitle": "वे छूट कोड जिन्हें सदस्य checkout पर लगा सकते हैं.",
+    "owner.coupons.title": "कूपन और ऑफर",
+    "owner.coupons.unlimited": "कोई सीमा नहीं",
+    "owner.coupons.usedCount": "{{count}} उपयोग",
+    "owner.coupons.usedWithLimit": "{{used}}/{{limit}} उपयोग",
+    "owner.plans.createPlan": "प्लान बनाएं",
+    "owner.plans.dateRange": "तारीख सीमा",
+    "owner.plans.daysCount": "{{count}} दिन",
+    "owner.plans.duration": "अवधि",
+    "owner.plans.durationDays": "अवधि (दिन)",
+    "owner.plans.edit": "बदलें",
     "owner.plans.editAccessibility": "{{name}} edit करें",
-    "owner.plans.editPlan": "Plan edit करें",
-    "owner.plans.hidden": "Hidden",
-    "owner.plans.hybrid": "Hybrid",
-    "owner.plans.newPlan": "New plan",
-    "owner.plans.noPlansYet": "अभी कोई plan नहीं",
-    "owner.plans.noPlansYetBody": "अपना पहला membership plan बनाएं.",
-    "owner.plans.planName": "Plan name",
+    "owner.plans.editPlan": "प्लान बदलें",
+    "owner.plans.hidden": "छिपा हुआ",
+    "owner.plans.hiddenDrafts": "छिपे ड्राफ्ट",
+    "owner.plans.hybrid": "मिश्रित",
+    "owner.plans.newPlan": "नया प्लान",
+    "owner.plans.noPlansYet": "अभी कोई प्लान नहीं",
+    "owner.plans.noPlansYetBody": "अपना पहला सदस्यता प्लान बनाएं.",
+    "owner.plans.planLimits": "प्लान सीमा",
+    "owner.plans.planName": "प्लान नाम",
     "owner.plans.planNamePlaceholder": "Monthly Active",
-    "owner.plans.plans": "Plans",
-    "owner.plans.priceInr": "Price (₹)",
-    "owner.plans.remove": "Remove",
-    "owner.plans.removePlanBody": "Members अब \"{{name}}\" नहीं खरीद पाएंगे.",
-    "owner.plans.removePlanTitle": "Plan remove करें?",
-    "owner.plans.saveChanges": "Changes save करें",
-    "owner.plans.showPublicly": "Publicly दिखाएं",
-    "owner.plans.subtitle": "आपके gym में members जो plans खरीद सकते हैं.",
-    "owner.plans.title": "Membership plans",
-    "owner.plans.trial": "Trial",
-    "owner.plans.type": "Type",
-    "owner.plans.visitPack": "Visit pack",
-    "owner.plans.visits": "Visits",
-    "owner.plans.visitsCount": "{{count}} visits",
-    "owner.billing.activeMembers": "Active members",
-    "owner.billing.activeMembersCopy": "{{count}} {{noun}} plan limits में {{verb}} होते हैं",
-    "owner.billing.aiImages": "AI images",
-    "owner.billing.aiText": "AI text",
-    "owner.billing.branches": "Branches",
-    "owner.billing.cancel": "Cancel",
-    "owner.billing.cancelAtPeriodEnd": "Period end पर cancel करें",
-    "owner.billing.cancelSubscriptionBody": "Subscription period end पर cancel होने के लिए mark होगा.",
-    "owner.billing.cancelSubscriptionTitle": "Subscription cancel करें?",
-    "owner.billing.cancellationRequested": "Subscription cancellation requested.",
-    "owner.billing.couldNotCancelSubscription": "Subscription cancel नहीं हो सकी.",
-    "owner.billing.couldNotOpenPlanCheckout": "Plan checkout नहीं खुल सका.",
-    "owner.billing.couldNotStartBillingSetup": "Billing setup शुरू नहीं हो सका.",
-    "owner.billing.count": "count",
-    "owner.billing.counts": "count",
-    "owner.billing.currentPlanLimits": "Current plan limits",
-    "owner.billing.currentPlanLimitsBody": "Limits gym size, team size, branches, inventory, messages और AI usage पर लागू हैं.",
-    "owner.billing.keep": "Keep",
-    "owner.billing.mandate": "Mandate",
-    "owner.billing.member": "member",
-    "owner.billing.members": "members",
-    "owner.billing.messages": "Messages",
-    "owner.billing.month": "month",
-    "owner.billing.monthly": "Monthly",
-    "owner.billing.nextBilling": "Next billing",
-    "owner.billing.nextCharge": "Next charge",
+    "owner.plans.plans": "प्लान",
+    "owner.plans.priceInr": "कीमत (₹)",
+    "owner.plans.publicPlans": "सार्वजनिक प्लान",
+    "owner.plans.remove": "हटाएं",
+    "owner.plans.removePlanBody": 'सदस्य अब "{{name}}" नहीं खरीद पाएंगे.',
+    "owner.plans.removePlanTitle": "प्लान हटाएं?",
+    "owner.plans.saveChanges": "बदलाव सेव करें",
+    "owner.plans.showPublicly": "सदस्यों को दिखाएं",
+    "owner.plans.subtitle": "वे प्लान जिन्हें सदस्य आपके जिम में खरीद सकते हैं.",
+    "owner.plans.title": "सदस्यता प्लान",
+    "owner.plans.totalPlans": "कुल {{count}}",
+    "owner.plans.trial": "ट्रायल",
+    "owner.plans.type": "प्रकार",
+    "owner.plans.visitPack": "विजिट पैक",
+    "owner.plans.visits": "विजिट",
+    "owner.plans.visitsCount": "{{count}} विजिट",
+    "owner.billing.activeMembers": "सक्रिय सदस्य",
+    "owner.billing.activeMembersCopy": "{{count}} {{noun}} आपके प्लान की सीमा में गिने जाते हैं",
+    "owner.billing.aiImages": "AI इमेज",
+    "owner.billing.aiText": "AI टेक्स्ट",
+    "owner.billing.autopay": "ऑटोपे",
+    "owner.billing.branches": "शाखाएं",
+    "owner.billing.cancel": "रद्द करें",
+    "owner.billing.cancelAtPeriodEnd": "पीरियड खत्म होने पर रद्द करें",
+    "owner.billing.cancelSubscriptionBody":
+      "Subscription period end पर cancel होने के लिए mark होगा.",
+    "owner.billing.cancelSubscriptionTitle": "सब्सक्रिप्शन रद्द करें?",
+    "owner.billing.cancellationRequested": "सब्सक्रिप्शन रद्द करने का अनुरोध भेजा गया.",
+    "owner.billing.couldNotCancelSubscription": "सब्सक्रिप्शन रद्द नहीं हो सका.",
+    "owner.billing.couldNotOpenPlanCheckout": "प्लान checkout नहीं खुल सका.",
+    "owner.billing.couldNotStartBillingSetup": "बिलिंग setup शुरू नहीं हो सका.",
+    "owner.billing.count": "गिने",
+    "owner.billing.counts": "गिने",
+    "owner.billing.currentPlanLimits": "प्लान सीमाएं",
+    "owner.billing.currentPlanLimitsBody":
+      "Limits gym size, team size, branches, inventory, messages और AI usage पर लागू हैं.",
+    "owner.billing.keep": "जारी रखें",
+    "owner.billing.mandate": "पेमेंट मैंडेट",
+    "owner.billing.member": "सदस्य",
+    "owner.billing.members": "सदस्य",
+    "owner.billing.messages": "मैसेज",
+    "owner.billing.month": "माह",
+    "owner.billing.monthly": "मासिक",
+    "owner.billing.nextBilling": "अगली बिलिंग",
+    "owner.billing.nextCharge": "अगला चार्ज",
+    "owner.billing.needsSetup": "Setup चाहिए",
     "owner.billing.noPaymentMandate": "Payment mandate set up नहीं है.",
     "owner.billing.notAvailable": "उपलब्ध नहीं",
     "owner.billing.openingBillingSetup": "Billing setup खुल रहा है.",
     "owner.billing.openingPlanCheckout": "Plan checkout खुल रहा है.",
-    "owner.billing.planName": "{{name}} plan",
-    "owner.billing.platformReferral": "Platform referral",
-    "owner.billing.products": "Products",
+    "owner.billing.planName": "{{name}} प्लान",
+    "owner.billing.platformReferral": "प्लैटफॉर्म रेफरल",
+    "owner.billing.products": "प्रोडक्ट",
     "owner.billing.referralPartnerships": "{{count}} gym referral partnerships recorded.",
-    "owner.billing.reports": "Reports",
-    "owner.billing.resumeSetup": "Setup resume करें",
-    "owner.billing.select": "Select",
-    "owner.billing.setUpMandate": "Mandate set up करें",
-    "owner.billing.sixMonths": "6 months",
-    "owner.billing.staff": "Staff",
-    "owner.billing.support": "Support",
-    "owner.billing.title": "Billing",
-    "owner.billing.trainers": "Trainers",
-    "owner.billing.trialEnds": "Trial ends",
-    "owner.billing.upgradePlan": "Plan upgrade करें",
-    "owner.billing.upgradePlanBody": "Web billing वाले same SaaS tiers चुनें.",
-    "owner.billing.year": "year",
-    "owner.billing.yearly": "Yearly",
-    "owner.payouts.baseMonthly": "Base / month (₹)",
-    "owner.payouts.confirmBody": "{{period}} के लिए {{amount}} paid mark करें.",
-    "owner.payouts.confirmTitle": "{{name}} को pay करें?",
-    "owner.payouts.earningLines": "{{count}} earning lines",
-    "owner.payouts.emptyBody": "Trainer earnings accrue होने पर यहां दिखेंगी.",
-    "owner.payouts.emptyTitle": "अभी कोई payout नहीं",
-    "owner.payouts.hideSettings": "Payout settings छिपाएं",
-    "owner.payouts.markPaid": "Paid mark करें",
-    "owner.payouts.marking": "Mark हो रहा है...",
-    "owner.payouts.outstanding": "इस महीने outstanding",
-    "owner.payouts.paid": "Paid",
-    "owner.payouts.payDay": "Pay day (1-28)",
-    "owner.payouts.perSession": "Per session (₹)",
-    "owner.payouts.ptCommission": "PT commission (%)",
-    "owner.payouts.saveSettings": "Settings save करें",
-    "owner.payouts.settings": "Payout settings",
-    "owner.payouts.subtitle": "अपने coaches को review और pay करें.",
+    "owner.billing.reports": "रिपोर्ट",
+    "owner.billing.resumeSetup": "Setup जारी रखें",
+    "owner.billing.select": "चुनें",
+    "owner.billing.setUpMandate": "मैंडेट setup करें",
+    "owner.billing.sixMonths": "6 महीने",
+    "owner.billing.staff": "स्टाफ",
+    "owner.billing.ready": "तैयार",
+    "owner.billing.statusActive": "सक्रिय",
+    "owner.billing.statusCancelled": "रद्द",
+    "owner.billing.statusDeleted": "हटाया गया",
+    "owner.billing.statusMissing": "मौजूद नहीं",
+    "owner.billing.statusPaymentPending": "पेमेंट लंबित",
+    "owner.billing.statusPaused": "रोका गया",
+    "owner.billing.statusSuspended": "निलंबित",
+    "owner.billing.statusTrialActive": "ट्रायल सक्रिय",
+    "owner.billing.statusTrialExpired": "ट्रायल समाप्त",
+    "owner.billing.statusTrialExpiring": "ट्रायल जल्द समाप्त",
+    "owner.billing.support": "सपोर्ट",
+    "owner.billing.subscription": "सब्सक्रिप्शन",
+    "owner.billing.title": "बिलिंग",
+    "owner.billing.trainers": "ट्रेनर",
+    "owner.billing.trialEnds": "ट्रायल खत्म",
+    "owner.billing.upgradePlan": "प्लान अपग्रेड करें",
+    "owner.billing.upgradePlanBody": "वेब बिलिंग वाले वही SaaS tier चुनें.",
+    "owner.billing.year": "साल",
+    "owner.billing.yearly": "वार्षिक",
+    "owner.payouts.baseMonthly": "मासिक बेस (₹)",
+    "owner.payouts.confirmBody": "{{period}} के लिए {{amount}} को भुगतान मानें.",
+    "owner.payouts.confirmTitle": "{{name}} को भुगतान करें?",
+    "owner.payouts.earningLines": "{{count}} कमाई लाइन",
+    "owner.payouts.emptyBody": "ट्रेनर की कमाई जुड़ते ही यहां दिखेगी.",
+    "owner.payouts.emptyTitle": "अभी कोई पेआउट नहीं",
+    "owner.payouts.hideSettings": "पेआउट सेटिंग्स छिपाएं",
+    "owner.payouts.markPaid": "भुगतान हो गया",
+    "owner.payouts.marking": "मार्क हो रहा है...",
+    "owner.payouts.outstanding": "इस महीने बाकी",
+    "owner.payouts.paid": "भुगतान हो गया",
+    "owner.payouts.payableTrainers": "भुगतान योग्य ट्रेनर",
+    "owner.payouts.payDay": "भुगतान दिन (1-28)",
+    "owner.payouts.perSession": "प्रति सेशन (₹)",
+    "owner.payouts.ptCommission": "PT कमीशन (%)",
+    "owner.payouts.saveSettings": "सेटिंग्स सेव करें",
+    "owner.payouts.settings": "पेआउट सेटिंग्स",
+    "owner.payouts.subtitle": "अपने कोच की समीक्षा और भुगतान करें.",
     "owner.payouts.thisMonth": "इस महीने",
     "owner.payouts.thisMonthLower": "इस महीने",
-    "owner.payouts.title": "Trainer payouts",
-    "owner.payouts.trainerFallback": "Trainer",
-    "owner.payouts.trainerLower": "trainer",
-    "owner.stock.allInStock": "सभी products stock में हैं",
-    "owner.stock.allInStockBody": "Inventory कम होने वाले items यहां दिखेंगे.",
-    "owner.stock.leftThreshold": "{{stock}} left · threshold {{threshold}}",
-    "owner.stock.lowStock": "Low stock",
-    "owner.stock.memberPickup": "Member pickup",
-    "owner.stock.noPickups": "कोई pickup waiting नहीं",
-    "owner.stock.noPickupsBody": "Collection के लिए waiting paid shop orders यहां दिखेंगे.",
-    "owner.stock.paidOrders": "Paid orders",
-    "owner.stock.pickupOrders": "Pickup orders",
-    "owner.stock.pickupPending": "Pickup pending",
-    "owner.stock.pickups": "Pickups",
-    "owner.stock.productsToReorder": "Reorder करने वाले products",
-    "owner.stock.reorder": "Reorder",
+    "owner.payouts.title": "ट्रेनर पेआउट",
+    "owner.payouts.trainerFallback": "ट्रेनर",
+    "owner.payouts.trainerLower": "ट्रेनर",
+    "owner.stock.allInStock": "सभी प्रोडक्ट स्टॉक में हैं",
+    "owner.stock.allInStockBody": "जिन आइटम का स्टॉक कम होगा, वे यहां दिखेंगे.",
+    "owner.stock.collectPayment": "पेमेंट लें",
+    "owner.stock.collectPaymentBody": "{{count}} ऑर्डर को पिकअप से पहले पेमेंट चाहिए.",
+    "owner.stock.collectPaymentDone": "कोई unpaid shop order waiting नहीं है.",
+    "owner.stock.leftThreshold": "{{stock}} बचे · सीमा {{threshold}}",
+    "owner.stock.left": "बचे",
+    "owner.stock.lowStock": "कम स्टॉक",
+    "owner.stock.memberPickup": "मेंबर पिकअप",
+    "owner.stock.noPickups": "कोई पिकअप बाकी नहीं",
+    "owner.stock.noPickupsBody": "कलेक्शन के लिए तैयार paid shop orders यहां दिखेंगे.",
+    "owner.stock.paidOrders": "पेड ऑर्डर",
+    "owner.stock.pickupOrders": "पिकअप ऑर्डर",
+    "owner.stock.pickupPending": "पिकअप लंबित",
+    "owner.stock.pickups": "पिकअप",
+    "owner.stock.productsToReorder": "रीऑर्डर वाले प्रोडक्ट",
+    "owner.stock.reorder": "रीऑर्डर",
     "owner.stock.reorderAccessibility": "{{name}} reorder करें",
-    "owner.stock.reorderBody": "Hi,\n\nकृपया {{name}} के supplier options share करें.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
-    "owner.stock.reorderSubject": "{{name}} reorder",
-    "owner.stock.title": "Stock",
-    "owner.stock.underThreshold": "Threshold से कम",
-    "owner.staff.admin": "Admin",
-    "owner.staff.changeRole": "Role बदलें",
-    "owner.staff.email": "Email",
-    "owner.staff.invite": "Invite",
-    "owner.staff.inviteStaffMember": "Staff member invite करें",
-    "owner.staff.invited": "Invited",
-    "owner.staff.noStaffBody": "अपना पहला admin या trainer invite करें.",
-    "owner.staff.noStaffYet": "अभी कोई staff नहीं",
-    "owner.staff.owner": "Owner",
-    "owner.staff.reception": "Reception",
-    "owner.staff.receptionWebHint": "Reception staff को web dashboard से branch assign किया जाता है.",
-    "owner.staff.remove": "Remove",
-    "owner.staff.removeBody": "{{name}} इस gym का access खो देगा.",
-    "owner.staff.removeTitle": "Staff member remove करें?",
-    "owner.staff.role": "Role",
-    "owner.staff.sendInvite": "Invite भेजें",
+    "owner.stock.reorderBody":
+      "Hi,\n\nकृपया {{name}} के supplier options share करें.\n\nCurrent stock: {{stock}}\nThreshold: {{threshold}}\n\nThanks.",
+    "owner.stock.reorderSubject": "{{name}} रीऑर्डर",
+    "owner.stock.reorderStock": "स्टॉक रीऑर्डर करें",
+    "owner.stock.reorderStockBody": "{{count}} प्रोडक्ट सीमा पर या उससे कम हैं.",
+    "owner.stock.reorderStockDone": "कोई प्रोडक्ट सीमा से कम नहीं है.",
+    "owner.stock.reorderNow": "अभी reorder करें",
+    "owner.stock.todayWork": "आज का स्टॉक काम",
+    "owner.stock.thresholdShort": "Min {{threshold}}",
+    "owner.stock.title": "स्टॉक",
+    "owner.stock.underThreshold": "सीमा से कम",
+    "owner.stock.verifyPickup": "पिकअप सत्यापित करें",
+    "owner.stock.verifyPickupBody": "{{count}} paid orders handoff के लिए ready हैं.",
+    "owner.stock.verifyPickupDone": "कोई मेंबर पिकअप बाकी नहीं है.",
+    "owner.staff.admin": "एडमिन",
+    "owner.staff.admins": "एडमिन",
+    "owner.staff.changeRole": "भूमिका बदलें",
+    "owner.staff.email": "ईमेल",
+    "owner.staff.invite": "आमंत्रित करें",
+    "owner.staff.inviteStaffMember": "स्टाफ सदस्य को आमंत्रित करें",
+    "owner.staff.invited": "आमंत्रित",
+    "owner.staff.noStaffBody": "अपना पहला एडमिन या ट्रेनर आमंत्रित करें.",
+    "owner.staff.noStaffYet": "अभी कोई स्टाफ नहीं",
+    "owner.staff.owner": "मालिक",
+    "owner.staff.pendingInvites": "{{count}} लंबित",
+    "owner.staff.reception": "रिसेप्शन",
+    "owner.staff.receptionWebHint": "रिसेप्शन स्टाफ को वेब डैशबोर्ड से शाखा दी जाती है.",
+    "owner.staff.remove": "हटाएं",
+    "owner.staff.removeBody": "{{name}} इस जिम का एक्सेस खो देगा.",
+    "owner.staff.removeTitle": "स्टाफ सदस्य हटाएं?",
+    "owner.staff.role": "भूमिका",
+    "owner.staff.sendInvite": "आमंत्रण भेजें",
     "owner.staff.sending": "भेजा जा रहा है...",
-    "owner.staff.staffMember": "Staff member",
-    "owner.staff.subtitle": "आपके gym के admins, trainers और reception.",
-    "owner.staff.team": "Team",
-    "owner.staff.title": "Staff",
-    "owner.staff.trainer": "Trainer",
-    "owner.dashboard.activeCount": "{{count}} active",
-    "owner.dashboard.attendance7Days": "Attendance · 7 days",
-    "owner.dashboard.chartAccessibility": "Dashboard chart",
-    "owner.dashboard.members30Days": "Members · 30 days",
-    "owner.dashboard.noActiveMemberPlans": "कोई active member plans नहीं.",
-    "owner.dashboard.planMix": "Plan mix",
-    "owner.dashboard.revenue7Days": "Revenue · 7 days",
-    "owner.dashboard.trends": "Trends",
-    "owner.dashboard.trendsSubtitle": "Revenue, attendance और member trends",
+    "owner.staff.staffMember": "स्टाफ सदस्य",
+    "owner.staff.subtitle": "आपके जिम के एडमिन, ट्रेनर और रिसेप्शन.",
+    "owner.staff.team": "टीम",
+    "owner.staff.title": "स्टाफ",
+    "owner.staff.totalStaff": "कुल {{count}}",
+    "owner.staff.trainer": "ट्रेनर",
+    "owner.staff.trainers": "ट्रेनर",
+    "owner.dashboard.activeCount": "{{count}} सक्रिय",
+    "owner.dashboard.attendance7Days": "हाज़िरी · 7 दिन",
+    "owner.dashboard.chartAccessibility": "डैशबोर्ड चार्ट",
+    "owner.dashboard.collapseTrends": "ट्रेंड विवरण छिपाएं",
+    "owner.dashboard.expandTrends": "ट्रेंड विवरण दिखाएं",
+    "owner.dashboard.members30Days": "सदस्य · 30 दिन",
+    "owner.dashboard.noActiveMemberPlans": "कोई सक्रिय सदस्य प्लान नहीं.",
+    "owner.dashboard.planMix": "प्लान मिक्स",
+    "owner.dashboard.revenue7Days": "कमाई · 7 दिन",
+    "owner.dashboard.trends": "ट्रेंड",
+    "owner.dashboard.trendsSubtitle": "कमाई, हाज़िरी और सदस्य बदलाव",
     "reception.desk.active": "Active",
     "reception.desk.branch": "Branch",
     "reception.desk.coachName": "Coach {{name}}",
     "reception.desk.code": "Code",
-    "reception.desk.displayEntryQr": "Entry QR दिखाएं",
+    "reception.desk.displayEntryQr": "Entry QR",
     "reception.desk.enterCode": "Code डालें",
     "reception.desk.flagged": "Flagged",
     "reception.desk.gateQueueClear": "Gate queue clear",
@@ -6467,12 +7695,18 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.desk.queueClearBody": "कोई pending या flagged scan desk attention नहीं चाहता.",
     "reception.desk.queueMeta": "{{pending}} pending · {{flagged}} flagged",
     "reception.desk.queueNeedsAction": "Desk queue को action चाहिए",
-    "reception.desk.queueNeedsActionBody": "Pending और flagged entry attempts age out होने से पहले review करें.",
+    "reception.desk.queueNeedsActionBody":
+      "Pending और flagged entry attempts age out होने से पहले review करें.",
     "reception.desk.recentActivity": "Recent activity",
     "reception.desk.referGym": "Gym refer करें और earn करें",
     "reception.desk.referGymAccessibility": "Zook को gym refer करें और earn करें",
     "reception.desk.referGymBody": "आपके refer किए gym के subscribe करने पर cash earn करें",
     "reception.desk.reviewRequired": "Review required",
+    "reception.desk.statusApproved": "Approved",
+    "reception.desk.statusFailed": "Failed",
+    "reception.desk.statusPendingApproval": "Review चाहिए",
+    "reception.desk.statusRejected": "Rejected",
+    "reception.desk.statusRecorded": "Recorded",
     "reception.desk.today": "आज",
     "reception.desk.todayCount": "{{count}} today",
     "reception.desk.todaysClasses": "आज की classes",
@@ -6488,65 +7722,74 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.workspace.alreadyCheckedInToday": "यह member आज पहले से checked in है.",
     "reception.workspace.approveFailed": "Approve नहीं हो सका. फिर कोशिश करें.",
     "reception.workspace.approvedScanReason": "Reception ने review के बाद scan approve किया",
-    "reception.workspace.authenticationRequiredAction": "यह action करने के लिए authentication जरूरी है.",
+    "reception.workspace.authenticationRequiredAction":
+      "यह action करने के लिए authentication जरूरी है.",
     "reception.workspace.bulkRecorded": "{{count}} {{memberLabel}} के लिए attendance record हुई.",
-    "reception.workspace.bulkRecordedPartial": "{{total}} में से {{successes}} record हुए. {{failures}} failed.",
-    "reception.workspace.checkInApproved": "Check-in approve हो गया.",
-    "reception.workspace.checkInNotValid": "Check-in valid नहीं है",
-    "reception.workspace.checkInRejected": "Check-in reject हो गया.",
-    "reception.workspace.checkInVerified": "Check-in verified",
-    "reception.workspace.couldNotRecordOne": "एक entry record नहीं हो सकी.",
-    "reception.workspace.deskApprovalRequired": "Desk approval जरूरी है.",
-    "reception.workspace.enterCodeFirst": "पहले code डालें.",
-    "reception.workspace.entryCode": "Entry code",
-    "reception.workspace.entryCodeInvalidMessage": "{{name}} का entry code मिला, पर entry के लिए valid नहीं है.",
-    "reception.workspace.fulfillFailed": "यह order fulfill नहीं हो सका.",
-    "reception.workspace.fulfillPickupAuth": "Code के बिना pickup fulfill करें",
-    "reception.workspace.fulfillPickupReason": "Reception ने local re-auth के बाद pickup manually fulfill किया.",
-    "reception.workspace.mainBranchFallback": "Main branch",
-    "reception.workspace.manualAttendanceRecorded": "Manual attendance record हो गई.",
-    "reception.workspace.memberCheckInFallback": "Member check-in",
-    "reception.workspace.memberFallback": "Member",
-    "reception.workspace.membershipAlreadyActive": "यह membership पहले से active है. Pending subscription चुनें या नया manual activation बनाएं.",
-    "reception.workspace.membershipFallback": "Membership",
-    "reception.workspace.noActiveCode": "कोई active entry या pickup code नहीं.",
-    "reception.workspace.notValidForEntry": "Entry के लिए valid नहीं",
-    "reception.workspace.onlyOneBranchBody": "इस gym में switch करने के लिए कोई और branch नहीं है.",
-    "reception.workspace.onlyOneBranchTitle": "सिर्फ एक branch",
-    "reception.workspace.orderTotalDetail": "Order total: {{amount}}",
-    "reception.workspace.ownerApprovalRequired": "Owner approval जरूरी है",
-    "reception.workspace.ownerDesk": "Owner desk",
-    "reception.workspace.paymentRecorded": "{{amount}} {{mode}} से record हुआ.",
-    "reception.workspace.pickedBadge": "Picked",
-    "reception.workspace.pickupFulfilled": "Pickup fulfill हो गया.",
-    "reception.workspace.pickupNotReady": "Pickup ready नहीं है",
-    "reception.workspace.pickupStatusTitle": "Pickup {{status}}",
-    "reception.workspace.pickupVerified": "Pickup verified",
-    "reception.workspace.pickupVerifiedFor": "{{name}} का pickup verified",
-    "reception.workspace.recordManualAttendanceAuth": "Manual attendance record करें",
-    "reception.workspace.recordManualPaymentAuth": "Manual payment record करें",
-    "reception.workspace.recording": "Record हो रहा है...",
-    "reception.workspace.receptionDesk": "Reception desk",
-    "reception.workspace.rejectFailed": "Reject नहीं हो सका. फिर कोशिश करें.",
-    "reception.workspace.rejectedScanReason": "Reception ने review के बाद scan reject किया",
-    "reception.workspace.selectedBadge": "Selected",
-    "reception.workspace.signInSelectGymVerify": "Verify करने से पहले sign in करें और gym select करें.",
-    "reception.workspace.statusDetail": "Status: {{status}}",
-    "reception.workspace.switchBranchBody": "आप जिस branch पर हैं उसे चुनें.",
-    "reception.workspace.switchBranchTitle": "Branch बदलें",
-    "reception.workspace.verifiedName": "{{name}} verified",
-    "reception.workspace.verifyCodeFailed": "यह code verify नहीं हो सका.",
-    "reception.workspace.verifyFailedTitle": "Verify failed",
-    "reception.workspace.verificationFailed": "Verification failed.",
-    "reception.workspace.verificationSuccessful": "Verification successful.",
-    "reception.home.title": "Front desk",
-    "reception.members.attendanceNote": "Attendance note",
-    "reception.members.auditReason": "Reason जोड़ें ताकि gym के पास clear record रहे.",
-    "reception.members.clearSelectedMember": "Selected member clear करें",
-    "reception.members.clear": "Clear",
+    "reception.workspace.bulkRecordedMany": "{{count}} सदस्यों की उपस्थिति दर्ज हुई.",
+    "reception.workspace.bulkRecordedOne": "1 सदस्य की उपस्थिति दर्ज हुई.",
+    "reception.workspace.bulkRecordedPartial":
+      "{{total}} में से {{successes}} दर्ज हुए. {{failures}} असफल रहे.",
+    "reception.workspace.checkInApproved": "चेक-इन स्वीकृत हो गया.",
+    "reception.workspace.checkInNotValid": "चेक-इन मान्य नहीं है",
+    "reception.workspace.checkInRejected": "चेक-इन अस्वीकार हो गया.",
+    "reception.workspace.checkInVerified": "चेक-इन सत्यापित",
+    "reception.workspace.couldNotRecordOne": "एक एंट्री दर्ज नहीं हो सकी.",
+    "reception.workspace.deskApprovalRequired": "डेस्क स्वीकृति जरूरी है.",
+    "reception.workspace.enterCodeFirst": "पहले कोड डालें.",
+    "reception.workspace.entryCode": "एंट्री कोड",
+    "reception.workspace.entryCodeInvalidMessage":
+      "{{name}} का एंट्री कोड मिला, पर एंट्री के लिए मान्य नहीं है.",
+    "reception.workspace.fulfillFailed": "यह ऑर्डर पूरा नहीं हो सका.",
+    "reception.workspace.fulfillPickupAuth": "कोड के बिना पिकअप पूरा करें",
+    "reception.workspace.fulfillPickupReason":
+      "रिसेप्शन ने लोकल री-ऑथ के बाद पिकअप मैन्युअली पूरा किया.",
+    "reception.workspace.mainBranchFallback": "मुख्य ब्रांच",
+    "reception.workspace.manualAttendanceRecorded": "मैन्युअल अटेंडेंस दर्ज हो गई.",
+    "reception.workspace.memberCheckInFallback": "मेंबर चेक-इन",
+    "reception.workspace.memberFallback": "मेंबर",
+    "reception.workspace.membershipAlreadyActive":
+      "यह मेंबरशिप पहले से सक्रिय है. पेंडिंग सब्सक्रिप्शन चुनें या नया मैन्युअल एक्टिवेशन बनाएं.",
+    "reception.workspace.membershipFallback": "मेंबरशिप",
+    "reception.workspace.noActiveCode": "कोई सक्रिय एंट्री या पिकअप कोड नहीं.",
+    "reception.workspace.notValidForEntry": "एंट्री के लिए मान्य नहीं",
+    "reception.workspace.onlyOneBranchBody": "इस जिम में बदलने के लिए कोई और ब्रांच नहीं है.",
+    "reception.workspace.onlyOneBranchTitle": "सिर्फ एक ब्रांच",
+    "reception.workspace.orderTotalDetail": "ऑर्डर कुल: {{amount}}",
+    "reception.workspace.ownerApprovalRequired": "ओनर स्वीकृति जरूरी है",
+    "reception.workspace.ownerDesk": "ओनर डेस्क",
+    "reception.workspace.paymentRecorded": "{{amount}} {{mode}} से दर्ज हुआ.",
+    "reception.workspace.pickedBadge": "पिक हुआ",
+    "reception.workspace.pickupFulfilled": "पिकअप पूरा हो गया.",
+    "reception.workspace.pickupNotReady": "पिकअप तैयार नहीं है",
+    "reception.workspace.pickupStatusTitle": "पिकअप {{status}}",
+    "reception.workspace.pickupVerified": "पिकअप वेरिफाई हुआ",
+    "reception.workspace.pickupVerifiedFor": "{{name}} का पिकअप वेरिफाई हुआ",
+    "reception.workspace.recordManualAttendanceAuth": "मैन्युअल अटेंडेंस दर्ज करें",
+    "reception.workspace.recordManualPaymentAuth": "मैन्युअल भुगतान दर्ज करें",
+    "reception.workspace.recording": "दर्ज हो रहा है...",
+    "reception.workspace.receptionDesk": "रिसेप्शन डेस्क",
+    "reception.workspace.rejectFailed": "अस्वीकार नहीं हो सका. फिर कोशिश करें.",
+    "reception.workspace.rejectedScanReason": "रिसेप्शन ने समीक्षा के बाद स्कैन अस्वीकार किया",
+    "reception.workspace.selectedBadge": "चुना गया",
+    "reception.workspace.signInSelectGymVerify":
+      "वेरिफाई करने से पहले साइन इन करें और जिम चुनें.",
+    "reception.workspace.statusDetail": "स्थिति: {{status}}",
+    "reception.workspace.switchBranchBody": "आप जिस ब्रांच पर हैं उसे चुनें.",
+    "reception.workspace.switchBranchTitle": "ब्रांच बदलें",
+    "reception.workspace.verifiedName": "{{name}} वेरिफाई हुआ",
+    "reception.workspace.verifyCodeFailed": "यह कोड वेरिफाई नहीं हो सका.",
+    "reception.workspace.verifyFailedTitle": "वेरिफिकेशन फेल हुआ",
+    "reception.workspace.verificationFailed": "वेरिफिकेशन फेल हुआ.",
+    "reception.workspace.verificationSuccessful": "वेरिफिकेशन सफल हुआ.",
+    "reception.home.title": "रिसेप्शन डेस्क",
+    "reception.members.attendanceNote": "अटेंडेंस नोट",
+    "reception.members.auditReason": "कारण जोड़ें ताकि जिम के पास साफ रिकॉर्ड रहे.",
+    "reception.members.clearSelectedMember": "चुना हुआ मेंबर हटाएं",
+    "reception.members.clear": "हटाएं",
     "reception.members.deskActions": "Desk actions",
     "reception.members.generalFitness": "General fitness",
-    "reception.members.hiddenHint": "{{visible}} of {{total}} matches दिख रहे हैं. Specific member जल्दी ढूंढने के लिए search refine करें.",
+    "reception.members.hiddenHint":
+      "{{visible}} of {{total}} matches दिख रहे हैं. Specific member जल्दी ढूंढने के लिए search refine करें.",
     "reception.members.memberTitle": "Member",
     "reception.members.membership": "Membership",
     "reception.members.multiSelectCount": "Multi-select · {{count}}",
@@ -6561,58 +7804,70 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "reception.members.selectMultiple": "Multiple select करें",
     "reception.members.selectedCount": "{{count}} members selected",
     "reception.members.title": "Members",
-    "reception.orders.confirmPickedUpBody": "{{name}} को {{amount}} के लिए collected mark किया जाएगा.",
+    "reception.orders.confirmPickedUpBody":
+      "{{name}} को {{amount}} के लिए collected mark किया जाएगा.",
     "reception.orders.confirmPickedUpTitle": "Order picked up mark करें?",
     "reception.orders.done": "Done",
     "reception.orders.enterPickupCode": "Pickup code डालें",
-    "reception.orders.fulfillmentQueue": "Fulfillment Queue",
+    "reception.orders.fulfillmentQueue": "Fulfillment queue",
     "reception.orders.itemCount": "{{count}} items",
     "reception.orders.markPickedUp": "Picked up mark करें",
     "reception.orders.noPickupsBody": "Collection के लिए ready paid shop orders यहां दिखेंगे.",
     "reception.orders.pickupCode": "Pickup code",
-    "reception.orders.pickupVerification": "Pickup Verification",
+    "reception.orders.pickupVerification": "Pickup verification",
     "reception.orders.pickupVerificationBody": "Order देने से पहले code और member match करें.",
     "reception.orders.ready": "Ready",
+    "reception.orders.statusCancelled": "रद्द",
+    "reception.orders.statusFailed": "असफल",
+    "reception.orders.statusFulfilled": "पिकअप हो गया",
+    "reception.orders.statusPaid": "Paid",
+    "reception.orders.statusPendingPayment": "Payment pending",
+    "reception.orders.statusRefunded": "रिफंड",
     "reception.orders.thisMember": "यह member",
     "reception.orders.title": "Orders",
     "reception.orders.verifyPickupCode": "Pickup code verify करें",
-    "reception.payments.activeDesk": "Active desk",
-    "reception.payments.amount": "Amount",
-    "reception.payments.amountInvalid": "0 से बड़ा amount दर्ज करें.",
-    "reception.payments.amountReceived": "Amount received",
-    "reception.payments.auditWarning": "सभी offline payments audit logs के साथ record होते हैं. Record करने से पहले payment received होना सुनिश्चित करें.",
-    "reception.payments.collection": "Payment collection",
-    "reception.payments.collectionMode": "Collection mode",
-    "reception.payments.desk": "Desk",
-    "reception.payments.deskNote": "Desk note",
-    "reception.payments.deskNotePlaceholder": "Finance को जो दिखना चाहिए",
-    "reception.payments.due": "Due",
-    "reception.payments.dueAmount": "{{amount}} due",
-    "reception.payments.findMember": "Member ढूंढें",
-    "reception.payments.invoice": "Invoice",
-    "reception.payments.memberPayment": "Reception member payment",
-    "reception.payments.membershipSelected": "{{status}} membership selected",
-    "reception.payments.missing": "Missing",
-    "reception.payments.mode": "Mode",
-    "reception.payments.modeBank": "Bank",
-    "reception.payments.modeCard": "Card",
-    "reception.payments.modeCash": "Cash",
-    "reception.payments.modeManual": "Manual",
-    "reception.payments.modeUpi": "Direct UPI",
-    "reception.payments.newPayment": "New Payment",
-    "reception.payments.noContact": "No contact",
-    "reception.payments.noMembershipSelected": "No membership selected",
-    "reception.payments.noPlan": "No plan",
-    "reception.payments.recordPayment": "Payment record करें",
-    "reception.payments.reference": "Receipt या reference",
-    "reception.payments.referencePlaceholder": "UPI ref, bank UTR, card slip",
-    "reception.payments.reviewConsequence": "इसे तभी record करें जब cash, UPI, card या bank transfer desk पर सच में receive हो गया हो.",
-    "reception.payments.reviewTitle": "Desk payment review",
-    "reception.payments.searchPlaceholder": "Name, email, या phone",
-    "reception.payments.selectMember": "Member select करें",
-    "reception.payments.selectMemberAccessibility": "{{name}} select करें",
-    "reception.payments.selectMemberFirst": "पहले member select करें",
-    "reception.payments.staffNote": "Staff note",
+    "reception.payments.activeDesk": "सक्रिय डेस्क",
+    "reception.payments.additionalDetails": "अतिरिक्त जानकारी",
+    "reception.payments.amount": "राशि",
+    "reception.payments.amountInvalid": "0 से बड़ी राशि दर्ज करें.",
+    "reception.payments.amountReceived": "मिली राशि",
+    "reception.payments.auditWarning":
+      "सभी offline payments audit log में जाते हैं. Record करने से पहले payment मिलना पक्का करें.",
+    "reception.payments.changeMember": "मेंबर बदलें",
+    "reception.payments.collection": "पेमेंट कलेक्शन",
+    "reception.payments.collectionMode": "पेमेंट मोड",
+    "reception.payments.desk": "डेस्क",
+    "reception.payments.deskNote": "डेस्क नोट",
+    "reception.payments.deskNotePlaceholder": "Finance team के लिए जरूरी बात",
+    "reception.payments.due": "बकाया",
+    "reception.payments.dueAmount": "{{amount}} बकाया",
+    "reception.payments.findMember": "मेंबर ढूंढें",
+    "reception.payments.invoice": "इनवॉइस",
+    "reception.payments.memberPayment": "Reception मेंबर पेमेंट",
+    "reception.payments.membershipSelected": "{{status}} मेंबरशिप selected",
+    "reception.payments.missing": "नहीं मिला",
+    "reception.payments.mode": "मोड",
+    "reception.payments.modeBank": "बैंक",
+    "reception.payments.modeCard": "कार्ड",
+    "reception.payments.modeCash": "कैश",
+    "reception.payments.modeManual": "मैनुअल",
+    "reception.payments.modeUpi": "डायरेक्ट UPI",
+    "reception.payments.newPayment": "नई पेमेंट",
+    "reception.payments.noContact": "कॉन्टैक्ट नहीं है",
+    "reception.payments.noAdditionalDetails": "रेफरेंस या नोट नहीं है",
+    "reception.payments.noMembershipSelected": "कोई मेंबरशिप चुनी नहीं गई",
+    "reception.payments.noPlan": "कोई प्लान नहीं",
+    "reception.payments.recordPayment": "पेमेंट रिकॉर्ड करें",
+    "reception.payments.reference": "रसीद या रेफरेंस",
+    "reception.payments.referencePlaceholder": "UPI रेफ, बैंक UTR, कार्ड स्लिप",
+    "reception.payments.reviewConsequence":
+      "इसे तभी record करें जब cash, UPI, card या bank transfer desk पर मिल चुका हो.",
+    "reception.payments.reviewTitle": "डेस्क पेमेंट रिव्यू",
+    "reception.payments.searchPlaceholder": "नाम, email, या phone",
+    "reception.payments.selectMember": "मेंबर चुनें",
+    "reception.payments.selectMemberAccessibility": "{{name}} चुनें",
+    "reception.payments.selectMemberFirst": "पहले मेंबर चुनें",
+    "reception.payments.staffNote": "स्टाफ नोट",
     "reception.payments.subtitle": "Reception",
     "reception.payments.verified": "Verified",
     "reception.verification.title": "Verification",
@@ -6631,42 +7886,62 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "attendance.mutation.manualFailed": "Manual check-in record नहीं हो सका.",
     "attendance.mutation.rejected": "Attendance reject हो गई.",
     "attendance.mutation.rejectFailed": "Attendance reject नहीं हो सकी.",
-    "owner.referrals.allowTrainerReferrals": "Trainer referrals allow करें",
-    "owner.referrals.codeExpiryDays": "Code expiry (दिन)",
-    "owner.referrals.creditInr": "Credit (₹)",
-    "owner.referrals.discountInr": "Discount ₹",
-    "owner.referrals.discountPercent": "Discount %",
-    "owner.referrals.enabled": "Referrals enabled",
-    "owner.referrals.enabledBody": "पूरे referral program को on या off करें.",
-    "owner.referrals.flatInr": "Flat ₹",
-    "owner.referrals.freeDays": "Free days",
-    "owner.referrals.limits": "Limits",
-    "owner.referrals.maxPerMemberMonth": "Max / member / month",
-    "owner.referrals.memberGymCreditBody": "जब member के referral से gym sign up करे, member को मिलने वाला account credit.",
-    "owner.referrals.memberRefersMember": "Member refers a member",
-    "owner.referrals.memberRefersNewGym": "Member refers a new gym",
-    "owner.referrals.newMemberGets": "New member gets",
-    "owner.referrals.none": "None",
-    "owner.referrals.percent": "Percent",
-    "owner.referrals.referrerEarns": "Referrer earns",
-    "owner.referrals.saveSettings": "Referral settings save करें",
-    "owner.referrals.subtitle": "Referrals पर सबको कितना reward मिलता है, सेट करें.",
-    "owner.referrals.title": "Referral program",
-    "owner.referrals.trainerEarns": "Trainer earns",
-    "owner.referrals.trainerRefersMember": "Trainer refers a member",
-    "owner.referrals.visits": "Visits",
+    "owner.referrals.allowTrainerReferrals": "ट्रेनर रेफरल चालू करें",
+    "owner.referrals.codeExpiryDays": "कोड की वैधता (दिन)",
+    "owner.referrals.creditInr": "क्रेडिट (₹)",
+    "owner.referrals.discountInr": "छूट ₹",
+    "owner.referrals.discountPercent": "छूट %",
+    "owner.referrals.enabled": "रेफरल चालू",
+    "owner.referrals.enabledBody": "पूरा रेफरल प्रोग्राम चालू या बंद करें.",
+    "owner.referrals.enabledShort": "चालू",
+    "owner.referrals.flatInr": "फ्लैट ₹",
+    "owner.referrals.freeDays": "मुफ्त दिन",
+    "owner.referrals.limits": "सीमाएं",
+    "owner.referrals.limitSummary": "{{count}}/माह · {{days}} दिन",
+    "owner.referrals.maxPerMemberMonth": "हर सदस्य / माह की सीमा",
+    "owner.referrals.memberGymCreditBody":
+      "रेफर किए गए जिम के साइन अप करने पर सदस्य को मिलने वाला क्रेडिट.",
+    "owner.referrals.memberRefersMember": "सदस्य किसी सदस्य को लाए",
+    "owner.referrals.memberRefersNewGym": "सदस्य नया जिम लाए",
+    "owner.referrals.moreRules": "बाकी रेफरल नियम",
+    "owner.referrals.moreRulesBody": "ट्रेनर रिवॉर्ड, नया जिम क्रेडिट और मासिक सीमा",
+    "owner.referrals.newMemberGets": "नए सदस्य को मिलेगा",
+    "owner.referrals.none": "कुछ नहीं",
+    "owner.referrals.off": "बंद",
+    "owner.referrals.paused": "रोका गया",
+    "owner.referrals.percent": "प्रतिशत",
+    "owner.referrals.program": "प्रोग्राम",
+    "owner.referrals.referrerEarns": "रेफर करने वाले को मिलेगा",
+    "owner.referrals.saveSettings": "रेफरल सेटिंग्स सेव करें",
+    "owner.referrals.subtitle": "रेफरल पर किसे कितना रिवॉर्ड मिलेगा, यह सेट करें.",
+    "owner.referrals.title": "रेफरल प्रोग्राम",
+    "owner.referrals.trainerEarns": "ट्रेनर को मिलेगा",
+    "owner.referrals.trainerRefersMember": "ट्रेनर सदस्य लाए",
+    "owner.referrals.trainers": "ट्रेनर",
+    "owner.referrals.visits": "विजिट",
     "owner.revenue.noPaymentsYet": "अभी कोई पेमेंट नहीं",
     "owner.revenue.noPaymentsYetBody": "पेमेंट और शॉप पिकअप आते ही यहां दिखेंगे.",
     "owner.revenue.paymentFallback": "पेमेंट",
     "owner.revenue.pickupPending": "पिकअप पेंडिंग",
+    "owner.revenue.pickupValue": "पिकअप वैल्यू",
+    "owner.revenue.pickupValueBody": "{{count}} शॉप पिकअप में {{amount}} के सदस्य ऑर्डर हैं.",
+    "owner.revenue.pickupValueDone": "डेस्क पर कोई पिकअप वैल्यू बाकी नहीं है.",
     "owner.revenue.recentTransactions": "हाल के ट्रांजैक्शन",
     "owner.revenue.refund": "रिफंड",
     "owner.revenue.refundAccessibility": "{{name}} को रिफंड करें",
-    "owner.revenue.refundPaymentBody": "{{name}} को {{amount}} रिफंड करें. इसे वापस नहीं किया जा सकता.",
+    "owner.revenue.refundPaymentBody":
+      "{{name}} को {{amount}} रिफंड करें. इसे वापस नहीं किया जा सकता.",
     "owner.revenue.refundPaymentTitle": "पेमेंट रिफंड करें?",
+    "owner.revenue.refundReview": "रिफंड समीक्षा",
+    "owner.revenue.refundReviewBody": "{{count}} सफल पेमेंट फीड से रिफंड हो सकते हैं.",
+    "owner.revenue.refundReviewDone": "कोई सफल पेमेंट रिफंड समीक्षा में नहीं है.",
     "owner.revenue.refundedByGym": "जिम द्वारा रिफंड",
-    "owner.revenue.manualRecords": "Manual records",
-    "owner.revenue.revenueToday": "आज का revenue",
+    "owner.revenue.financeWork": "फाइनेंस काम",
+    "owner.revenue.manualRecords": "डेस्क रिकॉर्ड",
+    "owner.revenue.manualRecordsBody": "{{count}} डेस्क पेमेंट का दैनिक मिलान बाकी है.",
+    "owner.revenue.manualRecordsDone": "कोई डेस्क पेमेंट मिलान में नहीं है.",
+    "owner.revenue.manualRecordsWithAmount": "डेस्क रिकॉर्ड {{amount}}",
+    "owner.revenue.revenueToday": "आज की कमाई",
     "owner.revenue.shopPickupOrder": "शॉप पिकअप ऑर्डर",
     "owner.revenue.tapToRefund": "रिफंड के लिए टैप करें",
     "owner.revenue.thisMember": "इस मेंबर",
@@ -6709,158 +7984,183 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.home.trainerFallback": "ट्रेनर",
     "trainer.home.trainerPlanningQueue": "ट्रेनर प्लानिंग क्यू",
     "trainer.clients.activePlanCount": "{{count}} सक्रिय {{label}}",
+    "trainer.clients.coachingFocus": "कोचिंग फोकस",
+    "trainer.clients.coachingFocusBody":
+      "पहले उन क्लाइंट से शुरू करें जिन्हें प्लान या फीडबैक रिव्यू चाहिए.",
     "trainer.clients.generalFitness": "सामान्य फिटनेस",
+    "trainer.clients.nextClient": "अगला क्लाइंट",
     "trainer.clients.noClients": "कोई क्लाइंट नहीं",
-    "trainer.clients.noClientsBody": "आपके जिम ने कोई क्लाइंट नहीं जोड़ा.",
+    "trainer.clients.noClientsBody": "आपके जिम ने अभी कोई क्लाइंट असाइन नहीं किया.",
     "trainer.clients.noMatchingClients": "कोई मेल खाता क्लाइंट नहीं",
-    "trainer.clients.subtitle": "{{name}} · क्लाइंट सूची access-controlled है",
+    "trainer.clients.openNextClient": "खोलें",
+    "trainer.clients.searchClients": "क्लाइंट खोजें",
+    "trainer.clients.subtitle": "आपके असाइन किए गए क्लाइंट",
     "trainer.clients.title": "क्लाइंट",
+    "trainer.clients.total": "कुल {{count}}",
     "trainer.clients.tryAnotherSearch": "दूसरी खोज या फिल्टर आजमाएं.",
-    "trainer.aiDraft.body": "आपके gym owner settings में AI plan drafting चालू कर सकते हैं. तब तक आप plans manually create और edit कर सकते हैं.",
-    "trainer.aiDraft.createManual": "Plan manually create करें",
-    "trainer.aiDraft.title": "AI drafting off है",
-    "trainer.classes.cancelBody": "जिन members ने यह class book की है उन्हें तुरंत notify किया जाएगा. यह undo नहीं हो सकता.",
-    "trainer.classes.cancelClass": "Class cancel करें",
-    "trainer.classes.cancelled": "Cancelled",
-    "trainer.classes.cancelTitle": "{{name}} cancel करें?",
-    "trainer.classes.capacity": "Capacity",
-    "trainer.classes.classDateAccessibility": "Class date",
-    "trainer.classes.className": "Class name",
-    "trainer.classes.classNamePlaceholder": "Sunset Yoga Flow",
-    "trainer.classes.date": "Date",
-    "trainer.classes.editAccessibility": "{{name}} edit करें",
-    "trainer.classes.editClass": "Class edit करें",
-    "trainer.classes.keepClass": "Class रखें",
-    "trainer.classes.loadingClasses": "Classes load हो रही हैं...",
-    "trainer.classes.loadingClassesBody": "थोड़ा रुकें, आपका schedule fetch हो रहा है.",
-    "trainer.classes.newClass": "New class",
-    "trainer.classes.noClassesBody": "Class schedule करें और members इसे book कर पाएंगे.",
-    "trainer.classes.priceInr": "Price (₹)",
-    "trainer.classes.saveChanges": "Changes save करें",
-    "trainer.classes.schedule": "Schedule",
-    "trainer.classes.scheduleClass": "Class schedule करें",
-    "trainer.classes.scheduling": "Schedule हो रहा है...",
-    "trainer.classes.subtitle": "Members के book करने के लिए group sessions schedule करें.",
-    "trainer.classes.time": "Time",
-    "trainer.classes.title": "Classes",
-    "trainer.classes.type": "Type",
-    "trainer.classes.typeBoxing": "Boxing",
-    "trainer.classes.typeCycling": "Cycling",
-    "trainer.classes.typeDance": "Dance",
+    "trainer.aiDraft.body":
+      "आपके जिम ओनर सेटिंग्स में AI प्लान ड्राफ्टिंग चालू कर सकते हैं. तब तक आप प्लान मैन्युअली बना और एडिट कर सकते हैं.",
+    "trainer.aiDraft.createManual": "प्लान मैन्युअली बनाएं",
+    "trainer.aiDraft.title": "AI ड्राफ्टिंग बंद है",
+    "trainer.classes.cancelBody":
+      "जिन मेंबरों ने यह क्लास बुक की है उन्हें तुरंत सूचना मिलेगी. यह वापस नहीं होगा.",
+    "trainer.classes.cancelClass": "क्लास कैंसल करें",
+    "trainer.classes.cancelled": "कैंसल",
+    "trainer.classes.cancelTitle": "{{name}} कैंसल करें?",
+    "trainer.classes.capacity": "क्षमता",
+    "trainer.classes.classDateAccessibility": "क्लास तारीख",
+    "trainer.classes.className": "क्लास नाम",
+    "trainer.classes.classNamePlaceholder": "Evening Strength Flow",
+    "trainer.classes.date": "तारीख",
+    "trainer.classes.editAccessibility": "{{name}} बदलें",
+    "trainer.classes.editClass": "क्लास बदलें",
+    "trainer.classes.keepClass": "क्लास रखें",
+    "trainer.classes.loadingClasses": "क्लासेस लोड हो रही हैं...",
+    "trainer.classes.loadingClassesBody": "थोड़ा रुकें, आपका शेड्यूल आ रहा है.",
+    "trainer.classes.newClass": "नई क्लास",
+    "trainer.classes.noClassesBody": "क्लास शेड्यूल करें, फिर मेंबर इसे बुक कर पाएंगे.",
+    "trainer.classes.priceInr": "कीमत (₹)",
+    "trainer.classes.saveChanges": "बदलाव सेव करें",
+    "trainer.classes.schedule": "शेड्यूल",
+    "trainer.classes.scheduleClass": "क्लास शेड्यूल करें",
+    "trainer.classes.scheduling": "शेड्यूल हो रहा है...",
+    "trainer.classes.subtitle": "सदस्य जिन group sessions को बुक कर सकें, उन्हें शेड्यूल करें.",
+    "trainer.classes.time": "समय",
+    "trainer.classes.title": "क्लासेस",
+    "trainer.classes.type": "प्रकार",
+    "trainer.classes.typeBoxing": "बॉक्सिंग",
+    "trainer.classes.typeCycling": "साइक्लिंग",
+    "trainer.classes.typeDance": "डांस",
     "trainer.classes.typeHiit": "HIIT",
-    "trainer.classes.typeMobility": "Mobility",
-    "trainer.classes.typeStrength": "Strength",
-    "trainer.classes.typeYoga": "Yoga",
-    "trainer.classes.upcomingClasses": "Upcoming classes",
-    "trainer.clientSessions.adherence": "Adherence",
-    "trainer.clientSessions.averageCompletion": "Recent plan feedback में {{percent}}% average completion.",
-    "trainer.clientSessions.backToClients": "Clients पर वापस",
+    "trainer.classes.typeMobility": "मोबिलिटी",
+    "trainer.classes.typeStrength": "स्ट्रेंथ",
+    "trainer.classes.typeYoga": "योग",
+    "trainer.classes.upcomingClasses": "आने वाली क्लास",
+    "trainer.clientSessions.adherence": "पालन",
+    "trainer.clientSessions.averageCompletion":
+      "हालिया प्लान फीडबैक में {{percent}}% औसत पूरा हुआ.",
+    "trainer.clientSessions.backToClients": "क्लाइंट्स पर वापस",
     "trainer.clientSessions.completePercent": "{{percent}}% पूरा",
     "trainer.clientSessions.durationMinutes": "{{minutes}} मिनट",
     "trainer.clientSessions.logged": "लॉग किया गया",
-    "trainer.clientSessions.noDetails": "कोई details नहीं जोड़ी गई.",
-    "trainer.clientSessions.noPlans": "कोई plan नहीं",
-    "trainer.clientSessions.planFeedback": "Plan feedback",
-    "trainer.clientSessions.planProgress": "Plan progress",
-    "trainer.clientSessions.title": "Client Detail",
+    "trainer.clientSessions.noDetails": "कोई विवरण नहीं जोड़ा गया.",
+    "trainer.clientSessions.noPlans": "कोई प्लान नहीं",
+    "trainer.clientSessions.planFeedback": "प्लान फीडबैक",
+    "trainer.clientSessions.planProgress": "प्लान प्रगति",
+    "trainer.clientSessions.title": "क्लाइंट विवरण",
     "trainer.clientSessions.waitingForFeedback": "Member feedback और workout logs का इंतजार है.",
-    "trainer.clientDiet.addMeal": "Meal जोड़ें",
-    "trainer.clientDiet.breakfast": "Breakfast",
-    "trainer.clientDiet.dailyCalorieTarget": "Daily calorie target",
-    "trainer.clientDiet.defaultTitle": "Coached diet plan",
+    "trainer.clientDiet.addMeal": "मील जोड़ें",
+    "trainer.clientDiet.breakfast": "नाश्ता",
+    "trainer.clientDiet.dailyCalorieTarget": "रोज़ का कैलोरी लक्ष्य",
+    "trainer.clientDiet.defaultTitle": "कोच्ड डाइट प्लान",
     "trainer.clientDiet.kcal": "{{kcal}} kcal",
     "trainer.clientDiet.kcalLabel": "kcal",
     "trainer.clientDiet.kcalTargetPrefix": "{{kcal}} kcal target · ",
-    "trainer.clientDiet.mealCount": "{{count}} meals",
-    "trainer.clientDiet.mealLabel": "Meal {{index}}",
-    "trainer.clientDiet.meals": "Meals",
-    "trainer.clientDiet.mealsPlanned": "{{count}} meals · {{kcal}} kcal planned",
-    "trainer.clientDiet.dinner": "Dinner",
-    "trainer.clientDiet.lunch": "Lunch",
-    "trainer.clientDiet.midMorning": "Mid-morning",
-    "trainer.clientDiet.noPreviousPlan": "इस client के लिए अभी कोई plan published नहीं. पहला plan नीचे बनाएं.",
-    "trainer.clientDiet.planTitle": "Plan title",
+    "trainer.clientDiet.mealCount": "{{count}} मील",
+    "trainer.clientDiet.mealLabel": "मील {{index}}",
+    "trainer.clientDiet.meals": "मील",
+    "trainer.clientDiet.mealsPlanned": "{{count}} मील · {{kcal}} kcal प्लान",
+    "trainer.clientDiet.dinner": "डिनर",
+    "trainer.clientDiet.lunch": "लंच",
+    "trainer.clientDiet.midMorning": "मिड-मॉर्निंग",
+    "trainer.clientDiet.noPreviousPlan":
+      "इस client के लिए अभी कोई plan published नहीं. पहला plan नीचे बनाएं.",
+    "trainer.clientDiet.planTitle": "प्लान शीर्षक",
     "trainer.clientDiet.planTitlePlaceholder": "Muscle gain · Vegetarian",
-    "trainer.clientDiet.preWorkout": "Pre-workout",
-    "trainer.clientDiet.previousPlan": "Previous plan",
-    "trainer.clientDiet.publish": "Publish",
-    "trainer.clientDiet.publishBody": "Member इस plan को तुरंत अपने Diet tab में देखेगा.",
-    "trainer.clientDiet.publishing": "Publish हो रहा है...",
-    "trainer.clientDiet.publishTitle": "Diet plan publish करें?",
-    "trainer.clientDiet.publishToClient": "Client को publish करें",
-    "trainer.clientDiet.subtitle": "अपने client के लिए plan बनाएं और publish करें.",
-    "trainer.clientDiet.title": "Diet plan",
-    "trainer.clientDetail.overviewTab": "Overview",
-    "trainer.clientDetail.planTab": "Plan",
-    "trainer.clientDetail.sessionsTab": "Sessions",
+    "trainer.clientDiet.preWorkout": "वर्कआउट से पहले",
+    "trainer.clientDiet.previousPlan": "पिछला प्लान",
+    "trainer.clientDiet.publish": "पब्लिश करें",
+    "trainer.clientDiet.publishBody": "मेंबर इस प्लान को तुरंत अपने डाइट टैब में देखेगा.",
+    "trainer.clientDiet.publishing": "पब्लिश हो रहा है...",
+    "trainer.clientDiet.publishTitle": "डाइट प्लान पब्लिश करें?",
+    "trainer.clientDiet.publishToClient": "क्लाइंट को पब्लिश करें",
+    "trainer.clientDiet.subtitle": "क्लाइंट के लिए डाइट प्लान बनाएं और पब्लिश करें.",
+    "trainer.clientDiet.title": "डाइट प्लान",
+    "trainer.clientDetail.overviewTab": "ओवरव्यू",
+    "trainer.clientDetail.planTab": "प्लान",
+    "trainer.clientDetail.sessionsTab": "सेशन",
+    "trainer.clientOverview.nextStep": "अगला कोचिंग कदम",
+    "trainer.clientOverview.nextStepBody": "आज इस क्लाइंट को आगे बढ़ाने वाला एक्शन चुनें.",
+    "trainer.clientOverview.reviewFeedback": "फीडबैक रिव्यू करें",
+    "trainer.clientOverview.reviewFeedbackBody":
+      "प्लान बदलने से पहले completion और हाल के workout notes देखें.",
+    "trainer.clientOverview.reviewSessions": "सेशन रिव्यू करें",
+    "trainer.clientOverview.reviewSessionsBody":
+      "अभी कोई workout log नहीं है. हाल की ट्रेनिंग अपडेट लेने के लिए सेशन खोलें.",
     "trainer.clientPlan.assignedStatus": "{{title}} assign हुआ. {{name}} अब इसे देख सकता है.",
-    "trainer.clientPlan.calories": "Calories",
-    "trainer.clientPlan.clientDietPlanPlaceholder": "{{name}} diet plan",
-    "trainer.clientPlan.dietPlanPublished": "Diet plan publish हुआ.",
-    "trainer.clientPlan.dietPublishedStatus": "{{title}} publish हुआ. {{name}} अब meals log कर सकता है.",
-    "trainer.clientPlan.dietTitle": "Diet title",
-    "trainer.clientPlan.draftPrompt": "{{title}} draft के रूप में save है. Assign करने से पहले review करें.",
-    "trainer.clientPlan.draftSaved": "Draft save हुआ.",
+    "trainer.clientPlan.calories": "कैलोरी",
+    "trainer.clientPlan.clientDietPlanPlaceholder": "{{name}} डाइट प्लान",
+    "trainer.clientPlan.dietPlanPublished": "डाइट प्लान पब्लिश हुआ.",
+    "trainer.clientPlan.dietPublishedStatus":
+      "{{title}} पब्लिश हुआ. {{name}} अब मील लॉग कर सकता है.",
+    "trainer.clientPlan.dietTitle": "डाइट शीर्षक",
+    "trainer.clientPlan.draftPrompt":
+      "{{title}} draft के रूप में save है. Assign करने से पहले review करें.",
+    "trainer.clientPlan.draftSaved": "ड्राफ्ट सेव हुआ.",
     "trainer.clientPlan.exerciseGobletSquat": "Goblet squat",
     "trainer.clientPlan.exerciseMachineSetup": "Machine setup walkthrough",
     "trainer.clientPlan.exerciseNutritionCheckIn": "Nutrition check-in",
     "trainer.clientPlan.exerciseRecoveryMobility": "Recovery mobility flow",
-    "trainer.clientPlan.exerciseTemplates": "Exercise templates",
+    "trainer.clientPlan.exerciseTemplates": "एक्सरसाइज टेम्पलेट",
     "trainer.clientPlan.exerciseWeeklyRoutineReview": "Weekly routine review",
-    "trainer.clientPlan.noDietPlanForClient": "{{name}} के लिए अभी कोई diet plan published नहीं. नीचे fresh start करें.",
-    "trainer.clientPlan.planAssigned": "Plan assign हुआ.",
-    "trainer.clientPlan.planBuilder": "Plan builder",
-    "trainer.clientPlan.planCouldNotBeCreated": "Plan create नहीं हो सका.",
-    "trainer.clientPlan.proteinG": "Protein g",
+    "trainer.clientPlan.noDietPlanForClient":
+      "{{name}} के लिए अभी कोई डाइट प्लान पब्लिश नहीं हुआ. नीचे नया प्लान शुरू करें.",
+    "trainer.clientPlan.planAssigned": "प्लान असाइन हुआ.",
+    "trainer.clientPlan.planBuilder": "प्लान बिल्डर",
+    "trainer.clientPlan.planCouldNotBeCreated": "प्लान नहीं बन सका.",
+    "trainer.clientPlan.proteinG": "प्रोटीन g",
     "trainer.clientPlan.proteinPrefix": "{{protein}}g protein · ",
-    "trainer.clientPlan.publishBody": "Member यह plan तुरंत देखेगा.",
-    "trainer.clientPlan.publishFourMealDiet": "4-meal diet publish करें",
-    "trainer.clientPlan.publishToClient": "{{name}} को publish करें",
-    "trainer.clientPlan.publishToClientTitle": "{{name}} को publish करें?",
-    "trainer.clientPlan.saveDraft": "Draft save करें",
-    "trainer.clientPlan.savedDraftStatus": "{{title}} draft के रूप में save हुआ.",
-    "trainer.clientPlan.saveExerciseTemplate": "Exercise को template के रूप में save करें",
-    "trainer.clientPlan.selectClientBeforeAssigning": "Assign करने से पहले client select करें.",
-    "trainer.clientPlan.selectClientBeforeDiet": "Diet publish करने से पहले client select करें.",
-    "trainer.clientPlan.selectClientBeforeSaving": "Save करने से पहले client select करें.",
-    "trainer.clientPlan.templateDiet": "Diet",
-    "trainer.clientPlan.templateMachine": "Machine Guide",
-    "trainer.clientPlan.templateNotes": "Template notes",
+    "trainer.clientPlan.publishBody": "मेंबर यह प्लान तुरंत देखेगा.",
+    "trainer.clientPlan.publishFourMealDiet": "4-मील डाइट पब्लिश करें",
+    "trainer.clientPlan.publishToClient": "{{name}} को पब्लिश करें",
+    "trainer.clientPlan.publishToClientTitle": "{{name}} को पब्लिश करें?",
+    "trainer.clientPlan.saveDraft": "ड्राफ्ट सेव करें",
+    "trainer.clientPlan.savedDraftStatus": "{{title}} ड्राफ्ट के रूप में सेव हुआ.",
+    "trainer.clientPlan.saveExerciseTemplate": "एक्सरसाइज को टेम्पलेट सेव करें",
+    "trainer.clientPlan.selectClientBeforeAssigning": "असाइन करने से पहले क्लाइंट चुनें.",
+    "trainer.clientPlan.selectClientBeforeDiet": "डाइट पब्लिश करने से पहले क्लाइंट चुनें.",
+    "trainer.clientPlan.selectClientBeforeSaving": "सेव करने से पहले क्लाइंट चुनें.",
+    "trainer.clientPlan.templateDiet": "डाइट",
+    "trainer.clientPlan.templateMachine": "मशीन गाइड",
+    "trainer.clientPlan.templateNotes": "टेम्पलेट नोट्स",
     "trainer.clientPlan.templateRecovery": "Recovery",
     "trainer.clientPlan.templateRoutine": "Routine",
     "trainer.clientPlan.templateWorkout": "Workout",
-    "trainer.clientOverview.active": "Active",
-    "trainer.clientOverview.activeMember": "Active member",
-    "trainer.clientOverview.allergyNote": "Allergy note",
-    "trainer.clientOverview.averagePlanCompletion": "{{percent}}% average plan completion",
-    "trainer.clientOverview.baseline": "Baseline",
+    "trainer.clientOverview.active": "सक्रिय",
+    "trainer.clientOverview.activeMember": "सक्रिय मेंबर",
+    "trainer.clientOverview.allergyNote": "एलर्जी नोट",
+    "trainer.clientOverview.averagePlanCompletion": "{{percent}}% औसत प्लान completion",
+    "trainer.clientOverview.baseline": "बेसलाइन",
     "trainer.clientOverview.bodyFatPercent": "Body fat %",
     "trainer.clientOverview.bodyProgressRecordedToast": "Body progress record हुआ.",
-    "trainer.clientOverview.bodyProgressTrend": "Body progress trend",
+    "trainer.clientOverview.bodyProgressTrend": "बॉडी प्रोग्रेस ट्रेंड",
     "trainer.clientOverview.createFirstPlan": "पहला plan बनाएं",
-    "trainer.clientOverview.dietNote": "Diet note",
-    "trainer.clientOverview.lastCheckIn": "Last check-in",
-    "trainer.clientOverview.missing": "Missing",
-    "trainer.clientOverview.needsFeedback": "Feedback चाहिए",
-    "trainer.clientOverview.noLog": "No log",
-    "trainer.clientOverview.noneAdded": "None added",
+    "trainer.clientOverview.dietNote": "डाइट नोट",
+    "trainer.clientOverview.lastCheckIn": "आखिरी चेक-इन",
+    "trainer.clientOverview.missing": "नहीं मिला",
+    "trainer.clientOverview.needsFeedback": "फीडबैक चाहिए",
+    "trainer.clientOverview.noLog": "कोई लॉग नहीं",
+    "trainer.clientOverview.noneAdded": "कुछ नहीं जोड़ा",
     "trainer.clientOverview.noMeasurements": "अभी कोई measurement नहीं",
-    "trainer.clientOverview.noMeasurementsBody": "इस client का trend track करने के लिए ऊपर body progress record करें.",
+    "trainer.clientOverview.noMeasurementsBody":
+      "इस client का trend track करने के लिए ऊपर body progress record करें.",
     "trainer.clientOverview.noWorkoutLogged": "कोई workout logged नहीं",
-    "trainer.clientOverview.notAdded": "Not added",
-    "trainer.clientOverview.noteAudit": "Trainer notes केवल assigned trainers और owners/admins देख सकते हैं.",
+    "trainer.clientOverview.notAdded": "नहीं जोड़ा",
+    "trainer.clientOverview.noteAudit":
+      "Trainer notes केवल assigned trainers और owners/admins देख सकते हैं.",
     "trainer.clientOverview.noteSavedToast": "Trainer note save हुआ.",
-    "trainer.clientOverview.notShared": "Not shared",
-    "trainer.clientOverview.paused": "Paused",
-    "trainer.clientOverview.pausedMember": "Paused member",
+    "trainer.clientOverview.notShared": "शेयर नहीं किया",
+    "trainer.clientOverview.paused": "पॉज",
+    "trainer.clientOverview.pausedMember": "पॉज मेंबर",
     "trainer.clientOverview.ptPack": "PT pack",
     "trainer.clientOverview.recordBodyProgress": "Body progress record करें",
-    "trainer.clientOverview.saved": "Saved",
+    "trainer.clientOverview.saved": "सेव हुआ",
     "trainer.clientOverview.saveNote": "Note save करें",
-    "trainer.clientOverview.shared": "Shared",
-    "trainer.clientOverview.tracked": "Tracked",
-    "trainer.clientOverview.trainerNote": "Trainer note",
-    "trainer.clientOverview.trainerNotePlaceholder": "अपने follow-up के लिए coaching note जोड़ें...",
+    "trainer.clientOverview.shared": "शेयर किया",
+    "trainer.clientOverview.tracked": "ट्रैक हुआ",
+    "trainer.clientOverview.trainerNote": "ट्रेनर नोट",
+    "trainer.clientOverview.trainerNotePlaceholder":
+      "अपने follow-up के लिए coaching note जोड़ें...",
     "trainer.clientOverview.waistCm": "Waist cm",
     "trainer.clientOverview.weightKg": "Weight kg",
     "trainer.clientOverview.workoutPlan": "Workout plan",
@@ -6913,41 +8213,51 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "trainer.pt.validDays": "मान्य दिन",
     "trainer.pt.yourPackages": "आपके पैकेज",
     "trainer.pt.yourPtClients": "आपके PT क्लाइंट",
-    "trainer.payouts.breakdown": "Breakdown",
-    "trainer.payouts.draft": "draft",
-    "trainer.payouts.earningLines": "{{count}} earning lines",
-    "trainer.payouts.emptyBody": "आपके PT commissions और class payouts यहां दिखेंगे.",
-    "trainer.payouts.emptyTitle": "अभी कोई earning नहीं",
-    "trainer.payouts.settings": "Payout settings",
-    "trainer.payouts.settingsSubtitle": "Compensation, pay day और UPI details",
-    "trainer.payouts.thisMonthAccrued": "इस महीने accrued",
-    "trainer.payouts.title": "Payouts",
-    "trainer.payoutSettings.baseMonthly": "Base / month (₹)",
-    "trainer.payoutSettings.bio": "Bio",
-    "trainer.payoutSettings.bioPlaceholder": "Members को अपने coaching style के बारे में थोड़ा बताएं.",
-    "trainer.payoutSettings.compensation": "Compensation",
-    "trainer.payoutSettings.footnote": "Changes आपके next payout cycle से apply होंगे.",
-    "trainer.payoutSettings.payDay": "Pay day of month",
-    "trainer.payoutSettings.payDayHint": "महीने का दिन जब आपका payout process होता है (1-28).",
-    "trainer.payoutSettings.perSessionFee": "Per-session fee (₹)",
-    "trainer.payoutSettings.perSessionFeeHint": "हर logged session के लिए credited flat amount.",
-    "trainer.payoutSettings.profileUpi": "Profile & UPI",
-    "trainer.payoutSettings.ptCommission": "PT commission (%)",
-    "trainer.payoutSettings.ptCommissionHint": "Personal training revenue में आपका share.",
-    "trainer.payoutSettings.saveChanges": "Changes save करें",
-    "trainer.payoutSettings.subtitle": "आपको payment कैसे मिले और आपकी UPI details set करें.",
-    "trainer.payoutSettings.title": "Payout settings",
-    "trainer.payoutSettings.upiHint": "Gym जरूरत पड़ने पर आपको directly pay करने के लिए इस्तेमाल करता है.",
+    "trainer.payouts.breakdown": "कमाई का विवरण",
+    "trainer.payouts.draft": "ड्राफ्ट",
+    "trainer.payouts.earningLines": "{{count}} कमाई लाइन",
+    "trainer.payouts.emptyBody": "आपके PT कमीशन और class payout यहां दिखेंगे.",
+    "trainer.payouts.emptyTitle": "अभी कोई कमाई नहीं",
+    "trainer.payouts.settings": "पेआउट सेटिंग्स",
+    "trainer.payouts.settingsSubtitle": "कमाई, भुगतान दिन और UPI जानकारी",
+    "trainer.payouts.thisMonthAccrued": "इस महीने की कमाई",
+    "trainer.payouts.title": "पेआउट",
+    "trainer.payoutSettings.baseMonthly": "महीने का बेस (₹)",
+    "trainer.payoutSettings.bio": "बायो",
+    "trainer.payoutSettings.bioPlaceholder":
+      "सदस्यों को अपने coaching style के बारे में थोड़ा बताएं.",
+    "trainer.payoutSettings.compensation": "कमाई",
+    "trainer.payoutSettings.footnote": "बदलाव आपके अगले payout cycle से लागू होंगे.",
+    "trainer.payoutSettings.payDay": "महीने का भुगतान दिन",
+    "trainer.payoutSettings.payDayHint": "महीने का वह दिन जब payout process होता है (1-28).",
+    "trainer.payoutSettings.payDayInvalid": "1 से 28 के बीच का दिन दर्ज करें.",
+    "trainer.payoutSettings.perSessionFee": "हर सेशन फीस (₹)",
+    "trainer.payoutSettings.perSessionFeeHint":
+      "हर logged session के लिए credit होने वाली flat राशि.",
+    "trainer.payoutSettings.profileUpi": "प्रोफाइल और UPI",
+    "trainer.payoutSettings.ptCommission": "PT कमीशन (%)",
+    "trainer.payoutSettings.ptCommissionHint": "Personal training revenue में आपका हिस्सा.",
+    "trainer.payoutSettings.ptCommissionInvalid": "0 से 100 के बीच कमीशन दर्ज करें.",
+    "trainer.payoutSettings.saveChanges": "बदलाव सेव करें",
+    "trainer.payoutSettings.subtitle": "आपको payment कैसे मिले और आपकी UPI जानकारी सेट करें.",
+    "trainer.payoutSettings.title": "पेआउट सेटिंग्स",
+    "trainer.payoutSettings.upiHint":
+      "जिम जरूरत पड़ने पर आपको सीधे pay करने के लिए इस्तेमाल करता है.",
     "trainer.payoutSettings.upiId": "UPI ID",
-    "trainer.plans.activePlanWork": "Active plan work",
-    "trainer.plans.emptyBody": "जिन clients को plan या update चाहिए वे यहां दिखेंगे.",
-    "trainer.plans.emptyTitle": "कोई active plan work नहीं",
-    "trainer.plans.queueClear": "Planning queue clear",
-    "trainer.plans.queueClearBody": "किसी client plan को assignment नहीं चाहिए.",
-    "trainer.plans.clientDetail": "Client Detail",
-    "trainer.plans.reviewActivePlans": "Active plans review करें",
-    "trainer.plans.reviewActivePlansBody": "Changes publish करने से पहले workouts, diet notes और feedback adjust करने के लिए हर client खोलें.",
-    "trainer.plans.title": "Plan work",
+    "trainer.plans.activePlanWork": "सक्रिय प्लान",
+    "trainer.plans.createPlan": "प्लान बनाएं",
+    "trainer.plans.emptyBody": "जिन क्लाइंट को प्लान या अपडेट चाहिए वे यहां दिखेंगे.",
+    "trainer.plans.emptyTitle": "अभी कोई प्लान काम नहीं",
+    "trainer.plans.needsFirstPlan": "पहला प्लान चाहिए",
+    "trainer.plans.needsFirstPlanBody":
+      "पहले उन क्लाइंट से शुरू करें जिनके पास सक्रिय प्लान नहीं है.",
+    "trainer.plans.queueClear": "प्लानिंग क्यू खाली",
+    "trainer.plans.queueClearBody": "किसी क्लाइंट को अभी प्लान असाइनमेंट नहीं चाहिए.",
+    "trainer.plans.clientDetail": "क्लाइंट विवरण",
+    "trainer.plans.reviewActivePlans": "सक्रिय प्लान",
+    "trainer.plans.reviewActivePlansBody":
+      "बदलाव पब्लिश करने से पहले workouts, diet notes और feedback adjust करने के लिए हर क्लाइंट खोलें.",
+    "trainer.plans.title": "प्लानिंग",
   },
 };
 

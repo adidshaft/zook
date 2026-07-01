@@ -15,6 +15,7 @@ export function AppHeader({
   trailing,
   chip,
   contextSlot,
+  titleNumberOfLines = 1,
   centered = false,
   showProfileShortcut = true,
   showBack = false,
@@ -28,6 +29,7 @@ export function AppHeader({
   trailing?: ReactNode;
   chip?: ReactNode;
   contextSlot?: ReactNode;
+  titleNumberOfLines?: number;
   centered?: boolean;
   showProfileShortcut?: boolean;
   showBack?: boolean;
@@ -67,7 +69,9 @@ export function AppHeader({
       </Pressable>
     );
   } else if (!resolvedLeading && !centered && showProfileShortcut) {
-    resolvedLeading = <ProfileShortcut />;
+    resolvedLeading = (
+      <ProfileShortcut accessibilityLabel={`${t("member.home.open")} ${t("settings.profileTitle")}`} />
+    );
   }
 
   return (
@@ -79,6 +83,7 @@ export function AppHeader({
           <Text style={[styles.headerEyebrow, { color: palette.text.tertiary }]}>{eyebrow}</Text>
         ) : null}
         <Text
+          numberOfLines={titleNumberOfLines}
           style={[
             styles.headerTitle,
             centered ? styles.centerText : null,
@@ -89,6 +94,7 @@ export function AppHeader({
         </Text>
         {subtitle ? (
           <Text
+            numberOfLines={1}
             style={[
               styles.headerSubtitle,
               centered ? styles.centerText : null,
@@ -122,6 +128,7 @@ const styles = StyleSheet.create({
   },
   headerContextSlot: {
     alignSelf: "flex-start",
+    width: "100%",
   },
   centeredCopy: {
     alignItems: "center",

@@ -1,18 +1,53 @@
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 
 import { Card, ListRow, AppHeader, ZookScreen } from "@/components/primitives";
-import { useT } from "@/lib/i18n";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing } from "@/lib/theme";
 
 const sections = [
-  { href: "/settings/account", titleKey: "settings.account", subtitleKey: "settings.accountSubtitle", icon: "person-outline" },
-  { href: "/settings/appearance", titleKey: "member.you.appearance", subtitleKey: "settings.appearanceSubtitle", icon: "contrast-outline" },
-  { href: "/settings/language", titleKey: "settings.language", subtitleKey: "settings.languageSubtitle", icon: "language-outline" },
-  { href: "/settings/notifications", titleKey: "settings.notifications", subtitleKey: "settings.notificationsSubtitle", icon: "notifications-outline" },
-  { href: "/settings/privacy", titleKey: "member.you.privacy", subtitleKey: "settings.privacySubtitle", icon: "lock-closed-outline" },
-  { href: "/settings/support", titleKey: "member.you.helpSupport", subtitleKey: "settings.supportSubtitle", icon: "help-circle-outline" },
-] as const;
+  {
+    href: "/settings/account",
+    icon: "person-outline",
+    subtitleKey: "settings.accountSubtitle",
+    titleKey: "settings.account",
+  },
+  {
+    href: "/settings/appearance",
+    icon: "contrast-outline",
+    subtitleKey: "settings.appearanceSubtitle",
+    titleKey: "member.you.appearance",
+  },
+  {
+    href: "/settings/language",
+    icon: "language-outline",
+    subtitleKey: "settings.languageSubtitle",
+    titleKey: "settings.language",
+  },
+  {
+    href: "/settings/notifications",
+    icon: "notifications-outline",
+    subtitleKey: "settings.notificationsSubtitle",
+    titleKey: "settings.notifications",
+  },
+  {
+    href: "/settings/privacy",
+    icon: "lock-closed-outline",
+    subtitleKey: "settings.privacySubtitle",
+    titleKey: "member.you.privacy",
+  },
+  {
+    href: "/settings/support",
+    icon: "help-circle-outline",
+    subtitleKey: "settings.supportSubtitle",
+    titleKey: "member.you.helpSupport",
+  },
+] satisfies Array<{
+  href: string;
+  icon: Parameters<typeof ListRow>[0]["icon"];
+  subtitleKey: TranslationKey;
+  titleKey: TranslationKey;
+}>;
 
 export default function SettingsIndexScreen() {
   const t = useT();
@@ -23,15 +58,14 @@ export default function SettingsIndexScreen() {
           <AppHeader title={t("more.settings.title")} showBack />
           <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
-              <Pressable
+              <ListRow
                 key={section.href}
+                title={t(section.titleKey)}
+                subtitle={t(section.subtitleKey)}
+                icon={section.icon}
                 onPress={() => router.push(section.href as never)}
-                accessibilityRole="button"
                 accessibilityLabel={t(section.titleKey)}
-                style={({ pressed }) => (pressed ? styles.rowPressed : null)}
-              >
-                <ListRow title={t(section.titleKey)} subtitle={t(section.subtitleKey)} icon={section.icon} />
-              </Pressable>
+              />
             ))}
           </Card>
         </ScrollView>
@@ -50,8 +84,4 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   list: { gap: 4 },
-  rowPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
 });

@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { Alert, RefreshControl, StyleSheet } from "react-native";
+import { Alert, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useState } from "react";
 import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
-import { MetricGrid } from "@/components/domain/metric-grid";
-import { BranchSelectorChip, EmptyState, Card, HeaderActions, PrimaryButton, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useHasPermission, useAuth } from "@/lib/auth";
@@ -43,12 +43,11 @@ export default function OwnerApprovalsScreen() {
     id: request.id,
     primaryText: request.userName ?? t("owner.approvals.joinRequest"),
     secondaryText: `${request.userEmail ?? request.userId} · ${t("owner.approvals.referral")}: ${request.referralCode ?? t("owner.approvals.none")}`,
-    metaText: t("owner.approvals.pending"),
   }));
   const attendanceItems: ApprovalItem[] = attentionAttempts.map((record) => ({
     id: record.id,
     primaryText: record.user?.name ?? record.user?.email ?? t("owner.approvals.memberCheckIn"),
-    secondaryText: `${record.branchName ?? t("owner.home.mainBranch")} · ${titleCaseFromCode(record.status)}`,
+    secondaryText: titleCaseFromCode(record.status),
     reason: formatReviewReason(
       Array.isArray(record.suspiciousFlags) ? record.suspiciousFlags.join(", ") : null,
     ),
@@ -150,24 +149,10 @@ export default function OwnerApprovalsScreen() {
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
-                <BranchSelectorChip />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
               </View>
             }
             trailing={<HeaderActions showBell />}
-          />
-          <MetricGrid
-            items={[
-              {
-                label: t("owner.approvals.joinRequests"),
-                value: joinRequests.length,
-                tone: "amber",
-              },
-              {
-                label: t("owner.approvals.scanReviews"),
-                value: attentionAttempts.length,
-                tone: "red",
-              },
-            ]}
           />
           {joinRequestsQuery.isError || attentionQuery.isError ? (
             <QueryErrorState error={joinRequestsQuery.error ?? attentionQuery.error} onRetry={() => { void joinRequestsQuery.refetch(); void attentionQuery.refetch(); }} />
@@ -180,7 +165,32 @@ export default function OwnerApprovalsScreen() {
             <>
               <SectionHeader
                 title={t("owner.approvals.requestListCount", { count: joinRequests.length })}
-                action={<PrimaryButton disabled={approveJoinRequestMutation.isPending || batchApproving} onPress={confirmApproveAllJoinRequests}>{t("owner.approvals.approveAll")}</PrimaryButton>}
+                action={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("owner.approvals.approveAll")}
+                    disabled={approveJoinRequestMutation.isPending || batchApproving}
+                    onPress={confirmApproveAllJoinRequests}
+                    hitSlop={8}
+                    style={({ pressed }) => [
+                      styles.headerIconAction,
+                      {
+                        backgroundColor: palette.surface.accentSoft,
+                        borderColor: palette.accent.base,
+                        opacity: approveJoinRequestMutation.isPending || batchApproving ? 0.5 : 1,
+                      },
+                      pressed && !approveJoinRequestMutation.isPending && !batchApproving
+                        ? styles.pressedAction
+                        : null,
+                    ]}
+                  >
+                    <Ionicons
+                      name={batchApproving ? "hourglass-outline" : "checkmark-done-outline"}
+                      size={19}
+                      color={palette.accent.strong}
+                    />
+                  </Pressable>
+                }
               />
               <ApprovalQueue
                 testID="pending-approvals-list"
@@ -215,8 +225,16 @@ export default function OwnerApprovalsScreen() {
 
 const styles = StyleSheet.create({
   headerContext: {
-    alignItems: "flex-start",
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
     gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
   },
   content: {
     width: "100%",
@@ -225,5 +243,17 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     gap: spacing.lg,
     paddingBottom: 96,
+  },
+  headerIconAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  pressedAction: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
   },
 });

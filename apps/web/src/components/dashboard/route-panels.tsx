@@ -52,7 +52,6 @@ const REGISTRY: Record<
   notifications: (props) => (
     <NotificationsPanel
       orgId={props.orgId}
-      organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
       permissions={props.permissions ?? []}
@@ -62,7 +61,6 @@ const REGISTRY: Record<
   "notification-templates": (props) => (
     <NotificationsPanel
       orgId={props.orgId}
-      organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
       permissions={props.permissions ?? []}
@@ -72,7 +70,6 @@ const REGISTRY: Record<
   "notification-history": (props) => (
     <NotificationsPanel
       orgId={props.orgId}
-      organization={props.organization}
       summary={props.summary}
       initialNotifications={props.initialNotifications}
       permissions={props.permissions ?? []}

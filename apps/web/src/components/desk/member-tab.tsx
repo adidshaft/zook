@@ -1,12 +1,35 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { formatDate, formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
+import { formatDate, formatDateTime, formatInr } from "@/lib/format";
 import { AvatarInitials } from "../dashboard-primitives";
-import { GlassCard, Pill } from "../glass-card";
+import { GlassCard } from "../glass-card";
 import { ZookButton, ZookButtonLink } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { MemberRow } from "./types";
 import { ageLabel, memberLabel, phoneLast4 } from "./utils";
+
+function membershipStatusLabel(status?: string | null) {
+  if (!status) return null;
+  const normalized = status.toUpperCase();
+  if (normalized === "ACTIVE") return "Active";
+  if (normalized === "PENDING" || normalized === "PENDING_PAYMENT") return "Pending";
+  if (normalized === "PAUSED") return "Paused";
+  if (["EXPIRED", "PAST_DUE"].includes(normalized)) return "Expired";
+  if (["CANCELLED", "FAILED", "REJECTED"].includes(normalized)) return "Inactive";
+  return "Review";
+}
+
+function attendanceStatusLabel(status?: string | null) {
+  if (!status) return "Recorded";
+  const normalized = status.toUpperCase();
+  if (normalized === "APPROVED") return "Approved";
+  if (normalized === "PENDING_APPROVAL") return "Needs review";
+  if (normalized === "REJECTED") return "Rejected";
+  if (normalized === "FLAGGED") return "Flagged";
+  if (normalized === "FAILED") return "Failed";
+  if (normalized === "RECORDED") return "Recorded";
+  return "Review";
+}
 
 export function MemberTab({
   copy,
@@ -74,7 +97,7 @@ export function MemberTab({
                 <span>{ageLabel(member.user?.dateOfBirth)}</span>
                 <span>
                   {member.activeSubscription
-                    ? formatEnumLabel(member.activeSubscription.status)
+                    ? membershipStatusLabel(member.activeSubscription.status)
                     : copy.noActivePlan}
                 </span>
               </div>
@@ -86,7 +109,8 @@ export function MemberTab({
       <GlassCard>
         {selectedMember ? (
           <>
-            <div className="flex items-start gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-4">
               {selectedPhoto ? (
                 <img
                   src={selectedPhoto}
@@ -100,12 +124,12 @@ export function MemberTab({
                 />
               )}
               <div className="min-w-0">
-                {selectedMember.user?.privateHandle ? (
-                  <Pill>
-                    {copy.privateId}: {selectedMember.user.privateHandle}
-                  </Pill>
-                ) : null}
                 <h2 className="text-2xl font-semibold text-white">{memberLabel(selectedMember)}</h2>
+                {selectedMember.user?.privateHandle ? (
+                  <p className="mt-1 text-xs font-medium text-white/42">
+                    {copy.privateId}: {selectedMember.user.privateHandle}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setShowPhone((current) => !current)}
@@ -120,95 +144,14 @@ export function MemberTab({
                   <p className="mt-2 text-xs text-white/38">{copy.profilePhotoMissing}</p>
                 ) : null}
               </div>
-            </div>
-            <div className="mt-5 grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                  {copy.membership}
-                </p>
-                <p className="mt-2 text-lg font-semibold text-white">
-                  {selectedMember.activeSubscription
-                    ? formatEnumLabel(selectedMember.activeSubscription.status)
-                    : copy.noActiveMembership}
-                </p>
-                <p className="mt-1 text-sm text-white/48">
-                  {copy.validUntil} {formatDate(selectedMember.activeSubscription?.endsAt)}
-                </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                  {copy.recentActivity}
-                </p>
-                {activeCheckIn ? (
-                  <div className="mt-3 rounded-2xl border border-blue-300/25 bg-blue-300/10 p-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-blue-100/70">
-                      {copy.activeCheckIn}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-blue-50">
-                      Since {formatDateTime(activeCheckIn.checkedInAt)}
-                    </p>
-                    {activeCheckIn.branchName ? (
-                      <p className="mt-1 text-xs text-blue-50/60">{activeCheckIn.branchName}</p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <p className="mt-2 text-sm text-white/68">
-                  {copy.lastCheckIn}: {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
-                </p>
-                <div className="mt-3 grid gap-2 text-xs text-white/48">
-                  {(selectedMember.recentCheckIns ?? []).slice(0, 3).map((record) => (
-                    <p key={record.id}>
-                      {formatDateTime(record.checkedInAt)} - {formatEnumLabel(record.status)}
-                      {record.checkedOutAt ? ` - Out ${formatDateTime(record.checkedOutAt)}` : ""}
-                    </p>
-                  ))}
-                  {selectedMember.lastPayment ? (
-                    <p>
-                      {copy.lastPayment}: {formatInr(selectedMember.lastPayment.amountPaise)} -{" "}
-                      {formatDateTime(selectedMember.lastPayment.recordedAt)}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                  Emergency contact
-                </p>
-                {emergencyContact?.name || emergencyContact?.phone ? (
-                  <div className="mt-2 text-sm text-white/68">
-                    <p className="font-medium text-white">
-                      {emergencyContact.name || "Contact"}
-                    </p>
-                    {emergencyContact.phone ? (
-                      <a
-                        href={`tel:${emergencyContact.phone}`}
-                        className="mt-1 inline-block text-white/58 underline-offset-4 hover:underline"
-                      >
-                        {emergencyContact.phone}
-                      </a>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-white/42">Not added by member.</p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
                 <ZookButtonLink
                   size="sm"
                   href={getRecordPaymentHref(selectedMember)}
                 >
                   {copy.recordPayment}
                 </ZookButtonLink>
-                <ZookButton
-                  type="button"
-                  tone="ghost"
-                  size="sm"
-                  disabled={Boolean(activeCheckIn)}
-                  state={busyId === `override:${selectedMember.user?.id}` ? "loading" : "idle"}
-                  onClick={() => onOverrideEntry(selectedMember)}
-                >
-                  {copy.overrideEntry}
-                </ZookButton>
                 {activeCheckIn ? (
                   <ZookButton
                     type="button"
@@ -221,6 +164,104 @@ export function MemberTab({
                     {copy.checkOut}
                   </ZookButton>
                 ) : null}
+              </div>
+            </div>
+            <div className="mt-5 grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                    {copy.membership}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className="truncate text-base font-semibold text-white">
+                      {selectedMember.activeSubscription
+                        ? membershipStatusLabel(selectedMember.activeSubscription.status)
+                        : copy.noActiveMembership}
+                    </p>
+                    <span className="shrink-0 text-xs text-white/42">
+                      {formatDate(selectedMember.activeSubscription?.endsAt)}
+                    </span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                    {copy.lastCheckIn}
+                  </p>
+                  <p className="mt-1 truncate text-base font-semibold text-white">
+                    {formatDateTime(selectedMember.lastCheckIn?.checkedInAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/35">
+                    {copy.recentActivity}
+                  </p>
+                  {selectedMember.lastPayment ? (
+                    <span className="truncate text-xs text-white/42">
+                      {copy.lastPayment}: {formatInr(selectedMember.lastPayment.amountPaise)}
+                    </span>
+                  ) : null}
+                </div>
+                {activeCheckIn ? (
+                  <div className="mt-3 rounded-xl border border-blue-300/25 bg-blue-300/10 px-3 py-2">
+                    <p className="text-sm font-medium text-blue-50">
+                      {copy.activeCheckIn} ·{" "}
+                      {copy.since} {formatDateTime(activeCheckIn.checkedInAt)}
+                    </p>
+                    {activeCheckIn.branchName ? (
+                      <p className="mt-1 text-xs text-blue-50/60">{activeCheckIn.branchName}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="mt-3 grid gap-1.5 text-xs text-white/48">
+                  {(selectedMember.recentCheckIns ?? []).slice(0, 3).map((record) => (
+                    <div
+                      key={record.id}
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-3 py-2"
+                    >
+                      <span className="truncate">{formatDateTime(record.checkedInAt)}</span>
+                      <span className="shrink-0 text-white/62">
+                        {attendanceStatusLabel(record.status)}
+                        {record.checkedOutAt ? ` · ${copy.checkedOut}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <details className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
+                <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.16em] text-white/45">
+                  {copy.emergencyContact}
+                </summary>
+                {emergencyContact?.name || emergencyContact?.phone ? (
+                  <div className="mt-2 text-sm text-white/68">
+                    <p className="font-medium text-white">
+                      {emergencyContact.name || copy.contactFallback}
+                    </p>
+                    {emergencyContact.phone ? (
+                      <a
+                        href={`tel:${emergencyContact.phone}`}
+                        className="mt-1 inline-block text-white/58 underline-offset-4 hover:underline"
+                      >
+                        {emergencyContact.phone}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-white/42">{copy.contactNotAdded}</p>
+                )}
+              </details>
+              <div className="flex flex-wrap gap-2">
+                <ZookButton
+                  type="button"
+                  tone="ghost"
+                  size="sm"
+                  disabled={Boolean(activeCheckIn)}
+                  state={busyId === `override:${selectedMember.user?.id}` ? "loading" : "idle"}
+                  onClick={() => onOverrideEntry(selectedMember)}
+                >
+                  {copy.overrideEntry}
+                </ZookButton>
                 <ZookButton
                   type="button"
                   tone="ghost"

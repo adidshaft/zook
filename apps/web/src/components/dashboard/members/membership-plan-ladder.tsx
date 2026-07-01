@@ -5,9 +5,10 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import {
   formatPlanShape,
+  membershipPlanTypeLabel,
   type MembershipPlanRow,
 } from "@/components/dashboard/types";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatInr } from "@/lib/format";
 
 type ResourceState<T> = {
   data: T | undefined;
@@ -44,7 +45,9 @@ export function MembershipPlanLadder({
                 render: (plan) => (
                   <div>
                     <p className="font-medium text-white">{plan.name}</p>
-                    <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
+                    <p className="mt-1 text-xs text-white/45">
+                      {membershipPlanTypeLabel(plan.type)}
+                    </p>
                   </div>
                 ),
               },
@@ -65,15 +68,14 @@ export function MembershipPlanLadder({
                 id: "state",
                 header: "State",
                 render: (plan) => (
-                  <div className="flex flex-wrap gap-2">
+                  <div>
                     <StatusPill
                       value={plan.active ? "Active" : "Paused"}
                       tone={plan.active ? "blue" : "amber"}
                     />
-                    <StatusPill
-                      value={plan.publicVisible ? "Public" : "Private"}
-                      tone="neutral"
-                    />
+                    <p className="mt-1 text-xs text-white/45">
+                      {plan.publicVisible ? "Visible on join page" : "Hidden from join page"}
+                    </p>
                   </div>
                 ),
               },

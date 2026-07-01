@@ -1,9 +1,9 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import { ErrorNotice } from "../operational-shared";
-import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { DataTable, EmptyState, SectionHeader } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
@@ -89,8 +89,32 @@ const roleCapabilitySections = [
   },
 ];
 
+function CompactMark({
+  label,
+  tone = "neutral",
+}: {
+  label: string;
+  tone?: "neutral" | "accent" | "amber";
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+      : tone === "amber"
+        ? "border-[color-mix(in_srgb,var(--feedback-warning)_45%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+        : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]";
+
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-semibold ${toneClass}`}
+    >
+      {label.slice(0, 1)}
+    </span>
+  );
+}
+
 export function StaffSection({
-  organization,
   staffInvite,
   setStaffInvite,
   staffAssignments,
@@ -113,9 +137,15 @@ export function StaffSection({
   revokeStaff,
   deleteCoachPlan,
 }: StaffSectionProps) {
+  const activeBranches = branches.filter((branch) => branch.active !== false);
+  const receptionistNeedsBranch = staffInvite.role === "RECEPTIONIST" && activeBranches.length === 0;
+  const canInviteStaff = formBusy !== "staff" && !receptionistNeedsBranch;
+  const [showInviteForm, setShowInviteForm] = useState(staffAssignments.length === 0);
+
   return (
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <GlassCard>
+        {showInviteForm ? (
         <div className="mb-5 grid gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -125,6 +155,15 @@ export function StaffSection({
                 admins and trainers can work across assigned gym areas.
               </p>
             </div>
+            {staffAssignments.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowInviteForm(false)}
+                className="zook-focus rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--text-tertiary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              >
+                Hide
+              </button>
+            ) : null}
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
             <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
@@ -157,20 +196,34 @@ export function StaffSection({
             />
           </div>
           {staffInvite.role === "RECEPTIONIST" ? (
-            <SearchableSelect
-              label="Assign branch"
-              placeholder="Assign branch"
-              value={staffInvite.branchId}
-              onChange={(branchId) => setStaffInvite((current) => ({ ...current, branchId }))}
-              options={branches
-                .filter((branch) => branch.active !== false)
-                .map((branch) => ({ value: branch.id, label: branch.name }))}
-            />
+            activeBranches.length > 0 ? (
+              <SearchableSelect
+                label="Assign branch"
+                placeholder="Assign branch"
+                value={staffInvite.branchId}
+                onChange={(branchId) => setStaffInvite((current) => ({ ...current, branchId }))}
+                options={activeBranches.map((branch) => ({ value: branch.id, label: branch.name }))}
+              />
+            ) : (
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+                <p className="font-medium text-[var(--text-primary)]">Add a branch before reception staff</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
+                  Reception access is tied to a location so check-ins, pickups, and entry approvals
+                  route to the right desk.
+                </p>
+                <Link
+                  href="/dashboard/settings?section=branches"
+                  className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)] hover:underline"
+                >
+                  Add branch
+                </Link>
+              </div>
+            )
           ) : null}
           <ZookButton
             type="button"
             onClick={() => void inviteStaff()}
-            disabled={formBusy === "staff"}
+            disabled={!canInviteStaff}
             state={formBusy === "staff" ? "loading" : "idle"}
             fullWidth
           >
@@ -179,10 +232,22 @@ export function StaffSection({
           {formError ? <p className="text-sm text-[var(--feedback-danger)]">{formError}</p> : null}
           {formStatus ? <p className="text-sm text-[var(--feedback-success)]">{formStatus}</p> : null}
         </div>
+        ) : null}
         <SectionHeader
           eyebrow="Team"
           title="Operational roles"
           badge={<Pill>{staffAssignments.length} assignments</Pill>}
+          action={
+            !showInviteForm ? (
+              <button
+                type="button"
+                onClick={() => setShowInviteForm(true)}
+                className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              >
+                Invite staff
+              </button>
+            ) : undefined
+          }
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
           Created in Trainer app.
@@ -197,21 +262,25 @@ export function StaffSection({
               columns={[
                 {
                   id: "person",
-                  header: "Person",
-                  render: (assignment) => (
-                    <div>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {staffUsersById.get(assignment.userId)?.name ?? "Staff user"}
+                  header: "Staff",
+                  render: (assignment) => {
+                    const staffUser = staffUsersById.get(assignment.userId);
+                    const contact = staffUser?.phone ?? staffUser?.email ?? "Contact missing";
+                    return (
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-[var(--text-primary)]">
+                        {staffUser?.name ?? "Staff user"}
                       </p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                        {staffUsersById.get(assignment.userId)?.email ?? assignment.userId}
+                      <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                        {contact} · assigned {formatDate(assignment.createdAt)}
                       </p>
                     </div>
-                  ),
+                    );
+                  },
                 },
                 {
-                  id: "role",
-                  header: "Role",
+                  id: "access",
+                  header: "Access",
                   render: (assignment) =>
                     editingStaffId === assignment.id ? (
                       <div className="grid min-w-[180px] gap-2">
@@ -246,30 +315,22 @@ export function StaffSection({
                         </select>
                       </div>
                     ) : (
-                      <span className="text-sm font-medium text-[var(--text-secondary)]">
-                        {formatEnumLabel(assignment.role)}
-                      </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CompactMark
+                          label={formatEnumLabel(assignment.role)}
+                          tone={assignment.role === "OWNER" ? "accent" : "neutral"}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-[var(--text-primary)]">
+                            {formatEnumLabel(assignment.role)}
+                          </span>
+                          <span className="block truncate text-xs text-[var(--text-tertiary)]">
+                            {branches.find((branch) => branch.id === assignment.branchId)?.name ??
+                              "All branches"}
+                          </span>
+                        </span>
+                      </div>
                     ),
-                },
-                {
-                  id: "branch",
-                  header: "Branch",
-                  render: (assignment) =>
-                    branches.find((branch) => branch.id === assignment.branchId)?.name ??
-                    "All branches",
-                },
-                {
-                  id: "contact",
-                  header: "Contact",
-                  render: (assignment) =>
-                    staffUsersById.get(assignment.userId)?.phone ??
-                    organization.contactPhone ??
-                    "Desk route",
-                },
-                {
-                  id: "created",
-                  header: "Assigned",
-                  render: (assignment) => formatDate(assignment.createdAt),
                 },
                 {
                   id: "actions",
@@ -308,10 +369,10 @@ export function StaffSection({
                             setStaffBranchDraft(assignment.branchId ?? "");
                           }}
                         >
-                          Role
+                          Edit
                         </ZookButton>
                       )}
-                      {assignment.role !== "OWNER" ? (
+                      {editingStaffId === assignment.id && assignment.role !== "OWNER" ? (
                         <ConfirmActionButton
                           title="Revoke staff access?"
                           description="This removes the staff member from this gym. Their historical activity stays in the audit log."
@@ -335,12 +396,13 @@ export function StaffSection({
         </div>
       </GlassCard>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Access"
-          title="What each role can do"
-        />
-        <div className="mt-5 grid gap-3">
+      <details className="group rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+          What each role can do
+          <span className="text-xs font-normal text-[var(--text-tertiary)] group-open:hidden">Show</span>
+          <span className="hidden text-xs font-normal text-[var(--text-tertiary)] group-open:inline">Hide</span>
+        </summary>
+        <div className="px-5 pb-5 pt-1 grid gap-3">
           {roleCapabilitySections.map((section) => (
             <div
               key={section.title}
@@ -358,43 +420,48 @@ export function StaffSection({
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-[22px] border border-[color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[var(--surface-accent-soft)] p-4">
-          <p className="font-semibold text-[var(--accent-strong)]">Team profile checklist</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Ask every new team member to add their photo, phone number, and display name after
-            accepting the invite. This keeps Reception, Trainer, Admin, and Owner records readable.
-          </p>
-        </div>
-      </GlassCard>
+      </details>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Coach Output"
-          title="Plan delivery"
-          badge={
-            <Pill>
-              {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
-            </Pill>
-          }
-        />
-        <div className="mt-5 grid gap-3">
+      <details className="group rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] xl:col-start-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 hover:bg-[var(--bg-sunken)]">
+          <span>
+            <span className="block text-sm font-semibold text-[var(--text-primary)]">
+              Training plan delivery
+            </span>
+            <span className="mt-1 block text-xs text-[var(--text-tertiary)]">
+              {coachPlans.length} plans · {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
+            </span>
+          </span>
+          <span className="text-xs font-normal text-[var(--text-tertiary)] group-open:hidden">
+            Show
+          </span>
+          <span className="hidden text-xs font-normal text-[var(--text-tertiary)] group-open:inline">
+            Hide
+          </span>
+        </summary>
+        <div className="grid gap-3 px-5 pb-5 pt-1">
           {coachPlansState.error ? (
             <ErrorNotice message={coachPlansState.error} />
           ) : coachPlansState.loading && coachPlans.length === 0 ? (
             <EmptyState title="Loading coaching plans" />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (
-              <div key={plan.id} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-[var(--text-primary)]">{plan.title}</p>
-                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {formatEnumLabel(plan.type)} · {plan.assignmentCount} assignments
-                    </p>
+              <div key={plan.id} className="rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CompactMark
+                      label={formatEnumLabel(plan.status)}
+                      tone={plan.status === "ACTIVE" ? "accent" : "amber"}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-[var(--text-primary)]">{plan.title}</p>
+                      <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                        {formatEnumLabel(plan.type)} · {plan.assignmentCount} assignments · updated {formatDateTime(plan.updatedAt)}
+                        {plan.aiGenerated ? " · assisted" : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <StatusPill value={formatEnumLabel(plan.status)} />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
+                  <div className="shrink-0">
                     <ConfirmActionButton
                       title={
                         plan.assignmentCount > 0
@@ -415,9 +482,6 @@ export function StaffSection({
                     </ConfirmActionButton>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-                  Updated {formatDateTime(plan.updatedAt)}
-                </p>
               </div>
             ))
           ) : (
@@ -432,7 +496,7 @@ export function StaffSection({
             </Link>
           ) : null}
         </div>
-      </GlassCard>
+      </details>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
   AppHeader,
@@ -8,12 +9,12 @@ import {
   EmptyState,
   QueryErrorState,
   Skeleton,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { dietApi } from "@/lib/domain-api";
 import type { DietPlanRecord, MealLogRecord } from "@/lib/domains/shared/types";
+import { useT } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
 function dateKey(date: Date) {
@@ -29,6 +30,7 @@ function addDays(date: Date, days: number) {
 export default function DietHistoryScreen() {
   const { token, activeOrgId } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const selectedDateKey = dateKey(selectedDate);
   const dietQuery = useQuery({
@@ -41,7 +43,7 @@ export default function DietHistoryScreen() {
         date: selectedDateKey,
       }),
   });
-  const logs = dietQuery.data?.logs ?? [];
+  const logs = useMemo(() => dietQuery.data?.logs ?? [], [dietQuery.data?.logs]);
   const totals = useMemo(
     () =>
       logs.reduce(
@@ -58,26 +60,36 @@ export default function DietHistoryScreen() {
 
   return (
     <ZookScreen testID="diet-history-screen">
-      <AppHeader title="Diet history" showBack />
+      <AppHeader title={t("member.diet.historyTitle")} showBack />
       <Card contentStyle={styles.stack}>
         <View style={styles.dateRow}>
-          <ZookButton
-            size="sm"
-            variant="secondary"
-            icon="chevron-back-outline"
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("member.diet.previousDay")}
             onPress={() => setSelectedDate((current) => addDays(current, -1))}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.dateAction,
+              { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+              pressed ? styles.pressed : null,
+            ]}
           >
-            Previous
-          </ZookButton>
+            <Ionicons name="chevron-back-outline" size={20} color={palette.text.secondary} />
+          </Pressable>
           <Text style={[styles.dateLabel, { color: palette.text.primary }]}>{selectedDateKey}</Text>
-          <ZookButton
-            size="sm"
-            variant="secondary"
-            icon="chevron-forward-outline"
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("member.diet.nextDay")}
             onPress={() => setSelectedDate((current) => addDays(current, 1))}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.dateAction,
+              { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+              pressed ? styles.pressed : null,
+            ]}
           >
-            Next
-          </ZookButton>
+            <Ionicons name="chevron-forward-outline" size={20} color={palette.text.secondary} />
+          </Pressable>
         </View>
         {dietQuery.isLoading ? (
           <View style={styles.stack}>
@@ -111,8 +123,8 @@ export default function DietHistoryScreen() {
             ) : (
               <EmptyState
                 icon="restaurant-outline"
-                title="No meals logged"
-                body="Meals you log for this day will appear here."
+                title={t("member.diet.noMealsLogged")}
+                body={t("member.diet.noMealsLoggedBody")}
               />
             )}
           </>
@@ -131,6 +143,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dateLabel: typography.bodyStrong,
+  dateAction: { alignItems: "center", borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, height: 40, justifyContent: "center", width: 40 },
+  pressed: { opacity: 0.84, transform: [{ scale: 0.96 }] },
   totalCard: { borderRadius: 20, borderWidth: 1, padding: spacing.md, gap: spacing.xs },
   totalValue: typography.screenTitle,
   totalMeta: typography.caption,

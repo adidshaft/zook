@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, CouponRow } from "@/components/dashboard/types";
 import { EmptyState } from "../../../dashboard-primitives";
@@ -35,69 +35,86 @@ export function CouponControls({
   toggleCoupon,
   startCouponEdit,
 }: CouponControlsProps) {
+  const [showCreateForm, setShowCreateForm] = useState(coupons.length === 0);
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="font-medium text-white">Coupons</p>
-      <div className="mt-3 grid gap-3">
-        <div className="grid gap-3 md:grid-cols-[1fr_150px]">
-          <TextInput
-            label="Coupon code"
-            value={couponForm.code}
-            onChange={(event) =>
-              setCouponForm((current) => ({
-                ...current,
-                code: event.target.value.toUpperCase(),
-              }))
-            }
-            placeholder="WELCOME10"
-          />
-          <Select
-            label="Discount type"
-            value={couponForm.type}
-            onChange={(event) =>
-              setCouponForm((current) => ({
-                ...current,
-                type: event.target.value as CouponKind,
-              }))
-            }
-            options={[
-              { value: "PERCENTAGE", label: "Percentage" },
-              { value: "FIXED_AMOUNT", label: "Fixed amount" },
-            ]}
-          />
-        </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <TextInput
-            label="Discount value"
-            value={couponForm.value}
-            onChange={(event) =>
-              setCouponForm((current) => ({ ...current, value: event.target.value }))
-            }
-            placeholder={couponForm.type === "PERCENTAGE" ? "10" : "500"}
-            inputMode="numeric"
-          />
-          <TextInput
-            label="Max uses"
-            value={couponForm.maxRedemptions}
-            onChange={(event) =>
-              setCouponForm((current) => ({
-                ...current,
-                maxRedemptions: event.target.value,
-              }))
-            }
-            placeholder="Max uses"
-            inputMode="numeric"
-          />
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-medium text-white">Coupons</p>
+        {coupons.length ? (
           <ZookButton
             type="button"
-            onClick={() => void createCoupon()}
-            disabled={formBusy === "coupon"}
-            state={formBusy === "coupon" ? "loading" : "idle"}
-            className="self-end"
+            tone={showCreateForm ? "ghost" : "secondary"}
+            size="sm"
+            onClick={() => setShowCreateForm((current) => !current)}
           >
-            {formBusy === "coupon" ? "Creating..." : "Create coupon"}
+            {showCreateForm ? "Cancel" : "+ Coupon"}
           </ZookButton>
-        </div>
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-3">
+        {showCreateForm ? (
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="grid gap-3 md:grid-cols-[1fr_150px]">
+              <TextInput
+                label="Coupon code"
+                value={couponForm.code}
+                onChange={(event) =>
+                  setCouponForm((current) => ({
+                    ...current,
+                    code: event.target.value.toUpperCase(),
+                  }))
+                }
+                placeholder="WELCOME10"
+              />
+              <Select
+                label="Discount type"
+                value={couponForm.type}
+                onChange={(event) =>
+                  setCouponForm((current) => ({
+                    ...current,
+                    type: event.target.value as CouponKind,
+                  }))
+                }
+                options={[
+                  { value: "PERCENTAGE", label: "Percentage" },
+                  { value: "FIXED_AMOUNT", label: "Fixed amount" },
+                ]}
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <TextInput
+                label="Discount value"
+                value={couponForm.value}
+                onChange={(event) =>
+                  setCouponForm((current) => ({ ...current, value: event.target.value }))
+                }
+                placeholder={couponForm.type === "PERCENTAGE" ? "10" : "500"}
+                inputMode="numeric"
+              />
+              <TextInput
+                label="Max uses"
+                value={couponForm.maxRedemptions}
+                onChange={(event) =>
+                  setCouponForm((current) => ({
+                    ...current,
+                    maxRedemptions: event.target.value,
+                  }))
+                }
+                placeholder="Max uses"
+                inputMode="numeric"
+              />
+              <ZookButton
+                type="button"
+                onClick={() => void createCoupon()}
+                disabled={formBusy === "coupon"}
+                state={formBusy === "coupon" ? "loading" : "idle"}
+                className="self-end"
+              >
+                {formBusy === "coupon" ? "Creating..." : "Create coupon"}
+              </ZookButton>
+            </div>
+          </div>
+        ) : null}
         {!coupons.length ? (
           <EmptyState
             title="No coupons"

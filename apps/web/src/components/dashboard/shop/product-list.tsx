@@ -7,12 +7,21 @@ import { EmptyState } from "../../dashboard-primitives";
 import { ZookButton } from "../../zook-button";
 import { ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { ProductRow } from "@/components/dashboard/types";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatInr } from "@/lib/format";
 import { ProductEditPanel } from "./product-edit-panel";
 import { productImagesFromProduct } from "./product-images";
 import type { ProductFormState, ProductPatch, ResourceState, StockAdjustmentState } from "./types";
 
 const PRODUCT_PAGE_SIZE = 6;
+
+function productCategoryLabel(category: string | null | undefined) {
+  if (category === "WATER") return "Water";
+  if (category === "PROTEIN_SHAKE") return "Protein shake";
+  if (category === "SHAKER") return "Shaker";
+  if (category === "TOWEL") return "Towel";
+  if (category === "SUPPLEMENT") return "Supplement";
+  return "Other";
+}
 
 export function ProductList({
   orgId,
@@ -131,66 +140,85 @@ function ProductListItem({
   deleteProduct: (productId: string) => Promise<void>;
 }) {
   const images = productImagesFromProduct(product);
+  const lowStock = product.stock <= product.lowStockThreshold;
+  const isEditing = editingProductId === product.id;
 
   return (
-    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 gap-3">
+    <div className="rounded-[22px] border border-white/10 bg-black/20 p-3 transition hover:bg-white/[0.04]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           {images.length ? (
             <img
               src={images[0]}
               alt={`${product.name} product photo`}
-              className="h-14 w-14 shrink-0 rounded-2xl border border-white/10 object-cover"
+              className="h-16 w-16 shrink-0 rounded-2xl border border-white/10 object-cover"
             />
           ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/12 bg-black/30 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/12 bg-black/30 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
               Photo
             </div>
           )}
           <div className="min-w-0">
             <p className="truncate font-medium text-white">{product.name}</p>
             <p className="mt-1 text-xs text-white/45">
-              {formatEnumLabel(product.category)} · {formatInr(product.pricePaise)} ·{" "}
-              {product.active ? "Active" : "Archived"}
+              {productCategoryLabel(product.category)} · {formatInr(product.pricePaise)}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span
+                className={
+                  lowStock
+                    ? "inline-flex h-6 items-center rounded-full border border-amber-300/25 bg-amber-300/10 px-2 text-xs font-semibold text-amber-100"
+                    : "inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.03] px-2 text-xs font-semibold text-white/58"
+                }
+              >
+                {product.stock} left
+              </span>
+              {!product.active ? (
+                <span className="inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.03] px-2 text-xs font-semibold text-amber-100/75">
+                  Archived
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
-        <span
-          className={
-            product.stock <= product.lowStockThreshold
-              ? "text-sm font-medium text-amber-100"
-              : "text-sm font-medium text-white/60"
-          }
-        >
-          {product.stock} left
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <ZookButton
+            type="button"
+            tone={isEditing ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => (isEditing ? setEditingProductId(null) : startProductEdit(product))}
+          >
+            {isEditing ? "Close" : "Edit"}
+          </ZookButton>
+        </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <ZookButton type="button" tone="ghost" size="sm" onClick={() => startProductEdit(product)}>
-          Edit
-        </ZookButton>
-        <ZookButton
-          type="button"
-          tone="ghost"
-          size="sm"
-          onClick={() => void updateProduct(product.id, { active: !product.active })}
-          disabled={formBusy === `product:${product.id}`}
-          state={formBusy === `product:${product.id}` ? "loading" : "idle"}
-        >
-          {product.active ? "Archive" : "Restore"}
-        </ZookButton>
-        <ConfirmActionButton
-          title="Delete product?"
-          description="Only products without order history can be deleted. Archive products with orders so reports stay consistent."
-          confirmLabel="Delete"
-          onConfirm={() => deleteProduct(product.id)}
-          disabled={formBusy === `product:${product.id}:delete`}
-          className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
-        >
-          Delete
-        </ConfirmActionButton>
-      </div>
-      {editingProductId === product.id ? (
+      {isEditing ? (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+          <ZookButton
+            type="button"
+            tone="ghost"
+            size="sm"
+            onClick={() => void updateProduct(product.id, { active: !product.active })}
+            disabled={formBusy === `product:${product.id}`}
+            state={formBusy === `product:${product.id}` ? "loading" : "idle"}
+          >
+            {product.active ? "Archive" : "Restore"}
+          </ZookButton>
+          {!product.active ? (
+            <ConfirmActionButton
+              title="Delete product?"
+              description="Only products without order history can be deleted. Restore products with history so reports stay consistent."
+              confirmLabel="Delete"
+              onConfirm={() => deleteProduct(product.id)}
+              disabled={formBusy === `product:${product.id}:delete`}
+              className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
+            >
+              Delete
+            </ConfirmActionButton>
+          ) : null}
+        </div>
+      ) : null}
+      {isEditing ? (
         <ProductEditPanel
           orgId={orgId}
           product={product}

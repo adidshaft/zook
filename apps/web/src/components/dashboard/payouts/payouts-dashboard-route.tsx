@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
-import { EmptyState } from "@/components/dashboard-primitives";
+import { EmptyState, SectionHeader } from "@/components/dashboard-primitives";
 import { GlassCard } from "@/components/glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import { formatInr } from "@/lib/format";
@@ -113,7 +113,13 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
   return (
     <div className="grid gap-4">
       <GlassCard className="p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+        <SectionHeader
+          eyebrow="Trainer payouts"
+          title="Monthly payout setup"
+          description="Choose a trainer, set the formula, then close generated payouts below."
+          badge={payouts.length ? <span className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">{payouts.length} payouts</span> : null}
+        />
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(9rem,0.8fr)_minmax(12rem,1.1fr)_repeat(3,minmax(8rem,0.8fr))_auto] xl:items-end">
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
             Month
             <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
@@ -126,22 +132,26 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
             Base monthly ₹
-            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" value={baseMonthly} onChange={(event) => setBaseMonthly(event.target.value)} />
+            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="decimal" value={baseMonthly} onChange={(event) => setBaseMonthly(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
             PT commission %
-            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" value={commission} onChange={(event) => setCommission(event.target.value)} />
+            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="numeric" value={commission} onChange={(event) => setCommission(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
             Per session ₹
-            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" value={perSession} onChange={(event) => setPerSession(event.target.value)} />
+            <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="decimal" value={perSession} onChange={(event) => setPerSession(event.target.value)} />
           </label>
-          <button className="zook-focus rounded-lg bg-[var(--accent-fill)] px-4 py-2 font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={configBusy} onClick={() => void saveConfig()}>{configBusy ? "Saving..." : "Save config"}</button>
+          <button className="zook-focus rounded-lg bg-[var(--accent-fill)] px-4 py-2 font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={configBusy || !selectedTrainerId} onClick={() => void saveConfig()}>{configBusy ? "Saving..." : "Save"}</button>
         </div>
-        <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+        <p className="mt-3 text-xs text-[var(--text-tertiary)]">
           Leave per-session blank if the trainer does not earn a fixed fee per session.
         </p>
-        {status ? <p className="mt-3 text-sm text-[var(--text-secondary)]">{status}</p> : null}
+        {status ? (
+          <p className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+            {status}
+          </p>
+        ) : null}
       </GlassCard>
       <div className="grid gap-3 md:grid-cols-2">
         {loading && payouts.length === 0 ? (
@@ -166,10 +176,10 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
               </div>
               <span className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs uppercase text-[var(--text-secondary)]">{payout.status}</span>
             </div>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 grid gap-1.5 border-t border-[var(--border-subtle)] pt-3">
               {payout.lines.map((line) => (
                 <div key={line.id} className="flex justify-between gap-3 text-sm">
-                  <span className="text-[var(--text-secondary)]">{line.description}</span>
+                  <span className="min-w-0 truncate text-[var(--text-secondary)]">{line.description}</span>
                   <span className="font-semibold text-[var(--text-primary)]">{formatInr(line.amountPaise)}</span>
                 </div>
               ))}

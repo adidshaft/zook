@@ -10,6 +10,8 @@ export type MemberFilter =
   | "All"
   | "Active"
   | "Pending Payment"
+  | "Expiring Soon"
+  | "Missing Contact"
   | "Expired"
   | "Paused"
   | "Visit Pack"
@@ -19,6 +21,8 @@ export const memberFilters: MemberFilter[] = [
   "All",
   "Active",
   "Pending Payment",
+  "Expiring Soon",
+  "Missing Contact",
   "Expired",
   "Paused",
   "Visit Pack",

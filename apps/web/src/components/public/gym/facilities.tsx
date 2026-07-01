@@ -3,9 +3,14 @@ import { GlassCard, Pill } from "@/components/glass-card";
 import { publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { PublicGym } from "./types";
 import { AmenityGrid } from "./amenity-grid";
-import { LocationCard } from "./location-card";
 
-export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
+export function GymFacilities({
+  org,
+  locale,
+}: {
+  org: PublicGym;
+  locale: PublicLocale;
+}) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const gallery = org.gallery.length
     ? org.gallery
@@ -15,9 +20,8 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
       ? `${org.name} गैलरी तस्वीर ${index + 1}`
       : `${org.name} gallery photo ${index + 1}`;
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <AmenityGrid org={org} />
-      <LocationCard org={org} />
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <TagCard title={t("facilities")} empty={t("facilitiesPending")} items={org.facilities} />
         <TagCard title={t("equipment")} empty={t("equipmentPending")} items={org.equipment} />
@@ -25,13 +29,13 @@ export function GymFacilities({ org, locale }: { org: PublicGym; locale: PublicL
       
       {gallery.length ? (
         <GlassCard>
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("galleryTitle")}</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t("galleryTitle")}</h2>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">{t("galleryCopy")}</p>
-          <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mt-6">
+          <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {gallery.slice(0, 15).map((imageUrl, index) => (
               <div 
                 key={imageUrl} 
-                className="group relative aspect-[4/3] overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] shadow-sm transition-all duration-300 hover:scale-[1.04] hover:shadow-md hover:border-[var(--accent-strong)]/30 cursor-pointer"
+                className="group relative aspect-[4/3] overflow-hidden rounded-[16px] border border-[var(--border)] bg-[var(--bg-sunken)] shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-[var(--accent-strong)]/30"
               >
                 <Image
                   src={imageUrl}
@@ -62,11 +66,11 @@ function TagCard({
 }) {
   return (
     <GlassCard>
-      <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{title}</h2>
-      <div className="mt-5 flex flex-wrap gap-2">
+      <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
+      <div className="mt-4 flex flex-wrap gap-2">
         {items.length ? (
           items.map((item) => (
-            <Pill key={item} className="transition-transform duration-200 hover:scale-105">
+            <Pill key={item} className="transition-transform duration-200 hover:scale-[1.02]">
               {item}
             </Pill>
           ))

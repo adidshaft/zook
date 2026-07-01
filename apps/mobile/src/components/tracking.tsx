@@ -1,5 +1,5 @@
 import type { TrackingSummaryMetric, WorkoutLogEntry } from "@zook/core";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
 import { gradients, gradientsLight, radii, useTheme } from "@/lib/theme";
@@ -54,7 +54,8 @@ export function WorkoutLogCard({
 }) {
   const t = useT();
   const { palette } = useTheme();
-  const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
+  const visibleExercises = compact ? entry.exercises.slice(0, 2) : entry.exercises;
+  const hiddenExerciseCount = compact ? Math.max(entry.exercises.length - visibleExercises.length, 0) : 0;
 
   return (
     <View
@@ -92,15 +93,24 @@ export function WorkoutLogCard({
         </View>
       </View>
 
-      <View style={[styles.metaRow, compact ? styles.metaRowCompact : null]}>
-        <MetaPill label={t("tracking.start")} value={entry.startTimeLabel} compact={compact} />
-        <MetaPill label={t("tracking.end")} value={entry.endTimeLabel} compact={compact} />
-        <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact={compact} />
-      </View>
+      {compact ? (
+        <View style={styles.compactMetaRow}>
+          <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact />
+          <MetaPill label={t("tracking.focus")} value={entry.focusLabel} compact />
+        </View>
+      ) : (
+        <>
+          <View style={styles.metaRow}>
+            <MetaPill label={t("tracking.start")} value={entry.startTimeLabel} />
+            <MetaPill label={t("tracking.end")} value={entry.endTimeLabel} />
+            <MetaPill label={t("tracking.duration")} value={entry.durationLabel} />
+          </View>
 
-      <Text style={[styles.focusText, { color: palette.feedback.warning }]}>
-        {t("tracking.focus")}: {entry.focusLabel}
-      </Text>
+          <Text style={[styles.focusText, { color: palette.feedback.warning }]}>
+            {t("tracking.focus")}: {entry.focusLabel}
+          </Text>
+        </>
+      )}
 
       <View style={styles.exerciseList}>
         {visibleExercises.map((exercise) => (
@@ -151,18 +161,18 @@ export function WorkoutLogCard({
             </View>
           </View>
         ))}
+        {hiddenExerciseCount ? (
+          <Text style={[styles.moreExercisesText, { color: palette.text.tertiary }]}>
+            +{hiddenExerciseCount}
+          </Text>
+        ) : null}
       </View>
 
-      <Text
-        style={[
-          styles.notesText,
-          { color: palette.text.secondary },
-          compact ? styles.notesTextCompact : null,
-        ]}
-        numberOfLines={compact ? 2 : undefined}
-      >
-        {entry.notes}
-      </Text>
+      {compact ? null : (
+        <Text style={[styles.notesText, { color: palette.text.secondary }]}>
+          {entry.notes}
+        </Text>
+      )}
     </View>
   );
 }
@@ -254,8 +264,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10
   },
-  metaRowCompact: {
-    gap: 8
+  compactMetaRow: {
+    flexDirection: "row",
+    gap: 8,
   },
   metaPill: {
     flex: 1,
@@ -281,7 +292,7 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   exerciseList: {
-    gap: 10
+    gap: 8
   },
   exerciseRow: {
     flexDirection: "row",
@@ -305,11 +316,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800"
   },
+  moreExercisesText: {
+    alignSelf: "flex-start",
+    fontSize: 12,
+    fontWeight: "800",
+  },
   notesText: {
     lineHeight: 20
-  },
-  notesTextCompact: {
-    fontSize: 12,
-    lineHeight: 17
   }
 });

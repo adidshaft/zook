@@ -8,6 +8,16 @@ import { GlassCard, Pill } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import { messageTypes, type NotificationType, type TemplateRow } from "./shared";
 
+function templateTypeLabel(type: string) {
+  if (type === "PROMOTIONAL") return "Announcement";
+  if (type === "OPERATIONAL") return "Update";
+  if (type === "TRANSACTIONAL") return "Direct message";
+  if (type === "ENGAGEMENT") return "Engagement";
+  if (type === "PLAN") return "Plan";
+  if (type === "SECURITY") return "Security";
+  return formatEnumLabel(type);
+}
+
 export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [form, setForm] = useState({
@@ -20,6 +30,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<TemplateRow | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const loadTemplates = useCallback(async () => {
     const payload = await webApiFetch<{ templates: TemplateRow[] }>(
@@ -34,6 +45,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
 
   function startEdit(template: TemplateRow) {
     setEditingId(template.id);
+    setShowForm(true);
     setForm({
       name: template.name,
       title: template.title,
@@ -59,6 +71,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
       );
       setForm({ name: "", title: "", body: "", type: "OPERATIONAL" });
       setEditingId("");
+      setShowForm(false);
       await loadTemplates();
       setStatus(editingId ? "Template updated." : "Template saved.");
     } catch (cause) {
@@ -86,7 +99,8 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+    <div className="grid gap-4">
+      {!templates.length || showForm ? (
       <GlassCard>
         <h2 className="text-xl font-semibold">{editingId ? "Edit template" : "Create template"}</h2>
         <form className="mt-5 grid gap-3" onSubmit={(event) => void saveTemplate(event)}>
@@ -145,6 +159,19 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                 size="sm"
                 onClick={() => {
                   setEditingId("");
+                  setShowForm(false);
+                  setForm({ name: "", title: "", body: "", type: "OPERATIONAL" });
+                }}
+              >
+                Cancel
+              </ZookButton>
+            ) : templates.length ? (
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowForm(false);
                   setForm({ name: "", title: "", body: "", type: "OPERATIONAL" });
                 }}
               >
@@ -155,20 +182,41 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
           {status ? <p className="text-sm text-white/58">{status}</p> : null}
         </form>
       </GlassCard>
+      ) : null}
 
       <GlassCard>
-        <h2 className="text-xl font-semibold">Saved templates</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Saved templates</h2>
+          {templates.length && !showForm ? (
+            <ZookButton
+              type="button"
+              size="sm"
+              onClick={() => {
+                setEditingId("");
+                setForm({ name: "", title: "", body: "", type: "OPERATIONAL" });
+                setShowForm(true);
+              }}
+            >
+              New template
+            </ZookButton>
+          ) : null}
+        </div>
         <div className="mt-5 grid gap-3">
           {templates.map((template) => (
             <div
               key={template.id}
-              className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+              className={`rounded-[22px] border p-3 transition ${
+                editingId === template.id ? "border-white/20 bg-white/8" : "border-white/10 bg-black/20"
+              }`}
             >
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
-                  <p className="font-medium text-white">{template.name}</p>
-                  <p className="mt-1 text-sm text-white/65">{template.title}</p>
-                  <p className="mt-2 line-clamp-2 text-sm text-white/45">{template.body}</p>
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Pill>{templateTypeLabel(template.type)}</Pill>
+                    <p className="truncate font-medium text-white">{template.name}</p>
+                  </div>
+                  <p className="mt-1 truncate text-sm text-white/65">{template.title}</p>
+                  <p className="mt-1 line-clamp-1 text-sm text-white/45">{template.body}</p>
                   <p className="mt-2 text-xs text-white/35">
                     Used {template.usageCount ?? 0} times
                     {template.lastUsedAt
@@ -176,8 +224,7 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                       : ""}
                   </p>
                 </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Pill>{formatEnumLabel(template.type)}</Pill>
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
                   <ZookButton
                     type="button"
                     tone="ghost"
@@ -186,14 +233,16 @@ export function NotificationTemplateManagerPanel({ orgId }: { orgId: string }) {
                   >
                     Edit
                   </ZookButton>
-                  <ZookButton
-                    type="button"
-                    tone="danger"
-                    size="sm"
-                    onClick={() => setTemplateToDelete(template)}
-                  >
-                    Remove
-                  </ZookButton>
+                  {editingId === template.id ? (
+                    <ZookButton
+                      type="button"
+                      tone="danger"
+                      size="sm"
+                      onClick={() => setTemplateToDelete(template)}
+                    >
+                      Remove
+                    </ZookButton>
+                  ) : null}
                 </div>
               </div>
             </div>

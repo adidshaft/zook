@@ -14,6 +14,7 @@ type BranchRecord = {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  googleMapsUrl?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   isDefault?: boolean | null;
@@ -171,11 +172,10 @@ export function BranchSelectionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void (async () => {
       const existingPermission = await Location.getForegroundPermissionsAsync();
-      const permission =
-        existingPermission.status === Location.PermissionStatus.GRANTED
-          ? existingPermission
-          : await Location.requestForegroundPermissionsAsync();
-      if (cancelled || permission.status !== Location.PermissionStatus.GRANTED) {
+      if (
+        cancelled ||
+        existingPermission.status !== Location.PermissionStatus.GRANTED
+      ) {
         return;
       }
       const position = await Location.getCurrentPositionAsync({

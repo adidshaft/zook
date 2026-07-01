@@ -79,20 +79,31 @@ export default async function MemberDietPage({
                 </div>
               ))}
             </div>
+            <div className="mt-4">
+              <AppHandoffCard
+                minimal
+                title="Log meals in the Zook app"
+                description="Meal check-ins, adherence history, and trainer updates in mobile."
+                deepLink="zook://diet"
+              />
+            </div>
           </GlassCard>
         ) : (
-          <GlassCard className="p-6 text-center">
-            <h2 className="text-2xl font-semibold text-white">No diet plan yet</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/55">
+          <GlassCard className="p-6">
+            <h2 className="text-xl font-semibold text-white">No diet plan yet</h2>
+            <p className="mt-2 text-sm leading-6 text-white/55">
               Your trainer has not published a diet plan for you yet.
             </p>
+            <div className="mt-4">
+              <AppHandoffCard
+                minimal
+                title="Ask your trainer in the app"
+                description="Diet plans are published by trainers in the Zook mobile app."
+                deepLink="zook://diet"
+              />
+            </div>
           </GlassCard>
         )}
-        <AppHandoffCard
-          title="Log meals in the Zook app"
-          description="Meal check-ins, adherence history, and trainer updates continue in the mobile app."
-          deepLink="zook://diet"
-        />
       </div>
     </main>
   );

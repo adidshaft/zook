@@ -1,10 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
-import { RefreshControl, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   EmptyState,
   Card,
   HeaderActions,
   ListRow,
+  Pill,
   Skeleton,
   QueryErrorState,
   ScreenHeader,
@@ -12,6 +14,7 @@ import {
   ZookScreen,
 } from "@/components/primitives";
 import { useTrainerPayouts } from "@/lib/domains";
+import { titleCaseFromCode } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -46,17 +49,30 @@ export default function TrainerPayoutsScreen() {
             />
           }
         >
-          <ScreenHeader title={t("trainer.payouts.title")} trailing={<HeaderActions showBell />} />
-
-          <Card variant="compact" contentStyle={styles.stack}>
-            <ListRow
-              title={t("trainer.payouts.settings")}
-              subtitle={t("trainer.payouts.settingsSubtitle")}
-              icon="settings-outline"
-              tone="violet"
-              onPress={() => router.push("/trainer/payout-settings" as never)}
-            />
-          </Card>
+          <ScreenHeader
+            title={t("trainer.payouts.title")}
+            trailing={
+              <View style={styles.headerActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("trainer.payouts.settings")}
+                  hitSlop={8}
+                  onPress={() => router.push("/trainer/payout-settings" as never)}
+                  style={({ pressed }) => [
+                    styles.iconButton,
+                    {
+                      backgroundColor: palette.surface.default,
+                      borderColor: palette.border.subtle,
+                    },
+                    pressed ? styles.controlPressed : null,
+                  ]}
+                >
+                  <Ionicons name="settings-outline" size={20} color={palette.text.primary} />
+                </Pressable>
+                <HeaderActions showBell />
+              </View>
+            }
+          />
 
           {payoutsQuery.isError ? <QueryErrorState error={payoutsQuery.error} onRetry={() => void payoutsQuery.refetch()} /> : null}
           {isLoading ? (
@@ -69,24 +85,33 @@ export default function TrainerPayoutsScreen() {
           {!isLoading ? (
             <>
               <Card variant="compact" contentStyle={styles.hero}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>
-                  {t("trainer.payouts.thisMonthAccrued")}
-                </Text>
+                <View style={styles.heroTop}>
+                  <Text style={[styles.label, { color: palette.text.secondary }]}>
+                    {t("trainer.payouts.thisMonthAccrued")}
+                  </Text>
+                  <Pill tone={current?.status === "PAID" ? "lime" : "amber"}>
+                    {titleCaseFromCode(current?.status ?? t("trainer.payouts.draft"))}
+                  </Pill>
+                </View>
                 <Text style={[styles.total, { color: palette.text.primary }]}>{rupees(current?.totalPaise ?? 0)}</Text>
                 <Text style={[styles.meta, { color: palette.text.secondary }]}>
-                  {current?.status ?? t("trainer.payouts.draft")} · {t("trainer.payouts.earningLines", { count: current?.lines?.length ?? 0 })}
+                  {t("trainer.payouts.earningLines", { count: current?.lines?.length ?? 0 })}
                 </Text>
               </Card>
-              <SectionHeader title={t("trainer.payouts.breakdown")} />
-              <Card variant="compact" contentStyle={styles.stack}>
-                {current?.lines?.length ? (
-                  current.lines.map((line) => (
-                    <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
-                  ))
-                ) : (
+              {current?.lines?.length ? (
+                <>
+                  <SectionHeader title={t("trainer.payouts.breakdown")} />
+                  <Card variant="compact" contentStyle={styles.stack}>
+                    {current.lines.map((line) => (
+                      <ListRow key={line.id} title={line.description} subtitle={line.kind} trailing={<Text style={[styles.lineAmount, { color: palette.accent.base }]}>{rupees(line.amountPaise)}</Text>} />
+                    ))}
+                  </Card>
+                </>
+              ) : (
+                <Card variant="compact">
                   <EmptyState icon="cash-outline" title={t("trainer.payouts.emptyTitle")} body={t("trainer.payouts.emptyBody")} />
-                )}
-              </Card>
+                </Card>
+              )}
             </>
           ) : null}
         </ScrollView>
@@ -97,7 +122,18 @@ export default function TrainerPayoutsScreen() {
 
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingTop: layout.screenContentTopPadding, width: "100%" },
+  headerActions: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  controlPressed: { opacity: 0.82, transform: [{ scale: 0.96 }] },
   hero: { gap: spacing.xs },
+  heroTop: { alignItems: "center", flexDirection: "row", gap: spacing.sm, justifyContent: "space-between" },
   label: { ...typography.caption },
   total: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40 },
   meta: { ...typography.body },

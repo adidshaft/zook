@@ -21,7 +21,6 @@ import {
 } from "react";
 import {
   AccessibilityInfo,
-  Alert,
   InteractionManager,
   Keyboard,
   Modal,
@@ -34,6 +33,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
+import { membershipStatusLabel } from "@/components/membership/helpers";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
 import {
@@ -42,7 +42,6 @@ import {
   Card,
   AnimatedAppear,
   HeaderActions,
-  HeaderMeta,
   IconBubble,
   PrimaryButton,
   ScreenHeader,
@@ -68,7 +67,7 @@ import { useReceptionQueue } from "@/lib/domains/reception";
 import { useFulfillShopOrder, useOrgActiveShopOrders } from "@/lib/domains/shop";
 import type { ReceptionQueueRecord } from "@/lib/domains/shared/types";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
-import { useT } from "@/lib/i18n";
+import { type TranslationKey, useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
@@ -113,6 +112,74 @@ type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
 let lastReceptionMemberId: string | null = null;
 
+const ATTENDANCE_FLAG_PRIORITY: Record<string, number> = {
+  EXPIRED_MEMBERSHIP: 0,
+  OUT_OF_BRANCH: 1,
+  STALE_TOKEN: 2,
+  RAPID_REPEAT: 3,
+  EARLY_CHECKIN: 4,
+};
+
+const attendanceStatusLabelKeys: Record<string, TranslationKey> = {
+  APPROVED: "reception.desk.statusApproved",
+  FAILED: "reception.desk.statusFailed",
+  FLAGGED: "reception.desk.flagged",
+  PENDING_APPROVAL: "reception.desk.statusPendingApproval",
+  RECORDED: "reception.desk.statusRecorded",
+  REJECTED: "reception.desk.statusRejected",
+};
+
+const pickupStatusLabelKeys: Record<string, TranslationKey> = {
+  CANCELLED: "reception.orders.statusCancelled",
+  FAILED: "reception.orders.statusFailed",
+  FULFILLED: "reception.orders.statusFulfilled",
+  PAID: "reception.orders.statusPaid",
+  PENDING_PAYMENT: "reception.orders.statusPendingPayment",
+  READY_FOR_PICKUP: "shop.readyForPickup",
+  REFUNDED: "reception.orders.statusRefunded",
+};
+
+const deskPaymentModeLabelKeys: Partial<Record<DeskPaymentMode, TranslationKey>> = {
+  BANK_TRANSFER: "reception.payments.modeBank",
+  CARD: "reception.payments.modeCard",
+  CASH: "reception.payments.modeCash",
+  DIRECT_UPI: "reception.payments.modeUpi",
+  OTHER: "reception.payments.modeManual",
+};
+
+function attendanceStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "RECORDED").toUpperCase();
+  const labelKey = attendanceStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "RECORDED");
+}
+
+function pickupStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "READY_FOR_PICKUP").toUpperCase();
+  const labelKey = pickupStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "READY_FOR_PICKUP");
+}
+
+function deskPaymentModeLabel(mode: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (mode ?? "OTHER").toUpperCase() as DeskPaymentMode;
+  const labelKey = deskPaymentModeLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(mode ?? "OTHER");
+}
+
+function attendanceReviewPriority(attempt: ReceptionQueueRecord) {
+  if (attempt.status === "FLAGGED") {
+    const flags = Array.isArray(attempt.suspiciousFlags) ? attempt.suspiciousFlags : [];
+    if (!flags.length) return 2;
+    return Math.min(...flags.map((flag) => ATTENDANCE_FLAG_PRIORITY[flag] ?? 2));
+  }
+  if (attempt.status === "PENDING_APPROVAL") return 5;
+  return 9;
+}
+
+function attendanceReviewTimestamp(attempt: ReceptionQueueRecord) {
+  const timestamp = new Date(attempt.checkedInAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 export function useReceptionWorkspace() {
   const value = useContext(ReceptionWorkspaceContext);
   if (!value) {
@@ -130,11 +197,11 @@ function useReceptionWorkspaceState({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, session, token } = useAuth();
+  const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const t = useT();
   const roleContext = useRoleContext();
-  const { branches, selectedBranch, selectBranch } = useBranchSelection();
+  const { selectedBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
@@ -182,7 +249,14 @@ function useReceptionWorkspaceState({
       lastReceptionMemberId = selectedMemberId;
     }
   }, [selectedMemberId]);
-  const approvalQueue = useMemo(() => queueQuery.data?.records ?? [], [queueQuery.data?.records]);
+  const approvalQueue = useMemo(
+    () =>
+      [...(queueQuery.data?.records ?? [])].sort((left, right) => {
+        const priority = attendanceReviewPriority(left) - attendanceReviewPriority(right);
+        return priority || attendanceReviewTimestamp(left) - attendanceReviewTimestamp(right);
+      }),
+    [queueQuery.data?.records],
+  );
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
   ).length;
@@ -201,18 +275,6 @@ function useReceptionWorkspaceState({
       setSelectedMemberId(initialMemberId);
     }
   }, [initialMemberId]);
-
-  useEffect(() => {
-    if (!initialRecordId) {
-      return;
-    }
-    const attempt =
-      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
-    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
-      return;
-    }
-    openDecisionSheet(attempt);
-  }, [approvalQueue, initialRecordId, selectedDecisionAttempt?.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -320,42 +382,8 @@ function useReceptionWorkspaceState({
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
-  const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const activeRole = roleContext?.role;
   const isDemo = Boolean(roleContext?.isDemo);
-  const canSwitchBranches = branches.length > 1;
-  const activeOrganizationName = activeOrganization?.name ?? t("reception.workspace.activeGymFallback");
-  const activeOrgLabel = activeOrganization
-    ? `${activeOrganization.name} · ${activeOrganization.city}`
-    : t("reception.workspace.activeGymFallback");
-  const gymSelectorLabel = selectedBranch?.name ?? activeOrgLabel;
-
-  function openBranchSwitcher() {
-    if (!canSwitchBranches) {
-      Alert.alert(
-        t("reception.workspace.onlyOneBranchTitle"),
-        t("reception.workspace.onlyOneBranchBody"),
-      );
-      return;
-    }
-    Alert.alert(
-      t("reception.workspace.switchBranchTitle"),
-      t("reception.workspace.switchBranchBody"),
-      [
-        ...branches.map((branch) => ({
-          text:
-            branch.id === selectedBranch?.id
-              ? t("reception.workspace.activeBranchSuffix", { name: branch.name })
-              : branch.name,
-          onPress: () => {
-            if (branch.id === selectedBranch?.id) return;
-            void selectBranch(branch.id);
-          },
-        })),
-        { text: t("common.cancel"), style: "cancel" as const },
-      ],
-    );
-  }
 
   function toggleMemberSelection(userId: string) {
     setSelectedMemberIds((current) => {
@@ -402,9 +430,8 @@ function useReceptionWorkspaceState({
           total: ids.length,
           failures: failures.length,
         })
-      : t("reception.workspace.bulkRecorded", {
+      : t(successes === 1 ? "reception.workspace.bulkRecordedOne" : "reception.workspace.bulkRecordedMany", {
           count: successes,
-          memberLabel: successes === 1 ? "member" : "members",
         });
     setBulkAttendanceStatus(summary);
     showToast({
@@ -445,7 +472,7 @@ function useReceptionWorkspaceState({
     [],
   );
 
-  function openDecisionSheet(attempt: ReceptionQueueRecord) {
+  const openDecisionSheet = useCallback((attempt: ReceptionQueueRecord) => {
     setSelectedDecisionAttempt(attempt);
     setDecisionReason(
       attempt.rejectionReason ??
@@ -454,7 +481,19 @@ function useReceptionWorkspaceState({
           t("reception.workspace.deskApprovalRequired"),
         ),
     );
-  }
+  }, [t]);
+
+  useEffect(() => {
+    if (!initialRecordId) {
+      return;
+    }
+    const attempt =
+      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
+    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
+      return;
+    }
+    openDecisionSheet(attempt);
+  }, [approvalQueue, initialRecordId, openDecisionSheet, selectedDecisionAttempt?.id]);
 
   function closeDecisionSheet() {
     decisionSheetRef.current?.dismiss();
@@ -622,7 +661,7 @@ function useReceptionWorkspaceState({
         result.match.user?.name ?? result.match.user?.email ?? t("reception.workspace.memberFallback");
       if (result.match.type === "attendance") {
         if (result.match.valid) {
-          const status = titleCaseFromCode(result.match.record?.status ?? "approved");
+          const status = attendanceStatusLabel(result.match.record?.status ?? "APPROVED", t);
           presentVerificationResult({
             tone: "success",
             type: "attendance",
@@ -672,7 +711,10 @@ function useReceptionWorkspaceState({
           message: t("reception.workspace.pickupVerifiedFor", { name }),
         });
       } else {
-        const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
+        const status = pickupStatusLabel(
+          result.match.pickupCode?.status ?? result.match.order?.status ?? "READY_FOR_PICKUP",
+          t,
+        );
         const message = t("reception.workspace.pickupStatusTitle", { status });
         presentVerificationResult({
           tone: "danger",
@@ -713,7 +755,7 @@ function useReceptionWorkspaceState({
       });
       const message = t("reception.workspace.paymentRecorded", {
         amount: formatInr(payment.payment.amountPaise),
-        mode: titleCaseFromCode(payment.payment.mode),
+        mode: deskPaymentModeLabel(payment.payment.mode, t),
       });
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
@@ -781,7 +823,6 @@ function useReceptionWorkspaceState({
 
   return {
     activeRole,
-    activeOrganizationName,
     approvalItems,
     approvalQueue,
     approveAttendance,
@@ -794,7 +835,6 @@ function useReceptionWorkspaceState({
     canRecordManualAttendance,
     canRecordOfflinePayment,
     canRecordPayment,
-    canSwitchBranches,
     canVerifyCode,
     closeDecisionSheet,
     decisionReason,
@@ -805,7 +845,6 @@ function useReceptionWorkspaceState({
     fulfillOrder,
     fulfillOrderMutation,
     fulfilledCount,
-    gymSelectorLabel,
     handleVerifyCodeChange,
     hiddenMemberCount,
     isDemo,
@@ -816,7 +855,6 @@ function useReceptionWorkspaceState({
     membership,
     multiSelectMode,
     onRefresh,
-    openBranchSwitcher,
     openDecisionSheet,
     paymentMemberSearch,
     paymentMode,
@@ -912,11 +950,6 @@ export function ReceptionWorkspace({
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
-  const deskLabel =
-    state.activeRole === "OWNER" || state.activeRole === "ADMIN"
-      ? t("reception.workspace.ownerDesk")
-      : t("reception.workspace.receptionDesk");
-
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
       <ZookScreen testID={testID}>
@@ -944,15 +977,12 @@ export function ReceptionWorkspace({
             <ScreenHeader
               title={isHomeScreen ? t("reception.desk.today") : title}
               subtitle={isHomeScreen ? undefined : subtitle}
-              meta={
-                isHomeScreen ? (
-                  <View style={styles.headerMetaRow}>
-                    <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
-                    <HeaderMeta icon="scan-outline">{deskLabel}</HeaderMeta>
-                  </View>
-                ) : undefined
+              contextSlot={
+                <View style={styles.headerContextCluster}>
+                  <RoleSwitcherContextPill />
+                  <BranchSelectorChip style={styles.headerBranchSelector} />
+                </View>
               }
-              contextSlot={!isHomeScreen ? <RoleSwitcherContextPill /> : undefined}
               scrollY={scrollY}
               trailing={
                 isDetailView ? (
@@ -983,41 +1013,6 @@ export function ReceptionWorkspace({
               }
             />
 
-            {isHomeScreen ? (
-              <View style={styles.workspaceChipRow}>
-                <BranchSelectorChip />
-              </View>
-            ) : (
-              <Pressable
-                testID="reception-gym-selector"
-                onPress={state.openBranchSwitcher}
-                accessibilityRole="button"
-                accessibilityLabel={state.canSwitchBranches ? t("branch.switch") : t("branch.current")}
-                disabled={!state.canSwitchBranches}
-                style={({ pressed }) => [
-                  styles.gymSelector,
-                  {
-                    borderColor: palette.border.default,
-                    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-                  },
-                  pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
-                ]}
-              >
-                <Ionicons name="business-outline" size={22} color={palette.text.primary} />
-                <View style={styles.gymSelectorCopy}>
-                  <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
-                    {state.gymSelectorLabel}
-                  </Text>
-                  <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-                    {deskLabel}
-                  </Text>
-                </View>
-                {state.canSwitchBranches ? (
-                  <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
-                ) : null}
-              </Pressable>
-            )}
-
             {showMemberContext ? (
               <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
                 <IconBubble
@@ -1031,7 +1026,7 @@ export function ReceptionWorkspace({
                   </Text>
                   <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
                     {state.member?.email ?? t("reception.members.searchOrSelect")}
-                    {state.membership?.status ? ` · ${titleCaseFromCode(state.membership.status)}` : ""}
+                    {state.membership?.status ? ` · ${membershipStatusLabel(state.membership.status, t)}` : ""}
                   </Text>
                 </View>
                 {state.member ? (

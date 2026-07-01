@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   AppHeader,
-  Card,
   QueryErrorState,
   Skeleton,
   ZookButton,
@@ -13,7 +13,8 @@ import {
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatRelativeDate } from "@/lib/formatting";
-import { spacing, typography, useTheme } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type NotificationDetailRecord = {
   id: string;
@@ -37,6 +38,7 @@ export default function NotificationDetailScreen() {
   const notificationId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { token } = useAuth();
   const { palette } = useTheme();
+  const t = useT();
   const router = useRouter();
   const notificationQuery = useQuery({
     queryKey: ["me", "notifications", notificationId],
@@ -49,17 +51,21 @@ export default function NotificationDetailScreen() {
   });
   const notification = notificationQuery.data?.notification ?? null;
   const actionUrl = getActionUrl(notification);
+  const fallbackTitle = t("notifications.fallbackTitle");
+  const resolvedTitle = notification?.title ?? fallbackTitle;
+  const typeLabel = notification?.type ? notification.type.replace(/_/g, " ") : null;
 
   return (
     <ZookScreen testID="notification-detail-screen">
-      <AppHeader title={notification?.title ?? "Notification"} showBack />
+      <View style={styles.content}>
+        <AppHeader title={fallbackTitle} showBack />
       {notificationQuery.isLoading ? (
-        <Card contentStyle={styles.stack}>
+        <View style={styles.stack}>
           <Skeleton width="64%" height={18} borderRadius={9} />
           <Skeleton width="100%" height={14} borderRadius={7} />
           <Skeleton width="82%" height={14} borderRadius={7} />
           <Skeleton width="44%" height={36} borderRadius={18} />
-        </Card>
+        </View>
       ) : null}
       {notificationQuery.isError ? (
         <QueryErrorState
@@ -68,42 +74,86 @@ export default function NotificationDetailScreen() {
         />
       ) : null}
       {!notificationQuery.isLoading && !notificationQuery.isError && notification ? (
-        <Card contentStyle={styles.stack}>
-          <View style={styles.metaRow}>
-            <Text style={[styles.type, { color: palette.text.secondary }]}>
-              {notification.type ?? "Notification"}
-            </Text>
-            {notification.createdAt ? (
-              <Text style={[styles.type, { color: palette.text.tertiary }]}>
-                {formatRelativeDate(notification.createdAt)}
-              </Text>
-            ) : null}
-          </View>
+        <View style={styles.messageSurface}>
           <Text style={[styles.title, { color: palette.text.primary }]}>
-            {notification.title ?? "Notification"}
+            {resolvedTitle}
           </Text>
-          <Text style={[styles.body, { color: palette.text.secondary }]}>
-            {notification.body ?? ""}
-          </Text>
+          {typeLabel || notification.createdAt ? (
+            <View style={styles.metaRow}>
+              {typeLabel ? (
+                <View style={[styles.metaChip, { backgroundColor: palette.bg.sunken }]}>
+                  <Ionicons name="notifications-outline" size={13} color={palette.text.secondary} />
+                  <Text numberOfLines={1} style={[styles.type, { color: palette.text.secondary }]}>
+                    {typeLabel}
+                  </Text>
+                </View>
+              ) : null}
+              {notification.createdAt ? (
+                <View style={[styles.metaChip, { backgroundColor: palette.bg.sunken }]}>
+                  <Ionicons name="time-outline" size={13} color={palette.text.tertiary} />
+                  <Text numberOfLines={1} style={[styles.type, { color: palette.text.tertiary }]}>
+                    {formatRelativeDate(notification.createdAt)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+          {notification.body ? (
+            <Text style={[styles.body, { color: palette.text.secondary }]}>
+              {notification.body}
+            </Text>
+          ) : (
+            <Text style={[styles.body, { color: palette.text.secondary }]}>
+              {t("notifications.noDetails")}
+            </Text>
+          )}
           {actionUrl ? (
             <ZookButton icon="open-outline" onPress={() => router.push(actionUrl as never)}>
-              View details
+              {t("notifications.openLinkedScreen")}
             </ZookButton>
           ) : (
             <ZookButton variant="secondary" icon="arrow-back-outline" onPress={() => router.back()}>
-              Back to inbox
+              {t("notifications.backToInbox")}
             </ZookButton>
           )}
-        </Card>
+        </View>
       ) : null}
+      </View>
     </ZookScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: spacing.md },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
+  content: {
+    width: "100%",
+    maxWidth: layout.contentWidth,
+    alignSelf: "center",
+    gap: spacing.lg,
+    paddingTop: layout.screenContentTopPadding,
+    paddingBottom: layout.bottomNavContentPadding,
+  },
+  stack: { gap: spacing.md, paddingHorizontal: layout.screenPadding },
+  messageSurface: {
+    gap: spacing.md,
+    paddingHorizontal: layout.screenPadding,
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  metaChip: {
+    alignItems: "center",
+    borderRadius: 999,
+    flexDirection: "row",
+    gap: 5,
+    maxWidth: "100%",
+    minHeight: 26,
+    paddingHorizontal: 9,
+  },
+  title: {
+    ...typography.headerTitle,
+  },
   type: typography.caption,
-  title: typography.cardTitle,
   body: { ...typography.body, lineHeight: 22 },
 });

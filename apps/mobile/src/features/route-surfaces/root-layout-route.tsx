@@ -41,7 +41,7 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
+import { layout, spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
 
@@ -507,10 +507,7 @@ function RuntimeBannerHost({ children }: { children: ReactNode }) {
       pointerEvents="box-none"
       style={[
         styles.runtimeBannerHost,
-        // Sit just below the safe-area top (below the notch / dynamic island)
-        // so transient banners like the demo "Test data" badge aren't hidden
-        // behind the island. The previous -76 offset pulled them up into it.
-        { top: Math.max(insets.top, spacing.xs) + spacing.xs },
+        { top: Math.max(insets.top, spacing.xs) + 2 },
       ]}
     >
       {children}
@@ -761,11 +758,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   runtimeBannerHost: {
+    alignItems: "flex-start",
     left: 0,
     position: "absolute",
     right: 0,
     zIndex: 20,
     gap: 6,
-    paddingHorizontal: 0,
+    paddingHorizontal: layout.screenPadding,
   },
 });

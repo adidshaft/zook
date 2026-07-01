@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { normalizeUsernameInput } from "@zook/core/services/organization-service";
-import { Copy, ExternalLink, QrCode, Save, Info, MapPin, Tags, Image } from "lucide-react";
+import { Copy, ExternalLink, QrCode, Save, Info, Tags, Image, Building2, Trash2 } from "lucide-react";
 import {
   DataTable,
   EmptyState,
@@ -14,7 +14,7 @@ import { GlassCard, Pill } from "./glass-card";
 import { ImageAssetUpload } from "./image-asset-upload";
 import { ZookButton } from "./zook-button";
 import { webApiFetch } from "@/lib/api-client";
-import { formatEnumLabel, formatIndiaPhoneInput, normalizeIndianPincodeInput } from "@/lib/format";
+import { formatIndiaPhoneInput, normalizeIndianPincodeInput } from "@/lib/format";
 import {
   amenityOptions,
   ChipPicker,
@@ -94,6 +94,20 @@ type ProfileForm = {
   equipmentText: string;
   galleryText: string;
 };
+
+function visibilityLabel(value: string) {
+  if (value === "PUBLIC") return "Public";
+  if (value === "INVITE_ONLY") return "Invite only";
+  if (value === "HIDDEN") return "Hidden";
+  return "Profile";
+}
+
+function joinModeLabel(value: string) {
+  if (value === "OPEN_JOIN") return "Open join";
+  if (value === "APPROVAL_REQUIRED") return "Approval required";
+  if (value === "INVITE_ONLY") return "Invite only";
+  return "Join mode";
+}
 
 function formFromPayload(payload: OrgProfilePayload): ProfileForm {
   const org = payload.org;
@@ -232,7 +246,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
 
   const tabItems = [
     { id: "basic" as const, label: "Basic Details", icon: Info },
-    { id: "location" as const, label: "Address & Branches", icon: MapPin },
+    { id: "location" as const, label: "Address & Branches", icon: Building2 },
     { id: "features" as const, label: "Facilities & Tags", icon: Tags },
     { id: "media" as const, label: "Photos & Logo", icon: Image },
     { id: "qr" as const, label: "QR & Public Links", icon: QrCode },
@@ -248,7 +262,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
             badge={
               <div className="flex flex-wrap gap-2">
                 <Pill tone={form.visibility === "PUBLIC" ? "blue" : "amber"}>
-                  {formatEnumLabel(form.visibility)}
+                  {visibilityLabel(form.visibility)}
                 </Pill>
                 {hasUnsavedChanges ? <Pill tone="amber">Unsaved changes</Pill> : null}
               </div>
@@ -351,12 +365,14 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                 label="Join mode"
                 value={form.joinMode}
                 options={["OPEN_JOIN", "APPROVAL_REQUIRED", "INVITE_ONLY"]}
+                optionLabel={joinModeLabel}
                 onChange={(value) => update("joinMode", value)}
               />
               <SelectField
                 label="Visibility"
                 value={form.visibility}
                 options={["PUBLIC", "INVITE_ONLY", "HIDDEN"]}
+                optionLabel={visibilityLabel}
                 onChange={(value) => update("visibility", value)}
               />
               <Field
@@ -456,9 +472,57 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
           <GlassCard>
             <SectionHeader
               eyebrow="Photos"
-              title="Images and gallery"
+              title="Branding and gallery"
+              description="Logo appears in gym selectors and profile cards. Cover and gallery photos make the public profile feel like the actual gym."
             />
-            <div className="mt-5 grid gap-4">
+            <div className="mt-5 grid gap-5">
+              <div className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg-sunken)]">
+                <div className="relative min-h-[240px] p-5 sm:p-6">
+                  {form.coverImageUrl ? (
+                    <img
+                      src={form.coverImageUrl}
+                      alt={`${form.name} cover preview`}
+                      className="absolute inset-0 h-full w-full object-cover opacity-45"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--accent)_24%,transparent),transparent_34%),linear-gradient(135deg,var(--surface),var(--bg-sunken))]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--bg)]/80 via-[var(--bg)]/48 to-[var(--bg-sunken)]/80" />
+                  <div className="relative flex min-h-[190px] flex-col justify-end gap-4">
+                    <div className="flex items-end gap-3">
+                      <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                        {form.logoUrl ? (
+                          <img
+                            src={form.logoUrl}
+                            alt={`${form.name} logo preview`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xl font-black text-[var(--accent-strong)]">
+                            {form.name.trim().slice(0, 2).toUpperCase() || "ZG"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                          Public preview
+                        </p>
+                        <h3 className="mt-1 max-w-xl truncate text-2xl font-semibold text-[var(--text-primary)]">
+                          {form.name || "Gym name"}
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                          {[form.address.split(",")[0], form.city].filter(Boolean).join(", ") ||
+                            "Locality, City"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+                      {form.tagline || "Add a short, sharp line that helps members understand your gym."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
                 <ImageAssetUpload
                   orgId={orgId}
@@ -468,6 +532,7 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                   valueUrl={form.logoUrl}
                   aspectClassName="aspect-square"
                   onUploaded={(asset) => update("logoUrl", asset.url)}
+                  onClear={() => update("logoUrl", "")}
                 />
                 <ImageAssetUpload
                   orgId={orgId}
@@ -476,34 +541,75 @@ export function GymProfileSetupPanel({ orgId }: { orgId: string }) {
                   helper="Wide, 1600 x 900 recommended"
                   valueUrl={form.coverImageUrl}
                   onUploaded={(asset) => update("coverImageUrl", asset.url)}
+                  onClear={() => update("coverImageUrl", "")}
                 />
               </div>
-              <ImageAssetUpload
-                orgId={orgId}
-                category="org_gallery"
-                label="Add gallery photo"
-                helper={`${Math.min(previewGallery.length, 15)}/15 added`}
-                onUploaded={(asset) => {
-                  const nextGallery = [...textToList(form.galleryText), asset.url].slice(0, 15);
-                  update("galleryText", nextGallery.join("\n"));
-                }}
-              />
-              <TextAreaField
-                label="Gallery photos"
-                value={form.galleryText}
-                onChange={(value) => update("galleryText", textToList(value).slice(0, 15).join("\n"))}
-                rows={5}
-                placeholder="Paste one image link per line."
-              />
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {previewGallery.slice(0, 15).map((imageUrl, index) => (
-                  <img
-                    key={imageUrl}
-                    src={imageUrl}
-                    alt={`${form.name} gallery photo ${index + 1}`}
-                    className="aspect-[4/3] rounded-2xl border border-[var(--border)] object-cover bg-[var(--bg-sunken)] transition-all hover:scale-105"
-                  />
-                ))}
+
+              <div className="grid gap-4 rounded-[28px] border border-[var(--border)] bg-[var(--surface)]/70 p-4">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">Gallery photos</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
+                      {Math.min(previewGallery.length, 15)}/15 added. Keep the strongest, clearest gym photos first.
+                    </p>
+                  </div>
+                  <div className="w-full sm:w-80">
+                    <ImageAssetUpload
+                      orgId={orgId}
+                      category="org_gallery"
+                      label="Add photo"
+                      helper="4:3 works best"
+                      onUploaded={(asset) => {
+                        const nextGallery = [...textToList(form.galleryText), asset.url].slice(0, 15);
+                        update("galleryText", nextGallery.join("\n"));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {previewGallery.length ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {previewGallery.slice(0, 15).map((imageUrl, index) => (
+                      <div key={`${imageUrl}-${index}`} className="group relative">
+                        <img
+                          src={imageUrl}
+                          alt={`${form.name} gallery photo ${index + 1}`}
+                          className="aspect-[4/3] w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] object-cover transition-all group-hover:scale-[1.02]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextGallery = previewGallery.filter((_, itemIndex) => itemIndex !== index);
+                            update("galleryText", nextGallery.join("\n"));
+                          }}
+                          className="zook-focus absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg)]/90 text-[var(--text-primary)] opacity-100 shadow-sm transition hover:bg-[var(--bg-elevated)] sm:opacity-0 sm:group-hover:opacity-100"
+                          aria-label={`Remove gallery photo ${index + 1}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
+                    Add a few real gym photos so members can judge the space before they pay.
+                  </div>
+                )}
+
+                <details className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
+                  <summary className="cursor-pointer text-xs font-semibold text-[var(--text-secondary)]">
+                    Edit gallery URLs
+                  </summary>
+                  <div className="mt-3">
+                    <TextAreaField
+                      label="Gallery photo links"
+                      value={form.galleryText}
+                      onChange={(value) => update("galleryText", textToList(value).slice(0, 15).join("\n"))}
+                      rows={5}
+                      placeholder="Paste one image link per line."
+                    />
+                  </div>
+                </details>
               </div>
             </div>
           </GlassCard>

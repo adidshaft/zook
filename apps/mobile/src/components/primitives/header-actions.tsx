@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useMyNotifications } from "@/lib/domains/notifications";
+import { useT } from "@/lib/i18n";
 import { spacing, useTheme } from "@/lib/theme";
 import { ProfileShortcut } from "./profile-shortcut";
 
@@ -25,6 +26,7 @@ export function HeaderActions({
 }) {
   const router = useRouter();
   const { palette } = useTheme();
+  const t = useT();
   const unreadQuery = useMyNotifications({
     select: (data) => data.notifications.filter((n) => !n.readAt).length,
   });
@@ -35,7 +37,11 @@ export function HeaderActions({
       {showBell ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={unread ? `Notifications, ${unread} unread` : "Notifications"}
+          accessibilityLabel={
+            unread
+              ? `${t("nav.inbox")}, ${t("notifications.unreadCount", { count: unread })}`
+              : t("nav.inbox")
+          }
           hitSlop={8}
           onPress={() => router.push("/notifications" as never)}
           style={({ pressed }) => [
@@ -57,7 +63,7 @@ export function HeaderActions({
       {showShopShortcut ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Open shop"
+          accessibilityLabel={`${t("member.home.open")} ${t("shop.title")}`}
           hitSlop={8}
           onPress={() => router.push("/shop" as never)}
           style={({ pressed }) => [
@@ -69,7 +75,14 @@ export function HeaderActions({
           <Ionicons name="bag-outline" size={20} color={palette.text.primary} />
         </Pressable>
       ) : null}
-      {showProfileShortcut ? <ProfileShortcut accessibilityLabel={accessibilityLabel} /> : null}
+      {showProfileShortcut ? (
+        <ProfileShortcut
+          size={38}
+          accessibilityLabel={
+            accessibilityLabel ?? `${t("member.home.open")} ${t("settings.profileTitle")}`
+          }
+        />
+      ) : null}
     </View>
   );
 }
@@ -78,11 +91,11 @@ const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
   bell: {
     alignItems: "center",
-    borderRadius: 22,
+    borderRadius: 19,
     borderWidth: 1,
-    height: 44,
+    height: 38,
     justifyContent: "center",
-    width: 44,
+    width: 38,
   },
   pressed: { opacity: 0.82, transform: [{ scale: 0.96 }] },
   badge: {

@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { useRef, useState } from "react";
 import {
   Dimensions,
+  type ImageSourcePropType,
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -26,10 +27,12 @@ const { width } = Dimensions.get("window");
  */
 export function GalleryViewer({
   images,
+  sourceForImage,
   initialIndex,
   onClose,
 }: {
   images: string[];
+  sourceForImage?: (image: string) => ImageSourcePropType | { uri: string } | null;
   initialIndex: number | null;
   onClose: () => void;
 }) {
@@ -57,7 +60,11 @@ export function GalleryViewer({
         >
           {images.map((uri, i) => (
             <View key={`${uri}-${i}`} style={[styles.page, { width }]}>
-              <Image source={{ uri: normalizeWebUrl(uri) }} style={styles.image} contentFit="contain" />
+              <Image
+                source={sourceForImage?.(uri) ?? { uri: normalizeWebUrl(uri) }}
+                style={styles.image}
+                contentFit="contain"
+              />
             </View>
           ))}
         </ScrollView>

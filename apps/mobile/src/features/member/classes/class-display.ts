@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 
 import type { PillTone } from "@/components/primitives";
+import type { TranslationKey } from "@/lib/i18n";
 import { gradients } from "@/lib/theme";
 import type { ThemeMode } from "@/lib/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
+type Translate = (key: TranslationKey) => string;
 
 export type ClassVisual = { icon: IconName; tone: PillTone };
 
@@ -58,23 +60,23 @@ function startOfDay(date: Date) {
 }
 
 /** "Today" / "Tomorrow" / "Wed, 25 Jun" — used for day-grouped schedules. */
-export function classDayHeading(value?: string | Date | null): string {
-  if (!value) return "Scheduled";
+export function classDayHeading(value?: string | Date | null, t?: Translate): string {
+  if (!value) return t ? t("common.scheduled") : "Scheduled";
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Scheduled";
+  if (Number.isNaN(date.getTime())) return t ? t("common.scheduled") : "Scheduled";
   const diffDays = Math.round(
     (startOfDay(date).getTime() - startOfDay(new Date()).getTime()) / 86_400_000,
   );
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
+  if (diffDays === 0) return t ? t("common.today") : "Today";
+  if (diffDays === 1) return t ? t("common.tomorrow") : "Tomorrow";
   return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 }
 
 /** Compact "Today · 6:30 PM" for tight spaces like the Home strip. */
-export function classDayTime(value?: string | Date | null): string {
-  if (!value) return "Scheduled";
+export function classDayTime(value?: string | Date | null, t?: Translate): string {
+  if (!value) return t ? t("common.scheduled") : "Scheduled";
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Scheduled";
+  if (Number.isNaN(date.getTime())) return t ? t("common.scheduled") : "Scheduled";
   const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-  return `${classDayHeading(date)} · ${time}`;
+  return `${classDayHeading(date, t)} · ${time}`;
 }

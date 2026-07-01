@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   CreditCard,
   CalendarDays,
-  LayoutDashboard,
   QrCode,
   Search,
   ShoppingBag,
@@ -17,7 +16,11 @@ import { DeskPendingBadge } from "./desk-pending-badge";
 
 type DeskChromeTab = {
   href: string;
-  label: string;
+  labelKey: {
+    [Key in keyof typeof deskTranslations.en]: (typeof deskTranslations.en)[Key] extends string
+      ? Key
+      : never;
+  }[keyof typeof deskTranslations.en];
   icon: ReactNode;
   permissions?: Permission[];
 };
@@ -25,35 +28,35 @@ type DeskChromeTab = {
 const tabs: DeskChromeTab[] = [
   {
     href: "/desk",
-    label: "Approvals",
+    labelKey: "tabApprovals",
     icon: <ClipboardCheck size={18} />,
     permissions: ["ATTENDANCE_APPROVE"],
   },
   {
     href: "/desk/members",
-    label: "Members",
+    labelKey: "tabMembers",
     icon: <Search size={18} />,
     permissions: ["MEMBERS_VIEW", "MEMBERS_MANAGE"],
   },
   {
     href: "/desk/payments",
-    label: "Payments",
+    labelKey: "tabPayments",
     icon: <CreditCard size={18} />,
     permissions: ["PAYMENTS_RECORD_OFFLINE", "PAYMENTS_VIEW"],
   },
   {
     href: "/desk/classes",
-    label: "Classes",
+    labelKey: "tabClasses",
     icon: <CalendarDays size={18} />,
     permissions: ["ATTENDANCE_APPROVE"],
   },
   {
     href: "/desk/orders",
-    label: "Orders",
+    labelKey: "tabOrders",
     icon: <ShoppingBag size={18} />,
     permissions: ["SHOP_FULFILL_ORDER"],
   },
-  { href: "/desk/qr", label: "QR", icon: <QrCode size={18} />, permissions: ["ATTENDANCE_QR_DISPLAY"] },
+  { href: "/desk/qr", labelKey: "tabQr", icon: <QrCode size={18} />, permissions: ["ATTENDANCE_QR_DISPLAY"] },
 ];
 
 function tabHref(href: string, branchId: string | null) {
@@ -104,13 +107,10 @@ export function DeskChrome({
       <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-4 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold uppercase tracking-[0.14em] text-[var(--text-primary)]">
+            <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
               {orgName}
             </p>
-            <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
-              <LayoutDashboard size={14} className="text-[var(--text-tertiary)]" />
-              <span>Reception desk</span>
-            </div>
+            <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">{copy.receptionDesk}</p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {canOpenManagement ? (
@@ -146,7 +146,7 @@ export function DeskChrome({
                 }`}
               >
                 {tab.icon}
-                <span>{tab.label}</span>
+                <span>{copy[tab.labelKey]}</span>
                 {tab.href === "/desk" ? (
                   <DeskPendingBadge orgId={orgId} branchId={branchId} active={active} />
                 ) : null}

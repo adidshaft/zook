@@ -1,20 +1,23 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
   EmptyState,
   FormField,
+  HeaderActions,
   IconBubble,
   Pill,
   QueryErrorState,
-  SectionHeader,
+  ScreenHeader,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgMembershipPlans, type MembershipPlanRecord } from "@/lib/domains/owner/queries";
 import { useDeleteMembershipPlan, useSaveMembershipPlan, type MembershipPlanInput } from "@/lib/domains/owner/mutations";
 import { formatInr } from "@/lib/formatting";
@@ -54,11 +57,24 @@ export default function OwnerPlans() {
   const [durationDays, setDurationDays] = useState("");
   const [visitLimit, setVisitLimit] = useState("");
   const [publicVisible, setPublicVisible] = useState(true);
+  const [showPlanLimits, setShowPlanLimits] = useState(false);
 
   const plans = plansQuery.data?.plans ?? [];
   const showDuration = type === "DURATION" || type === "HYBRID" || type === "TRIAL" || type === "DATE_RANGE";
   const showVisits = type === "VISIT_PACK" || type === "HYBRID" || type === "TRIAL";
   const canSubmit = name.trim().length >= 2 && (Number.parseInt(price, 10) || 0) >= 0 && !savePlan.isPending;
+  const planLimitSummary = [
+    showDuration
+      ? durationDays.trim()
+        ? t("owner.plans.daysCount", { count: durationDays.trim() })
+        : t("owner.plans.durationDays")
+      : null,
+    showVisits
+      ? visitLimit.trim()
+        ? t("owner.plans.visitsCount", { count: visitLimit.trim() })
+        : t("owner.plans.visits")
+      : null,
+  ].filter(Boolean).join(" · ");
 
   function resetForm() {
     setEditingId(null);
@@ -68,6 +84,7 @@ export default function OwnerPlans() {
     setDurationDays("");
     setVisitLimit("");
     setPublicVisible(true);
+    setShowPlanLimits(false);
     setShowForm(false);
   }
 
@@ -79,6 +96,7 @@ export default function OwnerPlans() {
     setDurationDays(plan.durationDays ? String(plan.durationDays) : "");
     setVisitLimit(plan.visitLimit ? String(plan.visitLimit) : "");
     setPublicVisible(plan.publicVisible);
+    setShowPlanLimits(Boolean(plan.durationDays || plan.visitLimit));
     setShowForm(true);
   }
 
@@ -121,16 +139,44 @@ export default function OwnerPlans() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("owner.plans.title")} subtitle={t("owner.plans.subtitle")} showBack />
-
-          <SectionHeader
-            title={t("owner.plans.plans")}
-            action={
-              <ZookButton size="sm" variant={showForm && !editingId ? "secondary" : "primary"} icon={showForm && !editingId ? "close" : "add"} onPress={() => (showForm && !editingId ? resetForm() : (resetForm(), setShowForm(true)))}>
-                {showForm && !editingId ? t("common.cancel") : t("owner.plans.newPlan")}
-              </ZookButton>
+          <ScreenHeader
+            title={t("owner.plans.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
             }
+            trailing={<HeaderActions showBell />}
           />
+
+          <View style={styles.listToolbar}>
+            <Pill tone={plans.length ? "blue" : "neutral"}>
+              {t("owner.plans.totalPlans", { count: plans.length })}
+            </Pill>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showForm && !editingId ? t("common.cancel") : t("owner.plans.newPlan")}
+              hitSlop={8}
+              onPress={() => (showForm && !editingId ? resetForm() : (resetForm(), setShowForm(true)))}
+              style={({ pressed }) => [
+                styles.toolbarAction,
+                {
+                  backgroundColor:
+                    showForm && !editingId ? palette.surface.default : palette.accent.base,
+                  borderColor:
+                    showForm && !editingId ? palette.border.default : palette.accent.strong,
+                },
+                pressed ? styles.pressedAction : null,
+              ]}
+            >
+              <Ionicons
+                name={showForm && !editingId ? "close" : "add"}
+                size={20}
+                color={showForm && !editingId ? palette.text.secondary : palette.text.onAccent}
+              />
+            </Pressable>
+          </View>
 
           {showForm ? (
             <Card contentStyle={styles.formCard}>
@@ -147,15 +193,41 @@ export default function OwnerPlans() {
                   );
                 })}
               </View>
-              <View style={styles.formRow}>
-                <FormField label={t("owner.plans.priceInr")} value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="1499" style={styles.formField} />
-                {showDuration ? (
-                  <FormField label={t("owner.plans.durationDays")} value={durationDays} onChangeText={setDurationDays} keyboardType="number-pad" placeholder="30" style={styles.formField} />
-                ) : null}
-                {showVisits ? (
-                  <FormField label={t("owner.plans.visits")} value={visitLimit} onChangeText={setVisitLimit} keyboardType="number-pad" placeholder="12" style={styles.formField} />
-                ) : null}
-              </View>
+              <FormField label={t("owner.plans.priceInr")} value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="1499" />
+              {showDuration || showVisits ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showPlanLimits }}
+                  onPress={() => setShowPlanLimits((value) => !value)}
+                  style={({ pressed }) => [
+                    styles.disclosureRow,
+                    { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                    pressed ? styles.pressedAction : null,
+                  ]}
+                >
+                  <View style={styles.disclosureCopy}>
+                    <Text style={[styles.disclosureTitle, { color: palette.text.primary }]}>{t("owner.plans.planLimits")}</Text>
+                    <Text style={[styles.disclosureMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+                      {planLimitSummary}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={showPlanLimits ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={palette.text.secondary}
+                  />
+                </Pressable>
+              ) : null}
+              {showPlanLimits ? (
+                <View style={styles.limitsStack}>
+                  {showDuration ? (
+                    <FormField label={t("owner.plans.durationDays")} value={durationDays} onChangeText={setDurationDays} keyboardType="number-pad" placeholder="30" />
+                  ) : null}
+                  {showVisits ? (
+                    <FormField label={t("owner.plans.visits")} value={visitLimit} onChangeText={setVisitLimit} keyboardType="number-pad" placeholder="12" />
+                  ) : null}
+                </View>
+              ) : null}
               <View style={styles.switchRow}>
                 <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.plans.showPublicly")}</Text>
                 <ThemedSwitch value={publicVisible} onValueChange={setPublicVisible} />
@@ -171,7 +243,15 @@ export default function OwnerPlans() {
           ) : null}
           {!plansQuery.isLoading && plans.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="pricetag-outline" title={t("owner.plans.noPlansYet")} body={t("owner.plans.noPlansYetBody")} />
+              <EmptyState
+                icon="pricetag-outline"
+                title={t("owner.plans.noPlansYet")}
+                body={t("owner.plans.noPlansYetBody")}
+                cta={{
+                  label: t("owner.plans.createPlan"),
+                  onPress: () => setShowForm(true),
+                }}
+              />
             </Card>
           ) : null}
 
@@ -183,19 +263,26 @@ export default function OwnerPlans() {
                   <View style={styles.planCopy}>
                     <Text style={[styles.planName, { color: palette.text.primary }]} numberOfLines={1}>{plan.name}</Text>
                     <Text style={[styles.planMeta, { color: palette.text.secondary }]} numberOfLines={1}>{planSummary(plan, t)}</Text>
+                    {!plan.publicVisible ? (
+                      <View style={styles.planStatusRow}>
+                        <Pill tone="neutral">{t("owner.plans.hidden")}</Pill>
+                      </View>
+                    ) : null}
                   </View>
                   <View style={styles.planRight}>
                     <Text style={[styles.planPrice, { color: palette.text.primary }]}>{formatInr(plan.pricePaise)}</Text>
-                    {!plan.publicVisible ? <Pill tone="neutral">{t("owner.plans.hidden")}</Pill> : null}
                   </View>
                 </Pressable>
                 <View style={styles.planActions}>
-                  <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={() => startEdit(plan)} style={styles.planAction}>
-                    {t("owner.plans.edit")}
-                  </ZookButton>
-                  <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmDelete(plan)} style={styles.planAction}>
-                    {t("owner.plans.remove")}
-                  </ZookButton>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("owner.plans.remove")}
+                    hitSlop={10}
+                    onPress={() => confirmDelete(plan)}
+                    style={({ pressed }) => [styles.planRemoveAction, pressed ? styles.pressedAction : null]}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={palette.feedback.danger} />
+                  </Pressable>
                 </View>
               </Card>
             ))}
@@ -207,6 +294,18 @@ export default function OwnerPlans() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     alignSelf: "center",
     gap: spacing.md,
@@ -218,8 +317,33 @@ const styles = StyleSheet.create({
   formCard: { gap: spacing.md },
   formTitle: { ...typography.cardTitle },
   label: { ...typography.caption },
-  formRow: { flexDirection: "row", gap: spacing.sm },
-  formField: { flex: 1 },
+  listToolbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  toolbarAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  disclosureRow: {
+    alignItems: "center",
+    borderRadius: radii.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  disclosureCopy: { flex: 1, gap: 2, minWidth: 0 },
+  disclosureTitle: { ...typography.bodyStrong },
+  disclosureMeta: { ...typography.small },
+  limitsStack: { gap: spacing.sm },
   switchRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   switchTitle: { ...typography.cardTitle },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
@@ -231,8 +355,24 @@ const styles = StyleSheet.create({
   planCopy: { flex: 1, gap: 2, minWidth: 0 },
   planName: { ...typography.cardTitle },
   planMeta: { ...typography.small },
-  planRight: { alignItems: "flex-end", gap: 4 },
+  planStatusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    paddingTop: 2,
+  },
+  planRight: { alignItems: "flex-end", gap: 4, maxWidth: 108 },
   planPrice: { ...typography.cardTitle },
-  planActions: { flexDirection: "row", gap: spacing.sm },
-  planAction: { flex: 1 },
+  planActions: { alignItems: "flex-end" },
+  planRemoveAction: {
+    alignItems: "center",
+    borderColor: "rgba(255, 98, 74, 0.42)",
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 42,
+  },
+  pressedAction: { opacity: 0.72, transform: [{ scale: 0.96 }] },
 });

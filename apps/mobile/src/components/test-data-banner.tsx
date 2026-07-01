@@ -10,23 +10,23 @@ export function TestDataBanner() {
   return (
     <View
       accessibilityRole="alert"
+      pointerEvents="none"
       style={[
         styles.capsule,
         {
-          backgroundColor: palette.surface.warningSoft,
+          backgroundColor: palette.bg.elevated,
           borderColor: palette.border.subtle,
         },
       ]}
     >
       <Text
         style={{
-          ...typography.caption,
-          color: palette.text.primary,
-          fontWeight: "600",
+          ...typography.navLabel,
+          color: palette.text.tertiary,
           textAlign: "center",
         }}
       >
-        Test data
+        Demo
       </Text>
     </View>
   );
@@ -34,12 +34,11 @@ export function TestDataBanner() {
 
 const styles = StyleSheet.create({
   capsule: {
-    alignSelf: "center",
     borderCurve: "continuous",
     borderRadius: 999,
-    borderWidth: 1,
-    minHeight: 28,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 18,
     justifyContent: "center",
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
 });

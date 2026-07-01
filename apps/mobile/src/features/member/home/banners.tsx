@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter, type Href } from "expo-router";
 
-import { Card, IconBubble, ZookButton } from "@/components/primitives";
+import { IconBubble } from "@/components/primitives";
 import { getTonePalette, type PillTone } from "@/components/primitives/tone-palette";
-import { useMyShopOrders } from "@/lib/domains/shop";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { useT } from "@/lib/i18n";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
@@ -22,7 +22,6 @@ export function Banners({ home }: { home?: MemberHomeData }) {
   const t = useT();
   const [dismissed, setDismissed] = useState<Record<string, string>>({});
   const orgId = home?.activeOrganization?.id ?? "none";
-  const shopOrdersQuery = useMyShopOrders();
 
   useEffect(() => {
     let mounted = true;
@@ -42,28 +41,16 @@ export function Banners({ home }: { home?: MemberHomeData }) {
 
   const showProfile = Boolean(home?.activeMembership && !home.assignedTrainer);
   const showReferral = Boolean(home?.activeOrganization && !recent(dismissed.referral, 7 * DAY_MS));
-  const pickupOrder = shopOrdersQuery.data?.orders.find(
-    (order) => order.pickupCode && !order.fulfilledAt && !/CANCEL|FULFILLED/i.test(order.status),
-  );
   const daysLeft = home?.activeMembership?.daysLeft;
   const membershipExpiring = typeof daysLeft === "number" && daysLeft <= 7;
+  const homeAccessCardOwnsRenewal = Boolean(home?.activeMembership);
 
   // Most actionable / time-sensitive first. The Shop tab and the header
   // notification bell already cover shop + unread-update prompts, so those
   // banners are intentionally gone. Cap the stack so Home never turns into a
   // wall of banners.
   const banners = [
-    pickupOrder ? (
-      <Banner
-        key="pickup"
-        icon="bag-check-outline"
-        title={t("member.home.pickupAvailable")}
-        body={t("member.home.pickupCodeBody", { code: pickupOrder.pickupCode ?? "" })}
-        actionHref={`/shop/pickup/${pickupOrder.id}`}
-        actionLabel={t("member.home.open")}
-      />
-    ) : null,
-    membershipExpiring ? (
+    membershipExpiring && !homeAccessCardOwnsRenewal ? (
       <Banner
         key="renew"
         icon="warning-outline"
@@ -101,7 +88,7 @@ export function Banners({ home }: { home?: MemberHomeData }) {
     ) : null,
   ].filter(Boolean);
 
-  const visibleBanners = banners.slice(0, 2);
+  const visibleBanners = banners.slice(0, 1);
   if (!visibleBanners.length) return null;
 
   return <View style={styles.stack}>{visibleBanners}</View>;
@@ -125,37 +112,52 @@ function Banner({
   title: string;
 }) {
   const { palette, mode } = useTheme();
+  const router = useRouter();
   const tonePalette = getTonePalette(tone, mode, palette);
   const t = useT();
   return (
-    <Card
-      variant="compact"
-      contentStyle={[
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={actionLabel}
+      onPress={() => router.push(actionHref as Href)}
+      style={({ pressed }) => [
         styles.banner,
-        tone !== "neutral"
-          ? {
-              backgroundColor: tonePalette.backgroundColor,
-              borderColor: tonePalette.borderColor,
-              borderWidth: StyleSheet.hairlineWidth,
-            }
-          : null,
+        {
+          backgroundColor: tone === "neutral" ? palette.surface.default : tonePalette.backgroundColor,
+          borderColor: tone === "neutral" ? palette.border.subtle : tonePalette.borderColor,
+        },
+        pressed ? styles.actionPressed : null,
       ]}
     >
-      <IconBubble icon={icon} tone={tone} size={34} />
+      <IconBubble icon={icon} tone={tone} size={24} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>
           {title}
         </Text>
-        <Text numberOfLines={2} style={[styles.body, { color: palette.text.secondary }]}>
+        <Text numberOfLines={1} style={[styles.body, { color: palette.text.secondary }]}>
           {body}
         </Text>
       </View>
-      <ZookButton href={actionHref as never} variant="secondary" size="sm">
-        {actionLabel}
-      </ZookButton>
+      <View
+        style={[
+          styles.action,
+          {
+            borderColor: palette.border.subtle,
+            backgroundColor: palette.surface.raised,
+          },
+        ]}
+      >
+        <Text numberOfLines={1} style={[styles.actionText, { color: palette.text.primary }]}>
+          {actionLabel}
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color={palette.text.secondary} />
+      </View>
       {onDismiss ? (
         <Pressable
-          onPress={onDismiss}
+          onPress={(event) => {
+            event.stopPropagation();
+            onDismiss();
+          }}
           accessibilityRole="button"
           accessibilityLabel={t("member.home.dismissBanner", { title })}
           style={({ pressed }) => [
@@ -170,20 +172,51 @@ function Banner({
           <Ionicons name="close" size={16} color={palette.text.tertiary} />
         </Pressable>
       ) : null}
-    </Card>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: spacing.sm },
-  banner: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  copy: { flex: 1, gap: 2 },
-  title: { ...typography.cardTitle },
-  body: { ...typography.small },
-  dismiss: {
+  stack: { gap: spacing.xs },
+  banner: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: spacing.xs,
     minHeight: 40,
-    minWidth: 40,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  copy: { flex: 1, gap: 2 },
+  title: {
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
+  },
+  body: { ...typography.small },
+  action: {
+    flexDirection: "row",
+    gap: 2,
+    minHeight: 32,
+    minWidth: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 7,
+  },
+  actionText: {
+    ...typography.caption,
+    maxWidth: 72,
+  },
+  actionPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.98 }],
+  },
+  dismiss: {
+    minHeight: 32,
+    minWidth: 32,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",

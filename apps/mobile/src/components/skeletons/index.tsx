@@ -178,22 +178,14 @@ export function TrainerClientsSkeleton() {
 export function FindGymsSkeleton() {
   return (
     <View style={styles.stack}>
-      <Card variant="compact" contentStyle={styles.searchBar}>
-        <Skeleton width={32} height={32} borderRadius={16} />
-        <Skeleton width="72%" height={16} borderRadius={8} />
-      </Card>
-      {[0, 1, 2, 3, 4].map((item) => (
-        <Card key={item} contentStyle={styles.gymCard}>
-          <View style={styles.row}>
-            <Skeleton width={58} height={58} borderRadius={16} />
-            <CardCopySkeleton titleWidth="64%" lineWidth="46%" />
-            <Skeleton width={72} height={26} borderRadius={13} />
+      {[0, 1, 2].map((item) => (
+        <Card key={item} variant="compact" contentStyle={styles.gymCompactRow}>
+          <Skeleton width={42} height={42} borderRadius={14} />
+          <View style={styles.copy}>
+            <Skeleton width={item === 0 ? "72%" : "58%"} height={16} borderRadius={8} />
+            <Skeleton width={item === 1 ? "44%" : "36%"} height={12} borderRadius={6} />
           </View>
-          <View style={styles.tagRow}>
-            <Skeleton width={58} height={22} borderRadius={11} />
-            <Skeleton width={72} height={22} borderRadius={11} />
-            <Skeleton width={52} height={22} borderRadius={11} />
-          </View>
+          <Skeleton width={58} height={24} borderRadius={12} />
         </Card>
       ))}
     </View>
@@ -300,6 +292,12 @@ const styles = StyleSheet.create({
   },
   gymCard: {
     gap: spacing.md,
+  },
+  gymCompactRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 68,
   },
   gymHeroSkeleton: {
     gap: spacing.lg,

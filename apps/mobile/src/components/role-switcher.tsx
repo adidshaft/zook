@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Role } from "@zook/core";
 
@@ -13,11 +12,9 @@ import {
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { IconBubble, ListRow, ZookChip } from "@/components/primitives";
-import { normalizeWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { titleCaseFromCode } from "@/lib/formatting";
-import { gymBrandColor } from "@/lib/gym-brand";
-import { useT } from "@/lib/i18n";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { routeForRole } from "@/lib/route-guards";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -30,6 +27,23 @@ type RoleCombo = {
   logoUrl?: string | null;
   role: Role;
 };
+
+const roleLabelKeys: Partial<Record<Role, TranslationKey>> = {
+  ADMIN: "roleSwitcher.role.admin",
+  MEMBER: "roleSwitcher.role.member",
+  OWNER: "roleSwitcher.role.owner",
+  PLATFORM_ADMIN: "roleSwitcher.role.platformAdmin",
+  RECEPTIONIST: "roleSwitcher.role.receptionist",
+  TRAINER: "roleSwitcher.role.trainer",
+};
+
+function getRoleLabel(role: Role | null | undefined, t: ReturnType<typeof useT>) {
+  if (!role) {
+    return t("roleSwitcher.role.member");
+  }
+  const labelKey = roleLabelKeys[role];
+  return labelKey ? t(labelKey) : titleCaseFromCode(role);
+}
 
 export function RoleSwitcherChip() {
   const { palette } = useTheme();
@@ -54,11 +68,11 @@ export function RoleSwitcherChip() {
   }, [session?.organizations]);
 
   const currentOrgId = ctx?.org?.orgId ?? activeOrgId;
-  const currentLabel = ctx?.org
-    ? `${ctx.org.name} · ${titleCaseFromCode(ctx.role)}`
-    : ctx?.isPlatformAdmin
-      ? "Zook · Platform Admin"
-      : "Zook · Member";
+  const currentLabel = ctx?.isPlatformAdmin
+    ? t("roleSwitcher.role.platformAdmin")
+    : ctx?.role
+      ? getRoleLabel(ctx.role, t)
+      : t("roleSwitcher.role.member");
   const canSwitch = combos.length > 1;
 
   const renderBackdrop = useCallback(
@@ -98,7 +112,7 @@ export function RoleSwitcherChip() {
         setBusyKey(null);
       }
     },
-    [ctx?.role, currentOrgId, router, switchOrg, switchRole],
+    [ctx?.role, currentOrgId, router, switchOrg, switchRole, t],
   );
 
   if (!ctx) {
@@ -132,10 +146,7 @@ export function RoleSwitcherChip() {
         accessibilityLabel={t("roleSwitcher.currentRoleAccessibility", { role: currentLabel })}
         onPress={() => sheetRef.current?.present()}
         hitSlop={6}
-        style={({ pressed }) => [
-          styles.roleTrigger,
-          pressed ? styles.roleTriggerPressed : null,
-        ]}
+        style={({ pressed }) => [styles.roleTrigger, pressed ? styles.roleTriggerPressed : null]}
       >
         <View style={styles.interactiveChip}>
           {chip}
@@ -156,7 +167,9 @@ export function RoleSwitcherChip() {
       >
         <BottomSheetView style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>{t("roleSwitcher.title")}</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
+              {t("roleSwitcher.title")}
+            </Text>
             <Text style={[styles.sheetSubtitle, { color: palette.text.secondary }]}>
               {t("roleSwitcher.subtitle")}
             </Text>
@@ -189,8 +202,12 @@ export function RoleSwitcherChip() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
-                    subtitle={selected ? t("roleSwitcher.currentWorkspace") : t("roleSwitcher.switchToWorkspace")}
+                    title={`${combo.orgName} · ${getRoleLabel(combo.role, t)}`}
+                    subtitle={
+                      selected
+                        ? t("roleSwitcher.currentWorkspace")
+                        : t("roleSwitcher.switchToWorkspace")
+                    }
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
@@ -206,7 +223,11 @@ export function RoleSwitcherChip() {
                           },
                         ]}
                       >
-                        {busy ? t("roleSwitcher.switching") : selected ? t("roleSwitcher.active") : t("roleSwitcher.use")}
+                        {busy
+                          ? t("roleSwitcher.switching")
+                          : selected
+                            ? t("roleSwitcher.active")
+                            : t("roleSwitcher.use")}
                       </Text>
                     }
                   />
@@ -243,13 +264,11 @@ export function RoleSwitcherContextPill() {
   }, [session?.organizations]);
 
   const currentOrgId = ctx?.org?.orgId ?? activeOrgId;
-  const currentOrganization =
-    session?.organizations.find((organization) => organization.orgId === currentOrgId) ?? ctx?.org ?? null;
-  const currentOrgName = currentOrganization?.name ?? "Zook";
-  const currentLogoUrl = currentOrganization?.logoUrl;
-  const rolesInOrg =
-    session?.organizations.find((organization) => organization.orgId === currentOrgId)?.roles ?? [];
-  const roleTag = rolesInOrg.length > 1 && ctx?.role ? titleCaseFromCode(ctx.role) : null;
+  const roleLabel = ctx?.isPlatformAdmin
+    ? t("roleSwitcher.role.platformAdmin")
+    : ctx?.role
+      ? getRoleLabel(ctx.role, t)
+      : t("roleSwitcher.role.member");
   const canSwitch = combos.length > 1;
 
   const renderBackdrop = useCallback(
@@ -289,7 +308,7 @@ export function RoleSwitcherContextPill() {
         setBusyKey(null);
       }
     },
-    [ctx?.role, currentOrgId, router, switchOrg, switchRole],
+    [ctx?.role, currentOrgId, router, switchOrg, switchRole, t],
   );
 
   if (!ctx) {
@@ -306,22 +325,35 @@ export function RoleSwitcherContextPill() {
         },
       ]}
     >
-      <GymLogoAvatar orgName={currentOrgName} logoUrl={currentLogoUrl} />
-      <Text numberOfLines={1} style={[styles.contextName, { color: palette.text.primary }]}>
-        {currentOrgName}
-      </Text>
-      {roleTag ? (
-        <Text numberOfLines={1} style={[styles.contextRole, { color: palette.text.secondary }]}>
-          {roleTag}
+      <View style={[styles.contextRoleIcon, { backgroundColor: palette.bg.sunken }]}>
+        <Ionicons name="shield-checkmark-outline" size={14} color={palette.text.secondary} />
+      </View>
+      <View style={styles.contextCopy}>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[styles.contextName, { color: palette.text.primary }]}
+        >
+          {roleLabel}
         </Text>
+      </View>
+      {canSwitch ? (
+        <Ionicons
+          name="chevron-down"
+          size={12}
+          color={palette.text.tertiary}
+          style={styles.contextChevron}
+        />
       ) : null}
-      {canSwitch ? <Ionicons name="chevron-down" size={14} color={palette.text.tertiary} /> : null}
     </View>
   );
 
   if (!canSwitch) {
     return (
-      <View testID="role-switcher-context-pill" accessibilityLabel={currentOrgName}>
+      <View
+        testID="role-switcher-context-pill"
+        accessibilityLabel={roleLabel}
+      >
         {trigger}
       </View>
     );
@@ -332,7 +364,7 @@ export function RoleSwitcherContextPill() {
       <Pressable
         testID="role-switcher-context-pill"
         accessibilityRole="button"
-        accessibilityLabel={t("roleSwitcher.currentWorkspaceAccessibility", { workspace: currentOrgName })}
+        accessibilityLabel={t("roleSwitcher.currentRoleAccessibility", { role: roleLabel })}
         onPress={() => sheetRef.current?.present()}
         hitSlop={6}
         style={({ pressed }) => (pressed ? styles.contextTriggerPressed : null)}
@@ -353,7 +385,9 @@ export function RoleSwitcherContextPill() {
       >
         <BottomSheetView style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>{t("roleSwitcher.title")}</Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
+              {t("roleSwitcher.title")}
+            </Text>
             <Text style={[styles.sheetSubtitle, { color: palette.text.secondary }]}>
               {t("roleSwitcher.subtitle")}
             </Text>
@@ -386,8 +420,12 @@ export function RoleSwitcherContextPill() {
                   ]}
                 >
                   <ListRow
-                    title={`${combo.orgName} · ${titleCaseFromCode(combo.role)}`}
-                    subtitle={selected ? t("roleSwitcher.currentWorkspace") : t("roleSwitcher.switchToWorkspace")}
+                    title={`${combo.orgName} · ${getRoleLabel(combo.role, t)}`}
+                    subtitle={
+                      selected
+                        ? t("roleSwitcher.currentWorkspace")
+                        : t("roleSwitcher.switchToWorkspace")
+                    }
                     leading={
                       <IconBubble
                         icon={selected ? "checkmark-circle-outline" : "business-outline"}
@@ -403,7 +441,11 @@ export function RoleSwitcherContextPill() {
                           },
                         ]}
                       >
-                        {busy ? t("roleSwitcher.switching") : selected ? t("roleSwitcher.active") : t("roleSwitcher.use")}
+                        {busy
+                          ? t("roleSwitcher.switching")
+                          : selected
+                            ? t("roleSwitcher.active")
+                            : t("roleSwitcher.use")}
                       </Text>
                     }
                   />
@@ -414,34 +456,6 @@ export function RoleSwitcherContextPill() {
         </BottomSheetView>
       </BottomSheetModal>
     </>
-  );
-}
-
-function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
-  const [didFail, setDidFail] = useState(false);
-  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
-  const brand = gymBrandColor(orgName);
-
-  useEffect(() => {
-    setDidFail(false);
-  }, [normalizedLogoUrl]);
-
-  if (normalizedLogoUrl && !didFail) {
-    return (
-      <Image
-        source={{ uri: normalizedLogoUrl }}
-        style={styles.contextAvatarImage}
-        contentFit="cover"
-        transition={120}
-        onError={() => setDidFail(true)}
-      />
-    );
-  }
-
-  return (
-    <View style={[styles.contextAvatar, { backgroundColor: brand.soft }]}>
-      <Text style={[styles.contextAvatarText, { color: brand.solid }]}>{brand.initial}</Text>
-    </View>
   );
 }
 
@@ -468,41 +482,44 @@ const styles = StyleSheet.create({
   contextPill: {
     alignItems: "center",
     borderCurve: "continuous",
-    borderRadius: 999,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
-    gap: spacing.xs,
-    maxWidth: Platform.OS === "android" ? 232 : 280,
+    flexShrink: 1,
+    gap: 6,
+    maxWidth: 132,
     minHeight: 36,
     minWidth: 0,
-    paddingLeft: 6,
-    paddingRight: spacing.sm,
+    paddingLeft: 7,
+    paddingRight: 8,
+    paddingVertical: 3,
   },
-  contextAvatar: {
+  contextRoleIcon: {
     alignItems: "center",
-    borderRadius: 999,
-    height: 20,
+    borderRadius: 8,
+    height: 22,
     justifyContent: "center",
-    width: 20,
+    overflow: "hidden",
+    width: 22,
   },
-  contextAvatarImage: {
-    borderRadius: 999,
-    height: 20,
-    width: 20,
-  },
-  contextAvatarText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 10,
-    lineHeight: 12,
-  },
-  contextName: {
-    ...typography.caption,
+  contextCopy: {
+    alignItems: "flex-start",
+    flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
-  contextRole: {
-    ...typography.caption,
-    maxWidth: Platform.OS === "android" ? 54 : 72,
+  contextName: {
+    fontSize: 12,
+    lineHeight: 14,
+    fontFamily: "Inter_700Bold",
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: "left",
+    width: "100%",
+  },
+  contextChevron: {
+    flexShrink: 0,
+    marginLeft: -2,
   },
   contextTriggerPressed: {
     opacity: 0.84,

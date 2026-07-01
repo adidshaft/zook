@@ -105,8 +105,17 @@ export function ThemePreferenceSwitcher() {
   );
 }
 
-export function ThemeToggleButton() {
+export function ThemeToggleButton({ locale = "en" }: { locale?: "en" | "hi" }) {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("light");
+  const nextTheme = currentTheme === "light" ? "dark" : "light";
+  const actionLabel =
+    locale === "hi"
+      ? nextTheme === "dark"
+        ? "डार्क थीम करें"
+        : "लाइट थीम करें"
+      : nextTheme === "dark"
+        ? "Switch to dark theme"
+        : "Switch to light theme";
 
   useEffect(() => {
     const pref = readCookiePreference();
@@ -135,8 +144,8 @@ export function ThemeToggleButton() {
     <button
       type="button"
       onClick={toggle}
-      title={currentTheme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme"}
-      aria-label="Toggle Theme"
+      title={actionLabel}
+      aria-label={actionLabel}
       className="zook-focus group flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:scale-105 active:scale-95"
     >
       {currentTheme === "light" ? (

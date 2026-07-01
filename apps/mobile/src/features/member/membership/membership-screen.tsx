@@ -29,29 +29,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
   BranchSelectorChip,
-  IconBubble,
   AppHeader,
-  MoneySummaryCard,
+  DatePickerField,
   QueryErrorState,
   SectionHeader,
+  SegmentedControl,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { RoleSwitcherChip } from "@/components/role-switcher";
 import {
   ActiveMembershipCard,
   AutopayCard,
   MembershipHistorySection,
   PaymentsSection,
 } from "@/components/membership";
+import { isAutopayEnabled, planTypeLabel } from "@/components/membership/helpers";
 import { MembershipSkeleton, PlansSkeleton } from "@/components/skeletons";
 import { toWebUrl } from "@/lib/api";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
 import { useAppFocusInvalidation } from "@/lib/app-focus";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { memberApi, paymentsApi } from "@/lib/domain-api";
-import { formatInr, formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
-import { useT } from "@/lib/i18n";
+import { formatInr, formatLongDate } from "@/lib/formatting";
+import { useI18n, useT, type TranslationKey } from "@/lib/i18n";
 import {
   useGeneratePaymentDocument,
   useGymProfile,
@@ -127,6 +127,7 @@ type PaymentRecord = {
 };
 
 type PaymentDocumentKind = "receipt" | "invoice";
+type MembershipTab = "current" | "history" | "payments";
 
 function daysUntil(dateStr?: string | null) {
   if (!dateStr) return null;
@@ -149,8 +150,31 @@ function pauseDefaultDate() {
 
 const pauseReasonOptions = ["Medical", "Travel", "Injury", "Other"];
 
+function pauseReasonLabelKey(reason: string): TranslationKey {
+  switch (reason) {
+    case "Medical":
+      return "member.membership.pauseReasonMedical";
+    case "Travel":
+      return "member.membership.pauseReasonTravel";
+    case "Injury":
+      return "member.membership.pauseReasonInjury";
+    default:
+      return "member.membership.pauseReasonOther";
+  }
+}
+
 function planIdFor(subscription?: MembershipRecord | null) {
   return subscription?.plan?.id ?? subscription?.planId ?? undefined;
+}
+
+function shouldShowJoinDifferentGym(subscription?: MembershipRecord | null) {
+  const status = String(subscription?.status ?? "").toUpperCase();
+  return (
+    !subscription ||
+    status.includes("CANCEL") ||
+    status.includes("EXPIRED") ||
+    status.includes("INACTIVE")
+  );
 }
 
 function checkoutUrl(url?: string | null) {
@@ -188,7 +212,7 @@ function subscriptionTimestamp(subscription: MembershipRecord) {
 export default function MembershipScreen() {
   const router = useRouter();
   const { mode, palette } = useTheme();
-  const t = useT();
+  const { locale, t } = useI18n();
   const routeParams = useLocalSearchParams<{
     focus?: string;
     notificationId?: string;
@@ -219,14 +243,18 @@ export default function MembershipScreen() {
     latestSubscription?.organization?.username ?? activeOrganization?.username ?? undefined;
   const gymQuery = useGymProfile(gymUsername ?? "");
   const availablePlans = useMemo(() => gymQuery.data?.plans ?? [], [gymQuery.data?.plans]);
-  const activeCount = memberships.filter((s) => s.status === "ACTIVE").length;
   const expiringSoonCount = memberships.filter((s) => {
     if (s.status !== "ACTIVE" || !s.endsAt) return false;
     const days = daysUntil(s.endsAt);
     return days !== null && days <= 30;
   }).length;
   const latestDaysLeft = latestSubscription ? daysUntil(latestSubscription.endsAt) : null;
+  const membershipStatItems =
+    expiringSoonCount > 0
+      ? [{ label: t("member.membership.expiringSoon"), value: expiringSoonCount }]
+      : [];
   const [renewalOpen, setRenewalOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [renewalTarget, setRenewalTarget] = useState<MembershipRecord | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>();
   const [renewalStatus, setRenewalStatus] = useState("");
@@ -243,6 +271,7 @@ export default function MembershipScreen() {
   const [documentBusyKey, setDocumentBusyKey] = useState<string | null>(null);
   const [pauseResumesAt, setPauseResumesAt] = useState(() => pauseDefaultDate());
   const [pauseReason, setPauseReason] = useState(pauseReasonOptions[0]!);
+  const [visibleTab, setVisibleTab] = useState<MembershipTab>("current");
   const refreshAfterCheckoutRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -252,6 +281,14 @@ export default function MembershipScreen() {
   const selectedPlan = useMemo(
     () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? renewalTarget?.plan ?? null,
     [availablePlans, renewalTarget?.plan, selectedPlanId],
+  );
+  const tabOptions = useMemo(
+    () => [
+      { label: t("member.membership.tabCurrent"), value: "current" as const },
+      { label: t("member.membership.tabHistory"), value: "history" as const },
+      { label: t("member.membership.tabPayments"), value: "payments" as const },
+    ],
+    [t],
   );
 
   useEffect(() => {
@@ -272,7 +309,10 @@ export default function MembershipScreen() {
     }
   }, [routeParams.focus]);
 
-  function registerSectionOffset(section: "active" | "history" | "payments", event: LayoutChangeEvent) {
+  function registerSectionOffset(
+    section: "active" | "history" | "payments",
+    event: LayoutChangeEvent,
+  ) {
     sectionOffsetsRef.current[section] = event.nativeEvent.layout.y;
   }
 
@@ -328,6 +368,10 @@ export default function MembershipScreen() {
     setRenewalStatus("");
   }
 
+  function closeManageSheet() {
+    setManageOpen(false);
+  }
+
   useEffect(() => {
     if (!focusTarget) {
       handledFocusRef.current = null;
@@ -338,6 +382,9 @@ export default function MembershipScreen() {
     }
     if (focusTarget === "buy" || focusTarget === "checkout") {
       if (!latestSubscription) {
+        if (membershipsQuery.isLoading) {
+          return;
+        }
         handledFocusRef.current = focusTarget;
         return;
       }
@@ -350,6 +397,7 @@ export default function MembershipScreen() {
       return;
     }
     if (focusTarget === "history") {
+      setVisibleTab("history");
       if (!scrollToSection(sortedSubscriptions.length > 1 ? "history" : "payments")) {
         return;
       }
@@ -357,6 +405,7 @@ export default function MembershipScreen() {
       return;
     }
     if (focusTarget === "payments") {
+      setVisibleTab("payments");
       if (!scrollToSection("payments")) {
         return;
       }
@@ -364,6 +413,7 @@ export default function MembershipScreen() {
       return;
     }
     if (focusTarget === "membership") {
+      setVisibleTab("current");
       if (!scrollToSection("active")) {
         return;
       }
@@ -399,7 +449,9 @@ export default function MembershipScreen() {
         return;
       }
       const url = checkoutUrlWithReturnUrl(result.checkoutUrl, result.session?.id ?? token);
-      setRenewalStatus(url ? t("member.membership.continuingBrowser") : t("member.membership.renewalRequestSent"));
+      setRenewalStatus(
+        url ? t("member.membership.continuingBrowser") : t("member.membership.renewalRequestSent"),
+      );
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -482,7 +534,11 @@ export default function MembershipScreen() {
         planId: selectedPlanId,
       });
       setRenewalStatus(t("member.membership.planSwitched"));
-      showToast({ tone: "success", haptic: "success", message: t("member.membership.planSwitched") });
+      showToast({
+        tone: "success",
+        haptic: "success",
+        message: t("member.membership.planSwitched"),
+      });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["me", "home"] }),
@@ -507,10 +563,16 @@ export default function MembershipScreen() {
     }
     Alert.alert(
       t("member.membership.pauseConfirmTitle"),
-      t("member.membership.pauseConfirmBody", { date: formatLongDate(pauseResumesAt.toISOString()) }),
+      t("member.membership.pauseConfirmBody", {
+        date: formatLongDate(pauseResumesAt.toISOString(), undefined, locale),
+      }),
       [
         { text: t("common.cancel"), style: "cancel" },
-        { text: t("member.membership.pause"), style: "destructive", onPress: () => void performPauseOrResume(subscription) },
+        {
+          text: t("member.membership.pause"),
+          style: "destructive",
+          onPress: () => void performPauseOrResume(subscription),
+        },
       ],
     );
   }
@@ -538,11 +600,17 @@ export default function MembershipScreen() {
           resumesAt: pauseResumesAt.toISOString(),
           reason: pauseReason,
         });
-        setMembershipActionStatus(t("member.membership.pausedUntil", { date: formatLongDate(pauseResumesAt.toISOString()) }));
+        setMembershipActionStatus(
+          t("member.membership.pausedUntil", {
+            date: formatLongDate(pauseResumesAt.toISOString(), undefined, locale),
+          }),
+        );
         showToast({
           tone: "success",
           haptic: "success",
-          message: t("member.membership.pausedToast", { date: formatLongDate(pauseResumesAt.toISOString()) }),
+          message: t("member.membership.pausedToast", {
+            date: formatLongDate(pauseResumesAt.toISOString(), undefined, locale),
+          }),
         });
       }
       await Promise.all([
@@ -616,12 +684,18 @@ export default function MembershipScreen() {
       showToast({
         tone: "success",
         haptic: "success",
-        message: kind === "receipt" ? t("member.membership.receiptGenerated") : t("member.membership.invoiceGenerated"),
+        message:
+          kind === "receipt"
+            ? t("member.membership.receiptGenerated")
+            : t("member.membership.invoiceGenerated"),
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       showToast({
-        title: kind === "receipt" ? t("member.membership.receiptUnavailable") : t("member.membership.invoiceUnavailable"),
+        title:
+          kind === "receipt"
+            ? t("member.membership.receiptUnavailable")
+            : t("member.membership.invoiceUnavailable"),
         message: getApiErrorMessage(error),
         tone: "danger",
         haptic: "error",
@@ -656,7 +730,9 @@ export default function MembershipScreen() {
       <ZookScreen testID="membership-screen">
         <ScrollView
           ref={scrollViewRef}
+          accessibilityElementsHidden={renewalOpen}
           contentInsetAdjustmentBehavior="never"
+          importantForAccessibility={renewalOpen ? "no-hide-descendants" : "auto"}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
@@ -673,20 +749,19 @@ export default function MembershipScreen() {
             title={t("member.membership.title")}
             contextSlot={
               <View style={styles.headerContext}>
-                <RoleSwitcherChip />
-                <BranchSelectorChip />
+                <BranchSelectorChip variant="header" style={styles.headerBranchSelector} />
               </View>
             }
             subtitle={
               memberships.length
-                ? t("member.membership.summary", { active: activeCount, expiring: expiringSoonCount, total: memberships.length })
+                ? undefined
                 : t("member.membership.noActivePlans")
             }
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
                 accessibilityRole="button"
-                accessibilityLabel={t("shop.back")}
+                accessibilityLabel={t("common.back")}
                 style={[
                   styles.iconButton,
                   {
@@ -703,19 +778,22 @@ export default function MembershipScreen() {
 
           {focusTarget ? (
             <Card variant="selected" contentStyle={styles.calloutContent}>
-              <IconBubble
-                icon={
+              <Ionicons
+                name={
                   focusTarget === "history" || focusTarget === "payments"
                     ? "receipt-outline"
                     : focusTarget === "buy" || focusTarget === "checkout"
                       ? "card-outline"
-                      : "notifications"
+                      : "notifications-outline"
                 }
-                tone={focusTarget === "buy" || focusTarget === "checkout" ? "blue" : "neutral"}
-                size={36}
+                size={16}
+                color={palette.accent.base}
               />
               <View style={styles.calloutCopy}>
-                <Text style={[styles.calloutTitle, { color: palette.text.primary }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.calloutTitle, { color: palette.text.primary }]}
+                >
                   {focusTarget === "buy"
                     ? t("member.membership.choosePlan")
                     : focusTarget === "checkout"
@@ -726,9 +804,12 @@ export default function MembershipScreen() {
                           ? t("member.membership.paymentDocuments")
                           : t("member.membership.update")}
                 </Text>
-                <Text style={[styles.calloutBody, { color: palette.text.secondary }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.calloutBody, { color: palette.text.secondary }]}
+                >
                   {focusTarget === "buy" || focusTarget === "checkout"
-                      ? latestSubscription
+                    ? latestSubscription
                       ? t("member.membership.renewalFlowOpened")
                       : t("member.membership.browseGymsBody")
                     : focusTarget === "history"
@@ -746,9 +827,14 @@ export default function MembershipScreen() {
           {waitingCheckoutSessionId ? (
             <Card variant="compact" contentStyle={styles.browserReturnContent}>
               <View style={styles.browserReturnCopy}>
-                <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>{t("member.membership.continuingBrowserTitle")}</Text>
+                <Text style={[styles.browserReturnTitle, { color: palette.text.primary }]}>
+                  {t("member.membership.continuingBrowserTitle")}
+                </Text>
                 <Text style={[styles.browserReturnBody, { color: palette.text.secondary }]}>
                   {t("member.membership.browserReturnBody")}
+                </Text>
+                <Text style={[styles.browserReturnHint, { color: palette.text.tertiary }]}>
+                  {t("member.membership.browserReturnHint")}
                 </Text>
               </View>
               <ZookButton
@@ -764,6 +850,33 @@ export default function MembershipScreen() {
 
           {membershipsQuery.isLoading ? <MembershipSkeleton /> : null}
 
+          {!membershipsQuery.isLoading && memberships.length ? (
+            <View style={styles.membershipStatsRow}>
+              {membershipStatItems.map((item) => (
+                <View
+                  key={item.label}
+                  style={[
+                    styles.membershipStatChip,
+                    {
+                      backgroundColor: palette.bg.sunken,
+                      borderColor: palette.border.subtle,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.membershipStatValue, { color: palette.text.primary }]}>
+                    {item.value}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.membershipStatLabel, { color: palette.text.secondary }]}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           {membershipsQuery.isError ? (
             <QueryErrorState error={membershipsQuery.error} onRetry={() => void onRefresh()} />
           ) : null}
@@ -775,7 +888,9 @@ export default function MembershipScreen() {
           {!membershipsQuery.isLoading && !memberships.length ? (
             <Card variant="compact" contentStyle={styles.emptyContent}>
               <View style={styles.emptyCopy}>
-                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>{t("member.membership.noMemberships")}</Text>
+                <Text style={[styles.emptyTitle, { color: palette.text.primary }]}>
+                  {t("member.membership.noMemberships")}
+                </Text>
                 <Text style={[styles.emptyBody, { color: palette.text.secondary }]}>
                   {t("member.membership.browseGymsBody")}
                 </Text>
@@ -786,78 +901,461 @@ export default function MembershipScreen() {
             </Card>
           ) : null}
 
-          {latestSubscription ? (
-            <View onLayout={(event) => registerSectionOffset("active", event)}>
-              <SectionHeader title={t("member.membership.activePlan")} />
-              <ActiveMembershipCard
-                activeOrganizationName={activeOrganization?.name}
-                actionBusy={membershipActionBusy}
-                actionStatus={membershipActionStatus}
-                daysLeft={latestDaysLeft}
-                onOpenRenewal={openRenewal}
-                onPauseDateChange={setPauseResumesAt}
-                onPauseReasonChange={setPauseReason}
-                onPauseOrResume={(subscription) => void pauseOrResumeMembership(subscription)}
-                onTerminate={(subscription) => cancelMembership(subscription)}
-                pauseMinimumDate={pauseMinimumDate}
-                pauseReason={pauseReason}
-                pauseReasonOptions={pauseReasonOptions}
-                pauseResumesAt={pauseResumesAt}
-                subscription={latestSubscription}
-                terminateBusy={terminateBusy}
-                terminateStatus={terminateStatus}
+          {!membershipsQuery.isLoading && memberships.length ? (
+            <View style={styles.tabbedContent}>
+              <SegmentedControl<MembershipTab>
+                options={tabOptions}
+                value={visibleTab}
+                onChange={(nextTab) => {
+                  setVisibleTab(nextTab);
+                  requestAnimationFrame(() => {
+                    scrollToSection(
+                      nextTab === "current"
+                        ? "active"
+                        : nextTab === "history"
+                          ? "history"
+                          : "payments",
+                    );
+                  });
+                }}
               />
 
-              <AutopayCard
-                autopayBusy={autopayBusy}
-                autopayStatus={autopayStatus}
-                onCancel={(subscription) => void cancelAutopay(subscription)}
-                onEnable={(subscription) => void enableAutopay(subscription)}
-                subscription={latestSubscription}
-              />
+              {visibleTab === "current" && latestSubscription ? (
+                <View
+                  style={styles.tabPanel}
+                  onLayout={(event) => registerSectionOffset("active", event)}
+                >
+                  <SectionHeader title={t("member.membership.activePlan")} />
+                  <ActiveMembershipCard
+                    actionBusy={membershipActionBusy}
+                    actionStatus={membershipActionStatus}
+                    daysLeft={latestDaysLeft}
+                    onOpenRenewal={openRenewal}
+                    onOpenManage={() => setManageOpen(true)}
+                    onPauseDateChange={setPauseResumesAt}
+                    onPauseReasonChange={setPauseReason}
+                    onPauseOrResume={(subscription) => void pauseOrResumeMembership(subscription)}
+                    onTerminate={(subscription) => cancelMembership(subscription)}
+                    pauseMinimumDate={pauseMinimumDate}
+                    pauseReason={pauseReason}
+                    pauseReasonOptions={pauseReasonOptions}
+                    pauseResumesAt={pauseResumesAt}
+                    subscription={latestSubscription}
+                    terminateBusy={terminateBusy}
+                    terminateStatus={terminateStatus}
+                  />
+                </View>
+              ) : null}
+
+              {visibleTab === "history" ? (
+                <View
+                  style={styles.tabPanel}
+                  onLayout={(event) => registerSectionOffset("history", event)}
+                >
+                  <MembershipHistorySection subscriptions={sortedSubscriptions} />
+                </View>
+              ) : null}
+
+              {visibleTab === "payments" ? (
+                <View
+                  style={styles.tabPanel}
+                  onLayout={(event) => registerSectionOffset("payments", event)}
+                >
+                  <PaymentsSection
+                    documentBusyKey={documentBusyKey}
+                    invoices={invoices}
+                    onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
+                    onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
+                    payments={payments}
+                  />
+                </View>
+              ) : null}
             </View>
           ) : null}
-
-          <View onLayout={(event) => registerSectionOffset("history", event)}>
-            <MembershipHistorySection subscriptions={sortedSubscriptions} />
-          </View>
-
-          <View onLayout={(event) => registerSectionOffset("payments", event)}>
-            <PaymentsSection
-              documentBusyKey={documentBusyKey}
-              invoices={invoices}
-              onCreateDocument={(payment, kind) => void createPaymentDocument(payment, kind)}
-              onDownloadInvoice={(invoice) => void downloadInvoice(invoice)}
-              payments={payments}
-            />
-          </View>
         </ScrollView>
         <RenewalSheet
           availablePlans={availablePlans}
           currentPlan={renewalTarget?.plan ?? null}
-          gymName={renewalTarget?.organization?.name ?? activeOrganization?.name ?? t("member.membership.yourGym")}
+          currentSubscription={renewalTarget}
+          gymName={
+            renewalTarget?.organization?.name ??
+            activeOrganization?.name ??
+            t("member.membership.yourGym")
+          }
+          showJoinDifferentGym={shouldShowJoinDifferentGym(renewalTarget)}
           loadingPlans={gymQuery.isLoading}
           onClose={closeRenewal}
+          onEnableAutopay={(subscription) => void enableAutopay(subscription)}
           onRenew={() => void renewMembership()}
           onSwitch={() => void switchMembershipNow()}
           open={renewalOpen}
+          autopayBusy={autopayBusy}
+          autopayStatus={autopayStatus}
           renewing={renewing || membershipActionBusy}
           selectedPlan={selectedPlan}
           selectedPlanId={selectedPlanId}
           setSelectedPlanId={setSelectedPlanId}
           status={renewalStatus}
         />
+        {latestSubscription ? (
+          <MembershipManageSheet
+            actionBusy={membershipActionBusy}
+            actionStatus={membershipActionStatus}
+            autopayBusy={autopayBusy}
+            autopayStatus={autopayStatus}
+            onClose={closeManageSheet}
+            onCancelAutopay={() => void cancelAutopay(latestSubscription)}
+            onEnableAutopay={() => void enableAutopay(latestSubscription)}
+            onPauseDateChange={setPauseResumesAt}
+            onPauseOrResume={() => void pauseOrResumeMembership(latestSubscription)}
+            onPauseReasonChange={setPauseReason}
+            onTerminate={() => cancelMembership(latestSubscription)}
+            open={manageOpen}
+            pauseMinimumDate={pauseMinimumDate}
+            pauseReason={pauseReason}
+            pauseReasonOptions={pauseReasonOptions}
+            pauseResumesAt={pauseResumesAt}
+            subscription={latestSubscription}
+            terminateBusy={terminateBusy}
+            terminateStatus={terminateStatus}
+          />
+        ) : null}
       </ZookScreen>
     </>
   );
 }
 
+function MembershipManageSheet({
+  actionBusy,
+  actionStatus,
+  autopayBusy,
+  autopayStatus,
+  onCancelAutopay,
+  onClose,
+  onEnableAutopay,
+  onPauseDateChange,
+  onPauseOrResume,
+  onPauseReasonChange,
+  onTerminate,
+  open,
+  pauseMinimumDate,
+  pauseReason,
+  pauseReasonOptions,
+  pauseResumesAt,
+  subscription,
+  terminateBusy,
+  terminateStatus,
+}: {
+  actionBusy: boolean;
+  actionStatus: string;
+  autopayBusy: boolean;
+  autopayStatus: string;
+  onCancelAutopay: () => void;
+  onClose: () => void;
+  onEnableAutopay: () => void;
+  onPauseDateChange: (date: Date) => void;
+  onPauseOrResume: () => void;
+  onPauseReasonChange: (reason: string) => void;
+  onTerminate: () => void;
+  open: boolean;
+  pauseMinimumDate: () => Date;
+  pauseReason: string;
+  pauseReasonOptions: string[];
+  pauseResumesAt: Date;
+  subscription: MembershipRecord;
+  terminateBusy?: boolean;
+  terminateStatus?: string;
+}) {
+  const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
+  const { locale, t } = useI18n();
+  const { height: screenHeight } = useWindowDimensions();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["CONTENT_HEIGHT"], []);
+  const canPause = subscription.status === "ACTIVE";
+  const autopayEnabled = isAutopayEnabled(subscription.autopay);
+  const [pauseOpen, setPauseOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    if (open) {
+      sheetRef.current?.present();
+      return;
+    }
+    sheetRef.current?.dismiss();
+  }, [open]);
+
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      snapPoints={snapPoints}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{
+        ...styles.sheetBackground,
+        backgroundColor: palette.bg.elevated,
+        borderColor: palette.border.default,
+      }}
+      handleIndicatorStyle={{ ...styles.sheetHandle, backgroundColor: palette.border.strong }}
+      maxDynamicContentSize={screenHeight * 0.76}
+      bottomInset={insets.bottom + 12}
+      onDismiss={onClose}
+    >
+      <BottomSheetView style={styles.sheet}>
+        <View style={styles.sheetHeader}>
+          <View style={styles.sheetTitleCopy}>
+            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>
+              {t("member.membership.manageMembership")}
+            </Text>
+            <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
+              {subscription.plan?.name ?? t("member.membership.activePlan")}
+            </Text>
+            <Text style={[styles.sheetBody, { color: palette.text.secondary }]}>
+              {t("member.membership.manageMembershipBody")}
+            </Text>
+          </View>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.dismiss")}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
+              pressed ? styles.closeButtonPressed : null,
+            ]}
+          >
+            <Ionicons name="close" size={18} color={palette.text.primary} />
+          </Pressable>
+        </View>
+
+        <View
+          style={[
+            styles.manageSummaryRow,
+            { backgroundColor: palette.bg.sunken, borderColor: palette.border.subtle },
+          ]}
+        >
+          <Ionicons
+            name={autopayEnabled ? "repeat-outline" : "card-outline"}
+            size={18}
+            color={autopayEnabled ? palette.accent.base : palette.text.secondary}
+          />
+          <View style={styles.manageSummaryCopy}>
+            <Text style={[styles.manageSummaryTitle, { color: palette.text.primary }]}>
+              {autopayEnabled
+                ? t("member.membership.autopayEnabledTitle")
+                : t("member.membership.manualRenewalTitle")}
+            </Text>
+            <Text numberOfLines={2} style={[styles.manageSummaryBody, { color: palette.text.secondary }]}>
+              {autopayEnabled
+                ? subscription.autopay?.nextChargeAt
+                  ? t("member.membership.nextRenewalDate", {
+                      date: formatLongDate(subscription.autopay.nextChargeAt, undefined, locale),
+                    })
+                  : t("member.membership.recurringRenewalEnabled")
+                : t("member.membership.manualRenewalBody")}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.manageQuickActions}>
+          {autopayEnabled ? (
+            <ZookButton
+              testID="membership-cancel-autopay-button"
+              variant="secondary"
+              disabled={autopayBusy}
+              onPress={onCancelAutopay}
+              icon="close-circle-outline"
+              style={styles.manageQuickAction}
+            >
+              {t("member.membership.cancelAutopay")}
+            </ZookButton>
+          ) : subscription.status === "ACTIVE" ? (
+            <ZookButton
+              testID="membership-enable-autopay-button"
+              disabled={autopayBusy}
+              busy={autopayBusy}
+              busyLabel={t("member.membership.starting")}
+              onPress={onEnableAutopay}
+              icon="flash-outline"
+              style={styles.manageQuickAction}
+            >
+              {t("member.membership.autopaySetupAction")}
+            </ZookButton>
+          ) : null}
+        </View>
+        {autopayStatus ? (
+          <Text style={[styles.statusMessage, { color: palette.feedback.info }]}>
+            {autopayStatus}
+          </Text>
+        ) : null}
+
+        {canPause ? (
+          <View style={[styles.manageDisclosure, { borderColor: palette.border.subtle }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("member.membership.pauseMembership")}
+              accessibilityState={{ expanded: pauseOpen }}
+              onPress={() => setPauseOpen((current) => !current)}
+              style={({ pressed }) => [
+                styles.manageDisclosureHeader,
+                pressed ? styles.manageDisclosurePressed : null,
+              ]}
+            >
+              <View style={styles.manageDisclosureCopy}>
+                <Text style={[styles.manageDisclosureTitle, { color: palette.text.primary }]}>
+                  {t("member.membership.pauseMembership")}
+                </Text>
+                <Text numberOfLines={2} style={[styles.manageDisclosureBody, { color: palette.text.secondary }]}>
+                  {t("member.membership.pauseDisclosureBody")}
+                </Text>
+              </View>
+              <Ionicons
+                name={pauseOpen ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={palette.text.secondary}
+              />
+            </Pressable>
+            {pauseOpen ? (
+              <View style={styles.manageSheetGroup}>
+                <DatePickerField
+                  accessibilityLabel={t("member.membership.pauseEndDateAccessibility")}
+                  label={t("member.membership.pauseUntil")}
+                  value={pauseResumesAt}
+                  minimumDate={pauseMinimumDate()}
+                  onChange={onPauseDateChange}
+                />
+                <Text style={[styles.manageSheetHelp, { color: palette.text.secondary }]}>
+                  {t("member.membership.pauseHelp")}
+                </Text>
+                <View style={styles.manageReasonRow}>
+                  {pauseReasonOptions.map((reason) => {
+                    const selected = reason === pauseReason;
+                    return (
+                      <Pressable
+                        key={reason}
+                        accessibilityRole="button"
+                        onPress={() => onPauseReasonChange(reason)}
+                        style={({ pressed }) => [
+                          styles.manageReasonChip,
+                          {
+                            backgroundColor: selected ? palette.surface.accentSoft : palette.bg.sunken,
+                            borderColor: selected ? palette.border.focus : palette.border.subtle,
+                          },
+                          pressed ? styles.manageReasonChipPressed : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.manageReasonText,
+                            { color: selected ? palette.accent.base : palette.text.secondary },
+                          ]}
+                        >
+                          {t(pauseReasonLabelKey(reason))}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <ZookButton
+                  testID="membership-pause-resume-button"
+                  variant="secondary"
+                  disabled={actionBusy}
+                  onPress={onPauseOrResume}
+                  icon="pause-circle-outline"
+                >
+                  {t("member.membership.pauseMembership")}
+                </ZookButton>
+              </View>
+            ) : null}
+          </View>
+        ) : subscription.status === "PAUSED" ? (
+          <ZookButton
+            testID="membership-pause-resume-button"
+            variant="secondary"
+            disabled={actionBusy}
+            onPress={onPauseOrResume}
+            icon="play-circle-outline"
+          >
+            {t("member.membership.resumeMembership")}
+          </ZookButton>
+        ) : null}
+
+        {actionStatus ? (
+          <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
+        ) : null}
+        {subscription.status !== "CANCELLED" ? (
+          <View style={[styles.manageDisclosure, { borderColor: palette.border.subtle }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("member.membership.endMembershipOptions")}
+              accessibilityState={{ expanded: endOpen }}
+              onPress={() => setEndOpen((current) => !current)}
+              style={({ pressed }) => [
+                styles.manageDisclosureHeader,
+                pressed ? styles.manageDisclosurePressed : null,
+              ]}
+            >
+              <View style={styles.manageDisclosureCopy}>
+                <Text style={[styles.manageDisclosureTitle, { color: palette.text.primary }]}>
+                  {t("member.membership.endMembershipOptions")}
+                </Text>
+                <Text numberOfLines={2} style={[styles.manageDisclosureBody, { color: palette.text.secondary }]}>
+                  {t("member.membership.endMembershipBody")}
+                </Text>
+              </View>
+              <Ionicons
+                name={endOpen ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={palette.text.secondary}
+              />
+            </Pressable>
+            {endOpen ? (
+              <View style={styles.manageSheetGroup}>
+                <ZookButton
+                  testID="membership-cancel-button"
+                  variant="destructive"
+                  disabled={Boolean(terminateBusy)}
+                  onPress={onTerminate}
+                  icon="close-circle-outline"
+                >
+                  {t("member.membership.cancelMembership")}
+                </ZookButton>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+        {terminateStatus ? (
+          <Text style={[styles.statusMessage, { color: palette.feedback.danger }]}>
+            {terminateStatus}
+          </Text>
+        ) : null}
+      </BottomSheetView>
+    </BottomSheetModal>
+  );
+}
+
 function RenewalSheet({
+  autopayBusy,
+  autopayStatus,
   availablePlans,
   currentPlan,
+  currentSubscription,
   gymName,
+  showJoinDifferentGym,
   loadingPlans,
   onClose,
+  onEnableAutopay,
   onRenew,
   onSwitch,
   open,
@@ -867,11 +1365,16 @@ function RenewalSheet({
   setSelectedPlanId,
   status,
 }: {
+  autopayBusy: boolean;
+  autopayStatus: string;
   availablePlans: PublicPlanSummary[];
   currentPlan: MembershipRecord["plan"];
+  currentSubscription: MembershipRecord | null;
   gymName: string;
+  showJoinDifferentGym: boolean;
   loadingPlans: boolean;
   onClose: () => void;
+  onEnableAutopay: (subscription: MembershipRecord) => void;
   onRenew: () => void;
   onSwitch: () => void;
   open: boolean;
@@ -881,6 +1384,7 @@ function RenewalSheet({
   setSelectedPlanId: (planId: string) => void;
   status: string;
 }) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { mode, palette } = useTheme();
   const t = useT();
@@ -893,6 +1397,13 @@ function RenewalSheet({
     : currentPlan?.id
       ? [currentPlan as PublicPlanSummary]
       : [];
+  const selectedAmount =
+    selectedPlan && "pricePaise" in selectedPlan ? formatInr(selectedPlan.pricePaise) : null;
+  const showAutopayPrompt =
+    Boolean(currentSubscription) &&
+    currentSubscription?.status === "ACTIVE" &&
+    !isAutopayEnabled(currentSubscription.autopay);
+  const [autopayChoiceOpen, setAutopayChoiceOpen] = useState(false);
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -934,9 +1445,11 @@ function RenewalSheet({
       <BottomSheetView style={styles.sheet}>
         <View style={styles.sheetHeader}>
           <View style={styles.sheetTitleCopy}>
-            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>{t("member.membership.renewMembership")}</Text>
+            <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>
+              {t("member.membership.renewMembership")}
+            </Text>
             <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
-              {selectedPlan?.name ?? currentPlan?.name ?? t("member.membership.currentPlan")}
+              {t("member.membership.choosePlan")}
             </Text>
             <Text style={[styles.sheetBody, { color: palette.text.secondary }]}>
               {t("member.membership.renewalSheetBody", { gym: gymName })}
@@ -978,7 +1491,9 @@ function RenewalSheet({
                     if (!renewing) setSelectedPlanId(plan.id);
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={t("member.membership.selectPlanAccessibility", { plan: plan.name })}
+                  accessibilityLabel={t("member.membership.selectPlanAccessibility", {
+                    plan: plan.name,
+                  })}
                   accessibilityState={{ selected, disabled: renewing, busy: selected && renewing }}
                   disabled={renewing}
                   style={({ pressed }) => [
@@ -995,9 +1510,11 @@ function RenewalSheet({
                   ]}
                 >
                   <View style={styles.planOptionCopy}>
-                    <Text style={[styles.planOptionTitle, { color: palette.text.primary }]}>{plan.name}</Text>
+                    <Text style={[styles.planOptionTitle, { color: palette.text.primary }]}>
+                      {plan.name}
+                    </Text>
                     <Text style={[styles.planOptionMeta, { color: palette.text.secondary }]}>
-                      {titleCaseFromCode(plan.type ?? "MEMBERSHIP")} · {formatInr(plan.pricePaise)}
+                      {planTypeLabel(plan.type, t)} · {formatInr(plan.pricePaise)}
                     </Text>
                   </View>
                   {selected && renewing ? (
@@ -1020,63 +1537,122 @@ function RenewalSheet({
           ) : null}
         </View>
 
-        {selectedPlan ? (
-          <MoneySummaryCard
-            title={t("member.membership.renewalSummary")}
-            amount={formatInr("pricePaise" in selectedPlan ? selectedPlan.pricePaise : 0)}
-            rows={[
-              { label: t("member.membership.plan"), value: selectedPlan.name ?? currentPlan?.name ?? t("member.membership.selectedPlan") },
-              {
-                label: t("member.membership.validity"),
-                value: selectedPlan.durationDays
-                  ? t("member.membership.days", { count: selectedPlan.durationDays })
-                  : t("member.membership.gymDefinedValidity"),
-              },
-              {
-                label: t("member.membership.visits"),
-                value: formatVisitLimit(selectedPlan.visitLimit),
-              },
-            ]}
-            consequence={t("member.membership.renewalConsequence")}
-          />
+        {status ? (
+          <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{status}</Text>
         ) : null}
-
-        {status ? <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{status}</Text> : null}
         <View style={styles.sheetActions}>
-          <ZookButton
-            testID="membership-renewal-cancel"
-            variant="secondary"
-            onPress={onClose}
-            style={styles.actionHalf}
-          >
-            {t("common.cancel")}
-          </ZookButton>
-          {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
-            <ZookButton
-              testID="membership-switch-now"
-              variant="secondary"
-              onPress={onSwitch}
-              disabled={renewing}
-              busy={renewing}
-              busyLabel={t("member.membership.updating")}
-              icon="swap-horizontal-outline"
-              style={styles.actionHalf}
-            >
-              {renewing ? t("member.membership.updating") : t("member.membership.switchNow")}
-            </ZookButton>
-          ) : null}
           <ZookButton
             testID="membership-pay-securely"
             onPress={onRenew}
             disabled={renewing}
             busy={renewing}
             busyLabel={t("member.membership.starting")}
-            icon="refresh-outline"
-            style={styles.actionHalf}
+            icon="card-outline"
+            style={styles.actionFull}
           >
-            {renewing ? t("member.membership.starting") : t("member.membership.paySecurely")}
+            {renewing
+              ? t("member.membership.starting")
+              : selectedAmount
+                ? t("member.membership.payAmountNow", { amount: selectedAmount })
+                : t("member.membership.payNow")}
           </ZookButton>
         </View>
+        {showAutopayPrompt && currentSubscription ? (
+          <View style={[styles.autopayDisclosure, { borderColor: palette.border.subtle }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("member.membership.autopayRenewalChoiceTitle")}
+              accessibilityState={{ expanded: autopayChoiceOpen }}
+              onPress={() => setAutopayChoiceOpen((current) => !current)}
+              style={({ pressed }) => [
+                styles.autopayDisclosureHeader,
+                {
+                  backgroundColor: palette.bg.sunken,
+                },
+                pressed ? styles.autopayDisclosurePressed : null,
+              ]}
+            >
+              <Ionicons name="repeat-outline" size={16} color={palette.text.secondary} />
+              <View style={styles.autopayDisclosureCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.autopayDisclosureTitle, { color: palette.text.primary }]}
+                >
+                  {t("member.membership.autopayRenewalChoiceTitle")}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[styles.autopayDisclosureBody, { color: palette.text.secondary }]}
+                >
+                  {t("member.membership.autopayRenewalChoiceBody")}
+                </Text>
+              </View>
+              <Ionicons
+                name={autopayChoiceOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={palette.text.secondary}
+              />
+            </Pressable>
+            {autopayChoiceOpen ? (
+              <AutopayCard
+                autopayBusy={autopayBusy}
+                autopayStatus={autopayStatus}
+                onEnable={onEnableAutopay}
+                subscription={currentSubscription}
+                variant="inline"
+              />
+            ) : null}
+          </View>
+        ) : null}
+        {selectedPlanId && selectedPlanId !== currentPlan?.id ? (
+          <Pressable
+            testID="membership-switch-now"
+            accessibilityRole="button"
+            accessibilityLabel={t("member.membership.switchWithoutCheckoutTitle")}
+            accessibilityState={{ disabled: renewing, busy: renewing }}
+            disabled={renewing}
+            onPress={onSwitch}
+            style={({ pressed }) => [
+              styles.secondarySheetLink,
+              { backgroundColor: palette.bg.sunken, borderColor: palette.border.subtle },
+              pressed && !renewing ? styles.secondarySheetLinkPressed : null,
+            ]}
+          >
+            {renewing ? <ActivityIndicator size="small" color={palette.text.secondary} /> : null}
+            <Ionicons name="swap-horizontal-outline" size={16} color={palette.text.secondary} />
+            <View style={styles.secondarySheetLinkCopy}>
+              <Text style={[styles.secondarySheetLinkText, { color: palette.text.primary }]}>
+                {renewing
+                  ? t("member.membership.updating")
+                  : t("member.membership.switchWithoutCheckoutTitle")}
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[styles.secondarySheetLinkBody, { color: palette.text.secondary }]}
+              >
+                {t("member.membership.switchWithoutCheckoutBody")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={palette.text.tertiary} />
+          </Pressable>
+        ) : null}
+        {showJoinDifferentGym ? (
+          <Pressable
+            onPress={() => {
+              onClose();
+              router.push("/gyms" as never);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel={t("member.membership.joinDifferentGym")}
+            style={styles.joinDifferentGymLink}
+          >
+            <Ionicons name="search-outline" size={14} color={palette.text.secondary} />
+            <Text style={[styles.joinDifferentGymText, { color: palette.text.secondary }]}>
+              {t("member.membership.joinDifferentGym")}
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={palette.text.secondary} />
+          </Pressable>
+        ) : null}
       </BottomSheetView>
     </BottomSheetModal>
   );
@@ -1091,9 +1667,42 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: layout.bottomNavContentPadding,
   },
-  headerContext: {
-    alignItems: "flex-start",
+  tabbedContent: {
+    gap: spacing.md,
+  },
+  tabPanel: {
+    gap: spacing.md,
+  },
+  membershipStatsRow: {
+    flexDirection: "row",
     gap: spacing.xs,
+  },
+  membershipStatChip: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
+    gap: 2,
+    minHeight: 50,
+    justifyContent: "center",
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  membershipStatValue: {
+    ...typography.bodyStrong,
+    lineHeight: 19,
+  },
+  membershipStatLabel: {
+    ...typography.caption,
+    maxWidth: "100%",
+    textAlign: "center",
+  },
+  headerContext: {
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 190,
   },
   iconButton: {
     width: 44,
@@ -1106,17 +1715,21 @@ const styles = StyleSheet.create({
   calloutContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
   calloutCopy: {
     flex: 1,
-    gap: 4,
+    gap: 1,
+    minWidth: 0,
   },
   calloutTitle: {
-    ...typography.cardTitle,
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
   },
   calloutBody: {
-    ...typography.body,
+    ...typography.small,
   },
   browserReturnContent: {
     flexDirection: "row",
@@ -1134,6 +1747,10 @@ const styles = StyleSheet.create({
   },
   browserReturnBody: {
     ...typography.body,
+  },
+  browserReturnHint: {
+    ...typography.caption,
+    lineHeight: 18,
   },
   emptyContent: {
     alignItems: "center",
@@ -1154,8 +1771,7 @@ const styles = StyleSheet.create({
   sheetBackground: {
     borderWidth: 1,
   },
-  sheetHandle: {
-  },
+  sheetHandle: {},
   sheet: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -1180,6 +1796,82 @@ const styles = StyleSheet.create({
   },
   sheetBody: {
     ...typography.body,
+  },
+  manageSheetGroup: {
+    gap: spacing.sm,
+  },
+  manageSummaryRow: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  manageSummaryCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  manageSummaryTitle: {
+    ...typography.bodyStrong,
+  },
+  manageSummaryBody: {
+    ...typography.small,
+  },
+  manageQuickActions: {
+    flexDirection: "row",
+  },
+  manageQuickAction: {
+    flex: 1,
+  },
+  manageDisclosure: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
+  manageDisclosureHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 54,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  manageDisclosurePressed: {
+    opacity: 0.82,
+  },
+  manageDisclosureCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  manageDisclosureTitle: {
+    ...typography.bodyStrong,
+  },
+  manageDisclosureBody: {
+    ...typography.small,
+  },
+  manageSheetHelp: {
+    ...typography.small,
+  },
+  manageReasonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  manageReasonChip: {
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  manageReasonChipPressed: {
+    opacity: 0.82,
+  },
+  manageReasonText: {
+    ...typography.caption,
   },
   closeButton: {
     width: 44,
@@ -1237,13 +1929,76 @@ const styles = StyleSheet.create({
   statusMessage: {
     ...typography.small,
   },
-  sheetActions: {
+  joinDifferentGymLink: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "center",
+    paddingVertical: spacing.xs,
+  },
+  joinDifferentGymText: {
+    ...typography.small,
+  },
+  secondarySheetLink: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  secondarySheetLinkPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.99 }],
+  },
+  secondarySheetLinkCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  secondarySheetLinkText: {
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
+  },
+  secondarySheetLinkBody: {
+    ...typography.small,
+  },
+  sheetActions: {
     gap: spacing.sm,
   },
-  actionHalf: {
+  autopayDisclosure: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
+  autopayDisclosureHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 46,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  autopayDisclosurePressed: {
+    opacity: 0.82,
+  },
+  autopayDisclosureCopy: {
     flex: 1,
-    minWidth: 130,
+    gap: 2,
+    minWidth: 0,
+  },
+  autopayDisclosureTitle: {
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
+  },
+  autopayDisclosureBody: {
+    ...typography.caption,
+    lineHeight: 14,
+  },
+  actionFull: {
+    width: "100%",
   },
 });

@@ -13,11 +13,11 @@ import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  Card,
   EmptyState,
   IconBubble,
   AppHeader,
   QueryErrorState,
+  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { NotificationsSkeleton } from "@/components/skeletons";
@@ -104,6 +104,33 @@ function groupByDate(items: InboxNotification[]) {
     .map(([label, bucketItems]) => ({ label, items: bucketItems }));
 }
 
+function formatInboxRowDate(
+  value: string | null | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+  locale?: string,
+) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const diffMs = Math.max(0, Date.now() - date.getTime());
+  const diffMinutes = Math.floor(diffMs / (60 * 1000));
+  if (diffMinutes < 1) {
+    return t("notifications.timeNow");
+  }
+  if (diffMinutes < 60) {
+    return t("notifications.timeMinutes", { count: diffMinutes });
+  }
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return t("notifications.timeHours", { count: diffHours });
+  }
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays <= 7) {
+    return t("notifications.timeDays", { count: diffDays });
+  }
+  return date.toLocaleDateString(locale, { day: "numeric", month: "short" });
+}
+
 export default function NotificationsScreen() {
   const routeParams = useLocalSearchParams<{ focus?: string; notificationId?: string }>();
   const router = useRouter();
@@ -116,7 +143,7 @@ export default function NotificationsScreen() {
   useAppFocusInvalidation([["me", "notifications"], ["me", "home"]]);
   const detailSheetRef = useRef<BottomSheetModal>(null);
   const autoMarkedNotificationRef = useRef<string | null>(null);
-  const detailSnapPoints = useMemo(() => ["38%", "72%"], []);
+  const detailSnapPoints = useMemo(() => ["34%", "68%"], []);
   const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set());
   const [markAllBusy, setMarkAllBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,9 +153,6 @@ export default function NotificationsScreen() {
     [notificationsQuery.data?.notifications],
   );
   const unreadCount = notifications.filter((item) => !item.readAt).length;
-  const latestLabel = notifications[0]?.notification?.createdAt
-    ? formatRelativeDate(notifications[0].notification.createdAt)
-    : null;
   const focusedNotification = notifications.find(
     (item) =>
       item.id === routeParams.notificationId || item.notification?.id === routeParams.notificationId,
@@ -308,6 +332,33 @@ export default function NotificationsScreen() {
     router.replace("/notifications" as never);
   }
 
+  function openFocusedNotificationTarget() {
+    if (!focusedNotification) {
+      closeNotificationDetails();
+      return;
+    }
+    const href = mapNotificationPayloadToHref({
+      notificationId: focusedNotification.notification?.id ?? focusedNotification.id,
+      type: focusedNotification.notification?.type,
+      ...(focusedNotification.notification?.metadata ?? {}),
+    });
+    if (!href.startsWith("/notifications")) {
+      detailSheetRef.current?.dismiss();
+      router.push(href as never);
+      return;
+    }
+    closeNotificationDetails();
+  }
+
+  const focusedHref = focusedNotification
+    ? mapNotificationPayloadToHref({
+        notificationId: focusedNotification.notification?.id ?? focusedNotification.id,
+        type: focusedNotification.notification?.type,
+        ...(focusedNotification.notification?.metadata ?? {}),
+      })
+    : "/notifications";
+  const focusedOpensRoute = !focusedHref.startsWith("/notifications");
+
   const dateGroups = useMemo(() => {
     return groupByDate(notifications).map((group) => {
       const displayItems =
@@ -366,21 +417,19 @@ export default function NotificationsScreen() {
             return null;
           }}
           ListHeaderComponent={
-            <View style={{ gap: 14, marginBottom: 14 }}>
+            <View style={styles.listHeader}>
               <AppHeader
                 title={t("nav.inbox")}
                 subtitle={
                   unreadCount > 0
-                    ? t(latestLabel ? "notifications.unreadRecent" : "notifications.unreadCount", { count: unreadCount, date: latestLabel ?? "" })
-                    : latestLabel
-                      ? t("notifications.allCaughtUpRecent", { date: latestLabel })
-                      : t("notifications.allCaughtUp")
+                    ? t("notifications.unreadCount", { count: unreadCount })
+                    : t("notifications.allCaughtUp")
                 }
                 leading={
                   <Pressable
                     onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
                     accessibilityRole="button"
-                    accessibilityLabel={t("shop.back")}
+                    accessibilityLabel={t("common.back")}
                     style={({ pressed }) => [
                       styles.iconButton,
                       {
@@ -411,10 +460,7 @@ export default function NotificationsScreen() {
                         pressed && !markAllBusy ? styles.pressed : null,
                       ]}
                     >
-                      <Ionicons name="checkmark-done" size={18} color={palette.accent.base} />
-                      <Text numberOfLines={1} style={[styles.markAllText, { color: palette.accent.base }]}>
-                        {t("notifications.markAllRead")}
-                      </Text>
+                      <Ionicons name="checkmark-done" size={17} color={palette.accent.base} />
                     </Pressable>
                   ) : null
                 }
@@ -422,14 +468,22 @@ export default function NotificationsScreen() {
               />
 
               {routeParams.notificationId ? (
-                <Card variant="selected" contentStyle={styles.calloutContent}>
-                  <IconBubble icon="notifications" tone="neutral" size={36} />
+                <View
+                  style={[
+                    styles.calloutContent,
+                    {
+                      backgroundColor: palette.bg.sunken,
+                      borderColor: palette.border.subtle,
+                    },
+                  ]}
+                >
+                  <Ionicons name="notifications-outline" size={14} color={palette.text.secondary} />
                   <Text style={[styles.calloutText, { color: palette.text.primary }]}>
                     {routeParams.focus === "attendance"
                       ? t("notifications.attendanceAlertReceived")
                       : t("notifications.openedFromPush")}
                   </Text>
-                </Card>
+                </View>
               ) : null}
 
               {notificationsQuery.isLoading ? (
@@ -482,7 +536,7 @@ export default function NotificationsScreen() {
               <IconBubble
                 icon={iconForType(focusedNotification?.notification?.type)}
                 tone={toneForType(focusedNotification?.notification?.type)}
-                size={44}
+                size={36}
               />
               <View style={styles.detailCopy}>
                 <Text style={[styles.detailTitle, { color: palette.text.primary }]}>
@@ -514,6 +568,14 @@ export default function NotificationsScreen() {
             <Text style={[styles.detailBody, { color: palette.text.primary }]}>
               {focusedNotification?.notification?.body ?? t("notifications.noDetails")}
             </Text>
+            <ZookButton
+              testID="notification-detail-action"
+              onPress={openFocusedNotificationTarget}
+              icon={focusedOpensRoute ? "open-outline" : "checkmark-circle-outline"}
+              fullWidth
+            >
+              {focusedOpensRoute ? t("notifications.openLinkedScreen") : t("notifications.done")}
+            </ZookButton>
           </BottomSheetScrollView>
         </BottomSheetModal>
       </ZookScreen>
@@ -535,7 +597,7 @@ function NotificationRow({
   onPress: () => void;
 }) {
   const { palette } = useTheme();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const notification = item.notification;
   const unread = !item.readAt;
   const type = notification?.type;
@@ -555,42 +617,63 @@ function NotificationRow({
       accessibilityState={{ busy }}
       style={({ pressed }) => [pressed ? styles.pressed : null]}
     >
-      <Card
-        variant={highlighted ? "selected" : unread ? "default" : "compact"}
-        contentStyle={[
+      <View
+        style={[
           styles.notificationContent,
-          unread ? [styles.notificationUnreadContent, { borderLeftColor: palette.accent.base }] : styles.notificationReadContent,
+          {
+            backgroundColor: highlighted ? palette.bg.sunken : "transparent",
+            borderColor: highlighted ? palette.border.subtle : "transparent",
+          },
+          unread ? null : styles.notificationReadContent,
         ]}
       >
         <View style={styles.notificationRow}>
-          <IconBubble icon={iconForType(type)} tone={toneForType(type)} size={40} />
+          <View style={styles.notificationStatusColumn}>
+            {unread ? (
+              <View
+                style={[
+                  styles.notificationUnreadDot,
+                  { backgroundColor: palette.accent.base },
+                ]}
+              />
+            ) : null}
+            <Ionicons
+              name={iconForType(type)}
+              size={13}
+              color={
+                highlighted
+                  ? palette.text.primary
+                  : unread
+                    ? palette.accent.base
+                    : palette.text.secondary
+              }
+            />
+          </View>
           <View style={styles.notificationCopy}>
             <View style={styles.notificationTitleRow}>
-              <Text numberOfLines={2} style={[styles.notificationTitle, { color: palette.text.primary }]}>
+              <Text numberOfLines={1} style={[styles.notificationTitle, { color: palette.text.primary }]}>
                 {notification?.title ?? t("notifications.fallbackTitle")}
               </Text>
-              {unread ? (
-                <View
-                  testID={first ? "unread-dot-first" : `unread-dot-${item.id}`}
-                  style={[styles.unreadDot, { backgroundColor: palette.accent.base }]}
-                />
-              ) : null}
+              <Text numberOfLines={1} style={[styles.notificationTime, { color: palette.text.tertiary }]}>
+                {notification?.createdAt ? formatInboxRowDate(notification.createdAt, t, locale) : ""}
+                {busy ? t("notifications.openingSuffix") : ""}
+              </Text>
             </View>
-            <Text numberOfLines={2} style={[styles.notificationBody, { color: palette.text.secondary }]}>
-              {notification?.body ?? t("notifications.noDetails")}
-            </Text>
-            <Text style={[styles.notificationTime, { color: palette.text.tertiary }]}>
-              {notification?.createdAt ? formatRelativeDate(notification.createdAt) : ""}
-              {busy ? t("notifications.openingSuffix") : ` · ${opensRoute ? t("notifications.openLinkedScreen") : t("notifications.markRead")}`}
-            </Text>
+            {notification?.body ? (
+              <Text numberOfLines={1} style={[styles.notificationBody, { color: palette.text.secondary }]}>
+                {notification.body}
+              </Text>
+            ) : null}
           </View>
-          <Ionicons
-            name={opensRoute ? "chevron-forward" : "checkmark-circle-outline"}
-            size={18}
-            color={opensRoute ? palette.text.secondary : palette.accent.base}
-          />
+          {opensRoute ? (
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={palette.text.secondary}
+            />
+          ) : null}
         </View>
-      </Card>
+      </View>
     </Pressable>
   );
 }
@@ -600,67 +683,84 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 20,
-    gap: 14,
+    paddingTop: 18,
+    gap: 7,
     paddingBottom: layout.bottomNavContentPadding,
   },
+  listHeader: {
+    gap: 8,
+    marginBottom: 6,
+  },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
   markAllButton: {
-    minWidth: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-  },
-  markAllText: {
-    ...typography.caption,
   },
   calloutContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.xs,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 30,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
   calloutText: {
     flex: 1,
-    ...typography.bodyStrong,
+    ...typography.caption,
   },
   dateGroupLabel: {
     ...typography.caption,
     paddingHorizontal: 4,
+    marginBottom: 2,
   },
   pressed: {
     opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
   notificationContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  notificationUnreadContent: {
-    borderLeftWidth: 3,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 48,
+    paddingVertical: 5,
+    paddingHorizontal: 7,
   },
   notificationReadContent: {
-    opacity: 0.78,
+    opacity: 0.68,
   },
   notificationRow: {
     flexDirection: "row",
-    gap: spacing.md,
-    alignItems: "flex-start",
+    gap: 7,
+    alignItems: "center",
+  },
+  notificationStatusColumn: {
+    width: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  notificationUnreadDot: {
+    borderRadius: 3,
+    height: 5,
+    width: 5,
   },
   notificationCopy: {
     flex: 1,
-    gap: 4,
+    gap: 2,
+    minWidth: 0,
   },
   notificationTitleRow: {
     flexDirection: "row",
@@ -669,22 +769,21 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     flex: 1,
-    ...typography.cardTitle,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
   },
   notificationBody: {
-    ...typography.body,
+    ...typography.caption,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 14,
   },
   notificationTime: {
     ...typography.small,
-    marginTop: 2,
+    flexShrink: 0,
+    maxWidth: 78,
   },
   showOlderButton: {
-    minHeight: 44,
+    minHeight: 36,
     alignSelf: "flex-start",
     justifyContent: "center",
     paddingHorizontal: spacing.sm,
@@ -699,8 +798,8 @@ const styles = StyleSheet.create({
   },
   sheetHandle: {},
   detailSheet: {
-    gap: spacing.lg,
-    padding: spacing.lg,
+    gap: spacing.md,
+    padding: spacing.md,
     paddingBottom: spacing.xxl,
   },
   detailHeader: {
@@ -713,12 +812,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   detailTitle: {
-    ...typography.headerTitle,
+    ...typography.cardTitle,
   },
   detailTime: {
     ...typography.caption,
   },
   detailBody: {
-    ...typography.body,
+    ...typography.small,
   },
 });

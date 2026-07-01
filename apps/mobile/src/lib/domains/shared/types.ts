@@ -185,7 +185,9 @@ export interface GymSearchResult {
   visibility?: string;
   latitude?: number | null;
   longitude?: number | null;
+  address?: string | null;
   coverImageUrl?: string | null;
+  logoUrl?: string | null;
   amenities: string[];
 }
 
@@ -238,6 +240,9 @@ export interface GymProfileData {
     address: string;
     city: string;
     state: string;
+    googleMapsUrl?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     isDefault?: boolean | null;
   }>;
   trainers?: Array<{

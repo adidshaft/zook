@@ -5,14 +5,35 @@ import { RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@zook/core";
 import { webApiFetch } from "@/lib/api-client";
+import type { PublicLocale } from "@/lib/public-i18n";
 
 type RenewResponse = {
   checkoutUrl?: string | null;
   session?: { id?: string } | null;
 };
 
-export function MemberRenewButton({ subscriptionId }: { subscriptionId: string }) {
+const copy = {
+  en: {
+    idle: "Renew membership",
+    busy: "Starting renewal...",
+    error: "Unable to start renewal.",
+  },
+  hi: {
+    idle: "सदस्यता रिन्यू करें",
+    busy: "रिन्यूअल शुरू हो रहा है...",
+    error: "रिन्यूअल शुरू नहीं हो पाया.",
+  },
+} satisfies Record<PublicLocale, Record<string, string>>;
+
+export function MemberRenewButton({
+  subscriptionId,
+  locale = "en",
+}: {
+  subscriptionId: string;
+  locale?: PublicLocale;
+}) {
   const router = useRouter();
+  const t = copy[locale];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +65,7 @@ export function MemberRenewButton({ subscriptionId }: { subscriptionId: string }
           ? cause.message
           : cause instanceof Error
             ? cause.message
-            : "Unable to start renewal.";
+            : t.error;
       setError(message);
     } finally {
       setBusy(false);
@@ -64,7 +85,7 @@ export function MemberRenewButton({ subscriptionId }: { subscriptionId: string }
         ) : (
           <RefreshCcw size={16} aria-hidden="true" />
         )}
-        {busy ? "Starting renewal..." : "Renew membership"}
+        {busy ? t.busy : t.idle}
       </button>
       {error ? (
         <p role="alert" aria-live="polite" className="max-w-xs text-xs text-red-300">

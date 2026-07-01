@@ -4,6 +4,7 @@ import type {
 } from "@zook/core";
 
 import { formatCompactMinutes, formatLongDate, formatTime } from "@/lib/formatting";
+import type { useT } from "@/lib/i18n";
 
 export function workoutToEntry(workout: {
   id: string;
@@ -54,34 +55,36 @@ export function buildTrackingSummaryMetrics(input: {
   recentCount: number;
   latestWeightKg?: string | number | null;
   habitsCount: number;
+  t: ReturnType<typeof useT>;
 }): TrackingSummaryMetric[] {
+  const { t } = input;
   return [
     {
       id: "worked-out",
-      label: "Active time",
+      label: t("tracking.activeTime"),
       value: formatCompactMinutes(input.totalDuration, {
         includeZeroMinutes: true,
         separator: " ",
       }),
-      detail: input.totalDuration > 0 ? "This week" : "No sessions"
+      detail: input.totalDuration > 0 ? t("tracking.workoutTime") : t("tracking.noSessions")
     },
     {
       id: "recent",
-      label: "Sessions",
+      label: t("tracking.sessions"),
       value: String(input.weeklyCount),
-      detail: "This week"
+      detail: t("tracking.loggedSessions")
     },
     {
       id: "weight",
-      label: "Weight",
+      label: t("tracking.weight"),
       value: input.latestWeightKg ? `${input.latestWeightKg} kg` : "--",
-      detail: "Logged entry"
+      detail: t("tracking.latestEntry")
     },
     {
       id: "habits",
-      label: "Habits",
+      label: t("member.home.habits"),
       value: String(input.habitsCount),
-      detail: input.habitsCount ? "Active habits" : "Add one"
+      detail: input.habitsCount ? t("tracking.activeHabits") : t("tracking.addOne")
     }
   ];
 }

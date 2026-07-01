@@ -779,8 +779,22 @@ export default function Scan() {
         >
           <ScreenHeader
             title={t("member.scan.title")}
+            leading={
+              router.canGoBack() ? (
+                <Pressable
+                  onPress={() => router.back()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("shop.back")}
+                  style={[
+                    styles.backButton,
+                    { backgroundColor: palette.bg.elevated, borderColor: palette.border.default },
+                  ]}
+                >
+                  <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+                </Pressable>
+              ) : null
+            }
             contextSlot={<RoleSwitcherChip />}
-            subtitle={t("member.scan.subtitle")}
             trailing={<HeaderActions showBell />}
           />
 
@@ -892,12 +906,12 @@ export default function Scan() {
               </View>
 
               <Card variant="compact" contentStyle={styles.helpContent}>
-                <IconBubble icon="shield-checkmark-outline" tone="neutral" size={36} />
+                <IconBubble icon="shield-checkmark-outline" tone="neutral" size={30} />
                 <View style={styles.helpCopy}>
-                  <Text style={[styles.helpTitle, { color: palette.text.primary }]}>
+                  <Text numberOfLines={1} style={[styles.helpTitle, { color: palette.text.primary }]}>
                     {t("member.scan.cantScan")}
                   </Text>
-                  <Text style={[styles.helpBody, { color: palette.text.secondary }]}>
+                  <Text numberOfLines={2} style={[styles.helpBody, { color: palette.text.secondary }]}>
                     {t("member.scan.enterDeskCodeManually")}
                   </Text>
                 </View>
@@ -1013,7 +1027,7 @@ export default function Scan() {
             </Card>
           )}
 
-          {scanState !== "idle" || cameraBlocked || (scanMode === "scan" && !hasCamera) ? (
+          {scanState !== "idle" ? (
           <Card variant="compact" contentStyle={styles.validationContent}>
             {verificationSteps.map((item) => (
               <View

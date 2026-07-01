@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { AnimatedAppear, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, Skeleton, ZookButton, ZookScreen } from "@/components/primitives";
+import { AnimatedAppear, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, Skeleton, ZookScreen } from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HabitsPanel } from "@/features/member/progress/habits-panel";
@@ -32,6 +32,7 @@ export default function ProgressScreen() {
     recentCount: summary?.recentCount ?? 0,
     latestWeightKg: latestBodyProgress?.weightKg,
     habitsCount: summaryQuery.data?.habits?.length ?? 0,
+    t,
   });
   const isLoading = summaryQuery.isLoading || workoutsQuery.isLoading;
 
@@ -58,21 +59,31 @@ export default function ProgressScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <ScreenHeader title={t("member.progress.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell showProfileShortcut={false} />} scrollY={scrollY} />
-          <AnimatedAppear delay={0}>
-            <View style={styles.actions}>
-              <ZookButton testID="tracking-log-workout" onPress={() => router.push("/tracking-entry" as never)} icon="add-circle-outline" style={styles.actionButton}>
-                {t("member.progress.logWorkout")}
-              </ZookButton>
-              <ZookButton variant="secondary" onPress={() => router.push("/tracking-history" as never)} icon="time-outline" style={styles.actionButton}>
-                {t("member.progress.history")}
-              </ZookButton>
-            </View>
-          </AnimatedAppear>
           {summaryQuery.isError || workoutsQuery.isError ? (
             <QueryErrorState error={summaryQuery.error ?? workoutsQuery.error} onRetry={() => void onRefresh()} />
           ) : null}
           <AnimatedAppear delay={40}>
-            <SectionHeader title={t("member.progress.thisWeek")} />
+            <SectionHeader
+              title={t("member.progress.thisWeek")}
+              action={
+                <Pressable
+                  testID="tracking-log-workout"
+                  accessibilityRole="button"
+                  accessibilityLabel={t("member.progress.logWorkout")}
+                  onPress={() => router.push("/tracking-entry" as never)}
+                  style={({ pressed }) => [
+                    styles.headerIconButton,
+                    {
+                      borderColor: palette.accent.soft,
+                      backgroundColor: palette.surface.accentSoft,
+                    },
+                    pressed ? styles.iconButtonPressed : null,
+                  ]}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color={palette.accent.base} />
+                </Pressable>
+              }
+            />
             {isLoading ? (
               <Card variant="compact" contentStyle={styles.loadingCard}>
                 <Skeleton width="60%" height={18} borderRadius={9} />
@@ -91,7 +102,26 @@ export default function ProgressScreen() {
             <HabitsPanel />
           </AnimatedAppear>
           <AnimatedAppear delay={80}>
-            <SectionHeader title={t("member.progress.recentWorkouts")} />
+            <SectionHeader
+              title={t("member.progress.recentWorkouts")}
+              action={
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("member.progress.history")}
+                  onPress={() => router.push("/tracking-history" as never)}
+                  style={({ pressed }) => [
+                    styles.headerIconButton,
+                    {
+                      borderColor: palette.border.default,
+                      backgroundColor: palette.surface.raised,
+                    },
+                    pressed ? styles.iconButtonPressed : null,
+                  ]}
+                >
+                  <Ionicons name="time-outline" size={18} color={palette.text.secondary} />
+                </Pressable>
+              }
+            />
             <View style={styles.stack}>
               {workouts.slice(0, 3).map((workout, index) => (
                 <WorkoutLogCard key={workout.id} entry={workoutToEntry(workout)} compact testID={index === 0 ? "tracking-history-workout-first" : undefined} />
@@ -130,8 +160,18 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  actions: { flexDirection: "row", gap: spacing.sm },
-  actionButton: { flex: 1 },
+  headerIconButton: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  iconButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.98 }],
+  },
   metrics: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
   loadingCard: { gap: spacing.sm },
   stack: { gap: spacing.sm },

@@ -10,6 +10,23 @@ import type { LoadingState, PagedState } from "../read-only/types";
 import { ShopOrderPaymentControl } from "./shop-order-payment-control";
 import type { PaymentReceiptState } from "./payments-utils";
 
+function settlementOrderStatusLabel(status: string | null | undefined) {
+  if (status === "PAYMENT_PENDING") return "Payment pending";
+  if (status === "PAID") return "Paid";
+  if (status === "READY_FOR_PICKUP") return "Ready for pickup";
+  if (status === "PICKED_UP") return "Picked up";
+  if (status === "CANCELLED") return "Cancelled";
+  if (status === "FAILED") return "Failed";
+  if (status === "REFUNDED") return "Refunded";
+  return formatEnumLabel(status ?? "order");
+}
+
+function settlementOrderNote(order: ShopOrderRow) {
+  if (order.status === "READY_FOR_PICKUP") return "Ready for desk handover";
+  if (order.status === "PENDING_PAYMENT" && !order.paymentId) return "Payment still needed";
+  return "";
+}
+
 export function SettlementQueueCard({
   orgId,
   queuedOrders,
@@ -109,7 +126,7 @@ export function SettlementQueueCard({
                 {
                   id: "status",
                   header: "Status",
-                  render: (order) => <StatusPill value={formatEnumLabel(order.status)} />,
+                  render: (order) => <StatusPill value={settlementOrderStatusLabel(order.status)} />,
                 },
                 {
                   id: "items",
@@ -121,12 +138,14 @@ export function SettlementQueueCard({
                 {
                   id: "notes",
                   header: "Notes",
-                  render: (order) =>
-                    order.status === "READY_FOR_PICKUP"
-                      ? "Ready for desk handover"
-                      : order.status === "PENDING_PAYMENT"
-                        ? "Payment still needed"
-                        : "No desk note",
+                  render: (order) => {
+                    const note = settlementOrderNote(order);
+                    return note ? (
+                      <span className="text-xs font-medium text-white/62">{note}</span>
+                    ) : (
+                      <span className="text-xs text-white/30">-</span>
+                    );
+                  },
                 },
                 {
                   id: "amount",
@@ -157,7 +176,7 @@ export function SettlementQueueCard({
                         }}
                       />
                     ) : (
-                      <span className="text-xs text-white/35">Settled</span>
+                      <span className="text-xs text-white/30">-</span>
                     ),
                 },
               ]}

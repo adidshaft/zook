@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { Check, ChevronDown, Search, X } from "lucide-react";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 export type SearchableSelectOption = {
   value: string;
@@ -68,6 +68,7 @@ export function SearchableSelect({
   multiple = false,
   hideLabel = false,
   buttonClassName,
+  buttonContent,
 }: {
   label: string;
   options: SearchableSelectOption[];
@@ -83,6 +84,7 @@ export function SearchableSelect({
   multiple?: boolean | undefined;
   hideLabel?: boolean | undefined;
   buttonClassName?: string | undefined;
+  buttonContent?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -148,9 +150,11 @@ export function SearchableSelect({
         onClick={() => (open ? setOpen(false) : openMenu())}
         className={buttonClassName || "zook-focus flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-left text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-sunken)]/80 disabled:opacity-50"}
       >
-        <span className="min-w-0 flex-1 truncate">
-          {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
-        </span>
+        {buttonContent ?? (
+          <span className="min-w-0 flex-1 truncate">
+            {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
+          </span>
+        )}
         <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" aria-hidden="true" />
       </button>
       {multiple && selectedLabels.length ? (

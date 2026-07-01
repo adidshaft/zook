@@ -246,6 +246,7 @@ export function middleware(request: NextRequest) {
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("x-zook-search", request.nextUrl.search);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
   const responseInit = { request: { headers: requestHeaders } };
   let response: NextResponse;

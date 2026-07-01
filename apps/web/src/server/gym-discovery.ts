@@ -4,6 +4,7 @@ export type DiscoveryGym = {
   id: string;
   name: string;
   username: string;
+  address?: string | null;
   city: string;
   state: string;
   visibility: string;

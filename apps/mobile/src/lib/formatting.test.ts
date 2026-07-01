@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBranchName, formatOrgLocationLine } from "./formatting";
+import { formatBranchName, formatGymHeaderIdentity, formatOrgLocationLine } from "./formatting";
 
 describe("mobile formatting", () => {
   it("trims repeated organization prefixes from branch names", () => {
@@ -24,11 +24,57 @@ describe("mobile formatting", () => {
 
   it("formats organization location lines without duplicating the organization", () => {
     expect(formatOrgLocationLine("Zook Fitness", "Zook Fitness - Indiranagar", "Bengaluru")).toBe(
-      "Zook Fitness · Indiranagar, Bengaluru",
+      "Zook Fitness, Indiranagar, Bengaluru",
     );
     expect(formatOrgLocationLine("Zook Fitness", "Zook Fitness", "Bengaluru")).toBe(
       "Zook Fitness, Bengaluru",
     );
     expect(formatOrgLocationLine(null, null, null)).toBe("No active gym");
+  });
+
+  it("formats gym headers as bold gym title plus locality and city subtitle", () => {
+    expect(
+      formatGymHeaderIdentity({
+        address: "Koregaon Park, Lane 7, Pune",
+        branchName: "Zook Fitness - Koregaon Park",
+        city: "Pune",
+        orgName: "Zook Fitness",
+      }),
+    ).toEqual({ title: "Zook Fitness", subtitle: "Koregaon Park, Pune" });
+
+    expect(
+      formatGymHeaderIdentity({
+        address: "Koregaon Park, Lane 7, Pune",
+        branchName: "Koregaon Park",
+        city: "Pune",
+        orgName: "Zook Fitness",
+      }),
+    ).toEqual({ title: "Zook Fitness", subtitle: "Koregaon Park, Pune" });
+
+    expect(
+      formatGymHeaderIdentity({
+        address: "Lane 7, Pune, Maharashtra",
+        branchName: "Aarogya Koregaon Park",
+        city: "Pune",
+        orgName: "Aarogya Strength Club",
+      }),
+    ).toEqual({ title: "Aarogya Strength Club", subtitle: "Koregaon Park, Pune" });
+
+    expect(
+      formatGymHeaderIdentity({
+        address: "Pune, Maharashtra",
+        branchName: "Pune",
+        city: "Pune",
+        orgName: "Zook Fitness",
+      }),
+    ).toEqual({ title: "Zook Fitness", subtitle: "Pune" });
+
+    expect(
+      formatGymHeaderIdentity({
+        branchName: "Zook Fitness",
+        city: "Pune",
+        orgName: "Zook Fitness",
+      }),
+    ).toEqual({ title: "Zook Fitness", subtitle: "Pune" });
   });
 });

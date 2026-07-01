@@ -19,13 +19,13 @@ function pillarIconClass(tone: "neutral" | "info") {
 export function HomeHero({ locale }: { locale: PublicLocale }) {
   const { t, pillars, statStrip } = homeData(locale);
   return (
-    <section className="relative grid gap-10 pt-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+    <section className="relative grid overflow-hidden gap-10 pt-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
       <Reveal y={32}>
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-[var(--accent-strong)]">
           <span className="h-px w-8 bg-[color-mix(in_srgb,var(--accent)_40%,transparent)]" />
           {t("indiaOps")}
         </div>
-        <h1 className="mt-6 max-w-3xl text-[clamp(3rem,8vw,6.8rem)] font-semibold leading-[0.95]">
+        <h1 className="mt-6 max-w-3xl text-[clamp(2.5rem,5.5vw,4.5rem)] font-semibold leading-[1.05]">
           {t("homeHeroTitle").split(" ").map((word, i) => (
             <span key={i} className={word.toLowerCase().includes("zook") ? "text-[var(--accent-strong)]" : ""}>
               {word}{" "}
@@ -57,18 +57,18 @@ export function HomeHero({ locale }: { locale: PublicLocale }) {
           delay={0.25}
           gap={0.1}
         >
-          {statStrip.map((label, index) => (
-            <StaggerItem key={label} className="px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{label}</p>
+          {statStrip.map((stat) => (
+            <StaggerItem key={stat.label} className="px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-tertiary)]">{stat.label}</p>
               <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
-                {index === 2 ? "24/7" : <Counter value={index === 0 ? 3 : 1} />}
+                {stat.value}
               </p>
             </StaggerItem>
           ))}
         </Stagger>
       </Reveal>
-      <Reveal y={32} delay={0.15} className="relative">
-        <div aria-hidden className="absolute -inset-6 -z-10 rounded-[40px] border border-[var(--border-subtle)]" />
+      <Reveal y={32} delay={0.15} className="relative min-w-0">
+        <div aria-hidden className="absolute inset-0 -z-10 rounded-[40px] border border-[var(--border-subtle)]" />
         <GlassCard variant="strong" className="group relative overflow-hidden p-6 text-[var(--text-primary)]">
           <div className="flex items-center justify-between">
             <div>

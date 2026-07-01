@@ -10,6 +10,7 @@ import {
 import { resolvePlanName } from "@zook/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InputAccessoryView, Keyboard, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   EmptyState,
   ExerciseRow,
@@ -20,11 +21,11 @@ import {
   QueryErrorState,
   SectionHeader,
   SegmentedControl,
-  StickyActionBar,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
+import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
 import { ExerciseListSkeleton, PlansSkeleton } from "@/components/skeletons";
 import {
   useCompletePlanAssignment,
@@ -175,14 +176,22 @@ export default function Plans() {
                 >
                   {t("member.plan.openTodayPlan")}
                 </ZookButton>
-                <ZookButton
+                <Pressable
                   testID="plans-view-active"
                   onPress={() => setFilter(planKind(selectedAssignment).includes("diet") ? "diet" : "workout")}
-                  variant="secondary"
-                  style={styles.activePlanSecondaryAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("member.planDetail.seeWeeklyList")}
+                  style={({ pressed }) => [
+                    styles.activePlanSecondaryAction,
+                    {
+                      backgroundColor: mode === "dark" ? palette.surface.raised : palette.bg.elevated,
+                      borderColor: palette.border.default,
+                    },
+                    pressed ? styles.iconButtonPressed : null,
+                  ]}
                 >
-                  {t("member.planDetail.seeWeeklyList")}
-                </ZookButton>
+                  <Ionicons name="list-outline" size={18} color={palette.text.primary} />
+                </Pressable>
               </View>
             </Card>
           ) : null}
@@ -232,10 +241,10 @@ export default function Plans() {
                   tone="neutral"
                   size={42}
                 />
-                <Text style={[styles.libraryTitle, { color: palette.text.primary }]}>
+                <Text numberOfLines={2} style={[styles.libraryTitle, { color: palette.text.primary }]}>
                   {planTitle(assignment, t("member.plan.assignedPlan"))}
                 </Text>
-                <Text style={[styles.libraryDetail, { color: palette.text.secondary }]}>
+                <Text numberOfLines={1} style={[styles.libraryDetail, { color: palette.text.secondary }]}>
                   {t("member.plan.percentComplete", { percent: assignment.progress?.completionPct ?? 0 })}
                 </Text>
               </Pressable>
@@ -248,6 +257,7 @@ export default function Plans() {
 }
 
 export function PlanDetailScreen() {
+  useHideBottomNav();
   const params = useLocalSearchParams<{
     view?: string | string[];
     assignmentId?: string | string[];
@@ -257,6 +267,7 @@ export function PlanDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { mode, palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(new Set<string>());
@@ -279,6 +290,8 @@ export function PlanDetailScreen() {
   const coachName = selectedAssignment?.assignedById ? t("member.planDetail.assignedByCoach") : t("member.planDetail.yourCoach");
   const completedCount = exercises.filter((exercise) => completed.has(exercise.name)).length;
   const progress = completedCount / Math.max(exercises.length, 1);
+  const remainingExerciseCount = Math.max(0, exercises.length - completedCount);
+  const canCompleteWorkout = Boolean(selectedAssignment) && exercises.length > 0 && remainingExerciseCount === 0;
   const requestedAssignmentId = firstParam(params.assignmentId);
   const progressStorageKey = selectedAssignment?.id
     ? `zook_plan_progress_${selectedAssignment.id}`
@@ -499,7 +512,10 @@ export function PlanDetailScreen() {
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
-            contentContainerStyle: styles.content,
+            contentContainerStyle: [
+              styles.content,
+              canCompleteWorkout ? styles.contentWithWorkoutDock : styles.contentWithoutWorkoutDock,
+            ],
             refreshControl: (
               <RefreshControl
                 refreshing={refreshing}
@@ -513,7 +529,7 @@ export function PlanDetailScreen() {
             <AppHeader
               title={planTitle(selectedAssignment, t("member.plan.assignedPlan"))}
               subtitle={coachName}
-              style={[styles.stickyHeader, { backgroundColor: palette.bg.app }]}
+              style={styles.detailHeader}
               leading={
                 <Pressable
                   onPress={() => router.canGoBack() ? router.back() : router.replace("/")}
@@ -536,7 +552,7 @@ export function PlanDetailScreen() {
                   onPress={openFeedbackSheet}
                   accessibilityRole="button"
                   accessibilityLabel={t("member.planDetail.tellCoach")}
-                  style={[
+                  style={({ pressed }) => [
                     styles.iconButton,
                     {
                       backgroundColor: feedbackOpen
@@ -546,11 +562,12 @@ export function PlanDetailScreen() {
                           : palette.bg.elevated,
                       borderColor: feedbackOpen ? palette.accent.strong : palette.border.default,
                     },
+                    pressed ? styles.iconButtonPressed : null,
                   ]}
                 >
                   <Ionicons
-                    name="information-outline"
-                    size={22}
+                    name="chatbubble-ellipses-outline"
+                    size={20}
                     color={feedbackOpen ? palette.text.onAccent : palette.text.primary}
                   />
                 </Pressable>
@@ -559,12 +576,15 @@ export function PlanDetailScreen() {
             />
 
             {feedbackStatus ? (
-              <Text style={[styles.inlineStatus, { color: palette.accent.base }]}>
-                {feedbackStatus}
-              </Text>
+              <View style={[styles.inlineStatusPill, { backgroundColor: palette.surface.accentSoft }]}>
+                <Ionicons name="checkmark-circle-outline" size={13} color={palette.accent.base} />
+                <Text numberOfLines={1} style={[styles.inlineStatus, { color: palette.accent.base }]}>
+                  {feedbackStatus}
+                </Text>
+              </View>
             ) : null}
 
-            <Card variant="selected" contentStyle={styles.progressContent}>
+            <Card variant="selected" padding={10} radius={18} contentStyle={styles.progressContent}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressCopy}>
                   <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
@@ -578,7 +598,7 @@ export function PlanDetailScreen() {
                   {Math.round(progress * 100)}%
                 </Text>
               </View>
-              <ProgressBar value={progress} label={t("member.diet.today")} />
+              <ProgressBar value={progress} />
             </Card>
 
             <SectionHeader title={t("member.planDetail.exercises")} />
@@ -607,34 +627,37 @@ export function PlanDetailScreen() {
                   title={exercise.name}
                   sets={exercise.sets}
                   detail={`${exercise.equipment} · ${exercise.reps}`}
+                  compact
                   complete={completed.has(exercise.name)}
                   onPress={() => toggleExercise(exercise.name)}
                 />
               ))}
             </View>
           </KeyboardAwareScreen>
-          <StickyActionBar>
-            <View style={styles.stickyActionRow}>
-              <ZookButton
-                testID="plan-detail-send-feedback"
-                onPress={openFeedbackSheet}
-                variant="secondary"
-                icon="send-outline"
-                style={styles.stickyActionHalf}
-              >
-                {t("member.planDetail.feedback")}
-              </ZookButton>
+          {canCompleteWorkout ? (
+            <View
+              style={[
+                styles.workoutDock,
+                {
+                  backgroundColor: mode === "dark" ? palette.bg.app : palette.bg.elevated,
+                  borderTopColor: palette.border.subtle,
+                  paddingBottom: Math.max(insets.bottom, 8),
+                },
+              ]}
+            >
               <ZookButton
                 testID="plan-detail-complete-workout"
                 onPress={() => void completeWorkout()}
-                disabled={!selectedAssignment || completePlan.isPending}
+                disabled={completePlan.isPending}
                 icon="checkmark-circle-outline"
-                style={styles.stickyActionPrimary}
+                fullWidth
               >
-                {completePlan.isPending ? t("member.planDetail.completing") : t("member.planDetail.completeWorkout")}
+                {completePlan.isPending
+                  ? t("member.planDetail.completing")
+                  : t("member.planDetail.completeWorkout")}
               </ZookButton>
             </View>
-          </StickyActionBar>
+          ) : null}
         </ZookScreen>
         <BottomSheetModal
           ref={feedbackSheetRef}
@@ -702,14 +725,16 @@ export function PlanDetailScreen() {
                 </Pressable>
               ))}
             </View>
-            <ZookButton
-              testID="plan-detail-feedback-send"
-              onPress={() => void sendFeedback()}
-              icon="send-outline"
-              style={styles.feedbackSendButton}
-            >
-              {t("member.planDetail.send")}
-            </ZookButton>
+            {Platform.OS === "ios" ? null : (
+              <ZookButton
+                testID="plan-detail-feedback-send"
+                onPress={() => void sendFeedback()}
+                icon="send-outline"
+                style={styles.feedbackSendButton}
+              >
+                {t("member.planDetail.send")}
+              </ZookButton>
+            )}
             <TextInput
               testID="plan-detail-feedback-input"
               inputAccessoryViewID={Platform.OS === "ios" ? feedbackAccessoryId : undefined}
@@ -773,21 +798,29 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
-    gap: spacing.lg,
-    paddingBottom: layout.bottomNavContentPadding + layout.stickyActionHeight,
+    gap: spacing.md,
   },
-  stickyHeader: {
-    marginHorizontal: -layout.screenPadding,
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.sm,
+  contentWithoutWorkoutDock: {
+    paddingBottom: spacing.xxl,
+  },
+  contentWithWorkoutDock: {
+    paddingBottom: layout.stickyActionHeight + spacing.md,
+  },
+  detailHeader: {
+    paddingTop: 2,
+    paddingBottom: 2,
   },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconButtonPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.96 }],
   },
   sheetBackground: {
     borderWidth: 1,
@@ -854,10 +887,34 @@ const styles = StyleSheet.create({
   },
   inlineStatus: {
     ...typography.caption,
-    paddingHorizontal: 4,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  inlineStatusPill: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    flexDirection: "row",
+    gap: 5,
+    minHeight: 26,
+    maxWidth: "100%",
+    paddingHorizontal: 9,
   },
   stack: {
     gap: spacing.sm,
+  },
+  workoutDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 60,
+    alignSelf: "center",
+    borderTopWidth: 1,
+    maxWidth: layout.contentWidth,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: 10,
+    width: "100%",
   },
   activePlanContent: {
     gap: spacing.lg,
@@ -872,6 +929,7 @@ const styles = StyleSheet.create({
   activePlanCopy: {
     flex: 1,
     gap: 4,
+    minWidth: 0,
   },
   activePlanTitle: {
     ...typography.headerTitle,
@@ -901,10 +959,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activePlanSecondaryAction: {
-    minWidth: 76,
+    alignItems: "center",
+    borderRadius: 23,
+    borderWidth: 1,
+    height: 46,
+    justifyContent: "center",
+    width: 46,
   },
   progressContent: {
-    gap: spacing.lg,
+    gap: 6,
   },
   progressHeader: {
     flexDirection: "row",
@@ -914,16 +977,20 @@ const styles = StyleSheet.create({
   },
   progressCopy: {
     flex: 1,
-    gap: 4,
+    gap: 2,
+    minWidth: 0,
   },
   cardTitle: {
-    ...typography.cardTitle,
+    ...typography.bodyStrong,
   },
   cardBody: {
-    ...typography.body,
+    ...typography.caption,
   },
   progressText: {
-    ...typography.metric,
+    fontFamily: "Inter_700Bold",
+    fontSize: 19,
+    fontVariant: ["tabular-nums"],
+    lineHeight: 23,
   },
   eyebrow: {
     ...typography.eyebrow,
@@ -947,21 +1014,12 @@ const styles = StyleSheet.create({
   },
   libraryTitle: {
     ...typography.cardTitle,
+    minHeight: 44,
   },
   libraryDetail: {
     ...typography.small,
   },
   emptyPlanCard: {
     width: "100%",
-  },
-  stickyActionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  stickyActionHalf: {
-    flex: 1,
-  },
-  stickyActionPrimary: {
-    flex: 1.6,
   },
 });

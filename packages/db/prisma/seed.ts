@@ -134,6 +134,7 @@ const seedOrgUsernames = ["aarogya-strength", "peaklab"];
 
 const gymImageAssets = {
   aarogyaStrength: {
+    logoUrl: "/seed/gyms/aarogya-strength/logo.svg",
     coverImageUrl: "/seed/gyms/aarogya-strength/cover.png",
     gallery: [
       "/seed/gyms/aarogya-strength/gallery-01.png",
@@ -144,6 +145,7 @@ const gymImageAssets = {
     ],
   },
   yourFitness: {
+    logoUrl: "/seed/gyms/your-fitness/logo.svg",
     coverImageUrl: "/seed/gyms/your-fitness/cover.png",
     gallery: [
       "/seed/gyms/your-fitness/gallery-01.png",
@@ -467,8 +469,10 @@ async function main() {
       pincode: "411001",
       latitude: new Prisma.Decimal("18.5362"),
       longitude: new Prisma.Decimal("73.8930"),
+      originalGoogleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Lane%207%2C%20Koregaon%20Park%2C%20Pune",
       locationSource: LocationSource.MOCK,
       amenities: ["Strength floor", "Cardio", "Locker room", "Personal training", "Recovery corner"],
+      logoUrl: gymImageAssets.aarogyaStrength.logoUrl,
       coverImageUrl: gymImageAssets.aarogyaStrength.coverImageUrl,
       operatingHours: { weekday: "05:30-22:30", sunday: "07:00-14:00" },
       visibility: GymVisibility.PUBLIC,
@@ -492,6 +496,7 @@ async function main() {
       pincode: "560038",
       latitude: new Prisma.Decimal("12.9719"),
       longitude: new Prisma.Decimal("77.6412"),
+      originalGoogleMapsUrl: "https://www.google.com/maps/search/?api=1&query=12th%20Main%20Road%2C%20Indiranagar%2C%20Bengaluru",
       locationSource: LocationSource.MOCK,
       amenities: ["Functional zone", "HIIT", "Mobility area", "Nutrition desk"],
       operatingHours: { weekday: "06:00-22:00", sunday: "08:00-12:00" },
@@ -513,6 +518,7 @@ async function main() {
       pincode: aarogyaStrength.pincode,
       latitude: aarogyaStrength.latitude,
       longitude: aarogyaStrength.longitude,
+      googleMapsUrl: aarogyaStrength.originalGoogleMapsUrl,
       locationSource: LocationSource.MOCK,
       isDefault: true,
     },
@@ -528,6 +534,7 @@ async function main() {
       pincode: indiranagarPerformance.pincode,
       latitude: indiranagarPerformance.latitude,
       longitude: indiranagarPerformance.longitude,
+      googleMapsUrl: indiranagarPerformance.originalGoogleMapsUrl,
       locationSource: LocationSource.MOCK,
       isDefault: true,
     },

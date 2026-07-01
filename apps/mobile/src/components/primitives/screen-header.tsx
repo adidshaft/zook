@@ -10,7 +10,7 @@ import { normalizeWebUrl } from "@/lib/api";
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
 import { materials, spacing, typography, useTheme } from "@/lib/theme";
-import { gymBrandColor } from "@/lib/gym-brand";
+import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
 
 type HeaderContext = {
   orgName: string;
@@ -23,8 +23,11 @@ export function ScreenHeader({
   title,
   subtitle,
   titleAccessory,
+  titleScale = "large",
+  hideExpandedTitle = false,
   context,
   contextSlot,
+  leading,
   trailing,
   meta,
   scrollY,
@@ -33,8 +36,11 @@ export function ScreenHeader({
   title: string;
   subtitle?: string;
   titleAccessory?: ReactNode;
+  titleScale?: "large" | "compact";
+  hideExpandedTitle?: boolean;
   context?: HeaderContext;
   contextSlot?: ReactNode;
+  leading?: ReactNode;
   trailing?: ReactNode;
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
@@ -92,8 +98,9 @@ export function ScreenHeader({
         </Text>
       </Reanimated.View>
 
-      {contextSlot || context || trailing ? (
+      {leading || contextSlot || context || trailing ? (
         <View style={styles.utilityRow}>
+          {leading ? <View style={styles.leadingSlot}>{leading}</View> : null}
           {contextSlot || context ? (
             <View style={styles.utilityLeading}>
               {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : null}
@@ -102,25 +109,28 @@ export function ScreenHeader({
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
         </View>
       ) : null}
-      <Reanimated.View style={[styles.titleBlock, titleStyle]}>
-        <View style={styles.titleRow}>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.title,
-              titleAccessory ? styles.titleWithAccessory : null,
-              { color: palette.text.primary },
-            ]}
-          >
-            {title}
-          </Text>
-          {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
-        </View>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
-        ) : null}
-        {meta ? <View style={styles.meta}>{meta}</View> : null}
-      </Reanimated.View>
+      {hideExpandedTitle ? null : (
+        <Reanimated.View style={[styles.titleBlock, titleStyle]}>
+          <View style={styles.titleRow}>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.title,
+                titleScale === "compact" ? styles.titleCompact : null,
+                titleAccessory ? styles.titleWithAccessory : null,
+                { color: palette.text.primary },
+              ]}
+            >
+              {title}
+            </Text>
+            {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
+          </View>
+          {subtitle ? (
+            <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+          ) : null}
+          {meta ? <View style={styles.meta}>{meta}</View> : null}
+        </Reanimated.View>
+      )}
     </View>
   );
 }
@@ -144,14 +154,24 @@ function ContextPill({ context }: { context: HeaderContext }) {
       ]}
     >
       <GymLogoAvatar orgName={context.orgName} logoUrl={context.logoUrl} />
-      <Text numberOfLines={1} style={[styles.contextText, { color: palette.text.primary }]}>
-        {context.orgName}
-      </Text>
-      {context.roleTag ? (
-        <Text numberOfLines={1} style={[styles.roleTag, { color: palette.text.secondary }]}>
-          {context.roleTag}
+      <View style={styles.contextCopy}>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[styles.contextText, { color: palette.text.primary }]}
+        >
+          {context.orgName}
         </Text>
-      ) : null}
+        {context.roleTag ? (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.roleTag, { color: palette.text.secondary }]}
+          >
+            {context.roleTag}
+          </Text>
+        ) : null}
+      </View>
       <Ionicons name="chevron-down" size={14} color={palette.text.tertiary} />
     </Pressable>
   );
@@ -159,7 +179,7 @@ function ContextPill({ context }: { context: HeaderContext }) {
 
 function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
   const [didFail, setDidFail] = useState(false);
-  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
+  const normalizedLogoUrl = seededGymLogoDataUri(logoUrl) ?? normalizeWebUrl(logoUrl);
   const brand = gymBrandColor(orgName);
 
   useEffect(() => {
@@ -224,10 +244,15 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   utilityRow: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
     gap: Platform.OS === "android" ? spacing.xs : spacing.sm,
     minHeight: 0,
+  },
+  leadingSlot: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginRight: spacing.xs,
   },
   utilityLeading: {
     alignItems: "center",
@@ -239,6 +264,7 @@ const styles = StyleSheet.create({
   },
   trailing: {
     alignItems: "center",
+    alignSelf: "flex-start",
     flexDirection: "row",
     gap: spacing.xs,
     marginLeft: "auto",
@@ -247,15 +273,17 @@ const styles = StyleSheet.create({
   contextPill: {
     alignItems: "center",
     borderCurve: "continuous",
-    borderRadius: 999,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
+    flexShrink: 1,
     gap: spacing.xs,
     maxWidth: "100%",
-    minHeight: 36,
+    minHeight: 42,
     minWidth: 0,
-    paddingLeft: 6,
-    paddingRight: spacing.sm,
+    paddingLeft: 7,
+    paddingRight: 9,
+    paddingVertical: 4,
   },
   avatar: {
     alignItems: "center",
@@ -274,14 +302,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
   },
-  contextText: {
-    ...typography.caption,
+  contextCopy: {
+    alignItems: "flex-start",
+    flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
+  contextText: {
+    fontSize: 13,
+    lineHeight: 15,
+    flexShrink: 1,
+    fontFamily: "Inter_700Bold",
+    minWidth: 0,
+    textAlign: "left",
+    width: "100%",
+  },
   roleTag: {
-    ...typography.caption,
-    maxWidth: Platform.OS === "android" ? 56 : 76,
+    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    lineHeight: 11.5,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: "left",
+    width: "100%",
   },
   titleBlock: {
     alignSelf: "stretch",
@@ -303,6 +346,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
+  },
+  titleCompact: {
+    ...typography.headerTitle,
   },
   titleWithAccessory: {
     paddingRight: spacing.sm,

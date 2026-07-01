@@ -72,7 +72,7 @@ export function ShopOrderPaymentControl({
         title={disabled ? disabledTitle : undefined}
         onClick={() => setOpen(true)}
       >
-        Record payment · Mode: {formatPaymentMode(form.mode)}
+        Record payment
       </ZookButton>
     );
   }

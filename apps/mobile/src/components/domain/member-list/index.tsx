@@ -23,6 +23,8 @@ export function MemberList({
   onRetry,
   onRevealPhone,
   onSearchChange,
+  resultSummary,
+  searchPlaceholder,
   searchValue,
   searchTestID,
   testID,
@@ -38,12 +40,16 @@ export function MemberList({
     title: t("memberList.noMembers"),
     subtitle: t("memberList.tryDifferentSearch"),
   };
-  const renderItem = ({ item, index }: { item: typeof items[number]; index: number }) => (
+  const renderItem = ({ item, index }: { item: (typeof items)[number]; index: number }) => (
     <MemberListRow
       item={item}
       onPress={() => onPressMember(item)}
       onRevealPhone={onRevealPhone ? () => onRevealPhone(item) : undefined}
-      testID={index === 0 ? `${testID ?? "member-list"}-row-first` : `${testID ?? "member-list"}-row-${item.id}`}
+      testID={
+        index === 0
+          ? `${testID ?? "member-list"}-row-first`
+          : `${testID ?? "member-list"}-row-${item.id}`
+      }
     />
   );
 
@@ -74,19 +80,29 @@ export function MemberList({
             filter={filter}
             onFilterChange={onFilterChange}
             onSearchChange={onSearchChange}
+            resultSummary={resultSummary}
+            searchPlaceholder={searchPlaceholder}
             searchValue={searchValue}
             searchTestID={searchTestID}
           />
           {isLoading ? <TrainerClientsSkeleton /> : null}
-          {isError ? <QueryErrorState error={new Error(t("memberList.couldNotLoad"))} onRetry={onRetry} /> : null}
+          {isError ? (
+            <QueryErrorState error={new Error(t("memberList.couldNotLoad"))} onRetry={onRetry} />
+          ) : null}
         </View>
       }
       ListEmptyComponent={
         !isLoading && !isError ? (
-          <MemberListEmptyState title={resolvedEmptyState.title} subtitle={resolvedEmptyState.subtitle} />
+          <MemberListEmptyState
+            title={resolvedEmptyState.title}
+            subtitle={resolvedEmptyState.subtitle}
+          />
         ) : null
       }
-      contentContainerStyle={[styles.listContent, !scrollEnabled ? styles.embeddedListContent : null]}
+      contentContainerStyle={[
+        styles.listContent,
+        !scrollEnabled ? styles.embeddedListContent : null,
+      ]}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
     />
   );
@@ -94,8 +110,8 @@ export function MemberList({
 
 const styles = StyleSheet.create({
   headerContainer: {
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
   },
   listContent: {
     paddingBottom: 96,
@@ -104,6 +120,6 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   separator: {
-    height: spacing.md,
+    height: spacing.xs,
   },
 });

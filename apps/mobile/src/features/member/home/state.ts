@@ -11,6 +11,7 @@ type HomeSignals = MemberHomeData & {
 export type HomeState =
   | { kind: "noOrg" }
   | { kind: "expiredMembership" }
+  | { kind: "membershipBlocked"; reason: "cancelled" | "pastDue" | "paymentPending" | "paused" }
   | { kind: "membershipPendingActivation"; gymName: string }
   | { kind: "noPlan"; gymName: string; daysLeft: number }
   | { kind: "todayRest"; planName: string; streak: number }
@@ -27,13 +28,29 @@ export type HomeState =
 function isExpired(membership: HomeSignals["activeMembership"]) {
   if (!membership) return false;
   const status = String(membership.status ?? "").toUpperCase();
-  return status.includes("EXPIRED") || (typeof membership.daysLeft === "number" && membership.daysLeft <= 0);
+  return (
+    status.includes("EXPIRED") ||
+    (typeof membership.daysLeft === "number" && membership.daysLeft <= 0)
+  );
 }
 
 export function deriveHomeState(home: HomeSignals | undefined): HomeState {
   if (!home) return { kind: "firstRun" };
   if (!home.activeOrganization) return { kind: "noOrg" };
   if (isExpired(home.activeMembership)) return { kind: "expiredMembership" };
+  const membershipStatus = String(home.activeMembership?.status ?? "").toUpperCase();
+  if (membershipStatus.includes("CANCEL")) {
+    return { kind: "membershipBlocked", reason: "cancelled" };
+  }
+  if (membershipStatus.includes("PAST_DUE") || membershipStatus.includes("OVERDUE")) {
+    return { kind: "membershipBlocked", reason: "pastDue" };
+  }
+  if (membershipStatus.includes("PENDING") || membershipStatus.includes("PAYMENT")) {
+    return { kind: "membershipBlocked", reason: "paymentPending" };
+  }
+  if (membershipStatus.includes("PAUSED")) {
+    return { kind: "membershipBlocked", reason: "paused" };
+  }
   if (home.activeWorkoutSessionId) {
     return { kind: "workoutInProgress", assignmentId: home.activeWorkoutSessionId };
   }

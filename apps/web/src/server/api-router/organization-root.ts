@@ -120,6 +120,8 @@ export async function handleOrganizationRoot(request: NextRequest, path: string[
           pincode: created.pincode,
           latitude: created.latitude,
           longitude: created.longitude,
+          googleMapsUrl: created.originalGoogleMapsUrl,
+          locationSource: created.originalGoogleMapsUrl ? "GOOGLE_MAPS_LINK" : "MANUAL",
           contactPhone: created.contactPhone,
           contactEmail: created.contactEmail,
           whatsappNumber: created.contactPhone,

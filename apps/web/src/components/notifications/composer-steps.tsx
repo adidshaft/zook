@@ -27,6 +27,31 @@ type AudienceOption = {
   allowed: boolean;
 };
 
+function composerNotificationStatusLabel(status: string | null | undefined) {
+  if (status === "SENT") return "Sent";
+  if (status === "SCHEDULED") return "Scheduled";
+  if (status === "FAILED") return "Failed";
+  if (status === "DRAFT") return "Draft";
+  if (status === "CANCELLED") return "Cancelled";
+  return formatEnumLabel(status ?? "message");
+}
+
+function composerNotificationTypeLabel(type: string | null | undefined) {
+  if (type === "PROMOTIONAL") return "Announcement";
+  if (type === "OPERATIONAL") return "Update";
+  if (type === "TRANSACTIONAL") return "Transactional";
+  return formatEnumLabel(type ?? "message");
+}
+
+function composerAudienceLabel(audience: string | null | undefined) {
+  if (audience === "ALL_MEMBERS") return "All members";
+  if (audience === "ACTIVE_MEMBERS") return "Active members";
+  if (audience === "EXPIRING_MEMBERS") return "Expiring members";
+  if (audience === "INACTIVE_MEMBERS") return "Inactive members";
+  if (audience === "SELECTED_MEMBERS") return "Selected members";
+  return formatEnumLabel(audience ?? "members");
+}
+
 export function MessageTypeStep({
   type,
   typePermissions,
@@ -387,28 +412,28 @@ export function ComposerDeliveryHistory({ notifications }: { notifications: Noti
         notifications.slice(0, 8).map((notification) => (
           <div
             key={notification.id}
-            className="rounded-[22px] border border-white/10 bg-black/20 p-4"
+            className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5"
           >
             <div className="flex items-center justify-between gap-3">
-              <p className="font-medium text-white">{notification.title}</p>
+              <p className="min-w-0 flex-1 truncate font-medium text-white">{notification.title}</p>
               <Pill tone={toneForNotificationStatus(notification.status)}>
-                {formatEnumLabel(notification.status)}
+                {composerNotificationStatusLabel(notification.status)}
               </Pill>
             </div>
-            <p className="mt-2 text-sm text-white/55">{notification.body}</p>
-            <p className="mt-2 text-xs text-white/40">
-              {formatEnumLabel(notification.type)} · {formatEnumLabel(notification.audience)} ·{" "}
+            <p className="mt-1 text-xs text-white/45">
+              {composerNotificationTypeLabel(notification.type)} · {composerAudienceLabel(notification.audience)} ·{" "}
               {formatDateTime(notification.createdAt)}
             </p>
-            <p className="mt-2 text-xs text-white/40">
+            <p className="mt-1 text-xs text-white/40">
               {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
-              {notification.recipientStats?.total ?? 0} recipients ·{" "}
-              {notification.recipientStats?.delivered ?? 0} delivered ·{" "}
-              {notification.recipientStats?.read ?? 0} read ({readPercent(notification)}%) ·{" "}
-              {notification.recipientStats?.failed ?? 0} failed
-              {notification.recipientStats?.scheduled
-                ? ` · ${notification.recipientStats.scheduled} scheduled`
+              {(notification.recipientStats?.failed ?? 0) > 0
+                ? `${notification.recipientStats?.failed ?? 0} failed · `
                 : ""}
+              {notification.recipientStats?.delivered ?? 0}/{notification.recipientStats?.total ?? 0} delivered
+              {(notification.recipientStats?.read ?? 0) > 0
+                ? ` · ${readPercent(notification)}% read`
+                : ""}
+              {notification.recipientStats?.scheduled ? ` · ${notification.recipientStats.scheduled} scheduled` : ""}
             </p>
           </div>
         ))

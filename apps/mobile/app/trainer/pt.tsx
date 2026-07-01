@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -28,7 +29,7 @@ import {
 } from "@/lib/domains/trainer/queries";
 import type { PtPlanRecord, PtSubscriptionRecord } from "@/lib/domains/shared/types";
 import { formatInr, titleCaseFromCode } from "@/lib/formatting";
-import { useT } from "@/lib/i18n";
+import { type TranslationKey, useT } from "@/lib/i18n";
 import { radii, spacing, typography, layout, useTheme } from "@/lib/theme";
 
 type PaymentMode = "CASH" | "DIRECT_UPI" | "OTHER";
@@ -40,6 +41,24 @@ function subscriptionTone(status: string) {
   if (normalized.includes("PENDING")) return "amber" as const;
   if (normalized.includes("EXPIRED") || normalized.includes("CANCEL")) return "red" as const;
   return "neutral" as const;
+}
+
+const subscriptionStatusLabelKeys: Record<string, TranslationKey> = {
+  ACTIVE: "memberList.status.active",
+  EXPIRED: "memberList.status.expired",
+  PAST_DUE: "memberList.status.expired",
+  PENDING: "memberList.status.pending",
+  PENDING_PAYMENT: "memberList.status.pending",
+};
+
+function subscriptionStatusLabel(status: string, t: ReturnType<typeof useT>) {
+  const normalized = status.toUpperCase();
+  const exactLabel = subscriptionStatusLabelKeys[normalized];
+  if (exactLabel) return t(exactLabel);
+  if (normalized.includes("ACTIVE")) return t("memberList.status.active");
+  if (normalized.includes("PENDING")) return t("memberList.status.pending");
+  if (normalized.includes("EXPIRED") || normalized.includes("CANCEL")) return t("memberList.status.expired");
+  return titleCaseFromCode(status);
 }
 
 function Chip({
@@ -90,7 +109,7 @@ function ClientRow({
   const remaining = sub.remainingSessions ?? 0;
   const canLog = active && remaining > 0;
   return (
-    <View style={styles.clientRow}>
+    <View style={[styles.clientRow, canLog ? styles.clientRowWithAction : null]}>
       <View style={styles.clientTop}>
         <IconBubble icon="person-outline" tone="blue" size={40} />
         <View style={styles.clientCopy}>
@@ -102,12 +121,24 @@ function ClientRow({
             {sub.totalSessions ? ` · ${t("trainer.pt.sessionsLeftShort", { remaining, total: sub.totalSessions })}` : ""}
           </Text>
         </View>
-        <Pill tone={subscriptionTone(sub.status)}>{titleCaseFromCode(sub.status)}</Pill>
+        <Pill tone={subscriptionTone(sub.status)}>{subscriptionStatusLabel(sub.status, t)}</Pill>
       </View>
       {canLog ? (
-        <ZookButton size="sm" variant="secondary" icon="checkmark-done-outline" busy={logging} busyLabel={t("trainer.pt.logging")} onPress={onLogSession}>
-          {t("trainer.pt.logSession")}
-        </ZookButton>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("trainer.pt.logSession")}
+          disabled={logging}
+          hitSlop={8}
+          onPress={onLogSession}
+          style={({ pressed }) => [
+            styles.compactAction,
+            { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+            pressed ? styles.pressedAction : null,
+            logging ? styles.disabledAction : null,
+          ]}
+        >
+          <Ionicons name={logging ? "hourglass-outline" : "checkmark-done-outline"} size={19} color={palette.text.secondary} />
+        </Pressable>
       ) : remaining <= 0 && sub.totalSessions ? (
         <Text style={[styles.clientMeta, { color: palette.text.tertiary }]}>{t("trainer.pt.allSessionsCompleted")}</Text>
       ) : null}
@@ -127,7 +158,7 @@ function PendingRequestRow({
   const { palette } = useTheme();
   const t = useT();
   return (
-    <View style={styles.clientRow}>
+    <View style={[styles.clientRow, styles.clientRowWithAction]}>
       <View style={styles.clientTop}>
         <IconBubble icon="person-outline" tone="amber" size={40} />
         <View style={styles.clientCopy}>
@@ -141,9 +172,21 @@ function PendingRequestRow({
         </View>
         <Pill tone="amber">{t("trainer.pt.pending")}</Pill>
       </View>
-      <ZookButton size="sm" variant="primary" icon="checkmark-outline" busy={approving} busyLabel={t("trainer.pt.approving")} onPress={onApprove}>
-        {t("trainer.pt.approve")}
-      </ZookButton>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("trainer.pt.approve")}
+        disabled={approving}
+        hitSlop={8}
+        onPress={onApprove}
+        style={({ pressed }) => [
+          styles.compactAction,
+          { backgroundColor: palette.accent.base, borderColor: palette.accent.strong },
+          pressed ? styles.pressedAction : null,
+          approving ? styles.disabledAction : null,
+        ]}
+      >
+        <Ionicons name={approving ? "hourglass-outline" : "checkmark-outline"} size={19} color={palette.text.onAccent} />
+      </Pressable>
     </View>
   );
 }
@@ -285,7 +328,7 @@ export default function TrainerPersonalTraining() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title={t("trainer.pt.title")} subtitle={t("trainer.pt.subtitle")} showBack />
+          <AppHeader title={t("trainer.pt.title")} showBack />
 
           {plansQuery.isLoading || subscriptionsQuery.isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
@@ -294,15 +337,29 @@ export default function TrainerPersonalTraining() {
             </Card>
           ) : null}
 
-          <View style={styles.statRow}>
-            <Card variant="compact" contentStyle={styles.statCard}>
-              <Text style={[styles.statValue, { color: palette.text.primary }]}>{activeClients}</Text>
-              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>{t("trainer.pt.ptClients")}</Text>
-            </Card>
-            <Card variant="compact" contentStyle={styles.statCard}>
-              <Text style={[styles.statValue, { color: palette.text.primary }]}>{plans.length}</Text>
-              <Text style={[styles.statLabel, { color: palette.text.secondary }]}>{t("trainer.pt.packages")}</Text>
-            </Card>
+          <View style={[styles.workSummary, { backgroundColor: palette.surface.default, borderColor: palette.border.subtle }]}>
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryValue, { color: pendingRequests.length ? palette.accent.base : palette.text.primary }]}>
+                {pendingRequests.length}
+              </Text>
+              <Text style={[styles.summaryLabel, { color: palette.text.secondary }]} numberOfLines={1}>
+                {t("trainer.pt.pendingRequests")}
+              </Text>
+            </View>
+            <View style={[styles.summaryDivider, { backgroundColor: palette.border.subtle }]} />
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryValue, { color: palette.text.primary }]}>{activeClients}</Text>
+              <Text style={[styles.summaryLabel, { color: palette.text.secondary }]} numberOfLines={1}>
+                {t("trainer.pt.ptClients")}
+              </Text>
+            </View>
+            <View style={[styles.summaryDivider, { backgroundColor: palette.border.subtle }]} />
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryValue, { color: palette.text.primary }]}>{plans.length}</Text>
+              <Text style={[styles.summaryLabel, { color: palette.text.secondary }]} numberOfLines={1}>
+                {t("trainer.pt.packages")}
+              </Text>
+            </View>
           </View>
 
           {pendingRequests.length > 0 ? (
@@ -326,15 +383,28 @@ export default function TrainerPersonalTraining() {
           <SectionHeader
             title={t("trainer.pt.yourPtClients")}
             action={
-              <ZookButton
-                size="sm"
-                variant={showClientForm ? "secondary" : "primary"}
-                icon={showClientForm ? "close" : "person-add"}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showClientForm ? t("common.cancel") : t("trainer.pt.add")}
                 disabled={plans.length === 0}
+                hitSlop={8}
                 onPress={() => setShowClientForm((current) => !current)}
+                style={({ pressed }) => [
+                  styles.headerIconAction,
+                  {
+                    backgroundColor: showClientForm ? palette.surface.default : palette.accent.base,
+                    borderColor: showClientForm ? palette.border.default : palette.accent.strong,
+                  },
+                  pressed ? styles.pressedAction : null,
+                  plans.length === 0 ? styles.disabledAction : null,
+                ]}
               >
-                {showClientForm ? t("common.cancel") : t("trainer.pt.add")}
-              </ZookButton>
+                <Ionicons
+                  name={showClientForm ? "close" : "person-add"}
+                  size={20}
+                  color={showClientForm ? palette.text.secondary : palette.text.onAccent}
+                />
+              </Pressable>
             }
           />
 
@@ -399,9 +469,26 @@ export default function TrainerPersonalTraining() {
           <SectionHeader
             title={t("trainer.pt.yourPackages")}
             action={
-              <ZookButton size="sm" variant={showPackageForm ? "secondary" : "primary"} icon={showPackageForm ? "close" : "add"} onPress={() => showPackageForm ? resetPackageForm() : setShowPackageForm(true)}>
-                {showPackageForm ? t("common.cancel") : t("trainer.pt.new")}
-              </ZookButton>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showPackageForm ? t("common.cancel") : t("trainer.pt.new")}
+                hitSlop={8}
+                onPress={() => showPackageForm ? resetPackageForm() : setShowPackageForm(true)}
+                style={({ pressed }) => [
+                  styles.headerIconAction,
+                  {
+                    backgroundColor: showPackageForm ? palette.surface.default : palette.accent.base,
+                    borderColor: showPackageForm ? palette.border.default : palette.accent.strong,
+                  },
+                  pressed ? styles.pressedAction : null,
+                ]}
+              >
+                <Ionicons
+                  name={showPackageForm ? "close" : "add"}
+                  size={20}
+                  color={showPackageForm ? palette.text.secondary : palette.text.onAccent}
+                />
+              </Pressable>
             }
           />
 
@@ -455,19 +542,38 @@ export default function TrainerPersonalTraining() {
                   <Text style={[styles.planDesc, { color: palette.text.secondary }]} numberOfLines={2}>{plan.description}</Text>
                 ) : null}
                 <View style={styles.planActions}>
-                  <ZookButton size="sm" variant="secondary" icon="pencil-outline" onPress={() => openEditPlan(plan)}>
-                    {t("trainer.pt.edit")}
-                  </ZookButton>
-                  <ZookButton
-                    size="sm"
-                    variant="secondary"
-                    icon="trash-outline"
-                    busy={deletePlan.isPending && deletePlan.variables === plan.id}
-                    busyLabel={t("trainer.pt.removing")}
-                    onPress={() => confirmDeletePlan(plan)}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("trainer.pt.edit")}
+                    hitSlop={8}
+                    onPress={() => openEditPlan(plan)}
+                    style={({ pressed }) => [
+                      styles.compactAction,
+                      { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+                      pressed ? styles.pressedAction : null,
+                    ]}
                   >
-                    {t("trainer.pt.remove")}
-                  </ZookButton>
+                    <Ionicons name="pencil-outline" size={18} color={palette.text.secondary} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("trainer.pt.remove")}
+                    disabled={deletePlan.isPending && deletePlan.variables === plan.id}
+                    hitSlop={8}
+                    onPress={() => confirmDeletePlan(plan)}
+                    style={({ pressed }) => [
+                      styles.compactAction,
+                      { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+                      pressed ? styles.pressedAction : null,
+                      deletePlan.isPending && deletePlan.variables === plan.id ? styles.disabledAction : null,
+                    ]}
+                  >
+                    <Ionicons
+                      name={deletePlan.isPending && deletePlan.variables === plan.id ? "hourglass-outline" : "trash-outline"}
+                      size={18}
+                      color={palette.text.secondary}
+                    />
+                  </Pressable>
                 </View>
               </Card>
             ))}
@@ -487,15 +593,41 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  statRow: { flexDirection: "row", gap: spacing.sm },
-  statCard: { alignItems: "flex-start", flex: 1, gap: 2 },
-  statValue: { ...typography.metric },
-  statLabel: { ...typography.small },
+  workSummary: {
+    alignItems: "center",
+    borderRadius: radii.large,
+    borderWidth: 1,
+    flexDirection: "row",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  summaryItem: { alignItems: "center", flex: 1, gap: 2, minWidth: 0 },
+  summaryValue: { fontFamily: "Inter_700Bold", fontSize: 20, lineHeight: 24 },
+  summaryLabel: { ...typography.small },
+  summaryDivider: { height: 28, width: StyleSheet.hairlineWidth },
   formCard: { gap: spacing.md },
   loadingCard: { gap: spacing.md },
   formLabel: { ...typography.caption },
-  formRow: { flexDirection: "row", gap: spacing.sm },
+  formRow: { gap: spacing.sm },
   formField: { flex: 1 },
+  headerIconAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  compactAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  pressedAction: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+  disabledAction: { opacity: 0.45 },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
   chip: { borderRadius: radii.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9, maxWidth: "100%" },
   chipText: { ...typography.caption },
@@ -507,10 +639,11 @@ const styles = StyleSheet.create({
   planMeta: { ...typography.small },
   planPrice: { ...typography.cardTitle },
   planDesc: { ...typography.body },
-  planActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs },
+  planActions: { alignSelf: "flex-end", flexDirection: "row", gap: spacing.xs, marginTop: spacing.xs },
   clientsCard: { gap: spacing.sm, paddingVertical: spacing.sm },
   clientRow: { gap: spacing.sm },
-  clientTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  clientRowWithAction: { alignItems: "center", flexDirection: "row" },
+  clientTop: { alignItems: "center", flex: 1, flexDirection: "row", gap: spacing.md, minWidth: 0 },
   clientCopy: { flex: 1, gap: 2, minWidth: 0 },
   clientName: { ...typography.cardTitle },
   clientMeta: { ...typography.small },

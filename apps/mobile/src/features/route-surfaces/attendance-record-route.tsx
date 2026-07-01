@@ -23,7 +23,7 @@ import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { formatDurationSeconds, formatTime, titleCaseFromCode } from "@/lib/formatting";
-import { useT } from "@/lib/i18n";
+import { type TranslationKey, useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -40,6 +40,21 @@ type AttendanceRecord = {
   reason?: string | null;
   source?: string | null;
 };
+
+const attendanceStatusLabelKeys: Record<string, TranslationKey> = {
+  APPROVED: "member.attendance.approved",
+  FAILED: "member.receipt.statusFailed",
+  FLAGGED: "reception.desk.flagged",
+  PENDING_APPROVAL: "member.attendance.pendingApproval",
+  RECORDED: "reception.desk.statusRecorded",
+  REJECTED: "reception.desk.statusRejected",
+};
+
+function attendanceStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "RECORDED").toUpperCase();
+  const labelKey = attendanceStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "RECORDED");
+}
 
 function toAttendanceFallbackRecord(
   home: MemberHomeData,
@@ -388,7 +403,7 @@ export default function AttendanceResultScreen() {
                 <DetailLine label={t("member.attendance.plan")} value={planName} icon="reader-outline" />
                 <DetailLine
                   label={t("member.attendance.status")}
-                  value={titleCaseFromCode(record.status ?? "RECORDED")}
+                  value={attendanceStatusLabel(record.status, t)}
                   icon="checkmark-circle-outline"
                   highlight
                 />

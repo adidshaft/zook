@@ -6,12 +6,16 @@ function toDate(value?: string | Date | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatLongDate(value?: string | Date | null, fallback = "Not available") {
+export function formatLongDate(
+  value?: string | Date | null,
+  fallback = "Not available",
+  locale?: string,
+) {
   const date = toDate(value);
   if (!date) {
     return fallback;
   }
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -300,18 +304,82 @@ export function formatBranchName(
   );
 }
 
+function stripSharedGymLeadWord(
+  orgName: string | null | undefined,
+  branchName: string | null | undefined,
+) {
+  const orgLead = orgName?.trim().split(/\s+/)[0];
+  const branch = branchName?.trim();
+  if (!orgLead || !branch) return branch ?? null;
+  const normalizedLead = orgLead.toLowerCase();
+  if (branch.toLowerCase() === normalizedLead) return branch;
+  if (!branch.toLowerCase().startsWith(`${normalizedLead} `)) return branch;
+  return branch.slice(orgLead.length).trim() || branch;
+}
+
+export function localityFromAddress(
+  address?: string | null,
+  branchName?: string | null,
+  orgName?: string | null,
+) {
+  const branch = branchName?.trim();
+  const cleanedBranch = formatBranchName(orgName, branch, {
+    collapseOrgMatch: true,
+  })?.trim();
+  const locality = stripSharedGymLeadWord(orgName, cleanedBranch);
+  if (locality) {
+    return locality;
+  }
+  return (
+    address
+      ?.split(",")
+      .map((part) => part.trim())
+      .find((part) => part) ?? null
+  );
+}
+
+function compactLocationSubtitle(parts: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .filter((part) => {
+      const normalized = part.toLowerCase();
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
+    .join(", ") || null;
+}
+
+export function formatGymHeaderIdentity({
+  address,
+  branchName,
+  city,
+  orgCity,
+  orgName,
+}: {
+  address?: string | null;
+  branchName?: string | null;
+  city?: string | null;
+  orgCity?: string | null;
+  orgName?: string | null;
+}) {
+  const title = orgName?.trim() || branchName?.trim() || "No active gym";
+  const locality = localityFromAddress(address, branchName, orgName);
+  const resolvedCity = city?.trim() || orgCity?.trim() || null;
+  const subtitle = compactLocationSubtitle([locality, resolvedCity]);
+
+  return { title, subtitle };
+}
+
 export function formatOrgLocationLine(
   orgName: string | null | undefined,
   branchName: string | null | undefined,
   city: string | null | undefined,
 ) {
-  const org = orgName?.trim();
-  const branchLabel = formatBranchName(org, branchName);
-  if (!org && !branchLabel) return "No active gym";
-  const location = org && branchLabel && branchLabel !== org
-    ? `${org} · ${branchLabel}`
-    : org || branchLabel || "";
-  return city ? `${location}, ${city}` : location;
+  const identity = formatGymHeaderIdentity({ branchName, city, orgName });
+  return identity.subtitle ? `${identity.title}, ${identity.subtitle}` : identity.title;
 }
 
 export function formatRedactedPhone(phone?: string | null, fallback = "No phone") {

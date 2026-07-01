@@ -1,14 +1,36 @@
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 
-import { BranchSelectorChip, EmptyState, Card, IconBubble, ListRow, MetricTile, ProfileShortcut, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, HeaderActions, IconBubble, Pill, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { StockRow, type LowStockProduct } from "@/features/owner/components/stock-row";
 import { useOwnerDashboard } from "@/lib/domains/owner";
 import { useOrgActiveShopOrders } from "@/lib/domains/shop";
-import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
+import { formatInr, toneForShopOrderStatus } from "@/lib/formatting";
 import { useI18n } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
+
+function orderWorkPriority(order: { status?: string | null; pickupCode?: string | null; fulfilledAt?: string | null }) {
+  const status = String(order.status ?? "").toUpperCase();
+  if (status === "PENDING_PAYMENT") return 0;
+  if (status === "READY_FOR_PICKUP" || (order.pickupCode && !order.fulfilledAt)) return 1;
+  if (status === "PROCESSING" || status === "PAID") return 2;
+  return 3;
+}
+
+function pickupOrderStatusLabel(
+  order: { status?: string | null; pickupCode?: string | null; fulfilledAt?: string | null },
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  const status = String(order.status ?? "").toUpperCase();
+  if (status === "PENDING_PAYMENT") return t("shop.orderNeedsPayment");
+  if (status === "READY_FOR_PICKUP" || (order.pickupCode && !order.fulfilledAt)) {
+    return order.pickupCode ? t("shop.orderReadyWithCode", { code: order.pickupCode }) : t("shop.orderReady");
+  }
+  if (status === "PROCESSING" || status === "PAID") return t("shop.orderBeingPrepared");
+  if (status === "CANCELLED") return t("shop.orderCancelled");
+  return t("owner.stock.pickupPending");
+}
 
 export default function OwnerStockScreen() {
   const { palette } = useTheme();
@@ -21,7 +43,9 @@ export default function OwnerStockScreen() {
   const lowStock = (dashboardQuery.data?.products ?? []).filter(
     (product) => (product.stock ?? 0) <= (product.lowStockThreshold ?? 0),
   );
-  const orders = ordersQuery.data?.orders ?? [];
+  const orders = [...(ordersQuery.data?.orders ?? [])].sort(
+    (left, right) => orderWorkPriority(left) - orderWorkPriority(right),
+  );
 
   async function reorderProduct(product: LowStockProduct) {
     const subject = encodeURIComponent(t("owner.stock.reorderSubject", { name: product.name }));
@@ -58,16 +82,34 @@ export default function OwnerStockScreen() {
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
-                <BranchSelectorChip />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
               </View>
             }
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
           />
-          <View style={styles.metricGrid}>
-            <MetricTile label={t("owner.stock.lowStock")} value={String(lowStock.length)} detail={t("owner.stock.underThreshold")} tone="amber" style={styles.metricHalf} />
-            <MetricTile label={t("owner.stock.pickups")} value={String(orders.length)} detail={t("owner.stock.paidOrders")} tone="blue" style={styles.metricHalf} />
-          </View>
-          <SectionHeader title={t("owner.stock.productsToReorder")} />
+          <SectionHeader
+            title={t("owner.stock.pickupOrders")}
+            action={<Pill tone={orders.length ? "blue" : "neutral"}>{orders.length}</Pill>}
+          />
+          <Card contentStyle={styles.stack}>
+            {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
+            {!ordersQuery.isError && orders.length
+                ? orders.map((order) => (
+                  <PickupOrderRow
+                    key={order.id}
+                    name={order.user?.name ?? t("owner.stock.memberPickup")}
+                    amount={formatInr(order.totalPaise)}
+                    status={pickupOrderStatusLabel(order, t)}
+                    statusTone={toneForShopOrderStatus(order.status)}
+                  />
+                ))
+              : null}
+            {!ordersQuery.isError && !orders.length ? <EmptyState icon="bag-handle-outline" title={t("owner.stock.noPickups")} body={t("owner.stock.noPickupsBody")} /> : null}
+          </Card>
+          <SectionHeader
+            title={t("owner.stock.productsToReorder")}
+            action={<Pill tone={lowStock.length ? "amber" : "neutral"}>{lowStock.length}</Pill>}
+          />
           <Card contentStyle={styles.stack}>
             {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
             {!dashboardQuery.isError && lowStock.length
@@ -75,34 +117,67 @@ export default function OwnerStockScreen() {
               : null}
             {!dashboardQuery.isError && !lowStock.length ? <EmptyState icon="cube-outline" title={t("owner.stock.allInStock")} body={t("owner.stock.allInStockBody")} /> : null}
           </Card>
-          <SectionHeader title={t("owner.stock.pickupOrders")} />
-          <Card contentStyle={styles.stack}>
-            {ordersQuery.isError ? <QueryErrorState error={ordersQuery.error} onRetry={() => void ordersQuery.refetch()} /> : null}
-            {!ordersQuery.isError && orders.length
-              ? orders.map((order) => (
-                  <ListRow
-                    key={order.id}
-                    title={order.user?.name ?? t("owner.stock.memberPickup")}
-                    subtitle={`${order.pickupCode ?? t("owner.stock.pickupPending")} · ${titleCaseFromCode(order.status)}`}
-                    leading={<IconBubble icon="bag-check-outline" tone={toneForShopOrderStatus(order.status)} />}
-                    trailing={
-                      <Text style={[styles.rowAmount, { color: palette.text.primary }]}>
-                        {formatInr(order.totalPaise)}
-                      </Text>
-                    }
-                  />
-                ))
-              : null}
-            {!ordersQuery.isError && !orders.length ? <EmptyState icon="bag-handle-outline" title={t("owner.stock.noPickups")} body={t("owner.stock.noPickupsBody")} /> : null}
-          </Card>
         </KeyboardAwareScreen>
       </ZookScreen>
     </>
   );
 }
 
+function PickupOrderRow({
+  name,
+  amount,
+  status,
+  statusTone,
+}: {
+  name: string;
+  amount: string;
+  status: string;
+  statusTone: Parameters<typeof Pill>[0]["tone"];
+}) {
+  const { palette } = useTheme();
+  return (
+    <View
+      style={[
+        styles.pickupRow,
+        {
+          borderColor: palette.border.subtle,
+          backgroundColor: palette.surface.default,
+        },
+      ]}
+    >
+      <IconBubble icon="bag-check-outline" tone={statusTone} size={34} />
+      <View style={styles.pickupCopy}>
+        <View style={styles.pickupTitleLine}>
+          <Text numberOfLines={1} style={[styles.pickupName, { color: palette.text.primary }]}>
+            {name}
+          </Text>
+          <Text numberOfLines={1} style={[styles.rowAmount, { color: palette.text.primary }]}>
+            {amount}
+          </Text>
+        </View>
+        <View style={styles.pickupMetaLine}>
+          <Pill tone={statusTone} style={styles.statusPill} textStyle={styles.statusPillText}>
+            {status}
+          </Pill>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  headerContext: { alignItems: "flex-start", gap: spacing.xs },
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -111,8 +186,44 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: 96,
   },
-  stack: { gap: spacing.md },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  metricHalf: { flexBasis: "47%", flexGrow: 1 },
+  stack: { gap: 8 },
+  pickupRow: {
+    alignItems: "center",
+    borderCurve: "continuous",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+  },
+  pickupCopy: {
+    flex: 1,
+    gap: 5,
+    minWidth: 0,
+  },
+  pickupTitleLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  pickupName: {
+    ...typography.bodyStrong,
+    flex: 1,
+    minWidth: 0,
+  },
+  pickupMetaLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+  },
   rowAmount: typography.bodyStrong,
+  statusPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  statusPillText: typography.caption,
 });

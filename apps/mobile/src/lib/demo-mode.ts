@@ -77,6 +77,10 @@ export function getOfflineDemoSession(): AuthSessionSummary {
         orgId: organization.id,
         name: organization.name,
         username: organization.username,
+        logoUrl:
+          organization.username === "aarogya-strength"
+            ? "/seed/gyms/aarogya-strength/logo.svg"
+            : null,
         status: organization.status,
         city: organization.city,
         state: organization.state,

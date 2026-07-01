@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type {
   OwnerDashboardChartPoint,
@@ -156,14 +158,37 @@ function PlanMix({ plans }: { plans: OwnerDashboardPlanMixPoint[] }) {
 export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts }) {
   const { palette } = useTheme();
   const t = useT();
+  const [expanded, setExpanded] = useState(false);
   if (!charts) return null;
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{t("owner.dashboard.trends")}</Text>
-        <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
-          {t("owner.dashboard.trendsSubtitle")}
-        </Text>
+        <View style={styles.sectionCopy}>
+          <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
+            {t("owner.dashboard.trends")}
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: palette.text.tertiary }]}>
+            {t("owner.dashboard.trendsSubtitle")}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            expanded ? t("owner.dashboard.collapseTrends") : t("owner.dashboard.expandTrends")
+          }
+          onPress={() => setExpanded((value) => !value)}
+          style={({ pressed }) => [
+            styles.expandAction,
+            { backgroundColor: palette.surface.raised, borderColor: palette.border.subtle },
+            pressed ? styles.expandActionPressed : null,
+          ]}
+        >
+          <Ionicons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={palette.text.secondary}
+          />
+        </Pressable>
       </View>
       <ChartCard
         title={t("owner.dashboard.revenue7Days")}
@@ -171,17 +196,21 @@ export function OwnerDashboardCharts({ charts }: { charts?: OwnerDashboardCharts
         points={charts.revenue7d ?? []}
         delta={charts.deltas?.revenue7d}
       />
-      <ChartCard
-        title={t("owner.dashboard.attendance7Days")}
-        points={charts.attendance7d ?? []}
-        delta={charts.deltas?.attendance7d}
-      />
-      <ChartCard
-        title={t("owner.dashboard.members30Days")}
-        points={charts.memberGrowth30d ?? []}
-        delta={charts.deltas?.memberGrowth30d}
-      />
-      <PlanMix plans={charts.planMix ?? []} />
+      {expanded ? (
+        <>
+          <ChartCard
+            title={t("owner.dashboard.attendance7Days")}
+            points={charts.attendance7d ?? []}
+            delta={charts.deltas?.attendance7d}
+          />
+          <ChartCard
+            title={t("owner.dashboard.members30Days")}
+            points={charts.memberGrowth30d ?? []}
+            delta={charts.deltas?.memberGrowth30d}
+          />
+          <PlanMix plans={charts.planMix ?? []} />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -191,13 +220,33 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+  },
+  sectionCopy: {
+    flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   sectionTitle: {
     ...typography.sectionTitle,
   },
   sectionSubtitle: {
     ...typography.caption,
+  },
+  expandAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  expandActionPressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.96 }],
   },
   card: {
     borderWidth: 1,

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { renderMembershipSurface } from "@/components/member-membership-surface";
-import { resolvePublicLocale } from "@/lib/public-i18n";
+import { localizedPath, resolvePublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
 import { isReservedSlug, isValidSlugFormat } from "@/server/member-slug";
 
@@ -18,14 +18,15 @@ export default async function MemberSlugPage({
     notFound();
   }
 
-  const session = await requireDashboardSession({ loginRedirectPath: `/m/${normalizedSlug}` });
+  const memberPath = localizedPath(`/m/${normalizedSlug}`, locale);
+  const session = await requireDashboardSession({ loginRedirectPath: memberPath });
   const ownSlug = session.user.slug?.toLowerCase();
 
   if (!ownSlug) {
-    redirect("/me");
+    redirect(localizedPath("/me", locale));
   }
   if (normalizedSlug !== ownSlug) {
-    redirect(`/m/${ownSlug}`);
+    redirect(localizedPath(`/m/${ownSlug}`, locale));
   }
 
   return renderMembershipSurface(session, locale);

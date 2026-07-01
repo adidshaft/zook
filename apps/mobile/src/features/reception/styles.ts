@@ -2,6 +2,8 @@ import { StyleSheet } from "react-native";
 
 import { layout, spacing, typography } from "@/lib/theme";
 
+const workspaceBottomClearance = layout.bottomNavContentPadding + 128;
+
 export const receptionWorkspaceStyles = StyleSheet.create({
   content: {
     width: "100%",
@@ -9,7 +11,7 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
     gap: spacing.lg,
-    paddingBottom: layout.bottomNavContentPadding + 80,
+    paddingBottom: workspaceBottomClearance,
   },
   contentNoScroll: {
     flex: 1,
@@ -30,17 +32,18 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
   },
-  headerMetaRow: {
+  headerContextCluster: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: spacing.md,
+    gap: spacing.xs,
+    minWidth: 0,
   },
-  workspaceChipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
+  headerBranchSelector: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 190,
   },
   deskHeader: {
     minHeight: 64,
@@ -61,23 +64,6 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 3,
-  },
-  gymSelector: {
-    minHeight: 70,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: 17,
-  },
-  gymSelectorCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-  },
-  gymSelectorText: {
-    ...typography.sectionTitle,
   },
   headerMeta: {
     ...typography.caption,
@@ -132,6 +118,29 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   stack: {
     gap: spacing.md,
   },
+  verifyCodeCard: {
+    gap: spacing.sm,
+  },
+  verifyActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  verifyPrimaryAction: {
+    flex: 1,
+  },
+  verifyQrButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verifyQrButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.98 }],
+  },
   memberListSection: {
     flex: 1,
     minHeight: 0,
@@ -142,6 +151,20 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   },
   liveFeed: {
     gap: spacing.sm,
+  },
+  compactAlertRow: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  compactAlertCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  compactAlertTitle: {
+    ...typography.bodyStrong,
   },
   liveFeedItem: {
     minHeight: 62,
@@ -163,13 +186,61 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   },
   queueCopy: {
     flex: 1,
+    minWidth: 0,
     gap: 5,
   },
+  orderMetaChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+  },
+  orderMetaChip: {
+    alignItems: "center",
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 4,
+    minHeight: 24,
+    maxWidth: 128,
+    paddingHorizontal: 7,
+  },
+  orderMetaText: {
+    ...typography.caption,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  orderHeaderActions: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+  },
+  orderStatusMark: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+  pickupCompleteAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  pickupCompleteActionPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
+  },
+  pickupCompleteActionDisabled: {
+    opacity: 0.5,
+  },
   queueTitle: {
-    ...typography.headerTitle,
+    ...typography.bodyStrong,
   },
   cardBody: {
-    ...typography.body,
+    ...typography.small,
   },
   auditTrail: {
     flexDirection: "row",
@@ -208,22 +279,22 @@ export const receptionWorkspaceStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   paymentModeTile: {
-    minWidth: 76,
-    minHeight: 64,
-    borderRadius: 12,
+    minHeight: 42,
+    borderRadius: 21,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 8,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   paymentModeTilePressed: {
     opacity: 0.84,
     transform: [{ scale: 0.985 }],
   },
   paymentModeText: {
-    fontSize: 11,
-    lineHeight: 14,
+    ...typography.caption,
   },
   paymentModeTextActive: {
     fontFamily: "Inter_600SemiBold",
@@ -231,20 +302,51 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   fieldGroupLabel: {
     ...typography.eyebrow,
   },
-  itemGrid: {
-    gap: 8,
-  },
-  itemPill: {
-    borderWidth: 1,
+  paymentDetailsRow: {
+    alignItems: "center",
     borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  paymentDetailsRowPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }],
+  },
+  paymentDetailsCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  paymentDetailsTitle: {
+    ...typography.bodyStrong,
+  },
+  paymentDetailsMeta: {
+    ...typography.small,
+  },
+  itemGrid: {
+    gap: 6,
+  },
+  itemPill: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
   itemName: {
+    flex: 1,
     ...typography.bodyStrong,
   },
   itemMeta: {
-    marginTop: 3,
+    flexShrink: 0,
     ...typography.small,
   },
   actionRow: {
@@ -379,6 +481,61 @@ export const receptionWorkspaceStyles = StyleSheet.create({
   paymentMemberCopy: {
     flex: 1,
     gap: 3,
+  },
+  paymentMemberActions: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+  },
+  paymentHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  paymentDuePanel: {
+    minHeight: 72,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  paymentDueCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  paymentDueAmount: {
+    ...typography.metric,
+  },
+  paymentDueMember: {
+    ...typography.caption,
+    flexShrink: 1,
+    maxWidth: "42%",
+    textAlign: "right",
+  },
+  paymentChangeMemberAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  paymentChangeMemberActionPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
+  },
+  paymentContextRow: {
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   paymentMemberName: {
     ...typography.bodyStrong,

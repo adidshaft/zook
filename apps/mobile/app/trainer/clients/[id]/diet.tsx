@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   AppHeader,
@@ -41,6 +42,7 @@ export default function TrainerClientDiet() {
 
   const [title, setTitle] = useState(t("trainer.clientDiet.defaultTitle"));
   const [target, setTarget] = useState("2000");
+  const [showPreviousMeals, setShowPreviousMeals] = useState(false);
   const [meals, setMeals] = useState<MealRow[]>(
     defaultMealKeys.map((meal) => ({ name: t(meal.key), calories: meal.calories })),
   );
@@ -105,7 +107,7 @@ export default function TrainerClientDiet() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader title={t("trainer.clientDiet.title")} subtitle={t("trainer.clientDiet.subtitle")} showBack />
+          <AppHeader title={t("trainer.clientDiet.title")} showBack />
 
           <SectionHeader title={t("trainer.clientDiet.previousPlan")} />
           {priorPlansQuery.isLoading ? (
@@ -122,21 +124,34 @@ export default function TrainerClientDiet() {
           {!priorPlansQuery.isLoading && !priorPlansQuery.isError ? (
             previousPlan ? (
               <Card variant="compact" contentStyle={styles.stack}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{previousPlan.title}</Text>
-                <Text style={[styles.totalText, { color: palette.text.secondary }]}>
-                  {previousPlan.calorieTarget ? t("trainer.clientDiet.kcalTargetPrefix", { kcal: previousPlan.calorieTarget }) : ""}
-                  {t("trainer.clientDiet.mealCount", { count: previousPlan.meals?.length ?? 0 })}
-                </Text>
-                {previousPlan.meals?.map((meal) => (
-                  <View key={meal.id} style={styles.previousMealRow}>
-                    <Text style={[styles.previousMealName, { color: palette.text.primary }]} numberOfLines={1}>
-                      {meal.name}
-                    </Text>
-                    <Text style={[styles.previousMealKcal, { color: palette.text.secondary }]}>
-                      {meal.calories != null ? t("trainer.clientDiet.kcal", { kcal: meal.calories }) : "-"}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showPreviousMeals }}
+                  onPress={() => setShowPreviousMeals((current) => !current)}
+                  style={({ pressed }) => [styles.previousPlanHeader, pressed ? styles.pressed : null]}
+                >
+                  <IconBubble icon="restaurant-outline" tone="lime" size={36} />
+                  <View style={styles.previousPlanCopy}>
+                    <Text style={[styles.cardTitle, { color: palette.text.primary }]} numberOfLines={1}>{previousPlan.title}</Text>
+                    <Text style={[styles.totalText, { color: palette.text.secondary }]} numberOfLines={1}>
+                      {previousPlan.calorieTarget ? t("trainer.clientDiet.kcalTargetPrefix", { kcal: previousPlan.calorieTarget }) : ""}
+                      {t("trainer.clientDiet.mealCount", { count: previousPlan.meals?.length ?? 0 })}
                     </Text>
                   </View>
-                ))}
+                  <Ionicons name={showPreviousMeals ? "chevron-up" : "chevron-down"} size={18} color={palette.text.tertiary} />
+                </Pressable>
+                {showPreviousMeals ? (
+                  previousPlan.meals?.map((meal) => (
+                    <View key={meal.id} style={styles.previousMealRow}>
+                      <Text style={[styles.previousMealName, { color: palette.text.primary }]} numberOfLines={1}>
+                        {meal.name}
+                      </Text>
+                      <Text style={[styles.previousMealKcal, { color: palette.text.secondary }]}>
+                        {meal.calories != null ? t("trainer.clientDiet.kcal", { kcal: meal.calories }) : "-"}
+                      </Text>
+                    </View>
+                  ))
+                ) : null}
               </Card>
             ) : (
               <Card variant="compact" contentStyle={styles.stack}>
@@ -161,9 +176,19 @@ export default function TrainerClientDiet() {
           <SectionHeader
             title={t("trainer.clientDiet.meals")}
             action={
-              <ZookButton size="sm" variant="secondary" icon="add" onPress={addMeal}>
-                {t("trainer.clientDiet.addMeal")}
-              </ZookButton>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("trainer.clientDiet.addMeal")}
+                hitSlop={8}
+                onPress={addMeal}
+                style={({ pressed }) => [
+                  styles.headerIconAction,
+                  { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+                  pressed ? styles.pressed : null,
+                ]}
+              >
+                <Ionicons name="add" size={20} color={palette.text.secondary} />
+              </Pressable>
             }
           />
 
@@ -190,7 +215,7 @@ export default function TrainerClientDiet() {
           </View>
 
           <ZookButton onPress={publish} disabled={!canPublish} busy={createPlan.isPending} busyLabel={t("trainer.clientDiet.publishing")} icon="send-outline" size="lg">
-            {t("trainer.clientDiet.publishToClient")}
+            {t("trainer.clientDiet.publish")}
           </ZookButton>
         </ScrollView>
       </ZookScreen>
@@ -218,10 +243,21 @@ const styles = StyleSheet.create({
   },
   totalText: { ...typography.small },
   stack: { gap: spacing.sm },
-  mealRow: { alignItems: "flex-end", flexDirection: "row", gap: spacing.sm },
-  mealName: { flex: 1 },
-  mealKcal: { width: 96 },
+  headerIconAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.98 }] },
+  mealRow: { gap: spacing.sm },
+  mealName: { width: "100%" },
+  mealKcal: { width: "100%" },
   cardTitle: { ...typography.cardTitle },
+  previousPlanHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  previousPlanCopy: { flex: 1, gap: 2, minWidth: 0 },
   previousMealRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   previousMealName: { ...typography.body, flex: 1, marginRight: spacing.sm },
   previousMealKcal: { ...typography.caption },

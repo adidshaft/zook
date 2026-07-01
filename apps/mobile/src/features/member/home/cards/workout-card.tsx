@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ZookButton } from "@/components/primitives";
 import { usePlanExercises } from "@/lib/domains/plans";
 import { useT } from "@/lib/i18n";
 import { glow, gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
@@ -29,21 +28,33 @@ export default function WorkoutCard({
   const t = useT();
   const exercisesQuery = usePlanExercises(assignmentId);
   const exercises = exercisesQuery.data?.exercises ?? [];
-  const exerciseNames = exercises
-    .map((exercise) => exercise.name)
-    .filter(Boolean)
-    .slice(0, 3);
+  const firstExercise = exercises.find((exercise) => Boolean(exercise.name))?.name;
   const exerciseCount = exercises.length;
   const meta = [
-    exerciseCount ? t("member.home.exerciseCount", { count: exerciseCount }) : null,
+    exerciseCount
+      ? t(exerciseCount === 1 ? "member.home.exerciseCountOne" : "member.home.exerciseCountOther", {
+          count: exerciseCount,
+        })
+      : null,
     estimatedMinutes ? t("member.home.estimatedMinutes", { minutes: estimatedMinutes }) : null,
-    t("member.home.trainerAssigned"),
   ]
     .filter(Boolean)
     .join("  ·  ");
+  const openWorkout = () => router.push(`/plan/${assignmentId}` as never);
 
   return (
-    <View testID="home-state-workout" style={[styles.card, glow.soft, { borderColor: palette.border.subtle }]}>
+    <Pressable
+      testID="home-state-workout"
+      onPress={openWorkout}
+      accessibilityRole="button"
+      accessibilityLabel={`${t("member.home.startWorkout")}: ${planName}`}
+      style={({ pressed }) => [
+        styles.card,
+        glow.soft,
+        { borderColor: palette.border.subtle },
+        pressed ? styles.cardPressed : null,
+      ]}
+    >
       <LinearGradient
         colors={gradients.heroCard}
         start={{ x: 0, y: 0 }}
@@ -58,42 +69,39 @@ export default function WorkoutCard({
       />
       <Ionicons
         name="barbell"
-        size={150}
+        size={96}
         color={palette.accent.base}
         style={styles.decor}
       />
       <View style={styles.content}>
-        <Text style={[styles.eyebrow, { color: palette.accent.base }]}>{t("member.home.todaysWorkout")}</Text>
-        <Text style={[styles.title, { color: ON_DARK_PRIMARY }]}>{planName}</Text>
-        <Text style={[styles.meta, { color: ON_DARK_SECONDARY }]}>{meta}</Text>
-        {exerciseNames.length ? (
-          <View style={styles.chips}>
-            {exerciseNames.map((name) => (
-              <View
-                key={name}
-                style={[
-                  styles.chip,
-                  { borderColor: ON_DARK_CHIP_BORDER, backgroundColor: ON_DARK_CHIP_BG },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: ON_DARK_PRIMARY }]} numberOfLines={1}>
-                  {name}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-        <ZookButton
-          onPress={() => router.push(`/plan/${assignmentId}` as never)}
-          icon="play"
-          size="lg"
-          fullWidth
-          style={styles.cta}
+        <View style={styles.copy}>
+          <Text style={[styles.eyebrow, { color: palette.accent.base }]}>{t("member.home.todaysWorkout")}</Text>
+          <Text numberOfLines={2} style={[styles.title, { color: ON_DARK_PRIMARY }]}>{planName}</Text>
+          {meta ? (
+            <Text numberOfLines={1} style={[styles.meta, { color: ON_DARK_SECONDARY }]}>{meta}</Text>
+          ) : null}
+          {firstExercise ? (
+            <Text numberOfLines={1} style={[styles.preview, { color: ON_DARK_SECONDARY }]}>
+              {firstExercise}
+            </Text>
+          ) : null}
+        </View>
+        <View
+          style={[
+            styles.startControl,
+            { borderColor: ON_DARK_CHIP_BORDER, backgroundColor: ON_DARK_CHIP_BG },
+          ]}
         >
-          {t("member.home.startWorkout")}
-        </ZookButton>
+          <Ionicons name="play" size={17} color={ON_DARK_PRIMARY} />
+          <View style={styles.startCopy}>
+            <Text numberOfLines={1} style={[styles.startText, { color: ON_DARK_PRIMARY }]}>
+              {t("member.home.startWorkout")}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={15} color={ON_DARK_SECONDARY} />
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -104,46 +112,56 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
   },
+  cardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
   decor: {
     position: "absolute",
-    right: -28,
-    top: -22,
+    right: -20,
+    top: -18,
     opacity: 0.08,
     transform: [{ rotate: "-18deg" }],
   },
   content: {
-    padding: spacing.xl,
-    gap: spacing.sm,
+    padding: 12,
+    gap: 10,
+  },
+  copy: {
+    gap: 4,
+    paddingRight: 70,
   },
   eyebrow: {
     ...typography.eyebrow,
     letterSpacing: 1.2,
   },
   title: {
-    ...typography.heroTitle,
+    fontFamily: "Inter_700Bold",
+    fontSize: 27,
+    lineHeight: 31,
   },
   meta: {
     ...typography.small,
-    marginTop: 2,
   },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  chip: {
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    maxWidth: "100%",
-  },
-  chipText: {
+  preview: {
     ...typography.caption,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
   },
-  cta: {
-    marginTop: spacing.md,
+  startControl: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 40,
+    paddingHorizontal: 12,
+  },
+  startCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  startText: {
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
   },
 });

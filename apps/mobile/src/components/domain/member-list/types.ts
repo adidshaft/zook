@@ -29,6 +29,8 @@ export type MemberListProps = {
   onPressMember: (member: MemberRowItem) => void;
   onRevealPhone?: (member: MemberRowItem) => void;
   searchValue?: string;
+  resultSummary?: string;
+  searchPlaceholder?: string;
   onSearchChange?: (value: string) => void;
   filter?: MemberListFilter;
   onFilterChange?: (filter: MemberListFilter) => void;

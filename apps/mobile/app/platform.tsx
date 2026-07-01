@@ -85,9 +85,6 @@ export default function PlatformMobile() {
           <AppHeader
             eyebrow={t("platform.operator")}
             title={t("platform.billing")}
-            subtitle={t("platform.subtitle", {
-              name: session?.user.name ?? t("platform.team"),
-            })}
             centered
             showBack
           />

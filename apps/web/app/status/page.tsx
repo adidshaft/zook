@@ -44,6 +44,109 @@ function aggregateServiceStatus(statuses: string[]) {
   return "operational";
 }
 
+const statusCopy = {
+  en: {
+    pill: "Zook status",
+    checkedSuffix: "Public status is grouped by the services gym teams care about.",
+    headline: {
+      operational: "All systems operational",
+      down: "Some Zook services are down",
+      degraded: "Some Zook services are slower than usual",
+    },
+    uptime: {
+      operational: "All systems operational",
+      affected: (count: number) =>
+        `${count} service${count === 1 ? "" : "s"} in test-provider mode or degraded`,
+    },
+    services: {
+      checkins: {
+        label: "Check-ins",
+        detail: "Members can scan QR codes and desks can approve entries.",
+      },
+      payments: {
+        label: "Payments",
+        detail: "Membership checkout and payment confirmations are available.",
+      },
+      app: {
+        label: "App & web",
+        detail: "Member, trainer, reception, and owner screens are loading.",
+      },
+    },
+    incidentsEyebrow: "Recent incidents · 90 days",
+    incidentsTitle: "Incident history",
+    noIncidents: "No incident history is recorded yet.",
+    engineeringPrompt: "Looking for engineering detail?",
+    engineeringLink: "Switch to Engineering view",
+    engineeringTitle: "Engineering view",
+    statusLabels: {
+      operational: "Operational",
+      degraded: "Degraded",
+      down: "Down",
+    },
+  },
+  hi: {
+    pill: "Zook स्थिति",
+    checkedSuffix: "यह स्थिति जिम टीमों के काम के हिसाब से समूहों में दिखती है.",
+    headline: {
+      operational: "सभी सेवाएं सामान्य हैं",
+      down: "Zook की कुछ सेवाएं बंद हैं",
+      degraded: "Zook की कुछ सेवाएं धीमी चल रही हैं",
+    },
+    uptime: {
+      operational: "सभी सेवाएं सामान्य हैं",
+      affected: (count: number) => `${count} सेवा धीमी या टेस्ट मोड में है`,
+    },
+    services: {
+      checkins: {
+        label: "चेक-इन",
+        detail: "सदस्य QR स्कैन कर सकते हैं और डेस्क एंट्री स्वीकृत कर सकता है.",
+      },
+      payments: {
+        label: "भुगतान",
+        detail: "सदस्यता चेकआउट और भुगतान पुष्टि उपलब्ध हैं.",
+      },
+      app: {
+        label: "ऐप और वेब",
+        detail: "मेंबर, ट्रेनर, रिसेप्शन और मालिक स्क्रीन लोड हो रही हैं.",
+      },
+    },
+    incidentsEyebrow: "हाल की घटनाएं · 90 दिन",
+    incidentsTitle: "घटना इतिहास",
+    noIncidents: "अभी कोई घटना इतिहास दर्ज नहीं है.",
+    engineeringPrompt: "इंजीनियरिंग विवरण चाहिए?",
+    engineeringLink: "इंजीनियरिंग व्यू खोलें",
+    engineeringTitle: "इंजीनियरिंग व्यू",
+    statusLabels: {
+      operational: "सामान्य",
+      degraded: "धीमा",
+      down: "बंद",
+    },
+  },
+} satisfies Record<
+  ReturnType<typeof resolvePublicLocale>,
+  {
+    pill: string;
+    checkedSuffix: string;
+    headline: Record<"operational" | "degraded" | "down", string>;
+    uptime: {
+      operational: string;
+      affected: (count: number) => string;
+    };
+    services: Record<"checkins" | "payments" | "app", { label: string; detail: string }>;
+    incidentsEyebrow: string;
+    incidentsTitle: string;
+    noIncidents: string;
+    engineeringPrompt: string;
+    engineeringLink: string;
+    engineeringTitle: string;
+    statusLabels: Record<"operational" | "degraded" | "down", string>;
+  }
+>;
+
+function statusLabel(status: string, copy: (typeof statusCopy)["en"]) {
+  return copy.statusLabels[status as "operational" | "degraded" | "down"] ?? formatEnumLabel(status);
+}
+
 function UptimeBars({ status }: { status: string }) {
   return (
     <div className="mt-5 flex h-8 items-end gap-1" aria-hidden="true">
@@ -73,6 +176,7 @@ export default async function StatusPage({
   const locale = resolvePublicLocale(rawSearchParams);
   const nextLocale = alternatePublicLocale(locale);
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
+  const copy = statusCopy[locale];
   const payload = await getStatusPayload();
   const components = Object.entries(payload.components);
   const engineeringParam = Array.isArray(rawSearchParams.engineering)
@@ -82,8 +186,8 @@ export default async function StatusPage({
   const userServices = [
     {
       key: "checkins",
-      label: "Check-ins",
-      detail: "Members can scan QR codes and desks can approve entries.",
+      label: copy.services.checkins.label,
+      detail: copy.services.checkins.detail,
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -91,8 +195,8 @@ export default async function StatusPage({
     },
     {
       key: "payments",
-      label: "Payments",
-      detail: "Membership checkout and payment confirmations are available.",
+      label: copy.services.payments.label,
+      detail: copy.services.payments.detail,
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -101,8 +205,8 @@ export default async function StatusPage({
     },
     {
       key: "app",
-      label: "App & web",
-      detail: "Member, trainer, reception, and owner screens are loading.",
+      label: copy.services.app.label,
+      detail: copy.services.app.detail,
       status: aggregateServiceStatus([
         payload.components.web.status,
         payload.components.db.status,
@@ -112,16 +216,12 @@ export default async function StatusPage({
   ];
   const publicStatus = aggregateServiceStatus(userServices.map((service) => service.status));
   const statusHeadline =
-    publicStatus === "operational"
-      ? "All systems operational"
-      : publicStatus === "down"
-        ? "Some Zook services are down"
-        : "Some Zook services are slower than usual";
+    copy.headline[publicStatus as "operational" | "degraded" | "down"] ?? formatEnumLabel(publicStatus);
   const degradedCount = userServices.filter((service) => service.status !== "operational").length;
   const uptimeLabel =
     publicStatus === "operational"
-      ? "All systems operational"
-      : `${degradedCount} service${degradedCount === 1 ? "" : "s"} in test-provider mode or degraded`;
+      ? copy.uptime.operational
+      : copy.uptime.affected(degradedCount);
 
   return (
     <main lang={locale === "hi" ? "hi-IN" : "en-IN"} className="min-h-dvh py-1">
@@ -137,13 +237,12 @@ export default async function StatusPage({
         <GlassCard variant="strong">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Pill tone={statusTone(publicStatus)}>Zook status</Pill>
+              <Pill tone={statusTone(publicStatus)}>{copy.pill}</Pill>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-6xl">
                 {statusHeadline}
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/58">
-                {t("lastChecked")} {formatDateTime(payload.timestamp)}. Public status is grouped
-                by the services gym teams care about.
+                {t("lastChecked")} {formatDateTime(payload.timestamp)}. {copy.checkedSuffix}
               </p>
             </div>
             <div className="flex min-h-16 min-w-16 items-center justify-center rounded-[24px] border border-white/10 bg-black/20">
@@ -162,7 +261,7 @@ export default async function StatusPage({
                     {service.label}
                   </span>
                   <p className="mt-4 text-2xl font-semibold text-white">
-                    {formatEnumLabel(service.status)}
+                    {statusLabel(service.status, copy)}
                   </p>
                 </div>
               </div>
@@ -177,19 +276,19 @@ export default async function StatusPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                Recent incidents · 90 days
+                {copy.incidentsEyebrow}
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Incident history</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-white">{copy.incidentsTitle}</h2>
             </div>
-            <Pill tone={statusTone(publicStatus)}>{formatEnumLabel(publicStatus)}</Pill>
+            <Pill tone={statusTone(publicStatus)}>{statusLabel(publicStatus, copy)}</Pill>
           </div>
           <p className="mt-5 text-sm text-white/50">
-            No incident history is recorded yet.
+            {copy.noIncidents}
           </p>
           <p className="mt-5 text-sm text-white/50">
-            Looking for engineering detail?{" "}
-            <Link href="/status?engineering=1" className="text-white underline decoration-white/30">
-              Switch to Engineering view
+            {copy.engineeringPrompt}{" "}
+            <Link href={localizedPath("/status", locale, { engineering: "1" })} className="text-white underline decoration-white/30">
+              {copy.engineeringLink}
             </Link>
             .
           </p>
@@ -197,7 +296,7 @@ export default async function StatusPage({
 
         {engineeringMode ? (
           <GlassCard>
-            <h2 className="text-2xl font-semibold text-white">Engineering view</h2>
+            <h2 className="text-2xl font-semibold text-white">{copy.engineeringTitle}</h2>
             <div className="mt-5 grid gap-3 md:hidden">
             {components.map(([key, component]) => (
               <div key={key} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
@@ -208,7 +307,7 @@ export default async function StatusPage({
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-2 text-sm text-white/72">
                     <StatusIcon status={component.status} />
-                    {formatEnumLabel(component.status)}
+                    {statusLabel(component.status, copy)}
                   </span>
                 </div>
                 <p className="mt-3 text-xs uppercase tracking-[0.18em] text-white/35">
@@ -245,7 +344,7 @@ export default async function StatusPage({
                     <td className="border-b border-white/10 px-4 py-4">
                       <span className="inline-flex items-center gap-2">
                         <StatusIcon status={component.status} />
-                        {formatEnumLabel(component.status)}
+                        {statusLabel(component.status, copy)}
                       </span>
                     </td>
                     <td className="border-b border-white/10 px-4 py-4 text-white/55">

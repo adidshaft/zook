@@ -1,6 +1,6 @@
-import { formatDateTime, formatEnumLabel, formatInr } from "@/lib/format";
-import { GlassCard, Pill } from "../glass-card";
-import { HelpHint, ManagedOn } from "../ui";
+import { formatDateTime, formatInr } from "@/lib/format";
+import { GlassCard } from "../glass-card";
+import { HelpHint } from "../ui";
 import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
 import type { ShopOrder } from "./types";
@@ -12,6 +12,61 @@ function toneForPickupOrderStatus(status: ShopOrder["status"]) {
   if (["CANCELLED", "FAILED", "REFUNDED"].includes(status)) return "red";
   if (status === "FULFILLED") return "blue";
   return "neutral";
+}
+
+function pickupOrderStatusLabel(status: ShopOrder["status"]) {
+  if (status === "PENDING_PAYMENT") return "Payment pending";
+  if (status === "READY_FOR_PICKUP") return "Ready for pickup";
+  if (status === "FULFILLED") return "Picked up";
+  if (status === "CANCELLED") return "Cancelled";
+  if (status === "FAILED") return "Failed";
+  if (status === "REFUNDED") return "Refunded";
+  if (status === "PAID") return "Paid";
+  return "Review order";
+}
+
+function statusMarkClass(tone: ReturnType<typeof toneForPickupOrderStatus>) {
+  if (tone === "lime") return "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]";
+  if (tone === "amber") return "border-[color-mix(in_srgb,var(--feedback-warning)_36%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]";
+  if (tone === "red") return "border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)]";
+  if (tone === "blue") return "border-[color-mix(in_srgb,var(--feedback-info)_36%,transparent)] bg-[var(--surface-info-soft)] text-[var(--feedback-info)]";
+  return "border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)]";
+}
+
+function PickupStatusMark({ status }: { status: ShopOrder["status"] }) {
+  const label = pickupOrderStatusLabel(status);
+  const tone = toneForPickupOrderStatus(status);
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.65rem] font-bold ${statusMarkClass(tone)}`}
+    >
+      <span aria-hidden>
+        {status === "FULFILLED" ? "✓" : status === "PENDING_PAYMENT" ? "…" : status === "READY_FOR_PICKUP" || status === "PAID" ? "✓" : "!"}
+      </span>
+    </span>
+  );
+}
+
+function CompactStateMark({
+  label,
+  tone,
+  children,
+}: {
+  label: string;
+  tone: "lime" | "amber" | "neutral";
+  children: string;
+}) {
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border px-2 text-[0.65rem] font-bold ${statusMarkClass(tone)}`}
+    >
+      <span aria-hidden>{children}</span>
+    </span>
+  );
 }
 
 export function PickupTab({
@@ -45,35 +100,38 @@ export function PickupTab({
 }) {
   return (
     <GlassCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold text-white">{copy.shopPickup}</h1>
-          <p className="mt-1 text-sm text-white/48">{copy.pickupDescription}</p>
-          <ManagedOn surface="desk" className="mt-3">
-            Verify identity in person before handover.
-          </ManagedOn>
+          <p className="mt-1 max-w-2xl text-sm text-white/48">{copy.pickupDescription}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs text-white/45">
-            Sort
-            <select
-              value={orderSort}
-              onChange={(event) =>
-                onOrderSortChange(event.target.value as "newest" | "oldest" | "status")
-              }
-              className="zook-focus ml-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs font-semibold text-white outline-none"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="status">Status</option>
-            </select>
+        <div className="flex shrink-0 items-center gap-2 md:justify-end">
+          <label className="sr-only" htmlFor="pickup-order-sort">
+            {copy.sortOrders}
           </label>
-          <Pill>
-            {fulfilledToday} {copy.fulfilledToday}
-          </Pill>
+          <select
+            id="pickup-order-sort"
+            aria-label={copy.sortOrders}
+            value={orderSort}
+            onChange={(event) =>
+              onOrderSortChange(event.target.value as "newest" | "oldest" | "status")
+            }
+            className="zook-focus h-9 rounded-full border border-white/10 bg-black/35 px-3 text-xs font-semibold text-white outline-none transition hover:bg-white/8"
+          >
+            <option value="newest">{copy.newestFirst}</option>
+            <option value="oldest">{copy.oldestFirst}</option>
+            <option value="status">{copy.statusFirst}</option>
+          </select>
+          <span
+            aria-label={`${fulfilledToday} ${copy.fulfilledToday}`}
+            title={`${fulfilledToday} ${copy.fulfilledToday}`}
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-white"
+          >
+            {fulfilledToday}
+          </span>
         </div>
       </div>
-      <div className="mt-5 grid gap-3">
+      <div className="mt-5 grid gap-2">
         {activeOrders.map((order) => {
           const verified = verifiedOrderIds.includes(order.id);
           const codeSkipped = skippedCodeOrderIds.includes(order.id);
@@ -81,61 +139,53 @@ export function PickupTab({
           return (
             <div
               key={order.id}
-              className={`rounded-[22px] border p-4 ${
+              className={`rounded-2xl border px-3 py-3 ${
                 highlightedOrderId === order.id
                   ? "border-white/20 bg-white/8"
                   : "border-white/10 bg-black/20"
               }`}
             >
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                <div>
-                  <p className="font-medium text-white">{order.user?.name ?? "Member"}</p>
-                  <p className="mt-1 text-xs text-white/35">
-                    Order {order.id.slice(-8).toUpperCase()}
+              <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate font-medium text-white">{order.user?.name ?? "Member"}</p>
+                    <span className="text-xs font-semibold text-white/45">#{order.id.slice(-8).toUpperCase()}</span>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-white/42">
+                    {formatInr(order.totalPaise)} · {orderItemsSummary(order)} · {formatDateTime(order.createdAt)}
                   </p>
-                  <p className="mt-1 text-xs text-white/35">
-                    Created {formatDateTime(order.createdAt)}
-                  </p>
-                  <p className="mt-1 text-sm text-white/48">{orderItemsSummary(order)}</p>
-                  {order.pickupCode ? (
-                    <p className="mt-2 inline-flex items-center gap-2 text-xs text-white/42">
-                      {copy.pickupCode}: hidden
-                      <HelpHint label="Pickup code" title="Pickup code" size="xs">
-                        Code is sent to the member by SMS. Reveal it only after verifying their
-                        identity at the desk.
+                  {order.pickupCode && !payAtDesk ? (
+                    <p className="mt-1.5 inline-flex items-center gap-2 text-xs text-white/42">
+                      {copy.pickupCodeSent}
+                      <HelpHint label={copy.pickupCode} title={copy.pickupCode} size="xs">
+                        {copy.pickupCodeHelp}
                       </HelpHint>
                     </p>
                   ) : null}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone={toneForPickupOrderStatus(order.status)}>
-                      {formatEnumLabel(order.status)}
-                    </Pill>
-                    <Pill tone={payAtDesk ? "amber" : "neutral"}>
-                      {payAtDesk ? copy.payAtDesk : copy.paid}
-                    </Pill>
-                    <Pill>{formatInr(order.totalPaise)}</Pill>
-                    {verified ? <Pill tone="lime">{copy.codeVerified}</Pill> : null}
-                    {codeSkipped ? <Pill tone="amber">{copy.codeSkipped}</Pill> : null}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <PickupStatusMark status={order.status} />
+                    <CompactStateMark label={payAtDesk ? copy.payAtDesk : copy.paid} tone={payAtDesk ? "amber" : "neutral"}>
+                      {payAtDesk ? "₹!" : "₹✓"}
+                    </CompactStateMark>
+                    {verified ? (
+                      <CompactStateMark label={copy.codeVerified} tone="lime">
+                        ✓
+                      </CompactStateMark>
+                    ) : null}
+                    {codeSkipped ? (
+                      <CompactStateMark label={copy.codeSkipped} tone="amber">
+                        !
+                      </CompactStateMark>
+                    ) : null}
                   </div>
                   {codeSkipped ? (
                     <p className="mt-2 text-xs text-amber-100/70">Code override reason recorded.</p>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <ZookButton
-                    type="button"
-                    tone="ghost"
-                    size="sm"
-                    disabled={busyId === `verify:${order.id}` || payAtDesk}
-                    state={busyId === `verify:${order.id}` ? "loading" : "idle"}
-                    onClick={() => onVerifyPickupCode(order)}
-                  >
-                    {copy.verifyCode}
-                  </ZookButton>
+                <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">
                   {payAtDesk ? (
                     <ZookButton
                       type="button"
-                      tone="secondary"
                       size="sm"
                       disabled={busyId === `pay:${order.id}`}
                       state={busyId === `pay:${order.id}` ? "loading" : "idle"}
@@ -144,18 +194,31 @@ export function PickupTab({
                       {copy.recordPayment}
                     </ZookButton>
                   ) : null}
-                  {!payAtDesk && !verified && !codeSkipped ? (
+                  {!payAtDesk ? (
                     <ZookButton
                       type="button"
                       tone="ghost"
                       size="sm"
+                      disabled={busyId === `verify:${order.id}` || verified || codeSkipped}
+                      state={busyId === `verify:${order.id}` ? "loading" : "idle"}
+                      onClick={() => onVerifyPickupCode(order)}
+                    >
+                      {verified ? copy.codeVerified : copy.verifyCode}
+                    </ZookButton>
+                  ) : null}
+                  {!payAtDesk && !verified && !codeSkipped ? (
+                    <button
+                      type="button"
+                      aria-label={copy.skipCode}
+                      title={copy.skipCode}
+                      className="zook-focus inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-transparent text-xs font-semibold text-white/45 transition hover:bg-white/8 hover:text-white active:translate-y-px"
                       onClick={() => {
-                        const reason = window.prompt("Why is the pickup code being skipped?")?.trim();
+                        const reason = window.prompt(copy.skipCodeReasonPrompt)?.trim();
                         if (reason) onSkipCode(order.id, reason);
                       }}
                     >
-                      {copy.skipCode}
-                    </ZookButton>
+                      <span aria-hidden>!</span>
+                    </button>
                   ) : null}
                   <ZookButton
                     type="button"

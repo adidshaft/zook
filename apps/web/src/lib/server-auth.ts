@@ -6,16 +6,27 @@ import { sessionCookieName } from "@/server/context";
 import { resolveSessionSummaryFromToken } from "@/server/session";
 
 export async function requireDashboardSession(
-  opts: { expectedHost?: WebHost; redirectPath?: string; loginRedirectPath?: string } = {},
+  opts: {
+    expectedHost?: WebHost;
+    redirectPath?: string;
+    loginRedirectPath?: string;
+    preferredOrgId?: string | undefined;
+  } = {},
 ) {
   const cookieStore = await cookies();
   const token = cookieStore.get(sessionCookieName)?.value;
-  const session = await resolveSessionSummaryFromToken(token);
+  const session = await resolveSessionSummaryFromToken(token, opts.preferredOrgId);
 
   if (!session) {
-    const loginPath = opts.loginRedirectPath
-      ? `/login?redirect=${encodeURIComponent(opts.loginRedirectPath)}`
-      : "/login";
+    let loginPath = "/login";
+    if (opts.loginRedirectPath) {
+      const query = new URLSearchParams({ redirect: opts.loginRedirectPath });
+      const locale = new URL(opts.loginRedirectPath, "https://zook.local").searchParams.get("lang");
+      if (locale === "hi") {
+        query.set("lang", locale);
+      }
+      loginPath = `/login?${query.toString()}`;
+    }
     if (opts.expectedHost === "dashboard") {
       redirect(new URL(loginPath, getOrigins().dashboard).toString());
     }

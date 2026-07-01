@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 import {
   AppHeader,
@@ -92,7 +93,7 @@ export default function RewardsRoute() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("rewards.title")} subtitle={t("rewards.subtitle")} showBack />
+          <AppHeader title={t("rewards.title")} showBack />
 
           {referralQuery.isError ? (
             <QueryErrorState error={referralQuery.error} onRetry={() => void referralQuery.refetch()} />
@@ -100,27 +101,45 @@ export default function RewardsRoute() {
 
           {/* Refer a gym to Zook */}
           {referral ? (
-            <Card contentStyle={styles.heroCard}>
-              <IconBubble icon="gift" tone="lime" size={48} />
-              <Text style={[styles.heroTitle, { color: palette.text.primary }]}>
-                {isCash
-                  ? t("rewards.earnCashPerGym", { amount: formatInr(referral.rewardPaise ?? 0) })
-                  : t("rewards.earnDaysPerGym", { count: referral.rewardDays ?? 0 })}
-              </Text>
-              <Text style={[styles.heroBody, { color: palette.text.secondary }]}>{referral.terms}</Text>
-              <View style={styles.codeRow}>
-                <View style={[styles.codePill, { backgroundColor: palette.surface.accentSoft }]}>
-                  <Text style={[styles.codeText, { color: palette.accent.base }]}>{referral.code}</Text>
-                </View>
-                <View style={styles.cycleRow}>
-                  {referral.qualifyingCycles.map((cycle) => (
-                    <Pill key={cycle} tone="neutral">{cycle}</Pill>
-                  ))}
+            <Card variant="compact" padding={12} contentStyle={styles.heroCard}>
+              <IconBubble icon="gift" tone="lime" size={38} />
+              <View style={styles.heroCopy}>
+                <Text numberOfLines={1} style={[styles.heroTitle, { color: palette.text.primary }]}>
+                  {isCash
+                    ? t("rewards.earnCashPerGym", { amount: formatInr(referral.rewardPaise ?? 0) })
+                    : t("rewards.earnDaysPerGym", { count: referral.rewardDays ?? 0 })}
+                </Text>
+                <Text numberOfLines={1} style={[styles.heroBody, { color: palette.text.secondary }]}>
+                  {t("rewards.shareHint")}
+                </Text>
+                <View style={styles.codeRow}>
+                  <View style={[styles.codePill, { backgroundColor: palette.surface.accentSoft }]}>
+                    <Text numberOfLines={1} style={[styles.codeText, { color: palette.accent.base }]}>
+                      {referral.code}
+                    </Text>
+                  </View>
+                  <View style={styles.cycleRow}>
+                    {referral.qualifyingCycles.slice(0, 2).map((cycle) => (
+                      <Pill key={cycle} tone="neutral">{cycle}</Pill>
+                    ))}
+                  </View>
                 </View>
               </View>
-              <ZookButton onPress={shareCode} icon="share-social-outline" size="lg">
-                {t("rewards.shareYourLink")}
-              </ZookButton>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("rewards.shareYourLink")}
+                onPress={shareCode}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.shareAction,
+                  {
+                    backgroundColor: palette.accent.fill,
+                  },
+                  pressed ? styles.shareActionPressed : null,
+                ]}
+              >
+                <Ionicons name="share-social-outline" size={18} color={palette.text.onAccent} />
+              </Pressable>
             </Card>
           ) : null}
 
@@ -144,16 +163,24 @@ export default function RewardsRoute() {
                     <Text style={[styles.sideValue, { color: palette.text.primary }]}>{formatInr(wallet?.lifetimePaise ?? 0)}</Text>
                   </View>
                 </View>
-                <ZookButton
-                  onPress={confirmWithdraw}
-                  disabled={!canWithdraw}
-                  busy={requestWithdrawal.isPending}
-                  busyLabel={t("rewards.requesting")}
-                  icon="cash-outline"
-                  variant={canWithdraw ? "primary" : "secondary"}
-                >
-                  {payable >= MIN_WITHDRAWAL_PAISE ? t("rewards.requestWithdrawal") : t("rewards.minToWithdraw", { amount: `₹${MIN_WITHDRAWAL_PAISE / 100}` })}
-                </ZookButton>
+                {canWithdraw || requestWithdrawal.isPending ? (
+                  <ZookButton
+                    onPress={confirmWithdraw}
+                    disabled={!canWithdraw}
+                    busy={requestWithdrawal.isPending}
+                    busyLabel={t("rewards.requesting")}
+                    icon="cash-outline"
+                  >
+                    {t("rewards.requestWithdrawal")}
+                  </ZookButton>
+                ) : (
+                  <View style={[styles.withdrawRail, { backgroundColor: palette.surface.default }]}>
+                    <Ionicons name="lock-closed-outline" size={16} color={palette.text.secondary} />
+                    <Text style={[styles.withdrawRailText, { color: palette.text.secondary }]} numberOfLines={1}>
+                      {t("rewards.minToWithdraw", { amount: `₹${MIN_WITHDRAWAL_PAISE / 100}` })}
+                    </Text>
+                  </View>
+                )}
               </Card>
 
               <SectionHeader title={t("rewards.activity")} />
@@ -207,13 +234,25 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  heroCard: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.lg },
-  heroTitle: { ...typography.cardTitle, textAlign: "center" },
-  heroBody: { ...typography.small, maxWidth: 300, textAlign: "center" },
-  codeRow: { alignItems: "center", gap: spacing.sm },
-  codePill: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
-  codeText: { ...typography.cardTitle, letterSpacing: 1 },
-  cycleRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, justifyContent: "center" },
+  heroCard: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  heroCopy: { flex: 1, gap: 4, minWidth: 0 },
+  heroTitle: { ...typography.bodyStrong },
+  heroBody: { ...typography.small },
+  codeRow: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
+  codePill: { borderRadius: 999, maxWidth: 130, paddingHorizontal: 10, paddingVertical: 5 },
+  codeText: { ...typography.caption, fontWeight: "900", letterSpacing: 1 },
+  cycleRow: { flexDirection: "row", gap: spacing.xs },
+  shareAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  shareActionPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.96 }],
+  },
   walletCard: { gap: spacing.md },
   balanceRow: { flexDirection: "row", gap: spacing.md },
   balanceMain: { flex: 1, gap: 4 },
@@ -222,6 +261,8 @@ const styles = StyleSheet.create({
   balanceSide: { alignItems: "flex-end", gap: 2 },
   sideLabel: { ...typography.small },
   sideValue: { ...typography.bodyStrong },
+  withdrawRail: { alignItems: "center", borderRadius: 16, flexDirection: "row", gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 8 },
+  withdrawRailText: { ...typography.small, flex: 1 },
   stack: { gap: spacing.sm },
   entryRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   entryCopy: { flex: 1, gap: 2, minWidth: 0 },

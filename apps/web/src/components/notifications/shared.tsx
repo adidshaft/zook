@@ -2,6 +2,7 @@
 
 import type { Permission } from "@zook/core";
 import type { PillTone } from "../glass-card";
+import { formatEnumLabel } from "@/lib/format";
 
 export type NotificationType =
   | "TRANSACTIONAL"
@@ -62,6 +63,35 @@ export function toneForNotificationStatus(status: string | null | undefined): Pi
   if (status === "FAILED" || status === "CANCELLED") return "red";
   if (status === "SCHEDULED" || status === "REQUESTED" || status === "PENDING") return "amber";
   return "neutral";
+}
+
+export function notificationStatusLabel(status: string | null | undefined) {
+  if (status === "SENT") return "Sent";
+  if (status === "SCHEDULED") return "Scheduled";
+  if (status === "FAILED") return "Failed";
+  if (status === "DRAFT") return "Draft";
+  if (status === "CANCELLED") return "Cancelled";
+  return formatEnumLabel(status ?? "message");
+}
+
+export function notificationTypeLabel(type: string | null | undefined) {
+  if (type === "PROMOTIONAL") return "Announcement";
+  if (type === "OPERATIONAL") return "Update";
+  if (type === "TRANSACTIONAL") return "Transactional";
+  return formatEnumLabel(type ?? "message");
+}
+
+export function notificationAudienceLabel(audience: string | null | undefined) {
+  if (audience === "ALL_MEMBERS" || audience === "all_active_members") return "All members";
+  if (audience === "ACTIVE_MEMBERS") return "Active members";
+  if (audience === "EXPIRING_MEMBERS" || audience === "expiring_soon") return "Expiring members";
+  if (audience === "INACTIVE_MEMBERS") return "Inactive members";
+  if (audience === "SELECTED_MEMBERS" || audience === "selected_members") return "Selected members";
+  if (audience === "branch_members") return "Branch members";
+  if (audience === "membership_plan") return "Plan members";
+  if (audience === "single_member") return "Single member";
+  if (audience === "assigned_clients") return "Assigned clients";
+  return formatEnumLabel(audience ?? "members");
 }
 
 export type TemplateRow = {

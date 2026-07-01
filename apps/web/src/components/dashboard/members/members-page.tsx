@@ -19,7 +19,6 @@ function statusFromParam(value: string | null): MemberFilter {
 export function MembersPage({
   view = "members",
   orgId,
-  organization,
   members,
   membersState,
   selectedMemberId,
@@ -65,12 +64,22 @@ export function MembersPage({
     () =>
       members.filter((member) => {
         const status = normalizeMemberText(member.activeSubscription?.status);
+        const endsAt = member.activeSubscription?.endsAt;
+        const daysUntilEnd = endsAt
+          ? Math.ceil((new Date(endsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          : null;
         const planName = normalizeMemberText(member.activeSubscription?.plan?.name);
         const planType = normalizeMemberText(member.activeSubscription?.plan?.type);
         const statusAndPlan = `${status} ${planName} ${planType}`;
+        const missingContact = !member.user?.email && !member.user?.phone;
         const filterMatch =
           memberFilter === "All" ||
           (memberFilter === "Active" && status.includes("active")) ||
+          (memberFilter === "Expiring Soon" &&
+            daysUntilEnd !== null &&
+            daysUntilEnd >= 0 &&
+            daysUntilEnd <= 7) ||
+          (memberFilter === "Missing Contact" && missingContact) ||
           (memberFilter === "Expired" && status.includes("expired")) ||
           (memberFilter === "Paused" && status.includes("paused")) ||
           (memberFilter === "Pending Payment" &&
@@ -285,17 +294,18 @@ export function MembersPage({
 
   return (
     <div className="grid gap-4">
-      <MemberSummary members={members} joinRequests={joinRequests} />
+      {view !== "join-requests" ? (
+        <MemberSummary members={members} joinRequests={joinRequests} />
+      ) : null}
 
       {view === "join-requests" ? (
         joinRequestsPanel
       ) : (
         <>
-          <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className={`grid gap-4 ${joinRequests.length > 0 ? "xl:grid-cols-[1.2fr_0.8fr]" : ""}`}>
             <div className="grid gap-4">
               <MemberList
                 orgId={orgId}
-                organization={organization}
                 members={members}
                 filteredMembers={filteredMembers}
                 membersState={membersState}
@@ -332,7 +342,7 @@ export function MembersPage({
                 updateSubscription={updateSubscription}
               />
             </div>
-            {joinRequestsPanel}
+            {joinRequests.length > 0 ? joinRequestsPanel : null}
           </div>
 
           <MembershipPlanLadder

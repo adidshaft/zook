@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { CheckCircle2, Circle, LockKeyhole, MapPin, Building } from "lucide-react";
+import { ChevronDown, ShieldCheck } from "lucide-react";
 import { resolvePlanName } from "@zook/ui";
 import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -13,7 +13,7 @@ import { PublicNav } from "@/components/public/nav/public-nav";
 import { formatInr } from "@/lib/format";
 import { PlanSelector } from "@/components/plan-selector";
 import { publicJoinHref } from "@/lib/public-join-url";
-import { planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
+import { planNameLabel, planValidityLabel, planVisitLabel } from "@/lib/public-plan-labels";
 import {
   alternatePublicLocale,
   joinModeLabelForLocale,
@@ -66,6 +66,35 @@ function loginRedirect(path: string, locale: PublicLocale = "en") {
     query.set("lang", "hi");
   }
   return `/login?${query.toString()}`;
+}
+
+function defaultJoinPlan<T extends { type: string }>(plans: T[]) {
+  return plans.find((plan) => plan.type !== "TRIAL") ?? plans[0];
+}
+
+function localityFromAddress(address?: string | null, city?: string | null) {
+  const cityValue = city?.trim().toLowerCase();
+  const laneLike = /^(lane|road|rd|street|st|plot|shop|unit|floor|fl|no\.?|#)\b/i;
+  return (
+    address
+      ?.split(",")
+      .map((part) => part.trim())
+      .find((part) => part && part.toLowerCase() !== cityValue && !laneLike.test(part)) ??
+    address
+      ?.split(",")
+      .map((part) => part.trim())
+      .find((part) => part && part.toLowerCase() !== cityValue) ??
+    null
+  );
+}
+
+function gymLocationLine(org: { address?: string | null; city?: string | null; state?: string | null }) {
+  const locality = localityFromAddress(org.address, org.city);
+  const city = org.city?.trim() || null;
+  if (locality && city && locality.toLowerCase() !== city.toLowerCase()) {
+    return `${locality}, ${city}`;
+  }
+  return city ?? locality ?? org.state ?? "";
 }
 
 async function getViewerJoinState(orgId: string) {
@@ -160,13 +189,16 @@ export default async function JoinPage({
 }) {
   const [{ username }, query] = await Promise.all([params, searchParams]);
   const locale = resolvePublicLocale(query);
-  const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
+  const t = (
+    key: Parameters<typeof publicT>[1],
+    replacements?: Parameters<typeof publicT>[2],
+  ) => publicT(locale, key, replacements);
   const data = await getPublicGymProfileData(username, query.ref);
   const org = data?.org;
   const viewerJoinState = org ? await getViewerJoinState(org.id) : null;
   const selectedPlan =
     data?.plans.find((plan) => plan.handle === query.plan || plan.id === query.plan) ??
-    data?.plans[0];
+    (data?.plans.length ? defaultJoinPlan(data.plans) : undefined);
   const referral = data?.referral?.status === "active" ? data.referral : null;
   const couponCode = query.coupon?.trim().toUpperCase() || undefined;
   const couponPreview =
@@ -186,11 +218,8 @@ export default async function JoinPage({
   );
   const joinMode = org?.joinMode ?? "OPEN_JOIN";
   const nextLocale = alternatePublicLocale(locale);
-  const checkoutSteps = [
-    { label: "Pay", state: "current" as const },
-    { label: "Confirm", state: "upcoming" as const },
-    { label: "Activate", state: "upcoming" as const },
-  ];
+  const orgLocationLine = org ? gymLocationLine(org) : "";
+  const paymentMethodLabel = data?.connected ? t("razorpay") : t("paymentUnavailableShort");
 
   if (!org || !selectedPlan) {
     return (
@@ -202,6 +231,7 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath("/gyms", locale)}
             backLabel={t("findGym")}
+            hideMarketingLinks
           >
             <AccountAwareNav locale={locale} />
           </PublicNav>
@@ -239,6 +269,7 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath(`/g/${org.username}`, locale)}
             backLabel={t("backToGym")}
+            hideMarketingLinks
           >
             <AccountAwareNav locale={locale} />
           </PublicNav>
@@ -303,6 +334,7 @@ export default async function JoinPage({
             languageLabel={t("languageSwitch")}
             backHref={localizedPath(`/g/${org.username}`, locale)}
             backLabel={t("backToGym")}
+            hideMarketingLinks
           >
             <AccountAwareNav locale={locale} />
           </PublicNav>
@@ -341,108 +373,84 @@ export default async function JoinPage({
           languageLabel={t("languageSwitch")}
           backHref={localizedPath(`/g/${org.username}`, locale)}
           backLabel={t("gymProfile")}
+          hideMarketingLinks
         >
           <AccountAwareNav locale={locale} />
         </PublicNav>
 
-        <section className="grid gap-5 lg:grid-cols-[1fr_420px]">
-          <GlassCard variant="strong">
-            <Pill tone="blue">{joinModeLabelForLocale(joinMode, locale)}</Pill>
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
-              {t("reviewMembership")}
-            </h1>
-
-            <div className="mt-5 rounded-3xl border border-[var(--border-focus)]/25 bg-gradient-to-br from-[var(--surface-raised)]/90 to-[var(--bg-sunken)]/90 p-5 shadow-md transition-all duration-300 hover:shadow-lg md:p-6">
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-                {org.logoUrl ? (
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-inner">
-                    <img
-                      src={org.logoUrl}
-                      alt={`${org.name} logo`}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-soft)]/30 to-[var(--accent-fill)]/20 text-2xl font-bold text-[var(--accent-strong)]">
-                    {org.name.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-strong)] bg-[var(--surface-accent-soft)] px-2 py-0.5 rounded-md">
-                      {org.gymType || "Fitness Center"}
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-                    {org.name}
-                  </h2>
-                  {org.tagline && (
-                    <p className="text-xs text-[var(--text-secondary)] italic font-medium leading-relaxed max-w-xl">
-                      "{org.tagline}"
-                    </p>
+        <section className="mx-auto grid w-full max-w-xl gap-5">
+          <GlassCard className="h-fit">
+            <div>
+              <div className="mb-4 flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  {org.logoUrl ? (
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-inner">
+                      <img
+                        src={org.logoUrl}
+                        alt={`${org.name} logo`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] text-sm font-bold text-[var(--accent-strong)]">
+                      {org.name.slice(0, 1).toUpperCase()}
+                    </div>
                   )}
-                </div>
-              </div>
-              
-              <div className="mt-5 grid gap-3 border-t border-[var(--border-subtle)] pt-4 text-xs sm:grid-cols-2 text-[var(--text-secondary)]">
-                <div className="flex items-start gap-2.5">
-                  <MapPin size={16} className="text-[var(--accent-strong)] shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">
-                    {org.address}, {org.city}, {org.state}
-                  </span>
-                </div>
-                {org.openingHoursSummary && (
-                  <div className="flex items-center gap-2.5">
-                    <Building size={16} className="text-[var(--accent-strong)] shrink-0" />
-                    <span>{org.openingHoursSummary}</span>
+                  <div className="min-w-0 text-left">
+                    <p className="line-clamp-2 text-base font-semibold leading-tight text-[var(--text-primary)]">
+                      {org.name}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-[var(--text-tertiary)]">
+                      {orgLocationLine}
+                    </p>
                   </div>
-                )}
+                </div>
+                <Pill tone="blue" className="shrink-0">
+                  {joinModeLabelForLocale(joinMode, locale)}
+                </Pill>
               </div>
-            </div>
-
-            {data.plans.length > 1 ? (
-              <PlanSelector
-                plans={data.plans}
-                selectedPlanId={selectedPlan.id}
-                username={org.username}
-                referralCode={referral?.code ?? null}
-                couponCode={couponPreview?.code ?? null}
-                locale={locale}
-                choosePlanLabel={t("choosePlan")}
-                changingPlanLabel={t("changingPlan")}
-              />
-            ) : (
-              <div className="mt-6 rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-                  Selected Plan
-                </p>
-                <div className="mt-3 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-[var(--text-primary)]">
-                      {resolvePlanName(selectedPlan)}
-                    </h3>
+              <div className="rounded-[22px] border border-[var(--border-focus)]/30 bg-[var(--bg-sunken)] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                      {t("selectedMembership")}
+                    </p>
+                    <p className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-[var(--text-primary)]">
+                      {planNameLabel(resolvePlanName(selectedPlan), locale)}
+                    </p>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                       {planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)}
                     </p>
                   </div>
-                  <span className="text-lg font-bold text-[var(--accent-strong)]">
-                    {formatInr(selectedPlan.pricePaise)}
-                  </span>
+                  <div className="shrink-0 text-left sm:text-right">
+                    <p className="text-xs text-[var(--text-tertiary)]">{t("dueToday")}</p>
+                    <p className="metric mt-0.5 text-3xl font-bold tracking-tight text-[var(--accent-strong)]">
+                      {formatInr(finalAmount)}
+                    </p>
+                  </div>
                 </div>
+                {referral || couponPreview ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {[
+                      ...(referral
+                        ? [{ label: t("referralDiscount") }]
+                        : []),
+                      ...(couponPreview
+                        ? [{ label: t("couponDiscount") }]
+                        : []),
+                    ].map((item) => (
+                    <span
+                      key={item.label}
+                      className="inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs"
+                    >
+                      <span className="font-semibold text-[var(--text-primary)]">{item.label}</span>
+                    </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-            )}
-          </GlassCard>
 
-          <GlassCard className="flex flex-col justify-between h-full">
-            <div>
-              <p className="text-sm text-[var(--text-tertiary)]">{t("finalAmount")}</p>
-              <p className="metric mt-1 text-5xl font-bold tracking-tight text-[var(--accent-strong)]">
-                {formatInr(finalAmount)}
-              </p>
-
-              {/* Secure Checkout CTA high-up for immediate visibility */}
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 space-y-3">
                 {viewerJoinState?.activeSubscription && (
                   <MembershipStateNotice
                     title={t("membershipInProgressTitle")}
@@ -458,23 +466,27 @@ export default async function JoinPage({
                     tone="blue"
                   />
                 )}
-                {data.connected ? (
+                {viewerJoinState?.activeSubscription ? null : data.connected ? (
                   <JoinCheckoutButton
                     orgId={org.id}
                     planId={selectedPlan.id}
                     couponCode={couponPreview?.code ?? null}
                     referralCode={referral?.code ?? null}
+                    className="mt-0"
+                    labels={{
+                      idle: data.connected
+                        ? t("payAmountNow", { amount: formatInr(finalAmount) })
+                        : t("paymentUnavailable"),
+                      busy: t("startingPayment"),
+                      started: t("paymentStarted"),
+                      unavailable: t("paymentUnavailable"),
+                      unable: t("unableStartPayment"),
+                    }}
                     loginPath={loginRedirect(
                       joinPath(org.username, selectedPlan.handle, referral, couponPreview?.code, locale),
                       locale,
                     )}
                   />
-                ) : process.env.NODE_ENV === "development" ? (
-                  <div className="grid gap-3">
-                    <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-3 text-xs leading-5 text-[var(--text-secondary)]">
-                      {t("testMode")}
-                    </div>
-                  </div>
                 ) : (
                   <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-warning-soft)] p-4 text-xs leading-5 text-[var(--text-secondary)]">
                     <p>{t("paymentUnavailable")}</p>
@@ -488,92 +500,96 @@ export default async function JoinPage({
                 )}
               </div>
 
-              {/* Pricing breakdown table moved here */}
-              <div className="mt-5 overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)]">
-                <table className="w-full text-left text-xs">
-                  <tbody className="divide-y divide-[var(--border-subtle)]">
-                    <tr className="bg-[var(--bg-sunken)]/40">
-                      <th className="px-4 py-2.5 font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)] w-1/3">
-                        Gym
-                      </th>
-                      <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
-                        {org.name} · {org.city}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th className="px-4 py-2.5 font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                        {t("plan")}
-                      </th>
-                      <td className="px-4 py-2.5 font-medium text-[var(--text-primary)]">
-                        {resolvePlanName(selectedPlan)} ({planValidityLabel(selectedPlan, locale)} · {planVisitLabel(selectedPlan.visitLimit, locale)})
-                      </td>
-                    </tr>
-                    <BreakdownRow label="Base Price" value={formatInr(selectedPlan.pricePaise)} />
-                    {referral && (
-                      <BreakdownRow
-                        label={`${t("referralDiscount")} (${referral.code})`}
-                        value={`-${formatInr(referralDiscountPaise)}`}
-                      />
-                    )}
-                    {couponPreview && (
-                      <BreakdownRow
-                        label={`${t("couponDiscount")} (${couponPreview.code})`}
-                        value={`-${formatInr(couponDiscountPaise)}`}
-                      />
-                    )}
-                    <BreakdownRow label={t("finalAmount")} value={formatInr(finalAmount)} strong />
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Coupon form moved here */}
-              <CouponApplyForm
-                orgId={org.id}
-                username={org.username}
-                planId={selectedPlan.id}
-                referralCode={referral?.code ?? null}
-                initialCouponCode={couponPreview?.code ?? null}
-              />
-
-              {/* High-density, professional checkout summary block */}
-              <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 text-xs leading-tight">
-                {/* Payment Method */}
-                <div className="flex items-center justify-between font-medium text-[var(--text-secondary)]">
-                  <span>{t("paymentMethod")}</span>
-                  <span className="font-semibold text-[var(--text-primary)]">{t("razorpay")}</span>
+              <details className="group mt-3 overflow-hidden rounded-[18px] border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2">
+                <summary className="zook-focus flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl text-sm font-semibold text-[var(--text-primary)]">
+                  <span className="min-w-0">{t("checkoutDetails")}</span>
+                  <span className="inline-flex min-w-0 shrink items-center gap-1.5 text-right text-xs font-semibold text-[var(--text-tertiary)]">
+                    <span className="truncate">{paymentMethodLabel}</span>
+                    <ChevronDown size={14} aria-hidden className="shrink-0 transition group-open:rotate-180" />
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-3">
+                  {viewerJoinState?.activeSubscription ? null : (
+                    <div className="grid gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 text-xs leading-5 text-[var(--text-secondary)]">
+                      <p className="flex items-start gap-2">
+                        <ShieldCheck
+                          size={14}
+                          className="mt-0.5 shrink-0 text-[var(--feedback-success)]"
+                          aria-hidden="true"
+                        />
+                        <span>{t("paymentActivation")}</span>
+                      </p>
+                    </div>
+                  )}
+                  <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+                    <table className="w-full text-left text-xs">
+                      <tbody className="divide-y divide-[var(--border-subtle)]">
+                        <BreakdownRow label={t("basePrice")} value={formatInr(selectedPlan.pricePaise)} />
+                        {referral && (
+                          <BreakdownRow
+                            label={`${t("referralDiscount")} (${referral.code})`}
+                            value={`-${formatInr(referralDiscountPaise)}`}
+                          />
+                        )}
+                        {couponPreview && (
+                          <BreakdownRow
+                            label={`${t("couponDiscount")} (${couponPreview.code})`}
+                            value={`-${formatInr(couponDiscountPaise)}`}
+                          />
+                        )}
+                        <BreakdownRow label={t("dueToday")} value={formatInr(finalAmount)} strong />
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                
-                {/* Checkout Progress Steps in a neat horizontal bar */}
-                <div className="mt-4 flex items-center justify-between gap-1 border-t border-[var(--border-subtle)] pt-4 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                  {checkoutSteps.map((step, index) => {
-                    const isCurrent = step.state === "current";
-                    const Icon = isCurrent ? CheckCircle2 : Circle;
-
-                    return (
-                      <div key={step.label} className="contents">
-                        <span
-                          className={`flex items-center gap-1 ${
-                            isCurrent
-                              ? "font-semibold text-[var(--accent-strong)]"
-                              : "text-[var(--text-tertiary)]"
-                          }`}
-                        >
-                          <Icon size={12} className="shrink-0" /> {step.label}
-                        </span>
-                        {index < checkoutSteps.length - 1 ? (
-                          <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                        ) : null}
-                      </div>
-                    );
-                  })}
+              </details>
+              <details
+                className="group mt-3 overflow-hidden rounded-[18px] border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2"
+              >
+                <summary className="zook-focus flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl text-sm font-semibold text-[var(--text-primary)]">
+                  <span className="min-w-0">{t("planAndOffers")}</span>
+                  <span className="inline-flex min-w-0 shrink items-center gap-1.5 text-right text-xs font-semibold text-[var(--text-tertiary)]">
+                    <span className="truncate">
+                      {couponPreview ? couponPreview.code : t("changePlan")}
+                    </span>
+                    <ChevronDown size={14} aria-hidden className="shrink-0 transition group-open:rotate-180" />
+                  </span>
+                </summary>
+                <div className="mt-3 grid gap-3 border-t border-[var(--border-subtle)] pt-3">
+                  {data.plans.length > 1 ? (
+                    <PlanSelector
+                      plans={data.plans}
+                      selectedPlanId={selectedPlan.id}
+                      username={org.username}
+                      referralCode={referral?.code ?? null}
+                      couponCode={couponPreview?.code ?? null}
+                      locale={locale}
+                      choosePlanLabel={t("changePlan")}
+                      changingPlanLabel={t("changingPlan")}
+                    />
+                  ) : null}
+                  <CouponApplyForm
+                    orgId={org.id}
+                    username={org.username}
+                    planId={selectedPlan.id}
+                    referralCode={referral?.code ?? null}
+                    initialCouponCode={couponPreview?.code ?? null}
+                    variant="inline"
+                    labels={{
+                      addCoupon: t("addCoupon"),
+                      applyCoupon: t("applyCoupon"),
+                      applyingCoupon: t("applyingCoupon"),
+                      couponApplied: t("couponApplied"),
+                      couponCode: t("couponCode"),
+                      couponInvalid: t("couponInvalid"),
+                      couponRequired: t("couponRequired"),
+                      couponWillApply: t("couponWillApply"),
+                      enterCoupon: t("enterCoupon"),
+                    }}
+                  />
                 </div>
+              </details>
 
-                {/* Secure Payment warning inline */}
-                <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-subtle)] pt-4 text-[11px] text-[var(--text-secondary)]">
-                  <LockKeyhole className="text-[var(--accent-strong)] shrink-0" size={14} />
-                  <span>{t("paymentActivation")}</span>
-                </div>
-              </div>
             </div>
           </GlassCard>
         </section>
@@ -625,10 +641,10 @@ function BreakdownRow({
 }) {
   return (
     <tr>
-      <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+      <th className="px-3 py-2 text-xs font-medium text-[var(--text-tertiary)]">
         {label}
       </th>
-      <td className={`px-4 py-3 text-right ${strong ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
+      <td className={`px-3 py-2 text-right ${strong ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
         {value}
       </td>
     </tr>

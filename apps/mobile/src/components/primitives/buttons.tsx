@@ -2,7 +2,7 @@ import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,

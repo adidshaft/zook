@@ -153,13 +153,33 @@ function demoBody(init: { body?: unknown }) {
   return init.body && typeof init.body === "object" ? (init.body as Record<string, unknown>) : {};
 }
 
-function demoGymProfile(username: string) {
+function demoGymMedia(username?: string | null) {
+  if (username === "aarogya-strength" || username === "your-fitness") {
+    const base = `/seed/gyms/${username}`;
+    return {
+      logoUrl: `${base}/logo.svg`,
+      coverImageUrl: `${base}/cover.png`,
+      gallery: [
+        `${base}/gallery-01.png`,
+        `${base}/gallery-02.png`,
+        `${base}/gallery-03.png`,
+        `${base}/gallery-04.png`,
+        `${base}/gallery-05.png`,
+      ],
+    };
+  }
+  return { logoUrl: null, coverImageUrl: null, gallery: [] };
+}
+
+function demoGymProfile(username: string, viewerAuthenticated: boolean) {
   const org =
     zookDemoFixtures.organizations.find((candidate) => candidate.username === username) ??
     activeOrg();
   if (!org) {
     return { org: null, plans: [] };
   }
+
+  const demoMedia = demoGymMedia(org.username);
 
   return {
     org: {
@@ -173,7 +193,9 @@ function demoGymProfile(username: string) {
       amenities: org.amenities,
       address: org.address,
       tagline: "Strength, PT, and recovery operations in one gym cockpit.",
-      gallery: [],
+      logoUrl: demoMedia.logoUrl,
+      coverImageUrl: demoMedia.coverImageUrl,
+      gallery: demoMedia.gallery,
       equipment: ["Dumbbells", "Power racks", "Treadmills", "Cable crossover machine"],
     },
     branches: zookDemoFixtures.branches.filter((branch) => branch.orgId === org.id),
@@ -198,7 +220,7 @@ function demoGymProfile(username: string) {
         visitLimit: plan.visitLimit,
       })),
     viewerState: {
-      activeMembership: activeMembership(),
+      activeMembership: viewerAuthenticated ? activeMembership() : null,
       pendingJoinRequest: null,
       approvedJoinRequest: null,
     },
@@ -2800,6 +2822,19 @@ export async function demoMobileApiFetch<T>(
       if (target) {
         target.status = "CANCELLED";
         target.daysLeft = 0;
+        const enriched = enrichMembership(target);
+        const planName = enriched?.plan?.name ?? "your membership";
+        zookDemoFixtures.notifications.unshift({
+          id: `notif-membership-cancelled-${Date.now()}`,
+          orgId: target.orgId ?? "org-aarogya-strength",
+          userId: "user-aarav",
+          type: "TRANSACTIONAL",
+          title: "Membership cancelled",
+          message: `${planName} has been cancelled. Rejoin this gym or explore a new one to restore your access.`,
+          targetRoute: "/membership",
+          readAt: null,
+          createdAt: nowIso(),
+        });
       }
       return {
         subscription: enrichMembership(target ?? activeMembership()) ?? null,
@@ -2951,6 +2986,24 @@ export async function demoMobileApiFetch<T>(
         },
       })),
     } as T;
+  if (pathname.match(/^\/me\/notifications\/[^/]+$/) && method === "GET") {
+    const notificationId = decodeURIComponent(pathname.split("/").pop() ?? "");
+    const notification = zookDemoFixtures.notifications.find((n) => n.id === notificationId);
+    if (!notification) {
+      throw new Error("Notification not found");
+    }
+    return {
+      notification: {
+        id: notification.id,
+        title: notification.title,
+        body: notification.message,
+        type: notification.type,
+        createdAt: notification.createdAt,
+        readAt: notification.readAt,
+        metadata: { targetRoute: notification.targetRoute },
+      },
+    } as T;
+  }
   if (pathname === "/me/notifications/read") {
     const body = init.body as { ids?: string[] } | undefined;
     return { count: body?.ids?.length ?? 0 } as T;
@@ -3018,21 +3071,27 @@ export async function demoMobileApiFetch<T>(
 
   if (pathname === "/orgs/public/search") {
     return {
-      gyms: zookDemoFixtures.organizations.map((candidate) => ({
-        id: candidate.id,
-        username: candidate.username,
-        name: candidate.name,
-        city: candidate.city,
-        state: candidate.state,
-        joinMode: candidate.joinMode,
-        visibility: "PUBLIC",
-        amenities: candidate.amenities,
-      })),
+      gyms: zookDemoFixtures.organizations.map((candidate) => {
+        const media = demoGymMedia(candidate.username);
+        return {
+          id: candidate.id,
+          username: candidate.username,
+          name: candidate.name,
+          city: candidate.city,
+          state: candidate.state,
+          address: candidate.address,
+          joinMode: candidate.joinMode,
+          visibility: "PUBLIC",
+          amenities: candidate.amenities,
+          logoUrl: media.logoUrl,
+          coverImageUrl: media.coverImageUrl,
+        };
+      }),
     } as T;
   }
 
   if (pathname.startsWith("/orgs/public/")) {
-    return demoGymProfile(pathname.replace("/orgs/public/", "")) as T;
+    return demoGymProfile(pathname.replace("/orgs/public/", ""), Boolean(init.token)) as T;
   }
 
   if (pathname.endsWith("/products")) {
@@ -3658,8 +3717,25 @@ export async function demoMobileApiFetch<T>(
   {
     const pauseMatch = pathname.match(/^\/me\/memberships\/([^/]+)\/pause$/);
     if (pauseMatch && method === "POST") {
+      const body = demoBody(init);
       const target = zookDemoFixtures.memberships.find((m) => m.id === pauseMatch[1]);
-      if (target) target.status = "PAUSED";
+      if (target) {
+        target.status = "PAUSED";
+        const enriched = enrichMembership(target);
+        const planName = enriched?.plan?.name ?? "your membership";
+        const resumeDate = body.resumesAt ? new Date(String(body.resumesAt)).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "the selected date";
+        zookDemoFixtures.notifications.unshift({
+          id: `notif-membership-paused-${Date.now()}`,
+          orgId: target.orgId ?? "org-aarogya-strength",
+          userId: "user-aarav",
+          type: "TRANSACTIONAL",
+          title: "Membership paused",
+          message: `${planName} is paused until ${resumeDate}. Your remaining days carry over. Resume any time to restore entry.`,
+          targetRoute: "/membership",
+          readAt: null,
+          createdAt: nowIso(),
+        });
+      }
       return { subscription: enrichMembership(target ?? activeMembership()) } as T;
     }
   }

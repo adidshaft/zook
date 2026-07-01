@@ -7,10 +7,12 @@ import { getTonePalette, type PillTone } from "./tone-palette";
 type IconName = keyof typeof Ionicons.glyphMap;
 
 export function IconBubble({
+  accessibilityLabel,
   icon,
   tone = "neutral",
   size = 44,
 }: {
+  accessibilityLabel?: string;
   icon: IconName;
   tone?: PillTone;
   size?: number;
@@ -20,6 +22,8 @@ export function IconBubble({
 
   return (
     <View
+      accessibilityLabel={accessibilityLabel}
+      accessible={Boolean(accessibilityLabel)}
       style={[
         styles.iconBubble,
         {

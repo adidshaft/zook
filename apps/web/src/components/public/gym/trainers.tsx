@@ -19,8 +19,8 @@ export function GymTrainers({
   return (
     <section className="grid gap-4 md:grid-cols-2">
       <GlassCard>
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{t("visibleTrainers")}</h2>
-        <div className="mt-5 grid gap-3">
+        <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t("visibleTrainers")}</h2>
+        <div className="mt-4 grid gap-2">
           {trainers.length ? (
             trainers.map((trainer) => <TrainerRow key={trainer.userId} trainer={trainer} locale={locale} />)
           ) : (
@@ -45,7 +45,7 @@ function TrainerRow({
   const profileDetails = trainerProfileDetails(trainer.specialties);
   const photoAlt = locale === "hi" ? `${trainer.name} की profile photo` : `${trainer.name} profile photo`;
   return (
-    <div className="flex items-start gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
+    <div className="flex items-start gap-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
       {trainer.profilePhotoUrl ? (
         <Image
           src={trainer.profilePhotoUrl}
@@ -65,7 +65,7 @@ function TrainerRow({
       <div className="min-w-0">
         <p className="font-medium text-[var(--text-primary)]">{trainer.name}</p>
         {trainer.bio ? (
-          <p className="mt-1 text-sm text-[var(--text-tertiary)]">{trainer.bio}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-[var(--text-tertiary)]">{trainer.bio}</p>
         ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {profileDetails.specialties.slice(0, 3).map((specialty) => (

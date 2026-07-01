@@ -32,6 +32,14 @@ type DietPlan = {
   meals: DietMeal[];
 };
 
+function dietPlanStatusLabel(status: string | null | undefined) {
+  if (status === "DRAFT") return "Draft";
+  if (status === "ACTIVE") return "Active";
+  if (status === "ARCHIVED") return "Archived";
+  if (status === "PAUSED") return "Paused";
+  return formatEnumLabel(status ?? "plan");
+}
+
 export function TrainerDietPlansPanel({
   orgId,
   trainerId,
@@ -157,7 +165,7 @@ export function TrainerDietPlansPanel({
               {
                 id: "status",
                 header: "Status",
-                render: (plan) => <StatusPill value={formatEnumLabel(plan.status)} />,
+                render: (plan) => <StatusPill value={dietPlanStatusLabel(plan.status)} />,
               },
               {
                 id: "meals",

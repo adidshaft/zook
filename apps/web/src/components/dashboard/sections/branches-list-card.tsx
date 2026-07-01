@@ -1,8 +1,9 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { ExternalLink, MapPinned } from "lucide-react";
 import { ErrorNotice } from "../operational-shared";
-import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { EmptyState, SectionHeader } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
@@ -14,15 +15,53 @@ import type {
 import { formatBranchHoursSummary } from "./branch-hours-editor";
 import type { BranchFormState } from "./branches-section";
 import { BranchForm } from "./branch-form";
+import { useT } from "@/lib/use-t";
 
-function branchSetupSteps(branch: BranchRow, hasReceptionist: boolean, hasBranchPlan: boolean) {
+type BranchManagementT = ReturnType<typeof useT>;
+
+function branchSetupSteps(
+  branch: BranchRow,
+  hasReceptionist: boolean,
+  hasBranchPlan: boolean,
+  t: BranchManagementT,
+) {
+  const hasMapLocation = branch.latitude != null || branch.longitude != null || Boolean(branch.googleMapsUrl);
   return [
-    { label: "Branch created", done: true },
-    { label: "Manager assigned", done: Boolean(branch.managerId) },
-    { label: "Working hours set", done: Boolean(branch.operatingHours) },
-    { label: "Reception assigned", done: hasReceptionist },
-    { label: "Plans added", done: hasBranchPlan },
+    { label: t("stepCreated"), done: true },
+    { label: t("stepMap"), done: hasMapLocation },
+    { label: t("stepManager"), done: Boolean(branch.managerId) },
+    { label: t("stepHours"), done: Boolean(branch.operatingHours) },
+    { label: t("stepReception"), done: hasReceptionist },
+    { label: t("stepPlans"), done: hasBranchPlan },
   ];
+}
+
+function BranchStatusMark({ label, active }: { label: string; active: boolean }) {
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex min-h-7 shrink-0 items-center justify-center rounded-full border px-2.5 text-[11px] font-semibold ${
+        active
+          ? "border-[color-mix(in_srgb,var(--accent)_42%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+          : "border-[color-mix(in_srgb,var(--feedback-warning)_38%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function compactBranchLocation(branch: BranchRow) {
+  return [branch.city, branch.state].filter(Boolean).join(", ") || undefined;
+}
+
+function compactBranchAddress(branch: BranchRow) {
+  const location = compactBranchLocation(branch);
+  const address = branch.address?.trim();
+  if (!address) return null;
+  if (location && address.toLowerCase() === location.toLowerCase()) return null;
+  return address;
 }
 
 export function BranchesListCard({
@@ -56,23 +95,56 @@ export function BranchesListCard({
   updateBranch: (branch: BranchRow, patch: Partial<BranchRow> | BranchFormState) => Promise<void>;
   deactivateBranch: (branch: BranchRow) => Promise<void>;
 }) {
+  const t = useT("branchManagement");
   const receptionistBranchIds = new Set(
     staffAssignments
       .filter((assignment) => assignment.role === "RECEPTIONIST" && assignment.branchId)
       .map((assignment) => assignment.branchId),
   );
+  const activeBranches = branches.filter((branch) => branch.active !== false);
+  const missingManagerCount = activeBranches.filter((branch) => !branch.managerId).length;
+  const missingHoursCount = activeBranches.filter((branch) => !branch.operatingHours).length;
+  const missingReceptionCount = activeBranches.filter((branch) => !receptionistBranchIds.has(branch.id)).length;
+  const missingMapCount = activeBranches.filter(
+    (branch) => branch.latitude == null && branch.longitude == null && !branch.googleMapsUrl,
+  ).length;
+  const summaryItems = [
+    { label: t("needManager"), value: missingManagerCount },
+    { label: t("needHours"), value: missingHoursCount },
+    { label: t("needReception"), value: missingReceptionCount },
+    { label: t("needMap"), value: missingMapCount },
+  ].filter((item) => item.value > 0);
 
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Locations"
-        title="Branch list"
-        badge={<Pill>{branches.filter((branch) => branch.active).length} active</Pill>}
+        eyebrow={t("locationsEyebrow")}
+        title={t("branchList")}
+        badge={<Pill>{activeBranches.length} {t("active")}</Pill>}
       />
       <div className="mt-5 grid gap-3">
         {branchesState.error ? <ErrorNotice message={branchesState.error} /> : null}
+        {branches.length && summaryItems.length ? (
+          <div className="flex flex-wrap gap-2">
+            {summaryItems.map((item) => (
+              <div
+                key={item.label}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-1.5"
+              >
+                <span className="text-xs text-[var(--text-tertiary)]">{item.label}</span>
+                <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : branches.length ? (
+          <div className="inline-flex w-fit rounded-full border border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-strong)]">
+            {t("readyForOps")}
+          </div>
+        ) : null}
         {branches.map((branch) => (
-          <div key={branch.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+          <div key={branch.id} className="rounded-[20px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
             {editingBranchId === branch.id ? (
               <BranchForm
                 mode="edit"
@@ -91,6 +163,7 @@ export function BranchesListCard({
                 formBusy={formBusy}
                 hasActivePlan={hasActivePlan}
                 hasReceptionist={receptionistBranchIds.has(branch.id)}
+                t={t}
                 onDeactivate={deactivateBranch}
                 onEdit={startBranchEdit}
                 onUpdate={updateBranch}
@@ -100,8 +173,8 @@ export function BranchesListCard({
         ))}
         {!branches.length && !branchesState.loading ? (
           <EmptyState
-            title="No branches"
-            description="Add the first location for branch-level attendance and stock controls."
+            title={t("noBranchesTitle")}
+            description={t("noBranchesDescription")}
           />
         ) : null}
       </div>
@@ -114,6 +187,7 @@ function BranchSummaryRow({
   formBusy,
   hasActivePlan,
   hasReceptionist,
+  t,
   onDeactivate,
   onEdit,
   onUpdate,
@@ -122,76 +196,156 @@ function BranchSummaryRow({
   formBusy: string | null;
   hasActivePlan: boolean;
   hasReceptionist: boolean;
+  t: BranchManagementT;
   onDeactivate: (branch: BranchRow) => Promise<void>;
   onEdit: (branch: BranchRow) => void;
   onUpdate: (branch: BranchRow, patch: Partial<BranchRow> | BranchFormState) => Promise<void>;
 }) {
-  const steps = branchSetupSteps(branch, hasReceptionist, hasActivePlan);
-  const doneCount = steps.filter((step) => step.done).length;
+  const steps = branchSetupSteps(branch, hasReceptionist, hasActivePlan, t);
+  const missingSteps = steps.filter((step) => !step.done);
+  const statusLabel = branch.isDefault ? t("primary") : branch.active ? t("active") : t("paused");
+  const hasMapPin = branch.latitude != null && branch.longitude != null;
+  const hasPublishedMap = Boolean(branch.googleMapsUrl) || hasMapPin;
+  const branchLocation = compactBranchLocation(branch);
+  const branchAddress = compactBranchAddress(branch);
+  const fallbackMapsHref =
+    branchAddress || branchLocation
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          [branchAddress, branchLocation].filter(Boolean).join(", "),
+        )}`
+      : null;
+  const mapsHref =
+    branch.googleMapsUrl ??
+    (hasMapPin
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${branch.latitude},${branch.longitude}`,
+        )}`
+      : fallbackMapsHref);
   return (
-    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-      <div>
-        {doneCount < 4 ? <Pill tone="amber">Setup incomplete</Pill> : null}
-        <p className="font-medium text-white">{branch.name}</p>
-        <p className="mt-1 text-sm text-white/50">
-          {branch.address} · {branch.city}, {branch.state} {branch.pincode}
-        </p>
-        <p className="mt-1 text-xs text-white/45">
-          {formatBranchHoursSummary(branch.operatingHours)}
-        </p>
-        <p className="mt-1 text-xs text-white/40">
-          {[branch.contactPhone, branch.contactEmail, branch.managerId ? "Manager assigned" : null]
-            .filter(Boolean)
-            .join(" · ") || "Add contact details before opening this branch"}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {steps.map((step) => (
-            <span
-              key={step.label}
-              className={`rounded-full border px-2 py-1 text-[0.68rem] ${step.done ? "border-blue-300/25 bg-blue-300/10 text-blue-50" : "border-white/10 bg-black/20 text-white/45"}`}
-            >
-              {step.done ? "Done: " : "Todo: "}
-              {step.label}
-            </span>
-          ))}
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-3">
+          <BranchStatusMark
+            label={statusLabel}
+            active={branch.isDefault || branch.active !== false}
+          />
+          <div className="min-w-0">
+            <p className="font-semibold leading-5 text-[var(--text-primary)]">{branch.name}</p>
+            <p className="mt-0.5 text-xs leading-4 text-[var(--text-tertiary)]">
+              {branchLocation ?? t("locationPending")}
+            </p>
+          </div>
         </div>
+        <div
+          className={`mt-3 inline-flex max-w-full items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            hasPublishedMap
+              ? "border-[color-mix(in_srgb,var(--accent)_34%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+              : "border-[color-mix(in_srgb,var(--feedback-warning)_34%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+          }`}
+        >
+          <MapPinned aria-hidden size={13} />
+          <span className="truncate">
+            {hasPublishedMap ? t("mapVisibleToMembers") : t("mapNotSet")}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+          {branchAddress ? (
+            <span className="max-w-full rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-1">
+              {branchAddress}
+            </span>
+          ) : null}
+          <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-1">
+            {formatBranchHoursSummary(branch.operatingHours)}
+          </span>
+          <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-1 text-[var(--text-tertiary)]">
+            {hasPublishedMap ? t("visibleOnAppWeb") : t("addMapToPublish")}
+          </span>
+        </div>
+        <details className="group mt-3">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-xs font-semibold text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+            {missingSteps.length
+              ? t(missingSteps.length === 1 ? "setupGap" : "setupGaps", {
+                  count: missingSteps.length,
+                })
+              : t("readyForOps")}
+            <span className="group-open:hidden">{t("show")}</span>
+            <span className="hidden group-open:inline">{t("hide")}</span>
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {(missingSteps.length ? missingSteps : steps).map((step) => (
+              <span
+                key={step.label}
+                className={`rounded-full border px-2 py-1 text-[0.68rem] ${
+                  step.done
+                    ? "border-[color-mix(in_srgb,var(--accent)_32%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                    : "border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-tertiary)]"
+                }`}
+              >
+                {step.label}
+              </span>
+            ))}
+          </div>
+        </details>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
-        <StatusPill
-          value={branch.isDefault ? "Primary" : branch.active ? "Active" : "Paused"}
-          tone={branch.isDefault || branch.active ? "blue" : "amber"}
-        />
+        {hasPublishedMap && mapsHref ? (
+          <a
+            href={mapsHref}
+            target="_blank"
+            rel="noreferrer"
+            className="zook-focus inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--accent)_32%,transparent)] bg-[var(--accent-soft)] px-3 text-xs font-semibold text-[var(--accent-strong)] transition hover:border-[var(--accent)]"
+          >
+            <ExternalLink aria-hidden size={13} />
+            {t("openMap")}
+          </a>
+        ) : (
+          <ZookButton
+            type="button"
+            tone="ghost"
+            size="sm"
+            onClick={() => onEdit(branch)}
+          >
+            {t("addMap")}
+          </ZookButton>
+        )}
         <ZookButton
           type="button"
           tone="ghost"
           size="sm"
           onClick={() => onEdit(branch)}
         >
-          Edit
+          {t("edit")}
         </ZookButton>
         {!branch.isDefault ? (
-          <ConfirmActionButton
-            title="Make this the primary location?"
-            description="New attendance and QR flows move to this location. Existing data stays intact."
-            confirmLabel="Make primary"
-            onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
-            disabled={formBusy === `branch:${branch.id}`}
-            className="zook-focus rounded-full border border-white/10 px-3 py-1 text-xs text-white/65 disabled:opacity-50"
-          >
-            Make primary
-          </ConfirmActionButton>
-        ) : null}
-        {!branch.isDefault && branch.active ? (
-          <ConfirmActionButton
-            title="Deactivate branch?"
-            description="Existing attendance, payments, and history stay intact. Members and staff stop using this branch."
-            confirmLabel="Deactivate"
-            onConfirm={() => onDeactivate(branch)}
-            disabled={formBusy === `branch:${branch.id}:delete`}
-            className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs text-red-100/80 disabled:opacity-50"
-          >
-            Deactivate
-          </ConfirmActionButton>
+          <details className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 py-1">
+            <summary className="cursor-pointer list-none text-xs font-semibold text-[var(--text-secondary)]">
+              {t("more")}
+            </summary>
+            <div className="mt-3 flex min-w-40 flex-col gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2 shadow-[var(--shadow-md)]">
+              <ConfirmActionButton
+                title={t("makePrimaryTitle")}
+                description={t("makePrimaryDescription")}
+                confirmLabel={t("makePrimary")}
+                onConfirm={() => onUpdate(branch, { isDefault: true, active: true })}
+                disabled={formBusy === `branch:${branch.id}`}
+                className="zook-focus rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] disabled:opacity-50"
+              >
+                {t("makePrimary")}
+              </ConfirmActionButton>
+              {branch.active ? (
+                <ConfirmActionButton
+                  title={t("deactivateTitle")}
+                  description={t("deactivateDescription")}
+                  confirmLabel={t("deactivate")}
+                  onConfirm={() => onDeactivate(branch)}
+                  disabled={formBusy === `branch:${branch.id}:delete`}
+                  className="zook-focus rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_28%,transparent)] px-3 py-1 text-xs text-[var(--feedback-danger)] hover:bg-[var(--surface-danger-soft)] disabled:opacity-50"
+                >
+                  {t("deactivate")}
+                </ConfirmActionButton>
+              ) : null}
+            </div>
+          </details>
         ) : null}
       </div>
     </div>

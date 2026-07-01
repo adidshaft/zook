@@ -30,16 +30,15 @@ import {
   MoneySummaryCard,
   ProductCard,
   SearchBar,
-  SectionHeader,
   Skeleton,
   StickyActionBar,
-  StatusChip,
   ZookButton,
   ZookScreen,
   type PillTone,
 } from "@/components/primitives";
+import { getTonePalette } from "@/components/primitives/tone-palette";
 import { useHideBottomNav } from "@/components/primitives/bottom-nav-context";
-import { formatDateTime, formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
+import { formatDateTime, formatInr } from "@/lib/formatting";
 import {
   useCompleteMockPayment,
   useCreateShopOrder,
@@ -53,7 +52,7 @@ import { toWebUrl } from "@/lib/api";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "@/lib/storage";
-import { layout, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { PickupQrCode } from "@/components/primitives/pickup-qr";
@@ -156,6 +155,49 @@ function optimisticOrderFromCart(input: {
   };
 }
 
+function orderActionPriority(order: ShopOrderRecord) {
+  const status = String(order.status ?? "").toUpperCase();
+  if (status === "READY_FOR_PICKUP" || (order.pickupCode && !order.fulfilledAt)) return 0;
+  if (status === "PENDING_PAYMENT") return 1;
+  if (status === "PROCESSING" || status === "PAID") return 2;
+  if (status === "FULFILLED") return 4;
+  if (status === "CANCELLED") return 5;
+  return 3;
+}
+
+function orderTimestamp(order: ShopOrderRecord) {
+  const timestamp = new Date(order.updatedAt ?? order.createdAt ?? 0).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function orderActionCopy(order: ShopOrderRecord, t: (key: TranslationKey, values?: Record<string, string | number>) => string) {
+  const status = String(order.status ?? "").toUpperCase();
+  if (status === "READY_FOR_PICKUP" || (order.pickupCode && !order.fulfilledAt)) {
+    return order.pickupCode
+      ? t("shop.orderReadyWithCode", { code: order.pickupCode })
+      : t("shop.orderReady");
+  }
+  if (status === "PENDING_PAYMENT") return t("shop.orderNeedsPayment");
+  if (status === "PROCESSING" || status === "PAID") return t("shop.orderBeingPrepared");
+  if (status === "FULFILLED") return t("shop.orderPickedUp");
+  if (status === "CANCELLED") return t("shop.orderCancelled");
+  return formatDateTime(order.createdAt, t("shop.recently"), "en-IN");
+}
+
+function orderBannerTitle(order: ShopOrderRecord, t: (key: TranslationKey, values?: Record<string, string | number>) => string) {
+  const status = String(order.status ?? "").toUpperCase();
+  if (status === "READY_FOR_PICKUP" || (order.pickupCode && !order.fulfilledAt)) return t("shop.readyForPickup");
+  if (status === "PENDING_PAYMENT") return t("shop.paymentPending");
+  if (status === "PROCESSING" || status === "PAID") return t("shop.orderBeingPrepared");
+  if (status === "FULFILLED") return t("shop.orderPickedUp");
+  if (status === "CANCELLED") return t("shop.orderCancelled");
+  return t("shop.orderHistory");
+}
+
+function cartLineSubtitle(quantity: number, unitPaise: number) {
+  return quantity > 1 ? `${quantity} × ${formatInr(unitPaise)}` : undefined;
+}
+
 export default function Shop() {
   const { mode, palette } = useTheme();
   const router = useRouter();
@@ -187,6 +229,7 @@ export default function Shop() {
   } | null>(null);
   const [waitingCheckoutSessionId, setWaitingCheckoutSessionId] = useState<string | null>(null);
   const [checkingCheckoutStatus, setCheckingCheckoutStatus] = useState(false);
+  const [showDeskPaymentOption, setShowDeskPaymentOption] = useState(false);
   const productsQuery = useShopProducts();
   const ordersQuery = useMyShopOrders();
   const createOrder = useCreateShopOrder();
@@ -202,6 +245,7 @@ export default function Shop() {
         ? "cart"
         : "browse";
   const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
+  const locationContext = <BranchSelectorChip variant="inline" style={styles.headerBranchSelector} />;
   const cartStorageKey = `zook_shop_cart_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
   const checkoutContextStoragePrefix = `zook_shop_checkout_${activeOrgId ?? activeOrganization?.orgId ?? "default"}`;
   const products = useMemo(() => productsQuery.data?.products ?? [], [productsQuery.data?.products]);
@@ -236,6 +280,15 @@ export default function Shop() {
     });
     return counts;
   }, [products]);
+  const visibleCategories = useMemo(
+    () => categories.filter((option) => option.value === "ALL" || (categoryCounts[option.value] ?? 0) > 0),
+    [categoryCounts],
+  );
+  useEffect(() => {
+    if (category !== "ALL" && (categoryCounts[category] ?? 0) === 0) {
+      setCategory("ALL");
+    }
+  }, [category, categoryCounts]);
   const cartItems = Object.entries(cart)
     .map(([productId, quantity]) => {
       const product = products.find((candidate) => candidate.id === productId);
@@ -247,7 +300,22 @@ export default function Shop() {
     0,
   );
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const recentOrders = (ordersQuery.data?.orders ?? []).slice(0, 3);
+  const recentOrders = [...(ordersQuery.data?.orders ?? [])]
+    .sort((left, right) => {
+      const priority = orderActionPriority(left) - orderActionPriority(right);
+      return priority || orderTimestamp(right) - orderTimestamp(left);
+    })
+    .slice(0, 3);
+  const pinnedOrder = recentOrders.find((candidate) => {
+    const status = String(candidate.status ?? "").toUpperCase();
+    return (
+      status === "READY_FOR_PICKUP" ||
+      status === "PENDING_PAYMENT" ||
+      status === "PROCESSING" ||
+      status === "PAID" ||
+      Boolean(candidate.pickupCode && !candidate.fulfilledAt)
+    );
+  });
   // Called unconditionally (before any state-based early return) to keep hook order stable.
   const contentPaddingBottom = useBottomScrollPadding({ hasStickyAction: itemCount > 0 });
   const storedItemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
@@ -633,6 +701,16 @@ export default function Shop() {
     }
   }
 
+  async function copyPickupCode() {
+    if (!order?.pickupCode) return;
+    try {
+      await Clipboard.setStringAsync(order.pickupCode);
+      showToast({ tone: "success", message: t("shop.pickupCodeCopied") });
+    } catch {
+      showToast({ tone: "danger", message: t("shop.pickupCodeCopyFailed") });
+    }
+  }
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -675,6 +753,7 @@ export default function Shop() {
     const canContinuePayment = order.status === "PENDING_PAYMENT" && Boolean(checkoutSession);
     const waitingForDeskPayment = order.status === "PENDING_PAYMENT" && !checkoutSession;
     const canShowPickupQr = order.status === "READY_FOR_PICKUP" || order.status === "FULFILLED";
+    const awaitingDeskTone = getTonePalette("amber", mode, palette);
     return (
       <ShopShell
         selectedPath="/shop"
@@ -696,7 +775,7 @@ export default function Shop() {
           title={waitingForDeskPayment ? t("shop.paymentPending") : t("shop.readyForPickup")}
           subtitle={waitingForDeskPayment ? t("shop.payAtDeskSubtitle") : t("shop.readyForPickupSubtitle")}
           leading={headerBackButton}
-          chip={<BranchSelectorChip />}
+          contextSlot={locationContext}
           showProfileShortcut={false}
         />
         {waitingCheckoutSessionId ? (
@@ -706,43 +785,64 @@ export default function Shop() {
           />
         ) : null}
         {waitingForDeskPayment ? (
-          <Card variant="compact" contentStyle={styles.paymentMethodContent}>
-            <Text style={[styles.paymentMethodTitle, { color: palette.text.primary }]}>{t("shop.payAtDesk")}</Text>
-            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.payAtDeskInstructions")}</Text>
-            <StatusChip status={t("shop.awaitingDeskPayment")} tone="amber" />
+          <Card variant="compact" contentStyle={styles.deskPaymentContent}>
+            <View
+              accessible
+              accessibilityLabel={t("shop.awaitingDeskPayment")}
+              style={[
+                styles.deskPaymentMark,
+                {
+                  borderColor: awaitingDeskTone.borderColor,
+                  backgroundColor: awaitingDeskTone.backgroundColor,
+                },
+              ]}
+            >
+              <Ionicons name="time-outline" size={15} color={awaitingDeskTone.color} />
+            </View>
+            <Text numberOfLines={2} style={[styles.cardBody, { color: palette.text.secondary }]}>
+              {t("shop.payAtDeskInstructions")}
+            </Text>
           </Card>
         ) : null}
         <Card variant="compact" contentStyle={styles.pickupContent}>
-          <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
-          <Pressable
-            onPress={async () => {
-              if (!order.pickupCode) return;
-              try {
-                await Clipboard.setStringAsync(order.pickupCode);
-                showToast({ tone: "success", message: t("shop.pickupCodeCopied") });
-              } catch {
-                showToast({ tone: "danger", message: t("shop.pickupCodeCopyFailed") });
+          <View style={styles.pickupCodeRow}>
+            <View style={styles.pickupCodeCopy}>
+              <Text style={[styles.pickupLabel, { color: palette.text.secondary }]}>{t("shop.pickupCode")}</Text>
+              <Text numberOfLines={1} style={[styles.pickupCode, { color: palette.text.primary }]}>
+                {order.pickupCode ?? t("shop.pending")}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => void copyPickupCode()}
+              accessibilityRole="button"
+              accessibilityLabel={
+                order.pickupCode
+                  ? t("shop.copyPickupCodeAccessibility", { code: order.pickupCode })
+                  : t("shop.pickupCodePending")
               }
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={
-              order.pickupCode
-                ? t("shop.copyPickupCodeAccessibility", { code: order.pickupCode })
-                : t("shop.pickupCodePending")
-            }
-            accessibilityState={{ disabled: !order.pickupCode }}
-            disabled={!order.pickupCode}
-            hitSlop={6}
-          >
-            <Text style={[styles.pickupCode, { color: palette.text.primary }]}>{order.pickupCode ?? t("shop.pending")}</Text>
-          </Pressable>
-          <StatusChip status={titleCaseFromCode(order.status)} tone={toneForShopOrderStatus(order.status)} />
+              accessibilityState={{ disabled: !order.pickupCode }}
+              disabled={!order.pickupCode}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.copyCodeButton,
+                {
+                  backgroundColor: palette.surface.accentSoft,
+                  opacity: order.pickupCode ? 1 : 0.45,
+                },
+                pressed && order.pickupCode ? styles.copyCodeButtonPressed : null,
+              ]}
+            >
+              <Ionicons name="copy-outline" size={17} color={palette.accent.strong} />
+            </Pressable>
+          </View>
         </Card>
         {canShowPickupQr ? (
           <Card variant="compact" contentStyle={styles.pickupQrContent}>
-            <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>{t("shop.showThisToCollect")}</Text>
-            <PickupQrCode value={pickupQrPayload(order)} />
-            <Text style={[styles.pickupQrCode, { color: palette.text.secondary }]}>{t("shop.codeWithValue", { code: order.pickupCode ?? t("shop.pending") })}</Text>
+            <View style={styles.pickupQrHeader}>
+              <Ionicons name="qr-code-outline" size={18} color={palette.accent.strong} />
+              <Text style={[styles.pickupQrTitle, { color: palette.text.primary }]}>{t("shop.showThisToCollect")}</Text>
+            </View>
+            <PickupQrCode value={pickupQrPayload(order)} size={136} />
           </Card>
         ) : null}
         <Card variant="compact" contentStyle={styles.stack}>
@@ -762,7 +862,6 @@ export default function Shop() {
                 key={item.productId}
                 title={product?.name ?? item.productId}
                 subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${formatInr(item.unitPaise)}`}
-                trailing={<StatusChip status={t("shop.paid")} tone="neutral" />}
               />
             );
           })}
@@ -774,6 +873,7 @@ export default function Shop() {
             router.replace("/shop" as never);
           }}
           icon="bag-outline"
+          variant="secondary"
         >
           {t("shop.backToShop")}
         </ZookButton>
@@ -801,7 +901,7 @@ export default function Shop() {
           title={t("shop.payment")}
           subtitle={t("shop.paymentSubtitle")}
           leading={headerBackButton}
-          chip={<BranchSelectorChip />}
+          contextSlot={locationContext}
           showProfileShortcut={false}
         />
         {waitingCheckoutSessionId ? (
@@ -811,95 +911,110 @@ export default function Shop() {
           />
         ) : null}
         <MoneySummaryCard
-          title={t("shop.pickupCheckout")}
+          title={t("shop.subtotal")}
           amount={formatInr(order.totalPaise)}
           rows={[
             { label: t("shop.itemsLabel"), value: t(order.items.length === 1 ? "shop.itemCount" : "shop.itemsCount", { count: order.items.length }) },
             { label: t("shop.pickupLabel"), value: t("shop.availableAtGymDesk") },
-            { label: t("shop.branchLabel"), value: activeOrganization?.name ?? t("shop.selectedGym") },
           ]}
           consequence={t("shop.checkoutConsequence")}
         />
-        <Card contentStyle={styles.checkoutContent}>
-          <ListRow
-            title={t("shop.paySecurely")}
-            subtitle={t("shop.confirmOrder")}
-            trailing={<StatusChip status="1" tone="neutral" />}
-          />
-          <ListRow
-            title={t("shop.getPickupCode")}
-            subtitle={t("shop.makeDeskCode")}
-            trailing={<StatusChip status="2" tone="neutral" />}
-          />
-          <ListRow
-            title={t("shop.collectAtDesk")}
-            subtitle={t("shop.showPickupCode")}
-            trailing={<StatusChip status="3" tone="neutral" />}
-          />
-          <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
-            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
-            <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(order.totalPaise)}</Text>
-          </View>
-        </Card>
       </ShopShell>
     );
   }
-
   if (checkoutState === "checkout") {
     return (
       <ShopShell
         selectedPath="/shop"
         refreshControl={refreshControl}
         stickyAction={
-          <View style={styles.paymentActionStack}>
-            <ZookButton
-              testID="shop-pay-online"
-              onPress={() => void createCheckout("ONLINE")}
-              disabled={!cartItems.length || createOrder.isPending}
-              busy={createOrder.isPending}
-              busyLabel={t("shop.creating")}
-              icon="card-outline"
-              fullWidth
-            >
-              {t("shop.payOnline")}
-            </ZookButton>
-            <ZookButton
-              testID="shop-pay-at-desk"
-              onPress={() => void createCheckout("DESK")}
-              disabled={!cartItems.length || createOrder.isPending}
-              variant="secondary"
-              icon="storefront-outline"
-              fullWidth
-            >
-              {t("shop.payAtDesk")}
-            </ZookButton>
-          </View>
+          <ZookButton
+            testID="shop-pay-online"
+            onPress={() => void createCheckout("ONLINE")}
+            disabled={!cartItems.length || createOrder.isPending}
+            busy={createOrder.isPending}
+            busyLabel={t("shop.creating")}
+            icon="card-outline"
+            fullWidth
+          >
+            {t("shop.payOnline")}
+          </ZookButton>
         }
       >
         <AppHeader
-          eyebrow={t("shop.payment")}
           title={t("shop.choosePaymentMethod")}
           subtitle={t("shop.choosePaymentMethodSubtitle")}
           leading={headerBackButton}
-          chip={<BranchSelectorChip />}
+          contextSlot={locationContext}
           showProfileShortcut={false}
         />
         <MoneySummaryCard
-          title={t("shop.pickupCheckout")}
+          title={t("shop.subtotal")}
           amount={formatInr(totalPaise)}
           rows={[
             { label: t("shop.itemsLabel"), value: t(itemCount === 1 ? "shop.itemCount" : "shop.itemsCount", { count: itemCount }) },
             { label: t("shop.pickupLabel"), value: t("shop.availableAtGymDesk") },
-            { label: t("shop.branchLabel"), value: activeOrganization?.name ?? t("shop.selectedGym") },
           ]}
-          consequence={t("shop.checkoutConsequence")}
         />
+        {showDeskPaymentOption ? (
+          <Pressable
+            testID="shop-pay-at-desk"
+            accessibilityRole="button"
+            accessibilityLabel={t("shop.payAtDesk")}
+            disabled={!cartItems.length || createOrder.isPending}
+            onPress={() => void createCheckout("DESK")}
+            style={({ pressed }) => [
+              styles.deskFallbackRow,
+              {
+                backgroundColor: palette.surface.default,
+                borderColor: palette.border.subtle,
+                opacity: !cartItems.length || createOrder.isPending ? 0.55 : 1,
+              },
+              pressed && cartItems.length && !createOrder.isPending
+                ? styles.deskFallbackRowPressed
+                : null,
+            ]}
+          >
+            <View style={[styles.deskFallbackIcon, { backgroundColor: palette.bg.sunken }]}>
+              <Ionicons name="storefront-outline" size={16} color={palette.text.secondary} />
+            </View>
+            <View style={styles.deskFallbackCopy}>
+              <Text style={[styles.deskFallbackTitle, { color: palette.text.primary }]}>
+                {t("shop.payAtDeskInstead")}
+              </Text>
+              <Text numberOfLines={1} style={[styles.deskFallbackBody, { color: palette.text.secondary }]}>
+                {t("shop.payAtDeskBody")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={palette.text.secondary} />
+          </Pressable>
+        ) : (
+          <Pressable
+            testID="shop-show-other-payment-options"
+            accessibilityRole="button"
+            accessibilityLabel={t("shop.otherPaymentOptions")}
+            onPress={() => setShowDeskPaymentOption(true)}
+            style={({ pressed }) => [
+              styles.paymentDisclosureRow,
+              {
+                backgroundColor: palette.bg.sunken,
+                borderColor: palette.border.subtle,
+              },
+              pressed ? styles.deskFallbackRowPressed : null,
+            ]}
+          >
+            <Text style={[styles.paymentDisclosureText, { color: palette.text.secondary }]}>
+              {t("shop.otherPaymentOptions")}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={palette.text.secondary} />
+          </Pressable>
+        )}
         <Card contentStyle={styles.checkoutContent}>
           {cartItems.map((item) => (
             <ListRow
               key={item.product.id}
               title={item.product.name}
-              subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${t("shop.inStockCount", { count: item.product.stock })}`}
+              subtitle={cartLineSubtitle(item.quantity, item.product.pricePaise)}
               trailing={
                 <Text style={[styles.cartLinePrice, { color: palette.text.primary }]}>
                   {formatInr(item.product.pricePaise * item.quantity)}
@@ -907,22 +1022,6 @@ export default function Shop() {
               }
             />
           ))}
-          <View style={[styles.checkoutTotal, { borderTopColor: palette.border.subtle }]}>
-            <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.orderTotal")}</Text>
-            <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
-          </View>
-        </Card>
-        <Card contentStyle={styles.paymentMethodContent}>
-          <ListRow
-            title={t("shop.payOnline")}
-            subtitle={t("shop.payOnlineBody")}
-            trailing={<Ionicons name="card-outline" size={20} color={palette.accent.strong} />}
-          />
-          <ListRow
-            title={t("shop.payAtDesk")}
-            subtitle={t("shop.payAtDeskBody")}
-            trailing={<Ionicons name="storefront-outline" size={20} color={palette.accent.strong} />}
-          />
         </Card>
       </ShopShell>
     );
@@ -934,30 +1033,28 @@ export default function Shop() {
         selectedPath="/shop"
         refreshControl={refreshControl}
         stickyAction={
+          cartItems.length ? (
           <ZookButton
             testID="shop-cart-checkout"
-            onPress={() => router.push("/shop/checkout" as never)}
+            onPress={() => void createCheckout("ONLINE")}
             disabled={!cartItems.length || createOrder.isPending}
+            busy={createOrder.isPending}
+            busyLabel={t("shop.creating")}
+            icon="card-outline"
             fullWidth
           >
-            {createOrder.isPending ? t("shop.creating") : t("shop.continuePayment")}
+            {createOrder.isPending
+              ? t("shop.creating")
+              : t("shop.payAmountNow", { amount: formatInr(totalPaise) })}
           </ZookButton>
+          ) : null
         }
       >
         <AppHeader
-          eyebrow={t("shop.cart")}
           title={t("shop.reviewOrder")}
           subtitle={t("shop.reviewOrderSubtitle")}
           leading={headerBackButton}
-          chip={
-            <View style={styles.headerChipStack}>
-              <BranchSelectorChip />
-              <StatusChip
-                status={`${itemCount} ${t(itemCount === 1 ? "shop.item" : "shop.items")}`}
-                tone="neutral"
-              />
-            </View>
-          }
+          contextSlot={locationContext}
           showProfileShortcut={false}
         />
         <Card variant="compact" contentStyle={styles.stack}>
@@ -966,7 +1063,7 @@ export default function Shop() {
               <ListRow
                 key={item.product.id}
                 title={item.product.name}
-                subtitle={`${item.quantity} ${t(item.quantity === 1 ? "shop.item" : "shop.items")} · ${t("shop.inStockCount", { count: item.product.stock })}`}
+                subtitle={cartLineSubtitle(item.quantity, item.product.pricePaise)}
                 trailing={
                   <View style={styles.cartLineTrailing}>
                     <Text style={[styles.cartLinePrice, { color: palette.text.primary }]}>
@@ -1019,10 +1116,57 @@ export default function Shop() {
             <EmptyState icon="cart-outline" title={t("shop.yourCartEmpty")} />
           )}
         </Card>
-        <Card variant="compact" contentStyle={styles.totalRow}>
-          <Text style={[styles.cardBody, { color: palette.text.secondary }]}>{t("shop.subtotal")}</Text>
-          <Text style={[styles.totalText, { color: palette.text.primary }]}>{formatInr(totalPaise)}</Text>
-        </Card>
+        {cartItems.length && showDeskPaymentOption ? (
+          <Pressable
+            testID="shop-cart-pay-at-desk"
+            accessibilityRole="button"
+            accessibilityLabel={t("shop.payAtDeskInstead")}
+            disabled={createOrder.isPending}
+            onPress={() => void createCheckout("DESK")}
+            style={({ pressed }) => [
+              styles.deskFallbackRow,
+              {
+                backgroundColor: palette.surface.default,
+                borderColor: palette.border.subtle,
+                opacity: createOrder.isPending ? 0.55 : 1,
+              },
+              pressed && !createOrder.isPending ? styles.deskFallbackRowPressed : null,
+            ]}
+          >
+            <View style={[styles.deskFallbackIcon, { backgroundColor: palette.bg.sunken }]}>
+              <Ionicons name="storefront-outline" size={16} color={palette.text.secondary} />
+            </View>
+            <View style={styles.deskFallbackCopy}>
+              <Text style={[styles.deskFallbackTitle, { color: palette.text.primary }]}>
+                {t("shop.payAtDeskInstead")}
+              </Text>
+              <Text numberOfLines={1} style={[styles.deskFallbackBody, { color: palette.text.secondary }]}>
+                {t("shop.payAtDeskBody")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={palette.text.secondary} />
+          </Pressable>
+        ) : cartItems.length ? (
+          <Pressable
+            testID="shop-cart-show-other-payment-options"
+            accessibilityRole="button"
+            accessibilityLabel={t("shop.otherPaymentOptions")}
+            onPress={() => setShowDeskPaymentOption(true)}
+            style={({ pressed }) => [
+              styles.paymentDisclosureRow,
+              {
+                backgroundColor: palette.bg.sunken,
+                borderColor: palette.border.subtle,
+              },
+              pressed ? styles.deskFallbackRowPressed : null,
+            ]}
+          >
+            <Text style={[styles.paymentDisclosureText, { color: palette.text.secondary }]}>
+              {t("shop.otherPaymentOptions")}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={palette.text.secondary} />
+          </Pressable>
+        ) : null}
       </ShopShell>
     );
   }
@@ -1032,6 +1176,8 @@ export default function Shop() {
       <Pressable
         testID="shop-mini-cart"
         onPress={() => router.push("/shop/cart" as never)}
+        accessibilityRole="button"
+        accessibilityLabel={t("shop.openMiniCart")}
         style={[
           styles.miniCart,
           {
@@ -1041,13 +1187,28 @@ export default function Shop() {
             elevation: Platform.OS === "android" ? 4 : 0,
           },
         ]}
-        accessibilityRole="button"
-        accessibilityLabel={t("shop.openMiniCart")}
       >
-        <Text style={[styles.miniCartText, { color: palette.text.onAccent }]}>
-          {itemCount} {t(itemCount === 1 ? "shop.item" : "shop.items")} · {formatInr(totalPaise)}
-        </Text>
-        <Ionicons name="chevron-forward" size={18} color={palette.text.onAccent} />
+        {({ pressed }) => (
+          <View style={[styles.miniCartReview, pressed ? styles.miniCartPressed : null]}>
+            <View style={[styles.miniCartIcon, { backgroundColor: "rgba(0,0,0,0.14)" }]}>
+              <Ionicons name="bag-handle-outline" size={18} color={palette.text.onAccent} />
+            </View>
+            <View style={styles.miniCartCopy}>
+              <Text numberOfLines={1} style={[styles.miniCartText, { color: palette.text.onAccent }]}>
+                {t("shop.cart")}
+              </Text>
+              <Text numberOfLines={1} style={[styles.miniCartMeta, { color: palette.text.onAccent }]}>
+                {itemCount} {t(itemCount === 1 ? "shop.item" : "shop.items")} · {formatInr(totalPaise)}
+              </Text>
+            </View>
+            <View style={styles.miniCartCta}>
+              <Text numberOfLines={1} style={[styles.miniCartPayText, { color: palette.text.onAccent }]}>
+                {t("shop.reviewOrder")}
+              </Text>
+              <Ionicons name="chevron-forward" size={17} color={palette.text.onAccent} />
+            </View>
+          </View>
+        )}
       </Pressable>
     ) : null;
 
@@ -1093,70 +1254,79 @@ export default function Shop() {
         }}
         columnWrapperStyle={styles.columnWrapper}
         ListHeaderComponent={
-          <View style={{ gap: 12, marginBottom: 12 }}>
+          <View style={styles.browseHeader}>
             <AppHeader
               title={t("shop.title")}
-              subtitle={`${t("shop.deskPickup")} · ${activeOrganization?.name ?? t("shop.activeGym")}`}
-              chip={<BranchSelectorChip />}
+              subtitle={undefined}
               showProfileShortcut={false}
-              trailing={
-                <View style={styles.headerActions}>
-                  <HeaderActions showBell />
-                  <Pressable
-                    testID="shop-open-cart"
-                    onPress={() => router.push("/shop/cart" as never)}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("shop.openCart")}
-                    style={[
-                      styles.cartIcon,
-                      {
-                        borderColor: palette.border.subtle,
-                        backgroundColor: palette.bg.elevated,
-                      },
-                    ]}
-                  >
-                    <Ionicons name="bag-outline" size={22} color={palette.text.primary} />
-                    {itemCount ? (
-                      <View style={[styles.cartBadge, { backgroundColor: palette.accent.fill }]}>
-                        <Text style={[styles.cartBadgeText, { color: palette.text.onAccent }]}>
-                          {itemCount}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </Pressable>
-                </View>
-              }
+              contextSlot={locationContext}
+              trailing={<HeaderActions showBell />}
             />
 
             <SearchBar value={query} onChangeText={setQuery} placeholder={t("shop.searchEssentials")} />
 
-            {recentOrders.length ? (
-              <Card variant="compact" contentStyle={styles.orderHistoryContent}>
-                <SectionHeader title={t("shop.orderHistory")} />
-                {recentOrders.map((historyOrder) => (
-                  <ListRow
-                    key={historyOrder.id}
-                    title={`${formatInr(historyOrder.totalPaise)} · ${t(historyOrder.items.length === 1 ? "shop.itemCount" : "shop.itemsCount", { count: historyOrder.items.length })}`}
-                    subtitle={formatDateTime(historyOrder.createdAt, t("shop.recently"), "en-IN")}
-                    onPress={() => router.push(`/shop/pickup/${historyOrder.id}` as never)}
-                    trailing={
-                      <StatusChip
-                        status={titleCaseFromCode(historyOrder.status)}
-                        tone={toneForShopOrderStatus(historyOrder.status)}
-                      />
-                    }
-                  />
-                ))}
-              </Card>
-            ) : null}
+            <View style={styles.serviceStrip}>
+              {!pinnedOrder ? (
+                <View
+                  style={[
+                    styles.pickupPill,
+                    {
+                      backgroundColor: palette.bg.sunken,
+                      borderColor: palette.border.subtle,
+                    },
+                  ]}
+                >
+                  <Ionicons name="storefront-outline" size={14} color={palette.text.secondary} />
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.pickupPillText, { color: palette.text.secondary }]}
+                  >
+                    {t("shop.deskPickup")}
+                  </Text>
+                </View>
+              ) : null}
+              {pinnedOrder ? (
+                <Pressable
+                  testID="shop-active-order-banner"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${orderBannerTitle(pinnedOrder, t)}: ${orderActionCopy(pinnedOrder, t)}`}
+                  onPress={() => router.push(`/shop/pickup/${pinnedOrder.id}` as never)}
+                  style={({ pressed }) => [
+                    styles.activeOrderBanner,
+                    {
+                      backgroundColor: palette.surface.default,
+                      borderColor: palette.border.subtle,
+                    },
+                    pressed ? styles.activeOrderBannerPressed : null,
+                  ]}
+                >
+                  <Ionicons name="receipt-outline" size={15} color={palette.accent.base} />
+                  <View style={styles.activeOrderCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.activeOrderTitle, { color: palette.text.primary }]}
+                    >
+                      {orderBannerTitle(pinnedOrder, t)}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.activeOrderMeta, { color: palette.text.secondary }]}
+                    >
+                      {orderActionCopy(pinnedOrder, t)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={15} color={palette.text.secondary} />
+                </Pressable>
+              ) : null}
+            </View>
 
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryRail}
-              style={{ marginVertical: 6 }}
+              style={styles.categoryScroller}
             >
-              {categories.map((option) => {
+              {visibleCategories.map((option) => {
                 const selected = option.value === category;
                 const count = categoryCounts[option.value] ?? 0;
                 return (
@@ -1164,6 +1334,7 @@ export default function Shop() {
                     key={option.value}
                     onPress={() => setCategory(option.value)}
                     accessibilityRole="button"
+                    accessibilityLabel={`${t(option.labelKey)}, ${count}`}
                     accessibilityState={{ selected }}
                     style={({ pressed }) => [
                       styles.categoryChip,
@@ -1176,12 +1347,26 @@ export default function Shop() {
                       pressed ? styles.categoryChipPressed : null,
                     ]}
                   >
-                    <Ionicons
-                      name={iconForCategory(option.value)}
-                      size={15}
-                      color={selected ? palette.text.onAccent : palette.text.secondary}
-                    />
+                    <View
+                      style={[
+                        styles.categoryIconBubble,
+                        {
+                          backgroundColor: selected
+                            ? "rgba(0,0,0,0.14)"
+                            : palette.bg.sunken,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={iconForCategory(option.value)}
+                        size={14}
+                        color={selected ? palette.text.onAccent : palette.text.secondary}
+                      />
+                    </View>
                     <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.82}
                       style={[
                         styles.categoryChipText,
                         {
@@ -1191,36 +1376,20 @@ export default function Shop() {
                     >
                       {t(option.labelKey)}
                     </Text>
-                    <View
-                      style={[
-                        styles.categoryCount,
-                        {
-                          backgroundColor: selected
-                            ? palette.accent.strong
-                            : palette.bg.sunken,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryCountText,
-                          {
-                            color: selected ? palette.text.onAccent : palette.text.secondary,
-                          },
-                        ]}
-                      >
-                        {count}
-                      </Text>
-                    </View>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
-            <SectionHeader
-              title={t("shop.availableNow")}
-              subtitle={`${filteredProducts.length} ${t(filteredProducts.length === 1 ? "shop.item" : "shop.items")}`}
-            />
+            {!productsQuery.isError && (category !== "ALL" || debouncedQuery) ? (
+              <View style={styles.inlineShelfHeader}>
+                <Text style={[styles.inlineShelfTitle, { color: palette.text.primary }]}>
+                  {debouncedQuery
+                    ? t("shop.searchResults")
+                    : t("shop.availableNow")}
+                </Text>
+              </View>
+            ) : null}
 
             {productsQuery.isError ? (
               <Card variant="danger" contentStyle={styles.stateCardContent}>
@@ -1337,7 +1506,7 @@ function ShopShell({
     <>
       <ZookScreen testID={`shop-${selectedPath.replace(/\W+/g, "-").replace(/^-|-$/g, "")}-screen`}>
         {noScroll ? (
-          <View style={{ flex: 1, paddingHorizontal: layout.screenPadding, paddingTop: 20 }}>
+          <View style={styles.noScrollContent}>
             {children}
           </View>
         ) : (

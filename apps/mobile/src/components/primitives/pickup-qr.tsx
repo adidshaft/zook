@@ -6,7 +6,7 @@ import { elevation, radii, spacing, useTheme } from "@/lib/theme";
 const qrPaper = "#FFFFFF";
 const qrInk = "#11150F";
 
-export function PickupQrCode({ value }: { value: string }) {
+export function PickupQrCode({ value, size = 176 }: { value: string; size?: number }) {
   const { mode, palette } = useTheme();
   const t = useT();
   const isDark = mode === "dark";
@@ -27,7 +27,7 @@ export function PickupQrCode({ value }: { value: string }) {
       ]}
     >
       <View style={styles.paper}>
-        <QRCode value={value} size={176} backgroundColor={qrPaper} color={qrInk} />
+        <QRCode value={value} size={size} backgroundColor={qrPaper} color={qrInk} />
       </View>
     </View>
   );
@@ -38,13 +38,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderRadius: radii.mainCard,
-    padding: 10,
+    padding: 8,
   },
   paper: {
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: qrPaper,
     borderRadius: 18,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
 });

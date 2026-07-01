@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   BarChart3,
-  Calendar,
   CircleAlert,
   TrendingUp,
   IndianRupee,
@@ -152,28 +151,21 @@ export function ReportsPanel({
   };
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-4">
       {/* Hero */}
       <SectionHero
         eyebrow="Operational report pack"
         title="Reports & insights"
         icon={BarChart3}
         tone="sky"
-        meta={
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
-              <Calendar size={11} />
-              {selectedBranchName}
-            </span>
-          </div>
-        }
+        meta={<span className="text-xs text-[var(--text-secondary)]">{selectedBranchName}</span>}
       />
 
       {/* Date range & Sub Tabs bar */}
-      <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr] md:items-end">
-        <GlassCard className="p-4">
+      <div className="grid gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-3 lg:grid-cols-[minmax(18rem,0.8fr)_1.2fr] lg:items-center">
+        <div>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+            <label className="grid flex-1 gap-1 text-xs font-medium text-[var(--text-secondary)]">
               From
               <input
                 type="date"
@@ -185,7 +177,7 @@ export function ReportsPanel({
                 className="zook-focus min-h-10 rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 text-sm text-[var(--text-primary)]"
               />
             </label>
-            <label className="grid flex-1 gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+            <label className="grid flex-1 gap-1 text-xs font-medium text-[var(--text-secondary)]">
               To
               <input
                 type="date"
@@ -208,10 +200,10 @@ export function ReportsPanel({
               {chartsError ?? "Updating report charts..."}
             </p>
           ) : null}
-        </GlassCard>
+        </div>
 
         {/* Sub Tabs Pill Selector */}
-        <div className="flex justify-start overflow-x-auto no-scrollbar rounded-full border border-[var(--border)] bg-[var(--surface)]/90 p-1.5 backdrop-blur-xl">
+        <div className="flex justify-start overflow-x-auto no-scrollbar rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-1 backdrop-blur-xl">
           <div className="flex gap-1 w-full justify-between">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -220,7 +212,7 @@ export function ReportsPanel({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 ${
+                  className={`relative flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-300 ${
                     isActive
                       ? "text-[var(--accent-strong)]"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]/50"
@@ -229,7 +221,7 @@ export function ReportsPanel({
                   {isActive && (
                     <motion.span
                       layoutId="active-reports-tab"
-                      className="absolute inset-0 rounded-full bg-[var(--surface-accent-soft)] border border-[var(--border-focus)]/30"
+                      className="absolute inset-0 rounded-xl bg-[var(--surface-accent-soft)] border border-[var(--border-focus)]/30"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -242,17 +234,14 @@ export function ReportsPanel({
         </div>
       </div>
 
-      <GlassCard className="p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-              CSV exports
-            </p>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Downloads follow the date range and branch.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <details className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--text-primary)]">
+          CSV exports
+          <span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">
+            Date range and branch applied
+          </span>
+        </summary>
+        <div className="mt-3 flex flex-wrap gap-2">
             {exportReports.map((report) => (
               <CsvExportButton
                 key={report.fileName}
@@ -260,9 +249,8 @@ export function ReportsPanel({
                 label={report.label}
               />
             ))}
-          </div>
         </div>
-      </GlassCard>
+      </details>
 
       {invalidRange && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-xs text-[var(--feedback-danger)]">
@@ -283,14 +271,14 @@ export function ReportsPanel({
             {activeTab === "financials" && (
               <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
                 {/* Revenue chart with window toggle */}
-                <GlassCard className="p-5">
+                <GlassCard className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                         Revenue trend
                       </p>
                       <div className="mt-2 flex items-baseline gap-3">
-                        <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                        <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                           {formatInr(summary.revenuePaise)}
                         </span>
                         <DeltaChip
@@ -322,7 +310,7 @@ export function ReportsPanel({
                       ))}
                     </div>
                   </div>
-                  <div className="mt-5 h-64">
+                  <div className="mt-4 h-56">
                     <LineChart
                       series={revenueSeries}
                       labels={revenueLabels}
@@ -337,7 +325,7 @@ export function ReportsPanel({
                 </GlassCard>
 
                 {/* Donut chart channels */}
-                <GlassCard className="p-5">
+                <GlassCard className="p-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                       Payment channels
@@ -346,12 +334,12 @@ export function ReportsPanel({
                       How money flows in
                     </h2>
                   </div>
-                  <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
+                  <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
                     <Donut
                       value={cashRupees}
                       total={channelTotal}
-                      size={140}
-                      thickness={14}
+                      size={124}
+                      thickness={12}
                       tone="violet"
                       centerLabel={
                         <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
@@ -384,39 +372,39 @@ export function ReportsPanel({
 
             {activeTab === "attendance" && (
               <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
-                <GlassCard className="p-5">
+                <GlassCard className="p-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                       Daily check-ins · last 7 days
                     </p>
                     <div className="mt-2 flex items-baseline gap-3">
-                      <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                      <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                         {summary.todayAttendance}
                       </span>
                       <span className="text-xs text-[var(--text-secondary)]">today</span>
                     </div>
                   </div>
-                  <div className="mt-4 h-56">
+                  <div className="mt-4 h-48">
                     <BarChart series={attendance7d} labels={attendanceLabels} tone="violet" />
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-5 flex flex-col justify-between">
+                <GlassCard className="p-4 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                      Attendance Insights
+                    <h3 className="text-base font-semibold text-[var(--text-primary)]">
+                      Attendance insights
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                       QR entry points at reception are processing checks smoothly. Active check-ins
                       peak during late evening and early morning hours.
                     </p>
                   </div>
-                  <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                      Today's Total
+                  <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
+                    <p className="text-xs font-medium text-[var(--text-tertiary)]">
+                      Today
                     </p>
-                    <p className="mt-1 text-2xl font-bold text-[var(--accent-strong)]">
-                      {summary.todayAttendance} Members
+                    <p className="mt-1 text-xl font-bold text-[var(--accent-strong)]">
+                      {summary.todayAttendance} members
                     </p>
                   </div>
                 </GlassCard>
@@ -425,14 +413,14 @@ export function ReportsPanel({
 
             {activeTab === "members" && (
               <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
-                <GlassCard className="p-5">
+                <GlassCard className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                         Member growth · last 30 days
                       </p>
                       <div className="mt-2 flex items-baseline gap-3">
-                        <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                        <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                           {summary.activeMembers}
                         </span>
                         <span className="text-xs text-[var(--text-secondary)]">active members</span>
@@ -444,15 +432,15 @@ export function ReportsPanel({
                       {summary.joinRequests} pending
                     </span>
                   </div>
-                  <div className="mt-4 h-52">
+                  <div className="mt-4 h-48">
                     <BarChart series={memberGrowth} labels={memberLabels} tone="sky" />
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-5 flex flex-col justify-between">
+                <GlassCard className="p-4 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                      Demand Funnel
+                    <h3 className="text-base font-semibold text-[var(--text-primary)]">
+                      Demand funnel
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                       Public registration links are generating active join requests. Review pending

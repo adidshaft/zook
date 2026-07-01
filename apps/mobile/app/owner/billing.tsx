@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
   Card,
+  HeaderActions,
   ListRow,
-  ProfileShortcut,
   QueryErrorState,
   ScreenHeader,
   Skeleton,
@@ -27,6 +27,7 @@ import { toWebUrl } from "@/lib/api";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 
 type Tier = "STARTER" | "GROWTH" | "PRO";
 type BillingCycle = "MONTHLY" | "SEMIANNUAL" | "YEARLY";
@@ -42,6 +43,31 @@ const CYCLE_PERIOD_KEY: Record<BillingCycle, TranslationKey> = {
   SEMIANNUAL: "owner.billing.sixMonths",
   YEARLY: "owner.billing.year",
 };
+
+const BILLING_STATUS_KEY: Record<string, TranslationKey> = {
+  ACTIVE: "owner.billing.statusActive",
+  CANCELLED: "owner.billing.statusCancelled",
+  DELETED: "owner.billing.statusDeleted",
+  MISSING: "owner.billing.statusMissing",
+  PAYMENT_PENDING: "owner.billing.statusPaymentPending",
+  PAUSED: "owner.billing.statusPaused",
+  SUSPENDED: "owner.billing.statusSuspended",
+  TRIAL_ACTIVE: "owner.billing.statusTrialActive",
+  TRIAL_EXPIRED: "owner.billing.statusTrialExpired",
+  TRIAL_EXPIRING: "owner.billing.statusTrialExpiring",
+};
+
+function billingStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "MISSING").toUpperCase();
+  const labelKey = BILLING_STATUS_KEY[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "MISSING");
+}
+
+function billingCycleLabel(cycle: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (cycle ?? "MONTHLY").toUpperCase() as BillingCycle;
+  const labelKey = CYCLE_LABEL_KEY[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(cycle ?? "MONTHLY");
+}
 const CYCLE_PRICE_KEY: Record<BillingCycle, "monthly" | "semiannual" | "yearly"> = {
   MONTHLY: "monthly",
   SEMIANNUAL: "semiannual",
@@ -90,15 +116,19 @@ async function openCheckout(value?: string | null) {
 export default function OwnerBillingScreen() {
   const { palette } = useTheme();
   const t = useT();
+  const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const billingQuery = useOwnerBillingSubscription();
   const createMandate = useCreateSaasBillingMandate();
   const upgrade = useUpgradeSaasSubscription();
   const cancel = useCancelSaasSubscription();
   const [cycle, setCycle] = useState<BillingCycle>("MONTHLY");
+  const [showPlanLimits, setShowPlanLimits] = useState(false);
   const data = billingQuery.data;
   const subscription = data?.subscription;
   const mandate = data?.mandate;
   const busy = createMandate.isPending || upgrade.isPending || cancel.isPending;
+  const autopayReady = mandate?.status === "ACTIVE" || mandate?.status === "AUTHENTICATED";
+  const nextChargeReady = Boolean(mandate?.nextChargeAt || subscription?.nextBillingAt);
 
   async function startMandateSetup() {
     try {
@@ -156,7 +186,7 @@ export default function OwnerBillingScreen() {
           scrollViewProps={{
             contentInsetAdjustmentBehavior: "never",
             showsVerticalScrollIndicator: false,
-            contentContainerStyle: styles.content,
+            contentContainerStyle: [styles.content, { paddingBottom: bottomPadding }],
             refreshControl: (
               <RefreshControl
                 refreshing={billingQuery.isRefetching}
@@ -172,10 +202,10 @@ export default function OwnerBillingScreen() {
             contextSlot={
               <View style={styles.headerContext}>
                 <RoleSwitcherContextPill />
-                <BranchSelectorChip />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
               </View>
             }
-            trailing={<ProfileShortcut />}
+            trailing={<HeaderActions showBell />}
           />
 
           {billingQuery.isError ? (
@@ -192,6 +222,50 @@ export default function OwnerBillingScreen() {
 
           {data ? (
             <>
+              <View style={styles.readinessGrid}>
+                <Card variant="compact" contentStyle={styles.readinessCard}>
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={22}
+                    color={palette.accent.fill}
+                  />
+                  <Text style={[styles.readinessTitle, { color: palette.text.primary }]}>
+                    {t("owner.billing.subscription")}
+                  </Text>
+                  <StatusChip
+                    status={billingStatusLabel(subscription?.status, t)}
+                    tone={toneForSaasSubscriptionStatus(subscription?.status)}
+                  />
+                </Card>
+                <Card variant="compact" contentStyle={styles.readinessCard}>
+                  <Ionicons
+                    name="card-outline"
+                    size={22}
+                    color={autopayReady ? palette.feedback.success : palette.feedback.warning}
+                  />
+                  <Text style={[styles.readinessTitle, { color: palette.text.primary }]}>
+                    {t("owner.billing.autopay")}
+                  </Text>
+                  <StatusChip
+                    status={autopayReady ? t("owner.billing.ready") : t("owner.billing.needsSetup")}
+                    tone={autopayReady ? "lime" : "amber"}
+                  />
+                </Card>
+                <Card variant="compact" contentStyle={styles.readinessCard}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={22}
+                    color={nextChargeReady ? palette.accent.fill : palette.text.tertiary}
+                  />
+                  <Text style={[styles.readinessTitle, { color: palette.text.primary }]}>
+                    {t("owner.billing.nextCharge")}
+                  </Text>
+                  <Text style={[styles.readinessValue, { color: palette.text.secondary }]}>
+                    {formatLongDate(mandate?.nextChargeAt ?? subscription?.nextBillingAt)}
+                  </Text>
+                </Card>
+              </View>
+
               <Card contentStyle={styles.stack}>
                 <View style={styles.rowHeader}>
                   <View style={styles.rowCopy}>
@@ -199,23 +273,14 @@ export default function OwnerBillingScreen() {
                       {t("owner.billing.planName", { name: titleCaseFromCode(subscription?.tier) })}
                     </Text>
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
-                      {titleCaseFromCode(subscription?.status)} · {titleCaseFromCode(subscription?.billingCycle)}
+                      {billingCycleLabel(subscription?.billingCycle, t)}
                     </Text>
                   </View>
-                  <StatusChip
-                    status={titleCaseFromCode(subscription?.status ?? "UNKNOWN")}
-                    tone={toneForSaasSubscriptionStatus(subscription?.status)}
-                  />
                 </View>
                 <ListRow
                   title={t("owner.billing.trialEnds")}
                   subtitle={formatLongDate(subscription?.trialEndAt)}
                   leading={<Ionicons name="timer-outline" size={20} color={palette.accent.fill} />}
-                />
-                <ListRow
-                  title={t("owner.billing.nextBilling")}
-                  subtitle={formatLongDate(subscription?.nextBillingAt)}
-                  leading={<Ionicons name="calendar-outline" size={20} color={palette.accent.fill} />}
                 />
                 <ListRow
                   title={t("owner.billing.activeMembers")}
@@ -233,15 +298,41 @@ export default function OwnerBillingScreen() {
                   <View style={styles.rowCopy}>
                     <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.mandate")}</Text>
                     <Text style={[styles.body, { color: palette.text.secondary }]}>
-                      {mandate
-                        ? `${titleCaseFromCode(mandate.status)} · ${formatInr(mandate.amountPaise)}`
-                        : t("owner.billing.noPaymentMandate")}
+                      {mandate ? formatInr(mandate.amountPaise) : t("owner.billing.noPaymentMandate")}
                     </Text>
                   </View>
-                  <StatusChip
-                    status={titleCaseFromCode(mandate?.status ?? "MISSING")}
-                    tone={mandate ? toneForMandateStatus(mandate.status) : "amber"}
-                  />
+                  <View style={styles.mandateActions}>
+                    <StatusChip
+                      status={billingStatusLabel(mandate?.status ?? "MISSING", t)}
+                      tone={mandate ? toneForMandateStatus(mandate.status) : "amber"}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        mandate?.checkoutUrl
+                          ? t("owner.billing.resumeSetup")
+                          : t("owner.billing.setUpMandate")
+                      }
+                      disabled={busy}
+                      hitSlop={8}
+                      onPress={startMandateSetup}
+                      style={({ pressed }) => [
+                        styles.iconAction,
+                        {
+                          backgroundColor: palette.surface.default,
+                          borderColor: palette.border.default,
+                          opacity: busy ? 0.56 : 1,
+                        },
+                        pressed ? styles.iconActionPressed : null,
+                      ]}
+                    >
+                      <Ionicons
+                        name={createMandate.isPending ? "hourglass-outline" : "card-outline"}
+                        size={18}
+                        color={palette.accent.fill}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
                 {mandate?.nextChargeAt ? (
                   <ListRow
@@ -250,14 +341,6 @@ export default function OwnerBillingScreen() {
                     leading={<Ionicons name="card-outline" size={20} color={palette.accent.fill} />}
                   />
                 ) : null}
-                <ZookButton
-                  icon="card-outline"
-                  busy={createMandate.isPending}
-                  disabled={busy}
-                  onPress={startMandateSetup}
-                >
-                  {mandate?.checkoutUrl ? t("owner.billing.resumeSetup") : t("owner.billing.setUpMandate")}
-                </ZookButton>
               </Card>
 
               <Card contentStyle={styles.stack}>
@@ -306,45 +389,68 @@ export default function OwnerBillingScreen() {
                 })}
               </Card>
 
-              <Card contentStyle={styles.stack}>
-                <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.currentPlanLimits")}</Text>
-                <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  {t("owner.billing.currentPlanLimitsBody")}
-                </Text>
-                <View style={styles.limitGrid}>
-                  {[
-                    [t("owner.billing.members"), usageLine(data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
-                    [t("owner.billing.branches"), usageLine(data.usage?.branchCount, data.entitlements?.branchLimit)],
-                    [t("owner.billing.staff"), usageLine(data.usage?.staffCount, data.entitlements?.staffLimit)],
-                    [t("owner.billing.trainers"), usageLine(data.usage?.trainerCount, data.entitlements?.trainerLimit)],
-                    [t("owner.billing.products"), usageLine(data.usage?.productCount, data.entitlements?.productLimit)],
-                    [
-                      t("owner.billing.messages"),
-                      usageLine(
-                        data.usage?.notificationMonthlyCount,
-                        data.entitlements?.notificationMonthlyLimit,
-                      ),
-                    ],
-                    [
-                      t("owner.billing.aiText"),
-                      usageLine(data.usage?.aiTextMonthlyCount, data.entitlements?.aiTextMonthlyLimit),
-                    ],
-                    [
-                      t("owner.billing.aiImages"),
-                      usageLine(data.usage?.aiImageMonthlyCount, data.entitlements?.aiImageMonthlyLimit),
-                    ],
-                  ].map(([label, value]) => (
-                    <View key={label} style={[styles.limitCell, { borderColor: palette.border.subtle }]}>
-                      <Text style={[styles.limitLabel, { color: palette.text.tertiary }]}>{label}</Text>
-                      <Text style={[styles.limitValue, { color: palette.text.primary }]}>{value}</Text>
-                    </View>
-                  ))}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showPlanLimits }}
+                onPress={() => setShowPlanLimits((value) => !value)}
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  { backgroundColor: palette.surface.default, borderColor: palette.border.default },
+                  pressed ? styles.iconActionPressed : null,
+                ]}
+              >
+                <View style={styles.rowCopy}>
+                  <Text style={[styles.cardTitle, { color: palette.text.primary }]}>
+                    {t("owner.billing.currentPlanLimits")}
+                  </Text>
+                  <Text numberOfLines={1} style={[styles.body, { color: palette.text.secondary }]}>
+                    {t("owner.billing.currentPlanLimitsBody")}
+                  </Text>
                 </View>
-                <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  {t("owner.billing.reports")}: {titleCaseFromCode(data.entitlements?.reports)} · {t("owner.billing.support")}:{" "}
-                  {titleCaseFromCode(data.entitlements?.support)}
-                </Text>
-              </Card>
+                <Ionicons
+                  name={showPlanLimits ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={palette.text.secondary}
+                />
+              </Pressable>
+
+              {showPlanLimits ? (
+                <Card contentStyle={styles.stack}>
+                  <View style={styles.limitGrid}>
+                    {[
+                      [t("owner.billing.members"), usageLine(data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
+                      [t("owner.billing.branches"), usageLine(data.usage?.branchCount, data.entitlements?.branchLimit)],
+                      [t("owner.billing.staff"), usageLine(data.usage?.staffCount, data.entitlements?.staffLimit)],
+                      [t("owner.billing.trainers"), usageLine(data.usage?.trainerCount, data.entitlements?.trainerLimit)],
+                      [t("owner.billing.products"), usageLine(data.usage?.productCount, data.entitlements?.productLimit)],
+                      [
+                        t("owner.billing.messages"),
+                        usageLine(
+                          data.usage?.notificationMonthlyCount,
+                          data.entitlements?.notificationMonthlyLimit,
+                        ),
+                      ],
+                      [
+                        t("owner.billing.aiText"),
+                        usageLine(data.usage?.aiTextMonthlyCount, data.entitlements?.aiTextMonthlyLimit),
+                      ],
+                      [
+                        t("owner.billing.aiImages"),
+                        usageLine(data.usage?.aiImageMonthlyCount, data.entitlements?.aiImageMonthlyLimit),
+                      ],
+                    ].map(([label, value]) => (
+                      <View key={label} style={[styles.limitCell, { borderColor: palette.border.subtle }]}>
+                        <Text style={[styles.limitLabel, { color: palette.text.tertiary }]}>{label}</Text>
+                        <Text style={[styles.limitValue, { color: palette.text.primary }]}>{value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={[styles.body, { color: palette.text.secondary }]}>
+                    {t("owner.billing.reports")}: {titleCaseFromCode(data.entitlements?.reports)} · {t("owner.billing.support")}:{" "}
+                    {titleCaseFromCode(data.entitlements?.support)}
+                  </Text>
+                </Card>
+              ) : null}
 
               <Card contentStyle={styles.stack}>
                 <Text style={[styles.cardTitle, { color: palette.text.primary }]}>{t("owner.billing.platformReferral")}</Text>
@@ -379,8 +485,16 @@ export default function OwnerBillingScreen() {
 
 const styles = StyleSheet.create({
   headerContext: {
-    alignItems: "flex-start",
-    gap: 6,
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
   },
   content: {
     width: "100%",
@@ -388,13 +502,29 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingTop: layout.screenContentTopPadding,
     gap: 14,
-    paddingBottom: 96,
   },
   stack: {
     gap: spacing.md,
   },
   loadingCard: {
     gap: spacing.md,
+  },
+  readinessGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  readinessCard: {
+    alignItems: "flex-start",
+    flexBasis: "31%",
+    flexGrow: 1,
+    gap: spacing.xs,
+  },
+  readinessTitle: {
+    ...typography.caption,
+  },
+  readinessValue: {
+    ...typography.small,
   },
   rowHeader: {
     flexDirection: "row",
@@ -405,6 +535,22 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 3,
+  },
+  mandateActions: {
+    alignItems: "flex-end",
+    gap: spacing.xs,
+  },
+  iconAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  iconActionPressed: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
   },
   cardTitle: {
     ...typography.cardTitle,
@@ -423,6 +569,15 @@ const styles = StyleSheet.create({
   },
   planTitle: {
     ...typography.bodyStrong,
+  },
+  disclosureRow: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   limitGrid: {
     flexDirection: "row",

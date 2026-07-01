@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import type { ReactNode } from "react";
 import {
   Platform,

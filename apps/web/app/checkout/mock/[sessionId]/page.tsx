@@ -43,12 +43,22 @@ function safePaymentReturnUrl(value?: string) {
   }
 }
 
+function demoAmountPaise(value?: string | string[]) {
+  const raw = firstParam(value);
+  if (!raw) return 224900;
+  const amount = Number(raw);
+  if (!Number.isInteger(amount) || amount < 0 || amount > 10_00_000_00) {
+    return 224900;
+  }
+  return amount;
+}
+
 export default async function MockCheckoutPage({
   params,
   searchParams,
 }: {
   params: Promise<{ sessionId: string }>;
-  searchParams: Promise<{ return_url?: string | string[] }>;
+  searchParams: Promise<{ amount?: string | string[]; return_url?: string | string[] }>;
 }) {
   if (getAppEnv() === "production") {
     notFound();
@@ -61,12 +71,52 @@ export default async function MockCheckoutPage({
       ? {
           testMembership: "टेस्ट सदस्यता",
           confirmationRequired: "पुष्टि आवश्यक",
-          testBanner: "टेस्ट मोड - यह असली पेमेंट नहीं है. किसी भी परिणाम पर क्लिक करके सिमुलेट करें.",
+          paymentConfirmation: "भुगतान पुष्टि",
+          testMode: "टेस्ट मोड · असली भुगतान नहीं",
+          initialMessage: "इस टेस्ट भुगतान का परिणाम चुनें.",
+          confirmedMessage: "भुगतान पुष्टि हो गया. सदस्यता अब Zook में अपडेट होगी.",
+          autopayNextTitle: "पेमेंट के बाद: ऑटो-पे",
+          autopayNextBody:
+            "Zook में सदस्यता खुलने के बाद एक टैप से ऑटो-पे चालू कर सकते हैं. इसे बाद में बंद भी किया जा सकता है.",
+          pendingMessage: "भुगतान लंबित है. पुष्टि तक सदस्यता सक्रिय नहीं होगी.",
+          failedMessage: "भुगतान असफल रहा. सदस्यता सक्रिय नहीं हुई.",
+          testStateUpdated: "टेस्ट भुगतान स्थिति अपडेट हुई.",
+          confirmPayment: "भुगतान पुष्टि करें",
+          confirmPaymentAmount: "{amount} भुगतान पुष्टि करें",
+          otherOutcomes: "अन्य टेस्ट परिणाम",
+          markPending: "लंबित करें",
+          markFailed: "असफल करें",
+          openInZook: "Zook ऐप खोलें",
+          sessionNotFound: "भुगतान सेशन नहीं मिला.",
+          statusCreated: "बना हुआ",
+          statusPaid: "भुगतान हुआ",
+          statusPending: "लंबित",
+          statusFailed: "असफल",
         }
       : {
           testMembership: "Test membership",
           confirmationRequired: "Confirmation required",
-          testBanner: "TEST MODE - No real payment. Click any outcome to simulate.",
+          paymentConfirmation: "Payment confirmation",
+          testMode: "Test mode · no real payment",
+          initialMessage: "Choose an outcome to simulate this payment session.",
+          confirmedMessage: "Payment confirmed. Membership will update in Zook.",
+          autopayNextTitle: "After payment: autopay",
+          autopayNextBody:
+            "After Zook opens your membership, you can set up autopay in one tap from your membership page and cancel it later.",
+          pendingMessage: "Payment is pending. Membership stays inactive until confirmation.",
+          failedMessage: "Payment failed. Membership was not activated.",
+          testStateUpdated: "Test payment state updated.",
+          confirmPayment: "Confirm payment",
+          confirmPaymentAmount: "Confirm {amount} payment",
+          otherOutcomes: "Other test outcomes",
+          markPending: "Mark pending",
+          markFailed: "Mark failed",
+          openInZook: "Open in Zook app",
+          sessionNotFound: "Payment session not found.",
+          statusCreated: "Created",
+          statusPaid: "Paid",
+          statusPending: "Pending",
+          statusFailed: "Failed",
         };
   let session = null;
   try {
@@ -76,7 +126,12 @@ export default async function MockCheckoutPage({
   }
   const canRenderLocalDemo = sessionId === "demo" && getAppEnv() !== "production";
   if (!session && (isMockPaymentCompletionAllowed() || canRenderLocalDemo)) {
-    session = { id: "demo", amountPaise: 224900, purpose: "MEMBERSHIP", status: "CREATED" };
+    session = {
+      id: "demo",
+      amountPaise: demoAmountPaise(resolvedSearchParams.amount),
+      purpose: "MEMBERSHIP",
+      status: "CREATED",
+    };
   }
   const requestedReturnUrl = safePaymentReturnUrl(firstParam(resolvedSearchParams.return_url));
   if (session && "metadata" in session && requestedReturnUrl) {
@@ -124,14 +179,37 @@ export default async function MockCheckoutPage({
     : null;
 
   return (
-    <main className="grid min-h-screen place-items-center px-5 py-16">
-      <div className="fixed inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-center text-sm font-semibold text-black shadow-lg shadow-amber-950/20">
-        {copy.testBanner}
-      </div>
-      <div className="absolute left-5 top-5">
+    <main className="flex min-h-screen flex-col items-center justify-start gap-5 px-5 pb-8 pt-[clamp(2rem,12vh,8rem)]">
+      <div className="w-full max-w-xl">
         <ZookLogo />
       </div>
-      <CheckoutPanel session={sessionSummary} {...(returnUrl ? { returnUrl } : {})} />
+      <CheckoutPanel
+        session={sessionSummary}
+        labels={{
+          paymentConfirmation: copy.paymentConfirmation,
+          confirmationRequired: copy.confirmationRequired,
+          testMode: copy.testMode,
+          initialMessage: copy.initialMessage,
+          confirmedMessage: copy.confirmedMessage,
+          pendingMessage: copy.pendingMessage,
+          failedMessage: copy.failedMessage,
+          testStateUpdated: copy.testStateUpdated,
+          confirmPayment: copy.confirmPayment,
+          confirmPaymentAmount: copy.confirmPaymentAmount,
+          otherOutcomes: copy.otherOutcomes,
+          markPending: copy.markPending,
+          markFailed: copy.markFailed,
+          openInZook: copy.openInZook,
+          sessionNotFound: copy.sessionNotFound,
+          statusCreated: copy.statusCreated,
+          statusPaid: copy.statusPaid,
+          statusPending: copy.statusPending,
+          statusFailed: copy.statusFailed,
+          autopayNextTitle: copy.autopayNextTitle,
+          autopayNextBody: copy.autopayNextBody,
+        }}
+        {...(returnUrl ? { returnUrl } : {})}
+      />
     </main>
   );
 }

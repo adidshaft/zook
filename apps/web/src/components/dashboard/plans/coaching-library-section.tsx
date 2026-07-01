@@ -1,11 +1,19 @@
 import { ErrorNotice } from "../operational-shared";
-import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { DataTable, EmptyState, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn } from "../../ui";
-import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import type { PlansSectionProps } from "./types";
 
 type CoachingLibrarySectionProps = Pick<PlansSectionProps, "coachPlans" | "coachPlansState">;
+
+function coachingPlanTypeLabel(type: string | null | undefined) {
+  if (type === "WORKOUT") return "Workout";
+  if (type === "NUTRITION") return "Nutrition";
+  if (type === "ADVISORY") return "Advisory";
+  if (type === "HYBRID") return "Hybrid";
+  return type || "Coaching";
+}
 
 export function CoachingLibrarySection({
   coachPlans,
@@ -41,7 +49,9 @@ export function CoachingLibrarySection({
                 render: (plan) => (
                   <div>
                     <p className="font-medium text-white">{plan.title}</p>
-                    <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
+                    <p className="mt-1 text-xs text-white/45">
+                      {coachingPlanTypeLabel(plan.type)}
+                    </p>
                   </div>
                 ),
               },
@@ -49,12 +59,21 @@ export function CoachingLibrarySection({
                 id: "review",
                 header: "Review",
                 render: (plan) => (
-                  <div className="flex flex-wrap gap-2">
-                    <StatusPill
-                      value={plan.reviewed ? "Reviewed" : "Needs review"}
-                      tone={plan.reviewed ? "blue" : "amber"}
-                    />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-label={plan.reviewed ? "Reviewed" : "Needs review"}
+                      title={plan.reviewed ? "Reviewed" : "Needs review"}
+                      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.65rem] font-bold ${
+                        plan.reviewed
+                          ? "border-[color-mix(in_srgb,var(--feedback-info)_36%,transparent)] bg-[var(--surface-info-soft)] text-[var(--feedback-info)]"
+                          : "border-[color-mix(in_srgb,var(--feedback-warning)_36%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+                      }`}
+                    >
+                      <span aria-hidden>{plan.reviewed ? "✓" : "!"}</span>
+                    </span>
+                    {plan.aiGenerated ? (
+                      <p className="text-xs text-white/45">AI assisted draft</p>
+                    ) : null}
                   </div>
                 ),
               },

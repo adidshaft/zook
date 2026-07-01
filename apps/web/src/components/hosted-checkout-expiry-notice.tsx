@@ -8,11 +8,28 @@ import { formatCountdownMs } from "@/lib/format";
 export function HostedCheckoutExpiryNotice({
   expiresAt,
   retryHref,
+  labels,
 }: {
   expiresAt: string | Date;
   retryHref: string;
+  labels?: {
+    expiredTitle: string;
+    expiredBody: string;
+    refreshStatus: string;
+    returnToZook: string;
+    expiresIn: (timeLeft: string) => string;
+  };
 }) {
   const router = useRouter();
+  const copy =
+    labels ??
+    {
+      expiredTitle: "This payment link has expired.",
+      expiredBody: "Refresh the session status, or return to Zook to start checkout again.",
+      refreshStatus: "Refresh status",
+      returnToZook: "Return to Zook",
+      expiresIn: (timeLeft: string) => `This payment link expires in ${timeLeft}.`,
+    };
   const expiryMs = useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
   const [remainingMs, setRemainingMs] = useState(() => expiryMs - Date.now());
   const didRefreshRef = useRef(false);
@@ -44,24 +61,24 @@ export function HostedCheckoutExpiryNotice({
   if (remainingMs <= 0) {
     return (
       <div className="mt-5 rounded-[22px] border border-[var(--feedback-danger)] bg-[var(--surface-danger-soft)] px-4 py-4 text-sm text-[var(--text-primary)]">
-        <p className="font-semibold text-[var(--text-primary)]">This payment link has expired.</p>
+        <p className="font-semibold text-[var(--text-primary)]">{copy.expiredTitle}</p>
         <p className="mt-2 leading-6 text-[var(--text-secondary)]">
-          Refresh the session status, or return to Zook to start checkout again.
+          {copy.expiredBody}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href={retryHref}
+            className="zook-focus inline-flex items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
+          >
+            {copy.returnToZook}
+          </Link>
           <button
             type="button"
             onClick={() => router.refresh()}
-            className="zook-focus inline-flex items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-3 font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
-          >
-            Refresh status
-          </button>
-          <Link
-            href={retryHref}
             className="zook-focus inline-flex items-center justify-center rounded-full border border-[var(--border)] px-5 py-3 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
-            Return to Zook
-          </Link>
+            {copy.refreshStatus}
+          </button>
         </div>
       </div>
     );
@@ -69,7 +86,7 @@ export function HostedCheckoutExpiryNotice({
 
   return (
     <div className="mt-5 rounded-[22px] border border-[var(--feedback-warning)] bg-[var(--surface-warning-soft)] px-4 py-3 text-sm text-[var(--text-primary)]">
-      This payment link expires in {formatCountdownMs(remainingMs)}.
+      {copy.expiresIn(formatCountdownMs(remainingMs))}
     </div>
   );
 }

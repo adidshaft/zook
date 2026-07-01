@@ -89,7 +89,6 @@ export function DashboardOverview({
   const accent: ChartTone = prefs.accent;
   const summary = hydratedData?.summary ?? data.summary;
   const charts = hydratedData?.charts ?? data.charts;
-  const products = hydratedData?.products ?? data.products;
   const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
   const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
   const isRefreshingDashboard = data.connected && dashboardQuery.isFetching;
@@ -102,39 +101,6 @@ export function DashboardOverview({
   const attendanceTrend = useMemo(() => charts.attendance7d.map((point) => point.value), [charts.attendance7d]);
   const planMix = charts.planMix;
   const planMixTotal = useMemo(() => planMix.reduce((sum, slice) => sum + slice.value, 0), [planMix]);
-
-  const attentionRows: AttentionRow[] = useMemo(() => [
-    {
-      icon: ClipboardList,
-      title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
-      subtitle: "Approve to start onboarding",
-      tone: summary.joinRequests > 0 ? "rose" : "sky",
-      href: "/dashboard/members/join-requests",
-    },
-    {
-      icon: Package,
-      title: `${summary.lowStockProducts} items running low`,
-      subtitle: products.length
-        ? products.slice(0, 2).map((product) => product.name).join(", ")
-        : "Pickup inventory is healthy",
-      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
-      href: "/dashboard/shop",
-    },
-    {
-      icon: CalendarClock,
-      title: `${summary.expiringMemberships} memberships expiring soon`,
-      subtitle: "Renewal window: next 7 days",
-      tone: summary.expiringMemberships > 0 ? "amber" : "sky",
-      href: "/dashboard/members",
-    },
-    {
-      icon: Dumbbell,
-      title: `${summary.pendingAttendanceApprovals} attendance approvals pending`,
-      subtitle: "Desk review queue",
-      tone: "sky",
-      href: "/dashboard/attendance",
-    },
-  ], [summary, products]);
 
   const nextBestActions: AttentionRow[] = useMemo(() => [
     ...(activeOrg.status !== "ACTIVE"
@@ -226,6 +192,37 @@ export function DashboardOverview({
 
   const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money", [nextBestActions]);
 
+  const dailyShortcuts: AttentionRow[] = useMemo(() => [
+    {
+      icon: CheckCircle2,
+      title: "Open QR check-in",
+      subtitle: `${summary.todayAttendance} check-in${summary.todayAttendance === 1 ? "" : "s"} today`,
+      tone: "sky",
+      href: "/dashboard/attendance/qr-display",
+    },
+    {
+      icon: IndianRupee,
+      title: "Take or review payment",
+      subtitle: formatInr(summary.cashCollectedPaise),
+      tone: "sky",
+      href: "/dashboard/payments",
+    },
+    {
+      icon: Users,
+      title: "Find a member",
+      subtitle: `${summary.activeMembers} active`,
+      tone: "amber",
+      href: "/dashboard/members",
+    },
+    {
+      icon: Package,
+      title: "Shop and pickup",
+      subtitle: summary.lowStockProducts > 0 ? `${summary.lowStockProducts} low stock` : "Inventory healthy",
+      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
+      href: "/dashboard/shop",
+    },
+  ], [summary]);
+
   const todayLabel = useMemo(() => formatWeekdayDate(new Date()), []);
 
   useEffect(() => {
@@ -260,7 +257,7 @@ export function DashboardOverview({
         }
       />
 
-      <GlassCard className="p-5">
+      <GlassCard className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -277,7 +274,7 @@ export function DashboardOverview({
             Open reports →
           </Link>
         </div>
-        <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        <div className="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-1">
           {nextBestActions.map((row, index) => (
             <ActivityRow
               key={row.title}
@@ -291,6 +288,43 @@ export function DashboardOverview({
             />
           ))}
         </div>
+        <details className="group mt-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
+          <summary className="zook-focus flex min-h-9 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl text-xs font-semibold text-[var(--text-secondary)]">
+            <span>Daily shortcuts</span>
+            <span className="inline-flex items-center gap-1 text-[var(--text-tertiary)]">
+              {dailyShortcuts.length} links
+              <ChevronRight
+                size={14}
+                className="transition group-open:rotate-90"
+                aria-hidden="true"
+              />
+            </span>
+          </summary>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {dailyShortcuts.map((shortcut) => {
+              const Icon = shortcut.icon;
+              return (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="group zook-focus flex items-center gap-2 rounded-2xl px-2.5 py-2 transition hover:bg-[var(--surface-raised)]"
+                >
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
+                    <Icon size={15} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-[var(--text-primary)]">
+                      {shortcut.title}
+                    </span>
+                    <span className="block truncate text-[11px] text-[var(--text-tertiary)]">
+                      {shortcut.subtitle}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </details>
       </GlassCard>
 
       {/* KPI row */}
@@ -340,12 +374,8 @@ export function DashboardOverview({
         />
       </div>
 
-      {/* Revenue + Attention split */}
-      <div
-        className={`grid grid-cols-1 gap-4 ${
-          prefs.widgets.revenueChart ? "lg:grid-cols-[1.4fr_1fr]" : ""
-        }`}
-      >
+      {/* Revenue */}
+      <div className="grid grid-cols-1 gap-4">
         {prefs.widgets.revenueChart ? (
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -380,31 +410,6 @@ export function DashboardOverview({
           </GlassCard>
         ) : null}
 
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-300" />
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">Needs attention</h2>
-            </div>
-            <Link href="/dashboard/reports" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              All →
-            </Link>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {attentionRows.map((row, index) => (
-              <ActivityRow
-                key={row.title}
-                icon={row.icon}
-                iconTone={row.tone}
-                title={row.title}
-                subtitle={row.subtitle}
-                href={row.href}
-                trailing={<ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />}
-                index={index}
-              />
-            ))}
-          </div>
-        </GlassCard>
       </div>
 
       {/* Member growth + plan mix */}

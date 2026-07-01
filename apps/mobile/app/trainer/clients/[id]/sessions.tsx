@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
   ListRow,
@@ -29,10 +30,10 @@ export default function TrainerClientSessionsScreen() {
   const t = useT();
   const clientsQuery = useTrainerClients();
   const client = selectedTrainerClient(clientsQuery.data?.clients, id);
-  const clientName = client?.user?.name ?? t("trainer.home.clientFallback");
   const activePlans = client?.summary?.activePlans ?? 0;
   const hasActivePlans = activePlans > 0;
   const averageCompletion = averageCompletionFor(client);
+  const adherenceValue = averageCompletion === null ? "--" : `${averageCompletion}%`;
   const progressTimeline = progressTimelineFor(client, {
     logged: t("trainer.clientSessions.logged"),
     planFeedback: t("trainer.clientSessions.planFeedback"),
@@ -55,7 +56,6 @@ export default function TrainerClientSessionsScreen() {
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           <AppHeader
             title={t("trainer.clientSessions.title")}
-            subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
@@ -77,33 +77,43 @@ export default function TrainerClientSessionsScreen() {
             </Card>
           ) : null}
           {!clientsQuery.isLoading ? (
-          <Card variant="compact" contentStyle={styles.stack}>
-            <ListRow
-              title={t("trainer.clientSessions.adherence")}
-              subtitle={averageCompletion === null ? t("trainer.clientSessions.waitingForFeedback") : t("trainer.clientSessions.averageCompletion", { percent: averageCompletion })}
-              trailing={averageCompletion === null ? undefined : <StatusChip status={`${averageCompletion}%`} tone="blue" />}
-            />
-            {progressTimeline.length ? (
-              progressTimeline.map((entry) => (
-                <ListRow key={entry.id} title={entry.title} subtitle={entry.body || t("trainer.clientSessions.noDetails")} trailing={<StatusChip status={entry.status} tone={entry.tone} />} />
-              ))
-            ) : (
-              <ListRow title={t("trainer.clientSessions.planFeedback")} />
-            )}
-            <ListRow
-              title={t("nav.plans")}
-              subtitle={t("trainer.clients.activePlanCount", {
-                count: activePlans,
-                label: activePlans === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
-              })}
-              trailing={
-                <StatusChip
-                  status={hasActivePlans ? t("member.home.active") : t("trainer.clientSessions.noPlans")}
-                  tone={hasActivePlans ? "blue" : "neutral"}
-                />
-              }
-            />
-          </Card>
+            <>
+              <Card variant="compact" contentStyle={styles.summaryCard}>
+                <View style={styles.summaryLead}>
+                  <Text style={[styles.summaryValue, { color: averageCompletion === null ? palette.text.secondary : palette.text.primary }]}>
+                    {adherenceValue}
+                  </Text>
+                  <View style={styles.summaryCopy}>
+                    <Text style={[styles.summaryTitle, { color: palette.text.primary }]}>{t("trainer.clientSessions.adherence")}</Text>
+                    <Text style={[styles.summaryBody, { color: palette.text.secondary }]} numberOfLines={2}>
+                      {averageCompletion === null ? t("trainer.clientSessions.waitingForFeedback") : t("trainer.clientSessions.averageCompletion", { percent: averageCompletion })}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.planRail, { backgroundColor: palette.surface.default }]}>
+                  <Ionicons name="reader-outline" size={16} color={palette.text.secondary} />
+                  <Text style={[styles.planRailText, { color: palette.text.secondary }]} numberOfLines={1}>
+                    {t("trainer.clients.activePlanCount", {
+                      count: activePlans,
+                      label: activePlans === 1 ? t("trainer.home.plan") : t("trainer.home.plans"),
+                    })}
+                  </Text>
+                  <StatusChip
+                    status={hasActivePlans ? t("member.home.active") : t("trainer.clientSessions.noPlans")}
+                    tone={hasActivePlans ? "blue" : "neutral"}
+                  />
+                </View>
+              </Card>
+              <Card variant="compact" contentStyle={styles.stack}>
+                {progressTimeline.length ? (
+                  progressTimeline.map((entry) => (
+                    <ListRow key={entry.id} title={entry.title} subtitle={entry.body || t("trainer.clientSessions.noDetails")} trailing={<StatusChip status={entry.status} tone={entry.tone} />} />
+                  ))
+                ) : (
+                  <ListRow title={t("trainer.clientSessions.planFeedback")} />
+                )}
+              </Card>
+            </>
           ) : null}
         </ScrollView>
       </ZookScreen>
@@ -115,5 +125,13 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   backIcon: { fontSize: 26, lineHeight: 28 },
+  summaryCard: { gap: spacing.sm },
+  summaryLead: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  summaryValue: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, minWidth: 76 },
+  summaryCopy: { flex: 1, gap: 2, minWidth: 0 },
+  summaryTitle: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 21 },
+  summaryBody: { fontSize: 13, lineHeight: 18 },
+  planRail: { alignItems: "center", borderRadius: 16, flexDirection: "row", gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 7 },
+  planRailText: { flex: 1, fontSize: 12, lineHeight: 16 },
   stack: { gap: spacing.sm },
 });

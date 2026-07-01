@@ -48,6 +48,9 @@ export interface DemoBranch {
   city: string;
   state: string;
   address: string;
+  googleMapsUrl?: string;
+  latitude?: number;
+  longitude?: number;
   attendanceMode: "AUTOMATIC" | "EXCEPTION_APPROVAL" | "MANUAL_APPROVAL";
 }
 
@@ -409,6 +412,18 @@ export const zookDemoFixtures: ZookDemoFixtures = {
       amenities: ["Strength", "Cardio", "Personal Training", "Protein Bar", "Locker"],
       ownerName: "Aditya Rao",
     },
+    {
+      id: "org-your-fitness",
+      name: "Your Fitness",
+      username: "your-fitness",
+      city: "Pune",
+      state: "Maharashtra",
+      address: "Balewadi High Street, Pune",
+      status: "ACTIVE",
+      joinMode: "APPROVAL_REQUIRED",
+      amenities: ["Functional Training", "Cardio", "Group Classes", "Showers"],
+      ownerName: "Nisha Mehra",
+    },
   ],
   branches: [
     {
@@ -418,7 +433,34 @@ export const zookDemoFixtures: ZookDemoFixtures = {
       city: "Pune",
       state: "Maharashtra",
       address: "Lane 7, Koregaon Park, Pune",
+      googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Lane%207%2C%20Koregaon%20Park%2C%20Pune",
+      latitude: 18.5362,
+      longitude: 73.8939,
       attendanceMode: "EXCEPTION_APPROVAL",
+    },
+    {
+      id: "branch-baner",
+      orgId: "org-aarogya-strength",
+      name: "Aarogya Baner High Street",
+      city: "Pune",
+      state: "Maharashtra",
+      address: "High Street, Baner, Pune",
+      googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=High%20Street%2C%20Baner%2C%20Pune",
+      latitude: 18.559,
+      longitude: 73.7868,
+      attendanceMode: "AUTOMATIC",
+    },
+    {
+      id: "branch-your-fitness-balewadi",
+      orgId: "org-your-fitness",
+      name: "Your Fitness Balewadi",
+      city: "Pune",
+      state: "Maharashtra",
+      address: "Balewadi High Street, Pune",
+      googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Balewadi%20High%20Street%2C%20Pune",
+      latitude: 18.5705,
+      longitude: 73.774,
+      attendanceMode: "AUTOMATIC",
     },
   ],
   roleAssignments: [
@@ -484,6 +526,28 @@ export const zookDemoFixtures: ZookDemoFixtures = {
       pricePaise: 249900,
       durationDays: 30,
       visitLimit: 12,
+      publicVisible: true,
+    },
+    {
+      id: "plan-your-fitness-starter",
+      orgId: "org-your-fitness",
+      name: "Starter Month",
+      description: "30 days of gym access with approval before activation.",
+      type: "DURATION",
+      pricePaise: 129900,
+      durationDays: 30,
+      visitLimit: 0,
+      publicVisible: true,
+    },
+    {
+      id: "plan-your-fitness-classes",
+      orgId: "org-your-fitness",
+      name: "Class Pack",
+      description: "8 coached group sessions for functional training.",
+      type: "VISIT_PACK",
+      pricePaise: 99900,
+      durationDays: 45,
+      visitLimit: 8,
       publicVisible: true,
     },
   ],

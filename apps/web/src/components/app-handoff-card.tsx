@@ -11,6 +11,7 @@ export function AppHandoffCard({
   eyebrow = "Continue in app",
   getAppHref = "/",
   compact = false,
+  minimal = false,
 }: {
   title: string;
   description: string;
@@ -18,12 +19,35 @@ export function AppHandoffCard({
   eyebrow?: string;
   getAppHref?: string;
   compact?: boolean;
+  minimal?: boolean;
 }) {
   const [triedDeepLink, setTriedDeepLink] = useState(false);
 
   function openApp() {
     setTriedDeepLink(true);
     window.location.href = deepLink;
+  }
+
+  if (minimal) {
+    return (
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">{description}</p>
+          {triedDeepLink ? (
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">Did not open? Install Zook first.</p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={openApp}
+          className="zook-focus shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-raised)]"
+        >
+          <Smartphone size={13} aria-hidden="true" />
+          Open app
+        </button>
+      </div>
+    );
   }
 
   return (

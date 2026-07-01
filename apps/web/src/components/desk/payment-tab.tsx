@@ -3,6 +3,7 @@ import { CreditCard } from "lucide-react";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
+import { formatPaymentMode, formatPaymentPurpose } from "@/components/dashboard/payments/payments-utils";
 import { GlassCard } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import type { DeskCopy } from "./copy";
@@ -91,6 +92,7 @@ export function PaymentTab({
     (member) => member.user?.id === paymentForm.memberUserId,
   );
   const activeSubscription = selectedPaymentMember?.activeSubscription;
+  const selectedShopOrder = payAtDeskOrders.find((order) => order.id === paymentForm.shopOrderId);
 
   return (
     <GlassCard>
@@ -142,24 +144,26 @@ export function PaymentTab({
           </div>
         </fieldset>
 
-        <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-          {copy.member}
-          <select
-            value={paymentForm.memberUserId}
-            onChange={(event) => onMemberChange(event.target.value)}
-            className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
-            required={paymentForm.purpose === "MEMBERSHIP"}
-          >
-            <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-              {copy.chooseMember}
-            </option>
-            {members.map((member) => (
-              <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                {memberLabel(member)}
+        {paymentForm.purpose !== "SHOP_ORDER" ? (
+          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+            {copy.member}
+            <select
+              value={paymentForm.memberUserId}
+              onChange={(event) => onMemberChange(event.target.value)}
+              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
+              required={paymentForm.purpose === "MEMBERSHIP"}
+            >
+              <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+                {copy.chooseMember}
               </option>
-            ))}
-          </select>
-        </label>
+              {members.map((member) => (
+                <option key={member.profile.id} value={member.user?.id ?? ""} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+                  {memberLabel(member)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {paymentForm.purpose === "SHOP_ORDER" ? (
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.shopOrderPayment}
@@ -182,6 +186,11 @@ export function PaymentTab({
             {!payAtDeskOrders.length ? (
               <span className="text-xs text-[var(--text-tertiary)]">{copy.noPayAtDeskOrders}</span>
             ) : null}
+            {selectedShopOrder ? (
+              <span className="rounded-2xl border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-2 text-xs font-semibold text-[var(--accent-strong)]">
+                {copy.collectAmount} {formatInr(selectedShopOrder.totalPaise)}
+              </span>
+            ) : null}
           </label>
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
@@ -198,7 +207,7 @@ export function PaymentTab({
                     className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
                   >
                     <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                      New membership
+                      {copy.newMembership}
                     </option>
                     <option value={activeSubscription.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
                       {copy.renewExisting}
@@ -214,7 +223,7 @@ export function PaymentTab({
                   className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
                 >
                   <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                    {activeSubscription ? "Use selected membership" : copy.renewExisting}
+                    {activeSubscription ? copy.useSelectedMembership : copy.renewExisting}
                   </option>
                   {activePlans.map((plan) => (
                     <option key={plan.id} value={plan.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
@@ -262,7 +271,7 @@ export function PaymentTab({
             />
           </label>
         ) : null}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4">
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
             {copy.amount}
             <div
@@ -293,35 +302,11 @@ export function PaymentTab({
               <span className="text-xs text-rose-500 dark:text-rose-300">{amountError}</span>
             ) : (
               <span className="text-xs text-[var(--text-tertiary)]">
-                Enter the collected amount in rupees.
+                {copy.amountHint}
               </span>
             )}
           </label>
-          <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-            {copy.referenceNumber}
-            <input
-              value={paymentForm.receiptNumber}
-              onChange={(event) => onFormChange({ receiptNumber: event.target.value })}
-              placeholder={copy.referencePlaceholder}
-              className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
-            />
-          </label>
         </div>
-        <PaymentProofUpload
-          orgId={orgId}
-          value={paymentForm.proofAssetId}
-          onChange={(proofAssetId) => onFormChange({ proofAssetId })}
-          label={copy.proofFileId}
-          placeholder={copy.proofPlaceholder}
-        />
-        <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-          {copy.notes}
-          <textarea
-            value={paymentForm.notes}
-            onChange={(event) => onFormChange({ notes: event.target.value })}
-            className="zook-focus min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
-          />
-        </label>
         <ZookButton
           type="submit"
           disabled={busyId === "payment"}
@@ -329,6 +314,38 @@ export function PaymentTab({
         >
           {busyId === "payment" ? copy.recording : copy.recordPayment}
         </ZookButton>
+        <details className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[var(--text-secondary)]">
+            <span>{copy.optionalDetails}</span>
+            <span className="text-xs font-normal text-[var(--text-tertiary)]">{copy.showOptionalDetails}</span>
+          </summary>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              {copy.referenceNumber}
+              <input
+                value={paymentForm.receiptNumber}
+                onChange={(event) => onFormChange({ receiptNumber: event.target.value })}
+                placeholder={copy.referencePlaceholder}
+                className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+            <PaymentProofUpload
+              orgId={orgId}
+              value={paymentForm.proofAssetId}
+              onChange={(proofAssetId) => onFormChange({ proofAssetId })}
+              label={copy.proofFileId}
+              placeholder={copy.proofPlaceholder}
+            />
+            <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
+              {copy.notes}
+              <textarea
+                value={paymentForm.notes}
+                onChange={(event) => onFormChange({ notes: event.target.value })}
+                className="zook-focus min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] transition focus:border-[var(--border-focus)]"
+              />
+            </label>
+          </div>
+        </details>
       </form>
       {lastReceipt ? <ReceiptCard copy={copy} receipt={lastReceipt} /> : null}
       <RecentPaymentsList
@@ -431,7 +448,7 @@ function RecentPaymentsList({
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-3">
+      <div className="mt-4 grid gap-2">
         {loading && !payments.length ? (
           <p className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
             {copy.loadingRecentPayments}
@@ -449,24 +466,22 @@ function RecentPaymentsList({
           return (
             <div
               key={payment.id}
-              className="flex flex-col justify-between gap-3 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4 sm:flex-row sm:items-center"
+              className="grid gap-3 rounded-[20px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center"
             >
-              <div>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {payment.user?.name ?? formatEnumLabel(payment.purpose)}
+              <div className="min-w-0">
+                <p className="truncate font-medium text-[var(--text-primary)]">
+                  {payment.user?.name ?? formatPaymentPurpose(payment.purpose)}
                 </p>
-                <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                  {formatInr(payment.amountPaise)} · {formatEnumLabel(payment.mode)} ·{" "}
+                <p className="mt-1 truncate text-xs text-[var(--text-secondary)]">
+                  {formatInr(payment.amountPaise)} · {formatPaymentMode(payment.mode)} ·{" "}
                   {formatDate(recordedAt)}
-                  {refunded > 0 ? (
-                    <>
-                      {" "}
-                      ·{" "}
-                      {refunded >= payment.amountPaise ? copy.refunded : copy.partiallyRefunded} (
-                      {formatInr(refunded)})
-                    </>
-                  ) : null}
                 </p>
+                {refunded > 0 ? (
+                  <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                    {refunded >= payment.amountPaise ? copy.refunded : copy.partiallyRefunded} ·{" "}
+                    {formatInr(refunded)}
+                  </p>
+                ) : null}
               </div>
               {refundable ? (
                 <ZookButton

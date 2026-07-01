@@ -71,6 +71,7 @@ export function DashboardShell({
   isPlatformAdmin,
   roles,
   permissions,
+  organizations,
   user,
   children,
 }: {
@@ -79,6 +80,14 @@ export function DashboardShell({
   isPlatformAdmin: boolean;
   roles: Role[];
   permissions?: Permission[];
+  organizations?: Array<{
+    orgId: string;
+    name: string;
+    logoUrl?: string | null;
+    city?: string | null;
+    state?: string | null;
+    status: string;
+  }>;
   user: { id?: string; name: string; email: string; preferredLocale?: string | null };
   children?: ReactNode;
 }) {
@@ -141,7 +150,12 @@ export function DashboardShell({
       : sectionDescriptions[locale][sectionKey] ?? "";
   const currentDashboardPath = `/dashboard${sectionKey ? `/${sectionKey}` : ""}`;
   const branchHref = (branchId: string) =>
-    `${currentDashboardPath}?branchId=${encodeURIComponent(branchId)}`;
+    `${currentDashboardPath}?${new URLSearchParams({
+      orgId: activeOrg.id,
+      branchId,
+    }).toString()}`;
+  const gymHref = (orgId: string) =>
+    `${currentDashboardPath}?${new URLSearchParams({ orgId }).toString()}`;
   const showOwnerSetupChecklist =
     sectionKey === "" &&
     (data.summary.activeMembers === 0 || !selectedBranch || activeOrg.status !== "ACTIVE");
@@ -168,9 +182,11 @@ export function DashboardShell({
 
           <DashboardHeader
             activeOrg={activeOrg}
+            organizations={organizations ?? []}
             selectedBranch={selectedBranch}
             data={data}
             branchHref={branchHref}
+            gymHref={gymHref}
             runtimeLabel={runtimeLabel}
             user={user}
             roleLabel={roleLabel}

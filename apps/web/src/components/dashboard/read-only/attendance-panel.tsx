@@ -27,6 +27,23 @@ import type {
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { PagedState } from "./types";
 
+function attendanceJoinModeLabel(mode: string | null | undefined) {
+  if (mode === "AUTO_APPROVE") return "Auto approve";
+  if (mode === "APPROVAL_REQUIRED") return "Approval required";
+  if (mode === "INVITE_ONLY") return "Invite only";
+  return formatEnumLabel(mode ?? "join");
+}
+
+function attendanceStatusLabel(status: string | null | undefined) {
+  if (status === "APPROVED") return "Approved";
+  if (status === "PENDING_APPROVAL") return "Needs review";
+  if (status === "REJECTED") return "Rejected";
+  if (status === "FLAGGED") return "Flagged";
+  if (status === "FAILED") return "Failed";
+  if (status === "RECORDED") return "Recorded";
+  return formatEnumLabel(status ?? "recorded");
+}
+
 export function AttendancePanel({
   orgId,
   organization,
@@ -96,7 +113,7 @@ export function AttendancePanel({
                 },
                 {
                   label: "Join mode",
-                  value: formatEnumLabel(organization.joinMode),
+                  value: attendanceJoinModeLabel(organization.joinMode),
                   meta: "Used during membership requests",
                 },
                 {
@@ -143,7 +160,7 @@ export function AttendancePanel({
                   {
                     id: "status",
                     header: "Status",
-                    render: (record) => <StatusPill value={formatEnumLabel(record.status)} />,
+                    render: (record) => <StatusPill value={attendanceStatusLabel(record.status)} />,
                   },
                   {
                     id: "remaining",

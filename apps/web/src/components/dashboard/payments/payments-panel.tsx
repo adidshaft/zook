@@ -22,6 +22,31 @@ type RefundDraft = {
   reason: string;
 };
 
+type PaymentWorkspaceTab = "review" | "history" | "record" | "growth";
+
+const paymentWorkspaceTabs: Array<{
+  id: PaymentWorkspaceTab;
+  label: string;
+  meta: (input: {
+    reviewCount: number;
+    paymentCount: number;
+    expiringMemberships: number;
+  }) => string;
+}> = [
+  {
+    id: "review",
+    label: "Review",
+    meta: ({ reviewCount }) => (reviewCount ? `${reviewCount} need check` : "Clean close"),
+  },
+  { id: "history", label: "History", meta: ({ paymentCount }) => `${paymentCount} records` },
+  { id: "record", label: "Record", meta: () => "Cash, UPI, card" },
+  {
+    id: "growth",
+    label: "Growth",
+    meta: ({ expiringMemberships }) => `${expiringMemberships} renewals`,
+  },
+];
+
 function refundedAmountFor(payment: PaymentRow) {
   return payment.refundedAmountPaise ?? 0;
 }
@@ -59,6 +84,7 @@ export function PaymentsPanel({
   const [refundBusyId, setRefundBusyId] = useState<string | null>(null);
   const [refundDraft, setRefundDraft] = useState<RefundDraft | null>(null);
   const [lastReceipt, setLastReceipt] = useState<PaymentReceiptState | null>(null);
+  const [activeTab, setActiveTab] = useState<PaymentWorkspaceTab>("review");
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -78,6 +104,7 @@ export function PaymentsPanel({
   const pendingPayments = payments.filter((payment) =>
     ["CREATED", "PENDING", "PENDING_PAYMENT", "PROCESSING"].includes(payment.status),
   );
+  const reviewCount = failedPayments.length + pendingPayments.length;
   const documentReadyPayments = succeededPayments.filter(
     (payment) => !payment.receiptNumber && !payment.refundedAmountPaise,
   );
@@ -243,14 +270,6 @@ export function PaymentsPanel({
   return (
     <div className="grid gap-4">
       <PaymentMetricCards summary={summary} queuedOrders={queuedOrders} />
-      <PaymentReconciliationCard
-        orgId={orgId}
-        summary={summary}
-        succeededPayments={succeededPayments}
-        failedPayments={failedPayments}
-        pendingPayments={pendingPayments}
-        documentReadyPayments={documentReadyPayments}
-      />
       {refundDraft ? (
         <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface-raised)]/82 p-4 shadow-[var(--shadow-md)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -314,52 +333,115 @@ export function PaymentsPanel({
           </div>
         </section>
       ) : null}
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <PaymentHistoryCard
-          orgId={orgId}
-          payments={payments}
-          paymentsState={paymentsState}
-          manualPaymentStatus={manualPaymentStatus}
-          documentBusyId={documentBusyId}
-          onGenerateDocument={(payment, kind) => void generatePaymentDocument(payment, kind)}
-          refundBusyId={refundBusyId}
-          onRefundPayment={openRefundDraft}
-        />
-        <OfflinePaymentCard
-          orgId={orgId}
-          membershipPlans={membershipPlans}
-          members={members}
-          manualPayment={manualPayment}
-          setManualPayment={setManualPayment}
-          manualPaymentStatus={manualPaymentStatus}
-          manualPaymentBusy={manualPaymentBusy}
-          canRecordOffline={canRecordOffline}
-          permissionMessage={permissionMessage}
-          lastReceipt={lastReceipt}
-          onRecordOfflinePayment={(event) => void recordOfflinePayment(event)}
-        />
-        <SettlementQueueCard
-          orgId={orgId}
-          queuedOrders={queuedOrders}
-          shopOrders={shopOrders}
-          filteredShopOrders={filteredShopOrders}
-          shopOrdersState={shopOrdersState}
-          paymentsState={paymentsState}
-          orderStatusFilter={orderStatusFilter}
-          setOrderStatusFilter={setOrderStatusFilter}
-          selectedOrderIds={selectedOrderIds}
-          selectedReadyOrders={selectedReadyOrders}
-          bulkBusy={bulkBusy}
-          manualPaymentBusy={manualPaymentBusy}
-          canRecordOffline={canRecordOffline}
-          permissionMessage={permissionMessage}
-          onToggleOrder={toggleOrder}
-          onBulkFulfillReadyOrders={bulkFulfillReadyOrders}
-          setManualPaymentStatus={setManualPaymentStatus}
-          setLastReceipt={setLastReceipt}
-        />
-        <RevenueOpportunitiesCard summary={summary} membershipPlans={membershipPlans} />
+
+      <div className="rounded-[26px] border border-white/10 bg-black/20 p-2">
+        <div className="grid gap-2 sm:grid-cols-4" role="tablist" aria-label="Payment workspace">
+          {paymentWorkspaceTabs.map((tab) => {
+            const selected = activeTab === tab.id;
+            const meta = tab.meta({
+              reviewCount,
+              paymentCount: payments.length,
+              expiringMemberships: summary.expiringMemberships,
+            });
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                type="button"
+                aria-selected={selected}
+                aria-controls={`payments-${tab.id}-panel`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`zook-focus rounded-[20px] px-4 py-3 text-left transition ${
+                  selected
+                    ? "bg-white text-black shadow-[0_18px_44px_rgba(0,0,0,0.22)]"
+                    : "text-white/62 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                <span className="block text-sm font-semibold">{tab.label}</span>
+                <span
+                  className={`mt-0.5 block truncate text-xs ${
+                    selected ? "text-black/55" : "text-white/38"
+                  }`}
+                >
+                  {meta}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {activeTab === "review" ? (
+        <div id="payments-review-panel" role="tabpanel" className="grid gap-4">
+          <PaymentReconciliationCard
+            orgId={orgId}
+            summary={summary}
+            succeededPayments={succeededPayments}
+            failedPayments={failedPayments}
+            pendingPayments={pendingPayments}
+            documentReadyPayments={documentReadyPayments}
+          />
+          <SettlementQueueCard
+            orgId={orgId}
+            queuedOrders={queuedOrders}
+            shopOrders={shopOrders}
+            filteredShopOrders={filteredShopOrders}
+            shopOrdersState={shopOrdersState}
+            paymentsState={paymentsState}
+            orderStatusFilter={orderStatusFilter}
+            setOrderStatusFilter={setOrderStatusFilter}
+            selectedOrderIds={selectedOrderIds}
+            selectedReadyOrders={selectedReadyOrders}
+            bulkBusy={bulkBusy}
+            manualPaymentBusy={manualPaymentBusy}
+            canRecordOffline={canRecordOffline}
+            permissionMessage={permissionMessage}
+            onToggleOrder={toggleOrder}
+            onBulkFulfillReadyOrders={bulkFulfillReadyOrders}
+            setManualPaymentStatus={setManualPaymentStatus}
+            setLastReceipt={setLastReceipt}
+          />
+        </div>
+      ) : null}
+
+      {activeTab === "history" ? (
+        <div id="payments-history-panel" role="tabpanel">
+          <PaymentHistoryCard
+            orgId={orgId}
+            payments={payments}
+            paymentsState={paymentsState}
+            manualPaymentStatus={manualPaymentStatus}
+            documentBusyId={documentBusyId}
+            onGenerateDocument={(payment, kind) => void generatePaymentDocument(payment, kind)}
+            refundBusyId={refundBusyId}
+            onRefundPayment={openRefundDraft}
+          />
+        </div>
+      ) : null}
+
+      {activeTab === "record" ? (
+        <div id="payments-record-panel" role="tabpanel">
+          <OfflinePaymentCard
+            orgId={orgId}
+            membershipPlans={membershipPlans}
+            members={members}
+            manualPayment={manualPayment}
+            setManualPayment={setManualPayment}
+            manualPaymentStatus={manualPaymentStatus}
+            manualPaymentBusy={manualPaymentBusy}
+            canRecordOffline={canRecordOffline}
+            permissionMessage={permissionMessage}
+            lastReceipt={lastReceipt}
+            onRecordOfflinePayment={(event) => void recordOfflinePayment(event)}
+          />
+        </div>
+      ) : null}
+
+      {activeTab === "growth" ? (
+        <div id="payments-growth-panel" role="tabpanel">
+          <RevenueOpportunitiesCard summary={summary} membershipPlans={membershipPlans} />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,44 +1,75 @@
 import Image from "next/image";
-import { MapPin } from "lucide-react";
 import { Pill } from "@/components/glass-card";
-import { joinModeLabelForLocale, joinModeTone, publicT, type PublicLocale } from "@/lib/public-i18n";
-import type { PublicGym } from "./types";
+import {
+  joinModeLabelForLocale,
+  joinModeTone,
+  publicT,
+  type PublicLocale,
+} from "@/lib/public-i18n";
+import { publicGymDisplayIdentity } from "@/lib/public-gym-profile";
+import type { PublicGym, PublicGymPlan } from "./types";
+import type { PublicGymProfileData } from "@/server/public-gym-read-models";
 
-export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale }) {
+function localizedGymTagline(
+  tagline: string | null | undefined,
+  fallback: string,
+  locale: PublicLocale,
+  t: (key: Parameters<typeof publicT>[1]) => string,
+) {
+  if (locale === "hi" && tagline?.toLowerCase().includes("strength, pt, and recovery operations")) {
+    return t("gymTaglineDemo");
+  }
+  return tagline || fallback;
+}
+
+export function GymHero({
+  org,
+  plans: _plans,
+  branches,
+  locale,
+}: {
+  org: PublicGym;
+  plans: PublicGymPlan[];
+  branches: PublicGymProfileData["branches"];
+  locale: PublicLocale;
+}) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   const coverAlt = locale === "hi" ? `${org.name} जिम की तस्वीर` : `${org.name} gym interior`;
   const logoAlt = locale === "hi" ? `${org.name} लोगो` : `${org.name} logo`;
+  const defaultBranch = branches.find((branch) => branch.isDefault) ?? branches[0] ?? null;
+  const identity = publicGymDisplayIdentity({
+    address: defaultBranch?.address ?? org.address ?? null,
+    branchName: defaultBranch?.name ?? null,
+    city: defaultBranch?.city ?? org.city ?? null,
+    orgName: org.name,
+    state: defaultBranch?.state ?? org.state ?? null,
+  });
+  const hasCover = Boolean(org.coverImageUrl);
   return (
-    <div className="glass-panel relative min-h-[560px] overflow-hidden rounded-[32px] p-6 md:p-8">
+    <div
+      className={`relative overflow-hidden rounded-[28px] border border-[var(--border)] p-5 shadow-[0_24px_80px_color-mix(in_srgb,var(--accent)_12%,transparent)] md:p-8 ${
+        hasCover ? "min-h-[280px] bg-black sm:min-h-[360px] lg:min-h-[420px]" : "glass-panel"
+      }`}
+    >
       {org.coverImageUrl ? (
         <Image
           src={org.coverImageUrl}
           alt={coverAlt}
           fill
           sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
-          className="object-cover opacity-20 dark:opacity-30"
+          className="object-cover"
           priority={false}
           unoptimized
         />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-br from-[color-mix(in_srgb,var(--bg)_95%,transparent)] via-[color-mix(in_srgb,var(--surface)_85%,transparent)] to-[color-mix(in_srgb,var(--bg-sunken)_95%,transparent)] dark:from-black/82 dark:via-black/62 dark:to-black/82" />
+      <div
+        className={
+          hasCover
+            ? "absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.58)_44%,rgba(0,0,0,0.16)_82%),linear-gradient(180deg,rgba(0,0,0,0.2),rgba(0,0,0,0.52))]"
+            : "absolute inset-0 bg-gradient-to-br from-[color-mix(in_srgb,var(--bg)_74%,transparent)] via-[color-mix(in_srgb,var(--surface)_54%,transparent)] to-[color-mix(in_srgb,var(--bg-sunken)_78%,transparent)] dark:from-black/68 dark:via-black/46 dark:to-black/72"
+        }
+      />
       <div className="relative z-10">
-        {org.coverImageUrl ? (
-          <div className="relative mb-5 h-48 w-full overflow-hidden rounded-2xl border border-[var(--border)]">
-            <Image
-              src={org.coverImageUrl}
-              alt={coverAlt}
-              fill
-              sizes="(min-width: 1024px) calc(100vw - 430px), 100vw"
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        ) : (
-          <div className="relative mb-5 h-40 w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-sunken)] via-[var(--surface-raised)] to-[var(--bg-sunken)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,var(--accent-soft)_35%,transparent_65%)]" />
-          </div>
-        )}
         <div className="flex flex-wrap items-center gap-3">
           {org.logoUrl ? (
             <Image
@@ -47,51 +78,61 @@ export function GymHero({ org, locale }: { org: PublicGym; locale: PublicLocale 
               width={56}
               height={56}
               sizes="56px"
-              className="h-14 w-14 rounded-2xl border border-[var(--border)] object-cover shadow-sm bg-[var(--surface)]"
+              className={`h-14 w-14 rounded-2xl object-cover shadow-sm ${
+                hasCover
+                  ? "border border-white/24 bg-black/25 shadow-black/20"
+                  : "border border-[var(--border)] bg-[var(--surface)]"
+              }`}
               unoptimized
             />
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Pill tone={joinModeTone(org.joinMode)}>{joinModeLabelForLocale(org.joinMode, locale)}</Pill>
-            {org.gymType ? <Pill>{org.gymType}</Pill> : null}
-          </div>
-        </div>
-        <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-tight text-[var(--text-primary)] md:text-7xl">
-          {org.name}
-        </h1>
-        <p className="mt-4 flex items-center gap-2 text-[var(--text-secondary)] font-medium">
-          <MapPin size={18} className="text-[var(--accent-strong)]" /> {org.address} · {org.city}, {org.state}
-        </p>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--text-secondary)]">
-          {org.tagline || t("gymTaglineFallback")}
-        </p>
-        {org.openingHoursSummary ? (
-          <p className="mt-3 text-sm text-[var(--accent-strong)] font-semibold">{org.openingHoursSummary}</p>
-        ) : null}
-
-        {org.amenities.length ? (
-          <div className="mt-7 flex flex-wrap gap-2 relative">
-            {org.amenities.map((amenity) => (
-              <Pill
-                key={amenity}
-                className="border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
-              >
-                {amenity}
-              </Pill>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="mt-10 flex flex-wrap gap-6 relative">
-          {[t("choosePlan"), t("verifyEmail"), t("paySecurely")].map((step, index) => (
-            <div key={step} className="flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-fill)] text-xs font-bold text-[var(--text-on-accent)]">
-                {index + 1}
-              </span>
-              <p className="text-sm text-[var(--text-primary)] font-semibold">{step}</p>
+          ) : (
+            <div
+              aria-label={logoAlt}
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl text-base font-black shadow-sm ${
+                hasCover
+                  ? "border border-white/24 bg-black/35 text-white"
+                  : "border border-[var(--border)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]"
+              }`}
+            >
+              {org.name.slice(0, 2).toUpperCase()}
             </div>
-          ))}
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Pill
+              tone={joinModeTone(org.joinMode)}
+              className={
+                hasCover
+                  ? "!border-white/24 !bg-black/45 !text-white shadow-sm backdrop-blur-md"
+                  : undefined
+              }
+            >
+              {joinModeLabelForLocale(org.joinMode, locale)}
+            </Pill>
+          </div>
         </div>
+        <h1
+          className={`mt-5 max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl ${
+            hasCover ? "!text-white" : "text-[var(--text-primary)]"
+          }`}
+        >
+          {identity.title}
+        </h1>
+        {identity.subtitle ? (
+          <p
+            className={`mt-2 max-w-2xl text-sm font-semibold leading-6 ${
+              hasCover ? "text-white/82" : "text-[var(--text-secondary)]"
+            }`}
+          >
+            {identity.subtitle}
+          </p>
+        ) : null}
+        <p
+          className={`mt-5 max-w-2xl text-base font-medium leading-7 ${
+            hasCover ? "text-white/88 drop-shadow-sm" : "text-[var(--text-secondary)]"
+          }`}
+        >
+          {localizedGymTagline(org.tagline, t("gymTaglineFallback"), locale, t)}
+        </p>
       </div>
     </div>
   );

@@ -3,6 +3,14 @@ import { StyleSheet } from "react-native";
 import { layout, spacing, typography } from "@/lib/theme";
 
 export const scanStyles = StyleSheet.create({
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -133,26 +141,29 @@ export const scanStyles = StyleSheet.create({
     opacity: 0.96,
   },
   helpContent: {
-    minHeight: 74,
+    minHeight: 58,
     flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    paddingVertical: 8,
   },
   helpCopy: {
     flex: 1,
-    gap: 3,
+    gap: 2,
+    minWidth: 0,
   },
   helpTitle: {
-    ...typography.cardTitle,
+    ...typography.bodyStrong,
   },
   helpBody: {
     ...typography.small,
   },
   manualCodeLink: {
-    minHeight: 44,
-    borderRadius: 22,
+    alignSelf: "center",
+    minHeight: 36,
+    borderRadius: 18,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
