@@ -101,6 +101,7 @@ export default function OwnerMemberDetail() {
   const t = useT();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [reminderSending, setReminderSending] = useState(false);
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
@@ -234,8 +235,35 @@ export default function OwnerMemberDetail() {
     }
   }
 
-  function sendReminder() {
-    showToast({ tone: "neutral", message: t("owner.member.reminderComingSoon") });
+  async function sendReminder() {
+    if (!token || !resolvedOrgId || !id || reminderSending) return;
+    setReminderSending(true);
+    try {
+      const endsAt = member?.activeSubscription?.endsAt ?? null;
+      const dateLabel = formatLongDate(endsAt, t("owner.members.soon"));
+      await ownerApi.sendMemberNotification({
+        token,
+        orgId: resolvedOrgId,
+        memberUserId: id,
+        title: t("owner.members.expiringReminderTitle"),
+        body: t("owner.members.expiringReminderBody", { date: dateLabel }),
+        metadata: { reason: "manual_member_detail_reminder", endsAt },
+      });
+      showToast({
+        tone: "success",
+        haptic: "success",
+        message: t("owner.members.reminderSent", { name }),
+      });
+    } catch (error) {
+      showToast({
+        title: t("owner.members.reminderNotSent"),
+        message: error instanceof Error ? error.message : t("owner.members.tryAgain"),
+        tone: "danger",
+        haptic: "error",
+      });
+    } finally {
+      setReminderSending(false);
+    }
   }
 
   function recordPayment() {
@@ -341,7 +369,13 @@ export default function OwnerMemberDetail() {
                     </Text>
                   </View>
                 </View>
-                <ZookButton variant={needsPlan ? "primary" : "secondary"} icon={nextAction.icon} onPress={nextAction.onPress}>
+                <ZookButton
+                  variant={needsPlan ? "primary" : "secondary"}
+                  icon={nextAction.icon}
+                  onPress={nextAction.onPress}
+                  disabled={nextAction.id === "sendReminder" && reminderSending}
+                  busy={nextAction.id === "sendReminder" && reminderSending}
+                >
                   {nextAction.cta}
                 </ZookButton>
               </Card>
@@ -412,10 +446,12 @@ export default function OwnerMemberDetail() {
                     accessibilityRole="button"
                     accessibilityLabel={action.label}
                     onPress={action.onPress}
+                    disabled={action.id === "sendReminder" && reminderSending}
                     hitSlop={8}
                     style={({ pressed }) => [
                       styles.secondaryIconAction,
                       { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                      action.id === "sendReminder" && reminderSending ? styles.secondaryIconActionDisabled : null,
                       pressed ? styles.secondaryIconActionPressed : null,
                     ]}
                   >
@@ -489,6 +525,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   secondaryIconActionPressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+  secondaryIconActionDisabled: { opacity: 0.48 },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   sectionCopy: { flex: 1, gap: 3 },
   sectionLabel: typography.caption,

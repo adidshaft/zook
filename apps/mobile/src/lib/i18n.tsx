@@ -1795,7 +1795,6 @@ export type TranslationKey =
   | "owner.member.openingPaymentTools"
   | "owner.member.phone"
   | "owner.member.recordPayment"
-  | "owner.member.reminderComingSoon"
   | "owner.member.reveal"
   | "owner.member.revealNotLogged"
   | "owner.member.revealNotLoggedBody"
@@ -4555,7 +4554,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.member.openingPaymentTools": "Opening payment tools.",
     "owner.member.phone": "Phone",
     "owner.member.recordPayment": "Record payment",
-    "owner.member.reminderComingSoon": "Reminder feature coming soon.",
     "owner.member.reveal": "View contact",
     "owner.member.revealNotLogged": "Contact view not logged",
     "owner.member.revealNotLoggedBody":
@@ -7340,7 +7338,6 @@ const translations: Record<AppLocale, Record<TranslationKey, string>> = {
     "owner.member.openingPaymentTools": "पेमेंट tools खुल रहे हैं.",
     "owner.member.phone": "फोन",
     "owner.member.recordPayment": "पेमेंट record करें",
-    "owner.member.reminderComingSoon": "Reminder feature जल्द आ रहा है.",
     "owner.member.reveal": "Contact देखें",
     "owner.member.revealNotLogged": "Contact view log नहीं हुआ",
     "owner.member.revealNotLoggedBody": "फोन दिखा दिया गया, लेकिन audit log save नहीं हो सका.",
