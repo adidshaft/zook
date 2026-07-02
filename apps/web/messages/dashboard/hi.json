@@ -453,6 +453,8 @@
     "csvSubscription": "Subscription",
     "reactivatedToast": "Member reactivate हो गया.",
     "deactivatedToast": "Member deactivate हो गया.",
+    "deactivateMember": "Member deactivate करें",
+    "reactivateMember": "Member reactivate करें",
     "accessUpdateError": "Member access update नहीं हो सका.",
     "accessReactivated": "Member फिर से gym access कर सकता है.",
     "accessInactiveStatus": "Member access inactive है.",

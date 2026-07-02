@@ -128,6 +128,7 @@ test.describe("auth actions", () => {
     );
 
     await page.goto("/login");
+    await page.getByText("More sign-in options").click();
     await expect(page.getByTestId("login-google")).toBeVisible();
     await expect(page.getByTestId("login-apple")).toBeVisible();
 
@@ -146,6 +147,7 @@ test.describe("auth actions", () => {
     expect(googleUrl.searchParams.get("nonce")).toBeTruthy();
 
     await page.goto("/login");
+    await page.getByText("More sign-in options").click();
     await page.getByTestId("login-apple").click();
     await expect(page.getByRole("main").getByRole("alert")).toContainText(/invalid sign-in token/i);
     const appleInit = await page.evaluate(

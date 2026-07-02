@@ -52,6 +52,7 @@ test.describe("payments actions", () => {
     const receiptNumber = `UI-RCPT-${Date.now()}`;
 
     await page.goto("/dashboard/payments");
+    await page.getByRole("tab", { name: /^Record\b/ }).click({ timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "Collected at the desk" })).toBeVisible({
       timeout: 30_000,
     });
@@ -159,6 +160,7 @@ test.describe("payments actions", () => {
     expect(pdfResponse.headers()["content-type"]).toContain("application/pdf");
 
     await page.goto("/dashboard/payments");
+    await page.getByRole("tab", { name: /^History\b/ }).click({ timeout: 30_000 });
     await expect(page.getByText("Payment history")).toBeVisible();
     await expect(page.getByText("₹1,800").first()).toBeVisible({ timeout: 15_000 });
   });
@@ -206,7 +208,9 @@ test.describe("payments actions", () => {
     ).resolves.toBeTruthy();
 
     await page.goto("/dashboard/payments");
+    await page.getByRole("tab", { name: /^History\b/ }).click({ timeout: 30_000 });
     const paymentRow = page.locator("tr").filter({ hasText: "₹3,333" }).first();
+    await paymentRow.getByRole("button", { name: /More actions for/ }).click();
     await paymentRow.getByRole("button", { name: "Refund" }).click();
     await expect(page.getByText("Refund draft")).toBeVisible();
     await page.getByLabel("Refund amount").fill("500");

@@ -91,6 +91,7 @@ export function MembershipCatalogSection({
       active: true,
     });
     setEditingPlanId(null);
+    setShowCreateForm(true);
   }
 
   return (

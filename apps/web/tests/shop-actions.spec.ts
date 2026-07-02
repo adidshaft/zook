@@ -61,7 +61,7 @@ test.describe("shop actions", () => {
     ).resolves.toMatchObject({ active: false });
 
     await page.goto("/dashboard/shop");
-    await expect(page.getByText("Low-stock watch")).toBeVisible();
+    await expect(page.getByText("Low stock", { exact: true }).first()).toBeVisible();
   });
 
   test("owner switches between branch-scoped shop inventory", async ({ page }) => {
@@ -274,14 +274,21 @@ test.describe("shop actions", () => {
     });
 
     await page.goto("/dashboard/shop");
-    await expect(page.getByText("Product photos", { exact: true })).toBeVisible({
+    const addProductToggle = page.getByRole("button", { name: "+ Add product" });
+    if (await addProductToggle.isVisible().catch(() => false)) {
+      await addProductToggle.click();
+    }
+    await expect(page.getByText("Product photos", { exact: true }).first()).toBeVisible({
       timeout: 15_000,
     });
     await page.goto("/dashboard/shop/orders");
-    await expect(page.getByText(order.id.slice(-8).toUpperCase())).toBeVisible({
-      timeout: 15_000,
-    });
-    const refundLink = page.getByRole("link", { name: /refund order/i }).first();
+    const orderRow = page
+      .locator("tr")
+      .filter({ hasText: order.id.slice(-8).toUpperCase() })
+      .first();
+    await expect(orderRow).toBeVisible({ timeout: 15_000 });
+    await orderRow.getByLabel("More order actions").click();
+    const refundLink = orderRow.getByRole("link", { name: /refund order/i }).first();
     await expect(refundLink).toBeVisible();
     await expect(refundLink).toHaveAttribute(
       "href",

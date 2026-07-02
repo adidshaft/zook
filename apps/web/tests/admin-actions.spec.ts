@@ -158,7 +158,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
     });
     const row = page.getByRole("row", { name: new RegExp(staffUser.email!, "i") });
     await expect(row).toBeVisible({ timeout: 15_000 });
-    await row.getByRole("button", { name: "Role" }).click();
+    await row.getByRole("button", { name: "Edit" }).click();
     await row.locator("select").first().selectOption("RECEPTIONIST");
     await row.locator("select").nth(1).selectOption(branch.id);
     await row.getByRole("button", { name: "Save" }).click();
@@ -242,7 +242,7 @@ test.describe("branches, staff, settings, and billing actions", () => {
       timeout: 15_000,
     });
     await expect(page.getByText(invoiceNumber)).toBeVisible({ timeout: 15_000 });
-    const pdfLink = page.getByRole("link", { name: /download invoice pdf/i }).first();
+    const pdfLink = page.getByRole("link", { name: /download pdf/i }).first();
     await expect(pdfLink).toBeVisible();
     await expect(pdfLink).toHaveAttribute(
       "href",

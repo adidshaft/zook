@@ -453,6 +453,8 @@
     "csvSubscription": "Subscription",
     "reactivatedToast": "Member reactivated.",
     "deactivatedToast": "Member deactivated.",
+    "deactivateMember": "Deactivate member",
+    "reactivateMember": "Reactivate member",
     "accessUpdateError": "Unable to update member access.",
     "accessReactivated": "Member can access the gym again.",
     "accessInactiveStatus": "Member access is inactive.",

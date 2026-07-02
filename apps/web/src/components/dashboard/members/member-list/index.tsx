@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { UserRoundCheck, UserRoundX } from "lucide-react";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../../operational-shared";
 import {
   DataTable,
@@ -75,6 +76,7 @@ export function MemberList({
   memberAccessBusyId,
   memberAccessStatus,
   memberAccessStatusTone,
+  updateMemberAccess,
 }: {
   orgId: string;
   members: MemberRow[];
@@ -150,24 +152,49 @@ export function MemberList({
         id: "detail",
         header: t("actions"),
         align: "right" as const,
-        render: (row: MemberRow) => (
-          <ZookButton
-            type="button"
-            tone="ghost"
-            size="sm"
-            onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
-            disabled={!row.user?.id}
-          >
-            {t("view")}
-          </ZookButton>
-        ),
+        render: (row: MemberRow) => {
+          const userId = row.user?.id;
+          const inactive = row.membership?.status === "inactive";
+          const accessLabel = inactive ? t("reactivateMember") : t("deactivateMember");
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                onClick={() => userId && setSelectedMemberId(userId)}
+                disabled={!userId}
+              >
+                {t("view")}
+              </ZookButton>
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                aria-label={accessLabel}
+                title={accessLabel}
+                onClick={() => userId && updateMemberAccess(userId, inactive ? "active" : "inactive")}
+                disabled={!userId || memberAccessBusyId === userId}
+                state={memberAccessBusyId === userId ? "loading" : "idle"}
+              >
+                {inactive ? (
+                  <UserRoundCheck aria-hidden className="h-4 w-4" />
+                ) : (
+                  <UserRoundX aria-hidden className="h-4 w-4" />
+                )}
+              </ZookButton>
+            </div>
+          );
+        },
       },
     ],
     [
+      memberAccessBusyId,
       selectedBulkMemberIds,
       setSelectedMemberId,
       t,
       toggleBulkMember,
+      updateMemberAccess,
     ],
   );
 
@@ -229,7 +256,7 @@ export function MemberList({
                 rowHeight={92}
                 maxHeight={620}
                 tableMinWidth="980px"
-                gridTemplateColumns="56px minmax(260px,1.4fr) minmax(180px,0.9fr) minmax(120px,0.6fr) minmax(120px,0.7fr) 96px"
+                gridTemplateColumns="56px minmax(260px,1.4fr) minmax(180px,0.9fr) minmax(120px,0.6fr) minmax(120px,0.7fr) 148px"
                 empty={<MemberListEmpty filtersActive={filtersActive} />}
               />
             ) : (
