@@ -105,12 +105,17 @@ test("shop product delete confirm dialog traps focus, closes on Escape, and pass
       pricePaise: 9900,
       stock: 3,
       lowStockThreshold: 1,
+      // Delete is only offered on an archived product (a deliberate safety
+      // guardrail against deleting something still sellable) and only once
+      // its card is in edit mode — seed it pre-archived and open Edit below.
+      active: false,
     },
   });
 
   await page.goto("/dashboard/shop");
   const productCard = page.locator("div.rounded-\\[22px\\]", { hasText: productName }).first();
   await expect(productCard).toBeVisible();
+  await productCard.getByRole("button", { name: "Edit" }).click();
   await productCard.getByRole("button", { name: "Delete" }).click();
 
   const dialog = page.getByRole("dialog", { name: /delete product/i });

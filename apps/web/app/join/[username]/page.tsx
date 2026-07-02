@@ -397,9 +397,9 @@ export default async function JoinPage({
                     </div>
                   )}
                   <div className="min-w-0 text-left">
-                    <p className="line-clamp-2 text-base font-semibold leading-tight text-[var(--text-primary)]">
+                    <h1 className="line-clamp-2 text-base font-semibold leading-tight text-[var(--text-primary)]">
                       {org.name}
-                    </p>
+                    </h1>
                     <p className="mt-0.5 line-clamp-1 text-xs text-[var(--text-tertiary)]">
                       {orgLocationLine}
                     </p>

@@ -31,7 +31,7 @@ export function BranchSelectClient({
   return (
     <div className="w-full min-w-[15.5rem] max-w-[28rem]">
       <SearchableSelect
-        label={t("label")}
+        label={t("placeholder")}
         placeholder={t("placeholder")}
         searchPlaceholder={t("search")}
         emptyLabel={t("empty")}
