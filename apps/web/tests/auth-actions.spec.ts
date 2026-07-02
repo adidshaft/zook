@@ -104,7 +104,10 @@ test.describe("auth actions", () => {
       accountMenu.getByTestId("dashboard-sign-out").click(),
     ]);
     expect(logoutResponse.ok()).toBeTruthy();
-    await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
+    await page.waitForURL((url) => url.pathname === "/", {
+      timeout: 15_000,
+      waitUntil: "domcontentloaded",
+    });
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "zook_session")?.value ?? "").toBe("");
   });
