@@ -18,11 +18,21 @@ describe("membership date helpers", () => {
     expect(daysUntil("2026-07-04T06:30:00.000Z", now)).toBe(2);
     expect(daysUntil("2026-07-01T06:30:00.000Z", now)).toBe(0);
 
-    expect(pauseMinimumDate(new Date("2026-07-02T04:00:00.000Z")).toISOString()).toBe(
-      "2026-07-03T06:30:00.000Z",
+    // pauseMinimumDate/pauseDefaultDate intentionally operate on device-local
+    // time (the pause picker should show "tomorrow noon" in the member's own
+    // timezone). Compute the expectation the same way rather than hardcoding
+    // an IST-relative instant, so this test is host-timezone-independent.
+    const expectedMinimum = new Date("2026-07-02T04:00:00.000Z");
+    expectedMinimum.setDate(expectedMinimum.getDate() + 1);
+    expectedMinimum.setHours(12, 0, 0, 0);
+    expect(pauseMinimumDate(new Date("2026-07-02T04:00:00.000Z")).getTime()).toBe(
+      expectedMinimum.getTime(),
     );
-    expect(pauseDefaultDate(new Date("2026-07-02T04:00:00.000Z")).toISOString()).toBe(
-      "2026-07-09T06:30:00.000Z",
+
+    const expectedDefault = new Date(expectedMinimum);
+    expectedDefault.setDate(expectedDefault.getDate() + 6);
+    expect(pauseDefaultDate(new Date("2026-07-02T04:00:00.000Z")).getTime()).toBe(
+      expectedDefault.getTime(),
     );
   });
 

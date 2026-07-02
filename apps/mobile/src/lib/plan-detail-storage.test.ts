@@ -49,7 +49,7 @@ describe("plan detail storage helpers", () => {
         ]),
       ),
     ).toEqual([
-      { name: "Farmer Carries", sets: "Custom", equipment: "Added", reps: "Carry" },
+      { name: "Farmer Carries", sets: "Custom", equipment: "Added", reps: "Carry", restSeconds: null },
     ]);
   });
 
