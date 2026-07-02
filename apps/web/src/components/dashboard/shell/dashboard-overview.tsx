@@ -150,7 +150,8 @@ export function DashboardOverview({
             title: overview.nudgeRenewalsTitle,
             subtitle: interpolate(overview.nudgeRenewalsSubtitle, {
               count: summary.expiringMemberships,
-              membershipLabel: summary.expiringMemberships === 1 ? "membership" : "memberships",
+              membershipLabel:
+                summary.expiringMemberships === 1 ? overview.membershipOne : overview.membershipOther,
             }),
             tone: "amber" as const,
             href: "/dashboard/members",
@@ -164,7 +165,8 @@ export function DashboardOverview({
             title: overview.clearApprovalsTitle,
             subtitle: interpolate(overview.clearApprovalsSubtitle, {
               count: summary.pendingAttendanceApprovals,
-              checkLabel: summary.pendingAttendanceApprovals === 1 ? "check" : "checks",
+              checkLabel:
+                summary.pendingAttendanceApprovals === 1 ? overview.checkOne : overview.checkOther,
             }),
             tone: "sky" as const,
             href: "/dashboard/attendance",
@@ -178,7 +180,7 @@ export function DashboardOverview({
             title: overview.restockTitle,
             subtitle: interpolate(overview.restockSubtitle, {
               count: summary.lowStockProducts,
-              productLabel: summary.lowStockProducts === 1 ? "product" : "products",
+              productLabel: summary.lowStockProducts === 1 ? overview.productOne : overview.productOther,
             }),
             tone: "amber" as const,
             href: "/dashboard/shop",
@@ -214,7 +216,7 @@ export function DashboardOverview({
       title: overview.openQrTitle,
       subtitle: interpolate(overview.openQrSubtitle, {
         count: summary.todayAttendance,
-        checkInLabel: summary.todayAttendance === 1 ? "check-in" : "check-ins",
+        checkInLabel: summary.todayAttendance === 1 ? overview.checkInOne : overview.checkInOther,
       }),
       tone: "sky",
       href: "/dashboard/attendance/qr-display",
