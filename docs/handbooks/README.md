@@ -8,7 +8,8 @@ Use these handbooks for production testing, onboarding, and role training.
 
 | Guide | Use it for |
 | --- | --- |
-| [user-manual.md](./user-manual.md) | Bilingual English/Hindi user manual for every role |
+| [user-manual-en.md](./user-manual-en.md) | Full English user manual — every role, step by step, with FAQs |
+| [user-manual-hi.md](./user-manual-hi.md) | पूरा हिन्दी user manual — हर role, step by step, FAQs के साथ |
 
 ---
 
