@@ -6,6 +6,7 @@ import { buildGymDiscoveryResults } from "../gym-discovery";
 import { assertRateLimit } from "../rate-limit";
 import { fail, ok } from "../response";
 import { getClientIp } from "../security";
+import { cachedJson } from "../server-cache";
 import { computeDiscountPaise, getMapProviderOrThrow, pathMatches } from "./core";
 
 function publicTrainerPhotoUrl(value: string | null | undefined) {
@@ -15,7 +16,46 @@ function publicTrainerPhotoUrl(value: string | null | undefined) {
   return value;
 }
 
+function seededPublicGymLogoUrl(username: string) {
+  if (username === "aarogya-strength" || username === "your-fitness") {
+    return `/seed/gyms/${username}/logo.svg`;
+  }
+  return null;
+}
+
+function nullableEnv(key: string) {
+  const value = process.env[key]?.trim();
+  return value ? value : null;
+}
+
 export async function handlePublicOrganizations(request: NextRequest, path: string[]) {
+  if (request.method === "GET" && pathMatches(path, ["public", "app-config"])) {
+    return ok({
+      minimumAppVersion: {
+        ios: nullableEnv("MINIMUM_APP_VERSION_IOS"),
+        android: nullableEnv("MINIMUM_APP_VERSION_ANDROID"),
+      },
+      storeUrls: {
+        ios: nullableEnv("NEXT_PUBLIC_APP_STORE_URL"),
+        android: nullableEnv("NEXT_PUBLIC_PLAY_STORE_URL"),
+      },
+    });
+  }
+
+  if (request.method === "GET" && pathMatches(path, ["orgs", "public", "cities"])) {
+    const cities = await cachedJson("public-org-cities", 300, async () => {
+      const rows = await prisma.organization.findMany({
+        where: { visibility: "PUBLIC", city: { not: "" } },
+        select: { city: true },
+        distinct: ["city"],
+        orderBy: { city: "asc" },
+        take: 100,
+      });
+      return rows.map((row) => row.city.trim()).filter(Boolean);
+    });
+    return ok({ cities });
+  }
+
   if (request.method === "GET" && pathMatches(path, ["orgs", "public", "search"])) {
     await assertRateLimit(
       "publicOrgSearchByIp",
@@ -39,6 +79,10 @@ export async function handlePublicOrganizations(request: NextRequest, path: stri
               OR: [
                 { name: { contains: query, mode: "insensitive" } },
                 { username: { contains: query, mode: "insensitive" } },
+                { address: { contains: query, mode: "insensitive" } },
+                { city: { contains: query, mode: "insensitive" } },
+                { state: { contains: query, mode: "insensitive" } },
+                { pincode: { contains: query, mode: "insensitive" } },
               ],
             }
           : {}),
@@ -53,8 +97,10 @@ export async function handlePublicOrganizations(request: NextRequest, path: stri
         id: gym.id,
         name: gym.name,
         username: gym.username,
+        address: gym.address,
         city: gym.city,
         state: gym.state,
+        pincode: gym.pincode,
         visibility: gym.visibility,
         joinMode: gym.joinMode,
         latitude: gym.latitude ? Number(gym.latitude) : null,
@@ -63,7 +109,7 @@ export async function handlePublicOrganizations(request: NextRequest, path: stri
           ? gym.amenities.filter((item): item is string => typeof item === "string")
           : [],
         coverImageUrl: gym.coverImageUrl,
-        logoUrl: gym.logoUrl,
+        logoUrl: gym.logoUrl ?? seededPublicGymLogoUrl(gym.username),
       })),
       ...(query ? { query } : {}),
       ...(city ? { city } : {}),
@@ -177,6 +223,7 @@ export async function handlePublicOrganizations(request: NextRequest, path: stri
     return ok({
       org: {
         ...org,
+        logoUrl: org.logoUrl ?? seededPublicGymLogoUrl(org.username),
         tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : null,
         gallery:
           Array.isArray(settingValues.gallery) &&

@@ -1,8 +1,9 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { formatInr } from "@/lib/format";
 import type { CouponKind, MembershipPlanRow, OfferRow } from "@/components/dashboard/types";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
+import { useT } from "@/lib/use-t";
 import type { OfferFormState } from "./types";
 
 type OfferControlsProps = {
@@ -36,85 +37,103 @@ export function OfferControls({
   toggleOffer,
   startOfferEdit,
 }: OfferControlsProps) {
+  const t = useT("plans");
+  const [showCreateForm, setShowCreateForm] = useState(offers.length === 0);
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-      <p className="font-medium text-white">Public offers</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-medium text-white">{t("publicOffers")}</p>
+        {offers.length ? (
+          <ZookButton
+            type="button"
+            tone={showCreateForm ? "ghost" : "secondary"}
+            size="sm"
+            onClick={() => setShowCreateForm((current) => !current)}
+          >
+            {showCreateForm ? t("cancel") : t("offerCta")}
+          </ZookButton>
+        ) : null}
+      </div>
       <div className="mt-3 grid gap-3">
-        <TextInput
-          label="Offer name"
-          value={offerForm.name}
-          onChange={(event) =>
-            setOfferForm((current) => ({ ...current, name: event.target.value }))
-          }
-          placeholder="Summer special"
-        />
-        <div className="grid gap-3 md:grid-cols-2">
-          <Select
-            label="Discount type"
-            value={offerForm.discountType}
-            onChange={(event) =>
-              setOfferForm((current) => ({
-                ...current,
-                discountType: event.target.value as CouponKind,
-              }))
-            }
-            options={[
-              { value: "PERCENTAGE", label: "Percentage" },
-              { value: "FIXED_AMOUNT", label: "Fixed amount" },
-            ]}
-          />
-          <TextInput
-            label="Discount value"
-            value={offerForm.discountValue}
-            onChange={(event) =>
-              setOfferForm((current) => ({
-                ...current,
-                discountValue: event.target.value,
-              }))
-            }
-            placeholder={offerForm.discountType === "PERCENTAGE" ? "15" : "750"}
-            inputMode="numeric"
-          />
-        </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_92px]">
-          <Select
-            label="Plan"
-            value={offerForm.applicablePlanId}
-            onChange={(event) =>
-              setOfferForm((current) => ({
-                ...current,
-                applicablePlanId: event.target.value,
-              }))
-            }
-            options={[
-              { value: "", label: "All public plans" },
-              ...membershipPlans.map((plan) => ({ value: plan.id, label: plan.name })),
-            ]}
-          />
-          <TextInput
-            label="Ends in"
-            value={offerForm.endsInDays}
-            onChange={(event) =>
-              setOfferForm((current) => ({ ...current, endsInDays: event.target.value }))
-            }
-            placeholder="Days"
-            inputMode="numeric"
-          />
-        </div>
-        <ZookButton
-          type="button"
-          onClick={() => void createOffer()}
-          disabled={formBusy === "offer"}
-          state={formBusy === "offer" ? "loading" : "idle"}
-        >
-          {formBusy === "offer" ? "Creating..." : "Create offer"}
-        </ZookButton>
+        {showCreateForm ? (
+          <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <TextInput
+              label={t("offerName")}
+              value={offerForm.name}
+              onChange={(event) =>
+                setOfferForm((current) => ({ ...current, name: event.target.value }))
+              }
+              placeholder={t("offerNamePlaceholder")}
+            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <Select
+                label={t("discountType")}
+                value={offerForm.discountType}
+                onChange={(event) =>
+                  setOfferForm((current) => ({
+                    ...current,
+                    discountType: event.target.value as CouponKind,
+                  }))
+                }
+                options={[
+                  { value: "PERCENTAGE", label: t("percentage") },
+                  { value: "FIXED_AMOUNT", label: t("fixedAmount") },
+                ]}
+              />
+              <TextInput
+                label={t("discountValue")}
+                value={offerForm.discountValue}
+                onChange={(event) =>
+                  setOfferForm((current) => ({
+                    ...current,
+                    discountValue: event.target.value,
+                  }))
+                }
+                placeholder={offerForm.discountType === "PERCENTAGE" ? "15" : "750"}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_92px]">
+              <Select
+                label={t("plan")}
+                value={offerForm.applicablePlanId}
+                onChange={(event) =>
+                  setOfferForm((current) => ({
+                    ...current,
+                    applicablePlanId: event.target.value,
+                  }))
+                }
+                options={[
+                  { value: "", label: t("allPublicPlans") },
+                  ...membershipPlans.map((plan) => ({ value: plan.id, label: plan.name })),
+                ]}
+              />
+              <TextInput
+                label={t("endsIn")}
+                value={offerForm.endsInDays}
+                onChange={(event) =>
+                  setOfferForm((current) => ({ ...current, endsInDays: event.target.value }))
+                }
+                placeholder={t("daysPlaceholder")}
+                inputMode="numeric"
+              />
+            </div>
+            <ZookButton
+              type="button"
+              onClick={() => void createOffer()}
+              disabled={formBusy === "offer"}
+              state={formBusy === "offer" ? "loading" : "idle"}
+            >
+              {formBusy === "offer" ? t("creating") : t("createOffer")}
+            </ZookButton>
+          </div>
+        ) : null}
         {offers.slice(0, 4).map((offer) => (
           <div key={offer.id} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
             {editingOfferId === offer.id ? (
               <div className="grid gap-2">
                 <TextInput
-                  label="Offer name"
+                  label={t("offerName")}
                   value={offerEditForm.name}
                   onChange={(event) =>
                     setOfferEditForm((current) => ({
@@ -125,7 +144,7 @@ export function OfferControls({
                 />
                 <div className="grid grid-cols-[1fr_1fr] gap-2">
                   <Select
-                    label="Type"
+                    label={t("type")}
                     value={offerEditForm.discountType}
                     onChange={(event) =>
                       setOfferEditForm((current) => ({
@@ -134,12 +153,12 @@ export function OfferControls({
                       }))
                     }
                     options={[
-                      { value: "PERCENTAGE", label: "Percentage" },
-                      { value: "FIXED_AMOUNT", label: "Fixed" },
+                      { value: "PERCENTAGE", label: t("percentage") },
+                      { value: "FIXED_AMOUNT", label: t("fixed") },
                     ]}
                   />
                   <TextInput
-                    label="Value"
+                    label={t("value")}
                     value={offerEditForm.discountValue}
                     onChange={(event) =>
                       setOfferEditForm((current) => ({
@@ -158,7 +177,7 @@ export function OfferControls({
                     disabled={formBusy === `offer:${offer.id}:edit`}
                     state={formBusy === `offer:${offer.id}:edit` ? "loading" : "idle"}
                   >
-                    Save
+                    {t("save")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -166,7 +185,7 @@ export function OfferControls({
                     size="sm"
                     onClick={() => setEditingOfferId(null)}
                   >
-                    Cancel
+                    {t("cancel")}
                   </ZookButton>
                 </div>
               </div>
@@ -176,9 +195,9 @@ export function OfferControls({
                   <p className="text-sm font-medium text-white">{offer.name}</p>
                   <p className="text-xs text-white/45">
                     {offer.discountType === "PERCENTAGE"
-                      ? `${offer.discountValue / 100}% off`
+                      ? t("percentOff", { value: offer.discountValue / 100 })
                       : formatInr(offer.discountValue)}{" "}
-                    · {offer.redemptionCount} used
+                    · {t("usedCount", { count: offer.redemptionCount })}
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
@@ -188,7 +207,7 @@ export function OfferControls({
                     size="sm"
                     onClick={() => startOfferEdit(offer)}
                   >
-                    Edit
+                    {t("edit")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -198,7 +217,7 @@ export function OfferControls({
                     disabled={formBusy === `offer:${offer.id}`}
                     state={formBusy === `offer:${offer.id}` ? "loading" : "idle"}
                   >
-                    {offer.active ? "Deactivate" : "Restore"}
+                    {offer.active ? t("deactivate") : t("restore")}
                   </ZookButton>
                 </div>
               </div>

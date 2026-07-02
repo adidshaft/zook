@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { UserCircle2 } from "lucide-react";
-import { DashboardLocaleToggle } from "../../dashboard-locale-toggle";
 import { DashboardSignOutButton } from "../../dashboard-sign-out-button";
 import { ThemePreferenceSwitcher } from "../../theme-preference-switcher";
 import type { UserMenuCopy } from "./types";
@@ -63,19 +62,6 @@ export function UserMenu({
         <div className="rounded-2xl bg-[var(--bg-sunken)] p-3">
           <p className="truncate text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
           <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">{user.email}</p>
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-3 px-1">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-            {copy.common.language}
-          </span>
-          <DashboardLocaleToggle
-            locale={user.preferredLocale ?? undefined}
-            labels={{
-              language: copy.common.language,
-              english: copy.common.english,
-              hindi: copy.common.hindi,
-            }}
-          />
         </div>
         <div className="mt-3 space-y-2 px-1">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">

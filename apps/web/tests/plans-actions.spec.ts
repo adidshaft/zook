@@ -33,6 +33,7 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
       timeout: 30_000,
     });
     await plansLoadPromise;
+    await page.getByRole("button", { name: "+ New plan" }).click();
     const planNameInput = page.getByLabel("Plan name").first();
     const priceInput = page.getByLabel("Price").first();
     const durationDaysInput = page.getByLabel("Duration days").first();
@@ -149,8 +150,10 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
 
     await page
       .getByRole("row", { name: new RegExp(planName) })
-      .getByRole("button", { name: "Archive" })
+      .getByRole("button", { name: "Edit" })
       .click();
+    await page.getByText("More plan actions").click();
+    await page.getByRole("button", { name: "Archive", exact: true }).click();
     await expect
       .poll(() => prisma.membershipPlan.findUnique({ where: { id: created.id } }), {
         timeout: 15_000,
@@ -158,8 +161,10 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
       .toMatchObject({ active: false });
     await page
       .getByRole("row", { name: new RegExp(planName) })
-      .getByRole("button", { name: "Restore" })
+      .getByRole("button", { name: "Edit" })
       .click();
+    await page.getByText("More plan actions").click();
+    await page.getByRole("button", { name: "Restore", exact: true }).click();
     await expect
       .poll(() => prisma.membershipPlan.findUnique({ where: { id: created.id } }), {
         timeout: 15_000,
@@ -310,9 +315,13 @@ test.describe("plans, coupons, offers, and referrals actions", () => {
     });
     await page
       .getByRole("row", { name: new RegExp(sourcePlan.name) })
-      .getByRole("button", { name: "Duplicate plan" })
+      .getByRole("button", { name: "Edit" })
       .click();
-    await expect(page.getByLabel("Plan name").first()).toHaveValue(`${sourcePlan.name} copy`);
+    await page.getByText("More plan actions").click();
+    await page.getByRole("button", { name: "Duplicate" }).click();
+    await expect(page.getByLabel("Plan name").first()).toHaveValue(
+      `${sourcePlan.name} duplicate`,
+    );
     await expect(page.getByLabel("Price").first()).toHaveValue("1234");
 
     await expect(page.getByRole("row", { name: new RegExp(archivedPlan.name) })).toBeVisible();

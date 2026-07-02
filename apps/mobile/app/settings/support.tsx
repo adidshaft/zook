@@ -1,12 +1,12 @@
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   Card,
   FormField,
-  ListRow,
-  AppHeader,
+  ScreenHeader,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -19,9 +19,9 @@ import { useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 
 const supportRows = [
-  { titleKey: "settings.helpCenter", subtitleKey: "settings.helpCenterSubtitle", url: "https://zookfit.in/help" },
-  { titleKey: "settings.terms", subtitleKey: "settings.termsSubtitle", url: "https://zookfit.in/terms" },
-  { titleKey: "settings.privacyPolicy", subtitleKey: "settings.privacyPolicySubtitle", url: "https://zookfit.in/privacy" },
+  { titleKey: "settings.helpCenter", subtitleKey: "settings.helpCenterSubtitle", icon: "help-circle-outline", url: "https://zookfit.in/help" },
+  { titleKey: "settings.terms", subtitleKey: "settings.termsSubtitle", icon: "document-text-outline", url: "https://zookfit.in/terms" },
+  { titleKey: "settings.privacyPolicy", subtitleKey: "settings.privacyPolicySubtitle", icon: "shield-checkmark-outline", url: "https://zookfit.in/privacy" },
 ] as const;
 
 export default function SupportSettingsScreen() {
@@ -78,9 +78,8 @@ export default function SupportSettingsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.you.helpSupport")}
-            subtitle={t("settings.version", { version: Constants.expoConfig?.version ?? "dev" })}
             showBack
           />
           <Card variant="compact" contentStyle={styles.list}>
@@ -90,17 +89,21 @@ export default function SupportSettingsScreen() {
               accessibilityLabel={t("settings.reportProblem")}
               style={({ pressed }) => (pressed ? styles.rowPressed : null)}
             >
-              <ListRow
-                title={t("settings.reportProblem")}
-                icon="bug-outline"
-                style={styles.row}
-              />
+              <View style={styles.supportRow}>
+                <View style={[styles.rowIcon, { backgroundColor: palette.surface.accentSoft }]}>
+                  <Ionicons name="bug-outline" size={18} color={palette.accent.base} />
+                </View>
+                <View style={styles.rowCopy}>
+                  <Text style={[styles.rowTitle, { color: palette.text.primary }]}>{t("settings.reportProblem")}</Text>
+                  <Text style={[styles.rowBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                    {t("settings.reportProblemBody")}
+                  </Text>
+                </View>
+                <Ionicons name={feedbackOpen ? "chevron-up" : "chevron-down"} size={18} color={palette.text.tertiary} />
+              </View>
             </Pressable>
             {feedbackOpen ? (
               <View style={styles.feedbackForm}>
-                <Text style={[styles.body, { color: palette.text.secondary }]}>
-                  {t("settings.reportProblemBody")}
-                </Text>
                 <FormField
                   label={t("settings.problemDetails")}
                   value={feedback}
@@ -129,15 +132,27 @@ export default function SupportSettingsScreen() {
                 accessibilityLabel={t(row.titleKey)}
                 style={({ pressed }) => (pressed ? styles.rowPressed : null)}
               >
-                <ListRow
-                  title={t(row.titleKey)}
-                  subtitle={t(row.subtitleKey)}
-                  icon="help-circle-outline"
-                  style={styles.row}
-                />
+                <View style={styles.supportRow}>
+                  <View style={[styles.rowIcon, { backgroundColor: palette.surface.default }]}>
+                    <Ionicons name={row.icon} size={18} color={palette.text.secondary} />
+                  </View>
+                  <View style={styles.rowCopy}>
+                    <Text style={[styles.rowTitle, { color: palette.text.primary }]}>{t(row.titleKey)}</Text>
+                    <Text style={[styles.rowBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                      {t(row.subtitleKey)}
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={17} color={palette.text.tertiary} />
+                </View>
               </Pressable>
             ))}
           </Card>
+          <View style={[styles.versionRail, { backgroundColor: palette.surface.default, borderColor: palette.border.subtle }]}>
+            <Ionicons name="phone-portrait-outline" size={15} color={palette.text.tertiary} />
+            <Text style={[styles.versionText, { color: palette.text.secondary }]} numberOfLines={1}>
+              {t("settings.version", { version: appVersion })}
+            </Text>
+          </View>
         </ScrollView>
       </ZookScreen>
     </>
@@ -156,7 +171,29 @@ const styles = StyleSheet.create({
   body: typography.body,
   feedbackForm: { gap: spacing.md, paddingBottom: spacing.sm },
   list: { gap: 4 },
-  row: {},
+  supportRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 56,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  rowIcon: { alignItems: "center", borderRadius: 14, height: 38, justifyContent: "center", width: 38 },
+  rowCopy: { flex: 1, gap: 2, minWidth: 0 },
+  rowTitle: typography.bodyStrong,
+  rowBody: typography.small,
+  versionRail: {
+    alignItems: "center",
+    alignSelf: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  versionText: typography.small,
   rowPressed: {
     opacity: 0.86,
     transform: [{ scale: 0.99 }],

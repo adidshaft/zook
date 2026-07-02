@@ -7,6 +7,7 @@ import { writeAuditLog } from "../audit";
 import { forbiddenError, notFoundError } from "../errors";
 import { getClientIp } from "../security";
 import { ok, readJson } from "../response";
+import { serializeUserForClient, setSessionCookie } from "./auth-helpers";
 import {
   ADMIN_DETAIL_LIST_LIMIT,
   assertNotImpersonating,
@@ -14,8 +15,6 @@ import {
   isFeatureFlagEnabled,
   pathMatches,
   platformImpersonateSchema,
-  serializeUserForClient,
-  setSessionCookie,
   sha256,
 } from "./core";
 

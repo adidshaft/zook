@@ -231,7 +231,8 @@ export class AuthService {
   async verifyOtp(input: {
     identifier: LoginIdentifier | string;
     code: string;
-    userId: string;
+    userId?: string;
+    resolveVerifiedUserId?: () => Promise<string>;
     userAgent?: string;
     ipAddress?: string;
   }): Promise<{ token: string; refreshToken: string; expiresAt: Date; refreshExpiresAt: Date }> {
@@ -240,7 +241,7 @@ export class AuthService {
     if (configuredFixedOtp && configuredFixedOtp !== allowedFixedOtp && input.code === configuredFixedOtp) {
       await this.repo.recordSecurityEvent?.({
         action: "auth.fixed_otp_rejected",
-        userId: input.userId,
+        ...(input.userId ? { userId: input.userId } : {}),
         identifier:
           typeof input.identifier === "string" ? input.identifier : input.identifier.value,
         ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
@@ -253,12 +254,16 @@ export class AuthService {
       throw new Error("Fixed OTP is disabled in this environment");
     }
     await this.consumeChallenge(input);
+    const userId = input.userId ?? (await input.resolveVerifiedUserId?.());
+    if (!userId) {
+      throw new Error("Verified user id required");
+    }
     const token = AuthService.createToken();
     const refreshToken = AuthService.createToken();
     const expiresAt = new Date(this.now().getTime() + 15 * 60 * 1000);
     const refreshExpiresAt = new Date(this.now().getTime() + 30 * 24 * 60 * 60 * 1000);
     await this.repo.createSession({
-      userId: input.userId,
+      userId,
       tokenHash: AuthService.hash(token),
       refreshTokenHash: AuthService.hash(refreshToken),
       expiresAt,

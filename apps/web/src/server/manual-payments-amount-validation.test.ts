@@ -13,7 +13,9 @@ const mocks = vi.hoisted(() => ({
   paymentCreate: vi.fn(),
   memberSubscriptionCreate: vi.fn(),
   memberSubscriptionFindFirst: vi.fn(),
+  memberSubscriptionFindUnique: vi.fn(),
   memberSubscriptionUpdate: vi.fn(),
+  memberSubscriptionUpdateMany: vi.fn(),
   membershipPlanFindFirst: vi.fn(),
   organizationFindUnique: vi.fn(),
   resolveOrgBranch: vi.fn(),
@@ -21,20 +23,27 @@ const mocks = vi.hoisted(() => ({
   writeAuditLog: vi.fn(),
 }));
 
-vi.mock("@zook/db", () => ({
-  prisma: {
+vi.mock("@zook/db", () => {
+  const prisma: Record<string, unknown> = {
     organization: { findUnique: mocks.organizationFindUnique },
     user: { findUnique: mocks.userFindUnique },
     membershipPlan: { findFirst: mocks.membershipPlanFindFirst },
     memberSubscription: {
       create: mocks.memberSubscriptionCreate,
       findFirst: mocks.memberSubscriptionFindFirst,
+      findUnique: mocks.memberSubscriptionFindUnique,
       update: mocks.memberSubscriptionUpdate,
+      updateMany: mocks.memberSubscriptionUpdateMany,
     },
     payment: { create: mocks.paymentCreate },
     shopOrder: { findFirst: vi.fn(), update: vi.fn() },
-  },
-}));
+    $transaction: (fn: (tx: unknown) => unknown) => fn(prisma),
+  };
+  return {
+    prisma,
+    Prisma: { TransactionIsolationLevel: { Serializable: "Serializable" } },
+  };
+});
 
 vi.mock("./access", () => ({
   getRequestContext: mocks.getRequestContext,

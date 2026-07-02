@@ -1,18 +1,22 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
   FormField,
+  HeaderActions,
   QueryErrorState,
   SectionHeader,
+  ScreenHeader,
   Skeleton,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgReferralPolicy, type ReferralPolicy } from "@/lib/domains/owner/queries";
 import { useUpdateReferralPolicy } from "@/lib/domains/owner/mutations";
 import { useT, type TranslationKey } from "@/lib/i18n";
@@ -67,6 +71,7 @@ export default function OwnerReferralSettings() {
   const updatePolicy = useUpdateReferralPolicy();
   const [refreshing, setRefreshing] = useState(false);
   const [form, setForm] = useState<ReferralPolicy | null>(null);
+  const [showMoreRules, setShowMoreRules] = useState(false);
 
   useEffect(() => {
     if (policyQuery.data?.policy && !form) setForm(policyQuery.data.policy);
@@ -113,7 +118,16 @@ export default function OwnerReferralSettings() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("owner.referrals.title")} subtitle={t("owner.referrals.subtitle")} showBack />
+          <ScreenHeader
+            title={t("owner.referrals.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
+            }
+            trailing={<HeaderActions showBell />}
+          />
 
           {policyQuery.isError ? (
             <QueryErrorState error={policyQuery.error} onRetry={() => void policyQuery.refetch()} />
@@ -129,12 +143,19 @@ export default function OwnerReferralSettings() {
 
           {form ? (
             <>
-              <Card variant="compact" contentStyle={styles.switchRow}>
-                <View style={styles.switchCopy}>
-                  <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.enabled")}</Text>
-                  <Text style={[styles.switchSub, { color: palette.text.secondary }]}>{t("owner.referrals.enabledBody")}</Text>
+              <Card variant="compact" contentStyle={styles.policyBar}>
+                <View style={styles.switchRow}>
+                  <View style={styles.switchCopy}>
+                    <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.enabled")}</Text>
+                    <Text numberOfLines={1} style={[styles.switchSub, { color: palette.text.secondary }]}>
+                      {t("owner.referrals.enabledBody")}
+                    </Text>
+                  </View>
+                  <ThemedSwitch value={form.enabled} onValueChange={(v) => patch({ enabled: v })} />
                 </View>
-                <ThemedSwitch value={form.enabled} onValueChange={(v) => patch({ enabled: v })} />
+                <ZookButton onPress={save} busy={updatePolicy.isPending} busyLabel={t("common.saving")} icon="save-outline" size="sm">
+                  {t("owner.referrals.saveSettings")}
+                </ZookButton>
               </Card>
 
               <SectionHeader title={t("owner.referrals.memberRefersMember")} />
@@ -156,42 +177,67 @@ export default function OwnerReferralSettings() {
                 ) : null}
               </Card>
 
-              <SectionHeader title={t("owner.referrals.trainerRefersMember")} />
-              <Card contentStyle={styles.formCard}>
-                <View style={styles.switchRow}>
-                  <View style={styles.switchCopy}>
-                    <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.allowTrainerReferrals")}</Text>
-                  </View>
-                  <ThemedSwitch value={form.trainerReferralEnabled} onValueChange={(v) => patch({ trainerReferralEnabled: v })} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showMoreRules }}
+                onPress={() => setShowMoreRules((value) => !value)}
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                  pressed ? styles.pressedAction : null,
+                ]}
+              >
+                <View style={styles.switchCopy}>
+                  <Text style={[styles.switchTitle, { color: palette.text.primary }]}>
+                    {t("owner.referrals.moreRules")}
+                  </Text>
+                  <Text numberOfLines={1} style={[styles.switchSub, { color: palette.text.secondary }]}>
+                    {t("owner.referrals.moreRulesBody")}
+                  </Text>
                 </View>
-                {form.trainerReferralEnabled ? (
-                  <>
-                    <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.referrals.trainerEarns")}</Text>
-                    <ChipRow options={REWARD_TYPES} value={form.trainerRewardType} onChange={(v) => patch({ trainerRewardType: v })} />
-                    {form.trainerRewardType !== "NONE" ? (
-                      <FormField label={form.trainerRewardType === "DAYS" ? t("owner.referrals.freeDays") : t("owner.referrals.visits")} value={String(form.trainerRewardValue)} onChangeText={(text) => patch({ trainerRewardValue: num(text) })} keyboardType="number-pad" />
+                <Ionicons
+                  name={showMoreRules ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={palette.text.secondary}
+                />
+              </Pressable>
+
+              {showMoreRules ? (
+                <>
+                  <SectionHeader title={t("owner.referrals.trainerRefersMember")} />
+                  <Card contentStyle={styles.formCard}>
+                    <View style={styles.switchRow}>
+                      <View style={styles.switchCopy}>
+                        <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.referrals.allowTrainerReferrals")}</Text>
+                      </View>
+                      <ThemedSwitch value={form.trainerReferralEnabled} onValueChange={(v) => patch({ trainerReferralEnabled: v })} />
+                    </View>
+                    {form.trainerReferralEnabled ? (
+                      <>
+                        <Text style={[styles.label, { color: palette.text.secondary }]}>{t("owner.referrals.trainerEarns")}</Text>
+                        <ChipRow options={REWARD_TYPES} value={form.trainerRewardType} onChange={(v) => patch({ trainerRewardType: v })} />
+                        {form.trainerRewardType !== "NONE" ? (
+                          <FormField label={form.trainerRewardType === "DAYS" ? t("owner.referrals.freeDays") : t("owner.referrals.visits")} value={String(form.trainerRewardValue)} onChangeText={(text) => patch({ trainerRewardValue: num(text) })} keyboardType="number-pad" />
+                        ) : null}
+                      </>
                     ) : null}
-                  </>
-                ) : null}
-              </Card>
+                  </Card>
 
-              <SectionHeader title={t("owner.referrals.memberRefersNewGym")} />
-              <Card contentStyle={styles.formCard}>
-                <Text style={[styles.label, { color: palette.text.secondary }]}>
-                  {t("owner.referrals.memberGymCreditBody")}
-                </Text>
-                <FormField label={t("owner.referrals.creditInr")} value={String(Math.round(form.memberGymReferralRewardPaise / 100))} onChangeText={(text) => patch({ memberGymReferralRewardPaise: num(text) * 100 })} keyboardType="number-pad" />
-              </Card>
+                  <SectionHeader title={t("owner.referrals.memberRefersNewGym")} />
+                  <Card contentStyle={styles.formCard}>
+                    <Text style={[styles.label, { color: palette.text.secondary }]}>
+                      {t("owner.referrals.memberGymCreditBody")}
+                    </Text>
+                    <FormField label={t("owner.referrals.creditInr")} value={String(Math.round(form.memberGymReferralRewardPaise / 100))} onChangeText={(text) => patch({ memberGymReferralRewardPaise: num(text) * 100 })} keyboardType="number-pad" />
+                  </Card>
 
-              <SectionHeader title={t("owner.referrals.limits")} />
-              <Card contentStyle={styles.formRow}>
-                <FormField label={t("owner.referrals.maxPerMemberMonth")} value={String(form.maxReferralsPerMonth)} onChangeText={(text) => patch({ maxReferralsPerMonth: Math.max(1, num(text)) })} keyboardType="number-pad" style={styles.formField} />
-                <FormField label={t("owner.referrals.codeExpiryDays")} value={String(form.referralCodeExpiryDays)} onChangeText={(text) => patch({ referralCodeExpiryDays: num(text) })} keyboardType="number-pad" style={styles.formField} />
-              </Card>
-
-              <ZookButton onPress={save} busy={updatePolicy.isPending} busyLabel={t("common.saving")} icon="save-outline" size="lg">
-                {t("owner.referrals.saveSettings")}
-              </ZookButton>
+                  <SectionHeader title={t("owner.referrals.limits")} />
+                  <Card contentStyle={styles.formRow}>
+                    <FormField label={t("owner.referrals.maxPerMemberMonth")} value={String(form.maxReferralsPerMonth)} onChangeText={(text) => patch({ maxReferralsPerMonth: Math.max(1, num(text)) })} keyboardType="number-pad" style={styles.formField} />
+                    <FormField label={t("owner.referrals.codeExpiryDays")} value={String(form.referralCodeExpiryDays)} onChangeText={(text) => patch({ referralCodeExpiryDays: num(text) })} keyboardType="number-pad" style={styles.formField} />
+                  </Card>
+                </>
+              ) : null}
             </>
           ) : null}
         </ScrollView>
@@ -201,6 +247,18 @@ export default function OwnerReferralSettings() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     alignSelf: "center",
     gap: spacing.md,
@@ -209,16 +267,28 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
+  policyBar: { gap: spacing.sm },
   switchRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   switchCopy: { flex: 1, gap: 2, minWidth: 0 },
   switchTitle: { ...typography.cardTitle },
   switchSub: { ...typography.small },
   formCard: { gap: spacing.md },
   loadingCard: { gap: spacing.md },
-  formRow: { flexDirection: "row", gap: spacing.sm },
+  disclosureRow: {
+    alignItems: "center",
+    borderRadius: radii.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  formRow: { gap: spacing.sm },
   formField: { flex: 1 },
   label: { ...typography.caption },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
   chip: { borderRadius: radii.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9 },
   chipText: { ...typography.caption },
+  pressedAction: { opacity: 0.78, transform: [{ scale: 0.96 }] },
 });

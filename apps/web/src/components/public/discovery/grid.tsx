@@ -1,11 +1,23 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Eye } from "lucide-react";
 import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
-import { formatInr } from "@/lib/format";
+import { priceSummary, publicGymDisplayIdentity } from "@/lib/public-gym-profile";
 import { joinModeLabelForLocale, joinModeTone, localizedPath, publicT, type PublicLocale } from "@/lib/public-i18n";
 import type { GymResult } from "@/lib/public-gym-discovery";
+
+function gymLocationLine(gym: GymResult) {
+  return (
+    publicGymDisplayIdentity({
+      address: gym.address ?? null,
+      city: gym.city,
+      orgName: gym.name,
+      state: gym.state,
+    }).subtitle ?? gym.city
+  );
+}
 
 export function GymDiscoveryGrid({
   gyms,
@@ -15,8 +27,15 @@ export function GymDiscoveryGrid({
   locale: PublicLocale;
 }) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
-  const coverAlt = (name: string) => (locale === "hi" ? `${name} की cover photo` : `${name} cover`);
+  const coverAlt = (name: string) => (locale === "hi" ? `${name} की कवर तस्वीर` : `${name} cover`);
   const logoAlt = (name: string) => (locale === "hi" ? `${name} लोगो` : `${name} logo`);
+  const openLabel = (planCount: number) => (planCount ? t("viewMemberships") : t("viewGym"));
+  const planCountLabel = (count: number) =>
+    count
+      ? locale === "hi"
+        ? `${count} ${t("publicPlans")}`
+        : `${count} ${count === 1 ? "plan" : "plans"}`
+      : t("publicSignupPending");
   if (!gyms.length) {
     return (
       <GlassCard className="text-center">
@@ -30,64 +49,99 @@ export function GymDiscoveryGrid({
     );
   }
   return (
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {gyms.map((gym) => (
-        <Link key={gym.id} href={localizedPath(`/g/${gym.username}`, locale)} className="zook-focus block rounded-[28px]">
-          <GlassCard className="h-full overflow-hidden transition hover:border-lime-300/25 hover:bg-white/[0.075]">
-            <div className="-mx-4 -mt-4 mb-4 h-36 overflow-hidden border-b border-white/10 bg-white/[0.03] sm:-mx-5 sm:-mt-5">
+    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {gyms.map((gym) => {
+        const primaryPrice =
+          gym.priceFromPaise !== null ? priceSummary(gym.priceSummaryPlans, locale) : t("freeToJoin");
+        const locationLine = gymLocationLine(gym);
+        const profileHref = localizedPath(`/g/${gym.username}`, locale);
+        const primaryHref = gym.planCount ? localizedPath(`/join/${gym.username}`, locale) : profileHref;
+        return (
+          <GlassCard
+            key={gym.id}
+            className="group grid h-full overflow-hidden p-0 transition duration-200 hover:-translate-y-0.5 hover:border-lime-300/25 hover:bg-white/[0.075]"
+          >
+            <div className="relative h-28 overflow-hidden bg-white/[0.03] sm:h-32">
               {gym.coverImageUrl ? (
-                <img
+                <Image
                   src={gym.coverImageUrl}
                   alt={coverAlt(gym.name)}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center bg-lime-300/10 text-sm font-semibold text-lime-100">
-                  {gym.name}
+                <div className="flex h-full items-center justify-end bg-[radial-gradient(circle_at_22%_18%,rgba(190,242,100,0.20),transparent_34%),linear-gradient(135deg,rgba(190,242,100,0.10),rgba(255,255,255,0.03))] px-5">
+                  <AvatarInitials
+                    name={gym.name}
+                    className="h-20 w-20 rounded-[28px] border-white/10 bg-white/[0.06] text-2xl text-lime-100/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                  />
                 </div>
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/52 via-black/10 to-black/5" />
+              <div className="absolute right-3 top-3">
+                <Pill tone={joinModeTone(gym.joinMode)} className="bg-black/45 backdrop-blur">
+                  {joinModeLabelForLocale(gym.joinMode, locale)}
+                </Pill>
+              </div>
             </div>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
+            <div className="grid gap-3 p-4">
+              <div className="flex min-w-0 items-start gap-3">
                 {gym.logoUrl ? (
-                  <img src={gym.logoUrl} alt={logoAlt(gym.name)} loading="lazy" decoding="async" className="h-12 w-12 rounded-2xl border border-white/10 object-cover" />
+                  <Image
+                    src={gym.logoUrl}
+                    alt={logoAlt(gym.name)}
+                    width={48}
+                    height={48}
+                    sizes="48px"
+                    className="h-12 w-12 shrink-0 rounded-2xl border border-white/12 bg-black/25 object-cover shadow-sm"
+                  />
                 ) : (
                   <AvatarInitials
                     name={gym.name}
-                    className="h-12 w-12 rounded-2xl border-white/10 bg-lime-300/12 text-sm text-lime-100"
+                    className="h-12 w-12 shrink-0 rounded-2xl border-white/12 bg-lime-300/14 text-sm text-lime-100 shadow-sm"
                   />
                 )}
-                <div>
-                  <h2 className="font-semibold text-white">{gym.name}</h2>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-white/45">
-                    <MapPin size={13} />
-                    {gym.city}, {gym.state}
+                <div className="min-w-0 flex-1">
+                  <h2 className="line-clamp-2 text-base font-semibold leading-tight text-white">
+                    {gym.name}
+                  </h2>
+                  <p className="mt-1 line-clamp-1 text-xs font-medium text-white/55">
+                    {locationLine}
                   </p>
                 </div>
               </div>
-              <Pill tone={joinModeTone(gym.joinMode)}>{joinModeLabelForLocale(gym.joinMode, locale)}</Pill>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {(gym.amenities ?? []).slice(0, 4).map((amenity) => <Pill key={amenity}>{amenity}</Pill>)}
-            </div>
-            <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/35">{t("memberships")}</p>
-              <p className="mt-2 text-lg font-semibold text-white">
-                {gym.priceFromPaise !== null
-                  ? `${t("startingAt")} ${formatInr(gym.priceFromPaise)}/${t("perMonth")}`
-                  : "Free to join"}
-              </p>
-              <p className="mt-1 text-xs text-white/45">
-                {gym.planCount
-                  ? `${gym.planCount} ${gym.planCount === 1 ? "plan" : "plans"} available`
-                  : t("publicSignupPending")}
-              </p>
+              <div className="grid gap-3 border-t border-white/8 pt-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold leading-snug text-white">
+                    {primaryPrice}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-white/45">{planCountLabel(gym.planCount)}</p>
+                </div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <Link
+                    href={primaryHref}
+                    aria-label={`${openLabel(gym.planCount)}: ${gym.name}`}
+                    className="zook-focus inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-full bg-lime-300 px-4 text-sm font-semibold text-black transition hover:bg-lime-200 active:scale-[0.99]"
+                  >
+                    <span className="truncate">{openLabel(gym.planCount)}</span>
+                    <ArrowRight size={16} aria-hidden className="shrink-0" />
+                  </Link>
+                  {gym.planCount ? (
+                    <Link
+                      href={profileHref}
+                      aria-label={`${t("viewGym")}: ${gym.name}`}
+                      className="zook-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
+                    >
+                      <Eye size={16} aria-hidden />
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </GlassCard>
-        </Link>
-      ))}
+        );
+      })}
     </section>
   );
 }

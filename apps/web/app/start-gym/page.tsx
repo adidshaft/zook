@@ -88,7 +88,11 @@ export default async function StartGymPage({
             <DashboardSignOutButton compact label={switchAccountLabel} />
           </div>
         </header>
-        <StartGymPanel {...(tier ? { initialTier: tier } : {})} ownerEmail={session.user.email} />
+        <StartGymPanel
+          {...(tier ? { initialTier: tier } : {})}
+          locale={locale}
+          ownerEmail={session.user.email}
+        />
       </div>
     </main>
   );

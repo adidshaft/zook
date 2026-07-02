@@ -15,6 +15,14 @@ export function useGymSearch(input: { query?: string; city?: string } = {}) {
   });
 }
 
+export function useGymCities() {
+  return useQuery({
+    queryKey: queryKeys.gym.cities(),
+    queryFn: () => mobileApiFetch<{ cities: string[] }>("/orgs/public/cities"),
+    staleTime: Infinity,
+  });
+}
+
 export function useGymProfile(username: string) {
   const { token } = useAuth();
   return useQuery({

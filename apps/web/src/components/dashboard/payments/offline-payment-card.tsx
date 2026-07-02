@@ -11,6 +11,7 @@ import { ZookButton } from "../../zook-button";
 import type { MembershipPlanRow, MemberRow } from "@/components/dashboard/types";
 import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
 import type { ManualPaymentForm } from "./types";
+import { useT } from "@/lib/use-t";
 
 export function OfflinePaymentCard({
   orgId,
@@ -37,20 +38,20 @@ export function OfflinePaymentCard({
   lastReceipt: PaymentReceiptState | null;
   onRecordOfflinePayment: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const t = useT("payments");
   const [amountTouched, setAmountTouched] = React.useState(false);
   const amountError = getRupeeAmountError(manualPayment.amountRupees);
 
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Record offline payment"
-        title="Collected at the desk"
+        eyebrow={t("recordOfflinePayment")}
+        title={t("collectedAtDesk")}
         description={
           <span className="inline-flex items-center gap-2">
-            Cash, UPI, card, or bank transfer membership payments.
-            <HelpHint label="Payment mode" title="Payment mode">
-              UPI is a direct bank transfer via PhonePe or GPay. Cash and Card are recorded for
-              reconciliation. Bank Transfer may settle in one to two days.
+            {t("offlinePaymentDescription")}
+            <HelpHint label={t("paymentMode")} title={t("paymentMode")}>
+              {t("paymentModeHelp")}
             </HelpHint>
           </span>
         }
@@ -78,14 +79,14 @@ export function OfflinePaymentCard({
                   : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]"
               }`}
             >
-              {formatPaymentMode(mode)}
+              {formatPaymentMode(mode, t)}
             </button>
           ))}
         </div>
         <SearchableSelect
-          label="Choose member"
-          placeholder="Choose member"
-          searchPlaceholder="Search members"
+          label={t("chooseMember")}
+          placeholder={t("chooseMember")}
+          searchPlaceholder={t("searchMembers")}
           value={manualPayment.memberUserId}
           onChange={(memberUserId) =>
             setManualPayment((current) => ({ ...current, memberUserId }))
@@ -94,14 +95,14 @@ export function OfflinePaymentCard({
             .filter((member) => member.user?.id)
             .map((member) => ({
               value: member.user!.id,
-              label: member.user?.name ?? member.user?.email ?? "Member",
+              label: member.user?.name ?? member.user?.email ?? t("member"),
               description: member.user?.phone ?? member.user?.email ?? undefined,
             }))}
         />
         <SearchableSelect
-          label="Choose plan"
-          placeholder="Choose plan"
-          searchPlaceholder="Search plans"
+          label={t("choosePlan")}
+          placeholder={t("choosePlan")}
+          searchPlaceholder={t("searchPlans")}
           value={manualPayment.planId}
           onChange={(planId) => {
             const plan = membershipPlans.find((candidate) => candidate.id === planId);
@@ -121,7 +122,7 @@ export function OfflinePaymentCard({
         />
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-            Amount
+            {t("amount")}
             <div
               className={`flex min-h-11 items-center rounded-2xl border bg-[var(--bg-sunken)] px-4 ${
                 amountTouched && amountError
@@ -153,7 +154,7 @@ export function OfflinePaymentCard({
               <span className="text-xs text-rose-500 dark:text-rose-300">{amountError}</span>
             ) : (
               <span className="text-xs text-[var(--text-tertiary)]">
-                Enter the collected amount in rupees.
+                {t("enterCollectedAmount")}
               </span>
             )}
           </label>
@@ -166,7 +167,7 @@ export function OfflinePaymentCard({
           >
             {modeOptions.map((mode) => (
               <option key={mode} value={mode} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                {formatPaymentMode(mode)}
+                {formatPaymentMode(mode, t)}
               </option>
             ))}
           </select>
@@ -183,7 +184,7 @@ export function OfflinePaymentCard({
           onChange={(event) =>
             setManualPayment((current) => ({ ...current, receiptNumber: event.target.value }))
           }
-          placeholder="Reference number"
+          placeholder={t("referenceNumber")}
           className="zook-focus min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
         <textarea
@@ -191,7 +192,7 @@ export function OfflinePaymentCard({
           onChange={(event) =>
             setManualPayment((current) => ({ ...current, notes: event.target.value }))
           }
-          placeholder="Notes"
+          placeholder={t("notes")}
           className="zook-focus min-h-24 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
         />
         <ZookButton
@@ -200,25 +201,24 @@ export function OfflinePaymentCard({
           state={manualPaymentBusy ? "loading" : "idle"}
           title={!canRecordOffline ? permissionMessage : undefined}
         >
-          {manualPaymentBusy ? "Recording..." : "Record payment"}
+          {manualPaymentBusy ? t("recording") : t("recordPayment")}
         </ZookButton>
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200 p-4 text-sm leading-6">
-          Manual/offline payments are recorded with audit logs. Membership activation still follows
-          the server confirmation rules for the selected payment path.
+          {t("manualPaymentAudit")}
         </div>
         {manualPaymentStatus ? <p className="text-sm text-[var(--text-tertiary)]">{manualPaymentStatus}</p> : null}
       </form>
       {lastReceipt ? (
         <div className="mt-5 rounded-[22px] border border-[var(--accent-strong)]/20 bg-[var(--surface-accent-soft)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
-            Receipt generated
+            {t("receiptGenerated")}
           </p>
           <p className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{lastReceipt.title}</p>
           <div className="mt-3 grid gap-2 text-sm text-[var(--text-secondary)]">
-            <p>Amount: {formatInr(lastReceipt.amountPaise)}</p>
-            <p>Mode: {formatPaymentMode(lastReceipt.mode)}</p>
-            <p>Reference: {lastReceipt.reference || "Not added"}</p>
-            <p>Recorded: {formatDateTime(lastReceipt.recordedAt)}</p>
+            <p>{t("receiptAmount", { amount: formatInr(lastReceipt.amountPaise) })}</p>
+            <p>{t("receiptMode", { mode: formatPaymentMode(lastReceipt.mode, t) })}</p>
+            <p>{t("receiptReference", { reference: lastReceipt.reference || t("notAdded") })}</p>
+            <p>{t("receiptRecorded", { date: formatDateTime(lastReceipt.recordedAt) })}</p>
           </div>
           <ZookButton
             type="button"
@@ -227,7 +227,7 @@ export function OfflinePaymentCard({
             onClick={() => window.print()}
             className="mt-4"
           >
-            Print receipt
+            {t("printReceipt")}
           </ZookButton>
         </div>
       ) : null}

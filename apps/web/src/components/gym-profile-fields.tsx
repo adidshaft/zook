@@ -121,11 +121,13 @@ export function SelectField<T extends string>({
   label,
   value,
   options,
+  optionLabel,
   onChange,
 }: {
   label: string;
   value: T;
   options: T[];
+  optionLabel?: (value: T) => string;
   onChange: (value: T) => void;
 }) {
   return (
@@ -140,7 +142,7 @@ export function SelectField<T extends string>({
       >
         {options.map((option) => (
           <option key={option} value={option} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-            {formatEnumLabel(option)}
+            {optionLabel ? optionLabel(option) : formatEnumLabel(option)}
           </option>
         ))}
       </select>

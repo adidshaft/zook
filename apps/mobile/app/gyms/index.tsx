@@ -1,34 +1,57 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  type ImageSourcePropType,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import {
   Card,
-  IconBubble,
-  AppHeader,
+  ScreenHeader,
   Pill,
   Input,
   QueryErrorState,
   SectionHeader,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { toWebUrl } from "@/lib/api";
-import { joinModeLabel, joinModeTone, titleCaseFromCode } from "@/lib/formatting";
+import { formatGymHeaderIdentity, formatInitials, joinModeTone } from "@/lib/formatting";
 import { resolveAmenities } from "@/lib/amenity-catalog";
+import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
 import { useI18n } from "@/lib/i18n";
-import { useGymSearch } from "@/lib/domains";
+import { useGymCities, useGymSearch } from "@/lib/domains";
 import { useAuth } from "@/lib/auth";
-import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { fixedSurfaces, layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import aarogyaCoverSource from "../../../web/public/seed/gyms/aarogya-strength/cover.png";
+
+const AAROGYA_COVER_SOURCE = aarogyaCoverSource as ImageSourcePropType;
 
 function normalizeMediaUrl(value?: string | null) {
   if (!value) {
     return undefined;
   }
   return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
+}
+
+function normalizeLogoUrl(value?: string | null) {
+  return seededGymLogoDataUri(value) ?? normalizeMediaUrl(value);
+}
+
+function resolveGymCoverSource(username?: string | null, coverImageUrl?: string | null) {
+  if (username === "aarogya-strength") {
+    return AAROGYA_COVER_SOURCE;
+  }
+  const normalized = normalizeMediaUrl(coverImageUrl);
+  return normalized ? { uri: normalized } : null;
 }
 
 function sanitizeReferralCode(value?: string | string[]) {
@@ -46,6 +69,7 @@ export default function FindGyms() {
   const { logout, session } = useAuth();
   const { t } = useI18n();
   const { palette, mode } = useTheme();
+  const { confirm, sheet } = useConfirmSheet();
   const chromeSurface = mode === "dark" ? palette.surface.default : palette.bg.elevated;
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = sanitizeReferralCode(routeParams.ref);
@@ -59,7 +83,15 @@ export default function FindGyms() {
     query: debouncedQuery || undefined,
     city: debouncedCity || undefined,
   });
-  const gyms = gymsQuery.data?.gyms ?? [];
+  const citiesQuery = useGymCities();
+  const gyms = useMemo(() => gymsQuery.data?.gyms ?? [], [gymsQuery.data?.gyms]);
+  const showResultCount = !gymsQuery.isError;
+  const showResults = !gymsQuery.isLoading && !gymsQuery.isError && gyms.length > 0;
+  const showSearchingInline = gymsQuery.isFetching && !gyms.length && !gymsQuery.isError;
+  const citySuggestions = useMemo(() => {
+    const values = citiesQuery.data?.cities ?? [];
+    return Array.from(new Set(values)).slice(0, 4);
+  }, [citiesQuery.data?.cities]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -80,10 +112,13 @@ export default function FindGyms() {
   };
 
   function confirmSignOut() {
-    Alert.alert(t("more.signOutConfirmTitle"), t("more.signOutConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("more.signOut"), style: "destructive", onPress: () => void logout() },
-    ]);
+    confirm({
+      title: t("more.signOutConfirmTitle"),
+      body: t("more.signOutConfirmBody"),
+      destructiveLabel: t("more.signOut"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => void logout(),
+    });
   }
 
   return (
@@ -105,8 +140,7 @@ export default function FindGyms() {
             ),
           }}
         >
-          <AppHeader
-            eyebrow={t("findGyms.discovery")}
+          <ScreenHeader
             title={t("findGyms.title")}
             leading={
               <Pressable
@@ -159,38 +193,98 @@ export default function FindGyms() {
             </Card>
           ) : null}
 
-          <Card contentStyle={styles.searchContent}>
+          <View style={styles.searchContent}>
             <Input
               testID="find-gyms-query"
-              label={t("findGyms.gymNameOrUsername")}
+              accessibilityLabel={t("findGyms.searchLabel")}
               value={query}
               onChangeText={setQuery}
               placeholder={t("findGyms.searchPlaceholder")}
+              leading={<Ionicons name="search-outline" size={17} color={palette.text.tertiary} />}
+              style={styles.compactInput}
+              inputWrapperStyle={styles.compactInputWrapper}
+              inputStyle={styles.compactInputText}
+              numberOfLines={1}
             />
-            <Input
-              testID="find-gyms-city"
-              label={t("findGyms.city")}
-              value={city}
-              onChangeText={setCity}
-              placeholder={t("findGyms.cityPlaceholder")}
-            />
-          </Card>
+            {citySuggestions.length || city ? (
+              <View style={styles.cityChips}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("findGyms.allAreas")}
+                  onPress={() => setCity("")}
+                  style={({ pressed }) => [
+                    styles.cityChip,
+                    {
+                      backgroundColor: !city ? palette.accent.base : palette.bg.sunken,
+                      borderColor: !city ? palette.accent.base : palette.border.subtle,
+                    },
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Text style={[styles.cityChipText, { color: !city ? palette.text.onAccent : palette.text.secondary }]}>
+                    {t("findGyms.allAreas")}
+                  </Text>
+                </Pressable>
+                {citySuggestions.map((suggestion) => {
+                  const selected = city.trim().toLowerCase() === suggestion.toLowerCase();
+                  return (
+                    <Pressable
+                      key={suggestion}
+                      accessibilityRole="button"
+                      accessibilityLabel={suggestion}
+                      onPress={() => setCity(selected ? "" : suggestion)}
+                      style={({ pressed }) => [
+                        styles.cityChip,
+                        {
+                          backgroundColor: selected ? palette.accent.base : palette.bg.sunken,
+                          borderColor: selected ? palette.accent.base : palette.border.subtle,
+                        },
+                        pressed ? styles.pressed : null,
+                      ]}
+                    >
+                      <Text style={[styles.cityChipText, { color: selected ? palette.text.onAccent : palette.text.secondary }]}>
+                        {suggestion}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
 
-          <SectionHeader
-            title={t("findGyms.availableGyms")}
-            subtitle={
-              gymsQuery.isFetching && !gyms.length
-                ? t("findGyms.searching")
-                : t(gyms.length === 1 ? "findGyms.resultCountOne" : "findGyms.resultCountMany", { count: gyms.length })
-            }
-          />
+          {!gymsQuery.isError ? (
+            <SectionHeader
+              title={t("findGyms.availableGyms")}
+              subtitle={
+                !showResultCount
+                  ? undefined
+                  : showSearchingInline
+                    ? undefined
+                    : t(gyms.length === 1 ? "findGyms.resultCountOne" : "findGyms.resultCountMany", { count: gyms.length })
+              }
+              action={
+                showSearchingInline ? (
+                  <View style={[styles.inlineStatus, { backgroundColor: palette.bg.sunken }]}>
+                    <View style={[styles.inlineStatusDot, { backgroundColor: palette.accent.base }]} />
+                    <Text style={[styles.inlineStatusText, { color: palette.text.secondary }]}>
+                      {t("findGyms.searching")}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+            />
+          ) : null}
 
           {gymsQuery.isLoading ? (
             <FindGymsSkeleton />
           ) : null}
 
           {gymsQuery.isError ? (
-            <QueryErrorState error={gymsQuery.error} onRetry={() => void gymsQuery.refetch()} />
+            <QueryErrorState
+              error={gymsQuery.error}
+              onRetry={() => void gymsQuery.refetch()}
+              title={t("findGyms.loadError")}
+            />
           ) : null}
 
           {!gymsQuery.isLoading && !gymsQuery.isError && !gyms.length ? (
@@ -206,8 +300,18 @@ export default function FindGyms() {
             </Card>
           ) : null}
 
-          <View style={styles.results}>
-            {gyms.map((gym, index) => (
+          {showResults ? (
+            <View style={styles.results}>
+              {gyms.map((gym, index) => {
+                const brand = gymBrandColor(gym.name);
+                const identity = formatGymHeaderIdentity({
+                  address: gym.address,
+                  city: gym.city,
+                  orgName: gym.name,
+                });
+                const locationLine = identity.subtitle ?? [gym.city, gym.state].filter(Boolean).join(", ");
+                const coverSource = resolveGymCoverSource(gym.username, gym.coverImageUrl);
+                return (
               <Link
                 key={gym.username}
                 href={{
@@ -225,41 +329,76 @@ export default function FindGyms() {
                   accessibilityLabel={t("findGyms.openGym", { name: gym.name })}
                   style={({ pressed }) => [pressed ? styles.pressed : null]}
                 >
-                  <Card contentStyle={styles.gymContent}>
-                    <View style={styles.gymHeader}>
-                      {gym.coverImageUrl ? (
+                  <Card padding={0} contentStyle={styles.gymContent}>
+                    <View style={styles.gymBrandCover}>
+                      {coverSource ? (
                         <Image
-                          source={{ uri: normalizeMediaUrl(gym.coverImageUrl) }}
-                          style={[
-                            styles.gymThumbnail,
-                            {
-                              backgroundColor: chromeSurface,
-                            },
-                          ]}
+                          source={coverSource}
+                          style={StyleSheet.absoluteFill}
                           contentFit="cover"
+                          cachePolicy="memory-disk"
+                          recyclingKey={`gym-cover-${gym.id}`}
+                          transition={150}
                           accessibilityLabel={t("findGyms.coverPhoto", { name: gym.name })}
                         />
                       ) : (
                         <View
                           style={[
-                            styles.gymThumbnailFallback,
-                            { backgroundColor: palette.surface.accentSoft },
+                            StyleSheet.absoluteFill,
+                            styles.gymCoverFallback,
+                            { backgroundColor: brand.soft },
                           ]}
                         >
-                          <IconBubble icon="business-outline" tone="neutral" size={34} />
+                          <Text style={[styles.fallbackInitial, { color: brand.solid }]}>
+                            {formatInitials(gym.name, brand.initial)}
+                          </Text>
                         </View>
                       )}
-                      <View style={styles.gymCopy}>
-                        <Text numberOfLines={2} style={[styles.gymTitle, { color: palette.text.primary }]}>
-                          {gym.name}
-                        </Text>
-                        <Text numberOfLines={1} style={[styles.gymLocation, { color: palette.text.secondary }]}>
-                          {gym.city}, {gym.state}
-                        </Text>
+                      <View style={styles.coverScrim} />
+                      <View style={styles.gymBrandOverlay}>
+                        <View style={[styles.gymInitialMark, { backgroundColor: brand.soft, borderColor: `${brand.solid}88` }]}>
+                          {normalizeLogoUrl(gym.logoUrl) ? (
+                            <Image
+                              source={{ uri: normalizeLogoUrl(gym.logoUrl) }}
+                              style={styles.gymLogoImage}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                              recyclingKey={`gym-logo-${gym.id}`}
+                              transition={150}
+                              accessibilityLabel={t("findGyms.logo", { name: gym.name })}
+                            />
+                          ) : (
+                            <Text style={[styles.gymInitialText, { color: brand.solid }]}>
+                              {formatInitials(gym.name, "Z")}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={styles.gymOverlayCopy}>
+                          <Text
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.86}
+                            style={styles.gymTitleOnCover}
+                          >
+                            {identity.title}
+                          </Text>
+                          {locationLine ? (
+                            <Text numberOfLines={1} style={styles.gymLocationOnCover}>
+                              {locationLine}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
-                      <Pill tone={joinModeTone(gym.joinMode)}>
-                        {joinModeLabel(gym.joinMode)}
-                      </Pill>
+                    </View>
+
+                    <View style={styles.gymMetaRow}>
+                      <Pill tone={joinModeTone(gym.joinMode)}>{localizedJoinModeLabel(gym.joinMode, t)}</Pill>
+                      <View style={[styles.gymOpenCue, { backgroundColor: palette.surface.accentSoft }]}>
+                        <Text style={[styles.gymOpenCueText, { color: palette.accent.base }]}>
+                          {t("findGyms.view")}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={13} color={palette.accent.base} />
+                      </View>
                     </View>
 
                     {(() => {
@@ -280,34 +419,32 @@ export default function FindGyms() {
                           ))}
                           {available.length > 5 ? (
                             <Text style={[styles.amenityMore, { color: palette.text.tertiary }]}>
-                              +{available.length - 5}
+                              {t("common.plusCount", { count: available.length - 5 })}
                             </Text>
                           ) : null}
                         </View>
                       );
                     })()}
 
-                    <View style={styles.gymFooter}>
-                      <View style={styles.gymFooterLeft}>
-                        <Ionicons name="eye-outline" size={13} color={palette.text.secondary} />
-                        <Text style={[styles.gymFooterText, { color: palette.text.secondary }]}>
-                          {titleCaseFromCode(gym.visibility ?? "PUBLIC")}
-                        </Text>
-                      </View>
-                      <View style={styles.gymViewCta}>
-                        <Text style={[styles.gymViewText, { color: palette.accent.base }]}>{t("findGyms.view")}</Text>
-                        <Ionicons name="chevron-forward" size={14} color={palette.accent.base} />
-                      </View>
-                    </View>
                   </Card>
                 </Pressable>
               </Link>
-            ))}
-          </View>
+                );
+              })}
+            </View>
+          ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
+      {sheet}
     </>
   );
+}
+
+function localizedJoinModeLabel(mode: string, t: ReturnType<typeof useI18n>["t"]) {
+  if (mode === "OPEN_JOIN") return t("gymProfile.joinModeOpen");
+  if (mode === "APPROVAL_REQUIRED") return t("gymProfile.joinModeApproval");
+  if (mode === "INVITE_ONLY") return t("gymProfile.joinModeInvite");
+  return mode;
 }
 
 const styles = StyleSheet.create({
@@ -315,8 +452,8 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: layout.contentWidth,
     alignSelf: "center",
-    paddingTop: 20,
-    gap: 14,
+    paddingTop: 8,
+    gap: 10,
     paddingBottom: layout.bottomNavContentPadding,
   },
   iconButton: {
@@ -340,7 +477,51 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
   },
   searchContent: {
-    gap: spacing.md,
+    gap: 8,
+  },
+  compactInput: {
+    gap: 0,
+  },
+  compactInputWrapper: {
+    minHeight: 46,
+    borderRadius: 17,
+    paddingHorizontal: 13,
+  },
+  compactInputText: {
+    minHeight: 38,
+    paddingVertical: 6,
+  },
+  cityChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  cityChip: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    minHeight: 30,
+    justifyContent: "center",
+    paddingHorizontal: 11,
+  },
+  cityChipText: {
+    ...typography.small,
+    fontWeight: "700",
+  },
+  inlineStatus: {
+    alignItems: "center",
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 6,
+    minHeight: 26,
+    paddingHorizontal: 9,
+  },
+  inlineStatusDot: {
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+  inlineStatusText: {
+    ...typography.caption,
   },
   loadingContent: {
     flexDirection: "row",
@@ -374,35 +555,93 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   gymContent: {
-    gap: spacing.md,
+    gap: 10,
+    overflow: "hidden",
   },
-  gymHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
+  gymBrandCover: {
+    height: 134,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    padding: 14,
   },
-  gymThumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  coverScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.38)",
   },
-  gymThumbnailFallback: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
+  gymCoverFallback: {
+    alignItems: "flex-end",
     justifyContent: "center",
+    paddingRight: 30,
   },
-  gymCopy: {
+  fallbackInitial: {
+    ...typography.timer,
+    fontWeight: "900",
+    letterSpacing: 0,
+    opacity: 0.34,
+  },
+  gymBrandOverlay: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    gap: 10,
+  },
+  gymInitialMark: {
+    alignItems: "center",
+    borderRadius: 17,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: "center",
+    overflow: "hidden",
+    width: 50,
+  },
+  gymLogoImage: {
+    height: "100%",
+    width: "100%",
+  },
+  gymInitialText: {
+    ...typography.sectionTitle,
+    fontWeight: "900",
+    letterSpacing: 0,
+  },
+  gymOverlayCopy: {
     flex: 1,
+    gap: 3,
     minWidth: 0,
-    gap: 4,
   },
-  gymTitle: {
+  gymTitleOnCover: {
+    color: fixedSurfaces.onImagePrimary,
     ...typography.headerTitle,
+    fontWeight: "900",
+    letterSpacing: 0,
+    lineHeight: 26,
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  gymLocation: {
-    ...typography.body,
+  gymLocationOnCover: {
+    color: "rgba(255,255,255,0.78)",
+    ...typography.small,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  gymMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: spacing.md,
+    paddingTop: 2,
+  },
+  gymOpenCue: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: radii.pill,
+    gap: 2,
+    minHeight: 30,
+    paddingHorizontal: 10,
+  },
+  gymOpenCueText: {
+    ...typography.caption,
+    fontWeight: "800",
   },
   tags: {
     flexDirection: "row",
@@ -417,6 +656,8 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     alignItems: "center",
     gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
   },
   amenityChip: {
     flexDirection: "row",
@@ -432,26 +673,5 @@ const styles = StyleSheet.create({
   },
   amenityMore: {
     ...typography.small,
-  },
-  gymFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  gymFooterLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  gymFooterText: {
-    ...typography.small,
-  },
-  gymViewCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  gymViewText: {
-    ...typography.caption,
   },
 });

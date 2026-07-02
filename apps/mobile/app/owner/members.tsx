@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { MemberList, type MemberListFilter, type MemberRowItem } from "@/components/domain/member-list";
 import { BranchSelectorChip, HeaderActions, ScreenHeader, ZookScreen } from "@/components/primitives";
@@ -155,12 +155,11 @@ export default function OwnerMembersScreen() {
             header={
               <ScreenHeader
                 title={t("owner.members.title")}
-                subtitle={t("owner.members.total", { count: membersQuery.data?.members.length ?? 0 })}
                 contextSlot={
-                  <>
+                  <View style={styles.headerContext}>
                     <RoleSwitcherContextPill />
-                    <BranchSelectorChip />
-                  </>
+                    <BranchSelectorChip style={styles.headerBranchSelector} />
+                  </View>
                 }
                 trailing={<HeaderActions showBell />}
               />
@@ -171,6 +170,7 @@ export default function OwnerMembersScreen() {
             onRetry={() => void membersQuery.refetch()}
             searchValue={memberSearch}
             onSearchChange={setMemberSearch}
+            resultSummary={t("owner.members.total", { count: filteredMembers.length })}
             filter={selectedFilter}
             onFilterChange={(filter) => {
               setMemberFilter(
@@ -196,6 +196,18 @@ export default function OwnerMembersScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,

@@ -65,10 +65,23 @@ export type OrganizationSnapshot = {
   contactEmail?: string | null;
 };
 
+export type BranchSummary = {
+  id: string;
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  googleMapsUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  isDefault: boolean;
+  active: boolean;
+};
+
 export type BranchScopeSnapshot = {
-  branches: Array<{ id: string; name: string; isDefault: boolean; active: boolean }>;
-  defaultBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
-  selectedBranch: { id: string; name: string; isDefault: boolean; active: boolean } | null;
+  branches: BranchSummary[];
+  defaultBranch: BranchSummary | null;
+  selectedBranch: BranchSummary | null;
   allBranches?: boolean;
   allBranchesAllowed?: boolean;
   mode: string;
@@ -321,6 +334,7 @@ export type BranchRow = {
   latitude?: number | string | null;
   longitude?: number | string | null;
   locationSource?: string | null;
+  googleMapsUrl?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
   whatsappNumber?: string | null;
@@ -497,4 +511,13 @@ export function formatPlanShape(plan: MembershipPlanRow) {
     return `${plan.validityDays} days validity`;
   }
   return "Configured";
+}
+
+export function membershipPlanTypeLabel(type: string | null | undefined) {
+  if (type === "HYBRID") return "Days + visits";
+  if (type === "DURATION") return "Time-based";
+  if (type === "VISIT_PACK") return "Visit pack";
+  if (type === "DATE_RANGE") return "Fixed dates";
+  if (type === "TRIAL") return "Trial";
+  return "Membership";
 }

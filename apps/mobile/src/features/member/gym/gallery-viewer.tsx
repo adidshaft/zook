@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { useRef, useState } from "react";
 import {
   Dimensions,
+  type ImageSourcePropType,
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -16,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { normalizeWebUrl } from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { spacing, typography } from "@/lib/theme";
+import { fixedSurfaces, spacing, typography } from "@/lib/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -26,10 +27,12 @@ const { width } = Dimensions.get("window");
  */
 export function GalleryViewer({
   images,
+  sourceForImage,
   initialIndex,
   onClose,
 }: {
   images: string[];
+  sourceForImage?: (image: string) => ImageSourcePropType | { uri: string } | null;
   initialIndex: number | null;
   onClose: () => void;
 }) {
@@ -57,7 +60,14 @@ export function GalleryViewer({
         >
           {images.map((uri, i) => (
             <View key={`${uri}-${i}`} style={[styles.page, { width }]}>
-              <Image source={{ uri: normalizeWebUrl(uri) }} style={styles.image} contentFit="contain" />
+              <Image
+                source={sourceForImage?.(uri) ?? { uri: normalizeWebUrl(uri) }}
+                style={styles.image}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                recyclingKey={uri}
+                transition={150}
+              />
             </View>
           ))}
         </ScrollView>
@@ -75,7 +85,7 @@ export function GalleryViewer({
           hitSlop={12}
           style={[styles.close, { top: insets.top + spacing.sm }]}
         >
-          <Ionicons name="close" size={26} color="#fff" />
+          <Ionicons name="close" size={26} color={fixedSurfaces.overlayInk} />
         </Pressable>
       </View>
     </Modal>
@@ -83,20 +93,20 @@ export function GalleryViewer({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: "rgba(6,9,8,0.98)", flex: 1, justifyContent: "center" },
+  backdrop: { backgroundColor: fixedSurfaces.galleryBackdrop, flex: 1, justifyContent: "center" },
   page: { alignItems: "center", justifyContent: "center" },
   image: { height: "80%", width: "100%" },
   counter: {
     alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: fixedSurfaces.overlayScrim,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
     position: "absolute",
   },
-  counterText: { ...typography.caption, color: "#fff" },
+  counterText: { ...typography.caption, color: fixedSurfaces.overlayInk },
   close: {
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: fixedSurfaces.overlayScrim,
     borderRadius: 999,
     padding: 8,
     position: "absolute",

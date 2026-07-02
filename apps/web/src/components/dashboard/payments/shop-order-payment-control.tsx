@@ -7,6 +7,7 @@ import type { ShopOrderRow } from "@/components/dashboard/types";
 import { PaymentProofUpload } from "../../payment-proof-upload";
 import { ZookButton } from "../../zook-button";
 import { formatPaymentMode, modeOptions, type PaymentReceiptState } from "./payments-utils";
+import { useT } from "@/lib/use-t";
 
 export function ShopOrderPaymentControl({
   orgId,
@@ -21,6 +22,7 @@ export function ShopOrderPaymentControl({
   disabledTitle?: string | undefined;
   onRecorded: (receipt: PaymentReceiptState) => void;
 }) {
+  const t = useT("payments");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -42,11 +44,11 @@ export function ShopOrderPaymentControl({
           mode: form.mode,
           receiptNumber: form.receiptNumber || undefined,
           proofAssetId: form.proofAssetId || undefined,
-          notes: form.notes || "Recorded from the owner payment queue.",
+          notes: form.notes || t("recordedQueueNote"),
         },
       });
       onRecorded({
-        title: `Shop order ${order.id.slice(-8).toUpperCase()}`,
+        title: t("shopOrderTitle", { order: order.id.slice(-8).toUpperCase() }),
         amountPaise: order.totalPaise,
         mode: form.mode,
         reference: form.receiptNumber || undefined,
@@ -56,7 +58,7 @@ export function ShopOrderPaymentControl({
       setStatus("");
       setForm({ mode: "DIRECT_UPI", receiptNumber: "", proofAssetId: "", notes: "" });
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to record shop payment.");
+      setStatus(cause instanceof Error ? cause.message : t("shopPaymentError"));
     } finally {
       setBusy(false);
     }
@@ -72,7 +74,7 @@ export function ShopOrderPaymentControl({
         title={disabled ? disabledTitle : undefined}
         onClick={() => setOpen(true)}
       >
-        Record payment · Mode: {formatPaymentMode(form.mode)}
+        {t("recordPayment")}
       </ZookButton>
     );
   }
@@ -86,7 +88,7 @@ export function ShopOrderPaymentControl({
           onClick={() => setOpen(false)}
           className="zook-focus rounded-full px-2 py-1 text-xs text-white/55 hover:bg-white/8"
         >
-          Close
+          {t("close")}
         </button>
       </div>
       <select
@@ -96,26 +98,26 @@ export function ShopOrderPaymentControl({
       >
         {modeOptions.map((mode) => (
           <option key={mode} value={mode} className="bg-black">
-            {formatPaymentMode(mode)}
+            {formatPaymentMode(mode, t)}
           </option>
         ))}
       </select>
       <input
         value={form.receiptNumber}
         onChange={(event) => setForm((current) => ({ ...current, receiptNumber: event.target.value }))}
-        placeholder="Reference"
+        placeholder={t("reference")}
         className="zook-focus min-h-10 rounded-xl border border-white/10 bg-black/40 px-3 text-xs text-white"
       />
       <PaymentProofUpload
         orgId={orgId}
         value={form.proofAssetId}
         onChange={(proofAssetId) => setForm((current) => ({ ...current, proofAssetId }))}
-        label="Proof"
+        label={t("proof")}
       />
       <textarea
         value={form.notes}
         onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-        placeholder="Notes"
+        placeholder={t("notes")}
         className="zook-focus min-h-16 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
       />
       {status ? <p className="text-xs text-amber-100">{status}</p> : null}
@@ -126,7 +128,7 @@ export function ShopOrderPaymentControl({
         state={busy ? "loading" : "idle"}
         onClick={() => void recordPayment()}
       >
-        {busy ? "Recording..." : "Confirm payment"}
+        {busy ? t("recording") : t("confirmPayment")}
       </ZookButton>
     </div>
   );

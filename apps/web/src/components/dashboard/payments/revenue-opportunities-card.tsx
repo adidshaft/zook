@@ -2,6 +2,7 @@ import { formatCompactNumber } from "@/lib/format";
 import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard } from "../../glass-card";
 import type { MembershipPlanRow, OrganizationSummary } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 
 export function RevenueOpportunitiesCard({
   summary,
@@ -10,37 +11,36 @@ export function RevenueOpportunitiesCard({
   summary: OrganizationSummary;
   membershipPlans: MembershipPlanRow[];
 }) {
+  const t = useT("payments");
+
   return (
     <GlassCard>
-      <SectionHeader
-        eyebrow="Levers"
-        title="Revenue opportunities"
-      />
+      <SectionHeader eyebrow={t("levers")} title={t("revenueOpportunities")} />
       <ReadoutGrid
         className="mt-5"
         columns={1}
         items={[
           {
-            label: "Renewal window",
+            label: t("renewalWindow"),
             value: formatCompactNumber(summary.expiringMemberships),
-            meta: "Members expiring in the next 7 days",
+            meta: t("renewalWindowMeta"),
           },
           {
-            label: "Inventory pressure",
+            label: t("inventoryPressure"),
             value: formatCompactNumber(summary.lowStockProducts),
-            meta: "Products close to threshold",
+            meta: t("inventoryPressureMeta"),
           },
           {
-            label: "Notification queue",
+            label: t("notificationQueue"),
             value: formatCompactNumber(summary.notificationQueueCount),
-            meta: "Messages still scheduled or failed",
+            meta: t("notificationQueueMeta"),
           },
           {
-            label: "Plan ladder",
+            label: t("planLadder"),
             value: membershipPlans.length
-              ? `${membershipPlans.length} available plans`
-              : "Load plans",
-            meta: "Useful while talking renewals at the desk",
+              ? t("availablePlans", { count: membershipPlans.length })
+              : t("loadPlans"),
+            meta: t("planLadderMeta"),
           },
         ]}
       />

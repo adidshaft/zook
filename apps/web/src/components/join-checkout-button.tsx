@@ -10,6 +10,12 @@ type ApiEnvelope<T> = {
   error?: { message?: string } | string;
 };
 
+function isInternalCheckoutError(message: string) {
+  return /prisma|localhost|database|stack|trace|internal server|failed to fetch|networkerror|ECONNREFUSED|<html/i.test(
+    message,
+  );
+}
+
 export function JoinCheckoutButton({
   orgId,
   planId,
@@ -17,6 +23,8 @@ export function JoinCheckoutButton({
   referralCode,
   loginPath,
   fallbackCheckoutUrl,
+  labels,
+  className = "mt-6",
 }: {
   orgId: string;
   planId: string;
@@ -24,9 +32,25 @@ export function JoinCheckoutButton({
   referralCode?: string | null;
   loginPath: string;
   fallbackCheckoutUrl?: string | null;
+  className?: string;
+  labels?: {
+    idle: string;
+    busy: string;
+    started: string;
+    unavailable: string;
+    unable: string;
+  };
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const statusId = `checkout-status-${orgId}-${planId}`;
+  const copy = labels ?? {
+    idle: "Pay securely",
+    busy: "Starting payment...",
+    started: "Payment started.",
+    unavailable: "Payment is unavailable for this plan.",
+    unable: "Unable to start payment.",
+  };
 
   async function startCheckout() {
     setBusy(true);
@@ -54,7 +78,7 @@ export function JoinCheckoutButton({
         const message =
           typeof payload?.error === "string"
             ? payload.error
-            : payload?.error?.message ?? "Unable to start payment.";
+            : payload?.error?.message ?? copy.unable;
         throw new Error(message);
       }
 
@@ -63,12 +87,13 @@ export function JoinCheckoutButton({
         fallbackCheckoutUrl ??
         (payload?.data?.session?.id ? `/checkout/${payload.data.session.id}` : null);
       if (!checkoutUrl) {
-        throw new Error("Payment is unavailable for this plan.");
+        throw new Error(copy.unavailable);
       }
-      toast.success("Payment started.");
+      toast.success(copy.started);
       window.location.assign(checkoutUrl);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Unable to start payment.";
+      const rawMessage = cause instanceof Error ? cause.message : copy.unable;
+      const message = isInternalCheckoutError(rawMessage) ? copy.unable : rawMessage;
       setError(message);
       toast.error(message);
     } finally {
@@ -77,24 +102,26 @@ export function JoinCheckoutButton({
   }
 
   return (
-    <div className="mt-6 grid gap-3">
+    <div className={`grid gap-3 ${className}`}>
       <ZookButton
         type="button"
         fullWidth
         onClick={() => void startCheckout()}
         disabled={busy}
         state={busy ? "loading" : "idle"}
+        aria-describedby={error ? statusId : undefined}
       >
-        {busy ? "Starting payment..." : "Pay securely"}
+        {busy ? copy.busy : copy.idle}
       </ZookButton>
       {error ? (
-        <p
+        <div
+          id={statusId}
           role="alert"
           aria-live="polite"
-          className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]"
+          className="rounded-[18px] border border-[color-mix(in_srgb,var(--feedback-danger)_32%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-3 text-sm text-[var(--feedback-danger)]"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+        </div>
       ) : null}
     </div>
   );

@@ -1,20 +1,24 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
   EmptyState,
   FormField,
+  HeaderActions,
   IconBubble,
   Pill,
   QueryErrorState,
-  SectionHeader,
+  ScreenHeader,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgCoupons, type CouponRecord } from "@/lib/domains/owner/queries";
 import { useDeleteCoupon, useSaveCoupon, type CouponInput } from "@/lib/domains/owner/mutations";
 import { formatInr } from "@/lib/formatting";
@@ -51,6 +55,7 @@ export default function OwnerCoupons() {
   const couponsQuery = useOrgCoupons();
   const saveCoupon = useSaveCoupon();
   const deleteCoupon = useDeleteCoupon();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -60,11 +65,21 @@ export default function OwnerCoupons() {
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [perUserLimit, setPerUserLimit] = useState("");
   const [active, setActive] = useState(true);
+  const [showRedemptionLimits, setShowRedemptionLimits] = useState(false);
 
   const coupons = couponsQuery.data?.coupons ?? [];
+  const activeCoupons = coupons.filter((coupon) => coupon.active);
   const numericValue = Number.parseInt(value, 10) || 0;
   const validValue = type === "PERCENTAGE" ? numericValue > 0 && numericValue <= 100 : numericValue > 0;
   const canSubmit = /^[A-Z0-9-]{3,32}$/.test(code.trim().toUpperCase()) && validValue && !saveCoupon.isPending;
+  const redemptionLimitSummary = [
+    maxRedemptions.trim()
+      ? `${t("owner.coupons.maxRedemptions")}: ${maxRedemptions.trim()}`
+      : null,
+    perUserLimit.trim()
+      ? t("owner.coupons.perMemberLimit", { count: perUserLimit.trim() })
+      : null,
+  ].filter(Boolean).join(" · ") || t("owner.coupons.unlimited");
 
   function resetForm() {
     setEditingId(null);
@@ -74,6 +89,7 @@ export default function OwnerCoupons() {
     setMaxRedemptions("");
     setPerUserLimit("");
     setActive(true);
+    setShowRedemptionLimits(false);
     setShowForm(false);
   }
 
@@ -89,6 +105,7 @@ export default function OwnerCoupons() {
     setMaxRedemptions(coupon.maxRedemptions ? String(coupon.maxRedemptions) : "");
     setPerUserLimit(coupon.perUserLimit ? String(coupon.perUserLimit) : "");
     setActive(coupon.active);
+    setShowRedemptionLimits(Boolean(coupon.maxRedemptions || coupon.perUserLimit));
     setShowForm(true);
   }
 
@@ -115,10 +132,13 @@ export default function OwnerCoupons() {
   }
 
   function confirmDelete(coupon: CouponRecord) {
-    Alert.alert(t("owner.coupons.removeCouponTitle"), t("owner.coupons.removeCouponBody", { code: coupon.code }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.coupons.remove"), style: "destructive", onPress: () => deleteCoupon.mutate(coupon.id) },
-    ]);
+    confirm({
+      title: t("owner.coupons.removeCouponTitle"),
+      body: t("owner.coupons.removeCouponBody", { code: coupon.code }),
+      destructiveLabel: t("owner.coupons.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => deleteCoupon.mutate(coupon.id),
+    });
   }
 
   return (
@@ -131,16 +151,55 @@ export default function OwnerCoupons() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("owner.coupons.title")} subtitle={t("owner.coupons.subtitle")} showBack />
-
-          <SectionHeader
-            title={t("owner.coupons.coupons")}
-            action={
-              <ZookButton size="sm" variant={showForm && !editingId ? "secondary" : "primary"} icon={showForm && !editingId ? "close" : "add"} onPress={() => (showForm && !editingId ? resetForm() : (resetForm(), setShowForm(true)))}>
-                {showForm && !editingId ? t("common.cancel") : t("owner.coupons.newCoupon")}
-              </ZookButton>
+          <ScreenHeader
+            title={t("owner.coupons.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
             }
+            trailing={<HeaderActions showBell />}
           />
+
+          <View style={styles.listToolbar}>
+            <View style={styles.countCluster}>
+              <Pill tone={activeCoupons.length ? "lime" : "neutral"}>
+                {t("owner.coupons.activeOffers", { count: activeCoupons.length })}
+              </Pill>
+              {coupons.length !== activeCoupons.length ? (
+                <Pill tone="neutral">
+                  {t("owner.coupons.pausedOffers", {
+                    count: coupons.length - activeCoupons.length,
+                  })}
+                </Pill>
+              ) : null}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                showForm && !editingId ? t("common.cancel") : t("owner.coupons.newCoupon")
+              }
+              hitSlop={8}
+              onPress={() => (showForm && !editingId ? resetForm() : (resetForm(), setShowForm(true)))}
+              style={({ pressed }) => [
+                styles.toolbarAction,
+                {
+                  backgroundColor:
+                    showForm && !editingId ? palette.surface.default : palette.accent.base,
+                  borderColor:
+                    showForm && !editingId ? palette.border.default : palette.accent.strong,
+                },
+                pressed ? styles.pressedAction : null,
+              ]}
+            >
+              <Ionicons
+                name={showForm && !editingId ? "close" : "add"}
+                size={20}
+                color={showForm && !editingId ? palette.text.secondary : palette.text.onAccent}
+              />
+            </Pressable>
+          </View>
 
           {showForm ? (
             <Card contentStyle={styles.formCard}>
@@ -158,10 +217,34 @@ export default function OwnerCoupons() {
                 })}
               </View>
               <FormField label={type === "PERCENTAGE" ? t("owner.coupons.percentOffInput") : t("owner.coupons.amountOffInput")} value={value} onChangeText={setValue} keyboardType="number-pad" placeholder={type === "PERCENTAGE" ? "15" : "500"} />
-              <View style={styles.formRow}>
-                <FormField label={t("owner.coupons.maxRedemptions")} value={maxRedemptions} onChangeText={setMaxRedemptions} keyboardType="number-pad" placeholder={t("owner.coupons.unlimited")} style={styles.formField} />
-                <FormField label={t("owner.coupons.perMember")} value={perUserLimit} onChangeText={setPerUserLimit} keyboardType="number-pad" placeholder="1" style={styles.formField} />
-              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showRedemptionLimits }}
+                onPress={() => setShowRedemptionLimits((value) => !value)}
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                  pressed ? styles.pressedAction : null,
+                ]}
+              >
+                <View style={styles.disclosureCopy}>
+                  <Text style={[styles.disclosureTitle, { color: palette.text.primary }]}>{t("owner.coupons.redemptionLimits")}</Text>
+                  <Text style={[styles.disclosureMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+                    {redemptionLimitSummary}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={showRedemptionLimits ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={palette.text.secondary}
+                />
+              </Pressable>
+              {showRedemptionLimits ? (
+                <View style={styles.limitsStack}>
+                  <FormField label={t("owner.coupons.maxRedemptions")} value={maxRedemptions} onChangeText={setMaxRedemptions} keyboardType="number-pad" placeholder={t("owner.coupons.unlimited")} />
+                  <FormField label={t("owner.coupons.perMember")} value={perUserLimit} onChangeText={setPerUserLimit} keyboardType="number-pad" placeholder="1" />
+                </View>
+              ) : null}
               <View style={styles.switchRow}>
                 <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.coupons.active")}</Text>
                 <ThemedSwitch value={active} onValueChange={setActive} />
@@ -177,7 +260,15 @@ export default function OwnerCoupons() {
           ) : null}
           {!couponsQuery.isLoading && coupons.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="pricetag-outline" title={t("owner.coupons.noCouponsYet")} body={t("owner.coupons.noCouponsYetBody")} />
+              <EmptyState
+                icon="pricetag-outline"
+                title={t("owner.coupons.noCouponsYet")}
+                body={t("owner.coupons.noCouponsYetBody")}
+                cta={{
+                  label: t("owner.coupons.createCoupon"),
+                  onPress: () => setShowForm(true),
+                }}
+              />
             </Card>
           ) : null}
 
@@ -189,30 +280,50 @@ export default function OwnerCoupons() {
                   <View style={styles.couponCopy}>
                     <Text style={[styles.couponCode, { color: palette.text.primary }]} numberOfLines={1}>{coupon.code}</Text>
                     <Text style={[styles.couponMeta, { color: palette.text.secondary }]} numberOfLines={1}>{couponLimits(coupon, t)}</Text>
+                    {!coupon.active ? (
+                      <View style={styles.couponStatusRow}>
+                        <Pill tone="neutral">{t("owner.coupons.paused")}</Pill>
+                      </View>
+                    ) : null}
                   </View>
                   <View style={styles.couponRight}>
                     <Text style={[styles.couponValue, { color: palette.text.primary }]}>{couponValue(coupon, t)}</Text>
-                    {!coupon.active ? <Pill tone="neutral">{t("owner.coupons.paused")}</Pill> : null}
                   </View>
                 </Pressable>
                 <View style={styles.couponActions}>
-                  <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={() => startEdit(coupon)} style={styles.couponAction}>
-                    {t("owner.coupons.edit")}
-                  </ZookButton>
-                  <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmDelete(coupon)} style={styles.couponAction}>
-                    {t("owner.coupons.remove")}
-                  </ZookButton>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("owner.coupons.remove")}
+                    hitSlop={10}
+                    onPress={() => confirmDelete(coupon)}
+                    style={({ pressed }) => [styles.couponRemoveAction, pressed ? styles.pressedAction : null]}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={palette.feedback.danger} />
+                  </Pressable>
                 </View>
               </Card>
             ))}
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     alignSelf: "center",
     gap: spacing.md,
@@ -224,8 +335,40 @@ const styles = StyleSheet.create({
   formCard: { gap: spacing.md },
   formTitle: { ...typography.cardTitle },
   label: { ...typography.caption },
-  formRow: { flexDirection: "row", gap: spacing.sm },
-  formField: { flex: 1 },
+  listToolbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  countCluster: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  toolbarAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  disclosureRow: {
+    alignItems: "center",
+    borderRadius: radii.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  disclosureCopy: { flex: 1, gap: 2, minWidth: 0 },
+  disclosureTitle: { ...typography.bodyStrong },
+  disclosureMeta: { ...typography.small },
+  limitsStack: { gap: spacing.sm },
   switchRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   switchTitle: { ...typography.cardTitle },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
@@ -237,8 +380,24 @@ const styles = StyleSheet.create({
   couponCopy: { flex: 1, gap: 2, minWidth: 0 },
   couponCode: { ...typography.cardTitle },
   couponMeta: { ...typography.small },
-  couponRight: { alignItems: "flex-end", gap: 4 },
+  couponStatusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    paddingTop: 2,
+  },
+  couponRight: { alignItems: "flex-end", gap: 4, maxWidth: 108 },
   couponValue: { ...typography.cardTitle },
-  couponActions: { flexDirection: "row", gap: spacing.sm },
-  couponAction: { flex: 1 },
+  couponActions: { alignItems: "flex-end" },
+  couponRemoveAction: {
+    alignItems: "center",
+    borderColor: "rgba(255, 98, 74, 0.42)",
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 42,
+  },
+  pressedAction: { opacity: 0.72, transform: [{ scale: 0.96 }] },
 });

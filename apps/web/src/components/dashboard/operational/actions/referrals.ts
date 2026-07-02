@@ -1,4 +1,5 @@
 import { webApiFetch } from "@/lib/api-client";
+import { rupeesToPaise } from "@/lib/payment-amount";
 import {
   type CouponRow,
   type OfferRow,
@@ -23,12 +24,16 @@ function bpsToPercentInput(value: number | null | undefined) {
 }
 
 function payloadForCouponForm(form: CouponForm) {
+  const valuePaise = form.type === "FIXED_AMOUNT" ? rupeesToPaise(form.value) : null;
+  if (form.type === "FIXED_AMOUNT" && valuePaise === null) {
+    return null;
+  }
   return {
     code: form.code,
     type: form.type,
     ...(form.type === "PERCENTAGE"
       ? { valuePercentBps: percentInputToBps(form.value) }
-      : { valuePaise: Math.round(Number(form.value || 0) * 100) }),
+      : { valuePaise }),
     ...(form.maxRedemptions ? { maxRedemptions: Number(form.maxRedemptions) } : {}),
     ...(form.perUserLimit ? { perUserLimit: Number(form.perUserLimit) } : {}),
     ...(form.applicablePlanId ? { applicablePlanId: form.applicablePlanId } : {}),
@@ -102,22 +107,14 @@ export function createReferralActions({
       state.setFormBusy("coupon");
       state.setFormError("");
       state.setFormStatus("");
+      const payload = payloadForCouponForm(state.couponForm);
+      if (!payload) {
+        state.setFormError("Enter a valid coupon amount.");
+        return;
+      }
       await webApiFetch(`/api/orgs/${orgId}/coupons`, {
         method: "POST",
-        body: {
-          code: state.couponForm.code,
-          type: state.couponForm.type,
-          ...(state.couponForm.type === "PERCENTAGE"
-            ? { valuePercentBps: percentInputToBps(state.couponForm.value) }
-            : { valuePaise: Math.round(Number(state.couponForm.value || 0) * 100) }),
-          maxRedemptions: state.couponForm.maxRedemptions
-            ? Number(state.couponForm.maxRedemptions)
-            : undefined,
-          perUserLimit: state.couponForm.perUserLimit
-            ? Number(state.couponForm.perUserLimit)
-            : undefined,
-          applicablePlanId: state.couponForm.applicablePlanId || undefined,
-        },
+        body: payload,
       });
       state.setCouponForm(createEmptyCouponForm());
       resources.couponsState.reload();
@@ -167,9 +164,14 @@ export function createReferralActions({
       state.setFormBusy(`coupon:${couponId}:edit`);
       state.setFormError("");
       state.setFormStatus("");
+      const payload = payloadForCouponForm(state.couponEditForm);
+      if (!payload) {
+        state.setFormError("Enter a valid coupon amount.");
+        return;
+      }
       await webApiFetch(`/api/orgs/${orgId}/coupons/${couponId}`, {
         method: "PATCH",
-        body: payloadForCouponForm(state.couponEditForm),
+        body: payload,
       });
       state.setEditingCouponId(null);
       resources.couponsState.reload();
@@ -186,6 +188,14 @@ export function createReferralActions({
       state.setFormBusy("offer");
       state.setFormError("");
       state.setFormStatus("");
+      const fixedDiscountPaise =
+        state.offerForm.discountType === "FIXED_AMOUNT"
+          ? rupeesToPaise(state.offerForm.discountValue)
+          : null;
+      if (state.offerForm.discountType === "FIXED_AMOUNT" && fixedDiscountPaise === null) {
+        state.setFormError("Enter a valid offer amount.");
+        return;
+      }
       const now = new Date();
       const endsAt = new Date(
         now.getTime() + Number(state.offerForm.endsInDays || 30) * 24 * 60 * 60 * 1000,
@@ -198,7 +208,7 @@ export function createReferralActions({
           discountValue:
             state.offerForm.discountType === "PERCENTAGE"
               ? percentInputToBps(state.offerForm.discountValue)
-              : Math.round(Number(state.offerForm.discountValue || 0) * 100),
+              : fixedDiscountPaise,
           applicablePlanIds: state.offerForm.applicablePlanId
             ? [state.offerForm.applicablePlanId]
             : undefined,
@@ -263,6 +273,14 @@ export function createReferralActions({
       state.setFormBusy(`offer:${offerId}:edit`);
       state.setFormError("");
       state.setFormStatus("");
+      const fixedDiscountPaise =
+        state.offerEditForm.discountType === "FIXED_AMOUNT"
+          ? rupeesToPaise(state.offerEditForm.discountValue)
+          : null;
+      if (state.offerEditForm.discountType === "FIXED_AMOUNT" && fixedDiscountPaise === null) {
+        state.setFormError("Enter a valid offer amount.");
+        return;
+      }
       const now = new Date();
       const endsAt = new Date(
         now.getTime() + Number(state.offerEditForm.endsInDays || 30) * 24 * 60 * 60 * 1000,
@@ -275,7 +293,7 @@ export function createReferralActions({
           discountValue:
             state.offerEditForm.discountType === "PERCENTAGE"
               ? percentInputToBps(state.offerEditForm.discountValue)
-              : Math.round(Number(state.offerEditForm.discountValue || 0) * 100),
+              : fixedDiscountPaise,
           applicablePlanIds: state.offerEditForm.applicablePlanId
             ? [state.offerEditForm.applicablePlanId]
             : [],

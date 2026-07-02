@@ -2,21 +2,30 @@
 
 import { RadioCardGroup } from "../../ui";
 import { ZookButton } from "../../zook-button";
+import { useT } from "@/lib/use-t";
 
 type BranchDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type BranchDayHours = { closed: true } | { open: string; close: string };
 type BranchHoursValue = Partial<Record<BranchDayKey, BranchDayHours>>;
 type BranchHoursPreset = "standard" | "early" | "always";
 
-const branchDayLabels: Array<{ key: BranchDayKey; label: string }> = [
-  { key: "mon", label: "Mon" },
-  { key: "tue", label: "Tue" },
-  { key: "wed", label: "Wed" },
-  { key: "thu", label: "Thu" },
-  { key: "fri", label: "Fri" },
-  { key: "sat", label: "Sat" },
-  { key: "sun", label: "Sun" },
+const branchDayLabels: Array<{ key: BranchDayKey }> = [
+  { key: "mon" },
+  { key: "tue" },
+  { key: "wed" },
+  { key: "thu" },
+  { key: "fri" },
+  { key: "sat" },
+  { key: "sun" },
 ];
+
+type BranchHoursSummaryLabels = {
+  closedAllWeek: string;
+  workingHoursSet: string;
+  everyDay: string;
+  customWorkingHoursSet: string;
+  days: Record<BranchDayKey, string>;
+};
 
 const branchTimeOptions = [
   ...Array.from({ length: 48 }, (_, index) => {
@@ -91,19 +100,22 @@ export function serializeBranchHours(hours: BranchHoursValue) {
 
 export const defaultBranchHoursText = serializeBranchHours(branchHoursPreset("standard"));
 
-export function formatBranchHoursSummary(input: unknown) {
+export function formatBranchHoursSummary(
+  input: unknown,
+  labels: BranchHoursSummaryLabels,
+) {
   const hours = normalizeBranchHours(input);
   const openDays = branchDayLabels.filter((day) => {
     const dayHours = hours[day.key];
     return dayHours && !("closed" in dayHours);
   });
   if (!openDays.length) {
-    return "Closed all week";
+    return labels.closedAllWeek;
   }
   const first = openDays[0];
   const firstHours = first ? hours[first.key] : null;
   if (!firstHours || "closed" in firstHours) {
-    return "Working hours set";
+    return labels.workingHoursSet;
   }
   const sameEveryOpenDay = openDays.every((day) => {
     const dayHours = hours[day.key];
@@ -114,10 +126,11 @@ export function formatBranchHoursSummary(input: unknown) {
       dayHours.close === firstHours.close
     );
   });
-  const dayText = openDays.length === 7 ? "Every day" : openDays.map((day) => day.label).join(", ");
+  const dayText =
+    openDays.length === 7 ? labels.everyDay : openDays.map((day) => labels.days[day.key]).join(", ");
   return sameEveryOpenDay
     ? `${dayText}, ${formatBranchTime(firstHours.open)} - ${formatBranchTime(firstHours.close)}`
-    : "Custom working hours set";
+    : labels.customWorkingHoursSet;
 }
 
 export function BranchHoursEditor({
@@ -129,6 +142,22 @@ export function BranchHoursEditor({
   onChange: (value: string) => void;
   compact?: boolean;
 }) {
+  const t = useT("branchManagement");
+  const summaryLabels: BranchHoursSummaryLabels = {
+    closedAllWeek: t("closedAllWeek"),
+    workingHoursSet: t("stepHours"),
+    everyDay: t("everyDay"),
+    customWorkingHoursSet: t("customWorkingHoursSet"),
+    days: {
+      mon: t("dayMonShort"),
+      tue: t("dayTueShort"),
+      wed: t("dayWedShort"),
+      thu: t("dayThuShort"),
+      fri: t("dayFriShort"),
+      sat: t("daySatShort"),
+      sun: t("daySunShort"),
+    },
+  };
   const hours = parseBranchHoursText(value);
   const normalizedHours = serializeBranchHours(hours);
   const activePreset =
@@ -168,8 +197,8 @@ export function BranchHoursEditor({
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-white">Working hours</p>
-          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours)}</p>
+          <p className="text-sm font-medium text-white">{t("workingHours")}</p>
+          <p className="mt-1 text-xs text-white/45">{formatBranchHoursSummary(hours, summaryLabels)}</p>
         </div>
         <ZookButton
           type="button"
@@ -177,12 +206,12 @@ export function BranchHoursEditor({
           size="sm"
           onClick={copyMondayToAll}
         >
-          Copy Mon
+          {t("copyMonday")}
         </ZookButton>
       </div>
       <RadioCardGroup
         name="branch-hours-preset"
-        label="Working hours preset"
+        label={t("workingHoursPreset")}
         value={activePreset === "custom" ? "standard" : activePreset}
         columns={3}
         className="mt-3"
@@ -190,12 +219,12 @@ export function BranchHoursEditor({
         options={[
           { value: "standard", label: "6 AM - 10 PM" },
           { value: "early", label: "5 AM - 10 PM" },
-          { value: "always", label: "Open all day" },
+          { value: "always", label: t("openAllDay") },
         ]}
       />
       {allClosed ? (
         <p className="mt-3 rounded-2xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-50">
-          This branch is closed on the public page.
+          {t("closedOnPublicPage")}
         </p>
       ) : null}
       <div className="mt-4 grid gap-2">
@@ -210,7 +239,7 @@ export function BranchHoursEditor({
               className="grid gap-2 rounded-2xl border border-white/10 bg-black/25 p-3"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-white/80">{day.label}</span>
+                <span className="text-xs font-semibold text-white/80">{summaryLabels.days[day.key]}</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -222,12 +251,12 @@ export function BranchHoursEditor({
                       : "border-blue-300/25 bg-blue-300/10 text-blue-50"
                   }`}
                 >
-                  {isClosed ? "Closed" : "Open"}
+                  {isClosed ? t("closed") : t("open")}
                 </button>
               </div>
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                 <select
-                  aria-label={day.label}
+                  aria-label={t("openTimeForDay", { day: summaryLabels.days[day.key] })}
                   value={open}
                   disabled={isClosed}
                   onChange={(event) => updateDay(day.key, { open: event.target.value, close })}
@@ -239,9 +268,9 @@ export function BranchHoursEditor({
                     </option>
                   ))}
                 </select>
-                <span className="text-xs text-white/35">to</span>
+                <span className="text-xs text-white/35">{t("to")}</span>
                 <select
-                  aria-label={day.label}
+                  aria-label={t("closeTimeForDay", { day: summaryLabels.days[day.key] })}
                   value={close}
                   disabled={isClosed}
                   onChange={(event) => updateDay(day.key, { open, close: event.target.value })}

@@ -1,4 +1,4 @@
-import { addDays, startOfToday, toDateKey } from "../shared/date";
+import { addDays, startOfDayIst, startOfToday, toDateKey } from "../shared/date";
 
 type DailyPoint = {
   date: string;
@@ -47,10 +47,8 @@ export function dayWindow(days: number) {
 }
 
 export function dateRangeWindow(from: Date, to: Date) {
-  const start = new Date(from);
-  start.setHours(0, 0, 0, 0);
-  const endDay = new Date(to);
-  endDay.setHours(0, 0, 0, 0);
+  const start = startOfDayIst(from);
+  const endDay = startOfDayIst(to);
   const end = addDays(endDay, 1);
   const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
   const daysInWindow = Array.from({ length: days }, (_, index) => addDays(start, index));

@@ -2,7 +2,7 @@ import { Link } from "expo-router";
 import type { Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -17,8 +17,6 @@ import {
 import { glow, gradients, radii, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
 
-// Deep-green primary-button fill for light mode (white label reads on it).
-const ACCENT_BUTTON_LIGHT = ["#2E5A36", "#1F3E24"] as const;
 import type { Palette } from "@/lib/theme/index";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
@@ -118,9 +116,9 @@ const buttonSizeStyles: Record<ButtonSize, ViewStyle> = {
 };
 
 const buttonTextSizeStyles: Record<ButtonSize, TextStyle> = {
-  sm: { fontSize: 13, lineHeight: 17 },
+  sm: { ...typography.small },
   md: {},
-  lg: { fontSize: 16, lineHeight: 21 },
+  lg: { ...typography.cardTitle },
 };
 
 export function ZookButton({
@@ -192,7 +190,7 @@ export function ZookButton({
   // light accent + white onAccent text); dark mode uses the lime fill with
   // black text. Keeping the lime fill in light mode left white-on-lime labels
   // that were nearly invisible.
-  const primaryGradient = mode === "light" ? ACCENT_BUTTON_LIGHT : gradients.accentButton;
+  const primaryGradient = mode === "light" ? gradients.accentButtonLight : gradients.accentButton;
   const gradientLayer = isPrimary ? (
     <LinearGradient
       colors={primaryGradient}

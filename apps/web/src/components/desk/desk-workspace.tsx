@@ -2,7 +2,7 @@
 
 import { Pill } from "@/components/glass-card";
 import Link from "next/link";
-import { CalendarDays, CreditCard, PackageCheck, QrCode } from "lucide-react";
+import { CreditCard, PackageCheck, QrCode, Search } from "lucide-react";
 import { useDeskWorkspace } from "@/lib/use-desk-workspace";
 import { DeskMetrics } from "./desk-metrics";
 import { DeskClassesPanel } from "./DeskClassesPanel";
@@ -38,33 +38,90 @@ export function DeskWorkspace({
     initialMemberUserId,
   });
   const branchQuery = branch?.id ? `?branchId=${encodeURIComponent(branch.id)}` : "";
+  const nextDeskAction = state.pendingRecords.length
+      ? {
+        href: `/desk${branchQuery}`,
+        label: copy.nextReviewCheckIns,
+        detail: `${state.pendingRecords.length} ${copy.nextReviewCheckInsDetail}`,
+        count: state.pendingRecords.length,
+      }
+    : state.payAtDeskOrders.length
+      ? {
+          href: `/desk/payments${branchQuery}`,
+          label: copy.nextCollectPayments,
+          detail: `${state.payAtDeskOrders.length} ${copy.nextCollectPaymentsDetail}`,
+          count: state.payAtDeskOrders.length,
+        }
+      : state.pickupOrders.length
+        ? {
+            href: `/desk/orders${branchQuery}`,
+            label: copy.nextVerifyPickups,
+            detail: `${state.pickupOrders.length} ${copy.nextVerifyPickupsDetail}`,
+            count: state.pickupOrders.length,
+          }
+        : {
+            href: `/desk/members${branchQuery}`,
+            label: copy.nextDeskClear,
+            detail: copy.nextDeskClearDetail,
+            count: state.todayRecords.length,
+          };
   const quickActions = [
-    { href: `/desk/members${branchQuery}`, label: "Check in", icon: <QrCode size={16} /> },
-    { href: `/desk/payments${branchQuery}`, label: "New payment", icon: <CreditCard size={16} /> },
-    { href: `/desk/classes${branchQuery}`, label: "Classes", icon: <CalendarDays size={16} /> },
-    { href: `/desk/orders${branchQuery}`, label: "Pickup", icon: <PackageCheck size={16} /> },
+    { href: `/desk/qr${branchQuery}`, label: copy.quickQrCheckIn, icon: <QrCode size={16} /> },
+    { href: `/desk/members${branchQuery}`, label: copy.quickFindMember, icon: <Search size={16} /> },
+    { href: `/desk/payments${branchQuery}`, label: copy.quickNewPayment, icon: <CreditCard size={16} /> },
+    { href: `/desk/orders${branchQuery}`, label: copy.quickPickup, icon: <PackageCheck size={16} /> },
   ];
+  const deskIsClear = nextDeskAction.label === copy.nextDeskClear;
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-4 px-4 py-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Pill>{branch?.name ?? copy.mainBranch}</Pill>
-        <Pill>
-          {state.todayRecords.length} {copy.checkInsToday}
-        </Pill>
-      </div>
+    <div className="mx-auto grid max-w-5xl gap-3 px-4 py-4">
+      <div className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3">
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill>{branch?.name ?? copy.mainBranch}</Pill>
+              <Pill>
+                {state.todayRecords.length} {copy.checkInsToday}
+              </Pill>
+              <Pill tone={deskIsClear ? "neutral" : "amber"}>
+                {nextDeskAction.count}
+              </Pill>
+            </div>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold text-[var(--text-primary)]">
+                  {nextDeskAction.label}
+                </h1>
+                <p className="mt-0.5 line-clamp-1 text-sm text-[var(--text-secondary)]">
+                  {nextDeskAction.detail}
+                </p>
+              </div>
+              <Link
+                href={nextDeskAction.href}
+                className="zook-focus inline-flex min-h-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--border-focus)] hover:bg-[var(--surface)]"
+              >
+                {copy.openTask}
+              </Link>
+            </div>
+          </div>
 
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2">
-        {quickActions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="zook-focus inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]"
-          >
-            {action.icon}
-            {action.label}
-          </Link>
-        ))}
+          <div className="flex gap-2 overflow-x-auto lg:justify-end">
+            {quickActions.map((action, idx) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className={
+                  idx === 0
+                    ? "zook-focus inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full bg-[var(--accent-fill)] px-3 text-xs font-semibold text-[var(--text-on-accent)] transition hover:opacity-90"
+                    : "zook-focus inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]"
+                }
+              >
+                {action.icon}
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
 
       <DeskMetrics

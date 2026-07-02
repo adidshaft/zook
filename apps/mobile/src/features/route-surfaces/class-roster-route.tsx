@@ -4,10 +4,9 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
-  IconBubble,
   Pill,
   QueryErrorState,
   SectionHeader,
@@ -179,12 +178,12 @@ export default function ClassRosterRoute() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader
+          <ScreenHeader
             title={String(title)}
             subtitle={
               data?.class
-                ? `${formatTime(data.class.startTime)} · ${confirmed.length}/${data.class.maxCapacity} booked`
-                : t("classRoster.subtitle")
+                ? `${formatTime(data.class.startTime)} · ${t("classRoster.bookedCount", { count: confirmed.length, capacity: data.class.maxCapacity })}`
+                : undefined
             }
             showBack
           />
@@ -234,14 +233,14 @@ export default function ClassRosterRoute() {
           ) : null}
 
           {!rosterQuery.isLoading && roster.length ? (
-            <Card variant="compact" contentStyle={styles.hintRow}>
-              <IconBubble icon="information-circle-outline" tone="neutral" size={34} />
+            <View style={[styles.hintRow, { borderColor: palette.border.subtle }]}>
+              <Ionicons name="information-circle-outline" size={14} color={palette.text.secondary} />
               <Text style={[styles.hint, { color: palette.text.secondary }]}>
                 {classHasStarted
                   ? t("classRoster.attendanceHint")
                   : t("classRoster.waitlistHint")}
               </Text>
-            </Card>
+            </View>
           ) : null}
         </ScrollView>
       </ZookScreen>

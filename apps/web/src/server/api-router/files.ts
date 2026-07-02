@@ -13,6 +13,7 @@ import {
 import { Prisma, prisma } from "@zook/db";
 import { getRequestContext, requireAuth } from "../access";
 import { writeAuditLog } from "../audit";
+import { getErrorReporter } from "../error-reporter";
 import {
   assertCanAccessFileAsset,
   assertCanServeLocalPublicFileAsset,
@@ -259,7 +260,11 @@ export async function handleFiles(request: NextRequest, path: string[]) {
       });
     } catch (error) {
       if (uploaded) {
-        await storageProvider.deleteFile({ key: storageKey }).catch(() => undefined);
+        await storageProvider.deleteFile({ key: storageKey }).catch((deleteError) => {
+          getErrorReporter().captureException(deleteError, {
+            metadata: { context: "file-delete-orphan", key: storageKey },
+          });
+        });
       }
       throw error;
     }

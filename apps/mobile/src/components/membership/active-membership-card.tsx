@@ -1,14 +1,27 @@
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DatePickerField, Card, IconBubble, Pill, ZookButton } from "@/components/primitives";
-import { formatLongDate, formatVisitLimit, titleCaseFromCode } from "@/lib/formatting";
-import { useT } from "@/lib/i18n";
+import { formatLongDate } from "@/lib/formatting";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { spacing, typography, useTheme } from "@/lib/theme";
-import { membershipStatusGuidance, toneForStatus } from "./helpers";
+import { membershipStatusGuidance, membershipStatusLabel, planTypeLabel, toneForStatus } from "./helpers";
 import type { MembershipRecord } from "./types";
 
+function pauseReasonLabelKey(reason: string): TranslationKey {
+  switch (reason) {
+    case "Medical":
+      return "member.membership.pauseReasonMedical";
+    case "Travel":
+      return "member.membership.pauseReasonTravel";
+    case "Injury":
+      return "member.membership.pauseReasonInjury";
+    default:
+      return "member.membership.pauseReasonOther";
+  }
+}
+
 export function ActiveMembershipCard({
-  activeOrganizationName,
   actionBusy,
   actionStatus,
   daysLeft,
@@ -16,6 +29,7 @@ export function ActiveMembershipCard({
   onPauseDateChange,
   onPauseReasonChange,
   onPauseOrResume,
+  onOpenManage,
   onTerminate,
   pauseMinimumDate,
   pauseReason,
@@ -25,7 +39,6 @@ export function ActiveMembershipCard({
   terminateBusy,
   terminateStatus,
 }: {
-  activeOrganizationName?: string | null;
   actionBusy: boolean;
   actionStatus: string;
   daysLeft: number | null;
@@ -33,6 +46,7 @@ export function ActiveMembershipCard({
   onPauseDateChange: (date: Date) => void;
   onPauseReasonChange: (reason: string) => void;
   onPauseOrResume: (subscription: MembershipRecord) => void;
+  onOpenManage?: () => void;
   onTerminate?: (subscription: MembershipRecord) => void;
   pauseMinimumDate: () => Date;
   pauseReason: string;
@@ -43,12 +57,21 @@ export function ActiveMembershipCard({
   terminateStatus?: string;
 }) {
   const { palette } = useTheme();
-  const t = useT();
+  const { locale, t } = useI18n();
+  const [manageOpen, setManageOpen] = useState(subscription.status === "PAUSED");
   const guidance = membershipStatusGuidance(subscription.status, daysLeft, t);
   const guidanceTone = toneForStatus(subscription.status);
   const guidanceShowsIcon = guidanceTone === "amber" || guidanceTone === "red";
   const isWarning = daysLeft !== null && daysLeft <= 7;
+  const isHealthyActive = subscription.status === "ACTIVE" && !isWarning;
+  const showGuidanceCard = !isHealthyActive || guidanceShowsIcon;
   const durationDays = subscription.plan?.durationDays ?? subscription.plan?.validityDays ?? null;
+  const planMetaParts = [
+    planTypeLabel(subscription.plan?.type, t),
+    durationDays
+      ? t("member.membership.days", { count: durationDays })
+      : t("member.membership.gymDefinedValidity"),
+  ].filter(Boolean);
   const daysProgress =
     daysLeft !== null && durationDays
       ? Math.max(5, Math.min(100, (daysLeft / Math.max(durationDays, 1)) * 100))
@@ -61,6 +84,14 @@ export function ActiveMembershipCard({
       : daysLeft !== null
         ? t("member.home.daysLeft", { count: daysLeft })
         : "";
+  const manageInSheet = Boolean(onOpenManage);
+  const handleManagePress = () => {
+    if (onOpenManage) {
+      onOpenManage();
+      return;
+    }
+    setManageOpen((current) => !current);
+  };
 
   return (
     <Card
@@ -70,16 +101,35 @@ export function ActiveMembershipCard({
       <View style={styles.featuredHeader}>
         <IconBubble icon="card-outline" tone={toneForStatus(subscription.status)} size={40} />
         <View style={styles.featuredCopy}>
-          <Text style={[styles.featuredTitle, { color: palette.text.primary }]}>
+          <Text numberOfLines={1} style={[styles.featuredTitle, { color: palette.text.primary }]}>
             {subscription.plan?.name ?? t("member.membership.eyebrow")}
           </Text>
-          <Text style={[styles.featuredOrg, { color: palette.text.secondary }]}>
-            {subscription.organization?.name ?? activeOrganizationName ?? t("member.home.gymFallback")}
+          <Text numberOfLines={1} style={[styles.featuredOrg, { color: palette.text.secondary }]}>
+            {planMetaParts.join(" · ")}
           </Text>
         </View>
-        <Pill tone={toneForStatus(subscription.status)}>
-          {titleCaseFromCode(subscription.status ?? "ACTIVE")}
-        </Pill>
+        <View style={styles.headerActions}>
+          <Pill tone={toneForStatus(subscription.status)}>
+            {membershipStatusLabel(subscription.status, t)}
+          </Pill>
+          {subscription.status !== "PAUSED" && manageInSheet ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("member.membership.manageMembership")}
+              onPress={handleManagePress}
+              style={({ pressed }) => [
+                styles.headerManageButton,
+                {
+                  backgroundColor: palette.bg.sunken,
+                  borderColor: palette.border.subtle,
+                },
+                pressed ? styles.manageTogglePressed : null,
+              ]}
+            >
+              <Ionicons name="ellipsis-horizontal" size={17} color={palette.text.secondary} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       {daysLeft !== null ? (
@@ -102,6 +152,7 @@ export function ActiveMembershipCard({
           </View>
           <View style={styles.progressLabels}>
             <Text
+              numberOfLines={1}
               style={[
                 styles.progressText,
                 { color: isWarning ? palette.feedback.warning : palette.accent.base },
@@ -109,8 +160,8 @@ export function ActiveMembershipCard({
             >
               {daysLeftLabel}
             </Text>
-            <Text style={[styles.progressTextMuted, { color: palette.text.secondary }]}>
-              {subscription.endsAt ? formatLongDate(subscription.endsAt) : ""}
+            <Text numberOfLines={1} style={[styles.progressTextMuted, { color: palette.text.secondary }]}>
+              {subscription.endsAt ? formatLongDate(subscription.endsAt, "", locale) : ""}
             </Text>
           </View>
         </View>
@@ -121,103 +172,160 @@ export function ActiveMembershipCard({
           <Ionicons name="walk-outline" size={14} color={palette.accent.base} />
           <Text style={[styles.membershipMetaText, { color: palette.text.secondary }]}>
             {t("member.membership.visitsRemaining", {
-              visits: formatVisitLimit(subscription.remainingVisits),
+              visits: t("member.membership.visitCount", { count: subscription.remainingVisits }),
             })}
           </Text>
         </View>
       ) : null}
 
-      <View
-        style={[
-          styles.guidanceCard,
-          {
-            borderColor:
-              guidanceTone === "amber"
-                ? palette.feedback.warning
-                : guidanceTone === "red"
-                  ? palette.feedback.danger
-                  : "transparent",
-            backgroundColor:
-              guidanceTone === "amber"
-                ? palette.surface.warningSoft
-                : guidanceTone === "red"
-                  ? palette.surface.dangerSoft
-                  : "transparent",
-            paddingHorizontal: guidanceTone === "amber" || guidanceTone === "red" ? spacing.md : 0,
-          },
-        ]}
-      >
-        {guidanceShowsIcon ? (
-          <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
-        ) : null}
-        <View style={styles.guidanceCopy}>
-          <Text style={[styles.guidanceTitle, { color: palette.text.primary }]}>
-            {guidance.title}
-          </Text>
-          <Text style={[styles.guidanceBody, { color: palette.text.secondary }]}>
-            {guidance.body}
-          </Text>
-        </View>
-      </View>
-
-      <ZookButton
-        testID="membership-renew-button"
-        onPress={() => onOpenRenewal(subscription)}
-        icon="refresh-outline"
-      >
-        {guidance.action}
-      </ZookButton>
-      {subscription.status !== "PAUSED" ? (
-        <View style={styles.pausePicker}>
-          <DatePickerField
-            accessibilityLabel={t("member.membership.pauseEndDateAccessibility")}
-            label={t("member.membership.pauseUntil")}
-            value={pauseResumesAt}
-            minimumDate={pauseMinimumDate()}
-            onChange={onPauseDateChange}
-          />
-          <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
-            {t("member.membership.pauseHelp")}
-          </Text>
-          <View style={styles.pauseReasons}>
-            {pauseReasonOptions.map((reason) => {
-              const selected = reason === pauseReason;
-              return (
-                <Pressable
-                  key={reason}
-                  accessibilityRole="button"
-                  onPress={() => onPauseReasonChange(reason)}
-                  style={({ pressed }) => [
-                    styles.pauseReason,
-                    {
-                      backgroundColor: selected ? palette.surface.accentSoft : palette.bg.sunken,
-                      borderColor: selected ? palette.border.focus : palette.border.subtle,
-                    },
-                    pressed ? styles.pauseReasonPressed : null,
-                  ]}
-                >
-                  <Text style={[styles.pauseReasonText, { color: selected ? palette.accent.base : palette.text.secondary }]}>
-                    {reason}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      {showGuidanceCard ? (
+        <View
+          style={[
+            styles.guidanceCard,
+            {
+              borderColor:
+                guidanceTone === "amber"
+                  ? palette.feedback.warning
+                  : guidanceTone === "red"
+                    ? palette.feedback.danger
+                    : "transparent",
+              backgroundColor:
+                guidanceTone === "amber"
+                  ? palette.surface.warningSoft
+                  : guidanceTone === "red"
+                    ? palette.surface.dangerSoft
+                    : "transparent",
+              paddingHorizontal: guidanceTone === "amber" || guidanceTone === "red" ? spacing.md : 0,
+            },
+          ]}
+        >
+          {guidanceShowsIcon ? (
+            <IconBubble icon="information-circle-outline" tone={guidanceTone} size={32} />
+          ) : null}
+          <View style={styles.guidanceCopy}>
+            <Text style={[styles.guidanceTitle, { color: palette.text.primary }]}>
+              {guidance.title}
+            </Text>
+            <Text style={[styles.guidanceBody, { color: palette.text.secondary }]}>
+              {guidance.body}
+            </Text>
           </View>
         </View>
       ) : null}
-      <ZookButton
-        testID="membership-pause-resume-button"
-        variant="secondary"
-        disabled={actionBusy || (subscription.status !== "ACTIVE" && subscription.status !== "PAUSED")}
-        onPress={() => onPauseOrResume(subscription)}
-        icon={subscription.status === "PAUSED" ? "play-circle-outline" : "pause-circle-outline"}
-      >
-        {subscription.status === "PAUSED" ? t("member.membership.resumeMembership") : t("member.membership.pauseMembership")}
-      </ZookButton>
+
+      {isHealthyActive ? null : (
+        <ZookButton
+          testID="membership-renew-button"
+          onPress={() => onOpenRenewal(subscription)}
+          icon="refresh-outline"
+        >
+          {guidance.action}
+        </ZookButton>
+      )}
+
+      {subscription.status !== "PAUSED" && !manageInSheet ? (
+        <View style={[styles.actionTray, isHealthyActive ? styles.actionTrayEnd : null]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("member.membership.manageMembership")}
+            accessibilityState={{ expanded: manageOpen }}
+            onPress={handleManagePress}
+            style={({ pressed }) => [
+              manageOpen && !manageInSheet ? styles.manageToggleOpen : styles.manageToggleClosed,
+              {
+                backgroundColor: palette.bg.sunken,
+                borderColor: palette.border.subtle,
+              },
+              pressed ? styles.manageTogglePressed : null,
+            ]}
+          >
+            {manageOpen && !manageInSheet ? (
+              <View style={styles.manageToggleCopy}>
+                <Text style={[styles.manageToggleTitle, { color: palette.text.primary }]}>
+                  {t("member.membership.manageMembership")}
+                </Text>
+                <Text style={[styles.manageToggleBody, { color: palette.text.secondary }]}>
+                  {t("member.membership.manageMembershipBody")}
+                </Text>
+              </View>
+            ) : null}
+            <Ionicons
+              name={manageInSheet ? "ellipsis-horizontal" : manageOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={palette.text.secondary}
+            />
+          </Pressable>
+        </View>
+      ) : null}
+
+      {subscription.status !== "PAUSED" && manageOpen && !manageInSheet ? (
+        <View style={styles.managePanel}>
+          <View style={styles.pausePicker}>
+            <DatePickerField
+              accessibilityLabel={t("member.membership.pauseEndDateAccessibility")}
+              label={t("member.membership.pauseUntil")}
+              value={pauseResumesAt}
+              minimumDate={pauseMinimumDate()}
+              onChange={onPauseDateChange}
+            />
+            <Text style={[styles.pauseHelp, { color: palette.text.secondary }]}>
+              {t("member.membership.pauseHelp")}
+            </Text>
+            <View style={styles.pauseReasons}>
+              {pauseReasonOptions.map((reason) => {
+                const selected = reason === pauseReason;
+                return (
+                  <Pressable
+                    key={reason}
+                    accessibilityRole="button"
+                    onPress={() => onPauseReasonChange(reason)}
+                    style={({ pressed }) => [
+                      styles.pauseReason,
+                      {
+                        backgroundColor: selected ? palette.surface.accentSoft : palette.bg.sunken,
+                        borderColor: selected ? palette.border.focus : palette.border.subtle,
+                      },
+                      pressed ? styles.pauseReasonPressed : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.pauseReasonText,
+                        { color: selected ? palette.accent.base : palette.text.secondary },
+                      ]}
+                    >
+                      {t(pauseReasonLabelKey(reason))}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <ZookButton
+            testID="membership-pause-resume-button"
+            variant="secondary"
+            disabled={actionBusy || subscription.status !== "ACTIVE"}
+            onPress={() => onPauseOrResume(subscription)}
+            icon="pause-circle-outline"
+          >
+            {t("member.membership.pauseMembership")}
+          </ZookButton>
+        </View>
+      ) : subscription.status === "PAUSED" ? (
+        <ZookButton
+          testID="membership-pause-resume-button"
+          variant="secondary"
+          disabled={actionBusy}
+          onPress={() => onPauseOrResume(subscription)}
+          icon="play-circle-outline"
+        >
+          {t("member.membership.resumeMembership")}
+        </ZookButton>
+      ) : null}
       {actionStatus ? (
         <Text style={[styles.statusMessage, { color: palette.accent.base }]}>{actionStatus}</Text>
       ) : null}
-      {onTerminate && subscription.status !== "CANCELLED" ? (
+      {onTerminate && subscription.status !== "CANCELLED" && manageOpen ? (
         <ZookButton
           testID="membership-cancel-button"
           variant="destructive"
@@ -249,12 +357,33 @@ const styles = StyleSheet.create({
   featuredCopy: {
     flex: 1,
     gap: 3,
+    minWidth: 0,
   },
   featuredTitle: {
     ...typography.cardTitle,
   },
   featuredOrg: {
     ...typography.small,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  headerManageButton: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 32,
+    justifyContent: "center",
+    width: 36,
+  },
+  actionTray: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  actionTrayEnd: {
+    justifyContent: "flex-end",
   },
   progressSection: {
     gap: spacing.sm,
@@ -275,9 +404,14 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...typography.small,
+    flex: 1,
+    minWidth: 0,
   },
   progressTextMuted: {
     ...typography.small,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: "right",
   },
   membershipMetaLine: {
     flexDirection: "row",
@@ -305,6 +439,43 @@ const styles = StyleSheet.create({
   },
   guidanceBody: {
     ...typography.small,
+  },
+  manageToggleOpen: {
+    flex: 1,
+    minHeight: 44,
+    flexShrink: 1,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  manageToggleClosed: {
+    alignItems: "center",
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  manageTogglePressed: {
+    opacity: 0.86,
+  },
+  manageToggleCopy: {
+    flexShrink: 1,
+    gap: 3,
+  },
+  manageToggleTitle: {
+    ...typography.caption,
+    fontWeight: "700",
+  },
+  manageToggleBody: {
+    ...typography.small,
+  },
+  managePanel: {
+    gap: spacing.sm,
   },
   pausePicker: {
     marginTop: -spacing.xs,

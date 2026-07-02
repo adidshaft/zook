@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Pill } from "@/components/glass-card";
 import { ZookButtonLink } from "@/components/zook-button";
 import { ZookLogo } from "@/components/zook-logo";
@@ -13,6 +13,7 @@ export function PublicNav({
   languageLabel,
   backHref,
   backLabel,
+  hideMarketingLinks,
   children,
 }: {
   locale: PublicLocale;
@@ -20,25 +21,25 @@ export function PublicNav({
   languageLabel?: string;
   backHref?: string;
   backLabel?: string;
+  hideMarketingLinks?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <header className="sticky top-3 z-30 flex items-center justify-between rounded-full border border-[var(--border)] bg-[var(--surface)]/80 px-3 py-2 backdrop-blur-xl">
-      <div className="flex items-center gap-2 pl-2">
+    <header className="sticky top-3 z-30 flex min-w-0 items-center justify-between gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/80 px-2.5 py-2 backdrop-blur-xl sm:px-3">
+      <div className="flex min-w-0 items-center gap-2 pl-1 sm:pl-2">
         <ZookLogo />
-        <div className="hidden md:block">
-          <Pill>
-            <MapPin size={12} />
-            {publicT(locale, "indiaOps")}
-          </Pill>
-        </div>
+        {!hideMarketingLinks ? (
+          <div className="hidden md:block">
+            <Pill>{publicT(locale, "indiaOps")}</Pill>
+          </div>
+        ) : null}
       </div>
-      <div className="flex items-center gap-2">
-        <ThemeToggleButton />
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        <ThemeToggleButton locale={locale} />
         {languageHref ? (
           <Link
             href={languageHref}
-            className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+            className="zook-focus rounded-full border border-[var(--border)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] sm:px-3"
           >
             {languageLabel ?? publicT(locale, "languageSwitch")}
           </Link>
@@ -46,32 +47,36 @@ export function PublicNav({
         {backHref ? (
           <Link
             href={backHref}
-            className="zook-focus inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+            aria-label={backLabel ?? publicT(locale, "home")}
+            title={backLabel ?? publicT(locale, "home")}
+            className="zook-focus inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1.5 text-xs text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] sm:gap-2 sm:px-3"
           >
             <ArrowLeft size={14} aria-hidden />
-            {backLabel ?? publicT(locale, "home")}
+            <span className="hidden sm:inline">{backLabel ?? publicT(locale, "home")}</span>
           </Link>
-        ) : (
+        ) : !hideMarketingLinks ? (
           <>
             <Link
               href={localizedPath("/pricing", locale)}
-              className="inline-flex rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              className="hidden rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] sm:inline-flex"
             >
-              Pricing
+              {publicT(locale, "navPricing")}
             </Link>
             <Link
               href={localizedPath("/gyms", locale)}
-              className="inline-flex rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]"
+              className="hidden rounded-full px-3 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] hover:bg-[var(--bg-sunken)] sm:inline-flex"
             >
               {publicT(locale, "navGyms")}
             </Link>
           </>
-        )}
-        <div className="block">
-          <ZookButtonLink href={localizedPath("/start-gym", locale)} size="sm">
-            {publicT(locale, "startGym")}
-          </ZookButtonLink>
-        </div>
+        ) : null}
+        {!hideMarketingLinks ? (
+          <div className="hidden sm:block">
+            <ZookButtonLink href={localizedPath("/start-gym", locale)} size="sm">
+              {publicT(locale, "startGym")}
+            </ZookButtonLink>
+          </div>
+        ) : null}
         {children}
       </div>
     </header>

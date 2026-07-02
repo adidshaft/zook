@@ -1,12 +1,13 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
   Card,
   FormField,
   QueryErrorState,
+  ScreenHeader,
   SectionHeader,
   Skeleton,
   ZookButton,
@@ -24,6 +25,7 @@ import { layout, spacing, typography, useTheme } from "@/lib/theme";
 export default function TrainerPayoutSettings() {
   const { palette } = useTheme();
   const { t } = useI18n();
+  const router = useRouter();
   const configQuery = useMyTrainerPayoutConfig();
   const profileQuery = useTrainerProfile();
   const updateConfig = useUpdateMyTrainerPayoutConfig();
@@ -61,8 +63,12 @@ export default function TrainerPayoutSettings() {
 
   const isLoading = configQuery.isLoading || profileQuery.isLoading;
   const isSaving = updateConfig.isPending || updateProfile.isPending;
+  const parsedCommission = Number.parseInt(ptCommission, 10);
+  const parsedPayDay = Number.parseInt(payDay, 10);
+  const commissionInvalid = ptCommission.trim().length > 0 && (Number.isNaN(parsedCommission) || parsedCommission < 0 || parsedCommission > 100);
+  const payDayInvalid = payDay.trim().length > 0 && (Number.isNaN(parsedPayDay) || parsedPayDay < 1 || parsedPayDay > 28);
   const payDayValue = Math.min(28, Math.max(1, Number.parseInt(payDay, 10) || 5));
-  const canSave = !isSaving;
+  const canSave = !isSaving && !commissionInvalid && !payDayInvalid;
 
   function save() {
     if (!canSave) return;
@@ -90,10 +96,34 @@ export default function TrainerPayoutSettings() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <AppHeader
+          <ScreenHeader
             title={t("trainer.payoutSettings.title")}
-            subtitle={t("trainer.payoutSettings.subtitle")}
-            showBack
+            leading={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("common.back")}
+                onPress={() => router.back()}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
+                  pressed ? styles.controlPressed : null,
+                ]}
+              >
+                <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+              </Pressable>
+            }
+            trailing={
+              <ZookButton
+                onPress={save}
+                disabled={!canSave}
+                busy={isSaving}
+                busyLabel={t("common.saving")}
+                icon="checkmark-circle-outline"
+                size="sm"
+              >
+                {t("trainer.payoutSettings.saveChanges")}
+              </ZookButton>
+            }
           />
 
           {hasError ? (
@@ -131,6 +161,7 @@ export default function TrainerPayoutSettings() {
                   keyboardType="number-pad"
                   placeholder="40"
                   hint={t("trainer.payoutSettings.ptCommissionHint")}
+                  error={commissionInvalid ? t("trainer.payoutSettings.ptCommissionInvalid") : undefined}
                 />
                 <FormField
                   label={t("trainer.payoutSettings.perSessionFee")}
@@ -147,6 +178,7 @@ export default function TrainerPayoutSettings() {
                   keyboardType="number-pad"
                   placeholder="5"
                   hint={t("trainer.payoutSettings.payDayHint")}
+                  error={payDayInvalid ? t("trainer.payoutSettings.payDayInvalid") : undefined}
                 />
               </Card>
 
@@ -176,15 +208,6 @@ export default function TrainerPayoutSettings() {
                 </Text>
               </View>
 
-              <ZookButton
-                onPress={save}
-                disabled={!canSave}
-                busy={isSaving}
-                busyLabel={t("common.saving")}
-                icon="checkmark-circle-outline"
-              >
-                {t("trainer.payoutSettings.saveChanges")}
-              </ZookButton>
             </>
           )}
         </ScrollView>
@@ -202,6 +225,15 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  controlPressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
   loadingCard: { gap: spacing.sm },
   formCard: { gap: spacing.md },
   bioField: { minHeight: 84 },

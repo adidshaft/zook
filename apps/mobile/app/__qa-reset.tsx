@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/lib/auth";
-import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import { isMobileFeatureEnabled, isOfflineDemoEnabled } from "@/lib/runtime-mode";
 import { useTheme } from "@/lib/theme";
 
 function safeTarget(value?: string | string[]) {
@@ -16,12 +16,13 @@ function safeTarget(value?: string | string[]) {
 
 export default function QaResetRoute() {
   const { palette } = useTheme();
-  const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
+  const demoEnabled = isOfflineDemoEnabled();
+  const qaShortcutsEnabled = demoEnabled && __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const { target } = useLocalSearchParams<{ target?: string }>();
   const { resetQaSession } = useAuth();
 
   useEffect(() => {
-    if (!qaShortcutsEnabled) {
+    if (!demoEnabled || !qaShortcutsEnabled) {
       return;
     }
     const nextTarget = safeTarget(target);
@@ -32,10 +33,10 @@ export default function QaResetRoute() {
       .catch(() => {
         router.replace("/login" as never);
       });
-  }, [qaShortcutsEnabled, resetQaSession, target]);
+  }, [demoEnabled, qaShortcutsEnabled, resetQaSession, target]);
 
-  if (!qaShortcutsEnabled) {
-    return <Redirect href="/login" />;
+  if (!demoEnabled || !qaShortcutsEnabled) {
+    return <Redirect href="/" />;
   }
 
   return (

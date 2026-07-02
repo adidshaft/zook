@@ -1,19 +1,23 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
   EmptyState,
   FormField,
+  HeaderActions,
   IconBubble,
   Pill,
   QueryErrorState,
-  SectionHeader,
+  ScreenHeader,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgStaff, type StaffAssignment, type StaffUser } from "@/lib/domains/owner/queries";
 import { useInviteStaff, useRemoveStaff, useUpdateStaffRole, type StaffRole } from "@/lib/domains/owner/mutations";
 import { useT } from "@/lib/i18n";
@@ -33,6 +37,7 @@ export default function OwnerStaff() {
   const invite = useInviteStaff();
   const updateRole = useUpdateStaffRole();
   const removeStaff = useRemoveStaff();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [email, setEmail] = useState("");
@@ -41,6 +46,7 @@ export default function OwnerStaff() {
 
   const staff = staffQuery.data?.staff ?? [];
   const users = staffQuery.data?.users ?? [];
+  const pendingCount = staff.filter((row) => row.pending).length;
   const assignableRoles: Array<{ value: StaffRole; label: string }> = [
     { value: "ADMIN", label: t("owner.staff.admin") },
     { value: "TRAINER", label: t("owner.staff.trainer") },
@@ -75,10 +81,13 @@ export default function OwnerStaff() {
   }
 
   function confirmRemove(row: StaffAssignment, name: string) {
-    Alert.alert(t("owner.staff.removeTitle"), t("owner.staff.removeBody", { name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.staff.remove"), style: "destructive", onPress: () => removeStaff.mutate(row.id) },
-    ]);
+    confirm({
+      title: t("owner.staff.removeTitle"),
+      body: t("owner.staff.removeBody", { name }),
+      destructiveLabel: t("owner.staff.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => removeStaff.mutate(row.id),
+    });
   }
 
   return (
@@ -91,16 +100,49 @@ export default function OwnerStaff() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("owner.staff.title")} subtitle={t("owner.staff.subtitle")} showBack />
-
-          <SectionHeader
-            title={t("owner.staff.team")}
-            action={
-              <ZookButton size="sm" variant={showInvite ? "secondary" : "primary"} icon={showInvite ? "close" : "person-add"} onPress={() => setShowInvite((v) => !v)}>
-                {showInvite ? t("common.cancel") : t("owner.staff.invite")}
-              </ZookButton>
+          <ScreenHeader
+            title={t("owner.staff.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
             }
+            trailing={<HeaderActions showBell />}
           />
+
+          <View style={styles.listToolbar}>
+            <View style={styles.countCluster}>
+              <Pill tone={staff.length ? "blue" : "neutral"}>
+                {t("owner.staff.totalStaff", { count: staff.length })}
+              </Pill>
+              {pendingCount ? (
+                <Pill tone="amber">
+                  {t("owner.staff.pendingInvites", { count: pendingCount })}
+                </Pill>
+              ) : null}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showInvite ? t("common.cancel") : t("owner.staff.invite")}
+              hitSlop={8}
+              onPress={() => setShowInvite((v) => !v)}
+              style={({ pressed }) => [
+                styles.toolbarAction,
+                {
+                  backgroundColor: showInvite ? palette.surface.default : palette.accent.base,
+                  borderColor: showInvite ? palette.border.default : palette.accent.strong,
+                },
+                pressed ? styles.pressedAction : null,
+              ]}
+            >
+              <Ionicons
+                name={showInvite ? "close" : "person-add"}
+                size={19}
+                color={showInvite ? palette.text.secondary : palette.text.onAccent}
+              />
+            </Pressable>
+          </View>
 
           {showInvite ? (
             <Card contentStyle={styles.formCard}>
@@ -129,7 +171,15 @@ export default function OwnerStaff() {
           ) : null}
           {!staffQuery.isLoading && staff.length === 0 ? (
             <Card variant="compact">
-              <EmptyState icon="people-outline" title={t("owner.staff.noStaffYet")} body={t("owner.staff.noStaffBody")} />
+              <EmptyState
+                icon="people-outline"
+                title={t("owner.staff.noStaffYet")}
+                body={t("owner.staff.noStaffBody")}
+                cta={{
+                  label: t("owner.staff.invite"),
+                  onPress: () => setShowInvite(true),
+                }}
+              />
             </Card>
           ) : null}
 
@@ -146,10 +196,10 @@ export default function OwnerStaff() {
                     <View style={styles.staffCopy}>
                       <Text style={[styles.staffName, { color: palette.text.primary }]} numberOfLines={1}>{name}</Text>
                       <Text style={[styles.staffMeta, { color: palette.text.secondary }]} numberOfLines={1}>{user?.email ?? ""}</Text>
-                    </View>
-                    <View style={styles.staffRight}>
-                      <Pill tone={roleTone(row.role)}>{roleLabel[row.role] ?? row.role}</Pill>
-                      {row.pending ? <Pill tone="neutral">{t("owner.staff.invited")}</Pill> : null}
+                      <View style={styles.staffStatusRow}>
+                        <Pill tone={roleTone(row.role)}>{roleLabel[row.role] ?? row.role}</Pill>
+                        {row.pending ? <Pill tone="neutral">{t("owner.staff.invited")}</Pill> : null}
+                      </View>
                     </View>
                   </View>
                   {!isOwner ? (
@@ -173,12 +223,39 @@ export default function OwnerStaff() {
                         </View>
                       ) : null}
                       <View style={styles.staffActions}>
-                        <ZookButton size="sm" variant="secondary" icon="swap-horizontal-outline" onPress={() => setEditingId(editing ? null : row.id)} style={styles.staffAction}>
-                          {editing ? t("common.done") : t("owner.staff.changeRole")}
-                        </ZookButton>
-                        <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmRemove(row, name)} style={styles.staffAction}>
-                          {t("owner.staff.remove")}
-                        </ZookButton>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={editing ? t("common.done") : t("owner.staff.changeRole")}
+                          hitSlop={8}
+                          onPress={() => setEditingId(editing ? null : row.id)}
+                          style={({ pressed }) => [
+                            styles.staffIconAction,
+                            {
+                              backgroundColor: editing ? palette.surface.accentSoft : palette.surface.default,
+                              borderColor: editing ? palette.accent.base : palette.border.default,
+                            },
+                            pressed ? styles.pressedAction : null,
+                          ]}
+                        >
+                          <Ionicons
+                            name={editing ? "checkmark" : "swap-horizontal-outline"}
+                            size={18}
+                            color={editing ? palette.accent.strong : palette.text.secondary}
+                          />
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={t("owner.staff.remove")}
+                          hitSlop={8}
+                          onPress={() => confirmRemove(row, name)}
+                          style={({ pressed }) => [
+                            styles.staffIconAction,
+                            styles.staffDangerAction,
+                            pressed ? styles.pressedAction : null,
+                          ]}
+                        >
+                          <Ionicons name="trash-outline" size={18} color={palette.feedback.danger} />
+                        </Pressable>
                       </View>
                     </>
                   ) : null}
@@ -188,11 +265,24 @@ export default function OwnerStaff() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: {
     alignSelf: "center",
     gap: spacing.md,
@@ -205,6 +295,26 @@ const styles = StyleSheet.create({
   formTitle: { ...typography.cardTitle },
   label: { ...typography.caption },
   hint: { ...typography.small },
+  listToolbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  countCluster: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  toolbarAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
   chip: { borderRadius: radii.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9 },
   chipText: { ...typography.caption },
@@ -214,7 +324,27 @@ const styles = StyleSheet.create({
   staffCopy: { flex: 1, gap: 2, minWidth: 0 },
   staffName: { ...typography.cardTitle },
   staffMeta: { ...typography.small },
-  staffRight: { alignItems: "flex-end", gap: 4 },
-  staffActions: { flexDirection: "row", gap: spacing.sm },
-  staffAction: { flex: 1 },
+  staffStatusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    paddingTop: 2,
+  },
+  staffActions: { alignSelf: "flex-end", flexDirection: "row", gap: spacing.xs },
+  staffIconAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  staffDangerAction: {
+    borderColor: "rgba(255, 98, 74, 0.42)",
+  },
+  pressedAction: {
+    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
+  },
 });

@@ -9,7 +9,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  AppHeader,
+  ScreenHeader,
   Skeleton,
   StatusRing,
   StatusChip,
@@ -23,7 +23,7 @@ import { attendanceApi } from "@/lib/domain-api";
 import { useMemberHome } from "@/lib/domains";
 import type { MemberHomeData } from "@/lib/domains/shared/types";
 import { formatDurationSeconds, formatTime, titleCaseFromCode } from "@/lib/formatting";
-import { useT } from "@/lib/i18n";
+import { type TranslationKey, useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -40,6 +40,21 @@ type AttendanceRecord = {
   reason?: string | null;
   source?: string | null;
 };
+
+const attendanceStatusLabelKeys: Record<string, TranslationKey> = {
+  APPROVED: "member.attendance.approved",
+  FAILED: "member.receipt.statusFailed",
+  FLAGGED: "reception.desk.flagged",
+  PENDING_APPROVAL: "member.attendance.pendingApproval",
+  RECORDED: "reception.desk.statusRecorded",
+  REJECTED: "reception.desk.statusRejected",
+};
+
+function attendanceStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "RECORDED").toUpperCase();
+  const labelKey = attendanceStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "RECORDED");
+}
 
 function toAttendanceFallbackRecord(
   home: MemberHomeData,
@@ -168,7 +183,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
+            <ScreenHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -189,7 +204,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
+            <ScreenHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>{t("member.attendance.notFound")}</Text>
@@ -232,7 +247,7 @@ export default function AttendanceResultScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.attendance.title")}
             subtitle={pending ? branchName : undefined}
             leading={dismissButton}
@@ -388,7 +403,7 @@ export default function AttendanceResultScreen() {
                 <DetailLine label={t("member.attendance.plan")} value={planName} icon="reader-outline" />
                 <DetailLine
                   label={t("member.attendance.status")}
-                  value={titleCaseFromCode(record.status ?? "RECORDED")}
+                  value={attendanceStatusLabel(record.status, t)}
                   icon="checkmark-circle-outline"
                   highlight
                 />

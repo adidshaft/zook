@@ -20,7 +20,11 @@ export function homeData(locale: PublicLocale) {
   const t = (key: Parameters<typeof publicT>[1]) => publicT(locale, key);
   return {
     t,
-    statStrip: [t("rolesLabel"), t("recordLabel"), t("uptimeLabel")] as const,
+    statStrip: [
+      { label: t("statRolesLabel"), value: t("statRolesValue") },
+      { label: t("statRecordLabel"), value: t("statRecordValue") },
+      { label: t("statUptimeLabel"), value: t("statUptimeValue") },
+    ] as const,
     pillars: [
       { icon: Users, label: t("owners"), value: t("ownersValue"), tone: "neutral" },
       { icon: Smartphone, label: t("members"), value: t("membersValue"), tone: "info" },

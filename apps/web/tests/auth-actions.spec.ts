@@ -104,7 +104,10 @@ test.describe("auth actions", () => {
       accountMenu.getByTestId("dashboard-sign-out").click(),
     ]);
     expect(logoutResponse.ok()).toBeTruthy();
-    await page.waitForURL((url) => url.pathname === "/", { timeout: 15_000 });
+    await page.waitForURL((url) => url.pathname === "/", {
+      timeout: 15_000,
+      waitUntil: "domcontentloaded",
+    });
     const cookies = await page.context().cookies();
     expect(cookies.find((cookie) => cookie.name === "zook_session")?.value ?? "").toBe("");
   });
@@ -128,6 +131,7 @@ test.describe("auth actions", () => {
     );
 
     await page.goto("/login");
+    await page.getByText("More sign-in options").click();
     await expect(page.getByTestId("login-google")).toBeVisible();
     await expect(page.getByTestId("login-apple")).toBeVisible();
 
@@ -146,6 +150,7 @@ test.describe("auth actions", () => {
     expect(googleUrl.searchParams.get("nonce")).toBeTruthy();
 
     await page.goto("/login");
+    await page.getByText("More sign-in options").click();
     await page.getByTestId("login-apple").click();
     await expect(page.getByRole("main").getByRole("alert")).toContainText(/invalid sign-in token/i);
     const appleInit = await page.evaluate(

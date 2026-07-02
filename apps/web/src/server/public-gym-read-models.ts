@@ -25,6 +25,18 @@ export type PublicGymTrainer = {
   visibleToMembers: boolean;
 };
 
+export type PublicGymBranch = {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  googleMapsUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  isDefault?: boolean;
+};
+
 export type PublicGymReferral = {
   code: string;
   status: string;
@@ -55,6 +67,7 @@ export type PublicGymProfileData = {
     appStoreUrl: string | null;
     playStoreUrl: string | null;
   };
+  branches: PublicGymBranch[];
   plans: PublicGymPlan[];
   trainers: PublicGymTrainer[];
   referral: PublicGymReferral | null;
@@ -78,6 +91,24 @@ function stringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+function demoGymMedia(username?: string | null) {
+  if (username === "aarogya-strength" || username === "your-fitness") {
+    const base = `/seed/gyms/${username}`;
+    return {
+      logoUrl: `${base}/logo.svg`,
+      coverImageUrl: `${base}/cover.png`,
+      gallery: [
+        `${base}/gallery-01.png`,
+        `${base}/gallery-02.png`,
+        `${base}/gallery-03.png`,
+        `${base}/gallery-04.png`,
+        `${base}/gallery-05.png`,
+      ],
+    };
+  }
+  return { logoUrl: null, coverImageUrl: null, gallery: [] };
 }
 
 function settingsRecord(value: unknown): Record<string, unknown> {
@@ -240,6 +271,7 @@ function demoPublicGymProfile(
   if (!org) {
     return null;
   }
+  const media = demoGymMedia(org.username);
   const usersById = new Map(zookDemoFixtures.users.map((user) => [user.id, user]));
   const referral = referralCode
     ? zookDemoFixtures.referralCodes.find(
@@ -257,10 +289,10 @@ function demoPublicGymProfile(
       state: org.state,
       joinMode: org.joinMode,
       amenities: org.amenities,
-      coverImageUrl: null,
-      logoUrl: null,
+      coverImageUrl: media.coverImageUrl,
+      logoUrl: media.logoUrl,
       tagline: null,
-      gallery: [],
+      gallery: media.gallery,
       facilities: [],
       equipment: [],
       gymType: null,
@@ -270,6 +302,19 @@ function demoPublicGymProfile(
       appStoreUrl: null,
       playStoreUrl: null,
     },
+    branches: zookDemoFixtures.branches
+      .filter((branch) => branch.orgId === org.id)
+      .map((branch, index) => ({
+        id: branch.id,
+        name: branch.name,
+        address: branch.address,
+        city: branch.city,
+        state: branch.state,
+        googleMapsUrl: branch.googleMapsUrl ?? null,
+        latitude: branch.latitude ?? null,
+        longitude: branch.longitude ?? null,
+        isDefault: index === 0,
+      })),
     plans: withPublicPlanHandles(
       zookDemoFixtures.membershipPlans
         .filter((plan) => plan.orgId === org.id && plan.publicVisible)
@@ -318,7 +363,7 @@ async function publicGymProfileFromDb(
     return null;
   }
 
-  const [plans, trainerAssignments, settings, referral] = await Promise.all([
+  const [plans, trainerAssignments, settings, referral, branches] = await Promise.all([
     prisma.membershipPlan.findMany({
       where: { orgId: org.id, active: true, publicVisible: true },
       orderBy: [{ pricePaise: "asc" }, { createdAt: "asc" }],
@@ -334,6 +379,22 @@ async function publicGymProfileFromDb(
           where: { code: referralCode.toUpperCase() },
         })
       : Promise.resolve(null),
+    prisma.branch.findMany({
+      where: { orgId: org.id },
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        googleMapsUrl: true,
+        latitude: true,
+        longitude: true,
+        isDefault: true,
+      },
+      take: 6,
+    }),
   ]);
 
   const trainerUserIds = trainerAssignments.map((assignment) => assignment.userId);
@@ -354,6 +415,7 @@ async function publicGymProfileFromDb(
     trainerProfiles.map((profile) => [profile.userId, profile]),
   );
   const settingValues = settingsRecord(settings?.keyValues);
+  const demoMedia = canUsePublicDemoFallback() ? demoGymMedia(org.username) : null;
   const referralBelongsToOrg = referral?.orgId === org.id;
 
   return {
@@ -367,10 +429,12 @@ async function publicGymProfileFromDb(
       state: org.state,
       joinMode: org.joinMode,
       amenities: stringArray(org.amenities),
-      coverImageUrl: org.coverImageUrl,
-      logoUrl: org.logoUrl,
+      coverImageUrl: org.coverImageUrl ?? demoMedia?.coverImageUrl ?? null,
+      logoUrl: org.logoUrl ?? demoMedia?.logoUrl ?? null,
       tagline: typeof settingValues.tagline === "string" ? settingValues.tagline : null,
-      gallery: stringArray(settingValues.gallery),
+      gallery: stringArray(settingValues.gallery).length
+        ? stringArray(settingValues.gallery)
+        : demoMedia?.gallery ?? [],
       facilities: stringArray(settingValues.facilities),
       equipment: stringArray(settingValues.equipment),
       gymType: typeof settingValues.gymType === "string" ? settingValues.gymType : null,
@@ -384,6 +448,17 @@ async function publicGymProfileFromDb(
       playStoreUrl:
         typeof settingValues.playStoreUrl === "string" ? settingValues.playStoreUrl : null,
     },
+    branches: branches.map((branch) => ({
+      id: branch.id,
+      name: branch.name,
+      address: branch.address,
+      city: branch.city,
+      state: branch.state,
+      googleMapsUrl: branch.googleMapsUrl,
+      latitude: branch.latitude ? Number(branch.latitude) : null,
+      longitude: branch.longitude ? Number(branch.longitude) : null,
+      isDefault: branch.isDefault,
+    })),
     plans: withPublicPlanHandles(
       plans.map((plan) => ({
         id: plan.id,

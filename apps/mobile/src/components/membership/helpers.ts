@@ -1,4 +1,5 @@
 import type { TranslationKey } from "@/lib/i18n";
+import { titleCaseFromCode } from "@/lib/formatting";
 
 export function toneForStatus(status?: string | null) {
   if (status === "ACTIVE") return "lime" as const;
@@ -18,6 +19,65 @@ export function toneForStatus(status?: string | null) {
 }
 
 type MembershipT = (key: TranslationKey, values?: Record<string, string | number>) => string;
+
+const membershipStatusLabelKeys: Record<string, TranslationKey> = {
+  ACTIVE: "memberList.status.active",
+  CANCELLED: "memberList.status.expired",
+  EXPIRED: "memberList.status.expired",
+  FAILED: "member.receipt.statusFailed",
+  PAST_DUE: "memberList.status.expired",
+  PAUSED: "member.receipt.statusPaused",
+  PENDING: "memberList.status.pending",
+  PENDING_PAYMENT: "memberList.status.pending",
+  REJECTED: "member.receipt.statusCancelled",
+};
+
+const paymentStatusLabelKeys: Record<string, TranslationKey> = {
+  CANCELLED: "member.receipt.statusCancelled",
+  CREATED: "member.receipt.statusCreated",
+  FAILED: "member.receipt.statusFailed",
+  ISSUED: "member.receipt.statusIssued",
+  PARTIALLY_REFUNDED: "member.receipt.statusRefunded",
+  REFUNDED: "member.receipt.statusRefunded",
+  SUCCEEDED: "member.receipt.statusSucceeded",
+};
+
+const paymentModeLabelKeys: Record<string, TranslationKey> = {
+  CASH: "member.receipt.modeCash",
+  ONLINE: "member.receipt.modeOnline",
+  UPI: "member.receipt.modeOnline",
+};
+
+const planTypeLabelKeys: Record<string, TranslationKey> = {
+  DURATION: "member.membership.typeDuration",
+  HYBRID: "member.membership.typeHybrid",
+  MEMBERSHIP: "member.membership.typeMembership",
+  TRIAL: "member.membership.typeTrial",
+};
+
+export function membershipStatusLabel(status: string | null | undefined, t: MembershipT) {
+  const normalized = (status ?? "ACTIVE").toUpperCase();
+  const labelKey = membershipStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "ACTIVE");
+}
+
+export function paymentStatusLabel(status: string | null | undefined, t: MembershipT) {
+  const normalized = (status ?? "CREATED").toUpperCase();
+  const labelKey = paymentStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "CREATED");
+}
+
+export function paymentModeLabel(mode: string | null | undefined, t: MembershipT) {
+  const normalized = (mode ?? "ONLINE").toUpperCase();
+  const labelKey = paymentModeLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(mode ?? "ONLINE");
+}
+
+export function planTypeLabel(type: string | null | undefined, t: MembershipT) {
+  const normalized = (type ?? "MEMBERSHIP").toUpperCase();
+  const labelKey = planTypeLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(type ?? "MEMBERSHIP");
+}
 
 export function membershipStatusGuidance(
   status: string | null | undefined,
@@ -45,7 +105,21 @@ export function membershipStatusGuidance(
       action: t("member.membership.guidanceRenewNow"),
     };
   }
-  if (status === "REJECTED" || status === "CANCELLED") {
+  if (status === "PAUSED") {
+    return {
+      title: t("member.membership.guidancePausedTitle"),
+      body: t("member.membership.guidancePausedBody"),
+      action: t("member.membership.resumeMembership"),
+    };
+  }
+  if (status === "CANCELLED") {
+    return {
+      title: t("member.membership.guidanceCancelledTitle"),
+      body: t("member.membership.guidanceCancelledBody"),
+      action: t("member.membership.joinDifferentGym"),
+    };
+  }
+  if (status === "REJECTED") {
     return {
       title: t("member.membership.guidanceInactiveTitle"),
       body: t("member.membership.guidanceInactiveBody"),

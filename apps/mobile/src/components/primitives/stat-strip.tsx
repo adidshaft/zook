@@ -1,12 +1,19 @@
+import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Card } from "./foundation";
 import { spacing, typography, useTheme } from "@/lib/theme";
 
+type StatStripItem = {
+  icon?: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+};
+
 export function StatStrip({
   items,
 }: {
-  items: Array<{ label: string; value: string }>;
+  items: StatStripItem[];
 }) {
   const { palette } = useTheme();
   const visibleItems = items.slice(0, 4);
@@ -17,10 +24,25 @@ export function StatStrip({
         <View key={`${item.label}-${index}`} style={styles.item}>
           {index > 0 ? <View style={[styles.divider, { backgroundColor: palette.border.subtle }]} /> : null}
           <View style={styles.itemContent}>
-            <Text numberOfLines={1} style={[styles.value, { color: palette.text.primary }]}>
-              {item.value}
-            </Text>
-            <Text style={[styles.label, { color: palette.text.secondary }]}>
+            <View style={styles.valueRow}>
+              {item.icon ? (
+                <Ionicons name={item.icon} size={14} color={palette.text.secondary} />
+              ) : null}
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.78}
+                numberOfLines={1}
+                style={[styles.value, { color: palette.text.primary }]}
+              >
+                {item.value}
+              </Text>
+            </View>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.82}
+              numberOfLines={1}
+              style={[styles.label, { color: palette.text.secondary }]}
+            >
               {item.label}
             </Text>
           </View>
@@ -34,7 +56,7 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     paddingHorizontal: 0,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   item: {
     flex: 1,
@@ -43,9 +65,9 @@ const styles = StyleSheet.create({
   },
   itemContent: {
     alignItems: "center",
-    gap: spacing.xs,
+    gap: 3,
     minWidth: 0,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   divider: {
     bottom: 4,
@@ -56,7 +78,17 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.bodyStrong,
+    flexShrink: 1,
+    minWidth: 0,
     textAlign: "center",
+  },
+  valueRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+    justifyContent: "center",
+    maxWidth: "100%",
+    minWidth: 0,
   },
   label: {
     ...typography.caption,

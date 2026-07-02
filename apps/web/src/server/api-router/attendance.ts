@@ -33,6 +33,7 @@ import {
   getOrganizationPendingAttendance,
 } from "../domains/attendance/read-models";
 import { invalidateOrganizationDashboardCache } from "../domains/overview/read-models";
+import { startOfDayIst } from "../domains/shared/date";
 import {
   applyAttendanceUsage,
   assertBranchAccessForContext,
@@ -612,8 +613,7 @@ export async function handleAttendance(request: NextRequest, path: string[]) {
     }
     const body = receptionCodeVerifySchema.parse(await readJson(request));
     const code = body.code.toUpperCase();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfDayIst(new Date());
     const [attendanceRecords, pickupCode] = await Promise.all([
       prisma.attendanceRecord.findMany({
         where: { orgId, checkedInAt: { gte: today } },

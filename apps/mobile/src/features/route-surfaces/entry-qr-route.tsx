@@ -1,25 +1,28 @@
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
+  HeaderActions,
   IconBubble,
   Pill,
   QueryErrorState,
+  ScreenHeader,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useAttendanceQrToken } from "@/lib/domains/owner/queries";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { fixedSurfaces, layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
-const QR_PAPER = "#FFFFFF";
-const QR_INK = "#11150F";
+const QR_PAPER = fixedSurfaces.qrPaper;
+const QR_INK = fixedSurfaces.qrInk;
 
 function secondsUntil(expiresAt?: string) {
   if (!expiresAt) return 0;
@@ -88,10 +91,15 @@ export default function EntryQrRoute() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("entryQr.title")}
-            subtitle={t("entryQr.subtitle")}
-            showBack
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip variant="header" style={styles.headerBranchSelector} />
+              </View>
+            }
+            trailing={<HeaderActions showBell />}
           />
 
           {tokenQuery.isError ? (
@@ -115,7 +123,9 @@ export default function EntryQrRoute() {
               <Text style={[styles.codeLabel, { color: palette.text.secondary }]}>
                 {t("entryQr.manualCode")}
               </Text>
-              <Text style={[styles.code, { color: palette.accent.base }]}>{token?.checkInCode ?? "—— ————"}</Text>
+              <Text style={[styles.code, { color: palette.accent.base }]}>
+                {token?.checkInCode ?? "—— ————"}
+              </Text>
             </View>
 
             <View style={styles.refreshRow}>
@@ -127,9 +137,22 @@ export default function EntryQrRoute() {
                     : t("entryQr.refreshing")}
               </Pill>
               {!isStatic ? (
-                <ZookButton size="sm" variant="secondary" icon="refresh-outline" onPress={() => void tokenQuery.refetch()}>
-                  {t("entryQr.refreshNow")}
-                </ZookButton>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("entryQr.refreshNow")}
+                  hitSlop={8}
+                  onPress={() => void tokenQuery.refetch()}
+                  style={({ pressed }) => [
+                    styles.iconAction,
+                    {
+                      borderColor: palette.border.default,
+                      backgroundColor: palette.surface.default,
+                    },
+                    pressed ? styles.iconActionPressed : null,
+                  ]}
+                >
+                  <IconBubble icon="refresh-outline" tone="neutral" size={30} />
+                </Pressable>
               ) : null}
             </View>
             <View style={styles.refreshRow}>
@@ -138,49 +161,68 @@ export default function EntryQrRoute() {
                 variant={isStatic ? "secondary" : "primary"}
                 onPress={() => void updateQrMode("ROLLING")}
               >
-                Rolling
+                {t("entryQr.rollingMode")}
               </ZookButton>
               <ZookButton
                 size="sm"
                 variant={isStatic ? "primary" : "secondary"}
                 onPress={() => void updateQrMode("STATIC")}
               >
-                Static
+                {t("entryQr.staticMode")}
               </ZookButton>
               {isStatic ? (
                 <>
-                  <ZookButton size="sm" variant="secondary" icon="print-outline" onPress={() => void openPrintView()}>
-                    Print
-                  </ZookButton>
-                  <ZookButton size="sm" variant="secondary" icon="refresh-outline" onPress={() => void regenerateQr()}>
-                    Regenerate
-                  </ZookButton>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("entryQr.print")}
+                    hitSlop={8}
+                    onPress={() => void openPrintView()}
+                    style={({ pressed }) => [
+                      styles.iconAction,
+                      {
+                        borderColor: palette.border.default,
+                        backgroundColor: palette.surface.default,
+                      },
+                      pressed ? styles.iconActionPressed : null,
+                    ]}
+                  >
+                    <IconBubble icon="print-outline" tone="neutral" size={30} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("entryQr.regenerate")}
+                    hitSlop={8}
+                    onPress={() => void regenerateQr()}
+                    style={({ pressed }) => [
+                      styles.iconAction,
+                      {
+                        borderColor: palette.border.default,
+                        backgroundColor: palette.surface.default,
+                      },
+                      pressed ? styles.iconActionPressed : null,
+                    ]}
+                  >
+                    <IconBubble icon="refresh-outline" tone="neutral" size={30} />
+                  </Pressable>
                 </>
               ) : null}
             </View>
           </Card>
 
-          <Card variant="compact" contentStyle={styles.infoRow}>
-            <IconBubble icon="shield-checkmark-outline" tone="lime" size={38} />
-            <View style={styles.infoCopy}>
-              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>
-                {t("entryQr.secureToken")}
-              </Text>
-              <Text style={[styles.infoBody, { color: palette.text.secondary }]}>
-                {t("entryQr.secureTokenBody")}
-              </Text>
-            </View>
-          </Card>
-
-          <Card variant="compact" contentStyle={styles.infoRow}>
-            <IconBubble icon="business-outline" tone="blue" size={38} />
-            <View style={styles.infoCopy}>
-              <Text style={[styles.infoTitle, { color: palette.text.primary }]}>
-                {t("entryQr.branchAware")}
-              </Text>
-              <Text style={[styles.infoBody, { color: palette.text.secondary }]}>
-                {t("entryQr.branchAwareBody")}
-              </Text>
+          <Card variant="compact" contentStyle={styles.infoRail}>
+            <View style={styles.infoRow}>
+              <IconBubble icon="shield-checkmark-outline" tone="lime" size={34} />
+              <View style={styles.infoCopy}>
+                <Text style={[styles.infoTitle, { color: palette.text.primary }]}>
+                  {t("entryQr.secureToken")}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[styles.infoBody, { color: palette.text.secondary }]}
+                >
+                  {t("entryQr.secureTokenBody")}
+                </Text>
+              </View>
             </View>
           </Card>
           {/* keep mode referenced for theme-driven contrast tweaks */}
@@ -192,6 +234,17 @@ export default function EntryQrRoute() {
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    maxWidth: 240,
+    minWidth: 0,
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 190,
+  },
   content: {
     alignSelf: "center",
     gap: spacing.md,
@@ -211,8 +264,24 @@ const styles = StyleSheet.create({
   qrPlaceholder: { alignItems: "center", height: 232, justifyContent: "center", width: 232 },
   codeBlock: { alignItems: "center", gap: 4 },
   codeLabel: { ...typography.caption },
-  code: { ...typography.display, fontSize: 40, letterSpacing: 4 },
-  refreshRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  code: { ...typography.timer, letterSpacing: 4 },
+  refreshRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    justifyContent: "center",
+  },
+  iconAction: {
+    alignItems: "center",
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+  iconActionPressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+  infoRail: { gap: spacing.sm },
   infoRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   infoCopy: { flex: 1, gap: 2, minWidth: 0 },
   infoTitle: { ...typography.cardTitle },

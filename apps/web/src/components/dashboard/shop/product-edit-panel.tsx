@@ -6,6 +6,7 @@ import type { ProductCategory, ProductRow } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
 import { ProductPhotosField, productCategories } from "./product-images";
 import type { ProductFormState, StockAdjustmentState } from "./types";
+import { useT } from "@/lib/use-t";
 
 export function ProductEditPanel({
   orgId,
@@ -32,22 +33,23 @@ export function ProductEditPanel({
   updateProduct: (productId: string) => Promise<void>;
   adjustStock: (productId: string) => Promise<void>;
 }) {
+  const t = useT("webUx.shop");
   return (
     <div className="mt-4 rounded-[20px] border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="font-medium text-white">Edit {product.name}</p>
+          <p className="font-medium text-white">{t("editProductTitle", { product: product.name })}</p>
           <p className="mt-1 text-xs text-white/45">
-            Changes save to {selectedBranchName}. Use stock adjustment for audit history.
+            {t("editProductDescription", { branch: selectedBranchName })}
           </p>
         </div>
         <ZookButton type="button" tone="ghost" size="sm" onClick={() => setEditingProductId(null)}>
-          Cancel
+          {t("cancel")}
         </ZookButton>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Product name
+          {t("productName")}
           <input
             value={productEditForm.name}
             onChange={(event) =>
@@ -57,7 +59,7 @@ export function ProductEditPanel({
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Category
+          {t("category")}
           <select
             value={productEditForm.category}
             onChange={(event) =>
@@ -76,7 +78,7 @@ export function ProductEditPanel({
           </select>
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Price in rupees
+          {t("priceInRupees")}
           <input
             value={productEditForm.priceRupees}
             onChange={(event) =>
@@ -87,7 +89,7 @@ export function ProductEditPanel({
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Current stock
+          {t("currentStock")}
           <input
             value={productEditForm.stock}
             onChange={(event) =>
@@ -98,7 +100,7 @@ export function ProductEditPanel({
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Low stock threshold
+          {t("lowStockThreshold")}
           <input
             value={productEditForm.lowStockThreshold}
             onChange={(event) =>
@@ -112,7 +114,7 @@ export function ProductEditPanel({
           />
         </label>
         <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/55">
-          Active in shop
+          {t("activeInShop")}
           <input
             type="checkbox"
             checked={productEditForm.active}
@@ -124,7 +126,7 @@ export function ProductEditPanel({
         </label>
       </div>
       <label className="mt-3 grid gap-1 text-xs font-medium text-white/50">
-        Short description
+        {t("shortDescription")}
         <input
           value={productEditForm.description}
           onChange={(event) =>
@@ -136,7 +138,7 @@ export function ProductEditPanel({
       <div className="mt-3">
         <ProductPhotosField
           orgId={orgId}
-          label="Product photos"
+          label={t("productPhotos")}
           form={productEditForm}
           setForm={setProductEditForm}
         />
@@ -151,7 +153,7 @@ export function ProductEditPanel({
               delta: event.target.value,
             }))
           }
-          placeholder="+/- stock"
+          placeholder={t("stockDeltaPlaceholder")}
           inputMode="numeric"
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
         />
@@ -164,7 +166,7 @@ export function ProductEditPanel({
               reason: event.target.value,
             }))
           }
-          placeholder="Adjustment reason"
+          placeholder={t("adjustmentReason")}
           className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
         />
         <ZookButton
@@ -174,7 +176,7 @@ export function ProductEditPanel({
           disabled={formBusy === `stock:${product.id}` || !stockAdjustment.delta}
           state={formBusy === `stock:${product.id}` ? "loading" : "idle"}
         >
-          Adjust
+          {t("adjust")}
         </ZookButton>
       </div>
       <ZookButton
@@ -185,7 +187,7 @@ export function ProductEditPanel({
         fullWidth
         className="mt-3"
       >
-        {formBusy === `product:${product.id}` ? "Saving..." : "Save product"}
+        {formBusy === `product:${product.id}` ? t("saving") : t("saveProduct")}
       </ZookButton>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, UserRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AuthSessionSummary, Role } from "@zook/core";
 import { ZookButtonLink } from "@/components/zook-button";
@@ -66,7 +66,7 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
   const destination = publicAccountDestination(sessionWithRoleFallback(session));
   const label = destination
     ? accountDestinationLabel(destination, {
-        platform: "Platform",
+        platform: publicT(locale, "platform"),
         dashboard: publicT(locale, "dashboard"),
         desk: publicT(locale, "desk"),
         coach: publicT(locale, "coach"),
@@ -87,7 +87,7 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
   }
 
   if (session) {
-    const userName = session.user.name || "My account";
+    const userName = session.user.name || publicT(locale, "myAccount");
     const initials = userName
       .split(/\s+/)
       .filter(Boolean)
@@ -114,7 +114,7 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
         {open ? (
           <div
             role="menu"
-            className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-[22px] border border-[var(--border-strong)] bg-[var(--surface-raised)] p-2 text-sm text-[var(--text-primary)] shadow-[var(--shadow-lg)]"
+            className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-[var(--border-strong)] bg-[var(--surface-raised)] p-2 text-sm text-[var(--text-primary)] shadow-[var(--shadow-lg)]"
           >
             <div className="border-b border-[var(--border)] px-3 py-3">
               <p className="truncate font-semibold">{userName}</p>
@@ -130,7 +130,7 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
                 className="zook-focus flex items-center gap-2 rounded-2xl px-3 py-2 text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
               >
                 <UserRound size={16} aria-hidden />
-                My profile
+                {publicT(locale, "myProfile")}
               </a>
               {destination ? (
                 <a
@@ -149,7 +149,7 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
                 className="zook-focus flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] disabled:opacity-60"
               >
                 <LogOut size={16} aria-hidden />
-                {signingOut ? "Signing out..." : "Log out"}
+                {signingOut ? publicT(locale, "signingOut") : publicT(locale, "logOut")}
               </button>
             </div>
           </div>
@@ -158,14 +158,20 @@ export function AccountAwareNav({ locale }: { locale: PublicLocale }) {
     );
   }
 
+  if (!loaded) {
+    return null;
+  }
+
   return (
     <ZookButtonLink
       href={destination ? destinationHref(destination, locale) : localizedPath("/login", locale)}
       tone="ghost"
       size="sm"
-      aria-busy={!loaded}
+      aria-label={label}
+      className="min-w-9 px-2.5 sm:px-4"
+      leadingIcon={<LogIn size={14} aria-hidden="true" />}
     >
-      {label}
+      <span className="hidden sm:inline">{label}</span>
     </ZookButtonLink>
   );
 }

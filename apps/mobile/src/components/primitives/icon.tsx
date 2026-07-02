@@ -1,7 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ExpoSymbols from "expo-symbols";
 import type { SFSymbol } from "expo-symbols";
-import { Platform } from "react-native";
 
 export type AppIconName =
   | "home"
@@ -84,9 +82,6 @@ export function Icon({
   const accessibilityProps = decorative
     ? ({ accessibilityElementsHidden: true, importantForAccessibility: "no" as const } as const)
     : ({ accessibilityRole: "image" as const, accessibilityLabel: accessibilityLabel ?? name } as const);
-  if (Platform.OS === "ios") {
-    return <ExpoSymbols.SymbolView {...accessibilityProps} name={icon.ios} size={size} tintColor={color} />;
-  }
   return (
     <Ionicons
       {...accessibilityProps}

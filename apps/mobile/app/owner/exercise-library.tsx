@@ -1,21 +1,26 @@
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  BranchSelectorChip,
   Card,
   EmptyState,
   FormField,
+  HeaderActions,
   IconBubble,
   Pill,
   QueryErrorState,
   SectionHeader,
+  ScreenHeader,
   Skeleton,
   ThemedSwitch,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
   useDeleteExerciseTemplate,
   useOrgExerciseTemplates,
@@ -23,7 +28,7 @@ import {
   type ExerciseTemplateRecord,
 } from "@/lib/domains";
 import { useT, type TranslationKey } from "@/lib/i18n";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string;
 
@@ -52,6 +57,7 @@ export default function OwnerExerciseLibraryScreen() {
   const templatesQuery = useOrgExerciseTemplates();
   const saveTemplate = useSaveExerciseTemplate();
   const deleteTemplate = useDeleteExerciseTemplate();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ExerciseTemplateRecord | null>(null);
@@ -64,11 +70,21 @@ export default function OwnerExerciseLibraryScreen() {
   const [tempo, setTempo] = useState("");
   const [notes, setNotes] = useState("");
   const [featured, setFeatured] = useState(false);
+  const [showProgrammingDefaults, setShowProgrammingDefaults] = useState(false);
 
   const templates = templatesQuery.data?.templates ?? [];
   const starters = templates.filter((template) => template.scope === "STARTER");
   const orgTemplates = templates.filter((template) => template.scope === "ORG");
   const canSubmit = name.trim().length >= 2 && !saveTemplate.isPending;
+  const programmingSummary =
+    [
+      sets.trim() ? t("owner.exerciseLibrary.setsCount", { count: sets.trim() }) : null,
+      reps.trim() ? t("owner.exerciseLibrary.repsCount", { count: reps.trim() }) : null,
+      restSeconds.trim() ? `${t("owner.exerciseLibrary.restSec")}: ${restSeconds.trim()}` : null,
+      tempo.trim() ? `${t("owner.exerciseLibrary.tempo")}: ${tempo.trim()}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || t("owner.exerciseLibrary.customExercise");
 
   function resetForm() {
     setEditing(null);
@@ -81,6 +97,7 @@ export default function OwnerExerciseLibraryScreen() {
     setTempo("");
     setNotes("");
     setFeatured(false);
+    setShowProgrammingDefaults(false);
     setShowForm(false);
   }
 
@@ -95,6 +112,7 @@ export default function OwnerExerciseLibraryScreen() {
     setTempo(template.tempo ?? "");
     setNotes(template.notes ?? "");
     setFeatured(Boolean(template.featured));
+    setShowProgrammingDefaults(Boolean(template.defaultSets || template.defaultReps || template.defaultRestSeconds || template.tempo || template.notes || template.featured));
     setShowForm(true);
   }
 
@@ -138,41 +156,62 @@ export default function OwnerExerciseLibraryScreen() {
   }
 
   function confirmDelete(template: ExerciseTemplateRecord) {
-    Alert.alert(t("owner.exerciseLibrary.removeTemplateTitle"), t("owner.exerciseLibrary.removeTemplateBody", { name: template.name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.exerciseLibrary.remove"), style: "destructive", onPress: () => deleteTemplate.mutate(template.id) },
-    ]);
+    confirm({
+      title: t("owner.exerciseLibrary.removeTemplateTitle"),
+      body: t("owner.exerciseLibrary.removeTemplateBody", { name: template.name }),
+      destructiveLabel: t("owner.exerciseLibrary.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => deleteTemplate.mutate(template.id),
+    });
   }
 
   function renderTemplate(template: ExerciseTemplateRecord) {
+    const isStarter = template.scope === "STARTER";
+    const primaryAction = isStarter ? () => adoptStarter(template) : () => startEdit(template);
+    const primaryLabel = isStarter ? t("owner.exerciseLibrary.add") : t("owner.exerciseLibrary.edit");
+
     return (
       <Card key={template.id} variant="compact" contentStyle={styles.templateCard}>
-        <View style={styles.templateMain}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={primaryLabel}
+          onPress={primaryAction}
+          style={({ pressed }) => [styles.templateMain, pressed ? styles.pressedRow : null]}
+        >
           <IconBubble icon={template.featured ? "star" : "barbell"} tone={template.featured ? "amber" : "lime"} size={42} />
           <View style={styles.templateCopy}>
             <Text style={[styles.templateName, { color: palette.text.primary }]} numberOfLines={1}>{template.name}</Text>
-            <Text style={[styles.templateMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+            <Text style={[styles.templateMeta, { color: palette.text.secondary }]} numberOfLines={2}>
               {templateMeta(template, t)}
             </Text>
+            <View style={styles.templateStatusRow}>
+              <Pill tone={template.scope === "STARTER" ? "blue" : template.featured ? "amber" : "neutral"}>
+                {templatePillLabel(template, t)}
+              </Pill>
+            </View>
           </View>
-          <Pill tone={template.scope === "STARTER" ? "blue" : template.featured ? "amber" : "neutral"}>
-            {templatePillLabel(template, t)}
-          </Pill>
-        </View>
+        </Pressable>
         <View style={styles.actions}>
-          {template.scope === "STARTER" ? (
-            <ZookButton size="sm" variant="secondary" icon="add" onPress={() => adoptStarter(template)} style={styles.actionButton}>
-              {t("owner.exerciseLibrary.add")}
-            </ZookButton>
+          {isStarter ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("owner.exerciseLibrary.add")}
+              hitSlop={10}
+              onPress={() => adoptStarter(template)}
+              style={({ pressed }) => [styles.addAction, pressed ? styles.pressedAction : null]}
+            >
+              <Ionicons name="add" size={20} color={palette.accent.base} />
+            </Pressable>
           ) : (
-            <>
-              <ZookButton size="sm" variant="secondary" icon="create-outline" onPress={() => startEdit(template)} style={styles.actionButton}>
-                {t("owner.exerciseLibrary.edit")}
-              </ZookButton>
-              <ZookButton size="sm" variant="destructive" icon="trash-outline" onPress={() => confirmDelete(template)} style={styles.actionButton}>
-                {t("owner.exerciseLibrary.remove")}
-              </ZookButton>
-            </>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("owner.exerciseLibrary.remove")}
+              hitSlop={10}
+              onPress={() => confirmDelete(template)}
+              style={({ pressed }) => [styles.removeAction, pressed ? styles.pressedAction : null]}
+            >
+              <Ionicons name="trash-outline" size={18} color={palette.feedback.danger} />
+            </Pressable>
           )}
         </View>
       </Card>
@@ -189,15 +228,44 @@ export default function OwnerExerciseLibraryScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("owner.exerciseLibrary.title")} subtitle={t("owner.exerciseLibrary.subtitle")} showBack />
-          <SectionHeader
-            title={t("owner.exerciseLibrary.sharedLibrary")}
-            action={
-              <ZookButton size="sm" variant={showForm && !editing ? "secondary" : "primary"} icon={showForm && !editing ? "close" : "add"} onPress={() => (showForm && !editing ? resetForm() : (resetForm(), setShowForm(true)))}>
-                {showForm && !editing ? t("common.cancel") : t("owner.exerciseLibrary.new")}
-              </ZookButton>
+          <ScreenHeader
+            title={t("owner.exerciseLibrary.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
             }
+            trailing={<HeaderActions showBell />}
           />
+          <View style={styles.listToolbar}>
+            <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
+              {t("owner.exerciseLibrary.sharedLibrary")}
+            </Text>
+            <View style={styles.headerActions}>
+              <Pill tone={orgTemplates.length ? "lime" : "neutral"}>{orgTemplates.length}</Pill>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showForm && !editing ? t("common.cancel") : t("owner.exerciseLibrary.new")}
+                hitSlop={8}
+                onPress={() => (showForm && !editing ? resetForm() : (resetForm(), setShowForm(true)))}
+                style={({ pressed }) => [
+                  styles.toolbarAction,
+                  {
+                    backgroundColor: showForm && !editing ? palette.surface.default : palette.accent.base,
+                    borderColor: showForm && !editing ? palette.border.default : palette.accent.strong,
+                  },
+                  pressed ? styles.pressedAction : null,
+                ]}
+              >
+                <Ionicons
+                  name={showForm && !editing ? "close" : "add"}
+                  size={20}
+                  color={showForm && !editing ? palette.text.secondary : palette.text.onAccent}
+                />
+              </Pressable>
+            </View>
+          </View>
           {showForm ? (
             <Card contentStyle={styles.formCard}>
               <Text style={[styles.formTitle, { color: palette.text.primary }]}>{editing ? t("owner.exerciseLibrary.editTemplate") : t("owner.exerciseLibrary.newTemplate")}</Text>
@@ -206,17 +274,45 @@ export default function OwnerExerciseLibraryScreen() {
                 <FormField label={t("owner.exerciseLibrary.muscle")} value={muscleGroup} onChangeText={setMuscleGroup} placeholder={t("owner.exerciseLibrary.musclePlaceholder")} style={styles.formField} />
                 <FormField label={t("owner.exerciseLibrary.equipment")} value={equipment} onChangeText={setEquipment} placeholder={t("owner.exerciseLibrary.equipmentPlaceholder")} style={styles.formField} />
               </View>
-              <View style={styles.formRow}>
-                <FormField label={t("owner.exerciseLibrary.sets")} value={sets} onChangeText={setSets} keyboardType="number-pad" style={styles.formField} />
-                <FormField label={t("owner.exerciseLibrary.reps")} value={reps} onChangeText={setReps} keyboardType="number-pad" style={styles.formField} />
-                <FormField label={t("owner.exerciseLibrary.restSec")} value={restSeconds} onChangeText={setRestSeconds} keyboardType="number-pad" style={styles.formField} />
-              </View>
-              <FormField label={t("owner.exerciseLibrary.tempo")} value={tempo} onChangeText={setTempo} placeholder="2-0-1" />
-              <FormField label={t("owner.exerciseLibrary.notes")} value={notes} onChangeText={setNotes} placeholder={t("owner.exerciseLibrary.notesPlaceholder")} multiline />
-              <View style={styles.switchRow}>
-                <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.exerciseLibrary.featured")}</Text>
-                <ThemedSwitch value={featured} onValueChange={setFeatured} />
-              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showProgrammingDefaults }}
+                onPress={() => setShowProgrammingDefaults((value) => !value)}
+                style={({ pressed }) => [
+                  styles.disclosureRow,
+                  { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                  pressed ? styles.pressedAction : null,
+                ]}
+              >
+                <View style={styles.disclosureCopy}>
+                  <Text style={[styles.disclosureTitle, { color: palette.text.primary }]}>
+                    {t("owner.exerciseLibrary.programmingDefaults")}
+                  </Text>
+                  <Text style={[styles.disclosureMeta, { color: palette.text.secondary }]} numberOfLines={1}>
+                    {programmingSummary}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={showProgrammingDefaults ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={palette.text.secondary}
+                />
+              </Pressable>
+              {showProgrammingDefaults ? (
+                <View style={styles.defaultsStack}>
+                  <View style={styles.formRow}>
+                    <FormField label={t("owner.exerciseLibrary.sets")} value={sets} onChangeText={setSets} keyboardType="number-pad" style={styles.formField} />
+                    <FormField label={t("owner.exerciseLibrary.reps")} value={reps} onChangeText={setReps} keyboardType="number-pad" style={styles.formField} />
+                  </View>
+                  <FormField label={t("owner.exerciseLibrary.restSec")} value={restSeconds} onChangeText={setRestSeconds} keyboardType="number-pad" />
+                  <FormField label={t("owner.exerciseLibrary.tempo")} value={tempo} onChangeText={setTempo} placeholder="2-0-1" />
+                  <FormField label={t("owner.exerciseLibrary.notes")} value={notes} onChangeText={setNotes} placeholder={t("owner.exerciseLibrary.notesPlaceholder")} multiline />
+                  <View style={styles.switchRow}>
+                    <Text style={[styles.switchTitle, { color: palette.text.primary }]}>{t("owner.exerciseLibrary.featured")}</Text>
+                    <ThemedSwitch value={featured} onValueChange={setFeatured} />
+                  </View>
+                </View>
+              ) : null}
               <ZookButton onPress={submit} disabled={!canSubmit} busy={saveTemplate.isPending} busyLabel={t("common.saving")} icon="save-outline">
                 {t("owner.exerciseLibrary.saveTemplate")}
               </ZookButton>
@@ -239,32 +335,104 @@ export default function OwnerExerciseLibraryScreen() {
           ) : null}
           {!templatesQuery.isLoading && !orgTemplates.length ? (
             <Card variant="compact">
-              <EmptyState icon="barbell-outline" title={t("owner.exerciseLibrary.noSharedTemplates")} body={t("owner.exerciseLibrary.noSharedTemplatesBody")} />
+              <EmptyState
+                icon="barbell-outline"
+                title={t("owner.exerciseLibrary.noSharedTemplates")}
+                body={t("owner.exerciseLibrary.noSharedTemplatesBody")}
+                cta={{
+                  label: t("owner.exerciseLibrary.newTemplate"),
+                  onPress: () => setShowForm(true),
+                }}
+              />
             </Card>
           ) : null}
           {!templatesQuery.isLoading ? <View style={styles.stack}>{orgTemplates.map(renderTemplate)}</View> : null}
-          <SectionHeader title={t("owner.exerciseLibrary.starters")} />
+          <SectionHeader title={t("owner.exerciseLibrary.starters")} action={<Pill tone={starters.length ? "blue" : "neutral"}>{starters.length}</Pill>} />
           {!templatesQuery.isLoading ? <View style={styles.stack}>{starters.map(renderTemplate)}</View> : null}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+    width: "100%",
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
+  },
   content: { alignSelf: "center", gap: spacing.md, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding, paddingTop: layout.screenContentTopPadding, width: "100%" },
   formCard: { gap: spacing.md },
   formTitle: { ...typography.cardTitle },
+  sectionTitle: { ...typography.sectionTitle },
+  headerActions: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
+  listToolbar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
+  toolbarAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
   formRow: { flexDirection: "row", gap: spacing.sm },
   formField: { flex: 1 },
+  disclosureRow: {
+    alignItems: "center",
+    borderRadius: radii.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  disclosureCopy: { flex: 1, gap: 2, minWidth: 0 },
+  disclosureTitle: { ...typography.bodyStrong },
+  disclosureMeta: { ...typography.small },
+  defaultsStack: { gap: spacing.sm },
   switchRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   switchTitle: { ...typography.bodyStrong },
   stack: { gap: spacing.sm },
   templateCard: { gap: spacing.sm },
   templateMain: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  templateCopy: { flex: 1, minWidth: 0 },
+  templateCopy: { flex: 1, gap: 2, minWidth: 0 },
   templateName: { ...typography.cardTitle },
   templateMeta: { ...typography.small },
-  actions: { flexDirection: "row", gap: spacing.sm },
-  actionButton: { flex: 1 },
+  templateStatusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    paddingTop: 2,
+  },
+  actions: { alignItems: "flex-end" },
+  addAction: {
+    alignItems: "center",
+    borderColor: "rgba(170, 255, 83, 0.42)",
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 42,
+  },
+  removeAction: {
+    alignItems: "center",
+    borderColor: "rgba(255, 98, 74, 0.42)",
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: "center",
+    width: 42,
+  },
+  pressedAction: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+  pressedRow: { opacity: 0.78 },
 });

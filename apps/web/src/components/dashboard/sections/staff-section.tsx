@@ -1,9 +1,9 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import { ErrorNotice } from "../operational-shared";
-import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitives";
+import { DataTable, EmptyState, SectionHeader } from "../../dashboard-primitives";
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ManagedOn, SearchableSelect } from "../../ui";
@@ -17,6 +17,7 @@ import type {
   StaffUserRow,
 } from "@/components/dashboard/types";
 import { formatDate, formatDateTime, formatEnumLabel } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 
 type ResourceState = {
   error: string;
@@ -54,43 +55,42 @@ type StaffSectionProps = {
   deleteCoachPlan: (plan: CoachPlanRow) => Promise<void>;
 };
 
-const roleCapabilitySections = [
-  {
-    title: "Reception",
-    items: [
-      "Check in members",
-      "Override entry when QR fails",
-      "Approve or reject pending entries",
-      "Record cash, UPI, card, and bank payments",
-      "Verify and fulfill shop pickups",
-      "Send one-member desk updates",
-    ],
-  },
-  {
-    title: "Admin",
-    items: [
-      "Manage members and join requests",
-      "Manage plans, coupons, and offers",
-      "Manage shop products and orders",
-      "Send broadcast messages within limits",
-      "View reports and activity logs",
-      "Manage branches and staff except billing",
-    ],
-  },
-  {
-    title: "Owner",
-    items: [
-      "Manage billing and invoices",
-      "Refund payments",
-      "Transfer ownership",
-      "Modify role permissions",
-      "Manage every admin workflow",
-    ],
-  },
-];
+type StaffT = ReturnType<typeof useT>;
+
+function roleLabel(role: string, t: StaffT) {
+  if (role === "TRAINER") return t("roleTrainer");
+  if (role === "RECEPTIONIST") return t("roleReception");
+  if (role === "ADMIN") return t("roleAdmin");
+  if (role === "OWNER") return t("roleOwner");
+  return formatEnumLabel(role);
+}
+
+function CompactMark({
+  label,
+  tone = "neutral",
+}: {
+  label: string;
+  tone?: "neutral" | "accent" | "amber";
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+      : tone === "amber"
+        ? "border-[color-mix(in_srgb,var(--feedback-warning)_45%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+        : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]";
+
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-semibold ${toneClass}`}
+    >
+      {label.slice(0, 1)}
+    </span>
+  );
+}
 
 export function StaffSection({
-  organization,
   staffInvite,
   setStaffInvite,
   staffAssignments,
@@ -113,22 +113,71 @@ export function StaffSection({
   revokeStaff,
   deleteCoachPlan,
 }: StaffSectionProps) {
+  const t = useT("staff");
+  const activeBranches = branches.filter((branch) => branch.active !== false);
+  const receptionistNeedsBranch = staffInvite.role === "RECEPTIONIST" && activeBranches.length === 0;
+  const canInviteStaff = formBusy !== "staff" && !receptionistNeedsBranch;
+  const [showInviteForm, setShowInviteForm] = useState(staffAssignments.length === 0);
+  const roleCapabilitySections = [
+    {
+      title: t("roleReception"),
+      items: [
+        t("capCheckInMembers"),
+        t("capOverrideEntry"),
+        t("capApproveRejectEntries"),
+        t("capRecordPayments"),
+        t("capVerifyPickups"),
+        t("capSendDeskUpdates"),
+      ],
+    },
+    {
+      title: t("roleAdmin"),
+      items: [
+        t("capManageMembers"),
+        t("capManagePlans"),
+        t("capManageShop"),
+        t("capBroadcastMessages"),
+        t("capViewReports"),
+        t("capManageBranchesStaff"),
+      ],
+    },
+    {
+      title: t("roleOwner"),
+      items: [
+        t("capManageBilling"),
+        t("capRefundPayments"),
+        t("capTransferOwnership"),
+        t("capModifyPermissions"),
+        t("capManageEveryWorkflow"),
+      ],
+    },
+  ];
+
   return (
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <GlassCard>
+        {showInviteForm ? (
         <div className="mb-5 grid gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-medium text-[var(--text-primary)]">Invite staff</p>
+              <p className="font-medium text-[var(--text-primary)]">{t("inviteStaff")}</p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                Invite email sends a sign-in link. Reception users should be tied to one branch;
-                admins and trainers can work across assigned gym areas.
+                {t("inviteDescription")}
               </p>
             </div>
+            {staffAssignments.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowInviteForm(false)}
+                className="zook-focus rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--text-tertiary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              >
+                {t("hide")}
+              </button>
+            ) : null}
           </div>
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
             <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-              Staff email
+              {t("staffEmail")}
               <input
                 value={staffInvite.email}
                 onChange={(event) =>
@@ -140,7 +189,7 @@ export function StaffSection({
               />
             </label>
             <SearchableSelect
-              label="Role"
+              label={t("role")}
               value={staffInvite.role}
               onChange={(role) =>
                 setStaffInvite((current) => ({
@@ -150,68 +199,97 @@ export function StaffSection({
                 }))
               }
               options={[
-                { value: "TRAINER", label: "Trainer" },
-                { value: "RECEPTIONIST", label: "Reception" },
-                { value: "ADMIN", label: "Admin" },
+                { value: "TRAINER", label: t("roleTrainer") },
+                { value: "RECEPTIONIST", label: t("roleReception") },
+                { value: "ADMIN", label: t("roleAdmin") },
               ]}
             />
           </div>
           {staffInvite.role === "RECEPTIONIST" ? (
-            <SearchableSelect
-              label="Assign branch"
-              placeholder="Assign branch"
-              value={staffInvite.branchId}
-              onChange={(branchId) => setStaffInvite((current) => ({ ...current, branchId }))}
-              options={branches
-                .filter((branch) => branch.active !== false)
-                .map((branch) => ({ value: branch.id, label: branch.name }))}
-            />
+            activeBranches.length > 0 ? (
+              <SearchableSelect
+                label={t("assignBranch")}
+                placeholder={t("assignBranch")}
+                value={staffInvite.branchId}
+                onChange={(branchId) => setStaffInvite((current) => ({ ...current, branchId }))}
+                options={activeBranches.map((branch) => ({ value: branch.id, label: branch.name }))}
+              />
+            ) : (
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+                <p className="font-medium text-[var(--text-primary)]">{t("addBranchBeforeReception")}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
+                  {t("receptionBranchDescription")}
+                </p>
+                <Link
+                  href="/dashboard/settings?section=branches"
+                  className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)] hover:underline"
+                >
+                  {t("addBranch")}
+                </Link>
+              </div>
+            )
           ) : null}
           <ZookButton
             type="button"
             onClick={() => void inviteStaff()}
-            disabled={formBusy === "staff"}
+            disabled={!canInviteStaff}
             state={formBusy === "staff" ? "loading" : "idle"}
             fullWidth
           >
-            {formBusy === "staff" ? "Inviting..." : "Invite staff"}
+            {formBusy === "staff" ? t("inviting") : t("inviteStaff")}
           </ZookButton>
           {formError ? <p className="text-sm text-[var(--feedback-danger)]">{formError}</p> : null}
           {formStatus ? <p className="text-sm text-[var(--feedback-success)]">{formStatus}</p> : null}
         </div>
+        ) : null}
         <SectionHeader
-          eyebrow="Team"
-          title="Operational roles"
-          badge={<Pill>{staffAssignments.length} assignments</Pill>}
+          eyebrow={t("team")}
+          title={t("operationalRoles")}
+          badge={<Pill>{t("assignmentsCount", { count: staffAssignments.length })}</Pill>}
+          action={
+            !showInviteForm ? (
+              <button
+                type="button"
+                onClick={() => setShowInviteForm(true)}
+                className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
+              >
+                {t("inviteStaff")}
+              </button>
+            ) : undefined
+          }
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Created in Trainer app.
+          {t("createdInTrainerApp")}
         </ManagedOn>
         <div className="mt-5">
           {staffState.error ? (
             <ErrorNotice message={staffState.error} />
           ) : staffState.loading && staffAssignments.length === 0 ? (
-            <EmptyState title="Loading staff" />
+            <EmptyState title={t("loadingStaff")} />
           ) : (
             <DataTable
               columns={[
                 {
                   id: "person",
-                  header: "Person",
-                  render: (assignment) => (
-                    <div>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {staffUsersById.get(assignment.userId)?.name ?? "Staff user"}
+                  header: t("staff"),
+                  render: (assignment) => {
+                    const staffUser = staffUsersById.get(assignment.userId);
+                    const contact = staffUser?.phone ?? staffUser?.email ?? t("contactMissing");
+                    return (
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-[var(--text-primary)]">
+                        {staffUser?.name ?? t("staffUser")}
                       </p>
-                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                        {staffUsersById.get(assignment.userId)?.email ?? assignment.userId}
+                      <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                        {t("assignedLine", { contact, date: formatDate(assignment.createdAt) })}
                       </p>
                     </div>
-                  ),
+                    );
+                  },
                 },
                 {
-                  id: "role",
-                  header: "Role",
+                  id: "access",
+                  header: t("access"),
                   render: (assignment) =>
                     editingStaffId === assignment.id ? (
                       <div className="grid min-w-[180px] gap-2">
@@ -221,13 +299,13 @@ export function StaffSection({
                           className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
                         >
                           <option value="TRAINER" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                            Trainer
+                            {t("roleTrainer")}
                           </option>
                           <option value="RECEPTIONIST" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                            Reception
+                            {t("roleReception")}
                           </option>
                           <option value="ADMIN" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                            Admin
+                            {t("roleAdmin")}
                           </option>
                         </select>
                         <select
@@ -236,7 +314,7 @@ export function StaffSection({
                           className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
                         >
                           <option value="" className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
-                            All branches
+                            {t("allBranches")}
                           </option>
                           {branches.map((branch) => (
                             <option key={branch.id} value={branch.id} className="bg-[var(--bg-elevated)] text-[var(--text-primary)]">
@@ -246,34 +324,26 @@ export function StaffSection({
                         </select>
                       </div>
                     ) : (
-                      <span className="text-sm font-medium text-[var(--text-secondary)]">
-                        {formatEnumLabel(assignment.role)}
-                      </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CompactMark
+                          label={roleLabel(assignment.role, t)}
+                          tone={assignment.role === "OWNER" ? "accent" : "neutral"}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-[var(--text-primary)]">
+                            {roleLabel(assignment.role, t)}
+                          </span>
+                          <span className="block truncate text-xs text-[var(--text-tertiary)]">
+                            {branches.find((branch) => branch.id === assignment.branchId)?.name ??
+                              t("allBranches")}
+                          </span>
+                        </span>
+                      </div>
                     ),
                 },
                 {
-                  id: "branch",
-                  header: "Branch",
-                  render: (assignment) =>
-                    branches.find((branch) => branch.id === assignment.branchId)?.name ??
-                    "All branches",
-                },
-                {
-                  id: "contact",
-                  header: "Contact",
-                  render: (assignment) =>
-                    staffUsersById.get(assignment.userId)?.phone ??
-                    organization.contactPhone ??
-                    "Desk route",
-                },
-                {
-                  id: "created",
-                  header: "Assigned",
-                  render: (assignment) => formatDate(assignment.createdAt),
-                },
-                {
                   id: "actions",
-                  header: "Manage",
+                  header: t("manage"),
                   align: "right",
                   render: (assignment) => (
                     <div className="flex flex-wrap justify-end gap-2">
@@ -286,7 +356,7 @@ export function StaffSection({
                             disabled={formBusy === `staff:${assignment.id}`}
                             state={formBusy === `staff:${assignment.id}` ? "loading" : "idle"}
                           >
-                            Save
+                            {t("save")}
                           </ZookButton>
                           <ZookButton
                             type="button"
@@ -294,7 +364,7 @@ export function StaffSection({
                             size="sm"
                             onClick={() => setEditingStaffId(null)}
                           >
-                            Cancel
+                            {t("cancel")}
                           </ZookButton>
                         </>
                       ) : (
@@ -308,19 +378,19 @@ export function StaffSection({
                             setStaffBranchDraft(assignment.branchId ?? "");
                           }}
                         >
-                          Role
+                          {t("edit")}
                         </ZookButton>
                       )}
-                      {assignment.role !== "OWNER" ? (
+                      {editingStaffId === assignment.id && assignment.role !== "OWNER" ? (
                         <ConfirmActionButton
-                          title="Revoke staff access?"
-                          description="This removes the staff member from this gym. Their historical activity stays in the audit log."
-                          confirmLabel="Revoke"
+                          title={t("revokeStaffTitle")}
+                          description={t("revokeStaffDescription")}
+                          confirmLabel={t("revoke")}
                           onConfirm={() => revokeStaff(assignment.id)}
                           disabled={formBusy === `staff:${assignment.id}:revoke`}
                           className="zook-focus rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_26%,transparent)] bg-transparent px-3 py-1 text-xs font-medium text-[var(--feedback-danger)] hover:border-[color-mix(in_srgb,var(--feedback-danger)_45%,transparent)] hover:bg-[var(--surface-danger-soft)] disabled:opacity-50"
                         >
-                          Revoke
+                          {t("revoke")}
                         </ConfirmActionButton>
                       ) : null}
                     </div>
@@ -329,18 +399,19 @@ export function StaffSection({
               ]}
               rows={staffAssignments}
               rowKey={(assignment) => assignment.id}
-              empty="No staff assignments."
+              empty={t("noStaffAssignments")}
             />
           )}
         </div>
       </GlassCard>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Access"
-          title="What each role can do"
-        />
-        <div className="mt-5 grid gap-3">
+      <details className="group rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+          {t("roleCapabilitiesTitle")}
+          <span className="text-xs font-normal text-[var(--text-tertiary)] group-open:hidden">{t("show")}</span>
+          <span className="hidden text-xs font-normal text-[var(--text-tertiary)] group-open:inline">{t("hide")}</span>
+        </summary>
+        <div className="px-5 pb-5 pt-1 grid gap-3">
           {roleCapabilitySections.map((section) => (
             <div
               key={section.title}
@@ -358,81 +429,90 @@ export function StaffSection({
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-[22px] border border-[color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[var(--surface-accent-soft)] p-4">
-          <p className="font-semibold text-[var(--accent-strong)]">Team profile checklist</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            Ask every new team member to add their photo, phone number, and display name after
-            accepting the invite. This keeps Reception, Trainer, Admin, and Owner records readable.
-          </p>
-        </div>
-      </GlassCard>
+      </details>
 
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Coach Output"
-          title="Plan delivery"
-          badge={
-            <Pill>
-              {coachPlans.filter((plan) => plan.aiGenerated).length} assisted
-            </Pill>
-          }
-        />
-        <div className="mt-5 grid gap-3">
+      <details className="group rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] xl:col-start-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 hover:bg-[var(--bg-sunken)]">
+          <span>
+            <span className="block text-sm font-semibold text-[var(--text-primary)]">
+              {t("trainingPlanDelivery")}
+            </span>
+            <span className="mt-1 block text-xs text-[var(--text-tertiary)]">
+              {t("plansAssisted", {
+                plans: coachPlans.length,
+                assisted: coachPlans.filter((plan) => plan.aiGenerated).length,
+              })}
+            </span>
+          </span>
+          <span className="text-xs font-normal text-[var(--text-tertiary)] group-open:hidden">
+            {t("show")}
+          </span>
+          <span className="hidden text-xs font-normal text-[var(--text-tertiary)] group-open:inline">
+            {t("hide")}
+          </span>
+        </summary>
+        <div className="grid gap-3 px-5 pb-5 pt-1">
           {coachPlansState.error ? (
             <ErrorNotice message={coachPlansState.error} />
           ) : coachPlansState.loading && coachPlans.length === 0 ? (
-            <EmptyState title="Loading coaching plans" />
+            <EmptyState title={t("loadingCoachingPlans")} />
           ) : coachPlans.length ? (
             coachPlans.slice(0, 6).map((plan) => (
-              <div key={plan.id} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-[var(--text-primary)]">{plan.title}</p>
-                    <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {formatEnumLabel(plan.type)} · {plan.assignmentCount} assignments
-                    </p>
+              <div key={plan.id} className="rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CompactMark
+                      label={formatEnumLabel(plan.status)}
+                      tone={plan.status === "ACTIVE" ? "accent" : "amber"}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-[var(--text-primary)]">{plan.title}</p>
+                      <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+                        {t("coachPlanMeta", {
+                          type: formatEnumLabel(plan.type),
+                          assignments: plan.assignmentCount,
+                          date: formatDateTime(plan.updatedAt),
+                          assisted: plan.aiGenerated ? ` · ${t("assisted")}` : "",
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <StatusPill value={formatEnumLabel(plan.status)} />
-                    {plan.aiGenerated ? <StatusPill value="Assisted" /> : null}
+                  <div className="shrink-0">
                     <ConfirmActionButton
                       title={
                         plan.assignmentCount > 0
-                          ? "Archive coaching plan?"
-                          : "Delete coaching plan?"
+                          ? t("archiveCoachingPlanTitle")
+                          : t("deleteCoachingPlanTitle")
                       }
                       description={
                         plan.assignmentCount > 0
-                          ? "Assigned plans are archived so member history remains intact."
-                          : "This plan will be removed from the training library."
+                          ? t("archiveCoachingPlanDescription")
+                          : t("deleteCoachingPlanDescription")
                       }
-                      confirmLabel={plan.assignmentCount > 0 ? "Archive" : "Delete"}
+                      confirmLabel={plan.assignmentCount > 0 ? t("archive") : t("delete")}
                       onConfirm={() => deleteCoachPlan(plan)}
                       disabled={formBusy === `coach-plan:${plan.id}:delete`}
                       className="zook-focus rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_26%,transparent)] bg-transparent px-3 py-1 text-xs font-medium text-[var(--feedback-danger)] hover:border-[color-mix(in_srgb,var(--feedback-danger)_45%,transparent)] hover:bg-[var(--surface-danger-soft)] disabled:opacity-50"
                     >
-                      {plan.assignmentCount > 0 ? "Archive" : "Delete"}
+                      {plan.assignmentCount > 0 ? t("archive") : t("delete")}
                     </ConfirmActionButton>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-                  Updated {formatDateTime(plan.updatedAt)}
-                </p>
               </div>
             ))
           ) : (
-            <EmptyState title="No coaching plans" />
+            <EmptyState title={t("noCoachingPlans")} />
           )}
           {coachPlans.length > 6 ? (
             <Link
               href="/dashboard/plans"
               className="mt-2 block text-right text-xs font-semibold text-[var(--accent-strong)] hover:underline"
             >
-              {coachPlans.length - 6} more plans →
+              {t("morePlans", { count: coachPlans.length - 6 })}
             </Link>
           ) : null}
         </div>
-      </GlassCard>
+      </details>
     </div>
   );
 }

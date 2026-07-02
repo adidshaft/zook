@@ -107,6 +107,11 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
   const pageStart = (page - 1) * pageSize;
   const visibleGyms = gyms.slice(pageStart, pageStart + pageSize);
   const totalPages = Math.max(1, Math.ceil(gyms.length / pageSize));
+  const resultSummary =
+    locale === "hi"
+      ? `${gyms.length} ${gyms.length === 1 ? "जिम मिला" : "जिम मिले"}`
+      : `${gyms.length} ${gyms.length === 1 ? "gym found" : "gyms found"}`;
+  const pageSummary = page > 1 ? `${t("page")} ${page} ${t("of")} ${totalPages}` : undefined;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://zookfit.in";
   const itemListJsonLd = {
     "@context": "https://schema.org",
@@ -172,7 +177,15 @@ export default async function GymsPage({ searchParams }: { searchParams: GymSear
         >
           <AccountAwareNav locale={locale} />
         </PublicNav>
-        <GymDiscoveryFilters locale={locale} q={q} city={city} people={people} price={price} />
+        <GymDiscoveryFilters
+          locale={locale}
+          q={q}
+          city={city}
+          people={people}
+          price={price}
+          resultSummary={resultSummary}
+          pageSummary={pageSummary}
+        />
         <GymDiscoveryGrid gyms={visibleGyms} locale={locale} />
         <GymPagination
           page={page}

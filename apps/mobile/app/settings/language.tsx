@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet } from "react-native";
 
-import { AppHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
+import { ScreenHeader, SegmentedControl, ZookScreen } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
 import { layout, spacing } from "@/lib/theme";
 
@@ -14,7 +14,7 @@ export default function LanguageSettingsScreen() {
     <>
       <ZookScreen testID="settings-language-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("settings.language")} showBack />
+          <ScreenHeader title={t("settings.language")} showBack />
           <SegmentedControl
             options={localizedOptions}
             value={preference}

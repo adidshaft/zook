@@ -3,6 +3,7 @@ import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
 import { CsvExportButton } from "../operational-shared";
 import type { OrganizationSummary, PaymentRow } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 
 export function PaymentReconciliationCard({
   orgId,
@@ -19,14 +20,16 @@ export function PaymentReconciliationCard({
   pendingPayments: PaymentRow[];
   documentReadyPayments: PaymentRow[];
 }) {
+  const t = useT("payments");
+
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Reconciliation"
-        title="Payment reconciliation"
+        eyebrow={t("reconciliationEyebrow")}
+        title={t("reconciliationTitle")}
         badge={
           <Pill tone={failedPayments.length || pendingPayments.length ? "amber" : "neutral"}>
-            {failedPayments.length || pendingPayments.length ? "Review queue" : "Clean"}
+            {failedPayments.length || pendingPayments.length ? t("reviewQueue") : t("clean")}
           </Pill>
         }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
@@ -36,40 +39,40 @@ export function PaymentReconciliationCard({
         columns={4}
         items={[
           {
-            label: "Settled payments",
+            label: t("settledPayments"),
             value: formatCompactNumber(succeededPayments.length),
-            meta: "Available for day-end totals",
+            meta: t("dayEndTotals"),
           },
           {
-            label: "Pending",
+            label: t("pending"),
             value: formatCompactNumber(pendingPayments.length),
-            meta: "Await confirmation or receipt",
+            meta: t("awaitConfirmation"),
           },
           {
-            label: "Failed/rejected",
+            label: t("failedRejected"),
             value: formatCompactNumber(failedPayments.length),
-            meta: "Follow up before retry",
+            meta: t("followUpRetry"),
           },
           {
-            label: "Receipts to issue",
+            label: t("receiptsToIssue"),
             value: formatCompactNumber(documentReadyPayments.length),
-            meta: "Confirmed payments without receipt ref",
+            meta: t("confirmedNoReceipt"),
           },
         ]}
       />
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {[
           {
-            title: "Close cash",
-            copy: `${formatInr(summary.cashCollectedPaise)} desk-collected amount should match cash/UPI/card slips.`,
+            title: t("closeCash"),
+            copy: t("closeCashCopy", { amount: formatInr(summary.cashCollectedPaise) }),
           },
           {
-            title: "Add receipt details",
-            copy: "Offline payments should include a reference or uploaded receipt before owner review.",
+            title: t("addReceiptDetails"),
+            copy: t("addReceiptDetailsCopy"),
           },
           {
-            title: "Refund watch",
-            copy: "Use the refunds tab for partial or failed-payment corrections.",
+            title: t("refundWatch"),
+            copy: t("refundWatchCopy"),
           },
         ].map((item) => (
           <div key={item.title} className="rounded-[22px] border border-white/10 bg-black/20 p-4">

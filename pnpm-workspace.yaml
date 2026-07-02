@@ -20,3 +20,14 @@ onlyBuiltDependencies:
   - "esbuild"
   - "prisma"
   - "sharp"
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@sentry/cli': true
+  '@swc/core': true
+  core-js: set this to true or false
+  esbuild: true
+  prisma: true
+  sharp: true

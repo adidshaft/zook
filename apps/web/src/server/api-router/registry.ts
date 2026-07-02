@@ -82,7 +82,7 @@ const apiRouteHandlerEntries: RouteHandlerEntry<ApiRouteHandler>[] = [
   { handler: handleNotificationsInbox, firstSegments: ["me"] },
   { handler: handleRewards, firstSegments: ["me", "platform"] },
   { handler: handleFiles, firstSegments: ["files"] },
-  { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals"] },
+  { handler: handlePublicOrganizations, firstSegments: ["orgs", "platform-referrals", "public"] },
   { handler: handleOrganizationAuditLogs, firstSegments: ["orgs"] },
   { handler: handleOrganizationBilling, firstSegments: ["orgs"] },
   { handler: handleOrganizationBranches, firstSegments: ["orgs"] },

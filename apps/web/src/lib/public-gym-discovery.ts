@@ -6,6 +6,7 @@ import { canUsePublicDemoFallback } from "@/server/public-gym-read-models";
 export type GymResult = DiscoveryGym & {
   priceFromPaise: number | null;
   planCount: number;
+  priceSummaryPlans: Array<{ pricePaise: number; durationDays: number | null; type: string | null }>;
 };
 
 export type GymPeopleFilter = "OPEN_JOIN" | "APPROVAL_REQUIRED";
@@ -14,6 +15,17 @@ export type GymPriceFilter = "FREE" | "PAID";
 export function toPositivePage(value?: string) {
   const page = Number(value);
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+}
+
+function demoGymMedia(username?: string | null) {
+  if (username === "aarogya-strength" || username === "your-fitness") {
+    const base = `/seed/gyms/${username}`;
+    return {
+      coverImageUrl: `${base}/cover.png`,
+      logoUrl: `${base}/logo.svg`,
+    };
+  }
+  return { coverImageUrl: null, logoUrl: null };
 }
 
 function filterGymResults(
@@ -38,11 +50,11 @@ async function demoGyms(
     import("@zook/core"),
     import("@zook/core/providers"),
   ]);
-  const plansByOrgId = new Map<string, Array<{ pricePaise: number }>>();
+  const plansByOrgId = new Map<string, Array<{ pricePaise: number; durationDays: number | null; type: string | null }>>();
   for (const plan of zookDemoFixtures.membershipPlans) {
     if (!plan.publicVisible) continue;
     const plans = plansByOrgId.get(plan.orgId) ?? [];
-    plans.push({ pricePaise: plan.pricePaise });
+    plans.push({ pricePaise: plan.pricePaise, durationDays: plan.durationDays, type: plan.type });
     plansByOrgId.set(plan.orgId, plans);
   }
   const results = buildGymDiscoveryResults({
@@ -50,13 +62,13 @@ async function demoGyms(
       id: gym.id,
       name: gym.name,
       username: gym.username,
+      address: gym.address,
       city: gym.city,
       state: gym.state,
       visibility: "PUBLIC",
       joinMode: gym.joinMode,
       amenities: gym.amenities,
-      coverImageUrl: null,
-      logoUrl: null,
+      ...demoGymMedia(gym.username),
     })),
     ...(query ? { query } : {}),
     ...(city ? { city } : {}),
@@ -67,7 +79,7 @@ async function demoGyms(
 
 function withPlanSummaries(
   gyms: DiscoveryGym[],
-  plansByOrgId: Map<string, Array<{ pricePaise: number }>>,
+  plansByOrgId: Map<string, Array<{ pricePaise: number; durationDays: number | null; type: string | null }>>,
 ): GymResult[] {
   return gyms.map((gym) => {
     const plans = plansByOrgId.get(gym.id) ?? [];
@@ -76,6 +88,7 @@ function withPlanSummaries(
       ...gym,
       priceFromPaise: paidPlans.length ? Math.min(...paidPlans.map((plan) => plan.pricePaise)) : null,
       planCount: plans.length,
+      priceSummaryPlans: plans,
     };
   });
 }
@@ -109,13 +122,13 @@ export async function searchGyms(
             active: true,
             publicVisible: true,
           },
-          select: { orgId: true, pricePaise: true },
+          select: { orgId: true, pricePaise: true, durationDays: true, type: true },
         })
       : [];
-    const plansByOrgId = new Map<string, Array<{ pricePaise: number }>>();
+    const plansByOrgId = new Map<string, Array<{ pricePaise: number; durationDays: number | null; type: string | null }>>();
     for (const plan of plans) {
       const current = plansByOrgId.get(plan.orgId) ?? [];
-      current.push(plan);
+      current.push({ pricePaise: plan.pricePaise, durationDays: plan.durationDays, type: plan.type });
       plansByOrgId.set(plan.orgId, current);
     }
     const results = buildGymDiscoveryResults({
@@ -123,6 +136,7 @@ export async function searchGyms(
         id: gym.id,
         name: gym.name,
         username: gym.username,
+        address: gym.address,
         city: gym.city,
         state: gym.state,
         visibility: gym.visibility,

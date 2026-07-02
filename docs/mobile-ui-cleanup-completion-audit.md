@@ -9,6 +9,88 @@ production launch certification. The branch has code-side coverage for the reque
 leftovers, web UX items, and product Part A/B rollout artifacts, but the goal cannot be marked
 fully complete until the human/device/provider gates below have external evidence.
 
+## 2026-07-01 UI/UX iteration checkpoint
+
+### Implemented
+
+- Improved mobile information hierarchy, density, and navigation across member, owner, trainer,
+  reception, shop, notifications, gym profile, and membership/payment surfaces.
+- Redesigned compact notification surfaces so alerts use less screen space and avoid decorative
+  left rails.
+- Reworked workout detail bottom actions and header treatment so primary actions are anchored and
+  the title area no longer has awkward backing blocks.
+- Improved gym identity display across mobile headers: bold gym name, smaller locality/city line,
+  no pin icon, better left alignment, fuller gym-name visibility, logo support, and gym/branch
+  selection affordances.
+- Added and connected gym branding support so public gym screens can show configured cover images,
+  gallery media, and logos instead of generic initials where assets exist.
+- Improved public gym profile and membership display to reduce duplicate gym/location information
+  and show branch/location more cleanly.
+- Reworked mobile membership/payment surfaces around the principle of fastest payment completion
+  and clearer autopay setup.
+- Improved mobile shop experience with compact quick-commerce inspired structure, status summaries,
+  search/categories, and product cards.
+- Added broad Hindi compatibility updates in mobile i18n, including profile, attendance, reception,
+  shop, membership, settings, referral, trainer, and scan flows.
+- Improved web owner branch/gym selection experience:
+  - Gym selector explains selected gym and owner subscription scope.
+  - Branch selector separates branch/location from gym account.
+  - Branch list shows map readiness, setup gaps, and operational status.
+  - Add-branch form is progressively disclosed and no longer opens by default when a branch exists.
+- Added branch Google Maps URL support through schema/migration and owner branch form.
+- Improved branch map setup UX: paste Google Maps link, open Google Maps from address, use current
+  location, and hide advanced coordinates by default.
+- Improved public gym location card to support branch selection, directions, map preview, and
+  distance checking.
+- Improved web payment/autopay language so autopay is prompted in the right payment context without
+  competing with unrelated primary actions.
+- Removed public direct mock-checkout fallback from join pages to satisfy launch safety.
+- Removed launch-gate deferred marker in server code.
+
+### Verification completed
+
+- Mobile visual review on iPhone 15 Pro simulator.
+- Authenticated Chrome visual review for owner `/dashboard/branches`.
+- `pnpm --filter @zook/mobile typecheck`
+- `pnpm --filter @zook/web typecheck`
+- `pnpm --filter @zook/mobile test` - 45 tests passed.
+- `pnpm --filter @zook/web test` - 164 tests passed.
+- `pnpm check:launch-gates`
+- `pnpm check:cleanup-audit`
+- `pnpm check:i18n` - mobile Hindi coverage 100%.
+- `DATABASE_URL=...zook_visual pnpm preflight`
+- `git diff --check`
+
+### Runtime notes
+
+- Used only iPhone 15 Pro for the final mobile simulator state.
+- Used Chrome for web visual verification.
+- No Next/Expo dev server was left running.
+- Existing local `zook` database had schema drift, so it was not reset. A separate disposable
+  `zook_visual` database was created for DB-backed visual verification and preflight.
+
+### Skipped / deferred
+
+- Splitting the large worktree into reviewable commits or a PR.
+- Exhaustive visual review of every single mobile and web screen.
+- Authenticated visual review for every owner dashboard section beyond the branch/gym selection
+  flow.
+- Real production Razorpay/webhook certification.
+- Full Google Places picker integration; current work supports Google Maps link/pin flow.
+- Full native-Hindi copywriter pass, beyond 100% i18n coverage and obvious mixed-copy cleanup.
+- Full accessibility audit with axe, keyboard traversal, and screen-reader testing.
+- Physical-device mobile QA; verification used iPhone 15 Pro simulator.
+- Dedicated performance profiling with Lighthouse, React Native tracing, or bundle analysis.
+
+### Recommended packaging
+
+Split the current work into reviewable chunks:
+
+1. Mobile UX and Hindi compatibility.
+2. Web owner branch/gym selection and map setup.
+3. Payment/autopay and launch-gate cleanup.
+4. DB/public gym branding and location support.
+
 ## Code-side evidence
 
 ### Mobile leftovers

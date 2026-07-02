@@ -52,7 +52,7 @@ test.describe("classes actions", () => {
 
     await page.goto(`/dashboard/classes?branchId=${branch.id}`);
     await expect(page.getByRole("heading", { name: "Schedule a group class" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: className })).toBeVisible();
+    await expect(page.getByRole("heading", { name: className }).first()).toBeVisible();
 
     await loginWithSessionCookie(page, "member@zook.local");
     const beforeBooking = await expectApiOk<{

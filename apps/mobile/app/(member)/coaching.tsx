@@ -1,9 +1,10 @@
 import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   IconBubble,
@@ -11,17 +12,21 @@ import {
   ProgressBar,
   QueryErrorState,
   SectionHeader,
+  SegmentedControl,
   Skeleton,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { useBrowsePtPlans, useMyCoaching, useRequestPtSubscription } from "@/lib/domains/member";
 import type { PtPlanRecord } from "@/lib/domains/shared/types";
-import { formatInr, formatRelativeDate } from "@/lib/formatting";
+import { formatInr } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { getApiErrorMessage } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
+
+type CoachingTab = "current" | "packages";
 
 function PtPlanCard({
   plan,
@@ -36,6 +41,9 @@ function PtPlanCard({
 }) {
   const { palette } = useTheme();
   const t = useT();
+  const sessionsLabel = plan.sessionCount
+    ? t("member.coaching.sessionsCount", { count: plan.sessionCount })
+    : t("member.coaching.flexibleSessions");
   return (
     <Card contentStyle={styles.planCard}>
       <View style={styles.planHeader}>
@@ -45,8 +53,8 @@ function PtPlanCard({
             {plan.name}
           </Text>
           <Text style={[styles.planMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-            {plan.trainerName ?? t("member.coaching.trainerFallback")}
-            {plan.sessionCount ? ` · ${t("member.coaching.sessionsCount", { count: plan.sessionCount })}` : ""}
+            {sessionsLabel}
+            {plan.trainerName ? ` · ${plan.trainerName}` : ""}
           </Text>
         </View>
         <Text style={[styles.planPrice, { color: palette.text.primary }]}>{formatInr(plan.pricePaise)}</Text>
@@ -59,16 +67,22 @@ function PtPlanCard({
       {requested ? (
         <Pill tone="amber">{t("member.coaching.requestSent")}</Pill>
       ) : (
-        <ZookButton
-          size="sm"
-          variant="secondary"
-          icon="paper-plane-outline"
-          busy={requesting}
-          busyLabel={t("member.coaching.requesting")}
-          onPress={onRequest}
-        >
-          {t("member.coaching.requestThisPackage")}
-        </ZookButton>
+        <View style={styles.planActionRow}>
+          <Text style={[styles.planPaymentHint, { color: palette.text.tertiary }]} numberOfLines={1}>
+            {t("member.coaching.payAfterApproval")}
+          </Text>
+          <ZookButton
+            size="sm"
+            variant="primary"
+            icon="paper-plane-outline"
+            busy={requesting}
+            busyLabel={t("member.coaching.requesting")}
+            onPress={onRequest}
+            style={styles.planAction}
+          >
+            {t("member.coaching.requestPackage")}
+          </ZookButton>
+        </View>
       )}
     </Card>
   );
@@ -77,20 +91,34 @@ function PtPlanCard({
 export default function MemberCoaching() {
   const { palette } = useTheme();
   const t = useT();
+  const { formatRelativeDate } = useFormatters();
   const router = useRouter();
   const coachingQuery = useMyCoaching();
   const plansQuery = useBrowsePtPlans();
   const requestSubscription = useRequestPtSubscription();
   const [refreshing, setRefreshing] = useState(false);
   const [requestedPlanIds, setRequestedPlanIds] = useState<string[]>([]);
+  const [selectedTab, setSelectedTab] = useState<CoachingTab>("packages");
 
   const data = coachingQuery.data;
   const subscription = data?.subscription ?? null;
+  const subscriptionId = subscription?.id;
   const total = subscription?.totalSessions ?? 0;
   const remaining = subscription?.remainingSessions ?? 0;
   const used = Math.max(0, total - remaining);
   const progress = total > 0 ? used / total : 0;
   const plans = plansQuery.data?.plans ?? [];
+  const visibleTab = subscription ? selectedTab : selectedTab === "current" ? "packages" : selectedTab;
+  const tabOptions: Array<{ label: string; value: CoachingTab }> = [
+    { label: t("member.coaching.currentTab"), value: "current" },
+    { label: t("member.coaching.packagesTab"), value: "packages" },
+  ];
+
+  useEffect(() => {
+    if (subscriptionId) {
+      setSelectedTab("current");
+    }
+  }, [subscriptionId]);
 
   async function refresh() {
     setRefreshing(true);
@@ -126,7 +154,7 @@ export default function MemberCoaching() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("member.coaching.title")} subtitle={t("member.coaching.subtitle")} showBack />
+          <ScreenHeader title={t("member.coaching.title")} showBack />
 
           {coachingQuery.isError ? (
             <QueryErrorState error={coachingQuery.error} onRetry={() => void coachingQuery.refetch()} />
@@ -147,124 +175,170 @@ export default function MemberCoaching() {
 
           {!coachingQuery.isLoading && !subscription ? (
             <>
-              <Card variant="compact">
-                <EmptyState
-                  icon="barbell-outline"
-                  title={t("member.coaching.noActiveCoaching")}
-                  body={t("member.coaching.noActiveCoachingBody")}
-                />
-              </Card>
+              <SegmentedControl options={tabOptions} value={visibleTab} onChange={setSelectedTab} />
 
-              <SectionHeader title={t("member.coaching.browsePtPackages")} />
-
-              {plansQuery.isError ? (
-                <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} />
-              ) : null}
-
-              {plansQuery.isLoading && !plansQuery.data ? (
-                <Card variant="compact" contentStyle={styles.loadingCard}>
-                  <Skeleton width="55%" height={18} borderRadius={9} />
-                  <Skeleton width="80%" height={14} borderRadius={7} />
-                  <Skeleton width="70%" height={14} borderRadius={7} />
-                </Card>
-              ) : null}
-
-              {!plansQuery.isLoading && plans.length === 0 && !plansQuery.isError ? (
+              {visibleTab === "current" ? (
                 <Card variant="compact">
                   <EmptyState
-                    icon="pricetag-outline"
-                    title={t("member.coaching.noPackagesAvailable")}
-                    body={t("member.coaching.noPackagesAvailableBody")}
+                    icon="barbell-outline"
+                    title={t("member.coaching.noActiveCoaching")}
+                    body={t("member.coaching.noActiveCoachingBody")}
                   />
                 </Card>
               ) : null}
 
-              <View style={styles.stack}>
-                {plans.map((plan) => (
-                  <PtPlanCard
-                    key={plan.id}
-                    plan={plan}
-                    requesting={requestSubscription.isPending && requestSubscription.variables?.ptPlanId === plan.id}
-                    requested={requestedPlanIds.includes(plan.id)}
-                    onRequest={() => requestPlan(plan)}
-                  />
-                ))}
-              </View>
+              {visibleTab === "packages" ? (
+                <>
+                  <SectionHeader title={t("member.coaching.browsePtPackages")} />
+
+                  {plansQuery.isError ? (
+                    <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} />
+                  ) : null}
+
+                  {plansQuery.isLoading && !plansQuery.data ? (
+                    <Card variant="compact" contentStyle={styles.loadingCard}>
+                      <Skeleton width="55%" height={18} borderRadius={9} />
+                      <Skeleton width="80%" height={14} borderRadius={7} />
+                      <Skeleton width="70%" height={14} borderRadius={7} />
+                    </Card>
+                  ) : null}
+
+                  {!plansQuery.isLoading && plans.length === 0 && !plansQuery.isError ? (
+                    <Card variant="compact">
+                      <EmptyState
+                        icon="pricetag-outline"
+                        title={t("member.coaching.noPackagesAvailable")}
+                        body={t("member.coaching.noPackagesAvailableBody")}
+                      />
+                    </Card>
+                  ) : null}
+
+                  <View style={styles.stack}>
+                    {plans.map((plan) => (
+                      <PtPlanCard
+                        key={plan.id}
+                        plan={plan}
+                        requesting={requestSubscription.isPending && requestSubscription.variables?.ptPlanId === plan.id}
+                        requested={requestedPlanIds.includes(plan.id)}
+                        onRequest={() => requestPlan(plan)}
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : null}
             </>
           ) : null}
 
           {subscription ? (
             <>
-              <Card contentStyle={styles.coachCard}>
-                <View style={styles.coachRow}>
-                  <IconBubble icon="person" tone="lime" size={52} />
-                  <View style={styles.coachCopy}>
-                    <Text style={[styles.coachLabel, { color: palette.text.secondary }]}>
-                      {t("member.coaching.yourCoach")}
-                    </Text>
-                    <Text style={[styles.coachName, { color: palette.text.primary }]} numberOfLines={1}>
-                      {data?.trainer?.name ?? t("member.coaching.yourTrainer")}
-                    </Text>
-                  </View>
-                  <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
-                    {subscription.status === "ACTIVE" ? t("member.coaching.active") : t("member.coaching.pending")}
-                  </Pill>
-                </View>
-                {subscription.planName ? (
-                  <Text style={[styles.planName, { color: palette.text.primary }]}>{subscription.planName}</Text>
-                ) : null}
-                {data?.plan?.description ? (
-                  <Text style={[styles.planDesc, { color: palette.text.secondary }]}>{data.plan.description}</Text>
-                ) : null}
-                <ProgressBar
-                  value={progress}
-                  tone="lime"
-                  label={t("member.coaching.sessionsLeft", { remaining, total })}
-                />
-                <View style={styles.metaRow}>
-                  <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                    {t("member.coaching.completedCount", { count: used })}
-                  </Text>
-                  {subscription.endsAt ? (
-                    <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                      {t("member.coaching.ends", { date: formatRelativeDate(subscription.endsAt) })}
-                    </Text>
-                  ) : null}
-                  <Text style={[styles.metaText, { color: palette.text.secondary }]}>
-                    {formatInr(subscription.amountPaise)}
-                  </Text>
-                </View>
-              </Card>
+              <SegmentedControl options={tabOptions} value={visibleTab} onChange={setSelectedTab} />
 
-              <ZookButton variant="secondary" icon="restaurant-outline" onPress={() => router.push("/plan?tab=diet" as never)}>
-                {t("member.coaching.viewDietPlan")}
-              </ZookButton>
-
-              <SectionHeader title={t("member.coaching.recentSessions")} />
-              {data && data.sessions.length === 0 ? (
-                <Card variant="compact">
-                  <EmptyState
-                    icon="time-outline"
-                    title={t("member.coaching.noSessionsYet")}
-                    body={t("member.coaching.noSessionsYetBody")}
-                  />
-                </Card>
-              ) : null}
-              <View style={styles.stack}>
-                {data?.sessions.map((session) => (
-                  <Card key={session.id} variant="compact" contentStyle={styles.sessionCard}>
-                    <IconBubble icon="checkmark-done" tone="blue" size={40} />
-                    <View style={styles.sessionCopy}>
-                      <Text style={[styles.sessionTitle, { color: palette.text.primary }]} numberOfLines={1}>
-                        {session.notes ?? t("member.coaching.trainingSession")}
+              {visibleTab === "current" ? (
+                <>
+                  <Card contentStyle={styles.coachCard}>
+                    <View style={styles.coachRow}>
+                      <IconBubble icon="person" tone="lime" size={52} />
+                      <View style={styles.coachCopy}>
+                        <Text style={[styles.coachName, { color: palette.text.primary }]} numberOfLines={1}>
+                          {data?.trainer?.name ?? t("member.coaching.yourTrainer")}
+                        </Text>
+                        {subscription.planName ? (
+                          <Text style={[styles.coachPlan, { color: palette.text.secondary }]} numberOfLines={1}>
+                            {subscription.planName}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.coachActions}>
+                        <Pill tone={subscription.status === "ACTIVE" ? "lime" : "amber"}>
+                          {subscription.status === "ACTIVE" ? t("member.coaching.active") : t("member.coaching.pending")}
+                        </Pill>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={t("member.coaching.viewDietPlan")}
+                          onPress={() => router.push("/plan?tab=diet" as never)}
+                          hitSlop={8}
+                          style={({ pressed }) => [
+                            styles.dietAction,
+                            {
+                              backgroundColor: palette.bg.sunken,
+                              borderColor: palette.border.default,
+                            },
+                            pressed ? styles.dietActionPressed : null,
+                          ]}
+                        >
+                          <Ionicons name="restaurant-outline" size={17} color={palette.text.primary} />
+                        </Pressable>
+                      </View>
+                    </View>
+                    {data?.plan?.description ? (
+                      <Text style={[styles.coachPlan, { color: palette.text.secondary }]} numberOfLines={1}>
+                        {data.plan.description}
                       </Text>
-                      <Text style={[styles.sessionMeta, { color: palette.text.secondary }]}>
-                        {formatRelativeDate(session.sessionAt)}
+                    ) : null}
+                    <ProgressBar
+                      value={progress}
+                      tone="lime"
+                      label={t("member.coaching.sessionsLeft", { remaining, total })}
+                    />
+                    <View style={styles.metaRow}>
+                      {subscription.endsAt ? (
+                        <Text style={[styles.metaText, { color: palette.text.secondary }]}>
+                          {t("member.coaching.ends", { date: formatRelativeDate(subscription.endsAt) })}
+                        </Text>
+                      ) : null}
+                      <Text style={[styles.metaText, { color: palette.text.secondary }]}>
+                        {formatInr(subscription.amountPaise)}
                       </Text>
                     </View>
                   </Card>
-                ))}
-              </View>
+
+                  <SectionHeader title={t("member.coaching.recentSessions")} />
+                  {data && data.sessions.length === 0 ? (
+                    <Card variant="compact">
+                      <EmptyState
+                        icon="time-outline"
+                        title={t("member.coaching.noSessionsYet")}
+                        body={t("member.coaching.noSessionsYetBody")}
+                      />
+                    </Card>
+                  ) : null}
+                  <View style={styles.stack}>
+                    {data?.sessions.map((session) => (
+                      <Card key={session.id} variant="compact" contentStyle={styles.sessionCard}>
+                        <IconBubble icon="checkmark-done" tone="blue" size={40} />
+                        <View style={styles.sessionCopy}>
+                          <Text style={[styles.sessionTitle, { color: palette.text.primary }]} numberOfLines={1}>
+                            {session.notes ?? t("member.coaching.trainingSession")}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.sessionMeta, { color: palette.text.secondary }]}
+                          >
+                            {formatRelativeDate(session.sessionAt)}
+                          </Text>
+                        </View>
+                      </Card>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              {visibleTab === "packages" ? (
+                <>
+                  <SectionHeader title={t("member.coaching.browsePtPackages")} />
+                  <View style={styles.stack}>
+                    {plans.map((plan) => (
+                      <PtPlanCard
+                        key={plan.id}
+                        plan={plan}
+                        requesting={requestSubscription.isPending && requestSubscription.variables?.ptPlanId === plan.id}
+                        requested={requestedPlanIds.includes(plan.id)}
+                        onRequest={() => requestPlan(plan)}
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : null}
             </>
           ) : null}
         </ScrollView>
@@ -285,10 +359,23 @@ const styles = StyleSheet.create({
   coachCard: { gap: spacing.md },
   coachRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   coachCopy: { flex: 1, gap: 2, minWidth: 0 },
-  coachLabel: { ...typography.caption },
   coachName: { ...typography.cardTitle },
+  coachPlan: { ...typography.small },
+  coachActions: { alignItems: "flex-end", gap: spacing.xs },
+  dietAction: {
+    alignItems: "center",
+    borderRadius: 17,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  dietActionPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.96 }],
+  },
   planName: { ...typography.cardTitle },
-  planDesc: { ...typography.small, marginTop: -spacing.sm },
+  planDesc: { ...typography.small },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   metaText: { ...typography.small },
   stack: { gap: spacing.sm },
@@ -302,6 +389,14 @@ const styles = StyleSheet.create({
   planMeta: { ...typography.small },
   planPrice: { ...typography.cardTitle },
   planCardDesc: { ...typography.small },
+  planActionRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+  },
+  planPaymentHint: { ...typography.caption, flex: 1, minWidth: 0 },
+  planAction: { flexShrink: 0 },
   loadingCard: { gap: spacing.md },
   loadingRow: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   loadingCopy: { flex: 1, gap: 8 },

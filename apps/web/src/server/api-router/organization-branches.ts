@@ -42,6 +42,7 @@ const branchManageBaseSchema = z.object({
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   locationSource: z.enum(["MANUAL", "GOOGLE_PLACE", "GOOGLE_MAPS_LINK"]).optional(),
+  googleMapsUrl: z.string().trim().url().optional(),
   contactPhone: z.string().trim().min(8).max(20),
   contactEmail: z.string().trim().email().optional().nullable(),
   whatsappNumber: z.string().trim().min(8).max(20).optional().nullable(),
@@ -126,6 +127,18 @@ function branchLocationWarnings(input: { state?: string | null; pincode?: string
 }
 
 async function resolveBranchLocation(input: z.infer<typeof branchManageBaseSchema>) {
+  if (input.googleMapsUrl) {
+    const place = await getMapProviderOrThrow().resolveGoogleMapsLink(input.googleMapsUrl);
+    if (!place) {
+      throw validationError("Unable to resolve the provided Google Maps link.");
+    }
+    return {
+      ...input,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      locationSource: place.locationSource === "MOCK" ? "MANUAL" : place.locationSource,
+    };
+  }
   if (input.latitude != null && input.longitude != null) {
     return input;
   }
@@ -220,6 +233,7 @@ export async function handleOrganizationBranches(request: NextRequest, path: str
           pincode: body.pincode,
           latitude: body.latitude != null ? new Prisma.Decimal(body.latitude) : undefined,
           longitude: body.longitude != null ? new Prisma.Decimal(body.longitude) : undefined,
+          googleMapsUrl: body.googleMapsUrl,
           locationSource: body.locationSource ?? "MANUAL",
           contactPhone: body.contactPhone,
           contactEmail: body.contactEmail,
@@ -399,9 +413,12 @@ export async function handleOrganizationBranches(request: NextRequest, path: str
         throw conflictError("A branch with this address already exists.");
       }
     }
+    const shouldResolveLocation =
+      Boolean(body.googleMapsUrl) ||
+      ((body.address || body.city || body.state || body.pincode) &&
+        (body.latitude == null || body.longitude == null));
     const resolvedBody =
-      (body.address || body.city || body.state || body.pincode) &&
-      (body.latitude == null || body.longitude == null)
+      shouldResolveLocation
         ? await resolveBranchLocation({
             name: body.name ?? existing.name,
             address: body.address ?? existing.address,
@@ -411,6 +428,7 @@ export async function handleOrganizationBranches(request: NextRequest, path: str
             latitude: body.latitude ?? undefined,
             longitude: body.longitude ?? undefined,
             locationSource: body.locationSource ?? undefined,
+            googleMapsUrl: body.googleMapsUrl,
             contactPhone: body.contactPhone ?? existing.contactPhone ?? "",
             contactEmail: body.contactEmail ?? existing.contactEmail,
             whatsappNumber: body.whatsappNumber ?? existing.whatsappNumber,
@@ -440,6 +458,7 @@ export async function handleOrganizationBranches(request: NextRequest, path: str
             resolvedBody.longitude != null
               ? new Prisma.Decimal(resolvedBody.longitude)
               : resolvedBody.longitude,
+          googleMapsUrl: resolvedBody.googleMapsUrl,
           locationSource: resolvedBody.locationSource,
           contactPhone: resolvedBody.contactPhone,
           contactEmail: resolvedBody.contactEmail,

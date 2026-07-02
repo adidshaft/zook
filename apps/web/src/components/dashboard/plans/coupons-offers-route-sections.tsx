@@ -7,24 +7,20 @@ import { CouponControls } from "../sections/overview/coupon-controls";
 import { OfferControls } from "../sections/overview/offer-controls";
 import { RouteFeedback } from "./route-feedback";
 import type { GrowthRouteProps } from "./types";
-
-const copy = {
-  couponsDescription:
-    "Create codes, set limits, and pause discounts without changing membership plans.",
-  offersDescription: "Publish gym offers for a plan, date window, or gym-wide promotion.",
-};
+import { useT } from "@/lib/use-t";
 
 export function CouponsRouteSection(props: GrowthRouteProps) {
+  const t = useT("plans");
   const activeCouponCount = props.coupons.filter((coupon) => coupon.active).length;
 
   return (
     <Section
-      eyebrow="Discount codes"
-      title="Coupons"
-      description={copy.couponsDescription}
+      eyebrow={t("discountCodes")}
+      title={t("coupons")}
+      description={t("couponsDescription")}
       badge={
         <Pill tone={activeCouponCount ? "blue" : "amber"}>
-          {activeCouponCount} active
+          {t("activeCount", { count: activeCouponCount })}
         </Pill>
       }
     >
@@ -51,16 +47,17 @@ export function CouponsRouteSection(props: GrowthRouteProps) {
 }
 
 export function OffersRouteSection(props: GrowthRouteProps) {
+  const t = useT("plans");
   const activeOfferCount = props.offers.filter((offer) => offer.active).length;
 
   return (
     <Section
-      eyebrow="Offers"
-      title="Public offers"
-      description={copy.offersDescription}
+      eyebrow={t("offers")}
+      title={t("publicOffers")}
+      description={t("offersDescription")}
       badge={
         <Pill tone={activeOfferCount ? "blue" : "amber"}>
-          {activeOfferCount} active
+          {t("activeCount", { count: activeOfferCount })}
         </Pill>
       }
     >

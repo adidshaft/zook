@@ -4,6 +4,7 @@ import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { formatDateTime, formatInr } from "@/lib/format";
 import { requireDashboardSession } from "@/lib/server-auth";
+import { dashboardMessages } from "@/components/dashboard/shell/copy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function TrainersPage() {
     expectedHost: "dashboard",
     redirectPath: "/dashboard/trainers",
   });
+  const t = dashboardMessages[session.user.preferredLocale === "hi" ? "hi" : "en"].trainers;
   const orgId = requireTrainerManage(session);
   const monthStart = new Date();
   monthStart.setDate(1);
@@ -60,13 +62,13 @@ export default async function TrainersPage() {
     <main className="mx-auto grid max-w-6xl gap-4 p-4 sm:p-6">
       <GlassCard variant="strong">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
-          Trainers
+          {t.eyebrow}
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
-          Trainer performance
+          {t.performanceTitle}
         </h1>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Review assigned clients, upcoming class load, and this-month payout totals.
+          {t.performanceDescription}
         </p>
       </GlassCard>
       <div className="grid gap-3">
@@ -79,17 +81,17 @@ export default async function TrainersPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold text-[var(--text-primary)]">{trainer.name}</h2>
-                      <Pill>{stringList(profile?.specialties).slice(0, 2).join(", ") || "Trainer"}</Pill>
+                      <Pill>{stringList(profile?.specialties).slice(0, 2).join(", ") || t.trainerFallback}</Pill>
                     </div>
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">{trainer.email}</p>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      Joined {formatDateTime(trainer.createdAt)}
+                      {t.joinedAt.replace("{date}", formatDateTime(trainer.createdAt))}
                     </p>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <Metric label="Clients" value={clientsByTrainer.get(trainer.id) ?? 0} />
-                    <Metric label="Classes" value={classesByTrainer.get(trainer.id) ?? 0} />
-                    <Metric label="Payout" value={formatInr(payoutByTrainer.get(trainer.id) ?? 0)} />
+                    <Metric label={t.clients} value={clientsByTrainer.get(trainer.id) ?? 0} />
+                    <Metric label={t.classes} value={classesByTrainer.get(trainer.id) ?? 0} />
+                    <Metric label={t.payout} value={formatInr(payoutByTrainer.get(trainer.id) ?? 0)} />
                   </div>
                 </div>
               </GlassCard>
@@ -98,7 +100,7 @@ export default async function TrainersPage() {
         })}
         {!users.length ? (
           <GlassCard>
-            <p className="text-sm text-[var(--text-secondary)]">No trainers are assigned yet.</p>
+            <p className="text-sm text-[var(--text-secondary)]">{t.noTrainersAssigned}</p>
           </GlassCard>
         ) : null}
       </div>

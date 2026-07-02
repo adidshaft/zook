@@ -5,6 +5,7 @@ import { ImageAssetUpload } from "../../image-asset-upload";
 import { Pill } from "../../glass-card";
 import type { ProductCategory, ProductRow } from "@/components/dashboard/types";
 import type { ProductFormState } from "./types";
+import { useT } from "@/lib/use-t";
 
 export const productCategories: ProductCategory[] = [
   "WATER",
@@ -50,6 +51,7 @@ export function ProductPhotosField({
   form: ProductFormState;
   setForm: Dispatch<SetStateAction<ProductFormState>>;
 }) {
+  const t = useT("webUx.shop");
   const images = productImagesFromForm(form);
 
   return (
@@ -58,16 +60,16 @@ export function ProductPhotosField({
         <div>
           <p className="text-sm font-medium text-white">{label}</p>
           <p className="mt-1 text-xs text-white/42">
-            Add up to 6 clear photos. The first photo appears first in the shop.
+            {t("productPhotosHelp")}
           </p>
         </div>
-        <Pill>{images.length}/6 photos</Pill>
+        <Pill>{t("photoCount", { count: images.length })}</Pill>
       </div>
       {images.length < 6 ? (
         <ImageAssetUpload
           orgId={orgId}
           category="product_image"
-          label="Add photo"
+          label={t("addPhoto")}
           valueUrl={images[0] ?? ""}
           aspectClassName="h-20"
           onUploaded={(asset) =>
@@ -117,14 +119,14 @@ export function ProductPhotosField({
                 }
                 className="zook-focus absolute right-2 top-2 rounded-full border border-white/15 bg-black/70 px-2 py-1 text-[11px] font-semibold text-white"
               >
-                Remove
+                {t("remove")}
               </button>
             </div>
           ))}
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/12 bg-black/20 px-4 py-5 text-center text-sm text-white/42">
-          No product photos attached.
+          {t("noProductPhotos")}
         </div>
       )}
     </div>

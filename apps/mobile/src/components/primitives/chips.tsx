@@ -1,12 +1,16 @@
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
 
-import { useBranchSelection } from "@/lib/branch-selection";
-import { useAuth } from "@/lib/auth";
-import { formatBranchName } from "@/lib/formatting";
-import { useI18n } from "@/lib/i18n";
 import { radii, typography, useTheme } from "@/lib/theme";
 import { useTonePalette, type PillTone } from "./tone-palette";
 export type { PillTone } from "./tone-palette";
@@ -41,8 +45,12 @@ export function ZookChip({
 }) {
   const { palette: themePalette } = useTheme();
   const palette = useTonePalette(tone);
+  const resolvedAccessibilityLabel =
+    accessibilityLabel ?? (typeof children === "string" ? children : undefined);
   const chip = (
     <View
+      accessibilityLabel={!onPress ? resolvedAccessibilityLabel : undefined}
+      accessible={!onPress && Boolean(resolvedAccessibilityLabel)}
       style={[
         styles.chip,
         {
@@ -68,7 +76,7 @@ export function ZookChip({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? (typeof children === "string" ? children : undefined)}
+      accessibilityLabel={resolvedAccessibilityLabel}
       android_ripple={{ color: themePalette.border.default, borderless: false }}
       onPress={() => pressWithLightHaptic(onPress)}
       style={({ pressed }) => [styles.chipPressable, pressed ? styles.pressed : null]}
@@ -83,7 +91,7 @@ export function Pill(props: Parameters<typeof ZookChip>[0]) {
 }
 
 export function normalizePillTone(tone?: PillTone | "danger" | null): PillTone {
-  return tone === "danger" ? "red" : tone ?? "neutral";
+  return tone === "danger" ? "red" : (tone ?? "neutral");
 }
 
 export function toneForStatusLabel(status: string): PillTone {
@@ -134,71 +142,12 @@ export function StatusChip({ status, children, tone, ...props }: StatusChipProps
   );
 }
 
-export function BranchSelectorChip() {
-  const { branches, selectedBranch, selectBranch } = useBranchSelection();
-  const { session, activeOrgId } = useAuth();
-  const { t } = useI18n();
-  const { palette } = useTheme();
-
-  if (!selectedBranch) {
-    return null;
-  }
-
-  const branchIndex = Math.max(
-    0,
-    branches.findIndex((branch) => branch.id === selectedBranch.id),
-  );
-  const canSwitch = branches.length > 1;
-  const activeOrganization =
-    session?.organizations.find((organization) => organization.orgId === activeOrgId) ??
-    session?.activeOrganization ??
-    null;
-  const branchLabel = formatBranchName(
-    activeOrganization?.name ?? null,
-    selectedBranch.name,
-  );
-
-  return (
-    <Pressable
-      onPress={() => {
-        if (!canSwitch) {
-          return;
-        }
-        const nextBranch = branches[(branchIndex + 1) % branches.length];
-        if (nextBranch) {
-          void Haptics.selectionAsync();
-          void selectBranch(nextBranch.id);
-        }
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={canSwitch ? t("branch.switch") : t("branch.current")}
-      disabled={!canSwitch}
-      style={[
-        styles.branchSelectorChip,
-        {
-          borderColor: canSwitch ? palette.accent.base : palette.border.subtle,
-          backgroundColor: canSwitch ? palette.surface.accentSoft : palette.surface.default,
-        },
-      ]}
-    >
-      <Ionicons name="business-outline" size={14} color={palette.accent.base} />
-      <Text numberOfLines={1} style={[styles.branchSelectorText, { color: palette.text.primary }]}>
-        {branchLabel ?? selectedBranch.name}
-      </Text>
-      {canSwitch ? (
-        <View style={[styles.branchSelectorCount, { backgroundColor: palette.bg.app }]}>
-          <Text style={[styles.branchSelectorCountText, { color: palette.accent.base }]}>
-            {branchIndex + 1}/{branches.length}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   chip: {
     alignSelf: "flex-start",
+    flexShrink: 1,
+    maxWidth: "100%",
+    minWidth: 0,
     minHeight: 26,
     borderWidth: 1,
     borderRadius: radii.pill,
@@ -215,39 +164,10 @@ const styles = StyleSheet.create({
   },
   chipText: {
     ...typography.caption,
-  },
-  branchSelectorChip: {
-    minHeight: 32,
-    maxWidth: "100%",
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingLeft: 10,
-    paddingRight: 6,
-    paddingVertical: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  branchSelectorText: {
-    ...typography.caption,
     flexShrink: 1,
     minWidth: 0,
   },
-  branchSelectorCount: {
-    minWidth: 30,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  branchSelectorCountText: {
-    fontSize: 9,
-    lineHeight: 11,
-    fontFamily: "Inter_800ExtraBold",
-    fontVariant: ["tabular-nums"],
-  },
+
   pressed: {
     opacity: 0.88,
     transform: [{ scale: 0.99 }],

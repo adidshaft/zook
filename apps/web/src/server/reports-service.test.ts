@@ -69,9 +69,11 @@ describe("reports service helpers", () => {
     expect(filters.planId).toBe("plan_1");
     expect(filters.paymentMode).toBe("CASH");
     expect(filters.branchId).toBe("branch_default");
-    expect(filters.from?.getHours()).toBe(0);
-    expect(filters.from?.getMinutes()).toBe(0);
-    expect(filters.to?.getHours()).toBe(23);
-    expect(filters.to?.getMinutes()).toBe(59);
+    // from/to are IST day boundaries expressed as fixed UTC instants
+    // (startOfDayIst/endOfDay) — assert the instant directly rather than via
+    // local-time getters, which only agree with this when the host machine's
+    // timezone happens to be IST.
+    expect(filters.from?.toISOString()).toBe("2026-03-31T18:30:00.000Z");
+    expect(filters.to?.toISOString()).toBe("2026-04-30T18:29:59.999Z");
   });
 });

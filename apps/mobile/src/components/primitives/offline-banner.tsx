@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { spacing, typography, useTheme } from "@/lib/theme";
+import { typography, useTheme } from "@/lib/theme";
 
 export function OfflineBanner({
   children = "Offline. Changes will save when connection returns.",
@@ -10,10 +10,12 @@ export function OfflineBanner({
   children?: ReactNode;
 }) {
   const { palette } = useTheme();
+  const accessibilityLabel = typeof children === "string" ? children : "Offline";
 
   return (
     <View
       accessibilityRole="alert"
+      accessibilityLabel={accessibilityLabel}
       style={[
         styles.offlineBanner,
         {
@@ -22,24 +24,35 @@ export function OfflineBanner({
         },
       ]}
     >
-      <Ionicons name="cloud-offline-outline" size={16} color={palette.feedback.warning} />
-      <Text style={[styles.offlineBannerText, { color: palette.text.primary }]}>{children}</Text>
+      <Ionicons name="cloud-offline-outline" size={13} color={palette.feedback.warning} />
+      <Text
+        numberOfLines={1}
+        style={[styles.offlineBannerText, { color: palette.text.primary }]}
+      >
+        {children}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   offlineBanner: {
-    borderRadius: 16,
+    alignSelf: "flex-end",
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: 5,
+    height: 28,
+    justifyContent: "center",
+    overflow: "hidden",
+    paddingHorizontal: 7,
+    width: 28,
   },
   offlineBannerText: {
-    flex: 1,
+    position: "absolute",
+    opacity: 0,
     ...typography.small,
+    lineHeight: 16,
   },
 });

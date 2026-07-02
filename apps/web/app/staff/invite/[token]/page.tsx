@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { StaffInvitePanel } from "@/components/staff-invite-panel";
 import { ZookLogo } from "@/components/zook-logo";
+
+export const metadata: Metadata = {
+  title: "Staff invite | Zook",
+  description: "Accept a private staff invitation to a Zook gym workspace.",
+  robots: { index: false, follow: false },
+};
 
 export default async function StaffInvitePage({
   params,

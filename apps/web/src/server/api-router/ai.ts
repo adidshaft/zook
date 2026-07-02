@@ -23,6 +23,7 @@ import {
   requireOrgPermission,
 } from "../access";
 import { writeAuditLog } from "../audit";
+import { startOfDayIst, startOfMonthIst } from "../domains/shared/date";
 import {
   featureUnavailableError,
   forbiddenError,
@@ -69,13 +70,11 @@ const aiGenerateSchema = z.object({
 });
 
 function startOfDay(date = new Date()) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
+  return startOfDayIst(date);
 }
 
 function startOfMonth(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+  return startOfMonthIst(date);
 }
 
 function getAIProviderOrThrow() {

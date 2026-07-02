@@ -5,6 +5,7 @@ import { HelpHint } from "../../ui";
 import { ZookButton } from "../../zook-button";
 import type { ProductCategory } from "@/components/dashboard/types";
 import { formatEnumLabel } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 import { ProductPhotosField, productCategories } from "./product-images";
 import type { ProductFormState } from "./types";
 
@@ -25,36 +26,37 @@ export function ProductCreateForm({
   formBusy: string | null;
   createProduct: () => Promise<void>;
 }) {
+  const t = useT("webUx.shop");
+
   return (
     <div className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="inline-flex items-center gap-2 font-medium text-white">
-            Add shop product
-            <HelpHint label="Stock thresholds" title="Stock thresholds">
-              Low-stock alerts fire below the threshold. Out-of-stock products are hidden from the
-              member shop.
+            {t("addShopProduct")}
+            <HelpHint label={t("stockThresholds")} title={t("stockThresholds")}>
+              {t("stockThresholdsHelp")}
             </HelpHint>
           </p>
           <p className="mt-1 text-xs text-white/45">
-            {scopeLabel}. Product photos should be clear and square or slightly wide.
+            {scopeLabel}. {t("productPhotoGuidance")}
           </p>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Product name
+          {t("productName")}
           <input
             value={productForm.name}
             onChange={(event) =>
               setProductForm((current) => ({ ...current, name: event.target.value }))
             }
-            placeholder="Protein bar, towel, bottle"
+            placeholder={t("productNamePlaceholder")}
             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Category
+          {t("category")}
           <select
             value={productForm.category}
             onChange={(event) =>
@@ -73,7 +75,7 @@ export function ProductCreateForm({
           </select>
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Price in rupees
+          {t("priceInRupees")}
           <input
             value={productForm.priceRupees}
             onChange={(event) =>
@@ -85,7 +87,7 @@ export function ProductCreateForm({
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Opening stock
+          {t("openingStock")}
           <input
             value={productForm.stock}
             onChange={(event) =>
@@ -99,18 +101,18 @@ export function ProductCreateForm({
       </div>
       <div className="grid gap-3 md:grid-cols-[1fr_140px]">
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Short description
+          {t("shortDescription")}
           <input
             value={productForm.description}
             onChange={(event) =>
               setProductForm((current) => ({ ...current, description: event.target.value }))
             }
-            placeholder="Short member-facing detail"
+            placeholder={t("shortDescriptionPlaceholder")}
             className="zook-focus rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none"
           />
         </label>
         <label className="grid gap-1 text-xs font-medium text-white/50">
-          Low stock alert
+          {t("lowStockAlert")}
           <input
             value={productForm.lowStockThreshold}
             onChange={(event) =>
@@ -127,7 +129,7 @@ export function ProductCreateForm({
       </div>
       <ProductPhotosField
         orgId={orgId}
-        label="Product photos"
+        label={t("productPhotos")}
         form={productForm}
         setForm={setProductForm}
       />
@@ -138,7 +140,7 @@ export function ProductCreateForm({
         state={formBusy === "product" ? "loading" : "idle"}
         fullWidth
       >
-        {formBusy === "product" ? "Creating..." : "Add product"}
+        {formBusy === "product" ? t("creating") : t("addProduct")}
       </ZookButton>
       {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
     </div>

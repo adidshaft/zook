@@ -130,6 +130,10 @@ export function isDemoBundleIncluded() {
   return process.env.EXPO_PUBLIC_INCLUDE_DEMO?.trim().toLowerCase() !== "false";
 }
 
+export function isOfflineDemoEnabled() {
+  return getMobileAppEnv() === "local" && isOfflineDemoMode() && isDemoBundleIncluded();
+}
+
 function normalizeBooleanFlag(value?: string | boolean | null) {
   if (typeof value === "boolean") {
     return value;

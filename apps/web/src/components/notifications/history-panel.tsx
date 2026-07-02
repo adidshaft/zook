@@ -5,13 +5,60 @@ import { ChevronRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { webApiFetch } from "@/lib/api-client";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
-import { GlassCard, Pill } from "../glass-card";
+import { GlassCard } from "../glass-card";
 import { ZookButton } from "../zook-button";
 import {
+  notificationAudienceLabel,
+  notificationStatusLabel,
+  notificationTypeLabel,
   toneForNotificationStatus,
   type NotificationRecipientRow,
   type NotificationRow,
 } from "./shared";
+
+function statusMarkClass(tone: ReturnType<typeof toneForNotificationStatus>) {
+  if (tone === "lime") return "bg-[var(--accent-strong)]";
+  if (tone === "amber") return "bg-[var(--feedback-warning)]";
+  if (tone === "red") return "bg-[var(--feedback-danger)]";
+  if (tone === "blue") return "bg-[var(--feedback-info)]";
+  return "bg-[var(--text-tertiary)]";
+}
+
+function StatusMark({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: ReturnType<typeof toneForNotificationStatus>;
+}) {
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-2 w-2 shrink-0 rounded-full ${statusMarkClass(tone)}`}
+    />
+  );
+}
+
+function recipientDeliveryLabel(status: string | null | undefined) {
+  if (status === "delivered") return "Delivered";
+  if (status === "read") return "Read";
+  if (status === "failed") return "Failed";
+  if (status === "scheduled") return "Scheduled";
+  if (status === "sent") return "Sent";
+  return formatEnumLabel(status ?? "pending");
+}
+
+function compactDeliverySummary(notification: NotificationRow) {
+  const stats = notification.recipientStats;
+  if (!stats?.total) return "No recipients";
+  const delivered = stats.delivered ?? 0;
+  const failed = stats.failed ?? 0;
+  const scheduled = stats.scheduled ?? 0;
+  if (failed > 0) return `${failed} failed · ${delivered}/${stats.total} delivered`;
+  if (scheduled > 0) return `${scheduled} scheduled · ${delivered}/${stats.total} delivered`;
+  return `${delivered}/${stats.total} delivered`;
+}
 
 export function NotificationHistoryPanel({
   orgId,
@@ -98,92 +145,101 @@ export function NotificationHistoryPanel({
         : notifications;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-      <GlassCard>
+    <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
+      <GlassCard className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">Message history</h2>
-            <p className="mt-2 text-sm text-white/50">
-              Delivery history for recent member messages, audience, and delivery state.
-            </p>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Message history</h2>
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">Recent sends, audience, and delivery state.</p>
           </div>
-          <Pill>{visibleNotifications.length} messages</Pill>
+          <span
+            aria-label={`${visibleNotifications.length} messages`}
+            title={`${visibleNotifications.length} messages`}
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 text-xs font-semibold text-[var(--text-primary)]"
+          >
+            {visibleNotifications.length}
+          </span>
         </div>
-        {statusFilter ? (
-          <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/52">
-            Showing{" "}
-            {statusFilter === "attention" ? "scheduled and failed" : formatEnumLabel(statusFilter)}{" "}
-            messages.
-          </p>
-        ) : null}
         {status ? (
           <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             {status}
           </p>
         ) : null}
-        <div className="mt-5 grid gap-3">
+        <div className="mt-4 grid gap-2">
           {visibleNotifications.map((notification) => (
             <button
               key={notification.id}
               type="button"
               onClick={() => void openRecipients(notification)}
-              className={`zook-focus rounded-[22px] border p-4 text-left transition ${
+              className={`zook-focus rounded-2xl border px-3 py-2 text-left transition ${
                 selectedNotification?.id === notification.id
-                  ? "border-white/20 bg-white/8"
-                  : "border-white/10 bg-black/20 hover:bg-white/6"
+                  ? "border-[var(--border-focus)] bg-[var(--surface-accent-soft)]"
+                  : "border-[var(--border-subtle)] bg-[var(--bg-sunken)] hover:border-[var(--border)] hover:bg-[var(--surface)]"
               }`}
             >
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
-                  <p className="font-medium text-white">{notification.title}</p>
-                  <p className="mt-2 text-sm text-white/55">{notification.body}</p>
-                  <p className="mt-2 text-xs text-white/40">
-                    {formatEnumLabel(notification.type)} · {formatEnumLabel(notification.audience)}{" "}
-                    · {formatDateTime(notification.createdAt)}
-                  </p>
-                  <p className="mt-2 text-xs text-white/40">
-                    {notification.createdByName ? `Sent by ${notification.createdByName} · ` : ""}
-                    {notification.recipientStats?.total ?? 0} recipients ·{" "}
-                    {notification.recipientStats?.delivered ?? 0} delivered ·{" "}
-                    {notification.recipientStats?.read ?? 0} read ({readPercent(notification)}%) ·{" "}
-                    {notification.recipientStats?.failed ?? 0} failed
-                    {notification.recipientStats?.scheduled
-                      ? ` · ${notification.recipientStats.scheduled} scheduled`
-                      : ""}
-                  </p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate font-medium text-[var(--text-primary)]">
+                      {notification.title}
+                    </p>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-semibold text-[var(--text-secondary)]">
+                      <StatusMark
+                        label={notificationStatusLabel(notification.status)}
+                        tone={toneForNotificationStatus(notification.status)}
+                      />
+                      {notificationStatusLabel(notification.status)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-tertiary)]">
+                    <span>{notificationAudienceLabel(notification.audience)}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{formatDateTime(notification.createdAt)}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{compactDeliverySummary(notification)}</span>
+                    {(notification.recipientStats?.read ?? 0) > 0 ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{readPercent(notification)}% read</span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Pill tone={toneForNotificationStatus(notification.status)}>
-                    {formatEnumLabel(notification.status)}
-                  </Pill>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-white/65">
-                    View recipients
-                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="sr-only">Open recipients</span>
-                  </span>
-                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" aria-hidden="true" />
+                <span className="sr-only">
+                  Open recipients for {notificationTypeLabel(notification.type)}
+                  {notification.createdByName ? ` sent by ${notification.createdByName}` : ""}
+                </span>
               </div>
             </button>
           ))}
           {!visibleNotifications.length ? (
-            <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
+            <p className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
               No messages match.
             </p>
           ) : null}
         </div>
       </GlassCard>
 
-      <GlassCard>
+      <GlassCard className="p-4">
         {selectedNotification ? (
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold">Recipients</h2>
-                <p className="mt-2 text-sm text-white/50">{selectedNotification.title}</p>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">Recipients</h2>
+                <p className="mt-1 line-clamp-1 text-sm text-[var(--text-tertiary)]">{selectedNotification.title}</p>
               </div>
-              <Pill tone={undeliveredCount > 0 ? "amber" : "neutral"}>
-                {undeliveredCount} undelivered
-              </Pill>
+              <span
+                aria-label={`${undeliveredCount} undelivered`}
+                title={`${undeliveredCount} undelivered`}
+                className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-2 text-xs font-semibold ${
+                  undeliveredCount > 0
+                    ? "border-[color-mix(in_srgb,var(--feedback-warning)_36%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
+                    : "border-[var(--border-subtle)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]"
+                }`}
+              >
+                {undeliveredCount}
+              </span>
             </div>
             <ZookButton
               type="button"
@@ -198,22 +254,27 @@ export function NotificationHistoryPanel({
                 ? "Sending again..."
                 : "Resend undelivered"}
             </ZookButton>
-            <div className="mt-5 grid max-h-[620px] gap-2 overflow-y-auto pr-1">
+            <div className="mt-4 grid max-h-[620px] gap-1.5 overflow-y-auto pr-1">
               {recipients.map((recipient) => (
                 <div
                   key={recipient.id}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-white">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                         {recipient.user?.name ?? recipient.user?.phone ?? recipient.userId}
                       </p>
-                      <p className="mt-1 text-xs text-white/42">
-                        {recipient.user?.email || recipient.user?.phone || "Member contact"}
+                      <p className="mt-0.5 truncate text-xs text-[var(--text-tertiary)]">
+                        {recipient.readAt
+                          ? `Read ${formatDateTime(recipient.readAt)}`
+                          : recipient.deliveredAt
+                            ? `Delivered ${formatDateTime(recipient.deliveredAt)}`
+                            : recipient.user?.email || recipient.user?.phone || "Member contact"}
                       </p>
                     </div>
-                    <Pill
+                    <StatusMark
+                      label={recipientDeliveryLabel(recipient.deliveryStatus)}
                       tone={
                         recipient.deliveryStatus === "failed"
                           ? "amber"
@@ -221,29 +282,21 @@ export function NotificationHistoryPanel({
                             ? "blue"
                             : "lime"
                       }
-                    >
-                      {formatEnumLabel(recipient.deliveryStatus)}
-                    </Pill>
+                    />
                   </div>
-                  <p className="mt-2 text-xs text-white/35">
-                    {recipient.readAt
-                      ? `Read ${formatDateTime(recipient.readAt)}`
-                      : recipient.deliveredAt
-                        ? `Delivered ${formatDateTime(recipient.deliveredAt)}`
-                        : `Added ${formatDateTime(recipient.createdAt)}`}
-                  </p>
                 </div>
               ))}
               {!recipients.length ? (
-                <p className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/50">
+                <p className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
                   Open a message to see each recipient.
                 </p>
               ) : null}
             </div>
           </div>
         ) : (
-          <div className="rounded-[24px] border border-white/10 bg-black/20 p-5">
-            <h2 className="text-xl font-semibold">Recipient detail</h2>
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-3">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Recipient detail</h2>
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">Select a message to inspect delivery.</p>
           </div>
         )}
       </GlassCard>

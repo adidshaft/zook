@@ -1,8 +1,8 @@
 import type { TrackingSummaryMetric, WorkoutLogEntry } from "@zook/core";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { gradients, gradientsLight, radii, useTheme } from "@/lib/theme";
+import { gradients, gradientsLight, radii, typography, useTheme } from "@/lib/theme";
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
   const { palette, mode } = useTheme();
@@ -54,7 +54,8 @@ export function WorkoutLogCard({
 }) {
   const t = useT();
   const { palette } = useTheme();
-  const visibleExercises = compact ? entry.exercises.slice(0, 3) : entry.exercises;
+  const visibleExercises = compact ? entry.exercises.slice(0, 2) : entry.exercises;
+  const hiddenExerciseCount = compact ? Math.max(entry.exercises.length - visibleExercises.length, 0) : 0;
 
   return (
     <View
@@ -92,15 +93,24 @@ export function WorkoutLogCard({
         </View>
       </View>
 
-      <View style={[styles.metaRow, compact ? styles.metaRowCompact : null]}>
-        <MetaPill label={t("tracking.start")} value={entry.startTimeLabel} compact={compact} />
-        <MetaPill label={t("tracking.end")} value={entry.endTimeLabel} compact={compact} />
-        <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact={compact} />
-      </View>
+      {compact ? (
+        <View style={styles.compactMetaRow}>
+          <MetaPill label={t("tracking.duration")} value={entry.durationLabel} compact />
+          <MetaPill label={t("tracking.focus")} value={entry.focusLabel} compact />
+        </View>
+      ) : (
+        <>
+          <View style={styles.metaRow}>
+            <MetaPill label={t("tracking.start")} value={entry.startTimeLabel} />
+            <MetaPill label={t("tracking.end")} value={entry.endTimeLabel} />
+            <MetaPill label={t("tracking.duration")} value={entry.durationLabel} />
+          </View>
 
-      <Text style={[styles.focusText, { color: palette.feedback.warning }]}>
-        {t("tracking.focus")}: {entry.focusLabel}
-      </Text>
+          <Text style={[styles.focusText, { color: palette.feedback.warning }]}>
+            {t("tracking.focus")}: {entry.focusLabel}
+          </Text>
+        </>
+      )}
 
       <View style={styles.exerciseList}>
         {visibleExercises.map((exercise) => (
@@ -151,18 +161,18 @@ export function WorkoutLogCard({
             </View>
           </View>
         ))}
+        {hiddenExerciseCount ? (
+          <Text style={[styles.moreExercisesText, { color: palette.text.tertiary }]}>
+            +{hiddenExerciseCount}
+          </Text>
+        ) : null}
       </View>
 
-      <Text
-        style={[
-          styles.notesText,
-          { color: palette.text.secondary },
-          compact ? styles.notesTextCompact : null,
-        ]}
-        numberOfLines={compact ? 2 : undefined}
-      >
-        {entry.notes}
-      </Text>
+      {compact ? null : (
+        <Text style={[styles.notesText, { color: palette.text.secondary }]}>
+          {entry.notes}
+        </Text>
+      )}
     </View>
   );
 }
@@ -199,16 +209,16 @@ const styles = StyleSheet.create({
     gap: 7
   },
   summaryLabel: {
-    fontSize: 13,
+    ...typography.small,
     fontWeight: "800"
   },
   summaryValue: {
-    fontSize: 32,
+    ...typography.heroTitle,
     fontWeight: "900",
     lineHeight: 34
   },
   summaryDetail: {
-    fontSize: 13,
+    ...typography.small,
     lineHeight: 18
   },
   logCard: {
@@ -228,16 +238,16 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   },
   logDate: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "700"
   },
   logTitle: {
-    fontSize: 24,
+    ...typography.screenTitle,
     fontWeight: "900",
     lineHeight: 28
   },
   logTitleCompact: {
-    fontSize: 20,
+    ...typography.headerTitle,
     lineHeight: 24
   },
   effortPill: {
@@ -247,15 +257,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   effortText: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "800"
   },
   metaRow: {
     flexDirection: "row",
     gap: 10
   },
-  metaRowCompact: {
-    gap: 8
+  compactMetaRow: {
+    flexDirection: "row",
+    gap: 8,
   },
   metaPill: {
     flex: 1,
@@ -269,19 +280,19 @@ const styles = StyleSheet.create({
     gap: 2
   },
   metaLabel: {
-    fontSize: 11,
+    ...typography.eyebrow,
     fontWeight: "700"
   },
   metaValue: {
-    fontSize: 16,
+    ...typography.cardTitle,
     fontWeight: "800"
   },
   focusText: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "800"
   },
   exerciseList: {
-    gap: 10
+    gap: 8
   },
   exerciseRow: {
     flexDirection: "row",
@@ -289,11 +300,11 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   exerciseName: {
-    fontSize: 16,
+    ...typography.cardTitle,
     fontWeight: "800"
   },
   exerciseMeta: {
-    fontSize: 12
+    ...typography.caption
   },
   statusPill: {
     borderRadius: radii.pill,
@@ -302,14 +313,15 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   statusText: {
-    fontSize: 11,
+    ...typography.eyebrow,
     fontWeight: "800"
+  },
+  moreExercisesText: {
+    alignSelf: "flex-start",
+    ...typography.caption,
+    fontWeight: "800",
   },
   notesText: {
     lineHeight: 20
-  },
-  notesTextCompact: {
-    fontSize: 12,
-    lineHeight: 17
   }
 });

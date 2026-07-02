@@ -1,5 +1,6 @@
 import type { Permission, RequestContext } from "@zook/core";
 import { prisma } from "@zook/db";
+import { addDays, startOfDayIst } from "./domains/shared/date";
 
 export type OrgReportType =
   | "members"
@@ -28,15 +29,11 @@ export type ReportFilters = {
 };
 
 function startOfDay(date: Date) {
-  const value = new Date(date);
-  value.setHours(0, 0, 0, 0);
-  return value;
+  return startOfDayIst(date);
 }
 
 function endOfDay(date: Date) {
-  const value = new Date(date);
-  value.setHours(23, 59, 59, 999);
-  return value;
+  return new Date(addDays(startOfDayIst(date), 1).getTime() - 1);
 }
 
 function parseDate(value: string | null) {

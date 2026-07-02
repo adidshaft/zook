@@ -1,114 +1,172 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import ts from "typescript";
+import { enTranslations } from "../apps/mobile/src/lib/i18n/en";
+import { hiTranslations } from "../apps/mobile/src/lib/i18n/hi";
 
 const root = process.cwd();
-const i18nPath = join(root, "apps/mobile/src/lib/i18n.tsx");
-const sourceText = readFileSync(i18nPath, "utf8");
-const source = ts.createSourceFile(i18nPath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const hardcodedAllowlistPath = join(root, "scripts/audit-i18n-allowlist.json");
 const minimumHindiCoverage = 0.95;
-
-function stringLiteralText(node: ts.Node) {
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-    return node.text;
-  }
-  return null;
-}
-
-function propertyNameText(name: ts.PropertyName) {
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
-    return name.text;
-  }
-  return null;
-}
-
-function findTranslationKeyUnion() {
-  const keys = new Set<string>();
-
-  function visit(node: ts.Node) {
-    if (ts.isTypeAliasDeclaration(node) && node.name.text === "TranslationKey") {
-      const queue: ts.TypeNode[] = [node.type];
-      while (queue.length) {
-        const current = queue.shift()!;
-        if (ts.isUnionTypeNode(current)) {
-          queue.push(...current.types);
-          continue;
-        }
-        if (ts.isLiteralTypeNode(current)) {
-          const text = stringLiteralText(current.literal);
-          if (text) {
-            keys.add(text);
-          }
-        }
-      }
-      return;
-    }
-    ts.forEachChild(node, visit);
-  }
-
-  visit(source);
-  return keys;
-}
-
-function findTranslationsObject() {
-  let translations: ts.ObjectLiteralExpression | null = null;
-
-  function visit(node: ts.Node) {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.name.text === "translations" &&
-      node.initializer &&
-      ts.isObjectLiteralExpression(node.initializer)
-    ) {
-      translations = node.initializer;
-      return;
-    }
-    ts.forEachChild(node, visit);
-  }
-
-  visit(source);
-  return translations;
-}
-
-function collectLocaleKeys(translations: ts.ObjectLiteralExpression, locale: string) {
-  const localeProperty = translations.properties.find((property): property is ts.PropertyAssignment => {
-    if (!ts.isPropertyAssignment(property)) {
-      return false;
-    }
-    return propertyNameText(property.name) === locale;
-  });
-  const keys = new Set<string>();
-  if (!localeProperty || !ts.isObjectLiteralExpression(localeProperty.initializer)) {
-    return keys;
-  }
-
-  for (const property of localeProperty.initializer.properties) {
-    if (!ts.isPropertyAssignment(property)) {
-      continue;
-    }
-    const key = propertyNameText(property.name);
-    if (key) {
-      keys.add(key);
-    }
-  }
-  return keys;
-}
+const jsxLiteralRoots = [
+  join(root, "apps/mobile/app"),
+  join(root, "apps/mobile/src/features"),
+];
+const formattingLiteralFiles = [join(root, "apps/mobile/src/lib/formatting.ts")];
+const jsxLiteralPropNames = new Set(["title", "label", "placeholder"]);
 
 function difference(left: Set<string>, right: Set<string>) {
   return [...left].filter((key) => !right.has(key)).sort();
 }
 
-const declaredKeys = findTranslationKeyUnion();
-const translations = findTranslationsObject();
-
-if (!translations) {
-  console.error("Could not find the translations object in apps/mobile/src/lib/i18n.tsx.");
-  process.exit(1);
+function listSourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) {
+        return [];
+      }
+      return listSourceFiles(path);
+    }
+    return entry.isFile() && /\.(tsx?)$/.test(entry.name) ? [path] : [];
+  });
 }
 
-const englishKeys = collectLocaleKeys(translations, "en");
-const hindiKeys = collectLocaleKeys(translations, "hi");
+function normalizeLiteralText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function meaningfulWordCount(text: string) {
+  const words = normalizeLiteralText(text).match(/[A-Za-z][A-Za-z'’-]*/g) ?? [];
+  return words.length;
+}
+
+function isMachineCodeLiteral(text: string) {
+  return /^[A-Z][A-Z0-9_/-]+$/.test(normalizeLiteralText(text));
+}
+
+function allowlistKey(file: string, text: string) {
+  return `${relative(root, file)}::${normalizeLiteralText(text)}`;
+}
+
+function readHardcodedAllowlist() {
+  if (!existsSync(hardcodedAllowlistPath)) {
+    return new Set<string>();
+  }
+  const raw = JSON.parse(readFileSync(hardcodedAllowlistPath, "utf8")) as Array<{
+    file: string;
+    text: string;
+  }>;
+  return new Set(raw.map((entry) => `${entry.file}::${normalizeLiteralText(entry.text)}`));
+}
+
+function jsxTextFromExpression(expression: ts.Expression) {
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+    return expression.text;
+  }
+  return null;
+}
+
+function collectHardcodedJsxLiterals() {
+  const allowlist = readHardcodedAllowlist();
+  const findings: Array<{ file: string; line: number; text: string; kind: string }> = [];
+
+  for (const file of jsxLiteralRoots.flatMap(listSourceFiles)) {
+    const text = readFileSync(file, "utf8");
+    const fileSource = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+
+    function addFinding(node: ts.Node, rawText: string, kind: string) {
+      const normalized = normalizeLiteralText(rawText);
+      if (meaningfulWordCount(normalized) <= 2) {
+        return;
+      }
+      if (isMachineCodeLiteral(normalized)) {
+        return;
+      }
+      if (allowlist.has(allowlistKey(file, normalized))) {
+        return;
+      }
+      const position = fileSource.getLineAndCharacterOfPosition(node.getStart(fileSource));
+      findings.push({
+        file: relative(root, file),
+        line: position.line + 1,
+        text: normalized,
+        kind,
+      });
+    }
+
+    function visit(node: ts.Node) {
+      if (ts.isJsxText(node)) {
+        addFinding(node, node.getText(fileSource), "jsx-text");
+      } else if (ts.isJsxExpression(node) && node.expression) {
+        const expressionText = jsxTextFromExpression(node.expression);
+        if (expressionText) {
+          addFinding(node, expressionText, "jsx-expression");
+        }
+      } else if (ts.isJsxAttribute(node) && jsxLiteralPropNames.has(node.name.text)) {
+        const initializer = node.initializer;
+        if (initializer && ts.isStringLiteral(initializer)) {
+          addFinding(node, initializer.text, `prop:${node.name.text}`);
+        } else if (initializer && ts.isJsxExpression(initializer) && initializer.expression) {
+          const expressionText = jsxTextFromExpression(initializer.expression);
+          if (expressionText) {
+            addFinding(node, expressionText, `prop:${node.name.text}`);
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    }
+
+    visit(fileSource);
+  }
+
+  return findings.sort((left, right) => left.file.localeCompare(right.file) || left.line - right.line);
+}
+
+function collectFormattingLiterals() {
+  const allowlist = readHardcodedAllowlist();
+  const findings: Array<{ file: string; line: number; text: string; kind: string }> = [];
+
+  for (const file of formattingLiteralFiles) {
+    const text = readFileSync(file, "utf8");
+    const fileSource = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+
+    function addFinding(node: ts.Node, rawText: string) {
+      const normalized = normalizeLiteralText(rawText);
+      if (meaningfulWordCount(normalized) <= 2) {
+        return;
+      }
+      if (isMachineCodeLiteral(normalized)) {
+        return;
+      }
+      if (allowlist.has(allowlistKey(file, normalized))) {
+        return;
+      }
+      const position = fileSource.getLineAndCharacterOfPosition(node.getStart(fileSource));
+      findings.push({
+        file: relative(root, file),
+        line: position.line + 1,
+        text: normalized,
+        kind: "formatting-literal",
+      });
+    }
+
+    function visit(node: ts.Node) {
+      if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+        addFinding(node, node.text);
+      }
+      ts.forEachChild(node, visit);
+    }
+
+    visit(fileSource);
+  }
+
+  return findings.sort((left, right) => left.file.localeCompare(right.file) || left.line - right.line);
+}
+
+const englishKeys = new Set(Object.keys(enTranslations));
+const hindiKeys = new Set(Object.keys(hiTranslations));
+const declaredKeys = englishKeys;
 const missingEnglish = difference(declaredKeys, englishKeys);
 const missingHindi = difference(declaredKeys, hindiKeys);
 const extraEnglish = difference(englishKeys, declaredKeys);
@@ -131,6 +189,29 @@ if (extraHindi.length) {
 if (hindiCoverage < minimumHindiCoverage) {
   failures.push(
     `Hindi coverage is ${(hindiCoverage * 100).toFixed(1)}%; required ${(minimumHindiCoverage * 100).toFixed(0)}%.`,
+  );
+}
+
+const hardcodedJsxLiterals = collectHardcodedJsxLiterals();
+const formattingLiterals = collectFormattingLiterals();
+if (hardcodedJsxLiterals.length) {
+  failures.push(
+    [
+      `Mobile JSX has ${hardcodedJsxLiterals.length} hardcoded English literal(s) with more than two words. Add i18n keys or allow intentional literals in scripts/audit-i18n-allowlist.json:`,
+      ...hardcodedJsxLiterals.map(
+        (finding) => `${finding.file}:${finding.line} [${finding.kind}] ${finding.text}`,
+      ),
+    ].join("\n"),
+  );
+}
+if (formattingLiterals.length) {
+  failures.push(
+    [
+      `Mobile formatting helpers have ${formattingLiterals.length} hardcoded English literal(s) with more than two words. Add i18n labels at call sites or allow intentional compatibility defaults in scripts/audit-i18n-allowlist.json:`,
+      ...formattingLiterals.map(
+        (finding) => `${finding.file}:${finding.line} [${finding.kind}] ${finding.text}`,
+      ),
+    ].join("\n"),
   );
 }
 

@@ -1,9 +1,7 @@
 import { useRouter } from "expo-router";
-import { Image } from "expo-image";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@/components/expo-safe-bottom-sheet";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
@@ -20,39 +18,30 @@ import {
   type ReactNode,
 } from "react";
 import {
-  AccessibilityInfo,
-  Alert,
-  InteractionManager,
   Keyboard,
-  Modal,
   Pressable,
   RefreshControl,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Reanimated, { useSharedValue } from "@/lib/reanimated-lite";
+import { useSharedValue } from "@/lib/reanimated-lite";
+import { membershipStatusLabel } from "@/components/membership/helpers";
 import { type ApprovalItem } from "@/components/domain/approval-queue";
 import { MemberList } from "@/components/domain/member-list";
 import {
   BranchSelectorChip,
-  FormField,
   Card,
   AnimatedAppear,
   HeaderActions,
-  HeaderMeta,
   IconBubble,
-  PrimaryButton,
   ScreenHeader,
-  SecondaryButton,
   ZookScreen,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import {
   formatAgeLabel,
-  formatInr,
   formatReviewReason,
   titleCaseFromCode,
 } from "@/lib/formatting";
@@ -68,16 +57,28 @@ import { useReceptionQueue } from "@/lib/domains/reception";
 import { useFulfillShopOrder, useOrgActiveShopOrders } from "@/lib/domains/shop";
 import type { ReceptionQueueRecord } from "@/lib/domains/shared/types";
 import { getApiErrorMessage, useAuth, useHasPermission } from "@/lib/auth";
-import { useT } from "@/lib/i18n";
+import { type TranslationKey, useT } from "@/lib/i18n";
 import { useRoleContext } from "@/lib/role-context";
 import { useBranchSelection } from "@/lib/branch-selection";
 import { apiClient, receptionApi } from "@/lib/domain-api";
-import { useShake } from "@/lib/motion";
 import { requirePrivilegedAuth } from "@/lib/privileged-action";
 import { useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
-import { paymentModes, reasonSuggestions, type DeskPaymentMode } from "./constants";
+import { paymentModes, type DeskPaymentMode } from "./constants";
+import {
+  buildVerificationPresentation,
+  bulkAttendanceSummary,
+  filterReceptionMembers,
+  manualAttendanceFailureMessage,
+  paymentFailureMessage,
+  receptionMemberResultLimit,
+  recordedPaymentMessage,
+  resolveDeskPaymentState,
+  selectReceptionMemberRecord,
+  sortReceptionApprovalQueue,
+} from "./desk-logic";
+import { ApprovalDecisionSheet, VerificationResultModal } from "./reception-overlays";
 import { receptionWorkspaceStyles as styles } from "./styles";
 
 export { receptionWorkspaceStyles } from "./styles";
@@ -113,6 +114,51 @@ type ReceptionWorkspaceValue = ReturnType<typeof useReceptionWorkspaceState>;
 const ReceptionWorkspaceContext = createContext<ReceptionWorkspaceValue | null>(null);
 let lastReceptionMemberId: string | null = null;
 
+const attendanceStatusLabelKeys: Record<string, TranslationKey> = {
+  APPROVED: "reception.desk.statusApproved",
+  FAILED: "reception.desk.statusFailed",
+  FLAGGED: "reception.desk.flagged",
+  PENDING_APPROVAL: "reception.desk.statusPendingApproval",
+  RECORDED: "reception.desk.statusRecorded",
+  REJECTED: "reception.desk.statusRejected",
+};
+
+const pickupStatusLabelKeys: Record<string, TranslationKey> = {
+  CANCELLED: "reception.orders.statusCancelled",
+  FAILED: "reception.orders.statusFailed",
+  FULFILLED: "reception.orders.statusFulfilled",
+  PAID: "reception.orders.statusPaid",
+  PENDING_PAYMENT: "reception.orders.statusPendingPayment",
+  READY_FOR_PICKUP: "shop.readyForPickup",
+  REFUNDED: "reception.orders.statusRefunded",
+};
+
+const deskPaymentModeLabelKeys: Partial<Record<DeskPaymentMode, TranslationKey>> = {
+  BANK_TRANSFER: "reception.payments.modeBank",
+  CARD: "reception.payments.modeCard",
+  CASH: "reception.payments.modeCash",
+  DIRECT_UPI: "reception.payments.modeUpi",
+  OTHER: "reception.payments.modeManual",
+};
+
+function attendanceStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "RECORDED").toUpperCase();
+  const labelKey = attendanceStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "RECORDED");
+}
+
+function pickupStatusLabel(status: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (status ?? "READY_FOR_PICKUP").toUpperCase();
+  const labelKey = pickupStatusLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status ?? "READY_FOR_PICKUP");
+}
+
+function deskPaymentModeLabel(mode: string | null | undefined, t: ReturnType<typeof useT>) {
+  const normalized = (mode ?? "OTHER").toUpperCase() as DeskPaymentMode;
+  const labelKey = deskPaymentModeLabelKeys[normalized];
+  return labelKey ? t(labelKey) : titleCaseFromCode(mode ?? "OTHER");
+}
+
 export function useReceptionWorkspace() {
   const value = useContext(ReceptionWorkspaceContext);
   if (!value) {
@@ -130,11 +176,11 @@ function useReceptionWorkspaceState({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeOrgId, session, token } = useAuth();
+  const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const t = useT();
   const roleContext = useRoleContext();
-  const { branches, selectedBranch, selectBranch } = useBranchSelection();
+  const { selectedBranch } = useBranchSelection();
   const canApproveAttendance = useHasPermission("ATTENDANCE_APPROVE");
   const canRecordManualAttendance = useHasPermission("ATTENDANCE_MANUAL_OVERRIDE");
   const canRecordOfflinePayment = useHasPermission("PAYMENTS_RECORD_OFFLINE");
@@ -182,7 +228,10 @@ function useReceptionWorkspaceState({
       lastReceptionMemberId = selectedMemberId;
     }
   }, [selectedMemberId]);
-  const approvalQueue = useMemo(() => queueQuery.data?.records ?? [], [queueQuery.data?.records]);
+  const approvalQueue = useMemo(
+    () => sortReceptionApprovalQueue(queueQuery.data?.records ?? []),
+    [queueQuery.data?.records],
+  );
   const pendingCount = approvalQueue.filter(
     (attempt) => attempt.status === "PENDING_APPROVAL",
   ).length;
@@ -192,7 +241,6 @@ function useReceptionWorkspaceState({
   const recentScans = todayRecords.slice(0, 5);
   const readyOrders = ordersQuery.data?.orders ?? [];
   const fulfilledCount = ordersQuery.data?.summary?.fulfilledToday ?? 0;
-  const amountPaise = Math.round(Number(amount || "0") * 100);
   const attendanceReason = reason.trim();
   const attendanceReasonInvalid = attendanceReason.length > 0 && attendanceReason.length < 2;
 
@@ -203,18 +251,6 @@ function useReceptionWorkspaceState({
   }, [initialMemberId]);
 
   useEffect(() => {
-    if (!initialRecordId) {
-      return;
-    }
-    const attempt =
-      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
-    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
-      return;
-    }
-    openDecisionSheet(attempt);
-  }, [approvalQueue, initialRecordId, selectedDecisionAttempt?.id]);
-
-  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedMemberSearch(memberSearch);
     }, 250);
@@ -222,15 +258,9 @@ function useReceptionWorkspaceState({
   }, [memberSearch]);
 
   const filteredMembers = useMemo(() => {
-    const query = debouncedMemberSearch.toLowerCase();
-    return (membersQuery.data?.members ?? []).filter((member) => {
-      const name = member.user?.name.toLowerCase() ?? "";
-      const email = member.user?.email.toLowerCase() ?? "";
-      const phone = member.user?.phone?.toLowerCase() ?? "";
-      return !query || name.includes(query) || email.includes(query) || phone.includes(query);
-    });
+    return filterReceptionMembers(membersQuery.data?.members ?? [], debouncedMemberSearch);
   }, [debouncedMemberSearch, membersQuery.data?.members]);
-  const memberResultLimit = memberSearch.trim().length ? 25 : 10;
+  const memberResultLimit = receptionMemberResultLimit(memberSearch);
   const visibleMembers = filteredMembers.slice(0, memberResultLimit);
   const hiddenMemberCount = Math.max(0, filteredMembers.length - visibleMembers.length);
   const receptionMemberItems = useMemo<DomainMemberItem[]>(
@@ -300,11 +330,10 @@ function useReceptionWorkspaceState({
       }),
     [approvalQueue, palette.text.secondary, t],
   );
-  const selectedMemberRecord =
-    (membersQuery.data?.members ?? []).find(
-      (record) =>
-        record.profile.userId === selectedMemberId || record.user?.id === selectedMemberId,
-    ) ?? null;
+  const selectedMemberRecord = selectReceptionMemberRecord(
+    membersQuery.data?.members ?? [],
+    selectedMemberId,
+  );
   useEffect(() => {
     if (!initialMemberId || selectedMemberRecord || !(membersQuery.data?.members.length)) {
       return;
@@ -314,48 +343,23 @@ function useReceptionWorkspaceState({
       setSelectedMemberId(fallbackMemberId);
     }
   }, [initialMemberId, membersQuery.data?.members, selectedMemberRecord]);
-  const memberRecord =
-    selectedMemberRecord ??
-    (initialMemberId ? (membersQuery.data?.members ?? [])[0] ?? null : null);
+  const memberRecord = selectReceptionMemberRecord(
+    membersQuery.data?.members ?? [],
+    selectedMemberId,
+    initialMemberId,
+  );
   const member = memberRecord?.user ?? null;
   const membership = memberRecord?.activeSubscription ?? null;
   const profile = memberRecord?.profile ?? null;
-  const activeOrganization = session?.activeOrganization ?? session?.organizations[0] ?? null;
   const activeRole = roleContext?.role;
   const isDemo = Boolean(roleContext?.isDemo);
-  const canSwitchBranches = branches.length > 1;
-  const activeOrganizationName = activeOrganization?.name ?? t("reception.workspace.activeGymFallback");
-  const activeOrgLabel = activeOrganization
-    ? `${activeOrganization.name} · ${activeOrganization.city}`
-    : t("reception.workspace.activeGymFallback");
-  const gymSelectorLabel = selectedBranch?.name ?? activeOrgLabel;
-
-  function openBranchSwitcher() {
-    if (!canSwitchBranches) {
-      Alert.alert(
-        t("reception.workspace.onlyOneBranchTitle"),
-        t("reception.workspace.onlyOneBranchBody"),
-      );
-      return;
-    }
-    Alert.alert(
-      t("reception.workspace.switchBranchTitle"),
-      t("reception.workspace.switchBranchBody"),
-      [
-        ...branches.map((branch) => ({
-          text:
-            branch.id === selectedBranch?.id
-              ? t("reception.workspace.activeBranchSuffix", { name: branch.name })
-              : branch.name,
-          onPress: () => {
-            if (branch.id === selectedBranch?.id) return;
-            void selectBranch(branch.id);
-          },
-        })),
-        { text: t("common.cancel"), style: "cancel" as const },
-      ],
-    );
-  }
+  const paymentState = resolveDeskPaymentState({
+    amount,
+    memberId: member?.id,
+    membershipId: membership?.id,
+    paymentReason,
+  });
+  const { amountInvalid, amountPaise, canRecordPayment, dueAmount } = paymentState;
 
   function toggleMemberSelection(userId: string) {
     setSelectedMemberIds((current) => {
@@ -396,36 +400,18 @@ function useReceptionWorkspaceState({
         failures.push(getApiErrorMessage(error) || t("reception.workspace.couldNotRecordOne"));
       }
     }
-    const summary = failures.length
-      ? t("reception.workspace.bulkRecordedPartial", {
-          successes,
-          total: ids.length,
-          failures: failures.length,
-        })
-      : t("reception.workspace.bulkRecorded", {
-          count: successes,
-          memberLabel: successes === 1 ? "member" : "members",
-        });
-    setBulkAttendanceStatus(summary);
-    showToast({
-      tone: failures.length ? "amber" : "success",
-      haptic: failures.length ? "warning" : "success",
-      message: summary,
-    });
+    const summary = bulkAttendanceSummary(
+      { failures: failures.length, successes, total: ids.length },
+      t,
+    );
+    setBulkAttendanceStatus(summary.message);
+    showToast(summary);
     if (!failures.length) {
       setSelectedMemberIds(new Set());
       setMultiSelectMode(false);
     }
   }
-  const dueAmount = amountPaise;
-  const canRecordPayment =
-    amountPaise > 0 &&
-    paymentReason.trim().length > 0 &&
-    Boolean(member?.id) &&
-    Boolean(membership?.id);
   const canVerifyCode = Boolean(verifyCode.trim() && token && activeOrgId);
-  const amountInvalid =
-    amount.trim().length > 0 && (!Number.isFinite(amountPaise) || amountPaise <= 0);
   const showOwnerApprovalRequired = () => {
     showToast({ title: t("reception.workspace.ownerApprovalRequired"), tone: "amber" });
   };
@@ -445,7 +431,7 @@ function useReceptionWorkspaceState({
     [],
   );
 
-  function openDecisionSheet(attempt: ReceptionQueueRecord) {
+  const openDecisionSheet = useCallback((attempt: ReceptionQueueRecord) => {
     setSelectedDecisionAttempt(attempt);
     setDecisionReason(
       attempt.rejectionReason ??
@@ -454,7 +440,19 @@ function useReceptionWorkspaceState({
           t("reception.workspace.deskApprovalRequired"),
         ),
     );
-  }
+  }, [t]);
+
+  useEffect(() => {
+    if (!initialRecordId) {
+      return;
+    }
+    const attempt =
+      approvalQueue.find((item) => item.id === initialRecordId) ?? approvalQueue[0] ?? null;
+    if (!attempt || selectedDecisionAttempt?.id === attempt.id) {
+      return;
+    }
+    openDecisionSheet(attempt);
+  }, [approvalQueue, initialRecordId, openDecisionSheet, selectedDecisionAttempt?.id]);
 
   function closeDecisionSheet() {
     decisionSheetRef.current?.dismiss();
@@ -618,77 +616,14 @@ function useReceptionWorkspaceState({
         showToast({ tone: "amber", haptic: "warning", message });
         return;
       }
-      const name =
-        result.match.user?.name ?? result.match.user?.email ?? t("reception.workspace.memberFallback");
-      if (result.match.type === "attendance") {
-        if (result.match.valid) {
-          const status = titleCaseFromCode(result.match.record?.status ?? "approved");
-          presentVerificationResult({
-            tone: "success",
-            type: "attendance",
-            name,
-            photoUrl: result.match.user?.profilePhotoUrl,
-            message: t("reception.workspace.checkInVerified"),
-            detail: t("reception.workspace.statusDetail", { status }),
-          });
-          showToast({
-            tone: "success",
-            haptic: "success",
-            message: t("reception.workspace.verifiedName", { name }),
-          });
-        } else {
-          const message = t("reception.workspace.entryCodeInvalidMessage", { name });
-          presentVerificationResult({
-            tone: "danger",
-            type: "attendance",
-            name,
-            photoUrl: result.match.user?.profilePhotoUrl,
-            message: t("reception.workspace.checkInNotValid"),
-            detail: message,
-          });
-          showToast({
-            tone: "amber",
-            haptic: "warning",
-            title: t("reception.workspace.notValidForEntry"),
-            message: name,
-          });
-        }
-        return;
-      }
-      if (result.match.valid) {
-        presentVerificationResult({
-          tone: "success",
-          type: "pickup",
-          name,
-          photoUrl: result.match.user?.profilePhotoUrl,
-          message: t("reception.workspace.pickupVerified"),
-          detail: t("reception.workspace.orderTotalDetail", {
-            amount: formatInr(result.match.order?.totalPaise ?? 0),
-          }),
-        });
-        showToast({
-          tone: "success",
-          haptic: "success",
-          message: t("reception.workspace.pickupVerifiedFor", { name }),
-        });
-      } else {
-        const status = titleCaseFromCode(result.match.pickupCode?.status ?? result.match.order?.status ?? "not ready");
-        const message = t("reception.workspace.pickupStatusTitle", { status });
-        presentVerificationResult({
-          tone: "danger",
-          type: "pickup",
-          name,
-          photoUrl: result.match.user?.profilePhotoUrl,
-          message: t("reception.workspace.pickupNotReady"),
-          detail: message,
-        });
-        showToast({
-          tone: "amber",
-          haptic: "warning",
-          title: t("reception.workspace.pickupStatusTitle", { status }),
-          message: name,
-        });
-      }
+      const presentation = buildVerificationPresentation(result.match, {
+        attendanceStatusLabel: (status) => attendanceStatusLabel(status, t),
+        memberFallback: t("reception.workspace.memberFallback"),
+        pickupStatusLabel: (status) => pickupStatusLabel(status, t),
+        t,
+      });
+      presentVerificationResult(presentation.result);
+      showToast(presentation.toast);
     } finally {
       setVerifyingCode(false);
     }
@@ -703,6 +638,10 @@ function useReceptionWorkspaceState({
       return;
     }
     try {
+      if (amountPaise === null || amountPaise <= 0) {
+        setPaymentStatus(t("reception.workspace.invalidAmount"));
+        return;
+      }
       const payment = await recordPaymentMutation.mutateAsync({
         memberUserId: member.id,
         subscriptionId: membership.id,
@@ -711,18 +650,18 @@ function useReceptionWorkspaceState({
         ...(referenceId ? { receiptNumber: referenceId } : {}),
         notes: [paymentReason, paymentNote].filter(Boolean).join(" · "),
       });
-      const message = t("reception.workspace.paymentRecorded", {
-        amount: formatInr(payment.payment.amountPaise),
-        mode: titleCaseFromCode(payment.payment.mode),
+      const message = recordedPaymentMessage(payment.payment, {
+        modeLabel: (mode) => deskPaymentModeLabel(mode, t),
+        t,
       });
       setPaymentStatus(message);
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      const statusMessage =
-        /already active/i.test(message)
-          ? t("reception.workspace.membershipAlreadyActive")
-          : message;
+      const statusMessage = paymentFailureMessage(
+        message,
+        t("reception.workspace.membershipAlreadyActive"),
+      );
       setPaymentStatus(statusMessage);
       showToast({ title: t("common.actionFailed"), message: statusMessage, tone: "danger", haptic: "error" });
     }
@@ -770,10 +709,10 @@ function useReceptionWorkspaceState({
       showToast({ tone: "success", haptic: "success", message });
     } catch (error) {
       const message = getApiErrorMessage(error);
-      const statusMessage =
-        /already has an attendance record/i.test(message)
-          ? t("reception.workspace.alreadyCheckedInToday")
-          : message;
+      const statusMessage = manualAttendanceFailureMessage(
+        message,
+        t("reception.workspace.alreadyCheckedInToday"),
+      );
       setAttendanceStatus(statusMessage);
       showToast({ title: t("common.actionFailed"), message: statusMessage, tone: "danger", haptic: "error" });
     }
@@ -781,7 +720,6 @@ function useReceptionWorkspaceState({
 
   return {
     activeRole,
-    activeOrganizationName,
     approvalItems,
     approvalQueue,
     approveAttendance,
@@ -794,7 +732,6 @@ function useReceptionWorkspaceState({
     canRecordManualAttendance,
     canRecordOfflinePayment,
     canRecordPayment,
-    canSwitchBranches,
     canVerifyCode,
     closeDecisionSheet,
     decisionReason,
@@ -805,7 +742,6 @@ function useReceptionWorkspaceState({
     fulfillOrder,
     fulfillOrderMutation,
     fulfilledCount,
-    gymSelectorLabel,
     handleVerifyCodeChange,
     hiddenMemberCount,
     isDemo,
@@ -816,7 +752,6 @@ function useReceptionWorkspaceState({
     membership,
     multiSelectMode,
     onRefresh,
-    openBranchSwitcher,
     openDecisionSheet,
     paymentMemberSearch,
     paymentMode,
@@ -912,11 +847,6 @@ export function ReceptionWorkspace({
     borderColor: palette.border.default,
     backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
   };
-  const deskLabel =
-    state.activeRole === "OWNER" || state.activeRole === "ADMIN"
-      ? t("reception.workspace.ownerDesk")
-      : t("reception.workspace.receptionDesk");
-
   return (
     <ReceptionWorkspaceContext.Provider value={state}>
       <ZookScreen testID={testID}>
@@ -944,15 +874,12 @@ export function ReceptionWorkspace({
             <ScreenHeader
               title={isHomeScreen ? t("reception.desk.today") : title}
               subtitle={isHomeScreen ? undefined : subtitle}
-              meta={
-                isHomeScreen ? (
-                  <View style={styles.headerMetaRow}>
-                    <HeaderMeta icon="business-outline">{state.activeOrganizationName}</HeaderMeta>
-                    <HeaderMeta icon="scan-outline">{deskLabel}</HeaderMeta>
-                  </View>
-                ) : undefined
+              contextSlot={
+                <View style={styles.headerContextCluster}>
+                  <RoleSwitcherContextPill />
+                  <BranchSelectorChip style={styles.headerBranchSelector} />
+                </View>
               }
-              contextSlot={!isHomeScreen ? <RoleSwitcherContextPill /> : undefined}
               scrollY={scrollY}
               trailing={
                 isDetailView ? (
@@ -983,41 +910,6 @@ export function ReceptionWorkspace({
               }
             />
 
-            {isHomeScreen ? (
-              <View style={styles.workspaceChipRow}>
-                <BranchSelectorChip />
-              </View>
-            ) : (
-              <Pressable
-                testID="reception-gym-selector"
-                onPress={state.openBranchSwitcher}
-                accessibilityRole="button"
-                accessibilityLabel={state.canSwitchBranches ? t("branch.switch") : t("branch.current")}
-                disabled={!state.canSwitchBranches}
-                style={({ pressed }) => [
-                  styles.gymSelector,
-                  {
-                    borderColor: palette.border.default,
-                    backgroundColor: isDark ? palette.surface.default : palette.surface.raised,
-                  },
-                  pressed && state.canSwitchBranches ? { opacity: 0.82 } : null,
-                ]}
-              >
-                <Ionicons name="business-outline" size={22} color={palette.text.primary} />
-                <View style={styles.gymSelectorCopy}>
-                  <Text style={[styles.gymSelectorText, { color: palette.text.primary }]}>
-                    {state.gymSelectorLabel}
-                  </Text>
-                  <Text style={[styles.headerMeta, { color: palette.text.secondary }]}>
-                    {deskLabel}
-                  </Text>
-                </View>
-                {state.canSwitchBranches ? (
-                  <Ionicons name="chevron-down" size={18} color={palette.text.tertiary} />
-                ) : null}
-              </Pressable>
-            )}
-
             {showMemberContext ? (
               <Card variant="compact" padding={12} contentStyle={styles.memberContext}>
                 <IconBubble
@@ -1031,7 +923,7 @@ export function ReceptionWorkspace({
                   </Text>
                   <Text style={[styles.memberContextBody, { color: palette.text.secondary }]}>
                     {state.member?.email ?? t("reception.members.searchOrSelect")}
-                    {state.membership?.status ? ` · ${titleCaseFromCode(state.membership.status)}` : ""}
+                    {state.membership?.status ? ` · ${membershipStatusLabel(state.membership.status, t)}` : ""}
                   </Text>
                 </View>
                 {state.member ? (
@@ -1057,270 +949,5 @@ export function ReceptionWorkspace({
         <ApprovalDecisionSheet />
       </ZookScreen>
     </ReceptionWorkspaceContext.Provider>
-  );
-}
-
-function ApprovalDecisionSheet() {
-  const { mode, palette } = useTheme();
-  const t = useT();
-  const isDark = mode === "dark";
-  const {
-    approveAttendance,
-    approveAttendanceMutation,
-    closeDecisionSheet,
-    decisionReason,
-    decisionSheetRef,
-    rejectAttendance,
-    rejectAttendanceMutation,
-    renderDecisionBackdrop,
-    selectedDecisionAttempt,
-    setDecisionReason,
-    setSelectedDecisionAttempt,
-  } = useReceptionWorkspace();
-  useEffect(() => {
-    if (!selectedDecisionAttempt) {
-      return;
-    }
-    let cancelled = false;
-    const task = InteractionManager.runAfterInteractions(() => {
-      requestAnimationFrame(() => {
-        if (!cancelled) {
-          decisionSheetRef.current?.present();
-        }
-      });
-    });
-    return () => {
-      cancelled = true;
-      task.cancel();
-    };
-  }, [decisionSheetRef, selectedDecisionAttempt]);
-  const sheetBackground = StyleSheet.flatten([
-    styles.sheetBackground,
-    {
-      borderColor: palette.border.default,
-      backgroundColor: isDark ? palette.bg.elevated : palette.surface.raised,
-    },
-  ]);
-  const sheetHandle = StyleSheet.flatten([
-    styles.sheetHandle,
-    { backgroundColor: palette.border.strong },
-  ]);
-
-  return (
-      <BottomSheetModal
-        ref={decisionSheetRef}
-        snapPoints={["48%"]}
-        enablePanDownToClose
-        backdropComponent={renderDecisionBackdrop}
-        backgroundStyle={sheetBackground}
-        handleIndicatorStyle={sheetHandle}
-        onDismiss={() => {
-          setSelectedDecisionAttempt(null);
-          setDecisionReason("");
-        }}
-      >
-        <BottomSheetView style={styles.decisionSheetContent}>
-          <View style={styles.sheetHeader}>
-            <View style={styles.sheetTitleCopy}>
-              <Text style={[styles.sheetEyebrow, { color: palette.accent.base }]}>
-                {t("reception.decision.reason")}
-              </Text>
-              <Text style={[styles.sheetTitle, { color: palette.text.primary }]}>
-                {selectedDecisionAttempt?.user?.name ??
-                  selectedDecisionAttempt?.user?.email ??
-                  t("reception.decision.memberCheckIn")}
-              </Text>
-              <Text style={[styles.cardBody, { color: palette.text.secondary }]}>
-                {t("reception.decision.addDeskNote")}
-              </Text>
-            </View>
-            <Pressable
-              onPress={closeDecisionSheet}
-              accessibilityRole="button"
-              accessibilityLabel={t("reception.decision.closeSheet")}
-              style={({ pressed }) => [
-                styles.sheetCloseButton,
-                { borderColor: palette.border.default, backgroundColor: palette.surface.raised },
-                pressed ? styles.sheetCloseButtonPressed : null,
-              ]}
-            >
-              <Ionicons name="close-outline" size={16} color={palette.text.secondary} />
-              <Text style={[styles.sheetCloseText, { color: palette.text.secondary }]}>
-                {t("reception.decision.close")}
-              </Text>
-            </Pressable>
-          </View>
-          <FormField
-            label={t("reception.decision.reason")}
-            value={decisionReason}
-            onChangeText={setDecisionReason}
-            multiline
-          />
-          <View style={styles.suggestionRow}>
-            {reasonSuggestions.map((suggestion) => (
-              <Pressable
-                key={suggestion}
-                onPress={() => setDecisionReason(suggestion)}
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.suggestionChip,
-                  {
-                    borderColor:
-                      decisionReason === suggestion ? palette.border.focus : palette.border.default,
-                    backgroundColor:
-                      decisionReason === suggestion
-                        ? palette.surface.accentSoft
-                        : palette.surface.raised,
-                  },
-                  pressed ? styles.suggestionChipPressed : null,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.suggestionText,
-                    {
-                      color:
-                        decisionReason === suggestion
-                          ? palette.accent.base
-                          : palette.text.secondary,
-                    },
-                  ]}
-                >
-                  {suggestion}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <View style={styles.actionRow}>
-            <PrimaryButton
-              testID="reception-decision-approve"
-              icon="checkmark-circle-outline"
-              disabled={!selectedDecisionAttempt || approveAttendanceMutation.isPending}
-              onPress={() => {
-                if (selectedDecisionAttempt) {
-                  void approveAttendance(selectedDecisionAttempt.id, decisionReason);
-                }
-              }}
-              style={styles.actionHalf}
-            >
-              {approveAttendanceMutation.isPending
-                ? t("reception.decision.approving")
-                : t("reception.decision.approve")}
-            </PrimaryButton>
-            <SecondaryButton
-              testID="reception-decision-reject"
-              icon="close-circle-outline"
-              disabled={!selectedDecisionAttempt || rejectAttendanceMutation.isPending}
-              onPress={() => {
-                if (selectedDecisionAttempt) {
-                  void rejectAttendance(selectedDecisionAttempt.id, decisionReason);
-                }
-              }}
-              style={styles.actionHalf}
-            >
-              {rejectAttendanceMutation.isPending
-                ? t("reception.decision.rejecting")
-                : t("reception.decision.reject")}
-            </SecondaryButton>
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
-  );
-}
-
-function VerificationResultModal() {
-  const { palette } = useTheme();
-  const t = useT();
-  const { dismissVerificationResult, verificationResult } = useReceptionWorkspace();
-  const success = verificationResult?.tone === "success";
-  const { animatedStyle: shakeStyle, shake } = useShake();
-  useEffect(() => {
-    if (!verificationResult) return;
-    if (!success) shake();
-    AccessibilityInfo.announceForAccessibility(
-      [
-        success
-          ? t("reception.workspace.verificationSuccessful")
-          : t("reception.workspace.verificationFailed"),
-        verificationResult.message,
-        verificationResult.name,
-        verificationResult.detail,
-      ]
-        .filter(Boolean)
-        .join(" "),
-    );
-    const timer = setTimeout(dismissVerificationResult, success ? 1400 : 4000);
-    return () => clearTimeout(timer);
-  }, [dismissVerificationResult, shake, success, t, verificationResult]);
-  const photo = verificationResult?.photoUrl;
-  const backdropColor = success ? "rgba(17,21,15,0.94)" : `${palette.feedback.danger}E6`;
-  return (
-    <Modal
-      animationType="fade"
-      transparent
-      visible={Boolean(verificationResult)}
-      onRequestClose={dismissVerificationResult}
-    >
-      <View
-        style={[
-          styles.verificationModalBackdrop,
-          { backgroundColor: backdropColor },
-        ]}
-      >
-        <Reanimated.View style={[styles.verificationModalContent, success ? null : shakeStyle]}>
-          {photo ? (
-            <Image
-              source={{ uri: photo }}
-              contentFit="cover"
-              style={[
-                styles.verificationModalPhoto,
-                { backgroundColor: palette.surface.raised },
-              ]}
-              accessibilityIgnoresInvertColors
-            />
-          ) : (
-            <View
-              style={styles.verificationModalPhotoFallback}
-            >
-              <Ionicons
-                name={success ? "checkmark-circle-outline" : "alert-circle-outline"}
-                size={92}
-                color={palette.text.inverse}
-              />
-            </View>
-          )}
-          <Text style={[styles.verificationModalEyebrow, { color: palette.text.inverse }]}>
-            {verificationResult?.type === "pickup"
-              ? t("reception.orders.pickupCode")
-              : t("reception.workspace.entryCode")}
-          </Text>
-          <Text style={[styles.verificationModalTitle, { color: palette.text.inverse }]}>
-            {verificationResult?.message}
-          </Text>
-          {verificationResult?.name ? (
-            <Text style={[styles.verificationModalName, { color: palette.text.inverse }]}>
-              {verificationResult.name}
-            </Text>
-          ) : null}
-          {verificationResult?.detail ? (
-            <Text style={[styles.verificationModalDetail, { color: palette.text.inverse }]}>
-              {verificationResult.detail}
-            </Text>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            onPress={dismissVerificationResult}
-            style={({ pressed }) => [
-              styles.verificationModalDismiss,
-              pressed ? styles.verificationModalDismissPressed : null,
-            ]}
-          >
-            <Text style={[styles.verificationModalDismissText, { color: palette.text.inverse }]}>
-              Dismiss
-            </Text>
-          </Pressable>
-        </Reanimated.View>
-      </View>
-    </Modal>
   );
 }

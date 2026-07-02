@@ -3,14 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
+  BranchSelectorChip,
   EmptyState,
-  Card,
   HeaderActions,
+  Pill,
   QueryErrorState,
   ScreenHeader,
   SectionHeader,
   ZookScreen,
 } from "@/components/primitives";
+import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { TrainerClientsSkeleton } from "@/components/skeletons";
 import { PlanRow } from "@/features/trainer/components/plan-row";
 import { useAuth } from "@/lib/auth";
@@ -27,7 +29,11 @@ export default function TrainerPlansScreen() {
   const bottomPadding = useBottomScrollPadding();
   const [refreshing, setRefreshing] = useState(false);
   const clientsQuery = useTrainerClients();
-  const plannedClients = (clientsQuery.data?.clients ?? []).filter(
+  const clients = clientsQuery.data?.clients ?? [];
+  const needsPlanClients = clients.filter(
+    (client) => (client.summary?.activePlans ?? 0) === 0,
+  );
+  const plannedClients = clients.filter(
     (client) => (client.summary?.activePlans ?? 0) > 0,
   );
 
@@ -57,25 +63,50 @@ export default function TrainerPlansScreen() {
             />
           }
         >
-          <ScreenHeader title={t("trainer.plans.title")} trailing={<HeaderActions showBell />} />
-          <SectionHeader title={t("trainer.plans.activePlanWork")} />
-          <Card variant="compact">
-            <SectionHeader
-              title={plannedClients.length ? t("trainer.plans.reviewActivePlans") : t("trainer.plans.queueClear")}
-              subtitle={
-                plannedClients.length
-                  ? t("trainer.plans.reviewActivePlansBody")
-                  : t("trainer.plans.queueClearBody")
-              }
-            />
-          </Card>
+          <ScreenHeader
+            title={t("trainer.plans.title")}
+            contextSlot={
+              <View style={styles.headerContext}>
+                <RoleSwitcherContextPill />
+                <BranchSelectorChip style={styles.headerBranchSelector} />
+              </View>
+            }
+            trailing={<HeaderActions showBell />}
+          />
           <View style={styles.stack}>
             {clientsQuery.isLoading ? (
               <TrainerClientsSkeleton />
             ) : clientsQuery.isError ? (
               <QueryErrorState error={clientsQuery.error} onRetry={() => void clientsQuery.refetch()} />
-            ) : plannedClients.length ? (
-              plannedClients.map((client) => <PlanRow key={client.id ?? client.memberUserId} client={client} />)
+            ) : needsPlanClients.length || plannedClients.length ? (
+              <>
+                {needsPlanClients.length ? (
+                  <>
+                    <SectionHeader
+                      title={t("trainer.plans.needsFirstPlan")}
+                      action={<Pill tone="amber">{needsPlanClients.length}</Pill>}
+                    />
+                    {needsPlanClients.map((client) => (
+                      <PlanRow
+                        key={client.id ?? client.memberUserId}
+                        actionLabel={t("trainer.plans.createPlan")}
+                        client={client}
+                      />
+                    ))}
+                  </>
+                ) : null}
+                {plannedClients.length ? (
+                  <>
+                    <SectionHeader
+                      title={t("trainer.plans.reviewActivePlans")}
+                      action={<Pill tone="blue">{plannedClients.length}</Pill>}
+                    />
+                    {plannedClients.map((client) => (
+                      <PlanRow key={client.id ?? client.memberUserId} client={client} />
+                    ))}
+                  </>
+                ) : null}
+              </>
             ) : (
               <EmptyState icon="clipboard-outline" title={t("trainer.plans.emptyTitle")} body={t("trainer.plans.emptyBody")} />
             )}
@@ -93,6 +124,17 @@ const styles = StyleSheet.create({
     maxWidth: layout.contentWidth,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
+  },
+  headerContext: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 0,
   },
   stack: { gap: spacing.sm },
 });

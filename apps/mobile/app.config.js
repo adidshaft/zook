@@ -167,6 +167,8 @@ const baseConfig = {
       projectId: "3ac0a41f-b9fd-4d91-accf-0e46f3313539",
     },
     sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "",
+    posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || "",
+    posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || "",
   },
 };
 const appVersion = baseConfig.version ?? "0.1.0";
@@ -350,6 +352,8 @@ module.exports = () => {
       apiMode,
       releaseProfile,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || "",
+      posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || "",
+      posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || "",
       appScheme,
       appVersion,
       runtimeVersion,

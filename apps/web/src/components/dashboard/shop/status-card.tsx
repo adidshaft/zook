@@ -1,52 +1,60 @@
 import { GlassCard } from "../../glass-card";
-import { ReadoutGrid, SectionHeader } from "../../dashboard-primitives";
 import type { BranchScopeSnapshot, OrganizationSummary } from "@/components/dashboard/types";
-import { formatCompactNumber, formatInr } from "@/lib/format";
+import { formatCompactNumber } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 
 export function ShopStatusCard({
   summary,
   branchScope,
   selectedBranchName,
-  queuedOrderCount,
-  readyOrderCount,
+  inventoryCount,
 }: {
   summary: OrganizationSummary;
   branchScope: BranchScopeSnapshot;
   selectedBranchName: string;
-  queuedOrderCount: number;
-  readyOrderCount: number;
+  inventoryCount: number;
 }) {
+  const t = useT("webUx.shop");
+  const items = [
+    {
+      label: t("stockBranch"),
+      value: branchScope.selectedBranch ? selectedBranchName : t("allBranches"),
+      meta: branchScope.selectedBranch ? t("stockEditsApplyHere") : t("chooseBranchToEditStock"),
+    },
+    {
+      label: t("listedProducts"),
+      value: formatCompactNumber(inventoryCount),
+      meta: inventoryCount ? t("visibleToMembers") : t("addProduct"),
+    },
+    {
+      label: t("lowStock"),
+      value: formatCompactNumber(summary.lowStockProducts),
+      meta: summary.lowStockProducts ? t("restockSoon") : t("noAlerts"),
+    },
+  ];
+
   return (
-    <GlassCard>
-      <SectionHeader eyebrow="Queue health" title="Shop status" />
-      <ReadoutGrid
-        className="mt-5"
-        columns={1}
-        items={[
-          {
-            label: "Stock branch",
-            value: branchScope.selectedBranch ? selectedBranchName : "All branches",
-            meta: branchScope.selectedBranch
-              ? "Products and stock changes apply to this branch"
-              : "Choose a branch before changing branch stock",
-          },
-          {
-            label: "Pending payment",
-            value: formatCompactNumber(queuedOrderCount),
-            meta: "Orders still waiting to settle",
-          },
-          {
-            label: "Ready for pickup",
-            value: formatCompactNumber(readyOrderCount),
-            meta: "Desk should keep pickup codes handy",
-          },
-          {
-            label: "Revenue today",
-            value: formatInr(summary.revenuePaise),
-            meta: "Shared with membership revenue card",
-          },
-        ]}
-      />
+    <GlassCard className="p-3">
+      <div className="grid gap-2 md:grid-cols-3">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="truncate text-xs font-semibold text-[var(--text-tertiary)]">
+                {item.label}
+              </span>
+              <span className="truncate text-sm font-semibold tabular-nums text-[var(--text-primary)]">
+                {item.value}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-[11px] text-[var(--text-tertiary)]">
+              {item.meta}
+            </p>
+          </div>
+        ))}
+      </div>
     </GlassCard>
   );
 }

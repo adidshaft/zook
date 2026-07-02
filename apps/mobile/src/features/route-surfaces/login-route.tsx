@@ -291,7 +291,7 @@ export default function Login() {
       >
         <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.heroSection}>
           <BrandMark size="lg" style={styles.heroMark} />
-          <Text style={[styles.heroTitle, { color: palette.text.primary }]}>Zook</Text>
+          <Text style={[styles.heroTitle, { color: palette.text.primary }]}>ZOOK</Text>
           <View
             style={[
               styles.heroEyebrowPill,
@@ -423,6 +423,25 @@ export default function Login() {
               {stage === "identifier" ? t("auth.sendCode") : t("auth.verifyAndSignIn")}
             </ZookButton>
 
+            {message ? (
+              <Text
+                testID="login-message-inline"
+                style={[
+                  styles.inlineMessage,
+                  {
+                    color:
+                      messageTone === "danger"
+                        ? palette.feedback.danger
+                        : messageTone === "success"
+                          ? palette.feedback.success
+                          : palette.text.secondary,
+                  },
+                ]}
+              >
+                {message}
+              </Text>
+            ) : null}
+
             {stage === "identifier" ? (
               <>
                 <View style={styles.socialDivider}>
@@ -531,24 +550,36 @@ export default function Login() {
           </Card>
         </Animated.View>
 
-        {message ? (
-          <Text
-            testID="login-message"
-            style={[
-              styles.messageText,
+        <Animated.View entering={FadeInDown.delay(320).duration(600)}>
+          <Card variant="compact" contentStyle={styles.pathContent}>
+            {[
               {
-                color:
-                  messageTone === "danger"
-                    ? palette.feedback.danger
-                    : messageTone === "success"
-                      ? palette.feedback.success
-                      : palette.text.secondary,
+                title: t("auth.memberPathTitle"),
+                body: t("auth.memberPathBody"),
               },
-            ]}
-          >
-            {message}
-          </Text>
-        ) : null}
+              {
+                title: t("auth.trainerPathTitle"),
+                body: t("auth.trainerPathBody"),
+              },
+              {
+                title: t("auth.staffPathTitle"),
+                body: t("auth.staffPathBody"),
+              },
+            ].map((item) => (
+              <View
+                key={item.title}
+                style={[
+                  styles.pathRow,
+                  { borderColor: palette.border.subtle, backgroundColor: palette.surface.raised },
+                ]}
+              >
+                <Text style={[styles.pathTitle, { color: palette.text.primary }]}>{item.title}</Text>
+                <Text style={[styles.pathBody, { color: palette.text.secondary }]}>{item.body}</Text>
+              </View>
+            ))}
+          </Card>
+        </Animated.View>
+
       </KeyboardAwareScreen>
     </ZookScreen>
   );
@@ -661,8 +692,26 @@ const styles = StyleSheet.create({
   legalLink: {
     fontFamily: "Inter_700Bold",
   },
-  messageText: {
-    ...typography.body,
+  pathContent: {
+    gap: spacing.sm,
+  },
+  pathRow: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 3,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  pathTitle: {
+    ...typography.cardTitle,
+  },
+  pathBody: {
+    ...typography.caption,
+    lineHeight: 18,
+  },
+  inlineMessage: {
+    ...typography.caption,
     textAlign: "center",
+    marginTop: -4,
   },
 });

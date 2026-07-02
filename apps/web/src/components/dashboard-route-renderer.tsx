@@ -16,14 +16,15 @@ import type { DashboardRoutePanelBaseProps } from "./dashboard/route-panels";
 
 type DashboardRouteProps = {
   section?: string[] | undefined;
-  searchParams: Promise<{ branchId?: string | undefined }>;
+  searchParams: Promise<{ branchId?: string | undefined; orgId?: string | undefined }>;
 };
 
 export async function loadDashboardRouteProps({ section, searchParams }: DashboardRouteProps) {
-  const { branchId } = await searchParams;
+  const { branchId, orgId } = await searchParams;
   const session = await requireDashboardSession({
     expectedHost: "dashboard",
     redirectPath: "/dashboard",
+    preferredOrgId: orgId,
   });
   const origins = getOrigins();
   const postLoginHref = () =>
@@ -45,6 +46,14 @@ export async function loadDashboardRouteProps({ section, searchParams }: Dashboa
     isPlatformAdmin: session.user.isPlatformAdmin,
     roles: session.activeOrganization?.roles ?? [],
     permissions: session.activeOrganization?.permissions ?? [],
+    organizations: session.organizations.map((organization) => ({
+      orgId: organization.orgId,
+      name: organization.name,
+      logoUrl: organization.logoUrl ?? null,
+      city: organization.city,
+      state: organization.state,
+      status: organization.status,
+    })),
     user: {
       id: session.user.id,
       name: session.user.name,

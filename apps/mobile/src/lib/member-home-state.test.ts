@@ -76,13 +76,27 @@ describe("deriveHomeState", () => {
   });
 
   it("returns workoutLoggedToday after logging today's workout", () => {
+    const today = new Date();
+    today.setHours(10, 0, 0, 0);
     expect(
       deriveHomeState(
-        home({ todayWorkoutLoggedAt: "2026-05-20T10:00:00Z", tomorrowPlanName: "Push" }),
+        home({ todayWorkoutLoggedAt: today.toISOString(), tomorrowPlanName: "Push" }),
       ),
     ).toMatchObject({
       kind: "workoutLoggedToday",
       nextPlanName: "Push",
+    });
+  });
+
+  it("does not treat an older workout log as completed today", () => {
+    expect(
+      deriveHomeState(
+        home({ todayWorkoutLoggedAt: "2026-05-20T10:00:00Z", todayPlanAssignmentId: "assign_1", todayPlanName: "Leg day" }),
+      ),
+    ).toMatchObject({
+      assignmentId: "assign_1",
+      kind: "todayWorkout",
+      planName: "Leg day",
     });
   });
 

@@ -222,6 +222,10 @@ export function NotificationComposerPanel({
       setError("Add a title and message before sending.");
       return false;
     }
+    if (scheduleAt && new Date(scheduleAt).getTime() <= Date.now()) {
+      setError("Schedule must be in the future. Leave blank to send now.");
+      return false;
+    }
     if (audience === "branch_members" && !branchId) {
       setError("Choose a branch.");
       return false;
@@ -342,7 +346,7 @@ export function NotificationComposerPanel({
           </div>
         }
       />
-      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
       <GlassCard>
         <div className="grid gap-4">
           {step === 1 ? (
@@ -477,10 +481,167 @@ export function NotificationComposerPanel({
         </div>
       </GlassCard>
 
-      <GlassCard>
-        <h2 className="text-xl font-semibold">Delivery history</h2>
-        <ComposerDeliveryHistory notifications={notifications} />
+      <GlassCard className="p-4">
+        <ComposerReadinessPanel
+          audienceLabel={
+            availableAudiences.find((option) => option.value === audience)?.label ?? audience
+          }
+          audienceReady={validateAudienceReady({
+            audience,
+            branchId,
+            planId,
+            selectedUserIds,
+            singleUserId,
+          })}
+          draftReady={Boolean(title.trim() && body.trim())}
+          preview={preview}
+          pushEnabled={pushEnabled}
+          recentNotificationCount={notifications.slice(0, 7).length}
+          templateCount={templates.length}
+          scheduleReady={!scheduleAt || new Date(scheduleAt).getTime() > Date.now()}
+          step={step}
+        />
+        <details className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+          <summary className="cursor-pointer list-none text-sm font-semibold text-white">
+            Delivery history
+            <span className="ml-2 text-xs font-normal text-white/45">
+              {notifications.length} recent
+            </span>
+          </summary>
+          <div className="mt-3">
+          <ComposerDeliveryHistory notifications={notifications} />
+          </div>
+        </details>
       </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+function validateAudienceReady({
+  audience,
+  branchId,
+  planId,
+  selectedUserIds,
+  singleUserId,
+}: {
+  audience: Audience;
+  branchId: string;
+  planId: string;
+  selectedUserIds: string[];
+  singleUserId: string;
+}) {
+  if (audience === "branch_members") return Boolean(branchId);
+  if (audience === "membership_plan") return Boolean(planId);
+  if (audience === "single_member") return Boolean(singleUserId);
+  if (audience === "selected_members") return selectedUserIds.length > 0;
+  return true;
+}
+
+function ComposerReadinessPanel({
+  audienceLabel,
+  audienceReady,
+  draftReady,
+  preview,
+  pushEnabled,
+  recentNotificationCount,
+  scheduleReady,
+  step,
+  templateCount,
+}: {
+  audienceLabel: string;
+  audienceReady: boolean;
+  draftReady: boolean;
+  preview: Preview | null;
+  pushEnabled: boolean;
+  recentNotificationCount: number;
+  scheduleReady: boolean;
+  step: number;
+  templateCount: number;
+}) {
+  const readiness = [
+    {
+      label: "Audience",
+      ready: audienceReady,
+      detail: audienceReady ? audienceLabel : "Choose the required audience detail.",
+    },
+    {
+      label: "Message",
+      ready: draftReady,
+      detail: draftReady ? "Title and body are ready." : "Add a title and message body.",
+    },
+    {
+      label: "Timing",
+      ready: scheduleReady,
+      detail: scheduleReady ? "Send now or future schedule is valid." : "Move schedule to the future.",
+    },
+    {
+      label: "Recipient preview",
+      ready: Boolean(preview?.willDeliver),
+      detail: preview
+        ? `${preview.willDeliver} of ${preview.resolvedRecipients} members will receive this.`
+        : "Preview recipients before sending.",
+    },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-white">Send readiness</h2>
+          <p className="mt-1 text-xs text-white/45">Preview recipients before sending.</p>
+        </div>
+        <span className="rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/70">
+          Step {step}/4
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {[
+          {
+            label: "Saved templates",
+            value: templateCount,
+          },
+          {
+            label: "Recent sends",
+            value: recentNotificationCount,
+          },
+          {
+            label: "Push channel",
+            value: pushEnabled ? "On" : "Off",
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2"
+          >
+            <p className="text-[11px] font-medium text-white/35">
+              {item.label}
+            </p>
+            <p className="mt-1 text-base font-semibold tabular-nums text-white">{item.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 grid gap-2">
+        {readiness.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-white">{item.label}</p>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  item.ready
+                    ? "bg-lime-300/10 text-lime-100"
+                    : "bg-amber-300/10 text-amber-100"
+                }`}
+              >
+                {item.ready ? "Ready" : "Needed"}
+              </span>
+            </div>
+            <p className="mt-1 line-clamp-1 text-xs text-white/50">{item.detail}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

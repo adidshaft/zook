@@ -13,21 +13,17 @@ export function MemberPrivateLink({ url }: { url: string }) {
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-white/40">
-          Your private link
-        </p>
-        <p className="mt-1 break-all text-sm text-white/70">{url}</p>
-        <p className="mt-1 text-xs text-white/42">Only you can see this when signed in.</p>
-      </div>
+    <div className="mt-3 flex items-center gap-2">
+      <p className="min-w-0 flex-1 truncate text-xs text-white/40" title={url}>
+        {url}
+      </p>
       <button
         type="button"
         onClick={() => void copyLink()}
-        className="zook-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-black transition hover:bg-lime-200"
+        className="zook-focus inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-xs font-medium text-white/60 transition hover:text-white/90"
       >
-        {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
-        {copied ? "Copied" : "Copy"}
+        {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+        {copied ? "Copied" : "Copy link"}
       </button>
     </div>
   );

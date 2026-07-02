@@ -181,11 +181,14 @@ export interface GymSearchResult {
   name: string;
   city: string;
   state: string;
+  pincode?: string | null;
   joinMode: string;
   visibility?: string;
   latitude?: number | null;
   longitude?: number | null;
+  address?: string | null;
   coverImageUrl?: string | null;
+  logoUrl?: string | null;
   amenities: string[];
 }
 
@@ -238,6 +241,9 @@ export interface GymProfileData {
     address: string;
     city: string;
     state: string;
+    googleMapsUrl?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     isDefault?: boolean | null;
   }>;
   trainers?: Array<{
@@ -334,6 +340,7 @@ export interface PlanExerciseRecord {
   reps?: string | null;
   day?: string | null;
   raw?: string | null;
+  restSeconds?: number | null;
   orderIndex: number;
   completed: boolean;
 }

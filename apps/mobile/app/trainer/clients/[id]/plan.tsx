@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
   Card,
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   SecondaryButton,
   SegmentedControl,
@@ -14,6 +14,7 @@ import {
   Skeleton,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import {
   clientDetailTabs,
@@ -86,6 +87,7 @@ export default function TrainerClientPlanScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const { t } = useI18n();
+  const { confirm, sheet } = useConfirmSheet();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
   const exerciseTemplatesQuery = useOrgExerciseTemplates();
@@ -97,6 +99,7 @@ export default function TrainerClientPlanScreen() {
   const [planTitle, setPlanTitle] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PlanTemplateId>("workout");
   const [selectedExerciseTemplateId, setSelectedExerciseTemplateId] = useState<string | null>(null);
+  const [showExerciseTemplates, setShowExerciseTemplates] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const [savedPlan, setSavedPlan] = useState<{ id: string; title: string } | null>(null);
   const [dietTitle, setDietTitle] = useState("");
@@ -291,9 +294,8 @@ export default function TrainerClientPlanScreen() {
     <>
       <ZookScreen testID="trainer-client-plan-screen">
         <ScrollView ref={scrollRef} contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader
+          <ScreenHeader
             title={t("trainer.clientSessions.title")}
-            subtitle={clientName}
             leading={
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace("/trainer/clients" as never))}
@@ -340,50 +342,104 @@ export default function TrainerClientPlanScreen() {
               })}
             </View>
             {exerciseTemplatesQuery.data?.templates.length ? (
-              <>
-                <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
-                  {t("trainer.clientPlan.exerciseTemplates")}
-                </Text>
-                <View style={styles.chipRow}>
-                  {exerciseTemplatesQuery.data.templates.slice(0, 10).map((template) => {
-                    const selected = selectedExerciseTemplateId === template.id;
-                    return (
-                      <Pressable
-                        key={template.id}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        onPress={() => setSelectedExerciseTemplateId(selected ? null : template.id)}
-                        style={({ pressed }) => [
-                          styles.templateChip,
-                          {
-                            backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
-                            borderColor: selected ? palette.accent.base : palette.border.default,
-                          },
-                          pressed ? styles.controlPressed : null,
-                        ]}
-                      >
-                        <Ionicons name={template.featured ? "star" : "barbell-outline"} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
-                        <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.name}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
+              <View style={styles.disclosureStack}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showExerciseTemplates }}
+                  onPress={() => setShowExerciseTemplates((current) => !current)}
+                  style={({ pressed }) => [styles.disclosureHeader, pressed ? styles.controlPressed : null]}
+                >
+                  <View style={[styles.disclosureIcon, { backgroundColor: palette.surface.accentSoft }]}>
+                    <Ionicons name="barbell-outline" size={18} color={palette.accent.base} />
+                  </View>
+                  <View style={styles.disclosureCopy}>
+                    <Text style={[styles.disclosureTitle, { color: palette.text.primary }]}>
+                      {t("trainer.clientPlan.exerciseTemplates")}
+                    </Text>
+                    <Text style={[styles.disclosureBody, { color: palette.text.secondary }]} numberOfLines={1}>
+                      {selectedExerciseTemplateId
+                        ? exerciseTemplatesQuery.data.templates.find((template) => template.id === selectedExerciseTemplateId)?.name
+                        : t("trainer.clientPlan.templateNotes")}
+                    </Text>
+                  </View>
+                  <Ionicons name={showExerciseTemplates ? "chevron-up" : "chevron-down"} size={18} color={palette.text.tertiary} />
+                </Pressable>
+                {showExerciseTemplates ? (
+                  <View style={styles.chipRow}>
+                    {exerciseTemplatesQuery.data.templates.slice(0, 10).map((template) => {
+                      const selected = selectedExerciseTemplateId === template.id;
+                      return (
+                        <Pressable
+                          key={template.id}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          onPress={() => setSelectedExerciseTemplateId(selected ? null : template.id)}
+                          style={({ pressed }) => [
+                            styles.templateChip,
+                            {
+                              backgroundColor: selected ? palette.surface.accentSoft : palette.surface.raised,
+                              borderColor: selected ? palette.accent.base : palette.border.default,
+                            },
+                            pressed ? styles.controlPressed : null,
+                          ]}
+                        >
+                          <Ionicons name={template.featured ? "star" : "barbell-outline"} size={15} color={selected ? palette.accent.base : palette.text.secondary} />
+                          <Text style={[styles.templateChipText, { color: selected ? palette.accent.base : palette.text.secondary }]}>{template.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
             ) : null}
-            <View style={styles.actionRow}>
+            <View style={styles.planActionRow}>
               <ZookButton testID="trainer-save-draft-button" onPress={() => void saveDraft()} icon="save-outline" disabled={savingPlan} style={styles.actionHalf}>{t("trainer.clientPlan.saveDraft")}</ZookButton>
-              <SecondaryButton testID="trainer-plan-template-help-button" onPress={() => scrollRef.current?.scrollToEnd({ animated: true })} disabled={!client || savingPlan} style={styles.actionHalf}>{t("trainer.clientPlan.templateNotes")}</SecondaryButton>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("trainer.clientPlan.templateNotes")}
+                disabled={!client || savingPlan}
+                hitSlop={8}
+                onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                style={({ pressed }) => [
+                  styles.compactAction,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                  !client || savingPlan ? styles.disabledAction : null,
+                ]}
+              >
+                <Ionicons name="document-text-outline" size={18} color={palette.text.secondary} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("trainer.clientPlan.saveExerciseTemplate")}
+                disabled={saveExerciseTemplate.isPending}
+                hitSlop={8}
+                onPress={saveCurrentExerciseAsTemplate}
+                style={({ pressed }) => [
+                  styles.compactAction,
+                  { backgroundColor: palette.surface.raised, borderColor: palette.border.default },
+                  pressed ? styles.controlPressed : null,
+                  saveExerciseTemplate.isPending ? styles.disabledAction : null,
+                ]}
+              >
+                <Ionicons name={saveExerciseTemplate.isPending ? "hourglass-outline" : "bookmark-outline"} size={18} color={palette.text.secondary} />
+              </Pressable>
             </View>
-            <SecondaryButton testID="trainer-save-exercise-template-button" onPress={saveCurrentExerciseAsTemplate} disabled={saveExerciseTemplate.isPending}>
-              {t("trainer.clientPlan.saveExerciseTemplate")}
-            </SecondaryButton>
             <SecondaryButton
               testID="trainer-publish-plan-button"
-              onPress={() => Alert.alert(t("trainer.clientPlan.publishToClientTitle", { name: clientName }), t("trainer.clientPlan.publishBody"), [{ text: t("common.cancel"), style: "cancel" }, { text: t("trainer.clientDiet.publish"), onPress: () => void assignPlan() }])}
+              onPress={() =>
+                confirm({
+                  title: t("trainer.clientPlan.publishToClientTitle", { name: clientName }),
+                  body: t("trainer.clientPlan.publishBody"),
+                  destructiveLabel: t("trainer.clientDiet.publish"),
+                  cancelLabel: t("common.cancel"),
+                  onConfirm: () => void assignPlan(),
+                })
+              }
               disabled={!canPublishAssignedPlan || savingPlan}
               onLongPress={!canPublishAssignedPlan ? () => showToast({ title: t("owner.approvals.ownerApprovalRequired"), tone: "amber" }) : undefined}
             >
-              {t("trainer.clientPlan.publishToClient", { name: clientName })}
+              {t("trainer.clientDiet.publish")}
             </SecondaryButton>
           </Card>
           {savedPlan ? (
@@ -432,7 +488,7 @@ export default function TrainerClientPlanScreen() {
           <Card contentStyle={styles.stack}>
             <SectionHeader title={t("trainer.clientDiet.title")} />
             <FormField testID="trainer-diet-title" label={t("trainer.clientPlan.dietTitle")} value={dietTitle} onChangeText={setDietTitle} placeholder={t("trainer.clientPlan.clientDietPlanPlaceholder", { name: clientName })} />
-            <View style={styles.actionRow}>
+            <View style={styles.numericStack}>
               <FormField label={t("trainer.clientPlan.calories")} value={calorieTarget} onChangeText={setCalorieTarget} keyboardType="number-pad" style={styles.actionHalf} />
               <FormField label={t("trainer.clientPlan.proteinG")} value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" style={styles.actionHalf} />
             </View>
@@ -449,6 +505,7 @@ export default function TrainerClientPlanScreen() {
           ) : null}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
@@ -457,13 +514,30 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  backIcon: { fontSize: 26, lineHeight: 28 },
+  backIcon: { ...typography.screenTitle, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   sectionLabel: { ...typography.caption },
   templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },
   templateChipText: { ...typography.caption },
   actionRow: { flexDirection: "row", gap: spacing.sm },
+  planActionRow: { alignItems: "center", flexDirection: "row", gap: spacing.xs },
   actionHalf: { flex: 1 },
+  numericStack: { gap: spacing.sm },
+  compactAction: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  disabledAction: { opacity: 0.45 },
+  disclosureStack: { gap: spacing.sm },
+  disclosureHeader: { alignItems: "center", flexDirection: "row", gap: spacing.md },
+  disclosureIcon: { alignItems: "center", borderRadius: 14, height: 38, justifyContent: "center", width: 38 },
+  disclosureCopy: { flex: 1, gap: 2, minWidth: 0 },
+  disclosureTitle: { ...typography.bodyStrong },
+  disclosureBody: { ...typography.small },
   stack: { gap: spacing.sm },
   draftPromptContent: { gap: spacing.sm },
   cardBody: { ...typography.body },

@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { setDemoFreshGym } from "@/lib/demo-api";
-import { isOfflineDemoMode } from "@/lib/demo-mode";
+import { isOfflineDemoEnabled } from "@/lib/runtime-mode";
 import { useTheme } from "@/lib/theme";
 
 /**
@@ -20,9 +20,10 @@ export default function DemoFreshGymRoute() {
   const { palette } = useTheme();
   const queryClient = useQueryClient();
   const { on, target } = useLocalSearchParams<{ on?: string; target?: string }>();
+  const demoEnabled = isOfflineDemoEnabled();
 
   useEffect(() => {
-    if (!isOfflineDemoMode()) {
+    if (!demoEnabled) {
       router.replace("/" as never);
       return;
     }
@@ -31,9 +32,9 @@ export default function DemoFreshGymRoute() {
       const next = firstParam(target);
       router.replace((next && next.startsWith("/") ? next : "/owner") as never);
     });
-  }, [on, queryClient, target]);
+  }, [demoEnabled, on, queryClient, target]);
 
-  if (!isOfflineDemoMode()) {
+  if (!demoEnabled) {
     return <Redirect href="/" />;
   }
 

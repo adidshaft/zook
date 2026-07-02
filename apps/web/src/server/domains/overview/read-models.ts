@@ -1,6 +1,11 @@
 import { Prisma, prisma } from "@zook/db";
 import { getProviderRegistryDiagnostics } from "@zook/core/providers";
-import { endOfWindow, startOfToday } from "@/server/domains/shared/date";
+import {
+  endOfWindow,
+  startOfMonthIst,
+  startOfToday,
+  toDateKey,
+} from "@/server/domains/shared/date";
 import { withBranchScope, type DashboardBranchFilter } from "@/server/domains/shared/filters";
 import { getBranchScope } from "@/server/domains/shared/org-context";
 import { serializeOrganizationForReadModel } from "@/server/domains/shared/read-serialization";
@@ -35,7 +40,7 @@ export async function getOrganizationDashboardData(
   input: { chartRange?: { from: Date; to: Date } } = {},
 ) {
   const rangeKey = input.chartRange
-    ? `${input.chartRange.from.toISOString().slice(0, 10)}:${input.chartRange.to.toISOString().slice(0, 10)}`
+    ? `${toDateKey(input.chartRange.from)}:${toDateKey(input.chartRange.to)}`
     : "default";
   return cachedJson(
     `org-dashboard:${orgId}:${filters.allBranches ? "all" : (filters.branchId ?? "default")}:${rangeKey}`,
@@ -61,9 +66,7 @@ async function getOrganizationDashboardFastDataUncached(
 ) {
   const today = startOfToday();
   const nextWeek = endOfWindow(7);
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  const monthStart = startOfMonthIst(new Date());
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
   const branchScopeFilter = branchScope.selectedBranch
@@ -243,9 +246,7 @@ async function getOrganizationDashboardDataUncached(
             input.chartRange.to,
           )
         : dayWindow(7);
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  const monthStart = startOfMonthIst(new Date());
   const branchScope = await getBranchScope(orgId, filters);
   const branchWhere = branchScope.selectedBranch ? { branchId: branchScope.selectedBranch.id } : {};
   const branchScopeFilter = branchScope.selectedBranch
@@ -454,9 +455,7 @@ export async function getPlatformDashboardData() {
 }
 
 async function getPlatformDashboardDataUncached() {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  const monthStart = startOfMonthIst(new Date());
 
   const [orgs, aiUsageThisMonth, abuseFlags, statusGroups] = await Promise.all([
     prisma.organization.findMany({

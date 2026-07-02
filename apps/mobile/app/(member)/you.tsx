@@ -2,14 +2,15 @@ import { Stack, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { AnimatedAppear, Card, ListRow, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { AnimatedAppear, Card, IconBubble, ScreenHeader, SectionHeader, ZookButton, ZookScreen, useConfirmSheet } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { IdentityCard } from "@/features/member/you/identity-card";
 import { MembershipSummary } from "@/features/member/you/membership-summary";
+import { QuickActionGrid } from "@/features/member/you/quick-action-grid";
 import { useAuth } from "@/lib/auth";
 import { useMemberHome } from "@/lib/domains/member";
 import { useT } from "@/lib/i18n";
-import { useCanSwitchRole, useRoleContext } from "@/lib/role-context";
+import { useRoleContext } from "@/lib/role-context";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
@@ -23,8 +24,7 @@ const settingsRows = [
 ] as const;
 
 export default function YouScreen() {
-  const { logout, switchRole } = useAuth();
-  const canSwitch = useCanSwitchRole();
+  const { logout } = useAuth();
   const ctx = useRoleContext();
   const homeQuery = useMemberHome();
   const { palette, preference } = useTheme();
@@ -32,9 +32,6 @@ export default function YouScreen() {
   const signOutConfirm = useConfirmSheet();
   const scrollY = useSharedValue(0);
   
-  const nextRole = ctx?.availableRoles.find((role) => role !== ctx?.role);
-  const gymHref = ctx?.org?.username ? `/gyms/${ctx.org.username}` : "/gyms";
-
   function confirmSignOut() {
     signOutConfirm.confirm({
       title: t("more.signOutConfirmTitle"),
@@ -43,10 +40,6 @@ export default function YouScreen() {
       onConfirm: () => void logout(),
     });
   }
-
-  const isOwnerAvailable = ctx?.availableRoles.includes("OWNER");
-  const showBackToOwner = canSwitch && isOwnerAvailable && ctx?.role !== "OWNER";
-  const showSwitchRole = canSwitch && nextRole && !showBackToOwner;
 
   return (
     <>
@@ -81,52 +74,27 @@ export default function YouScreen() {
 
           <AnimatedAppear delay={80}>
             <SectionHeader title={t("member.you.quickActions")} />
-            <Card variant="compact" contentStyle={styles.list}>
-            {showBackToOwner && (
-              <PillActionRow
-                title={t("member.you.backToOwnerMode")}
-                icon="apps-outline"
-                onPress={() => void switchRole("OWNER")}
-              />
-            )}
-            
-            {showSwitchRole && nextRole && (
-              <PillActionRow
-                title={t("member.you.switchToRole", { role: titleCase(nextRole) })}
-                icon="swap-horizontal-outline"
-                onPress={() => void switchRole(nextRole)}
-              />
-            )}
-
-            <PillActionRow
-              title={t("member.you.switchGym")}
-              icon="business-outline"
-              onPress={() => router.push(gymHref as never)}
+            <QuickActionGrid
+              unreadCount={homeQuery.data?.unreadNotifications ?? 0}
             />
-            <PillActionRow
-              title={t("member.you.gymShop")}
-              icon="storefront-outline"
-              onPress={() => router.push("/shop" as never)}
-            />
-            </Card>
           </AnimatedAppear>
 
-          <AnimatedAppear delay={120}>
+          <AnimatedAppear delay={100}>
             <SectionHeader title={t("more.settings.title")} />
-            <Card variant="compact" contentStyle={styles.list}>
-            {settingsRows.map((row) => (
-              <PillActionRow
-                key={row.href}
-                title={t(row.titleKey)}
-                subtitle={row.href === "/settings/appearance" ? t(`member.you.theme.${preference}`) : undefined}
-                icon={row.icon}
-                onPress={() => router.push(row.href as never)}
-              />
-            ))}
+            <Card variant="compact" contentStyle={styles.settingsList}>
+              {settingsRows.map((row) => (
+                <SettingsTile
+                  key={row.href}
+                  title={t(row.titleKey)}
+                  subtitle={row.href === "/settings/appearance" ? t(`member.you.theme.${preference}`) : undefined}
+                  icon={row.icon}
+                  onPress={() => router.push(row.href as never)}
+                />
+              ))}
             </Card>
           </AnimatedAppear>
 
-          <AnimatedAppear delay={160}>
+          <AnimatedAppear delay={140}>
             <View style={styles.signOutContainer}>
               <ZookButton
                 onPress={confirmSignOut}
@@ -150,7 +118,7 @@ export default function YouScreen() {
   );
 }
 
-function PillActionRow({
+function SettingsTile({
   title,
   subtitle,
   icon,
@@ -161,23 +129,31 @@ function PillActionRow({
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
+  const { palette } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={title}
       style={({ pressed }) => [
-        styles.rowPressable,
+        styles.settingsTile,
         pressed ? styles.rowPressed : null,
       ]}
     >
-      <ListRow title={title} subtitle={subtitle} icon={icon} />
+      <IconBubble icon={icon} tone="neutral" size={32} />
+      <View style={styles.settingsTileCopy}>
+        <Text numberOfLines={1} style={[styles.settingsTileTitle, { color: palette.text.primary }]}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text numberOfLines={1} style={[styles.settingsTileSubtitle, { color: palette.text.secondary }]}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={14} color={palette.text.tertiary} style={styles.settingsTileChevron} />
     </Pressable>
   );
-}
-
-function titleCase(value: string) {
-  return value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 const styles = StyleSheet.create({
@@ -189,14 +165,36 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     width: "100%",
   },
-  list: {
+  settingsList: {
     gap: 4,
   },
-  rowPressable: {
-    borderRadius: 18,
+  settingsTile: {
+    alignItems: "center",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 50,
+    minWidth: 0,
+    paddingHorizontal: 8,
   },
   rowPressed: {
     opacity: 0.86,
+    transform: [{ scale: 0.985 }],
+  },
+  settingsTileCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  settingsTileTitle: {
+    ...typography.caption,
+    fontFamily: "Inter_700Bold",
+  },
+  settingsTileSubtitle: {
+    ...typography.navLabel,
+  },
+  settingsTileChevron: {
+    opacity: 0.55,
   },
   signOutContainer: {
     marginTop: 8,

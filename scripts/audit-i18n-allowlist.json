@@ -1,0 +1,47 @@
+[
+  {
+    "file": "apps/mobile/app/owner/staff.tsx",
+    "text": "coach@email.com",
+    "reason": "Example email placeholder."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "In about an hour",
+    "reason": "Compatibility fallback; localized callers use formatting-i18n labels."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "About an hour ago",
+    "reason": "Compatibility fallback; localized callers use formatting-i18n labels."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "Schedule not available",
+    "reason": "Legacy formatter fallback pending a dedicated localized schedule formatter."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "No active gym",
+    "reason": "Legacy formatter fallback pending a dedicated localized gym identity formatter."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "DOB not added",
+    "reason": "Legacy formatter fallback pending a dedicated localized age formatter."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "Desk approval is required.",
+    "reason": "Legacy review fallback pending endpoint-level localized reason labels."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "Attendance approval mode is enabled.",
+    "reason": "Server reason text replacement compatibility."
+  },
+  {
+    "file": "apps/mobile/src/lib/formatting.ts",
+    "text": "Anyone can join",
+    "reason": "Legacy join-mode fallback pending a localized join-mode formatter."
+  }
+]

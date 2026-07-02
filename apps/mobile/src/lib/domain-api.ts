@@ -682,6 +682,12 @@ export const ownerApi = {
       orgId: options.orgId,
     });
   },
+  reportsSummary<T = unknown>(options: RequestOptions) {
+    return mobileApiFetch<T>(`/orgs/${options.orgId}/reports/summary`, {
+      token: options.token,
+      orgId: options.orgId,
+    });
+  },
   members<T = unknown>(options: RequestOptions) {
     return mobileApiFetch<T>(`/orgs/${options.orgId}/members`, {
       token: options.token,

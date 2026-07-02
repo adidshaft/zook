@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   skipText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
+    ...typography.button,
   },
 });

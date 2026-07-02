@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   IconBubble,
-  AppHeader,
+  ScreenHeader,
   Pill,
   QueryErrorState,
   SectionHeader,
@@ -13,11 +13,11 @@ import {
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
-import { toneForStatus } from "@/components/membership/helpers";
+import { membershipStatusLabel, toneForStatus } from "@/components/membership/helpers";
 import { useAuth } from "@/lib/auth";
 import { apiClient, ownerApi } from "@/lib/domain-api";
 import { toWebUrl } from "@/lib/api";
-import { formatInitials, formatLongDate, formatRedactedPhone, titleCaseFromCode } from "@/lib/formatting";
+import { formatInitials, formatLongDate, formatRedactedPhone } from "@/lib/formatting";
 import { getStoredValue, phoneRevealStorageKey, setStoredValue } from "@/lib/storage";
 import type { OrgMemberRecord } from "@/lib/domains/shared/types";
 import { useT } from "@/lib/i18n";
@@ -38,6 +38,13 @@ type OrgMemberDetailResponse = {
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function daysUntil(value?: string | null) {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return null;
+  return Math.ceil((timestamp - Date.now()) / 86_400_000);
 }
 
 function BackButton({ accessibilityLabel, onPress }: { accessibilityLabel: string; onPress: () => void }) {
@@ -94,6 +101,7 @@ export default function OwnerMemberDetail() {
   const t = useT();
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [reminderSending, setReminderSending] = useState(false);
   const memberQuery = useQuery({
     queryKey: ["org", resolvedOrgId, "members", id],
     queryFn: () =>
@@ -113,8 +121,67 @@ export default function OwnerMemberDetail() {
   const goal = member?.user?.fitnessGoal ?? member?.profile.fitnessGoal ?? t("owner.member.notSet");
   const notes = member?.profile.notes;
   const subscriptionStatus = member?.activeSubscription?.status ?? null;
-  const subscriptionStatusLabel = subscriptionStatus ? titleCaseFromCode(subscriptionStatus) : t("owner.member.noActivePlan");
+  const subscriptionStatusLabel = subscriptionStatus ? membershipStatusLabel(subscriptionStatus, t) : t("owner.member.noActivePlan");
   const subscriptions = member?.subscriptions ?? [];
+  const activePlanDaysLeft = daysUntil(member?.activeSubscription?.endsAt);
+  const isPlanExpiring = activePlanDaysLeft != null && activePlanDaysLeft >= 0 && activePlanDaysLeft <= 14;
+  const needsContact = !email || !phone;
+  const needsPlan = !member?.activeSubscription || subscriptionStatus !== "ACTIVE";
+  const nextAction = needsPlan
+    ? {
+        id: "recordPayment" as const,
+        icon: "card-outline" as const,
+        title: t("owner.member.actionPlanTitle"),
+        body: t("owner.member.actionPlanBody"),
+        cta: t("owner.member.recordPayment"),
+        onPress: recordPayment,
+      }
+    : needsContact
+      ? {
+          id: "viewFullProfile" as const,
+          icon: "call-outline" as const,
+          title: t("owner.member.actionContactTitle"),
+          body: t("owner.member.actionContactBody"),
+          cta: t("owner.member.viewFullProfile"),
+          onPress: openWebProfile,
+        }
+      : isPlanExpiring
+        ? {
+            id: "sendReminder" as const,
+            icon: "notifications-outline" as const,
+            title: t("owner.member.actionExpiringTitle"),
+            body: t("owner.member.actionExpiringBody", { count: activePlanDaysLeft ?? 0 }),
+            cta: t("owner.member.sendReminder"),
+            onPress: sendReminder,
+          }
+        : {
+            id: "viewFullProfile" as const,
+            icon: "checkmark-circle-outline" as const,
+            title: t("owner.member.actionHealthyTitle"),
+            body: t("owner.member.actionHealthyBody"),
+            cta: t("owner.member.viewFullProfile"),
+            onPress: openWebProfile,
+          };
+  const secondaryActions = [
+    {
+      id: "sendReminder",
+      icon: "notifications-outline" as const,
+      label: t("owner.member.sendReminder"),
+      onPress: sendReminder,
+    },
+    {
+      id: "recordPayment",
+      icon: "card-outline" as const,
+      label: t("owner.member.recordPayment"),
+      onPress: recordPayment,
+    },
+    {
+      id: "viewFullProfile",
+      icon: "open-outline" as const,
+      label: t("owner.member.viewFullProfile"),
+      onPress: openWebProfile,
+    },
+  ].filter((action) => action.id !== nextAction.id);
 
   useEffect(() => {
     let mounted = true;
@@ -168,8 +235,35 @@ export default function OwnerMemberDetail() {
     }
   }
 
-  function sendReminder() {
-    showToast({ tone: "neutral", message: t("owner.member.reminderComingSoon") });
+  async function sendReminder() {
+    if (!token || !resolvedOrgId || !id || reminderSending) return;
+    setReminderSending(true);
+    try {
+      const endsAt = member?.activeSubscription?.endsAt ?? null;
+      const dateLabel = formatLongDate(endsAt, t("owner.members.soon"));
+      await ownerApi.sendMemberNotification({
+        token,
+        orgId: resolvedOrgId,
+        memberUserId: id,
+        title: t("owner.members.expiringReminderTitle"),
+        body: t("owner.members.expiringReminderBody", { date: dateLabel }),
+        metadata: { reason: "manual_member_detail_reminder", endsAt },
+      });
+      showToast({
+        tone: "success",
+        haptic: "success",
+        message: t("owner.members.reminderSent", { name }),
+      });
+    } catch (error) {
+      showToast({
+        title: t("owner.members.reminderNotSent"),
+        message: error instanceof Error ? error.message : t("owner.members.tryAgain"),
+        tone: "danger",
+        haptic: "error",
+      });
+    } finally {
+      setReminderSending(false);
+    }
   }
 
   function recordPayment() {
@@ -200,7 +294,7 @@ export default function OwnerMemberDetail() {
             />
           }
         >
-          <AppHeader
+          <ScreenHeader
             title={name}
             leading={
               <BackButton
@@ -258,6 +352,32 @@ export default function OwnerMemberDetail() {
                   </Text>
                   <Pill tone={toneForStatus(subscriptionStatus)}>{subscriptionStatusLabel}</Pill>
                 </View>
+              </Card>
+
+              <Card contentStyle={styles.nextActionCard}>
+                <View style={styles.sectionRow}>
+                  <IconBubble icon={nextAction.icon} tone={needsPlan || isPlanExpiring ? "amber" : "neutral"} size={42} />
+                  <View style={styles.sectionCopy}>
+                    <Text style={[styles.sectionLabel, { color: palette.text.secondary }]}>
+                      {t("owner.member.nextBestAction")}
+                    </Text>
+                    <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>
+                      {nextAction.title}
+                    </Text>
+                    <Text style={[styles.nextActionBody, { color: palette.text.secondary }]}>
+                      {nextAction.body}
+                    </Text>
+                  </View>
+                </View>
+                <ZookButton
+                  variant={needsPlan ? "primary" : "secondary"}
+                  icon={nextAction.icon}
+                  onPress={nextAction.onPress}
+                  disabled={nextAction.id === "sendReminder" && reminderSending}
+                  busy={nextAction.id === "sendReminder" && reminderSending}
+                >
+                  {nextAction.cta}
+                </ZookButton>
               </Card>
 
               <Card contentStyle={styles.sectionContent}>
@@ -320,15 +440,24 @@ export default function OwnerMemberDetail() {
               </Card>
 
               <Card contentStyle={styles.actionCard}>
-                <ZookButton variant="secondary" icon="notifications-outline" onPress={sendReminder}>
-                  {t("owner.member.sendReminder")}
-                </ZookButton>
-                <ZookButton variant="secondary" icon="card-outline" onPress={recordPayment}>
-                  {t("owner.member.recordPayment")}
-                </ZookButton>
-                <ZookButton variant="secondary" icon="open-outline" onPress={openWebProfile}>
-                  {t("owner.member.viewFullProfile")}
-                </ZookButton>
+                {secondaryActions.map((action) => (
+                  <Pressable
+                    key={action.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={action.label}
+                    onPress={action.onPress}
+                    disabled={action.id === "sendReminder" && reminderSending}
+                    hitSlop={8}
+                    style={({ pressed }) => [
+                      styles.secondaryIconAction,
+                      { borderColor: palette.border.default, backgroundColor: palette.surface.default },
+                      action.id === "sendReminder" && reminderSending ? styles.secondaryIconActionDisabled : null,
+                      pressed ? styles.secondaryIconActionPressed : null,
+                    ]}
+                  >
+                    <Ionicons name={action.icon} size={19} color={palette.text.primary} />
+                  </Pressable>
+                ))}
               </Card>
 
               {subscriptions.length > 1 ? (
@@ -338,7 +467,7 @@ export default function OwnerMemberDetail() {
                     {subscriptions.map((subscription, index) => (
                       <View key={subscription.id ?? index} style={styles.subRow}>
                         <Pill tone={toneForStatus(subscription.status ?? null)}>
-                          {titleCaseFromCode(subscription.status ?? "")}
+                          {membershipStatusLabel(subscription.status, t)}
                         </Pill>
                         {subscription.endsAt ? (
                           <Text style={[styles.rowLabel, { color: palette.text.secondary }]}>
@@ -384,7 +513,19 @@ const styles = StyleSheet.create({
   memberName: typography.headerTitle,
   memberEmail: typography.small,
   sectionContent: { gap: spacing.md },
-  actionCard: { gap: spacing.sm },
+  nextActionCard: { gap: spacing.md },
+  nextActionBody: { ...typography.body, marginTop: 2 },
+  actionCard: { alignSelf: "flex-end", flexDirection: "row", gap: spacing.sm },
+  secondaryIconAction: {
+    alignItems: "center",
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  secondaryIconActionPressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+  secondaryIconActionDisabled: { opacity: 0.48 },
   sectionRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   sectionCopy: { flex: 1, gap: 3 },
   sectionLabel: typography.caption,

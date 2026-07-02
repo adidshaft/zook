@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { elevation, spacing, typography, useTheme } from "@/lib/theme";
 import { useT } from "@/lib/i18n";
 import { subscribeToast, type ToastPayload, type ToastTone } from "@/lib/toast";
+import { toneSurface } from "@/components/primitives/tone-palette";
 
 export function ToastHost() {
   const insets = useSafeAreaInsets();
@@ -74,10 +75,10 @@ export function ToastHost() {
       backgroundColor:
         mode === "dark"
           ? isAndroid
-            ? "#2B2412"
+            ? toneSurface("amber", "dark")
             : palette.surface.warningSoft
           : isAndroid
-            ? "#FFF4DD"
+            ? toneSurface("amber", "light")
             : palette.surface.warningSoft,
       shadowColor: palette.feedback.warning,
     },
@@ -86,10 +87,10 @@ export function ToastHost() {
       backgroundColor:
         mode === "dark"
           ? isAndroid
-            ? "#2D1715"
+            ? toneSurface("danger", "dark")
             : palette.surface.dangerSoft
           : isAndroid
-            ? "#FDE8E6"
+            ? toneSurface("danger", "light")
             : palette.surface.dangerSoft,
       shadowColor: palette.feedback.danger,
     },
@@ -98,10 +99,10 @@ export function ToastHost() {
       backgroundColor:
         mode === "dark"
           ? isAndroid
-            ? "#15271F"
+            ? toneSurface("success", "dark")
             : palette.surface.successSoft
           : isAndroid
-            ? "#E8F6EE"
+            ? toneSurface("success", "light")
             : palette.surface.successSoft,
       shadowColor: palette.feedback.success,
     },

@@ -34,6 +34,7 @@ import {
   useOwnerPrefs,
 } from "../../owner-customisation-panel";
 import { useDashboardSummary, type DashboardSummaryData } from "@/lib/query-hooks/overview";
+import { interpolate } from "./copy";
 import type { DashboardCopy, DashboardData } from "./types";
 
 const LazyOwnerCustomisationPanel = lazy(() =>
@@ -54,12 +55,14 @@ export function DashboardOverview({
   activeOrg,
   selectedBranch,
   data,
+  copy,
 }: {
   activeOrg: DashboardData["orgs"][number];
   selectedBranch: DashboardData["branchScope"]["selectedBranch"];
   data: DashboardData;
   copy: DashboardCopy;
 }) {
+  const overview = copy.overview;
   const prefs = useOwnerPrefs();
   const [showCustomisationPanel, setShowCustomisationPanel] = useState(false);
   const branchId = data.branchScope.allBranches ? "all" : selectedBranch?.id;
@@ -89,12 +92,12 @@ export function DashboardOverview({
   const accent: ChartTone = prefs.accent;
   const summary = hydratedData?.summary ?? data.summary;
   const charts = hydratedData?.charts ?? data.charts;
-  const products = hydratedData?.products ?? data.products;
   const aiUsage = hydratedData?.aiUsage ?? data.aiUsage;
   const auditLogCount = hydratedData?.auditLogCount ?? data.auditLogCount;
   const isRefreshingDashboard = data.connected && dashboardQuery.isFetching;
   const aiQuota = 50;
   const aiUsagePercent = Math.min(100, Math.round((summary.aiUsageThisMonth / aiQuota) * 100));
+  const memberLabel = summary.activeMembers === 1 ? overview.memberOne : overview.memberOther;
 
   const revenueRupees = useMemo(() => Math.round(summary.revenuePaise / 100), [summary.revenuePaise]);
   const revenueTrend = useMemo(() => charts.revenue7d.map((point) => point.value), [charts.revenue7d]);
@@ -103,46 +106,13 @@ export function DashboardOverview({
   const planMix = charts.planMix;
   const planMixTotal = useMemo(() => planMix.reduce((sum, slice) => sum + slice.value, 0), [planMix]);
 
-  const attentionRows: AttentionRow[] = useMemo(() => [
-    {
-      icon: ClipboardList,
-      title: `${summary.joinRequests} pending join request${summary.joinRequests === 1 ? "" : "s"}`,
-      subtitle: "Approve to start onboarding",
-      tone: summary.joinRequests > 0 ? "rose" : "sky",
-      href: "/dashboard/members/join-requests",
-    },
-    {
-      icon: Package,
-      title: `${summary.lowStockProducts} items running low`,
-      subtitle: products.length
-        ? products.slice(0, 2).map((product) => product.name).join(", ")
-        : "Pickup inventory is healthy",
-      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
-      href: "/dashboard/shop",
-    },
-    {
-      icon: CalendarClock,
-      title: `${summary.expiringMemberships} memberships expiring soon`,
-      subtitle: "Renewal window: next 7 days",
-      tone: summary.expiringMemberships > 0 ? "amber" : "sky",
-      href: "/dashboard/members",
-    },
-    {
-      icon: Dumbbell,
-      title: `${summary.pendingAttendanceApprovals} attendance approvals pending`,
-      subtitle: "Desk review queue",
-      tone: "sky",
-      href: "/dashboard/attendance",
-    },
-  ], [summary, products]);
-
   const nextBestActions: AttentionRow[] = useMemo(() => [
     ...(activeOrg.status !== "ACTIVE"
       ? [
           {
             icon: AlertTriangle,
-            title: "Gym is not active",
-            subtitle: `Status: ${formatEnumLabel(activeOrg.status)}`,
+            title: overview.gymNotActiveTitle,
+            subtitle: interpolate(overview.gymNotActiveSubtitle, { status: formatEnumLabel(activeOrg.status) }),
             tone: "rose" as const,
             href: "/dashboard/settings",
           },
@@ -152,8 +122,8 @@ export function DashboardOverview({
       ? [
           {
             icon: ClipboardList,
-            title: "Finish branch details",
-            subtitle: "Choose a primary branch for inventory and attendance.",
+            title: overview.finishBranchTitle,
+            subtitle: overview.finishBranchSubtitle,
             tone: "amber" as const,
             href: "/dashboard/branches",
           },
@@ -163,8 +133,11 @@ export function DashboardOverview({
       ? [
           {
             icon: UserPlus,
-            title: "Approve new join requests",
-            subtitle: `${summary.joinRequests} member${summary.joinRequests === 1 ? "" : "s"} waiting for access.`,
+            title: overview.approveJoinTitle,
+            subtitle: interpolate(overview.approveJoinSubtitle, {
+              count: summary.joinRequests,
+              memberLabel: summary.joinRequests === 1 ? overview.memberOne : overview.memberOther,
+            }),
             tone: "rose" as const,
             href: "/dashboard/members/join-requests",
           },
@@ -174,8 +147,12 @@ export function DashboardOverview({
       ? [
           {
             icon: CalendarClock,
-            title: "Nudge renewals",
-            subtitle: `${summary.expiringMemberships} membership${summary.expiringMemberships === 1 ? "" : "s"} expire in the next 7 days.`,
+            title: overview.nudgeRenewalsTitle,
+            subtitle: interpolate(overview.nudgeRenewalsSubtitle, {
+              count: summary.expiringMemberships,
+              membershipLabel:
+                summary.expiringMemberships === 1 ? overview.membershipOne : overview.membershipOther,
+            }),
             tone: "amber" as const,
             href: "/dashboard/members",
           },
@@ -185,8 +162,12 @@ export function DashboardOverview({
       ? [
           {
             icon: Dumbbell,
-            title: "Clear desk approvals",
-            subtitle: `${summary.pendingAttendanceApprovals} attendance check${summary.pendingAttendanceApprovals === 1 ? "" : "s"} need review.`,
+            title: overview.clearApprovalsTitle,
+            subtitle: interpolate(overview.clearApprovalsSubtitle, {
+              count: summary.pendingAttendanceApprovals,
+              checkLabel:
+                summary.pendingAttendanceApprovals === 1 ? overview.checkOne : overview.checkOther,
+            }),
             tone: "sky" as const,
             href: "/dashboard/attendance",
           },
@@ -196,8 +177,11 @@ export function DashboardOverview({
       ? [
           {
             icon: Package,
-            title: "Restock shop items",
-            subtitle: `${summary.lowStockProducts} product${summary.lowStockProducts === 1 ? "" : "s"} below threshold.`,
+            title: overview.restockTitle,
+            subtitle: interpolate(overview.restockSubtitle, {
+              count: summary.lowStockProducts,
+              productLabel: summary.lowStockProducts === 1 ? overview.productOne : overview.productOther,
+            }),
             tone: "amber" as const,
             href: "/dashboard/shop",
           },
@@ -207,8 +191,8 @@ export function DashboardOverview({
       ? [
           {
             icon: IndianRupee,
-            title: "Confirm first payment path",
-            subtitle: "Run a small membership payment before inviting members.",
+            title: overview.confirmPaymentTitle,
+            subtitle: overview.confirmPaymentSubtitle,
             tone: "sky" as const,
             href: "/dashboard/payments",
           },
@@ -216,15 +200,51 @@ export function DashboardOverview({
       : [
           {
             icon: IndianRupee,
-            title: "Reconcile today's money",
-            subtitle: `${formatInr(summary.cashCollectedPaise)} collected at desk today.`,
+            title: overview.reconcileMoneyTitle,
+            subtitle: interpolate(overview.reconcileMoneySubtitle, { amount: formatInr(summary.cashCollectedPaise) }),
             tone: "sky" as const,
             href: "/dashboard/payments",
           },
         ]),
-  ].slice(0, 5), [activeOrg.status, selectedBranch, summary]);
+  ].slice(0, 5), [activeOrg.status, overview, selectedBranch, summary]);
 
-  const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === "Reconcile today's money", [nextBestActions]);
+  const setupComplete = useMemo(() => nextBestActions.length === 1 && nextBestActions[0]?.title === overview.reconcileMoneyTitle, [nextBestActions, overview.reconcileMoneyTitle]);
+
+  const dailyShortcuts: AttentionRow[] = useMemo(() => [
+    {
+      icon: CheckCircle2,
+      title: overview.openQrTitle,
+      subtitle: interpolate(overview.openQrSubtitle, {
+        count: summary.todayAttendance,
+        checkInLabel: summary.todayAttendance === 1 ? overview.checkInOne : overview.checkInOther,
+      }),
+      tone: "sky",
+      href: "/dashboard/attendance/qr-display",
+    },
+    {
+      icon: IndianRupee,
+      title: overview.takePaymentTitle,
+      subtitle: formatInr(summary.cashCollectedPaise),
+      tone: "sky",
+      href: "/dashboard/payments",
+    },
+    {
+      icon: Users,
+      title: overview.findMemberTitle,
+      subtitle: interpolate(overview.findMemberSubtitle, { count: summary.activeMembers }),
+      tone: "amber",
+      href: "/dashboard/members",
+    },
+    {
+      icon: Package,
+      title: overview.shopPickupTitle,
+      subtitle: summary.lowStockProducts > 0
+        ? interpolate(overview.lowStockSubtitle, { count: summary.lowStockProducts })
+        : overview.inventoryHealthy,
+      tone: summary.lowStockProducts > 0 ? "amber" : "sky",
+      href: "/dashboard/shop",
+    },
+  ], [overview, summary]);
 
   const todayLabel = useMemo(() => formatWeekdayDate(new Date()), []);
 
@@ -242,42 +262,46 @@ export function DashboardOverview({
     <div className="grid gap-6">
       {/* Hero header */}
       <SectionHero
-        eyebrow="Today's command board"
-        title="Run the gym, not the spreadsheet"
-        description={`${summary.activeMembers} active member${summary.activeMembers === 1 ? "" : "s"} today. ${todayLabel}.`}
+        eyebrow={overview.heroEyebrow}
+        title={overview.heroTitle}
+        description={interpolate(overview.heroDescription, {
+          count: summary.activeMembers,
+          memberLabel,
+          date: todayLabel,
+        })}
         icon={TrendingUp}
         tone={accent}
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
               <StatusDot tone={accent} size={6} />
-              Today
+              {overview.today}
             </span>
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)]/60 px-3 py-1 text-xs text-[var(--text-tertiary)]">
-              {data.connected ? (isRefreshingDashboard ? "Updating metrics" : "Server data") : "Local data"}
+              {data.connected ? (isRefreshingDashboard ? overview.updatingMetrics : overview.serverData) : overview.localData}
             </span>
           </div>
         }
       />
 
-      <GlassCard className="p-5">
+      <GlassCard className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-              Next best actions
+              {overview.nextBestActions}
             </p>
             <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-              {setupComplete ? "Keep the operating rhythm clean" : "What needs attention today"}
+              {setupComplete ? overview.operatingRhythm : overview.needsAttention}
             </h2>
           </div>
           <Link
             href="/dashboard/reports"
             className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
           >
-            Open reports →
+            {overview.openReports} →
           </Link>
         </div>
-        <div className="mt-4 grid gap-2 lg:grid-cols-2">
+        <div className="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-1">
           {nextBestActions.map((row, index) => (
             <ActivityRow
               key={row.title}
@@ -291,6 +315,43 @@ export function DashboardOverview({
             />
           ))}
         </div>
+        <details className="group mt-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
+          <summary className="zook-focus flex min-h-9 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl text-xs font-semibold text-[var(--text-secondary)]">
+            <span>{overview.dailyShortcuts}</span>
+            <span className="inline-flex items-center gap-1 text-[var(--text-tertiary)]">
+              {interpolate(overview.links, { count: dailyShortcuts.length })}
+              <ChevronRight
+                size={14}
+                className="transition group-open:rotate-90"
+                aria-hidden="true"
+              />
+            </span>
+          </summary>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {dailyShortcuts.map((shortcut) => {
+              const Icon = shortcut.icon;
+              return (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="group zook-focus flex items-center gap-2 rounded-2xl px-2.5 py-2 transition hover:bg-[var(--surface-raised)]"
+                >
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
+                    <Icon size={15} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-[var(--text-primary)]">
+                      {shortcut.title}
+                    </span>
+                    <span className="block truncate text-[11px] text-[var(--text-tertiary)]">
+                      {shortcut.subtitle}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </details>
       </GlassCard>
 
       {/* KPI row */}
@@ -300,58 +361,59 @@ export function DashboardOverview({
           : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
       }`}>
         <KPITile
-          label="Active members"
+          label={overview.activeMembers}
           value={summary.activeMembers}
           icon={Users}
           tone={accent}
           trend={memberTrend}
           delta={charts.deltas.memberGrowth30d}
+          noTrendLabel={overview.noTrend}
         />
         <KPITile
-          label="Today's check-ins"
+          label={overview.todaysCheckIns}
           value={summary.todayAttendance}
           icon={CheckCircle2}
           tone="sky"
           trend={attendanceTrend}
           delta={charts.deltas.attendance7d}
+          noTrendLabel={overview.noTrend}
         />
         <KPITile
-          label="Revenue today"
+          label={overview.revenueToday}
           value={revenueRupees}
           format={(v) => formatInrCompact(v * 100)}
           icon={IndianRupee}
           tone={accent}
           trend={revenueTrend}
           delta={charts.deltas.revenue7d}
+          noTrendLabel={overview.noTrend}
         />
         <KPITile
-          label="Join requests"
+          label={overview.joinRequests}
           value={summary.joinRequests}
           icon={UserPlus}
           tone="rose"
           href="/dashboard/members/join-requests"
+          noTrendLabel={overview.noTrend}
         />
         <KPITile
-          label="Low stock"
+          label={overview.lowStock}
           value={summary.lowStockProducts}
           icon={Package}
           tone="violet"
           href="/dashboard/shop"
+          noTrendLabel={overview.noTrend}
         />
       </div>
 
-      {/* Revenue + Attention split */}
-      <div
-        className={`grid grid-cols-1 gap-4 ${
-          prefs.widgets.revenueChart ? "lg:grid-cols-[1.4fr_1fr]" : ""
-        }`}
-      >
+      {/* Revenue */}
+      <div className="grid grid-cols-1 gap-4">
         {prefs.widgets.revenueChart ? (
           <GlassCard className="overflow-hidden p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  Revenue · last 7 days
+                  {overview.revenueLast7Days}
                 </p>
                 <div className="mt-2 flex items-baseline gap-3">
                   <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
@@ -364,7 +426,7 @@ export function DashboardOverview({
                 href="/dashboard/reports"
                 className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
               >
-                Open reports →
+                {overview.openReports} →
               </Link>
             </div>
             <div className="mt-4 h-56">
@@ -374,37 +436,12 @@ export function DashboardOverview({
                 tone={accent}
                 formatY={(v) => formatInrCompact(v * 100)}
                 formatTooltip={(v, label) => `${label}: ${formatInrCompact(v * 100)}`}
-                ariaLabel="Revenue across the last 7 days"
+                ariaLabel={overview.revenueChartAria}
               />
             </div>
           </GlassCard>
         ) : null}
 
-        <GlassCard className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-300" />
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">Needs attention</h2>
-            </div>
-            <Link href="/dashboard/reports" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              All →
-            </Link>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {attentionRows.map((row, index) => (
-              <ActivityRow
-                key={row.title}
-                icon={row.icon}
-                iconTone={row.tone}
-                title={row.title}
-                subtitle={row.subtitle}
-                href={row.href}
-                trailing={<ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />}
-                index={index}
-              />
-            ))}
-          </div>
-        </GlassCard>
       </div>
 
       {/* Member growth + plan mix */}
@@ -419,24 +456,29 @@ export function DashboardOverview({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Daily check-ins · last 7 days
+                {overview.dailyCheckInsLast7Days}
               </p>
               <div className="mt-2 flex items-baseline gap-3">
                 <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">
                   {summary.todayAttendance}
                 </span>
-                <span className="text-xs text-[var(--text-tertiary)]">today</span>
+                <span className="text-xs text-[var(--text-tertiary)]">{overview.today}</span>
               </div>
             </div>
             <Link
               href="/dashboard/attendance"
               className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
             >
-              Open attendance →
+              {overview.openAttendance} →
             </Link>
           </div>
           <div className="mt-4 h-44">
-            <BarChart series={attendanceTrend} labels={charts.attendance7d.map((point) => point.label || "")} tone="sky" />
+            <BarChart
+              series={attendanceTrend}
+              labels={charts.attendance7d.map((point) => point.label || "")}
+              tone="sky"
+              ariaLabel={overview.dailyCheckInsChartAria}
+            />
           </div>
         </GlassCard>
         ) : null}
@@ -446,17 +488,17 @@ export function DashboardOverview({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Plan mix
+                {overview.planMix}
               </p>
               <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-                Where members are
+                {overview.whereMembersAre}
               </h2>
             </div>
             <Link
               href="/dashboard/membership-plans"
               className="rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)]"
             >
-              Edit plans →
+              {overview.editPlans} →
             </Link>
           </div>
           <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:items-center">
@@ -471,7 +513,9 @@ export function DashboardOverview({
                   {planMixTotal}
                 </span>
               }
-              centerSub={`active member${planMixTotal === 1 ? "" : "s"}`}
+              centerSub={interpolate(overview.activeMemberCenter, {
+                memberLabel: planMixTotal === 1 ? overview.memberOne : overview.memberOther,
+              })}
             />
             <div className="grid flex-1 gap-2">
               {planMix.length ? planMix.map((slice) => (
@@ -483,7 +527,7 @@ export function DashboardOverview({
                 />
               )) : (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
-                  <span className="truncate text-xs text-[var(--text-secondary)]">No active plan mix</span>
+                  <span className="truncate text-xs text-[var(--text-secondary)]">{overview.noActivePlanMix}</span>
                   <span className="text-xs font-semibold tabular-nums text-[var(--text-primary)]">0%</span>
                 </div>
               )}
@@ -500,9 +544,9 @@ export function DashboardOverview({
         {prefs.widgets.aiUsage ? (
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">AI usage</h2>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">{overview.aiUsage}</h2>
             <Link href="/dashboard/ai" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              Insights →
+              {overview.insights} →
             </Link>
           </div>
           <div className="mt-5 flex flex-col items-center gap-5 justify-between">
@@ -518,15 +562,15 @@ export function DashboardOverview({
                     {aiUsagePercent}%
                   </span>
                 }
-                centerSub="of monthly limit"
+                centerSub={overview.monthlyLimit}
               />
             </div>
             <div className="grid grid-cols-3 gap-2 w-full min-w-0">
               {(
                 [
-                  ["AI events", `${summary.aiUsageThisMonth} / ${aiQuota}`],
-                  ["Recent logs", `${aiUsage.length}`],
-                  ["Data", data.connected ? "Server" : "Local"],
+                  [overview.aiEvents, `${summary.aiUsageThisMonth} / ${aiQuota}`],
+                  [overview.recentLogs, `${aiUsage.length}`],
+                  [overview.data, data.connected ? overview.server : overview.local],
                 ] as const
               ).map(([label, value]) => (
                 <div
@@ -545,22 +589,24 @@ export function DashboardOverview({
         {prefs.widgets.staffActivity ? (
         <GlassCard className="p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">Recent staff activity</h2>
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">{overview.recentStaffActivity}</h2>
             <Link href="/dashboard/audit" className="text-xs font-medium text-[var(--accent)] hover:underline">
-              Audit log →
+              {overview.auditLog} →
             </Link>
           </div>
           <Link
             href="/dashboard/audit"
             className="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-3 transition hover:border-[var(--border)]"
           >
-            <AvatarInitials name="Audit" className="h-9 w-9 rounded-full" />
+            <AvatarInitials name={overview.auditAvatarName} className="h-9 w-9 rounded-full" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-[var(--text-primary)]">
-                <strong className="tabular-nums">{summary.staffCount}</strong> staff roles ·{" "}
-                <strong className="tabular-nums">{auditLogCount}</strong> audit records
+                {interpolate(overview.staffRolesAudit, {
+                  staffCount: summary.staffCount,
+                  auditCount: auditLogCount,
+                })}
               </span>
-              <span className="block text-xs text-[var(--text-tertiary)]">Exact actions and timestamps</span>
+              <span className="block text-xs text-[var(--text-tertiary)]">{overview.exactActions}</span>
             </span>
             <ChevronRight size={16} className="text-[var(--text-tertiary)]/60" />
           </Link>

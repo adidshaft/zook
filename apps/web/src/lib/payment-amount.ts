@@ -10,6 +10,21 @@ export function normalizeRupeeInput(value: string) {
   return `${whole}.${fraction}`;
 }
 
+export function rupeesToPaise(input: string) {
+  const normalized = normalizeRupeeInput(input);
+  if (!normalized) {
+    return null;
+  }
+  if (!/^\d+(\.\d{0,2})?$/.test(normalized)) {
+    return null;
+  }
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return null;
+  }
+  return Math.round(amount * 100);
+}
+
 export function getRupeeAmountError(value: string) {
   const normalized = normalizeRupeeInput(value);
   if (!normalized) {

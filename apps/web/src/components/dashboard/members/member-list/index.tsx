@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { UserRoundCheck, UserRoundX } from "lucide-react";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../../operational-shared";
 import {
   DataTable,
@@ -11,15 +12,53 @@ import {
 } from "../../../dashboard-primitives";
 import { GlassCard, Pill } from "../../../glass-card";
 import { ZookButton, ZookButtonLink } from "../../../zook-button";
-import type { MemberRow, OrganizationSnapshot } from "@/components/dashboard/types";
+import type { MemberRow } from "@/components/dashboard/types";
 import { formatDate } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 import { memberFilters, type MemberFilter, type MembersState } from "./types";
 
 const memberVirtualizationThreshold = 120;
 
+type MembersT = ReturnType<typeof useT>;
+
+function memberContactMeta(row: MemberRow, t: MembersT) {
+  return [row.user?.email, row.user?.phone].filter(Boolean).join(" · ") || t("contactMissing");
+}
+
+function memberFilterLabel(filter: MemberFilter, t: MembersT) {
+  const keyByFilter: Record<MemberFilter, Parameters<MembersT>[0]> = {
+    All: "filterAll",
+    Active: "filterActive",
+    "Pending Payment": "filterPendingPayment",
+    "Expiring Soon": "filterExpiringSoon",
+    "Missing Contact": "filterMissingContact",
+    Expired: "filterExpired",
+    Paused: "filterPaused",
+    "Visit Pack": "filterVisitPack",
+    Trial: "filterTrial",
+  };
+  return t(keyByFilter[filter]);
+}
+
+function AccessMark({ inactive, t }: { inactive: boolean; t: MembersT }) {
+  const label = inactive ? t("accessInactive") : t("accessActive");
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.65rem] font-bold ${
+        inactive
+          ? "border-[color-mix(in_srgb,var(--feedback-danger)_36%,transparent)] bg-[var(--surface-danger-soft)] text-[var(--feedback-danger)]"
+          : "border-[var(--border-focus)] bg-[var(--surface-accent-soft)] text-[var(--accent-strong)]"
+      }`}
+    >
+      <span aria-hidden>{inactive ? "!" : "✓"}</span>
+    </span>
+  );
+}
+
 export function MemberList({
   orgId,
-  organization,
   members,
   filteredMembers,
   membersState,
@@ -40,7 +79,6 @@ export function MemberList({
   updateMemberAccess,
 }: {
   orgId: string;
-  organization: OrganizationSnapshot;
   members: MemberRow[];
   filteredMembers: MemberRow[];
   membersState: MembersState;
@@ -60,116 +98,101 @@ export function MemberList({
   memberAccessStatusTone: "neutral" | "lime" | "red";
   updateMemberAccess: (memberUserId: string, status: "active" | "inactive") => void;
 }) {
+  const t = useT("members");
   const useVirtualizedRoster = filteredMembers.length >= memberVirtualizationThreshold;
   const memberRosterColumns = useMemo(
     () => [
       {
         id: "select",
-        header: "Select",
+        header: t("select"),
         render: (row: MemberRow) => (
           <input
             type="checkbox"
             checked={Boolean(row.user?.id && selectedBulkMemberIds.includes(row.user.id))}
             onChange={() => toggleBulkMember(row.user?.id)}
-            aria-label={`Select ${row.user?.name ?? "member"}`}
+            aria-label={t("selectMember", { name: row.user?.name ?? t("memberFallback") })}
             className="zook-focus h-4 w-4 rounded border-[var(--border)] bg-[var(--bg-sunken)] accent-[var(--accent-fill)]"
           />
         ),
       },
       {
         id: "member",
-        header: "Member",
+        header: t("member"),
         render: (row: MemberRow) => (
-          <div>
-            <p className="font-medium text-[var(--text-primary)]">
-              {row.user?.name ?? "Member profile"}
+          <div className="min-w-0">
+            <p className="truncate font-medium text-[var(--text-primary)]">
+              {row.user?.name ?? t("memberProfile")}
             </p>
-            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-              {row.user?.email ?? "No email recorded"}
-            </p>
-          </div>
-        ),
-      },
-      {
-        id: "contact",
-        header: "Contact",
-        render: (row: MemberRow) => (
-          <div>
-            <p>{row.user?.phone ?? organization.contactPhone ?? "Desk follow-up needed"}</p>
-            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-              {row.user?.fitnessGoal ?? "Goal capture pending"}
+            <p className="mt-1 truncate text-xs text-[var(--text-tertiary)]">
+              {memberContactMeta(row, t)}
             </p>
           </div>
         ),
       },
       {
-        id: "profile",
-        header: "Profile state",
+        id: "goal",
+        header: t("goal"),
         render: (row: MemberRow) => (
-          <div className="flex flex-wrap gap-2">
-            <StatusPill
-              value={row.membership?.status === "inactive" ? "Inactive" : "Active"}
-              tone={row.membership?.status === "inactive" ? "red" : "lime"}
-            />
-            <StatusPill
-              value={row.profile.publicVisibility ? "Visible" : "Private"}
-              tone="neutral"
-            />
-            <StatusPill
-              value={row.profile.marketingOptIn ? "Marketing on" : "Marketing off"}
-              tone="neutral"
-            />
-          </div>
+          <p className="max-w-[220px] truncate">{row.user?.fitnessGoal ?? t("goalPending")}</p>
+        ),
+      },
+      {
+        id: "access",
+        header: t("access"),
+        render: (row: MemberRow) => (
+          <AccessMark inactive={row.membership?.status === "inactive"} t={t} />
         ),
       },
       {
         id: "joined",
-        header: "Created",
+        header: t("created"),
         render: (row: MemberRow) => formatDate(row.profile.createdAt),
       },
       {
         id: "detail",
-        header: "Actions",
+        header: t("actions"),
         align: "right" as const,
-        render: (row: MemberRow) => (
-          <div className="flex flex-wrap justify-end gap-2">
-            <ZookButton
-              type="button"
-              tone="ghost"
-              size="sm"
-              onClick={() => row.user?.id && setSelectedMemberId(row.user.id)}
-              disabled={!row.user?.id}
-            >
-              View
-            </ZookButton>
-            <ZookButton
-              type="button"
-              tone={row.membership?.status === "inactive" ? "lime" : "ghost"}
-              size="sm"
-              onClick={() =>
-                row.user?.id &&
-                updateMemberAccess(
-                  row.user.id,
-                  row.membership?.status === "inactive" ? "active" : "inactive",
-                )
-              }
-              disabled={
-                !row.user?.id ||
-                memberAccessBusyId === row.user?.id ||
-                memberAccessBusyId === "bulk"
-              }
-            >
-              {row.membership?.status === "inactive" ? "Reactivate member" : "Deactivate member"}
-            </ZookButton>
-          </div>
-        ),
+        render: (row: MemberRow) => {
+          const userId = row.user?.id;
+          const inactive = row.membership?.status === "inactive";
+          const accessLabel = inactive ? t("reactivateMember") : t("deactivateMember");
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                onClick={() => userId && setSelectedMemberId(userId)}
+                disabled={!userId}
+              >
+                {t("view")}
+              </ZookButton>
+              <ZookButton
+                type="button"
+                tone="ghost"
+                size="sm"
+                aria-label={accessLabel}
+                title={accessLabel}
+                onClick={() => userId && updateMemberAccess(userId, inactive ? "active" : "inactive")}
+                disabled={!userId || memberAccessBusyId === userId}
+                state={memberAccessBusyId === userId ? "loading" : "idle"}
+              >
+                {inactive ? (
+                  <UserRoundCheck aria-hidden className="h-4 w-4" />
+                ) : (
+                  <UserRoundX aria-hidden className="h-4 w-4" />
+                )}
+              </ZookButton>
+            </div>
+          );
+        },
       },
     ],
     [
       memberAccessBusyId,
-      organization.contactPhone,
       selectedBulkMemberIds,
       setSelectedMemberId,
+      t,
       toggleBulkMember,
       updateMemberAccess,
     ],
@@ -178,18 +201,18 @@ export function MemberList({
   return (
     <GlassCard className="xl:col-span-1">
       <SectionHeader
-        eyebrow="Members"
-        title="Member roster"
+        eyebrow={t("eyebrow")}
+        title={t("rosterTitle")}
         badge={
           <Pill>
             {filtersActive ? `${filteredMembers.length}/${members.length}` : members.length}{" "}
-            profiles
+            {t("profiles")}
           </Pill>
         }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/members.csv`} />}
       />
-      <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {memberFilters.map((filter) => {
             const active = filter === memberFilter;
             return (
@@ -204,7 +227,7 @@ export function MemberList({
                   tone={active ? "blue" : filter === "Pending Payment" ? "amber" : "neutral"}
                   className={active ? "border-[var(--border-focus)]" : "hover:bg-[var(--surface)]"}
                 >
-                  {filter}
+                  {memberFilterLabel(filter, t)}
                 </Pill>
               </button>
             );
@@ -214,15 +237,15 @@ export function MemberList({
           type="search"
           value={memberSearch}
           onChange={(event) => setMemberSearch(event.target.value)}
-          placeholder="Search name, email, phone, member ID"
-          className="zook-focus min-h-11 min-w-0 rounded-full border border-[var(--border-subtle)] bg-[var(--bg)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] lg:w-[360px]"
+          placeholder={t("searchPlaceholder")}
+          className="zook-focus min-h-10 min-w-0 rounded-full border border-[var(--border-subtle)] bg-[var(--bg)] px-4 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] lg:w-[360px]"
         />
       </div>
       <div className="mt-5">
         {membersState.error ? (
           <ErrorNotice message={membersState.error} />
         ) : membersState.loading && members.length === 0 ? (
-          <EmptyState title="Loading member roster" />
+          <EmptyState title={t("loadingRoster")} />
         ) : (
           <>
             {useVirtualizedRoster ? (
@@ -233,7 +256,7 @@ export function MemberList({
                 rowHeight={92}
                 maxHeight={620}
                 tableMinWidth="980px"
-                gridTemplateColumns="56px minmax(220px,1.2fr) minmax(220px,1fr) minmax(180px,1fr) minmax(120px,0.7fr) 96px"
+                gridTemplateColumns="56px minmax(260px,1.4fr) minmax(180px,0.9fr) minmax(120px,0.6fr) minmax(120px,0.7fr) 148px"
                 empty={<MemberListEmpty filtersActive={filtersActive} />}
               />
             ) : (
@@ -245,22 +268,14 @@ export function MemberList({
                 empty={<MemberListEmpty filtersActive={filtersActive} />}
               />
             )}
-            {filteredMembers.length ? (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3">
-                <p className="text-sm text-[var(--text-tertiary)]">
-                  Showing {filteredMembers.length} match{filteredMembers.length === 1 ? "" : "es"}.{" "}
-                  Refine search for faster action at large scale.
-                </p>
-              </div>
-            ) : null}
             {selectedBulkMemberIds.length ? (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-4 py-3">
                 <p className="text-sm text-[var(--text-secondary)]">
-                  {selectedBulkMemberIds.length} selected
+                  {t("selected", { count: selectedBulkMemberIds.length })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <ZookButton type="button" size="sm" onClick={exportSelectedMembers}>
-                    Export selected
+                    {t("exportSelected")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -269,10 +284,10 @@ export function MemberList({
                     onClick={bulkArchiveMembers}
                     disabled={memberAccessBusyId === "bulk"}
                   >
-                    Bulk archive
+                    {t("bulkArchive")}
                   </ZookButton>
                   <ZookButton type="button" tone="ghost" size="sm" onClick={clearSelection}>
-                    Clear
+                    {t("clear")}
                   </ZookButton>
                 </div>
               </div>
@@ -296,17 +311,18 @@ export function MemberList({
 }
 
 function MemberListEmpty({ filtersActive }: { filtersActive: boolean }) {
+  const t = useT("members");
   return (
     <EmptyState
-      title={filtersActive ? "No members match" : "No members"}
+      title={filtersActive ? t("noMembersMatch") : t("noMembers")}
       description={
         filtersActive
-          ? "Try a different filter or search term."
-          : "Create your first membership plan and share your join link to start accepting members."
+          ? t("noMembersMatchDescription")
+          : t("noMembersDescription")
       }
       action={
         filtersActive ? null : (
-          <ZookButtonLink href="/dashboard/plans">Create a plan</ZookButtonLink>
+          <ZookButtonLink href="/dashboard/plans">{t("createPlan")}</ZookButtonLink>
         )
       }
     />

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { renderMembershipSurface } from "@/components/member-membership-surface";
 import { destinationToUrl, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import { getOrigins } from "@/lib/origins";
-import { resolvePublicLocale } from "@/lib/public-i18n";
+import { localizedPath, resolvePublicLocale } from "@/lib/public-i18n";
 import { requireDashboardSession } from "@/lib/server-auth";
 
 export const metadata: Metadata = {
@@ -18,14 +18,15 @@ export default async function MyMembershipPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const locale = resolvePublicLocale((await searchParams) ?? {});
-  const session = await requireDashboardSession({ loginRedirectPath: "/me" });
+  const memberPath = localizedPath("/me", locale);
+  const session = await requireDashboardSession({ loginRedirectPath: memberPath });
   const destination = resolvePostLoginDestination(session);
 
   if (destination.host === "dashboard") {
     redirect(destinationToUrl(destination, getOrigins()));
   }
   if (session.user.slug) {
-    redirect(`/m/${session.user.slug}`);
+    redirect(localizedPath(`/m/${session.user.slug}`, locale));
   }
 
   return renderMembershipSurface(session, locale);

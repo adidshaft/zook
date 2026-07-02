@@ -5,6 +5,7 @@ import { EmptyState, SectionHeader, StatusPill } from "../dashboard-primitives";
 import { Pill } from "../glass-card";
 import { formatDate, formatEnumLabel, formatNumber } from "@/lib/format";
 import type { BodyProgressEntryRow } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 
 function numericLabel(value: string | number | null | undefined, suffix: string) {
   if (value === null || value === undefined || value === "") {
@@ -18,17 +19,18 @@ function numericLabel(value: string | number | null | undefined, suffix: string)
 }
 
 export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntryRow[] }) {
+  const t = useT("members");
   const visibleEntries = entries.slice(0, 6);
   const entriesWithPhotos = visibleEntries.filter((entry) => entry.photoAssetId).length;
 
   return (
     <div className="mt-4 rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)]/40 p-4 lg:col-span-4">
       <SectionHeader
-        eyebrow="Body composition"
-        title="Photo timeline"
+        eyebrow={t("bodyCompositionEyebrow")}
+        title={t("photoTimeline")}
         badge={
           <Pill>
-            {entriesWithPhotos} photo{entriesWithPhotos === 1 ? "" : "s"}
+            {t("photoCount", { count: entriesWithPhotos })}
           </Pill>
         }
       />
@@ -43,19 +45,19 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 {entry.photoAssetId ? (
                   <img
                     src={`/api/files/${entry.photoAssetId}/content`}
-                    alt={`Body progress photo from ${formatDate(entry.measuredAt)}`}
+                    alt={t("bodyProgressPhotoAlt", { date: formatDate(entry.measuredAt) })}
                     className="h-full w-full object-cover"
                     loading="lazy"
                   />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--text-tertiary)]">
                     <Camera size={24} aria-hidden="true" />
-                    <span className="text-sm">No photo attached</span>
+                    <span className="text-sm">{t("noPhotoAttached")}</span>
                   </div>
                 )}
                 {index === 0 ? (
                   <div className="absolute left-3 top-3">
-                    <StatusPill value="Recent" />
+                    <StatusPill value={t("recent")} />
                   </div>
                 ) : null}
               </div>
@@ -63,24 +65,24 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(entry.measuredAt)}</p>
                   <Pill tone={entry.visibility === "PRIVATE" ? "amber" : "neutral"}>
-                    {entry.visibility ? formatEnumLabel(entry.visibility) : "Visible"}
+                    {entry.visibility ? formatEnumLabel(entry.visibility) : t("visible")}
                   </Pill>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-xs">
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
-                    <dt className="text-[var(--text-tertiary)]">Weight</dt>
+                    <dt className="text-[var(--text-tertiary)]">{t("weight")}</dt>
                     <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.weightKg, " kg")}
                     </dd>
                   </div>
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
-                    <dt className="text-[var(--text-tertiary)]">Body fat</dt>
+                    <dt className="text-[var(--text-tertiary)]">{t("bodyFat")}</dt>
                     <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.bodyFatPercent, "%")}
                     </dd>
                   </div>
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2">
-                    <dt className="text-[var(--text-tertiary)]">Waist</dt>
+                    <dt className="text-[var(--text-tertiary)]">{t("waist")}</dt>
                     <dd className="mt-1 font-medium text-[var(--text-primary)]">
                       {numericLabel(entry.waistCm, " cm")}
                     </dd>
@@ -96,8 +98,8 @@ export function BodyCompositionTimeline({ entries }: { entries: BodyProgressEntr
       ) : (
         <EmptyState
           className="mt-5"
-          title="No body composition entries"
-          description="Add body progress and progress photos from the member app."
+          title={t("noBodyCompositionEntries")}
+          description={t("bodyCompositionEmptyDescription")}
         />
       )}
     </div>

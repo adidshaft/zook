@@ -27,6 +27,7 @@ import { applySessionLocalePreference, translate } from "./i18n";
 import { sanitizeOtpValue } from "./otp";
 import { deleteStoredValue, getStoredValue, setStoredValue } from "./storage";
 import { typography, useTheme } from "./theme";
+import { trackEvent } from "./analytics";
 
 const SESSION_STORAGE_KEY = "zook_session";
 const REFRESH_SESSION_STORAGE_KEY = "zook_refresh_session";
@@ -580,6 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestOtp = useCallback(async (identifier: string) => {
     const result = await authClient.requestOtp(identifier);
     setError(undefined);
+    void trackEvent("auth_otp_requested");
     return result;
   }, []);
 
@@ -600,6 +602,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ]);
       refreshTokenRef.current = refreshTokenValue;
       await hydrate(result.token);
+      void trackEvent("auth_signed_in", { role: result.session?.activeOrganization?.roles[0] });
       qaResetInFlight = false;
       await maybePromptForBiometric();
     },

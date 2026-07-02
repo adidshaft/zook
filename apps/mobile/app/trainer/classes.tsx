@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   DatePickerField,
   EmptyState,
@@ -14,8 +14,8 @@ import {
   QueryErrorState,
   SectionHeader,
   Skeleton,
-  ZookButton,
   ZookScreen,
+  ZookButton,
   useConfirmSheet,
 } from "@/components/primitives";
 import { useMyClasses } from "@/lib/domains";
@@ -194,19 +194,31 @@ export default function TrainerClasses() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title={t("trainer.classes.title")} subtitle={t("trainer.classes.subtitle")} showBack />
+          <ScreenHeader title={t("trainer.classes.title")} showBack />
 
           <SectionHeader
             title={isEditing ? t("trainer.classes.editClass") : t("trainer.classes.schedule")}
             action={
-              <ZookButton
-                size="sm"
-                variant={showForm ? "secondary" : "primary"}
-                icon={showForm ? "close" : "add"}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showForm ? t("common.cancel") : t("trainer.classes.newClass")}
+                hitSlop={8}
                 onPress={() => (showForm ? closeForm() : openCreateForm())}
+                style={({ pressed }) => [
+                  styles.headerIconAction,
+                  {
+                    backgroundColor: showForm ? palette.surface.default : palette.accent.base,
+                    borderColor: showForm ? palette.border.default : palette.accent.strong,
+                  },
+                  pressed ? styles.pressedAction : null,
+                ]}
               >
-                {showForm ? t("common.cancel") : t("trainer.classes.newClass")}
-              </ZookButton>
+                <Ionicons
+                  name={showForm ? "close" : "add"}
+                  size={20}
+                  color={showForm ? palette.text.secondary : palette.text.onAccent}
+                />
+              </Pressable>
             }
           />
 
@@ -297,7 +309,10 @@ export default function TrainerClasses() {
             </Card>
           ) : null}
 
-          <SectionHeader title={t("trainer.classes.upcomingClasses")} />
+          <SectionHeader
+            title={t("trainer.classes.upcomingClasses")}
+            action={<Pill tone={classes.length > 0 ? "blue" : "neutral"}>{classes.length}</Pill>}
+          />
           {classesQuery.isLoading ? (
             <Card variant="compact" contentStyle={styles.stack}>
               {[0, 1, 2].map((item) => (
@@ -335,8 +350,20 @@ export default function TrainerClasses() {
                     <View style={styles.classCopy}>
                       <Text style={[styles.className, { color: palette.text.primary }]} numberOfLines={1}>{entry.name}</Text>
                       <Text style={[styles.classMeta, { color: palette.text.secondary }]} numberOfLines={1}>
-                        {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {classTypeLabel(entry.classType, t)} · {entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free")}
+                        {classTypeLabel(entry.classType, t)}
                       </Text>
+                      <View style={styles.classMetaChips}>
+                        <View style={[styles.metaChip, { backgroundColor: palette.surface.accentSoft }]}>
+                          <Text style={[styles.metaChipText, { color: palette.text.secondary }]} numberOfLines={1}>
+                            {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)}
+                          </Text>
+                        </View>
+                        <View style={[styles.metaChip, { backgroundColor: palette.surface.default }]}>
+                          <Text style={[styles.metaChipText, { color: palette.text.secondary }]} numberOfLines={1}>
+                            {entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free")}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                     <Pill tone={entry.remainingCapacity <= 0 ? "red" : "neutral"}>
                       {entry.enrollmentCount}/{entry.maxCapacity}
@@ -362,7 +389,10 @@ export default function TrainerClasses() {
 
           {cancelledClasses.length > 0 ? (
             <>
-              <SectionHeader title={t("trainer.classes.cancelled")} />
+              <SectionHeader
+                title={t("trainer.classes.cancelled")}
+                action={<Pill tone="neutral">{cancelledClasses.length}</Pill>}
+              />
               <View style={styles.stack}>
                 {cancelledClasses.map((entry) => {
                   const visual = classTypeVisual(entry.classType);
@@ -374,8 +404,15 @@ export default function TrainerClasses() {
                           {entry.name}
                         </Text>
                         <Text style={[styles.classMeta, { color: palette.text.tertiary }]} numberOfLines={1}>
-                          {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)} · {classTypeLabel(entry.classType, t)}
+                          {classTypeLabel(entry.classType, t)}
                         </Text>
+                        <View style={styles.classMetaChips}>
+                          <View style={[styles.metaChip, { backgroundColor: palette.surface.default }]}>
+                            <Text style={[styles.metaChipText, { color: palette.text.tertiary }]} numberOfLines={1}>
+                              {classDayHeading(entry.startTime)} · {formatTime(entry.startTime)}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
                       <Pill tone="neutral">{t("trainer.classes.cancelled")}</Pill>
                     </Card>
@@ -402,8 +439,17 @@ const styles = StyleSheet.create({
   },
   formCard: { gap: spacing.md },
   formLabel: { ...typography.caption },
-  formRow: { flexDirection: "row", gap: spacing.sm },
+  formRow: { gap: spacing.sm },
   formField: { flex: 1, gap: 6 },
+  headerIconAction: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  pressedAction: { opacity: 0.78, transform: [{ scale: 0.96 }] },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: -spacing.xs },
   chip: { borderRadius: radii.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9 },
   chipText: { ...typography.caption },
@@ -413,6 +459,9 @@ const styles = StyleSheet.create({
   classCopy: { flex: 1, gap: 2, minWidth: 0 },
   className: { ...typography.cardTitle },
   classMeta: { ...typography.small },
+  classMetaChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: 2 },
+  metaChip: { borderRadius: radii.pill, maxWidth: "100%", paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  metaChipText: { ...typography.eyebrow },
   editButton: { padding: spacing.xs },
   cancelledCard: { opacity: 0.6 },
   cancelledText: { textDecorationLine: "line-through" },

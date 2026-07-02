@@ -6,6 +6,7 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/domain-api";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import { typography, useTheme } from "@/lib/theme";
+import { showToast } from "@/lib/toast";
 
 const maxProfilePhotoBytes = 5 * 1024 * 1024;
 
@@ -92,26 +94,14 @@ function pickAction(canRemove: boolean, t: Translate) {
     ];
     const cancelLabel = t("common.cancel");
 
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: [...actions.map((action) => action.label), cancelLabel],
-          cancelButtonIndex: actions.length,
-          destructiveButtonIndex: canRemove ? actions.findIndex((action) => action.value === "remove") : undefined,
-        },
-        (selectedIndex) => resolve(actions[selectedIndex]?.value ?? null),
-      );
-      return;
-    }
-
-    Alert.alert(t("member.profilePhoto.profilePhoto"), t("member.profilePhoto.updateProfilePhoto"), [
-      ...actions.map((action) => ({
-        text: action.label,
-        style: action.value === "remove" ? ("destructive" as const) : ("default" as const),
-        onPress: () => resolve(action.value),
-      })),
-      { text: cancelLabel, style: "cancel", onPress: () => resolve(null) },
-    ]);
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: [...actions.map((action) => action.label), cancelLabel],
+        cancelButtonIndex: actions.length,
+        destructiveButtonIndex: canRemove ? actions.findIndex((action) => action.value === "remove") : undefined,
+      },
+      (selectedIndex) => resolve(actions[selectedIndex]?.value ?? null),
+    );
   });
 }
 
@@ -153,6 +143,7 @@ export function ProfilePhotoControl({
   const [committedUrl, setCommittedUrl] = useState(profilePhotoUrl ?? null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
   const initials = useMemo(() => initialsForName(name), [name]);
   const visibleUri = normalizeWebUrl(previewUri ?? committedUrl, { allowDeviceUri: true });
   const hasPhoto = Boolean(previewUri ?? committedUrl);
@@ -242,7 +233,12 @@ export function ProfilePhotoControl({
       setCommittedUrl(previousUrl);
       setPreviewUri(null);
       onError?.(error);
-      Alert.alert(t("member.profilePhoto.photoNotSaved"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
+      showToast({
+        title: t("member.profilePhoto.photoNotSaved"),
+        message: getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"),
+        tone: "danger",
+        haptic: "error",
+      });
     } finally {
       setBusy(false);
     }
@@ -266,15 +262,19 @@ export function ProfilePhotoControl({
     } catch (error) {
       setCommittedUrl(previousUrl);
       onError?.(error);
-      Alert.alert(t("member.profilePhoto.photoNotRemoved"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
+      showToast({
+        title: t("member.profilePhoto.photoNotRemoved"),
+        message: getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"),
+        tone: "danger",
+        haptic: "error",
+      });
     } finally {
       setBusy(false);
     }
   }
 
-  async function handlePress() {
-    if (disabled || busy) return;
-    const action = await pickAction(hasPhoto, t);
+  async function runPhotoAction(action: PhotoAction | null) {
+    setActionSheetVisible(false);
     try {
       if (action === "camera" || action === "library") {
         await savePickedPhoto(action);
@@ -283,63 +283,152 @@ export function ProfilePhotoControl({
       }
     } catch (error) {
       onError?.(error);
-      Alert.alert(t("member.profilePhoto.profilePhoto"), getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"));
+      showToast({
+        title: t("member.profilePhoto.profilePhoto"),
+        message: getApiErrorMessage(error) || t("member.profilePhoto.tryAgain"),
+        tone: "danger",
+        haptic: "error",
+      });
     }
   }
 
+  async function handlePress() {
+    if (disabled || busy) return;
+    if (Platform.OS === "ios") {
+      await runPhotoAction(await pickAction(hasPhoto, t));
+      return;
+    }
+    setActionSheetVisible(true);
+  }
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t("member.profilePhoto.updateProfilePhoto")}
-      disabled={disabled || busy}
-      onPress={() => void handlePress()}
-      style={({ pressed }) => [
-        styles.control,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: palette.surface.raised,
-          borderColor: palette.border.focus,
-          opacity: disabled ? 0.54 : 1,
-        },
-        pressed ? styles.pressed : null,
-        style,
-      ]}
-    >
-      {visibleUri ? (
-        <Image source={{ uri: visibleUri }} style={styles.image} contentFit="cover" />
-      ) : (
-        <Text
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.72}
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("member.profilePhoto.updateProfilePhoto")}
+        disabled={disabled || busy}
+        onPress={() => void handlePress()}
+        style={({ pressed }) => [
+          styles.control,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: palette.surface.raised,
+            borderColor: palette.border.focus,
+            opacity: disabled ? 0.54 : 1,
+          },
+          pressed ? styles.pressed : null,
+          style,
+        ]}
+      >
+        {visibleUri ? (
+          <Image
+            source={{ uri: visibleUri }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={visibleUri}
+            transition={150}
+          />
+        ) : (
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            style={[
+              styles.initials,
+              {
+                color: palette.text.primary,
+                fontSize: Math.max(18, size * 0.26),
+              },
+            ]}
+          >
+            {initials}
+          </Text>
+        )}
+        <View
           style={[
-            styles.initials,
+            styles.badge,
             {
-              color: palette.text.primary,
-              fontSize: Math.max(18, size * 0.26),
+              backgroundColor: palette.accent.fill,
+              borderColor: palette.bg.app,
             },
           ]}
         >
-          {initials}
-        </Text>
-      )}
-      <View
-        style={[
-          styles.badge,
-          {
-            backgroundColor: palette.accent.fill,
-            borderColor: palette.bg.app,
-          },
-        ]}
-      >
-        {busy ? (
-          <ActivityIndicator color={palette.text.onAccent} size="small" />
-        ) : (
-          <Ionicons name="camera" size={16} color={palette.text.onAccent} />
-        )}
-      </View>
+          {busy ? (
+            <ActivityIndicator color={palette.text.onAccent} size="small" />
+          ) : (
+            <Ionicons name="camera" size={16} color={palette.text.onAccent} />
+          )}
+        </View>
+      </Pressable>
+      <Modal transparent visible={actionSheetVisible} animationType="fade" onRequestClose={() => setActionSheetVisible(false)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("common.cancel")}
+          style={styles.modalBackdrop}
+          onPress={() => setActionSheetVisible(false)}
+        >
+          <View style={[styles.actionSheet, { backgroundColor: palette.surface.default, borderColor: palette.border.subtle }]}>
+            <Text style={[styles.actionSheetTitle, { color: palette.text.primary }]}>
+              {t("member.profilePhoto.profilePhoto")}
+            </Text>
+            <Text style={[styles.actionSheetBody, { color: palette.text.secondary }]}>
+              {t("member.profilePhoto.updateProfilePhoto")}
+            </Text>
+            <PhotoActionButton
+              label={t("member.profilePhoto.takePhoto")}
+              icon="camera-outline"
+              onPress={() => void runPhotoAction("camera")}
+            />
+            <PhotoActionButton
+              label={t("member.profilePhoto.chooseFromLibrary")}
+              icon="image-outline"
+              onPress={() => void runPhotoAction("library")}
+            />
+            {hasPhoto ? (
+              <PhotoActionButton
+                label={t("member.profilePhoto.remove")}
+                icon="trash-outline"
+                danger
+                onPress={() => void runPhotoAction("remove")}
+              />
+            ) : null}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+function PhotoActionButton({
+  danger = false,
+  icon,
+  label,
+  onPress,
+}: {
+  danger?: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  const { palette } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionSheetButton,
+        { borderColor: palette.border.subtle, backgroundColor: palette.surface.raised },
+        pressed ? styles.pressed : null,
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={danger ? palette.feedback.danger : palette.text.secondary} />
+      <Text style={[styles.actionSheetButtonText, { color: danger ? palette.feedback.danger : palette.text.primary }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -373,5 +462,39 @@ const styles = StyleSheet.create({
   pressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.82,
+  },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.46)",
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 18,
+  },
+  actionSheet: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+    maxWidth: 440,
+    padding: 16,
+    width: "100%",
+  },
+  actionSheetTitle: {
+    ...typography.cardTitle,
+  },
+  actionSheetBody: {
+    ...typography.small,
+    marginBottom: 4,
+  },
+  actionSheetButton: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  actionSheetButtonText: {
+    ...typography.bodyStrong,
   },
 });

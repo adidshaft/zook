@@ -1,23 +1,32 @@
-# 📚 Zook User Handbooks
+# Zook User Handbooks
 
-> Use these handbooks for tomorrow's production testing and for onboarding each role.
+Use these handbooks for production testing, onboarding, and role training.
 
 ---
 
-## 👥 Role Handbooks
+## Start Here
+
+| Guide | Use it for |
+| --- | --- |
+| [user-manual-en.md](./user-manual-en.md) | Full English user manual — every role, step by step, with FAQs |
+| [user-manual-hi.md](./user-manual-hi.md) | पूरा हिन्दी user manual — हर role, step by step, FAQs के साथ |
+
+---
+
+## Role Handbooks
 
 | Role | Handbook | Primary surface |
 | --- | --- | --- |
-| 👑 Owner | [owner-handbook.md](./owner-handbook.md) | Web `/dashboard` + mobile `/owner` |
-| 🧑‍💼 Admin | [admin-handbook.md](./admin-handbook.md) | Web `/dashboard` + mobile `/owner` |
-| 🎫 Receptionist | [receptionist-handbook.md](./receptionist-handbook.md) | Web `/desk` + mobile `/reception` |
-| 🏃 Trainer | [trainer-handbook.md](./trainer-handbook.md) | Mobile `/trainer` + web `/coach` |
-| 🏋️ Member | [member-handbook.md](./member-handbook.md) | Mobile app + public web |
-| 🛠️ Platform operator | [platform-status-handbook.md](./platform-status-handbook.md) | Web `/platform` |
+| Owner | [owner-handbook.md](./owner-handbook.md) | Web `/dashboard` + mobile `/owner` |
+| Admin | [admin-handbook.md](./admin-handbook.md) | Web `/dashboard` + mobile `/owner` |
+| Receptionist | [receptionist-handbook.md](./receptionist-handbook.md) | Web `/desk` + mobile `/reception` |
+| Trainer | [trainer-handbook.md](./trainer-handbook.md) | Mobile `/trainer` + web `/coach` |
+| Member | [member-handbook.md](./member-handbook.md) | Mobile app + public web |
+| Platform operator | [platform-status-handbook.md](./platform-status-handbook.md) | Web `/platform` |
 
 ---
 
-## 🧪 Testing Helpers
+## Testing Helpers
 
 | Guide | Use it for |
 | --- | --- |
@@ -26,7 +35,7 @@
 
 ---
 
-## ✅ Tomorrow's Production Test Rule
+## Production Test Rule
 
 Read-only smoke is safe in production:
 - Open pages.

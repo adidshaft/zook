@@ -7,7 +7,7 @@ import {
   markShopOrderPaid,
   validateManualMembershipPaymentAmount,
 } from "@zook/core/services";
-import { prisma } from "@zook/db";
+import { Prisma, prisma } from "@zook/db";
 import { writeAuditLog } from "../audit";
 import { conflictError, forbiddenError, notFoundError, validationError } from "../errors";
 import { ensurePaymentInvoiceDocument } from "../invoices/generate";
@@ -136,10 +136,13 @@ async function handleManualPaymentRequest(request: NextRequest, orgId: string, r
       if (!reservation) {
         await Promise.all(
           items.map(async (item) => {
-            await tx.product.update({
-              where: { id: item.productId },
+            const stockUpdate = await tx.product.updateMany({
+              where: { id: item.productId, stock: { gte: item.quantity } },
               data: { stock: { decrement: item.quantity } },
             });
+            if (stockUpdate.count !== 1) {
+              throw conflictError("Product out of stock");
+            }
             await tx.inventoryMovement.create({
               data: {
                 orgId,
@@ -296,24 +299,39 @@ async function handleManualPaymentRequest(request: NextRequest, orgId: string, r
         publicVisible: plan.publicVisible,
       }),
     );
-    payment = await prisma.payment.create({
-      data: clean({
-        ...basePaymentData,
-        branchId: existingSubscription.branchId ?? deskBranchId,
-      }),
-    });
-    subscription = await prisma.memberSubscription.update({
-      where: { id: existingSubscription.id },
-      data: clean({
-        branchId: existingSubscription.branchId ?? deskBranchId,
-        status: "ACTIVE",
-        startsAt: window.startsAt,
-        endsAt: window.endsAt,
-        remainingVisits: window.remainingVisits,
-        paymentId: payment.id,
-        activatedById: userId,
-      }),
-    });
+    const activationBranchId = existingSubscription.branchId ?? deskBranchId;
+    const activation = await prisma.$transaction(
+      async (tx) => {
+        const createdPayment = await tx.payment.create({
+          data: clean({ ...basePaymentData, branchId: activationBranchId }),
+        });
+        // Compare-and-swap: only one desk entry can flip the subscription to
+        // ACTIVE. If it is already active (e.g. a concurrent record), the whole
+        // transaction rolls back so the payment above is never persisted.
+        const activated = await tx.memberSubscription.updateMany({
+          where: { id: existingSubscription.id, status: { not: "ACTIVE" } },
+          data: clean({
+            branchId: activationBranchId,
+            status: "ACTIVE",
+            startsAt: window.startsAt,
+            endsAt: window.endsAt,
+            remainingVisits: window.remainingVisits,
+            paymentId: createdPayment.id,
+            activatedById: userId,
+          }),
+        });
+        if (activated.count !== 1) {
+          throw conflictError("Subscription is already active");
+        }
+        const activatedSubscription = await tx.memberSubscription.findUnique({
+          where: { id: existingSubscription.id },
+        });
+        return { payment: createdPayment, subscription: activatedSubscription };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    payment = activation.payment;
+    subscription = activation.subscription;
   } else {
     const planId = body.planId;
     if (!planId) {
@@ -356,23 +374,31 @@ async function handleManualPaymentRequest(request: NextRequest, orgId: string, r
         publicVisible: plan.publicVisible,
       }),
     );
-    payment = await prisma.payment.create({
-      data: clean({ ...basePaymentData, branchId: branch.id }),
-    });
-    subscription = await prisma.memberSubscription.create({
-      data: clean({
-        orgId,
-        branchId: branch.id,
-        memberUserId,
-        planId: plan.id,
-        status: "ACTIVE",
-        startsAt: window.startsAt,
-        endsAt: window.endsAt,
-        remainingVisits: window.remainingVisits,
-        paymentId: payment.id,
-        activatedById: userId,
-      }),
-    });
+    const created = await prisma.$transaction(
+      async (tx) => {
+        const createdPayment = await tx.payment.create({
+          data: clean({ ...basePaymentData, branchId: branch.id }),
+        });
+        const createdSubscription = await tx.memberSubscription.create({
+          data: clean({
+            orgId,
+            branchId: branch.id,
+            memberUserId,
+            planId: plan.id,
+            status: "ACTIVE",
+            startsAt: window.startsAt,
+            endsAt: window.endsAt,
+            remainingVisits: window.remainingVisits,
+            paymentId: createdPayment.id,
+            activatedById: userId,
+          }),
+        });
+        return { payment: createdPayment, subscription: createdSubscription };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    payment = created.payment;
+    subscription = created.subscription;
   }
   await ensureOrganizationMembership({
     orgId,

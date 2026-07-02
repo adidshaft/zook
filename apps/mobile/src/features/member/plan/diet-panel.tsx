@@ -143,7 +143,7 @@ export function DietPanel() {
           icon="calendar-outline"
           onPress={() => router.push("/diet-history" as never)}
         >
-          View diet history
+          {t("member.diet.viewHistory")}
         </ZookButton>
       </Card>
       ) : null}

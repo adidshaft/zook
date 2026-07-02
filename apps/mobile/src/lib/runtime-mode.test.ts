@@ -21,6 +21,10 @@ describe("mobile runtime mode", () => {
     expoConstants.manifest = undefined;
     expoConstants.manifest2 = undefined;
     delete process.env.EXPO_PUBLIC_API_MODE;
+    delete process.env.APP_ENV;
+    delete process.env.EXPO_PUBLIC_APP_ENV;
+    delete process.env.EXPO_PUBLIC_ENV_PROFILE;
+    delete process.env.EXPO_PUBLIC_INCLUDE_DEMO;
     delete process.env.MOBILE_API_MODE;
     delete process.env.API_MODE;
     delete process.env.EXPO_PUBLIC_DEMO;
@@ -58,5 +62,24 @@ describe("mobile runtime mode", () => {
     const { getMobileApiMode } = await import("./runtime-mode");
 
     expect(getMobileApiMode()).toBe("offline-demo");
+  });
+
+  it("denies demo and QA route guards in production mode", async () => {
+    process.env.APP_ENV = "production";
+    process.env.EXPO_PUBLIC_API_MODE = "offline-demo";
+    const { getMobileRuntimeConfigError, isOfflineDemoEnabled } = await import("./runtime-mode");
+
+    expect(isOfflineDemoEnabled()).toBe(false);
+    expect(getMobileRuntimeConfigError()).toBe(
+      "Local test mode is only available in local builds.",
+    );
+  });
+
+  it("enables demo and QA route guards only for local offline-demo builds", async () => {
+    process.env.APP_ENV = "local";
+    process.env.EXPO_PUBLIC_API_MODE = "offline-demo";
+    const { isOfflineDemoEnabled } = await import("./runtime-mode");
+
+    expect(isOfflineDemoEnabled()).toBe(true);
   });
 });

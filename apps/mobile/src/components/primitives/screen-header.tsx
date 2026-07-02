@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
@@ -10,7 +11,9 @@ import { normalizeWebUrl } from "@/lib/api";
 import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite";
 import { useReduceMotion } from "@/lib/motion";
 import { materials, spacing, typography, useTheme } from "@/lib/theme";
-import { gymBrandColor } from "@/lib/gym-brand";
+import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
+import { useT } from "@/lib/i18n";
+import { ProfileShortcut } from "./profile-shortcut";
 
 type HeaderContext = {
   orgName: string;
@@ -20,30 +23,78 @@ type HeaderContext = {
 };
 
 export function ScreenHeader({
+  eyebrow,
   title,
   subtitle,
   titleAccessory,
+  titleScale = "large",
+  hideExpandedTitle = false,
   context,
   contextSlot,
+  leading,
   trailing,
+  chip,
   meta,
   scrollY,
+  titleNumberOfLines = 1,
+  centered = false,
+  showProfileShortcut = false,
+  showBack = false,
+  onBack,
   style,
 }: {
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   titleAccessory?: ReactNode;
+  titleScale?: "large" | "compact";
+  hideExpandedTitle?: boolean;
   context?: HeaderContext;
   contextSlot?: ReactNode;
+  leading?: ReactNode;
   trailing?: ReactNode;
+  chip?: ReactNode;
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
+  titleNumberOfLines?: number;
+  centered?: boolean;
+  showProfileShortcut?: boolean;
+  showBack?: boolean;
+  onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const { mode, palette } = useTheme();
+  const router = useRouter();
+  const t = useT();
   const reduceMotion = useReduceMotion();
   const glass = materials.glassBar(mode);
   const tonal = materials.tonalBar(mode);
+  let resolvedLeading = leading;
+  const wantsBack = !resolvedLeading && (showBack || (!centered && router.canGoBack()));
+  if (wantsBack) {
+    resolvedLeading = (
+      <Pressable
+        onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
+        accessibilityRole="button"
+        accessibilityLabel={t("common.back")}
+        hitSlop={12}
+        style={({ pressed }) => [
+          styles.backButton,
+          {
+            backgroundColor: palette.bg.elevated,
+            borderColor: palette.border.default,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+      >
+        <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+      </Pressable>
+    );
+  } else if (!resolvedLeading && !centered && showProfileShortcut) {
+    resolvedLeading = (
+      <ProfileShortcut accessibilityLabel={`${t("member.home.open")} ${t("settings.profileTitle")}`} />
+    );
+  }
 
   const titleStyle = useAnimatedStyle(() => {
     const y = scrollY?.value ?? 0;
@@ -92,8 +143,9 @@ export function ScreenHeader({
         </Text>
       </Reanimated.View>
 
-      {contextSlot || context || trailing ? (
-        <View style={styles.utilityRow}>
+      {resolvedLeading || contextSlot || context || trailing ? (
+        <View style={[styles.utilityRow, centered ? styles.utilityRowCentered : null]}>
+          {resolvedLeading ? <View style={styles.leadingSlot}>{resolvedLeading}</View> : null}
           {contextSlot || context ? (
             <View style={styles.utilityLeading}>
               {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : null}
@@ -102,25 +154,40 @@ export function ScreenHeader({
           {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
         </View>
       ) : null}
-      <Reanimated.View style={[styles.titleBlock, titleStyle]}>
-        <View style={styles.titleRow}>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.title,
-              titleAccessory ? styles.titleWithAccessory : null,
-              { color: palette.text.primary },
-            ]}
-          >
-            {title}
-          </Text>
-          {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
-        </View>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
-        ) : null}
-        {meta ? <View style={styles.meta}>{meta}</View> : null}
-      </Reanimated.View>
+      {hideExpandedTitle ? null : (
+        <Reanimated.View style={[styles.titleBlock, centered ? styles.titleBlockCentered : null, titleStyle]}>
+          {chip}
+          {eyebrow ? (
+            <Text style={[styles.eyebrow, centered ? styles.centerText : null, { color: palette.text.tertiary }]}>
+              {eyebrow}
+            </Text>
+          ) : null}
+          <View style={styles.titleRow}>
+            <Text
+              numberOfLines={titleNumberOfLines}
+              style={[
+                styles.title,
+                titleScale === "compact" ? styles.titleCompact : null,
+                titleAccessory ? styles.titleWithAccessory : null,
+                centered ? styles.centerText : null,
+                { color: palette.text.primary },
+              ]}
+            >
+              {title}
+            </Text>
+            {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
+          </View>
+          {subtitle ? (
+            <Text
+              numberOfLines={1}
+              style={[styles.subtitle, centered ? styles.centerText : null, { color: palette.text.secondary }]}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+          {meta ? <View style={styles.meta}>{meta}</View> : null}
+        </Reanimated.View>
+      )}
     </View>
   );
 }
@@ -144,14 +211,24 @@ function ContextPill({ context }: { context: HeaderContext }) {
       ]}
     >
       <GymLogoAvatar orgName={context.orgName} logoUrl={context.logoUrl} />
-      <Text numberOfLines={1} style={[styles.contextText, { color: palette.text.primary }]}>
-        {context.orgName}
-      </Text>
-      {context.roleTag ? (
-        <Text numberOfLines={1} style={[styles.roleTag, { color: palette.text.secondary }]}>
-          {context.roleTag}
+      <View style={styles.contextCopy}>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[styles.contextText, { color: palette.text.primary }]}
+        >
+          {context.orgName}
         </Text>
-      ) : null}
+        {context.roleTag ? (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.roleTag, { color: palette.text.secondary }]}
+          >
+            {context.roleTag}
+          </Text>
+        ) : null}
+      </View>
       <Ionicons name="chevron-down" size={14} color={palette.text.tertiary} />
     </Pressable>
   );
@@ -159,7 +236,7 @@ function ContextPill({ context }: { context: HeaderContext }) {
 
 function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string | null }) {
   const [didFail, setDidFail] = useState(false);
-  const normalizedLogoUrl = normalizeWebUrl(logoUrl);
+  const normalizedLogoUrl = seededGymLogoDataUri(logoUrl) ?? normalizeWebUrl(logoUrl);
   const brand = gymBrandColor(orgName);
 
   useEffect(() => {
@@ -172,6 +249,8 @@ function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string
         source={{ uri: normalizedLogoUrl }}
         style={styles.avatarImage}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        recyclingKey={normalizedLogoUrl}
         transition={120}
         onError={() => setDidFail(true)}
       />
@@ -224,10 +303,18 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   utilityRow: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
     gap: Platform.OS === "android" ? spacing.xs : spacing.sm,
     minHeight: 0,
+  },
+  utilityRowCentered: {
+    justifyContent: "center",
+  },
+  leadingSlot: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginRight: spacing.xs,
   },
   utilityLeading: {
     alignItems: "center",
@@ -239,6 +326,7 @@ const styles = StyleSheet.create({
   },
   trailing: {
     alignItems: "center",
+    alignSelf: "flex-start",
     flexDirection: "row",
     gap: spacing.xs,
     marginLeft: "auto",
@@ -247,15 +335,17 @@ const styles = StyleSheet.create({
   contextPill: {
     alignItems: "center",
     borderCurve: "continuous",
-    borderRadius: 999,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
+    flexShrink: 1,
     gap: spacing.xs,
     maxWidth: "100%",
-    minHeight: 36,
+    minHeight: 42,
     minWidth: 0,
-    paddingLeft: 6,
-    paddingRight: spacing.sm,
+    paddingLeft: 7,
+    paddingRight: 9,
+    paddingVertical: 4,
   },
   avatar: {
     alignItems: "center",
@@ -270,23 +360,39 @@ const styles = StyleSheet.create({
     width: 20,
   },
   avatarText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 10,
+    ...typography.eyebrow,
     lineHeight: 12,
   },
-  contextText: {
-    ...typography.caption,
+  contextCopy: {
+    alignItems: "flex-start",
+    flex: 1,
     flexShrink: 1,
     minWidth: 0,
   },
+  contextText: {
+    ...typography.small,
+    lineHeight: 15,
+    flexShrink: 1,
+    fontFamily: "Inter_700Bold",
+    minWidth: 0,
+    textAlign: "left",
+    width: "100%",
+  },
   roleTag: {
-    ...typography.caption,
-    maxWidth: Platform.OS === "android" ? 56 : 76,
+    ...typography.eyebrow,
+    lineHeight: 11.5,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: "left",
+    width: "100%",
   },
   titleBlock: {
     alignSelf: "stretch",
     gap: spacing.xs,
     width: "100%",
+  },
+  titleBlockCentered: {
+    alignItems: "center",
   },
   titleRow: {
     alignItems: "center",
@@ -298,11 +404,20 @@ const styles = StyleSheet.create({
   },
   title: {
     // Tab-root screens intentionally use the larger landing-page title scale;
-    // pushed screens route through AppHeader's compact headerTitle token.
+    // pushed screens route through ScreenHeader's compact headerTitle token.
     ...typography.screenTitle,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
+  },
+  titleCompact: {
+    ...typography.headerTitle,
+  },
+  centerText: {
+    textAlign: "center",
+  },
+  eyebrow: {
+    ...typography.eyebrow,
   },
   titleWithAccessory: {
     paddingRight: spacing.sm,
@@ -316,6 +431,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.small,
+  },
+  backButton: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
   },
   meta: {
     alignItems: "center",

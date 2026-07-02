@@ -5,9 +5,23 @@ import { MemberList } from "@/components/domain/member-list";
 import { toneForStatus } from "@/components/membership/helpers";
 import { AuditWarning, Card, FormField, ListRow, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
 import { formatAgeLabel, titleCaseFromCode } from "@/lib/formatting";
-import { useI18n } from "@/lib/i18n";
+import { type TranslationKey, useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useReceptionWorkspace, receptionWorkspaceStyles as styles } from "../reception-workspace";
+
+const membershipStatusLabelKeys: Record<string, TranslationKey> = {
+  ACTIVE: "memberList.status.active",
+  EXPIRED: "memberList.status.expired",
+  PAST_DUE: "memberList.status.expired",
+  PENDING: "memberList.status.pending",
+  PENDING_PAYMENT: "memberList.status.pending",
+};
+
+function membershipStatusLabel(status: string | null | undefined, t: ReturnType<typeof useI18n>["t"]) {
+  const key = String(status ?? "").toUpperCase();
+  const labelKey = membershipStatusLabelKeys[key];
+  return labelKey ? t(labelKey) : titleCaseFromCode(status);
+}
 
 export function ReceptionMembersScreenBody() {
   const { palette } = useTheme();
@@ -154,7 +168,7 @@ export function ReceptionMembersScreenBody() {
                   subtitle={member?.fitnessGoal ?? profile?.fitnessGoal ?? t("reception.members.generalFitness")}
                   trailing={
                     <Pill tone={membership ? toneForStatus(membership.status) : "amber"}>
-                      {membership ? titleCaseFromCode(membership.status) : t("reception.members.noMembership")}
+                      {membership ? membershipStatusLabel(membership.status, t) : t("reception.members.noMembership")}
                     </Pill>
                   }
                 />

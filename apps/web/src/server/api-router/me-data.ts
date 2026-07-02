@@ -17,13 +17,17 @@ import { resolveSessionSummaryFromToken } from "../session";
 import { getClientIp } from "../security";
 import { writeAuditLog } from "../audit";
 import {
-  assertActiveContextOrg,
   assertContactIdentifierAvailable,
+  contactOtpPurpose,
+  PrismaAuthRepo,
+  serializeUserForClient,
+} from "./auth-helpers";
+import {
+  assertActiveContextOrg,
   attendanceCheckoutSchema,
   attendanceDetailParamsSchema,
   clean,
   closeAttendanceSession,
-  contactOtpPurpose,
   enrichAttendanceRecords,
   ensurePaymentInvoice,
   ensurePaymentReceipt,
@@ -39,11 +43,9 @@ import {
   memberWellnessProfileSchema,
   parseMemberProfileNotes,
   pathMatches,
-  PrismaAuthRepo,
   profilePhotoAssetSchema,
   receiptHtml,
   sanitizeRichText,
-  serializeUserForClient,
 } from "./core";
 
 export async function handleMeData(request: NextRequest, path: string[]) {

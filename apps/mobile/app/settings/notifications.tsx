@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { Card, AppHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
+import { Card, ScreenHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { useT } from "@/lib/i18n";
@@ -13,10 +14,10 @@ import { useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 
 const rows = [
-  { key: "transactional", titleKey: "settings.paymentsReceipts" },
-  { key: "operational", titleKey: "settings.gymOperations" },
-  { key: "engagement", titleKey: "settings.trainingReminders" },
-  { key: "promotional", titleKey: "settings.offers" },
+  { key: "transactional", titleKey: "settings.paymentsReceipts", subtitleKey: "settings.paymentsReceiptsSubtitle", icon: "receipt-outline" },
+  { key: "operational", titleKey: "settings.gymOperations", subtitleKey: "settings.gymOperationsSubtitle", icon: "business-outline" },
+  { key: "engagement", titleKey: "settings.trainingReminders", subtitleKey: "settings.trainingRemindersSubtitle", icon: "barbell-outline" },
+  { key: "promotional", titleKey: "settings.offers", subtitleKey: "settings.offersSubtitle", icon: "pricetag-outline" },
 ] as const;
 
 export default function NotificationSettingsScreen() {
@@ -48,25 +49,65 @@ export default function NotificationSettingsScreen() {
     <>
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("settings.notifications")} showBack />
+          <ScreenHeader title={t("settings.notifications")} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
-            <PreferenceRow title={t("settings.pushNotifications")} value={preferences.pushEnabled} disabled={pendingKey === "pushEnabled"} onChange={(value) => void update("pushEnabled", value)} />
+            <PreferenceRow
+              icon="notifications-outline"
+              subtitle={t("settings.pushNotificationsSubtitle")}
+              title={t("settings.pushNotifications")}
+              value={preferences.pushEnabled}
+              disabled={pendingKey === "pushEnabled"}
+              onChange={(value) => void update("pushEnabled", value)}
+            />
             {rows.map((row) => (
-              <PreferenceRow key={row.key} title={t(row.titleKey)} value={preferences[row.key]} disabled={pendingKey === row.key} onChange={(value) => void update(row.key, value)} />
+              <PreferenceRow
+                key={row.key}
+                icon={row.icon}
+                subtitle={t(row.subtitleKey)}
+                title={t(row.titleKey)}
+                value={preferences[row.key]}
+                disabled={pendingKey === row.key}
+                onChange={(value) => void update(row.key, value)}
+              />
             ))}
           </Card>
-          <Text style={[styles.note, { color: palette.text.secondary }]}>{t("settings.activeGymPreferenceNote")}</Text>
+          <View style={[styles.noteRail, { borderColor: palette.border.subtle, backgroundColor: palette.surface.default }]}>
+            <Ionicons name="business-outline" size={14} color={palette.text.secondary} />
+            <Text style={[styles.note, { color: palette.text.secondary }]} numberOfLines={2}>
+              {t("settings.activeGymPreferenceNote")}
+            </Text>
+          </View>
         </ScrollView>
       </ZookScreen>
     </>
   );
 }
 
-function PreferenceRow({ disabled, onChange, title, value }: { disabled?: boolean; onChange: (value: boolean) => void; title: string; value: boolean }) {
+function PreferenceRow({
+  disabled,
+  icon,
+  onChange,
+  subtitle,
+  title,
+  value,
+}: {
+  disabled?: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  onChange: (value: boolean) => void;
+  subtitle: string;
+  title: string;
+  value: boolean;
+}) {
   const { palette } = useTheme();
   return (
-    <View style={styles.row}>
-      <Text style={[styles.title, { color: palette.text.primary }]}>{title}</Text>
+    <View style={[styles.row, disabled ? styles.rowDisabled : null]}>
+      <View style={[styles.iconBox, { backgroundColor: palette.surface.default }]}>
+        <Ionicons name={icon} size={18} color={palette.text.secondary} />
+      </View>
+      <View style={styles.copy}>
+        <Text style={[styles.title, { color: palette.text.primary }]} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.subtitle, { color: palette.text.secondary }]} numberOfLines={2}>{subtitle}</Text>
+      </View>
       <ThemedSwitch value={value} disabled={disabled} onValueChange={onChange} />
     </View>
   );
@@ -81,8 +122,21 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
-  stack: { gap: spacing.md },
-  row: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
-  title: typography.cardTitle,
-  note: typography.small,
+  stack: { gap: spacing.xs },
+  row: { alignItems: "center", flexDirection: "row", gap: spacing.sm, minHeight: 52 },
+  rowDisabled: { opacity: 0.68 },
+  iconBox: { alignItems: "center", borderRadius: 12, height: 34, justifyContent: "center", width: 34 },
+  copy: { flex: 1, gap: 2, minWidth: 0 },
+  title: typography.bodyStrong,
+  subtitle: typography.small,
+  noteRail: {
+    alignItems: "center",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  note: { ...typography.small, flex: 1, minWidth: 0 },
 });

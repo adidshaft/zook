@@ -22,11 +22,25 @@ export function SectionHeader({
         <Text style={[styles.sectionEyebrow, { color: palette.text.tertiary }]}>{eyebrow}</Text>
       ) : null}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: palette.text.primary }]}>{title}</Text>
-        {action ? <View>{action}</View> : null}
+        <Text
+          adjustsFontSizeToFit
+          minimumFontScale={0.84}
+          numberOfLines={1}
+          style={[styles.sectionTitle, { color: palette.text.primary }]}
+        >
+          {title}
+        </Text>
+        {action ? <View style={styles.sectionAction}>{action}</View> : null}
       </View>
       {subtitle ? (
-        <Text style={[styles.sectionSubtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+        <Text
+          adjustsFontSizeToFit
+          minimumFontScale={0.88}
+          numberOfLines={1}
+          style={[styles.sectionSubtitle, { color: palette.text.secondary }]}
+        >
+          {subtitle}
+        </Text>
       ) : null}
     </View>
   );
@@ -49,11 +63,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    textTransform: "uppercase",
+    ...typography.body,
+    fontWeight: "700",
     letterSpacing: 0,
-    lineHeight: 18,
+    lineHeight: 20,
+    minWidth: 0,
+  },
+  sectionAction: {
+    flexShrink: 0,
   },
   sectionSubtitle: {
     ...typography.small,

@@ -247,7 +247,8 @@ export async function handlePushDevices(request: NextRequest, path: string[]) {
     if (!normalizedPhone) {
       throw validationError("Enter a valid Indian WhatsApp phone number.");
     }
-    // TODO: Require OTP verification once WhatsApp Business API onboarding is complete.
+    // Manual WhatsApp registration is restricted to authenticated users and rate-limited here.
+    // Provider-side OTP verification should wrap this same upsert when WhatsApp onboarding is enabled.
     const device = await prisma.whatsAppDevice.upsert({
       where: {
         provider_phone_userId: {

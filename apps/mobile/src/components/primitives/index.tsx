@@ -1,12 +1,12 @@
 export * from "./buttons";
-export * from "./app-header";
 export { BrandMark, Card, ZookScreen } from "./foundation";
 export { MetricTile, InfoRow, StatusRing } from "./metric-primitives";
 export { MoneySummaryCard, OperationalQueueCard } from "./summary-cards";
 export { ProgressBar } from "./progress-bar";
+export { TrendSparkline } from "./trend-sparkline";
+export type { TrendSparklinePoint } from "./trend-sparkline";
 export * from "./feedback-primitives";
 export {
-  ExerciseRow,
   FormField,
   Input,
   ListRow,
@@ -15,6 +15,7 @@ export {
   SearchField,
   SegmentedControl,
 } from "./input-primitives";
+export { ExerciseRow } from "@/features/member/plan/exercise-row";
 export { DatePickerField } from "./date-picker-field";
 export { OtpInput } from "./otp-input";
 export type { OtpInputHandle } from "./otp-input";
@@ -24,6 +25,7 @@ export { ProfileShortcut } from "./profile-shortcut";
 export { HeaderActions } from "./header-actions";
 export { SectionHeader } from "./section-header";
 export * from "./chips";
+export { BranchSelectorChip } from "../branch-selector";
 export * from "./switch";
 export * from "./bottom-nav-context";
 export * from "./keyboard-aware-screen";

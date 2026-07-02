@@ -79,4 +79,48 @@ describe("gym discovery", () => {
     expect(results[0]?.id).toBe("near");
     expect(results[0]?.distanceMeters).toBeLessThan(results[1]?.distanceMeters ?? Infinity);
   });
+
+  it("matches search queries against city, address, state, and pincode", () => {
+    const gyms = [
+      {
+        id: "pune",
+        name: "Aarogya Strength",
+        username: "aarogya-strength",
+        address: "Koregaon Park Road",
+        city: "Pune",
+        state: "Maharashtra",
+        pincode: "411001",
+        visibility: "PUBLIC",
+        joinMode: "OPEN_JOIN",
+        latitude: 18.52,
+        longitude: 73.85
+      },
+      {
+        id: "kanpur",
+        name: "Your Fitness",
+        username: "your-fitness",
+        address: "Civil Lines",
+        city: "Kanpur",
+        state: "Uttar Pradesh",
+        pincode: "208001",
+        visibility: "PUBLIC",
+        joinMode: "OPEN_JOIN",
+        latitude: 26.45,
+        longitude: 80.33
+      }
+    ];
+
+    expect(
+      buildGymDiscoveryResults({ gyms, query: "Pune", mapProvider: new MockMapProvider() })
+        .map((gym) => gym.id),
+    ).toEqual(["pune"]);
+    expect(
+      buildGymDiscoveryResults({ gyms, query: "411001", mapProvider: new MockMapProvider() })
+        .map((gym) => gym.id),
+    ).toEqual(["pune"]);
+    expect(
+      buildGymDiscoveryResults({ gyms, query: "civil", mapProvider: new MockMapProvider() })
+        .map((gym) => gym.id),
+    ).toEqual(["kanpur"]);
+  });
 });

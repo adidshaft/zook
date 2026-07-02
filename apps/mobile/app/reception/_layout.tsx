@@ -65,8 +65,8 @@ export default function ReceptionLayout() {
       <Tabs.Screen
         name="entry-qr"
         options={{
-          title: t("nav.scan"),
-          tabBarButtonTestID: "bottom-nav-scan",
+          title: t("nav.entryQr"),
+          tabBarButtonTestID: "bottom-nav-entry-qr",
           tabBarIcon: ({ color, size }) => <Icon name="scan" size={size} color={color} />,
         }}
       />

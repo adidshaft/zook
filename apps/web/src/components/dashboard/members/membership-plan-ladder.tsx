@@ -5,9 +5,11 @@ import { DataTable, EmptyState, SectionHeader, StatusPill } from "../../dashboar
 import { GlassCard, Pill } from "../../glass-card";
 import {
   formatPlanShape,
+  membershipPlanTypeLabel,
   type MembershipPlanRow,
 } from "@/components/dashboard/types";
-import { formatEnumLabel, formatInr } from "@/lib/format";
+import { formatInr } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 
 type ResourceState<T> = {
   data: T | undefined;
@@ -23,39 +25,43 @@ export function MembershipPlanLadder({
   membershipPlans: MembershipPlanRow[];
   membershipPlansState: ResourceState<{ plans: MembershipPlanRow[] }>;
 }) {
+  const t = useT("members");
+
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Membership plans"
-        title="Membership plan ladder"
-        badge={<Pill>{membershipPlans.length} plans</Pill>}
+        eyebrow={t("membershipPlans")}
+        title={t("membershipPlanLadder")}
+        badge={<Pill>{t("plansCount", { count: membershipPlans.length })}</Pill>}
       />
       <div className="mt-5">
         {membershipPlansState.error ? (
           <ErrorNotice message={membershipPlansState.error} />
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-          <EmptyState title="Loading plan ladder" />
+          <EmptyState title={t("loadingPlanLadder")} />
         ) : (
           <DataTable
             columns={[
               {
                 id: "plan",
-                header: "Plan",
+                header: t("plan"),
                 render: (plan) => (
                   <div>
                     <p className="font-medium text-white">{plan.name}</p>
-                    <p className="mt-1 text-xs text-white/45">{formatEnumLabel(plan.type)}</p>
+                    <p className="mt-1 text-xs text-white/45">
+                      {membershipPlanTypeLabel(plan.type)}
+                    </p>
                   </div>
                 ),
               },
               {
                 id: "shape",
-                header: "Shape",
+                header: t("shape"),
                 render: (plan) => formatPlanShape(plan),
               },
               {
                 id: "price",
-                header: "Price",
+                header: t("price"),
                 align: "right",
                 render: (plan) => (
                   <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
@@ -63,24 +69,23 @@ export function MembershipPlanLadder({
               },
               {
                 id: "state",
-                header: "State",
+                header: t("state"),
                 render: (plan) => (
-                  <div className="flex flex-wrap gap-2">
+                  <div>
                     <StatusPill
-                      value={plan.active ? "Active" : "Paused"}
+                      value={plan.active ? t("active") : t("statusPaused")}
                       tone={plan.active ? "blue" : "amber"}
                     />
-                    <StatusPill
-                      value={plan.publicVisible ? "Public" : "Private"}
-                      tone="neutral"
-                    />
+                    <p className="mt-1 text-xs text-white/45">
+                      {plan.publicVisible ? t("visibleJoinPage") : t("hiddenJoinPage")}
+                    </p>
                   </div>
                 ),
               },
             ]}
             rows={membershipPlans}
             rowKey={(plan) => plan.id}
-            empty="No plans."
+            empty={t("noPlans")}
           />
         )}
       </div>

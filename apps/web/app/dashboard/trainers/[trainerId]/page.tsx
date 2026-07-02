@@ -4,6 +4,7 @@ import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { formatDateTime, formatInr } from "@/lib/format";
 import { requireDashboardSession } from "@/lib/server-auth";
+import { dashboardMessages } from "@/components/dashboard/shell/copy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function TrainerDetailPage({
   if (!session.activeOrgId || !session.activeOrganization?.permissions.includes("TRAINERS_MANAGE")) {
     redirect("/dashboard");
   }
+  const t = dashboardMessages[session.user.preferredLocale === "hi" ? "hi" : "en"].trainers;
   const orgId = session.activeOrgId;
   const { trainerId } = await params;
   const monthStart = new Date();
@@ -58,13 +60,13 @@ export default async function TrainerDetailPage({
     <main className="mx-auto grid max-w-6xl gap-4 p-4 sm:p-6">
       <GlassCard variant="strong">
         <Link href="/dashboard/trainers" className="text-sm font-semibold text-[var(--accent-strong)]">
-          Back to trainers
+          {t.backToTrainers}
         </Link>
         <h1 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">{trainer.name}</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">{trainer.email}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {stringList(profile?.specialties).map((specialty) => <Pill key={specialty}>{specialty}</Pill>)}
-          <Pill>{profile?.visibleToMembers ? "Public profile" : "Internal profile"}</Pill>
+          <Pill>{profile?.visibleToMembers ? t.publicProfile : t.internalProfile}</Pill>
         </div>
         {profile?.bio ? (
           <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">{profile.bio}</p>
@@ -72,14 +74,14 @@ export default async function TrainerDetailPage({
       </GlassCard>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <Metric label="Assigned clients" value={assignments.length} />
-        <Metric label="PT sessions" value={sessionCount} />
-        <Metric label="This month payout" value={formatInr(payout._sum.totalPaise ?? 0)} />
+        <Metric label={t.assignedClients} value={assignments.length} />
+        <Metric label={t.ptSessions} value={sessionCount} />
+        <Metric label={t.thisMonthPayout} value={formatInr(payout._sum.totalPaise ?? 0)} />
       </div>
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <GlassCard>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Assigned clients</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t.assignedClients}</h2>
           <div className="mt-4 grid gap-2">
             {assignments.map((assignment) => {
               const member = memberById.get(assignment.memberUserId);
@@ -89,21 +91,21 @@ export default async function TrainerDetailPage({
                   href={`/dashboard/trainers/${trainerId}/clients/${assignment.memberUserId}`}
                   className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3"
                 >
-                  <p className="font-semibold text-[var(--text-primary)]">{member?.name ?? "Member"}</p>
+                  <p className="font-semibold text-[var(--text-primary)]">{member?.name ?? t.memberFallback}</p>
                   <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                    Assigned {formatDateTime(assignment.createdAt)}
+                    {t.assignedAt.replace("{date}", formatDateTime(assignment.createdAt))}
                   </p>
                 </Link>
               );
             })}
             {!assignments.length ? (
-              <p className="text-sm text-[var(--text-secondary)]">No active client assignments.</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t.noActiveClientAssignments}</p>
             ) : null}
           </div>
         </GlassCard>
 
         <GlassCard>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Upcoming classes</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t.upcomingClasses}</h2>
           <div className="mt-4 grid gap-2">
             {upcomingClasses.map((entry) => (
               <div key={entry.id} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
@@ -114,7 +116,7 @@ export default async function TrainerDetailPage({
               </div>
             ))}
             {!upcomingClasses.length ? (
-              <p className="text-sm text-[var(--text-secondary)]">No upcoming classes.</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t.noUpcomingClasses}</p>
             ) : null}
           </div>
         </GlassCard>

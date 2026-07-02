@@ -1,4 +1,5 @@
 import { Prisma, prisma } from "@zook/db";
+import { toDateKey } from "../shared/date";
 
 interface PlanExerciseSummary {
   id: string;
@@ -109,6 +110,13 @@ export function extractPlanExercises(content: Prisma.JsonValue): PlanExerciseSum
 function completedExerciseNames(progressJson: Prisma.JsonValue | null | undefined) {
   if (!isRecord(progressJson)) {
     return new Set<string>();
+  }
+  const completedAt = typeof progressJson.completedAt === "string" ? progressJson.completedAt : null;
+  if (completedAt) {
+    const completedDate = new Date(completedAt);
+    if (Number.isNaN(completedDate.getTime()) || toDateKey(completedDate) !== toDateKey(new Date())) {
+      return new Set<string>();
+    }
   }
   const values: string[] = [];
   for (const key of ["completedExercises", "completed", "done"]) {

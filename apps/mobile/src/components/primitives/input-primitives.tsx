@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { useState, type ReactNode } from "react";
 import {
   Pressable,
@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { gradients, gradientsLight, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { useT } from "@/lib/i18n";
 import { pressWithHaptics } from "./buttons";
 import { Card } from "./foundation";
 import { IconBubble } from "./icon-bubble";
@@ -79,7 +80,7 @@ export function ListRow({
     >
       {leading ?? (icon ? <IconBubble icon={icon} tone={tone} size={40} /> : null)}
       <View style={styles.listRowCopy}>
-        <Text numberOfLines={1} style={[styles.listRowTitle, { color: palette.text.primary }]}>
+        <Text numberOfLines={2} style={[styles.listRowTitle, { color: palette.text.primary }]}>
           {title}
         </Text>
         {subtitle ? (
@@ -115,6 +116,7 @@ type TextFieldProps = Omit<TextInputProps, "style"> & {
   required?: boolean;
   readonly?: boolean;
   style?: StyleProp<ViewStyle>;
+  inputWrapperStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -128,6 +130,7 @@ function TextField({
   required = false,
   readonly = false,
   style,
+  inputWrapperStyle,
   inputStyle,
   leading,
   trailing,
@@ -172,6 +175,7 @@ function TextField({
             backgroundColor: inputSurface,
           },
           disabled ? styles.inputWrapperDisabled : null,
+          inputWrapperStyle,
         ]}
       >
         {leading}
@@ -228,8 +232,21 @@ export function SearchBar({
   trailing?: ReactNode;
 }) {
   const { palette } = useTheme();
+  const t = useT();
+  const hasValue = Boolean(value?.trim());
   const resolvedTrailing =
-    trailing ?? <Ionicons name="options-outline" size={17} color={palette.text.tertiary} />;
+    trailing ??
+    (hasValue && onChangeText ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("assistant.clear")}
+        hitSlop={iconOnlyHitSlop}
+        onPress={() => pressWithHaptics(() => onChangeText(""))}
+        style={({ pressed }) => [styles.searchClearButton, pressed ? styles.pressed : null]}
+      >
+        <Ionicons name="close" size={14} color={palette.text.secondary} />
+      </Pressable>
+    ) : null);
   return (
     <TextField
       value={value}
@@ -239,7 +256,7 @@ export function SearchBar({
       autoCorrect={false}
       returnKeyType="search"
       keyboardType="default"
-      clearButtonMode="while-editing"
+      clearButtonMode="never"
       leading={<Ionicons name="search-outline" size={18} color={palette.text.tertiary} />}
       trailing={resolvedTrailing}
       style={style}
@@ -296,12 +313,14 @@ export function ProductCard({
   testID?: string;
 }) {
   const { palette: themePalette, mode } = useTheme();
+  const t = useT();
   const palette = useTonePalette(tone);
   const productGradient = mode === "light" ? PRODUCT_TONE_GRADIENT_LIGHT[tone] : PRODUCT_TONE_GRADIENT[tone];
   const increment = onIncrement ?? onPress;
   const canIncrement = !disabled && !incrementDisabled && Boolean(increment);
   const canDecrement = !disabled && Boolean(onDecrement);
   const addButtonDisabled = !canIncrement;
+  const showStockBadge = tone === "red" || tone === "amber";
 
   return (
     <Card
@@ -321,7 +340,14 @@ export function ProductCard({
         ]}
       >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.productImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={imageUrl}
+            transition={150}
+          />
         ) : (
           <>
             <LinearGradient
@@ -333,26 +359,21 @@ export function ProductCard({
             <Ionicons name={icon} size={40} color={palette.color} />
           </>
         )}
-        {tone === "red" || tone === "amber" ? (
-          <View
-            style={[
-              styles.productBadge,
-              { borderColor: palette.borderColor, backgroundColor: palette.backgroundColor },
-            ]}
-          >
-            <Text style={[styles.productBadgeText, { color: palette.color }]}>{stock}</Text>
-          </View>
-        ) : null}
       </View>
-      <View style={styles.productInfo}>
+      <View style={[styles.productInfo, compact ? styles.productInfoCompact : null]}>
         <Text numberOfLines={2} style={[styles.productName, { color: themePalette.text.primary }]}>
           {name}
         </Text>
-        <Text numberOfLines={1} style={[styles.productMeta, { color: themePalette.text.secondary }]}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+          style={[styles.productMeta, { color: showStockBadge ? palette.color : themePalette.text.secondary }]}
+        >
           {stock}
         </Text>
       </View>
-      <View style={styles.productFooter}>
+      <View style={[styles.productFooter, compact ? styles.productFooterCompact : null]}>
         <Text
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -365,6 +386,7 @@ export function ProductCard({
           <View
             style={[
               styles.productStepper,
+              compact ? styles.productStepperCompact : null,
               {
                 borderColor: themePalette.accent.base,
                 backgroundColor: themePalette.surface.accentSoft,
@@ -378,10 +400,14 @@ export function ProductCard({
               }}
               disabled={!canDecrement}
               accessibilityRole="button"
-              accessibilityLabel={`Remove ${name}`}
+              accessibilityLabel={t("shop.removeProductAccessibility", { name })}
               accessibilityState={{ disabled: !canDecrement }}
               hitSlop={iconOnlyHitSlop}
-              style={[styles.productStepperButton, !canDecrement ? styles.disabled : null]}
+              style={[
+                styles.productStepperButton,
+                compact ? styles.productStepperButtonCompact : null,
+                !canDecrement ? styles.disabled : null,
+              ]}
             >
               <Ionicons name="remove" size={16} color={themePalette.accent.strong} />
             </Pressable>
@@ -393,10 +419,14 @@ export function ProductCard({
               }}
               disabled={!canIncrement}
               accessibilityRole="button"
-              accessibilityLabel={`Add ${name}`}
+              accessibilityLabel={t("shop.addProductAccessibility", { name })}
               accessibilityState={{ disabled: !canIncrement }}
               hitSlop={iconOnlyHitSlop}
-              style={[styles.productStepperButton, !canIncrement ? styles.disabled : null]}
+              style={[
+                styles.productStepperButton,
+                compact ? styles.productStepperButtonCompact : null,
+                !canIncrement ? styles.disabled : null,
+              ]}
             >
               <Ionicons name="add" size={16} color={themePalette.accent.strong} />
             </Pressable>
@@ -409,7 +439,7 @@ export function ProductCard({
             }}
             disabled={!canIncrement}
             accessibilityRole="button"
-            accessibilityLabel={`Add ${name}`}
+            accessibilityLabel={t("shop.addProductAccessibility", { name })}
             accessibilityState={{ disabled: !canIncrement }}
             hitSlop={compact ? { top: 6, bottom: 6, left: 0, right: 0 } : undefined}
             style={[
@@ -430,8 +460,11 @@ export function ProductCard({
                 styles.productAddText,
                 { color: addButtonDisabled ? themePalette.text.tertiary : themePalette.accent.strong },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.72}
             >
-              {disabled ? "OUT" : "ADD"}
+              {disabled ? t("shop.outShort") : t("shop.addShort")}
             </Text>
             <Ionicons
               name="add"
@@ -442,59 +475,6 @@ export function ProductCard({
         )}
       </View>
     </Card>
-  );
-}
-
-export function ExerciseRow({
-  title,
-  detail,
-  sets,
-  complete = false,
-  onPress,
-  style,
-}: {
-  title: string;
-  detail: string;
-  sets?: string;
-  complete?: boolean;
-  onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const { palette } = useTheme();
-  return (
-    <Pressable
-      onPress={() => pressWithHaptics(onPress)}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: complete }}
-      style={({ pressed }) => [
-        styles.exerciseRow,
-        {
-          borderColor: palette.border.subtle,
-          backgroundColor: palette.surface.default,
-        },
-        pressed ? styles.pressed : null,
-        style,
-      ]}
-    >
-      <View
-        style={[
-          styles.exerciseCheck,
-          {
-            borderColor: complete ? palette.accent.strong : palette.border.strong,
-            backgroundColor: complete ? palette.accent.strong : palette.surface.default,
-          },
-        ]}
-      >
-        {complete ? <Ionicons name="checkmark" size={15} color={palette.text.onAccent} /> : null}
-      </View>
-      <IconBubble icon="barbell-outline" tone="neutral" size={38} />
-      <View style={styles.exerciseCopy}>
-        <Text style={[styles.exerciseTitle, { color: palette.text.primary }]}>
-          {sets ? `${title} · ${sets}` : title}
-        </Text>
-        <Text style={[styles.exerciseDetail, { color: palette.text.secondary }]}>{detail}</Text>
-      </View>
-    </Pressable>
   );
 }
 
@@ -510,7 +490,6 @@ export function SegmentedControl<T extends string>({
   const { palette, mode } = useTheme();
   return (
     <View
-      accessibilityRole="radiogroup"
       style={[
         styles.segmentedControl,
         {
@@ -525,7 +504,8 @@ export function SegmentedControl<T extends string>({
           <Pressable
             key={option.value}
             onPress={() => pressWithHaptics(() => onChange(option.value))}
-            accessibilityRole="radio"
+            accessibilityRole="button"
+            accessibilityLabel={option.label}
             accessibilityState={{ selected }}
             style={({ pressed }) => [
               styles.segmentedOption,
@@ -628,6 +608,13 @@ const styles = StyleSheet.create({
   inputError: {
     ...typography.caption,
   },
+  searchClearButton: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
+  },
   productCard: {
     flex: 1,
     minWidth: 0,
@@ -638,7 +625,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   productContentCompact: {
-    gap: 7,
+    gap: 5,
   },
   productVisual: {
     height: 122,
@@ -649,28 +636,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   productVisualCompact: {
-    height: 86,
-    borderRadius: 14,
+    height: 62,
+    borderRadius: 12,
   },
   productImage: {
     width: "100%",
     height: "100%",
   },
-  productBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  productBadgeText: {
-    ...typography.caption,
-  },
   productInfo: {
     gap: 3,
-    minHeight: 44,
+    minHeight: 47,
+  },
+  productInfoCompact: {
+    gap: 1,
+    minHeight: 35,
   },
   productName: {
     ...typography.bodyStrong,
@@ -684,6 +663,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
+  },
+  productFooterCompact: {
+    gap: 6,
   },
   productPrice: {
     ...typography.bodyStrong,
@@ -701,7 +683,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   productAddCompact: {
-    height: 44,
+    width: 72,
+    height: 34,
   },
   productAddText: {
     ...typography.caption,
@@ -716,45 +699,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     overflow: "hidden",
   },
+  productStepperCompact: {
+    width: 82,
+    height: 34,
+    borderRadius: 10,
+  },
   productStepperButton: {
     width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
+  productStepperButtonCompact: {
+    width: 34,
+    height: 34,
+  },
   productQuantity: {
     minWidth: 20,
     ...typography.caption,
     textAlign: "center",
   },
-  exerciseRow: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    borderRadius: radii.large,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  exerciseCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exerciseCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  exerciseTitle: {
-    ...typography.bodyStrong,
-  },
-  exerciseDetail: {
-    ...typography.small,
-  },
+
   segmentedControl: {
     minHeight: 50,
     borderRadius: 20,

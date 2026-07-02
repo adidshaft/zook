@@ -10,32 +10,25 @@ import { ReferralCodeControls } from "../sections/overview/referral-code-control
 import { RouteFeedback } from "./route-feedback";
 import type { GrowthRouteProps } from "./types";
 import { webApiFetch } from "@/lib/api-client";
-
-const copy = {
-  referralsDescription:
-    "Create member, staff, and trainer referral codes with clear monthly limits.",
-  referralEmpty: "Referral performance starts after the first share.",
-  policyDescription: "Set the reward, friend discount, and monthly cap.",
-  maxDiscount: "Maximum discount (%)",
-};
+import { useT } from "@/lib/use-t";
 
 const setupPresets = [
   {
-    label: "7 days + 10% off",
+    labelKey: "preset7Days",
     referrerRewardType: "DAYS" as RewardType,
     referrerRewardValue: "7",
     referredDiscountType: "PERCENTAGE" as DiscountType,
     referredDiscountValue: "1000",
   },
   {
-    label: "3 visits + 5% off",
+    labelKey: "preset3Visits",
     referrerRewardType: "VISITS" as RewardType,
     referrerRewardValue: "3",
     referredDiscountType: "PERCENTAGE" as DiscountType,
     referredDiscountValue: "500",
   },
   {
-    label: "Referral tracking only",
+    labelKey: "presetTrackingOnly",
     referrerRewardType: "NONE" as RewardType,
     referrerRewardValue: "0",
     referredDiscountType: "NONE" as DiscountType,
@@ -56,6 +49,7 @@ function percentToBps(value: string) {
 }
 
 export function ReferralsRouteSection(props: GrowthRouteProps) {
+  const t = useT("plans");
   const isDefaultPolicy =
     props.referralPolicy?.referrerRewardType === "DAYS" &&
     props.referralPolicy.referrerRewardValue === 7 &&
@@ -72,12 +66,12 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
   return (
     <div className="grid gap-4">
       <Section
-        eyebrow="Referrals"
-        title="Referral codes"
-        description={copy.referralsDescription}
+        eyebrow={t("referrals")}
+        title={t("referralCodes")}
+        description={t("referralsDescription")}
         badge={
           <Pill tone={props.referralPolicy?.enabled === false ? "amber" : "blue"}>
-            {props.referralPolicy?.enabled === false ? "Paused" : "Enabled"}
+            {props.referralPolicy?.enabled === false ? t("paused") : t("enabled")}
           </Pill>
         }
       >
@@ -86,42 +80,42 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
             columns={2}
             items={[
               {
-                label: "Active codes",
+                label: t("activeCodes"),
                 value: formatCompactNumber(
                   props.referralAnalytics?.summary.activeCodes ?? props.referrals.length,
                 ),
-                meta: "Available now",
+                meta: t("availableNow"),
               },
               {
-                label: "This month",
+                label: t("thisMonth"),
                 value: formatCompactNumber(
                   props.referralAnalytics?.summary.redemptionsThisMonth ?? 0,
                 ),
-                meta: "Redemptions",
+                meta: t("redemptions"),
               },
               {
-                label: "Credits",
+                label: t("credits"),
                 value: formatCompactNumber(
                   props.referralAnalytics?.summary.rewardCreditsThisMonth ?? 0,
                 ),
-                meta: "Rewards earned",
+                meta: t("rewardsEarned"),
               },
               {
-                label: "Applied",
+                label: t("applied"),
                 value: formatCompactNumber(
                   props.referralAnalytics?.summary.appliedRewardsThisMonth ?? 0,
                 ),
-                meta: "Rewards used",
+                meta: t("rewardsUsed"),
               },
             ]}
           />
           {isDefaultPolicy ? (
             <div className="rounded-[24px] border border-amber-300/20 bg-amber-300/10 p-4">
-              <p className="font-medium text-white">Set up referrals in 60 seconds</p>
+              <p className="font-medium text-white">{t("setupReferrals")}</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-3">
                 {setupPresets.map((preset) => (
                   <button
-                    key={preset.label}
+                    key={preset.labelKey}
                     type="button"
                     className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-left text-sm text-white transition hover:border-lime-300/40"
                     onClick={() =>
@@ -136,14 +130,14 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       }))
                     }
                   >
-                    {preset.label}
+                    {t(preset.labelKey)}
                   </button>
                 ))}
               </div>
             </div>
           ) : null}
           <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-            <p className="font-medium text-white">Top advocates</p>
+            <p className="font-medium text-white">{t("topAdvocates")}</p>
             <div className="mt-3 grid gap-2">
               {(props.referralAnalytics?.topReferrers ?? []).length ? (
                 props.referralAnalytics!.topReferrers.map((item) => (
@@ -154,13 +148,15 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                     <div>
                       <p className="text-sm font-medium text-white">{item.code.code}</p>
                       <p className="text-xs text-white/45">
-                        {item.user?.email ?? item.code.createdByRole} · {item.code.redemptionCount}{" "}
-                        redemptions
+                        {item.user?.email ?? item.code.createdByRole} ·{" "}
+                        {t("redemptionsCount", { count: item.code.redemptionCount })}
                       </p>
                       <p className="text-xs text-white/35">
-                        {item.abuseSignals?.redemptions24h ?? 0} in 24h ·{" "}
-                        {item.abuseSignals?.uniqueInviteePhones ?? 0} phones
-                        {item.abuseSignals?.suspiciousClustering ? " · flagged" : ""}
+                        {t("abuseSignals", {
+                          redemptions: item.abuseSignals?.redemptions24h ?? 0,
+                          phones: item.abuseSignals?.uniqueInviteePhones ?? 0,
+                        })}
+                        {item.abuseSignals?.suspiciousClustering ? ` · ${t("flagged")}` : ""}
                       </p>
                     </div>
                     <StatusPill
@@ -176,7 +172,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                         state={props.formBusy === `referral:${item.code.id}` ? "loading" : "idle"}
                         onClick={() => void props.updateReferral(item.code, "paused")}
                       >
-                        Pause code
+                        {t("pauseCode")}
                       </ZookButton>
                       {item.code.referrerUserId ? (
                         <ZookButtonLink
@@ -184,11 +180,11 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                           size="sm"
                           href={`/dashboard/notifications?audience=single_member&userId=${encodeURIComponent(item.code.referrerUserId)}`}
                         >
-                          Notify
+                          {t("notify")}
                         </ZookButtonLink>
                       ) : (
                         <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/35">
-                          Member not linked
+                          {t("memberNotLinked")}
                         </span>
                       )}
                     </div>
@@ -196,13 +192,13 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                 ))
               ) : (
                 <p className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white/45">
-                  {copy.referralEmpty}
+                  {t("referralEmpty")}
                 </p>
               )}
             </div>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
-            <p className="font-medium text-white">Rewards to close</p>
+            <p className="font-medium text-white">{t("rewardsToClose")}</p>
             <div className="mt-3 grid gap-2">
               {(props.referralAnalytics?.pendingRewards ?? []).length ? (
                 props.referralAnalytics!.pendingRewards!.map((reward) => (
@@ -214,7 +210,9 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       <p className="text-sm font-medium text-white">
                         {reward.rewardValue} {reward.rewardType.toLowerCase()}
                       </p>
-                      <p className="text-xs text-white/45">Referrer {reward.referrerUserId}</p>
+                      <p className="text-xs text-white/45">
+                        {t("referrer", { id: reward.referrerUserId })}
+                      </p>
                     </div>
                     <ZookButton
                       type="button"
@@ -222,13 +220,13 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                       size="sm"
                       onClick={() => void markRewardPaid(reward.id)}
                     >
-                      Mark paid
+                      {t("markPaid")}
                     </ZookButton>
                   </div>
                 ))
               ) : (
                 <p className="rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white/45">
-                  No unpaid referral credits.
+                  {t("noUnpaidReferralCredits")}
                 </p>
               )}
             </div>
@@ -236,7 +234,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
         </div>
       </Section>
 
-      <Section eyebrow="Policy" title="Referral policy" description={copy.policyDescription}>
+      <Section eyebrow={t("policy")} title={t("referralPolicy")} description={t("policyDescription")}>
         <div className="grid gap-4">
           {props.referralPolicyState.error ? (
             <ErrorNotice message={props.referralPolicyState.error} />
@@ -246,7 +244,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
           ) : null}
           <div className="grid gap-3 md:grid-cols-3">
             <Select
-              label="Referrer reward"
+              label={t("referrerReward")}
               value={props.policyForm.referrerRewardType}
               onChange={(event) =>
                 props.setPolicyForm((current) => ({
@@ -255,13 +253,13 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                 }))
               }
               options={[
-                { value: "DAYS", label: "Days" },
-                { value: "VISITS", label: "Visits" },
-                { value: "NONE", label: "No reward" },
+                { value: "DAYS", label: t("days") },
+                { value: "VISITS", label: t("visits") },
+                { value: "NONE", label: t("noReward") },
               ]}
             />
             <TextInput
-              label="Reward value"
+              label={t("rewardValue")}
               value={props.policyForm.referrerRewardValue}
               inputMode="numeric"
               onChange={(event) =>
@@ -272,7 +270,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               }
             />
             <TextInput
-              label="Monthly limit"
+              label={t("monthlyLimit")}
               value={props.policyForm.maxReferralsPerMonth}
               inputMode="numeric"
               onChange={(event) =>
@@ -283,7 +281,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               }
             />
             <Select
-              label="Friend discount"
+              label={t("friendDiscount")}
               value={props.policyForm.referredDiscountType}
               onChange={(event) =>
                 props.setPolicyForm((current) => ({
@@ -292,13 +290,13 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
                 }))
               }
               options={[
-                { value: "PERCENTAGE", label: "Percentage" },
-                { value: "FIXED", label: "Fixed amount" },
-                { value: "NONE", label: "No discount" },
+                { value: "PERCENTAGE", label: t("percentage") },
+                { value: "FIXED", label: t("fixedAmount") },
+                { value: "NONE", label: t("noDiscount") },
               ]}
             />
             <TextInput
-              label="Discount value"
+              label={t("discountValue")}
               value={props.policyForm.referredDiscountValue}
               inputMode="numeric"
               onChange={(event) =>
@@ -309,7 +307,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               }
             />
             <TextInput
-              label={copy.maxDiscount}
+              label={t("maxDiscount")}
               value={bpsToPercent(props.policyForm.maxDiscountCapBps)}
               inputMode="numeric"
               onChange={(event) =>
@@ -321,19 +319,18 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
             />
           </div>
           <p className="text-xs leading-5 text-white/45">
-            For percentage discounts, enter the visible percent value. For fixed discounts, enter
-            rupees.
+            {t("discountHelp")}
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Toggle
-              label="Referral program"
+              label={t("referralProgram")}
               checked={props.policyForm.enabled}
               onCheckedChange={(checked) =>
                 props.setPolicyForm((current) => ({ ...current, enabled: checked }))
               }
             />
             <Toggle
-              label="Trainer codes"
+              label={t("trainerCodes")}
               checked={props.policyForm.trainerReferralEnabled}
               onCheckedChange={(checked) =>
                 props.setPolicyForm((current) => ({
@@ -343,7 +340,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               }
             />
             <Toggle
-              label="Staff codes"
+              label={t("staffCodes")}
               checked={props.policyForm.staffReferralEnabled}
               onCheckedChange={(checked) =>
                 props.setPolicyForm((current) => ({
@@ -359,7 +356,7 @@ export function ReferralsRouteSection(props: GrowthRouteProps) {
               state={props.formBusy === "referral-policy" ? "loading" : "idle"}
               className="ml-auto"
             >
-              {props.formBusy === "referral-policy" ? "Saving..." : "Save policy"}
+              {props.formBusy === "referral-policy" ? t("saving") : t("savePolicy")}
             </ZookButton>
           </div>
           <ReferralCodeControls

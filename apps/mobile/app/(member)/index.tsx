@@ -1,14 +1,7 @@
 import { Stack } from "expo-router";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
@@ -20,6 +13,7 @@ import {
   IconBubble,
   QueryErrorState,
   ScreenHeader,
+  SegmentedControl,
   StatStrip,
   ZookButton,
   ZookScreen,
@@ -38,8 +32,11 @@ import { formatCompactMinutes, formatElapsedTimer } from "@/lib/formatting";
 import { useT } from "@/lib/i18n";
 import { type ActiveCheckIn, useManualCheckout } from "@/lib/use-geofence-checkout";
 import { useSharedValue } from "@/lib/reanimated-lite";
+import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { layout, spacing, typography } from "@/lib/theme";
 import { useTheme } from "@/lib/theme/index";
+
+type HomeSection = "classes" | "coaching" | "week";
 
 function secondsSince(value: string) {
   const startedAt = new Date(value).getTime();
@@ -73,25 +70,22 @@ function ActiveCheckInCard({
   }, [activeCheckIn.checkedInAt]);
 
   return (
-    <Card contentStyle={styles.activeSessionCard}>
+    <Card variant="compact" contentStyle={styles.activeSessionCard}>
       <View style={styles.activeSessionHeader}>
-        <IconBubble icon="time-outline" tone="blue" size={42} />
+        <IconBubble icon="time-outline" tone="blue" size={34} />
         <View style={styles.activeSessionCopy}>
-          <Text style={[styles.activeSessionLabel, { color: palette.text.secondary }]}>
-            {t("member.home.activeCheckIn")}
-          </Text>
-          <Text style={[styles.activeSessionBranch, { color: palette.text.primary }]}>
+          <Text numberOfLines={1} style={[styles.activeSessionBranch, { color: palette.text.primary }]}>
             {activeCheckIn.branchName ?? t("member.home.currentBranch")}
           </Text>
+          <Text numberOfLines={1} style={[styles.activeSessionLabel, { color: palette.text.secondary }]}>
+            {t("member.home.activeCheckIn")}
+          </Text>
         </View>
+        <Text style={[styles.activeSessionTimer, { color: palette.accent.base }]}>
+          {formatElapsedTimer(elapsedSeconds)}
+        </Text>
       </View>
-      <Text style={[styles.activeSessionTimer, { color: palette.accent.base }]}>
-        {formatElapsedTimer(elapsedSeconds)}
-      </Text>
-      <Text style={[styles.activeSessionHint, { color: palette.text.secondary }]}>
-        {t("member.home.activeCheckInHint")}
-      </Text>
-      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary">
+      <ZookButton onPress={onStop} disabled={busy} icon="stop-circle-outline" variant="secondary" size="sm">
         {busy ? t("member.home.stoppingSession") : t("member.home.stopSession")}
       </ZookButton>
     </Card>
@@ -104,18 +98,26 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
   const t = useT();
   const membership = home?.activeMembership;
   const organization = home?.activeOrganization;
+  const gymName = organization?.name?.trim();
   const daysLeft = membership?.daysLeft;
   const visitsLeft = membership?.remainingVisits;
   const hasMembership = Boolean(membership);
   const isExpired =
     hasMembership &&
-    (String(membership?.status ?? "").toLowerCase().includes("expired") ||
+    (String(membership?.status ?? "")
+      .toLowerCase()
+      .includes("expired") ||
       (typeof daysLeft === "number" && daysLeft <= 0));
-  const needsAction = !hasMembership || isExpired;
+  const isRenewalWindow = hasMembership && typeof daysLeft === "number" && daysLeft <= 7;
+  const needsAction = !hasMembership || isExpired || isRenewalWindow;
   const statusLabel = !hasMembership
     ? t("member.home.noActiveMembership")
     : isExpired
       ? t("member.home.renewalNeeded")
+      : isRenewalWindow
+        ? daysLeft <= 0
+          ? t("member.home.membershipEndsToday")
+          : t("member.home.daysLeft", { count: Math.max(0, daysLeft) })
       : t("member.home.accessActive");
   const detail = !hasMembership
     ? t("member.home.browsePlansToStart")
@@ -127,6 +129,8 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
       ]
         .filter(Boolean)
         .join(" · ") || t("member.home.membershipActive");
+  const title = gymName || statusLabel;
+  const eyebrow = statusLabel;
 
   return (
     <Card
@@ -143,22 +147,33 @@ function MembershipAccessCard({ home }: { home?: MemberHomeData }) {
     >
       <View style={styles.membershipTop}>
         <IconBubble
-          icon={!hasMembership ? "card-outline" : isExpired ? "warning-outline" : "shield-checkmark-outline"}
+          icon={
+            !hasMembership
+              ? "card-outline"
+              : isExpired
+                ? "warning-outline"
+                : "shield-checkmark-outline"
+          }
           tone={needsAction ? "amber" : "lime"}
           size={40}
         />
         <View style={styles.membershipCopy}>
-          <Text style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
-            {t("member.home.membershipAccess")}
+          <Text numberOfLines={1} style={[styles.membershipEyebrow, { color: palette.text.secondary }]}>
+            {eyebrow}
           </Text>
-          <Text style={[styles.membershipTitle, { color: palette.text.primary }]}>
-            {statusLabel}
+          <Text
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.88}
+            style={[styles.membershipTitle, { color: palette.text.primary }]}
+          >
+            {title}
           </Text>
-          <Text style={[styles.membershipMeta, { color: palette.text.secondary }]}>
-            {detail}
-          </Text>
+          <Text numberOfLines={2} style={[styles.membershipMeta, { color: palette.text.secondary }]}>{detail}</Text>
         </View>
-        {needsAction ? null : <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />}
+        {needsAction ? null : (
+          <Ionicons name="chevron-forward" size={20} color={palette.text.tertiary} />
+        )}
       </View>
       {needsAction ? (
         <ZookButton
@@ -191,6 +206,9 @@ export default function HomeScreen() {
   const activeMinutes = Math.round(trackingQuery.data?.summary.totalDuration ?? 0);
   const workoutsLogged = trackingQuery.data?.summary.weeklyCount ?? 0;
   const habitsDone = trackingQuery.data?.habits.length ?? 0;
+  const [homeSection, setHomeSection] = useState<HomeSection>("classes");
+  const sectionDelay = activeCheckIn ? 120 : 80;
+  const bottomPadding = useBottomScrollPadding();
 
   return (
     <>
@@ -199,7 +217,7 @@ export default function HomeScreen() {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }]}
           onScroll={(event) => {
             scrollY.value = event.nativeEvent.contentOffset.y;
           }}
@@ -232,9 +250,16 @@ export default function HomeScreen() {
           ) : null}
           {!homeQuery.isLoading && !homeQuery.isError ? (
             <>
-              <AnimatedAppear delay={0}>
-                <MembershipAccessCard home={home} />
-              </AnimatedAppear>
+              {/* Suppress the compact membership card when renderHomeCard already owns membership messaging */}
+              {state.kind !== "noOrg" &&
+              state.kind !== "expiredMembership" &&
+              state.kind !== "membershipBlocked" &&
+              state.kind !== "membershipPendingActivation" &&
+              state.kind !== "noPlan" ? (
+                <AnimatedAppear delay={0}>
+                  <MembershipAccessCard home={home} />
+                </AnimatedAppear>
+              ) : null}
               <AnimatedAppear delay={20}>
                 <Banners home={home} />
               </AnimatedAppear>
@@ -247,29 +272,44 @@ export default function HomeScreen() {
                   />
                 </AnimatedAppear>
               ) : null}
-              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>{renderHomeCard(state)}</AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 120 : 80}>
-                <ClassesStrip />
+              <AnimatedAppear delay={activeCheckIn ? 80 : 40}>
+                {renderHomeCard(state)}
               </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 140 : 100}>
-                <CoachingStrip />
-              </AnimatedAppear>
-              <AnimatedAppear delay={activeCheckIn ? 160 : 120}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t("member.home.openProgress")}
-                  onPress={() => router.push("/progress" as never)}
-                  style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
-                >
-                  <StatStrip
-                    items={[
-                      { label: t("member.home.visits"), value: String(weeklyVisits) },
-                      { label: t("member.home.active"), value: formatCompactMinutes(activeMinutes) },
-                      { label: t("member.home.workouts"), value: String(workoutsLogged) },
-                      { label: t("member.home.habits"), value: String(habitsDone) },
+              <AnimatedAppear delay={sectionDelay}>
+                <View style={styles.homeSections}>
+                  <SegmentedControl<HomeSection>
+                    value={homeSection}
+                    onChange={setHomeSection}
+                    options={[
+                      { label: t("member.home.classesTab"), value: "classes" },
+                      { label: t("member.home.coachingTab"), value: "coaching" },
+                      { label: t("member.home.weekTab"), value: "week" },
                     ]}
                   />
-                </Pressable>
+                  {homeSection === "classes" ? <ClassesStrip compact /> : null}
+                  {homeSection === "coaching" ? <CoachingStrip /> : null}
+                  {homeSection === "week" ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("member.home.openProgress")}
+                      onPress={() => router.push("/progress" as never)}
+                      style={({ pressed }) => (pressed ? styles.statStripPressed : null)}
+                    >
+                      <StatStrip
+                        items={[
+                          { icon: "walk-outline", label: t("member.home.visits"), value: String(weeklyVisits) },
+                          {
+                            icon: "time-outline",
+                            label: t("member.home.active"),
+                            value: formatCompactMinutes(activeMinutes),
+                          },
+                          { icon: "barbell-outline", label: t("member.home.workouts"), value: String(workoutsLogged) },
+                          { icon: "checkmark-done-outline", label: t("member.home.habits"), value: String(habitsDone) },
+                        ]}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
               </AnimatedAppear>
             </>
           ) : null}
@@ -301,7 +341,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: spacing.lg,
     maxWidth: layout.contentWidth,
-    paddingBottom: layout.bottomNavContentPadding,
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
@@ -309,35 +348,39 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
+  homeSections: {
+    gap: spacing.sm,
+  },
   activeSessionCard: {
-    gap: spacing.md,
-    padding: 16,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   activeSessionHeader: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.md,
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0,
   },
   activeSessionCopy: {
     flex: 1,
-    gap: 3,
+    gap: 1,
+    minWidth: 0,
   },
   activeSessionLabel: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    textTransform: "uppercase",
+    ...typography.navLabel,
   },
   activeSessionBranch: {
+    ...typography.caption,
     fontFamily: "Inter_700Bold",
-    fontSize: 17,
   },
   activeSessionTimer: {
-    ...typography.timer,
-  },
-  activeSessionHint: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.caption,
+    fontFamily: "Inter_800ExtraBold",
+    fontVariant: ["tabular-nums"],
   },
   membershipCard: {
     gap: spacing.md,
@@ -355,7 +398,7 @@ const styles = StyleSheet.create({
   },
   membershipEyebrow: {
     ...typography.caption,
-    textTransform: "uppercase",
+    fontFamily: "Inter_700Bold",
   },
   membershipTitle: {
     ...typography.cardTitle,

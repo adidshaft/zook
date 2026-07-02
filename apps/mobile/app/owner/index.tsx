@@ -1,18 +1,39 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Pressable, RefreshControl, Share, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, Share, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { AttentionCard, type AttentionItem } from "@/components/domain/attention";
 import { MetricGrid, type MetricTileItem } from "@/components/domain/metric-grid";
-import { AnimatedAppear, BranchSelectorChip, Card, EmptyState, HeaderActions, QueryErrorState, ScreenHeader, SetupChecklist, StatusChip, ZookButton, ZookScreen } from "@/components/primitives";
+import {
+  AnimatedAppear,
+  BranchSelectorChip,
+  Card,
+  HeaderActions,
+  QueryErrorState,
+  ScreenHeader,
+  SetupChecklist,
+  StatusChip,
+  ZookButton,
+  ZookScreen,
+} from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { OwnerDashboardSkeleton } from "@/components/skeletons";
 import { useOrgAttendancePending } from "@/lib/domains/attendance";
-import { useOwnerBillingSubscription, useOwnerDashboard, useOwnerSetupStatus, usePrefetchOwnerWorkspace } from "@/lib/domains/owner";
+import {
+  useOwnerBillingSubscription,
+  useOwnerDashboard,
+  useOwnerSetupStatus,
+  usePrefetchOwnerWorkspace,
+} from "@/lib/domains/owner";
 import { useOrgRecentPayments } from "@/lib/domains/payments";
-import { formatBranchName, formatCompactNumber, formatInr, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
+import {
+  formatCompactNumber,
+  formatInr,
+  titleCaseFromCode,
+  toneForSaasSubscriptionStatus,
+} from "@/lib/formatting";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useAuth, useHasPermission } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
@@ -96,9 +117,11 @@ export default function OwnerCommandScreen() {
           title: t("owner.home.approvalsWaiting"),
           subtitle: t("owner.home.approvalsWaitingSubtitle", {
             join: joinRequests.length,
-            joinLabel: joinRequests.length === 1 ? t("owner.home.request") : t("owner.home.requests"),
+            joinLabel:
+              joinRequests.length === 1 ? t("owner.home.request") : t("owner.home.requests"),
             scans: attentionAttempts.length,
-            scanLabel: attentionAttempts.length === 1 ? t("owner.home.review") : t("owner.home.reviews"),
+            scanLabel:
+              attentionAttempts.length === 1 ? t("owner.home.review") : t("owner.home.reviews"),
           }),
           tone: "amber",
           icon: "checkmark-done-outline",
@@ -111,7 +134,10 @@ export default function OwnerCommandScreen() {
           title: t("owner.home.paymentExceptions"),
           subtitle: t("owner.home.paymentExceptionsSubtitle", {
             count: paymentExceptionCount,
-            action: paymentExceptionCount === 1 ? t("owner.home.transactionNeeds") : t("owner.home.transactionsNeed"),
+            action:
+              paymentExceptionCount === 1
+                ? t("owner.home.transactionNeeds")
+                : t("owner.home.transactionsNeed"),
           }),
           tone: "amber",
           icon: "card-outline",
@@ -141,11 +167,15 @@ export default function OwnerCommandScreen() {
           }),
           tone: "blue",
           icon: "time-outline",
-          cta: { label: t("owner.home.open"), onPress: () => router.push("/owner/members?filter=expiring" as never) },
+          cta: {
+            label: t("owner.home.open"),
+            onPress: () => router.push("/owner/members?filter=expiring" as never),
+          },
         }
       : null,
   ];
   const items = maybeAttentionItems.filter((item): item is AttentionItem => Boolean(item));
+  const visibleAttentionItems = items.slice(0, 2);
   const mandateStatus = billingQuery.data?.mandate?.status ?? null;
   const subscription = billingQuery.data?.subscription;
   const billingReady =
@@ -155,20 +185,10 @@ export default function OwnerCommandScreen() {
       ["CREATED", "AUTHENTICATED", "ACTIVE", "PENDING", "HALTED", "PAUSED"].includes(
         mandateStatus,
       ));
-  const branchName =
-    dashboard?.branchScope?.selectedBranch?.name ??
-    dashboard?.branchScope?.defaultBranch?.name ??
-    t("owner.home.mainBranch");
-  const orgName = roleContext?.org?.name ?? t("owner.home.gymFallback");
-  const branchLabel = formatBranchName(orgName, branchName, {
-    collapseOrgMatch: true,
-    fallback: t("owner.home.mainBranch"),
-  });
   const metrics: MetricTileItem[] = [
     {
       label: t("owner.home.activeMembers"),
       value: formatCompactNumber(dashboard?.summary?.activeMembers ?? 0),
-      hint: branchLabel ?? undefined,
       tone: "blue",
       icon: "people-outline",
       onPress: () => router.push("/owner/members"),
@@ -176,13 +196,6 @@ export default function OwnerCommandScreen() {
     {
       label: t("owner.home.todayCheckIns"),
       value: formatCompactNumber(dashboard?.summary?.todayAttendance ?? 0),
-      hint:
-        (dashboard?.summary?.pendingAttendanceApprovals ?? 0) > 0
-          ? t("owner.home.pendingReviews", {
-              count: dashboard?.summary?.pendingAttendanceApprovals ?? 0,
-              label: (dashboard?.summary?.pendingAttendanceApprovals ?? 0) === 1 ? t("owner.home.review") : t("owner.home.reviews"),
-            })
-          : undefined,
       tone: "blue",
       icon: "qr-code-outline",
       onPress: () => router.push("/owner/approvals"),
@@ -195,33 +208,7 @@ export default function OwnerCommandScreen() {
       icon: "trending-up-outline",
       onPress: () => router.push("/owner/revenue"),
     },
-    {
-      label: t("owner.home.approvals"),
-      value: pendingApprovals,
-      hint: pendingApprovals > 0 ? t("owner.home.needsAttention") : undefined,
-      tone: "violet",
-      icon: "checkmark-done-outline",
-      onPress: () => router.push("/owner/approvals"),
-    },
   ];
-  const todayItems = [
-    {
-      label: t("owner.home.todayCheckIns"),
-      value: formatCompactNumber(dashboard?.today?.checkIns ?? dashboard?.summary?.todayAttendance ?? 0),
-      onPress: () => router.push("/owner/approvals"),
-    },
-    {
-      label: t("owner.home.approvals"),
-      value: formatCompactNumber(dashboard?.today?.pendingApprovals ?? dashboard?.summary?.pendingAttendanceApprovals ?? 0),
-      onPress: () => router.push("/owner/approvals"),
-    },
-    {
-      label: t("shop.pickupLabel"),
-      value: formatCompactNumber(dashboard?.today?.openOrders ?? 0),
-      onPress: () => router.push("/owner/orders" as never),
-    },
-  ];
-
   const onRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: activeOrgId ? ["org", activeOrgId] : ["org"] });
   };
@@ -251,14 +238,18 @@ export default function OwnerCommandScreen() {
         >
           <ScreenHeader
             title={t("owner.home.today")}
-            subtitle={orgName}
-            titleAccessory={<BranchSelectorChip />}
+            contextSlot={<BranchSelectorChip />}
             trailing={<HeaderActions showBell />}
             scrollY={scrollY}
           />
           {dashboardQuery.isLoading ? <OwnerDashboardSkeleton /> : null}
-          {dashboardQuery.isError ? <QueryErrorState error={dashboardQuery.error} onRetry={() => void dashboardQuery.refetch()} /> : null}
-              {dashboard ? (
+          {dashboardQuery.isError ? (
+            <QueryErrorState
+              error={dashboardQuery.error}
+              onRetry={() => void dashboardQuery.refetch()}
+            />
+          ) : null}
+          {dashboard ? (
             <>
               {showSetupChecklist ? (
                 <AnimatedAppear delay={0}>
@@ -278,7 +269,11 @@ export default function OwnerCommandScreen() {
                         </Text>
                       </View>
                       <StatusChip
-                        status={subscription ? titleCaseFromCode(subscription.status) : t("owner.home.setup")}
+                        status={
+                          subscription
+                            ? titleCaseFromCode(subscription.status)
+                            : t("owner.home.setup")
+                        }
                         tone={toneForSaasSubscriptionStatus(subscription?.status)}
                       />
                     </View>
@@ -292,52 +287,15 @@ export default function OwnerCommandScreen() {
                   </Card>
                 </AnimatedAppear>
               ) : null}
-              <AnimatedAppear delay={60}>
-                <Card variant="compact" contentStyle={styles.todayCard}>
-                  <Text style={[styles.todayTitle, { color: palette.text.primary }]}>
-                    {t("owner.home.today")}
-                  </Text>
-                  <View style={styles.todayRow}>
-                    {todayItems.map((item) => (
-                      <Pressable
-                        key={item.label}
-                        accessibilityRole="button"
-                        onPress={item.onPress}
-                        style={({ pressed }) => [
-                          styles.todayChip,
-                          {
-                            backgroundColor: palette.bg.sunken,
-                            borderColor: palette.border.subtle,
-                          },
-                          pressed ? styles.todayChipPressed : null,
-                        ]}
-                      >
-                        <Text style={[styles.todayValue, { color: palette.text.primary }]}>
-                          {item.value}
-                        </Text>
-                        <Text numberOfLines={1} style={[styles.todayLabel, { color: palette.text.secondary }]}>
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </Card>
-              </AnimatedAppear>
-              <AnimatedAppear delay={80}>
+              {visibleAttentionItems.length ? (
+                <AnimatedAppear delay={60}>
+                  <AttentionCard items={visibleAttentionItems} />
+                </AnimatedAppear>
+              ) : null}
+              <AnimatedAppear delay={visibleAttentionItems.length ? 100 : 60}>
                 <MetricGrid testID="owner-view-command" items={metrics} />
               </AnimatedAppear>
               <AnimatedAppear delay={120}>
-                {items.length ? (
-                  <AttentionCard items={items} />
-                ) : (
-                  <Card variant="compact">
-                    <EmptyState
-                      title={t("owner.home.allClear")}
-                    />
-                  </Card>
-                )}
-              </AnimatedAppear>
-              <AnimatedAppear delay={160}>
                 <OwnerDashboardCharts charts={dashboard.charts} />
               </AnimatedAppear>
             </>
@@ -375,33 +333,5 @@ const styles = StyleSheet.create({
   },
   billingBody: {
     ...typography.body,
-  },
-  todayCard: {
-    gap: spacing.sm,
-  },
-  todayTitle: {
-    ...typography.cardTitle,
-  },
-  todayRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  todayChip: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    flex: 1,
-    minHeight: 72,
-    justifyContent: "center",
-    padding: spacing.sm,
-  },
-  todayChipPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-  todayValue: {
-    ...typography.metric,
-  },
-  todayLabel: {
-    ...typography.caption,
   },
 });

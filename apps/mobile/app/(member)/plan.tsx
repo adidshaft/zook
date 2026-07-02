@@ -36,6 +36,23 @@ function planKind(assignment?: MyPlanRecord | null) {
   return (assignment?.plan?.type ?? "WORKOUT").toLowerCase();
 }
 
+function planCompletion(assignment: MyPlanRecord) {
+  return assignment.progress?.completionPct ?? 0;
+}
+
+function planUpdatedAt(assignment: MyPlanRecord) {
+  const timestamp = new Date(assignment.createdAt ?? 0).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function planActionPriority(assignment: MyPlanRecord) {
+  if (assignment.active === false) return 4;
+  const completion = planCompletion(assignment);
+  if (completion <= 0) return 0;
+  if (completion < 100) return 1;
+  return 3;
+}
+
 export default function MemberPlanScreen() {
   const router = useRouter();
   const t = useT();
@@ -45,13 +62,21 @@ export default function MemberPlanScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const plans = plansQuery.data?.plans ?? [];
-  const workoutPlans = plans.filter((assignment) => planKind(assignment).includes("workout"));
-  const todayPlan = workoutPlans[0] ?? plans[0] ?? null;
+  const workoutPlans = plans
+    .filter((assignment) => planKind(assignment).includes("workout"))
+    .sort((left, right) => {
+      const priority = planActionPriority(left) - planActionPriority(right);
+      return (
+        priority ||
+        planCompletion(left) - planCompletion(right) ||
+        planUpdatedAt(right) - planUpdatedAt(left)
+      );
+    });
+  const nextWorkoutPlan = workoutPlans[0] ?? null;
   const singleWorkoutPlan = workoutPlans.length === 1 ? workoutPlans[0] : null;
   const exercisePreviewQuery = usePlanExercises(singleWorkoutPlan?.id);
   const exercisePreview = exercisePreviewQuery.data?.exercises.slice(0, 3) ?? [];
-  // Don't repeat today's plan in the schedule list below.
-  const upcomingPlans = workoutPlans.filter((assignment) => assignment.id !== todayPlan?.id);
+  const upcomingPlans = workoutPlans.filter((assignment) => assignment.id !== nextWorkoutPlan?.id);
   const { palette } = useTheme();
 
   useEffect(() => {
@@ -110,25 +135,73 @@ export default function MemberPlanScreen() {
               {plansQuery.isError ? <QueryErrorState error={plansQuery.error} onRetry={() => void plansQuery.refetch()} /> : null}
 
               <AnimatedAppear delay={40}>
-                <SectionHeader title={t("member.plan.todaysWorkout")} />
-                {todayPlan ? (
+                <SectionHeader title={t("member.plan.nextWorkout")} />
+                {nextWorkoutPlan ? (
                   <Card variant="selected" contentStyle={styles.todayCard}>
                     <View style={styles.todayTop}>
                       <IconBubble icon="barbell-outline" tone="blue" size={46} />
                       <View style={styles.todayCopy}>
                         <Text numberOfLines={1} style={[styles.todayTitle, { color: palette.text.primary }]}>
-                          {planTitle(todayPlan, t("member.plan.assignedPlan"))}
+                          {planTitle(nextWorkoutPlan, t("member.plan.assignedPlan"))}
                         </Text>
                         <Text numberOfLines={1} style={[styles.todayMeta, { color: palette.text.secondary }]}>
-                          {t("member.plan.planMeta", {
-                            kind: planKind(todayPlan),
-                            assignment: t("member.plan.trainerAssigned"),
-                          })}
+                          {t("member.plan.trainerAssigned")}
                         </Text>
                       </View>
                     </View>
-                    <ProgressBar value={(todayPlan.progress?.completionPct ?? 0) / 100} label={t("member.plan.progress")} />
-                    <ZookButton testID="plan-start-today" onPress={() => openAssignment(todayPlan.id)} icon="play-outline" fullWidth>
+                    <ProgressBar value={(nextWorkoutPlan.progress?.completionPct ?? 0) / 100} label={t("member.plan.progress")} />
+                    {singleWorkoutPlan ? (
+                      <View style={[styles.inlinePreview, { borderColor: palette.border.subtle }]}>
+                        {exercisePreviewQuery.isError ? (
+                          <QueryErrorState
+                            error={exercisePreviewQuery.error}
+                            onRetry={() => void exercisePreviewQuery.refetch()}
+                            title={t("member.plan.couldNotLoadExercises")}
+                          />
+                        ) : exercisePreviewQuery.isLoading ? (
+                          <View style={styles.previewSkeleton}>
+                            {[0, 1, 2].map((item) => (
+                              <Skeleton key={item} width="90%" height={14} borderRadius={7} />
+                            ))}
+                          </View>
+                        ) : exercisePreview.length ? (
+                          exercisePreview.map((exercise, index) => (
+                            <View
+                              key={exercise.id}
+                              style={[
+                                styles.exercisePreviewRow,
+                                { backgroundColor: palette.surface.default },
+                              ]}
+                            >
+                              <View style={styles.exercisePreviewIcon}>
+                                <Ionicons
+                                  name={index === 0 ? "flash-outline" : "barbell-outline"}
+                                  size={15}
+                                  color={palette.text.secondary}
+                                />
+                              </View>
+                              <View style={styles.exercisePreviewCopy}>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[styles.exercisePreviewTitle, { color: palette.text.primary }]}
+                                >
+                                  {exercise.name}
+                                </Text>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[styles.exercisePreviewMeta, { color: palette.text.secondary }]}
+                                >
+                                  {[exercise.sets, exercise.reps].filter(Boolean).join(" · ") ||
+                                    exercise.day ||
+                                    t("member.plan.coachGuided")}
+                                </Text>
+                              </View>
+                            </View>
+                          ))
+                        ) : null}
+                      </View>
+                    ) : null}
+                    <ZookButton testID="plan-start-today" onPress={() => openAssignment(nextWorkoutPlan.id)} icon="play-outline" fullWidth>
                       {t("member.plan.openTodayPlan")}
                     </ZookButton>
                   </Card>
@@ -147,72 +220,28 @@ export default function MemberPlanScreen() {
                 <AnimatedAppear delay={80}>
                   <SectionHeader title={t("member.plan.morePlans")} />
                   <View style={styles.stack}>
-                  {upcomingPlans.map((assignment, index) => (
-                    <Card
-                      key={assignment.id}
-                      testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
-                      onPress={() => openAssignment(assignment.id)}
-                      pressable
-                      variant="compact"
-                    >
-                      <ListRow
-                        title={planTitle(assignment, t("member.plan.assignedPlan"))}
-                        subtitle={t("member.plan.percentComplete", {
-                          percent: assignment.progress?.completionPct ?? 0,
-                        })}
-                        leading={<IconBubble icon="calendar-outline" tone="neutral" />}
-                        trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
-                      />
-                    </Card>
-                  ))}
+                    {upcomingPlans.map((assignment, index) => (
+                      <Card
+                        key={assignment.id}
+                        testID={index === 0 ? "plan-schedule-first" : `plan-schedule-${assignment.id}`}
+                        onPress={() => openAssignment(assignment.id)}
+                        pressable
+                        variant="compact"
+                      >
+                        <ListRow
+                          title={planTitle(assignment, t("member.plan.assignedPlan"))}
+                          subtitle={t("member.plan.percentComplete", {
+                            percent: assignment.progress?.completionPct ?? 0,
+                          })}
+                          leading={<IconBubble icon="calendar-outline" tone="neutral" />}
+                          trailing={<Ionicons name="chevron-forward" size={18} color={palette.text.tertiary} />}
+                        />
+                      </Card>
+                    ))}
                   </View>
                 </AnimatedAppear>
               ) : null}
 
-              {singleWorkoutPlan ? (
-                <AnimatedAppear delay={80}>
-                  <SectionHeader title={t("member.plan.insideThisPlan")} />
-                  <Card variant="compact" contentStyle={styles.previewCard}>
-                    {exercisePreviewQuery.isError ? (
-                      <QueryErrorState
-                        error={exercisePreviewQuery.error}
-                        onRetry={() => void exercisePreviewQuery.refetch()}
-                        title={t("member.plan.couldNotLoadExercises")}
-                      />
-                    ) : exercisePreviewQuery.isLoading ? (
-                      <View style={styles.previewSkeleton}>
-                        {[0, 1, 2].map((item) => (
-                          <Skeleton key={item} width="90%" height={14} borderRadius={7} />
-                        ))}
-                      </View>
-                    ) : exercisePreview.length ? (
-                      <>
-                        {exercisePreview.map((exercise, index) => (
-                          <ListRow
-                            key={exercise.id}
-                            title={exercise.name}
-                            subtitle={[exercise.sets, exercise.reps].filter(Boolean).join(" · ") || exercise.day || t("member.plan.coachGuided")}
-                            leading={<IconBubble icon={index === 0 ? "flash-outline" : "barbell-outline"} tone="neutral" />}
-                          />
-                        ))}
-                        <ZookButton
-                          testID="plan-preview-open"
-                          onPress={() => openAssignment(singleWorkoutPlan.id)}
-                          icon="list-outline"
-                          variant="secondary"
-                          fullWidth
-                        >
-                          {t("member.plan.viewFullExerciseList")}
-                        </ZookButton>
-                      </>
-                    ) : (
-                      <EmptyState
-                        title={t("member.plan.noExercises")}
-                      />
-                    )}
-                  </Card>
-                </AnimatedAppear>
-              ) : null}
             </>
           )}
         </ScrollView>
@@ -231,11 +260,37 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   stack: { gap: spacing.sm },
-  previewCard: { gap: spacing.sm },
+  inlinePreview: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+    paddingTop: spacing.xs,
+  },
+  exercisePreviewCopy: { flex: 1, minWidth: 0 },
+  exercisePreviewIcon: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 30,
+    justifyContent: "center",
+    width: 30,
+  },
+  exercisePreviewMeta: {
+    ...typography.small,
+    lineHeight: 16,
+  },
+  exercisePreviewRow: {
+    alignItems: "center",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 46,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  exercisePreviewTitle: {
+    ...typography.button,
+    lineHeight: 18,
+  },
   previewSkeleton: { gap: spacing.sm },
-  previewCopy: { flex: 1, gap: 4 },
-  previewTitle: typography.cardTitle,
-  previewMeta: typography.small,
   todayCard: { gap: spacing.md },
   todayTop: { alignItems: "center", flexDirection: "row", gap: spacing.md },
   todayCopy: { flex: 1, gap: 4 },

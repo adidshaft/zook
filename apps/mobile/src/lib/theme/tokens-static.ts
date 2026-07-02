@@ -94,6 +94,7 @@ export const typography = {
 export const gradients = {
   // Primary lime CTA — bright top-left to deeper bottom-right.
   accentButton: ["#D2FB66", "#A9EA3C"] as const,
+  accentButtonLight: ["#2E5A36", "#1F3E24"] as const,
   // Ambient lime glow behind headers / hero content.
   accentGlow: ["rgba(185,244,85,0.20)", "rgba(185,244,85,0.0)"] as const,
   // Featured hero card surface (workout / today).
@@ -143,6 +144,20 @@ export const glow = {
   },
 } as const;
 
+export const fixedSurfaces = {
+  shadowBlack: "#000000",
+  cameraWell: "#050806",
+  onImagePrimary: "#FFFFFF",
+  onDarkPrimary: "#F6FFE9",
+  qrPaper: "#FFFFFF",
+  qrInk: "#11150F",
+  overlayInk: "#FFFFFF",
+  galleryBackdrop: "rgba(6,9,8,0.98)",
+  overlayScrim: "rgba(0,0,0,0.45)",
+  brandMarkFallbackBg: "#000000",
+  brandMarkFrameBg: "#0F1411",
+} as const;
+
 export const palettes = {
   light: lightPalette,
   dark: darkPalette,
@@ -159,5 +174,6 @@ export const zookTokens = {
   shadowIntensity,
   materials,
   gradients,
+  fixedSurfaces,
   glow,
 } as const;

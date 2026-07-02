@@ -1,57 +1,91 @@
 import { Stack, useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 import {
-  AppHeader,
+  ScreenHeader,
   BranchSelectorChip,
   Card,
   EmptyState,
   IconBubble,
   Pill,
   QueryErrorState,
-  ZookButton,
   ZookScreen,
 } from "@/components/primitives";
 import { ClassesSkeleton } from "@/components/skeletons";
-import { useBranchSelection } from "@/lib/branch-selection";
 import { useCancelEnrollment, useEnrollInClass, useMyClasses } from "@/lib/domains";
 import type { MemberClassRecord } from "@/lib/domains/shared/types";
 import { formatInr, formatTime } from "@/lib/formatting";
 import { useT, type TranslationKey } from "@/lib/i18n";
-import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
-import {
-  classDayHeading,
-  classTypeGradient,
-  classTypeVisual,
-} from "@/features/member/classes/class-display";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { classDayHeading, classTypeVisual } from "@/features/member/classes/class-display";
 
 type TFunction = (key: TranslationKey, values?: Record<string, string | number>) => string;
+type ClassFilter = "all" | "booked" | "open";
 
 function bookingLabel(entry: MemberClassRecord, t: TFunction) {
   if (entry.myEnrollmentStatus === "confirmed") return t("member.classes.booked");
-  if (entry.myEnrollmentStatus === "pending_payment") return t("member.classes.continuePayment");
+  if (entry.myEnrollmentStatus === "pending_payment") {
+    return entry.pricePaise && entry.pricePaise > 0
+      ? t("member.classes.payAmountNow", { amount: formatInr(entry.pricePaise) })
+      : t("member.classes.continuePayment");
+  }
   if (entry.myEnrollmentStatus === "waitlisted") return t("member.classes.onWaitlist");
   if (entry.remainingCapacity <= 0) return t("member.classes.joinWaitlist");
   return entry.pricePaise && entry.pricePaise > 0 ? t("member.classes.bookWithPrice", { price: formatInr(entry.pricePaise) }) : t("member.classes.bookClass");
 }
 
 function statusPill(entry: MemberClassRecord, t: TFunction) {
-  if (entry.myEnrollmentStatus === "confirmed") return { label: t("member.classes.booked"), tone: "lime" as const };
+  if (entry.myEnrollmentStatus === "confirmed")
+    return { label: t("member.classes.booked"), accessibilityLabel: t("member.classes.booked"), tone: "lime" as const };
   if (entry.myEnrollmentStatus === "pending_payment")
-    return { label: t("member.classes.paymentDue"), tone: "amber" as const };
+    return { label: t("member.classes.paymentDue"), accessibilityLabel: t("member.classes.paymentDue"), tone: "amber" as const };
   if (entry.myEnrollmentStatus === "waitlisted")
-    return { label: t("member.classes.waitlisted"), tone: "amber" as const };
-  if (entry.remainingCapacity <= 0) return { label: t("member.classes.full"), tone: "red" as const };
+    return { label: t("member.classes.waitlisted"), accessibilityLabel: t("member.classes.waitlisted"), tone: "amber" as const };
+  if (entry.remainingCapacity <= 0)
+    return { label: t("member.classes.full"), accessibilityLabel: t("member.classes.full"), tone: "red" as const };
   if (entry.remainingCapacity <= 3)
-    return { label: t("member.classes.left", { count: entry.remainingCapacity }), tone: "amber" as const };
-  return { label: t("member.classes.spots", { count: entry.remainingCapacity }), tone: "neutral" as const };
+    return {
+      label: t("member.classes.left", { count: entry.remainingCapacity }),
+      accessibilityLabel: t("member.classes.spots", { count: entry.remainingCapacity }),
+      tone: "amber" as const,
+    };
+  return {
+    label: t("member.classes.spots", { count: entry.remainingCapacity }),
+    accessibilityLabel: t("member.classes.spots", { count: entry.remainingCapacity }),
+    tone: "neutral" as const,
+  };
 }
 
-function groupByDay(classes: MemberClassRecord[]) {
+function actionIcon(entry: MemberClassRecord) {
+  if (entry.myEnrollmentStatus === "confirmed" || entry.myEnrollmentStatus === "waitlisted") {
+    return "close-circle-outline" as const;
+  }
+  if (entry.myEnrollmentStatus === "pending_payment") return "card-outline" as const;
+  if (entry.remainingCapacity <= 0) return "people-outline" as const;
+  return "add-circle-outline" as const;
+}
+
+const classTypeLabelKeys: Record<string, TranslationKey> = {
+  boxing: "trainer.classes.typeBoxing",
+  cycling: "trainer.classes.typeCycling",
+  dance: "trainer.classes.typeDance",
+  hiit: "trainer.classes.typeHiit",
+  mobility: "trainer.classes.typeMobility",
+  strength: "trainer.classes.typeStrength",
+  yoga: "trainer.classes.typeYoga",
+};
+
+function classTypeLabel(classType: string | null | undefined, t: TFunction) {
+  const key = (classType ?? "").trim().toLowerCase();
+  const labelKey = classTypeLabelKeys[key];
+  return labelKey ? t(labelKey) : classType;
+}
+
+function groupByDay(classes: MemberClassRecord[], t: TFunction) {
   const groups: Array<{ heading: string; items: MemberClassRecord[] }> = [];
   for (const entry of classes) {
-    const heading = classDayHeading(entry.startTime);
+    const heading = classDayHeading(entry.startTime, t);
     const last = groups[groups.length - 1];
     if (last && last.heading === heading) {
       last.items.push(entry);
@@ -60,6 +94,11 @@ function groupByDay(classes: MemberClassRecord[]) {
     }
   }
   return groups;
+}
+
+function classStartMs(entry: MemberClassRecord) {
+  const timestamp = new Date(entry.startTime).getTime();
+  return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
 }
 
 function ClassCard({
@@ -77,17 +116,23 @@ function ClassCard({
   onBook: () => void;
   onCancel: () => void;
 }) {
-  const { palette, mode } = useTheme();
+  const { palette } = useTheme();
   const t = useT();
   const visual = classTypeVisual(entry.classType);
   const pill = statusPill(entry, t);
   const booked = entry.myEnrollmentStatus === "confirmed";
   const pendingPayment = entry.myEnrollmentStatus === "pending_payment";
   const waitlisted = entry.myEnrollmentStatus === "waitlisted";
+  const actionDisabled = booked || waitlisted ? cancelling : busy;
+  const actionLabel = booked || waitlisted
+    ? (cancelling ? t("member.classes.cancelling") : t("common.cancel"))
+    : (busy ? (pendingPayment ? t("member.classes.opening") : t("common.saving")) : bookingLabel(entry, t));
+  const actionTone = booked || waitlisted ? palette.text.secondary : palette.text.primary;
+  const priceLabel = entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : null;
   const meta = [
-    entry.classType,
-    entry.pricePaise && entry.pricePaise > 0 ? formatInr(entry.pricePaise) : t("member.classes.free"),
+    classTypeLabel(entry.classType, t),
     entry.trainerName ? t("member.classes.coachName", { name: entry.trainerName }) : null,
+    priceLabel,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -99,67 +144,51 @@ function ClassCard({
         { borderColor: palette.border.subtle, backgroundColor: palette.surface.default },
       ]}
     >
-      <LinearGradient
-        colors={classTypeGradient(entry.classType, mode)}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
       <View style={styles.classContent}>
-        <Pressable accessibilityRole="button" onPress={onOpen} style={styles.detailPressable}>
-          <View style={styles.classHeader}>
-            <IconBubble icon={visual.icon} tone={visual.tone} size={46} />
-            <View style={styles.classTitleBlock}>
-              <Text style={[styles.classTitle, { color: palette.text.primary }]}>{entry.name}</Text>
-              <Text style={[styles.classTime, { color: palette.text.secondary }]}>
-                {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
+        <View style={styles.classHeader}>
+          <Pressable accessibilityRole="button" onPress={onOpen} style={styles.detailPressable}>
+            <View style={styles.classTimeBlock}>
+              <Text style={[styles.classTime, { color: palette.text.primary }]}>
+                {formatTime(entry.startTime)}
+              </Text>
+              <Text style={[styles.classEndTime, { color: palette.text.tertiary }]}>
+                {formatTime(entry.endTime)}
               </Text>
             </View>
-            <Pill tone={pill.tone}>{pill.label}</Pill>
-          </View>
-          {meta ? (
-            <Text style={[styles.metaText, { color: palette.text.secondary }]}>{meta}</Text>
-          ) : null}
-          {entry.description ? (
-            <Text style={[styles.description, { color: palette.text.secondary }]} numberOfLines={2}>
-              {entry.description}
-            </Text>
-          ) : null}
-        </Pressable>
-        {booked || waitlisted ? (
-          <View style={styles.actionRow}>
-            <View style={styles.bookedBadge}>
-              <Pill tone={waitlisted ? "amber" : "lime"}>
-                {waitlisted ? t("member.classes.onWaitlist") : t("member.classes.booked")}
-              </Pill>
+            <IconBubble icon={visual.icon} tone={visual.tone} size={34} />
+            <View style={styles.classTitleBlock}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.88}
+                style={[styles.classTitle, { color: palette.text.primary }]}
+              >
+                {entry.name}
+              </Text>
+              <Text numberOfLines={1} style={[styles.metaText, { color: palette.text.secondary }]}>
+                {meta}
+              </Text>
             </View>
-            <ZookButton
-              onPress={onCancel}
-              disabled={cancelling}
-              variant="secondary"
-              icon="close-circle-outline"
-              style={styles.cancelButton}
-            >
-              {cancelling ? t("member.classes.cancelling") : t("common.cancel")}
-            </ZookButton>
-          </View>
-        ) : pendingPayment ? (
-          <ZookButton
-            onPress={onBook}
-            disabled={busy}
-            variant="primary"
+          </Pressable>
+          <Pill tone={pill.tone} accessibilityLabel={pill.accessibilityLabel}>{pill.label}</Pill>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+            disabled={actionDisabled}
+            onPress={booked || waitlisted ? onCancel : onBook}
+            style={({ pressed }) => [
+              styles.classIconAction,
+              {
+                borderColor: palette.border.default,
+                backgroundColor: palette.surface.raised,
+                opacity: actionDisabled ? 0.56 : 1,
+              },
+              pressed ? styles.classIconActionPressed : null,
+            ]}
           >
-            {busy ? t("member.classes.opening") : bookingLabel(entry, t)}
-          </ZookButton>
-        ) : (
-          <ZookButton
-            onPress={onBook}
-            disabled={busy}
-            variant="primary"
-          >
-            {busy ? t("common.saving") : bookingLabel(entry, t)}
-          </ZookButton>
-        )}
+            <Ionicons name={actionIcon(entry)} size={20} color={actionTone} />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -169,17 +198,65 @@ export default function ClassesRoute() {
   const { palette } = useTheme();
   const router = useRouter();
   const t = useT();
-  const { selectedBranch } = useBranchSelection();
   const classesQuery = useMyClasses();
   const enrollMutation = useEnrollInClass();
   const cancelMutation = useCancelEnrollment();
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<ClassFilter>("all");
 
   const classes = useMemo(
-    () => (classesQuery.data?.classes ?? []).filter((entry) => entry.status !== "CANCELLED"),
+    () =>
+      (classesQuery.data?.classes ?? [])
+        .filter((entry) => entry.status !== "CANCELLED")
+        .sort((left, right) => classStartMs(left) - classStartMs(right)),
     [classesQuery.data?.classes],
   );
-  const groups = useMemo(() => groupByDay(classes), [classes]);
+  const classCounts = useMemo(() => {
+    const booked = classes.filter((entry) =>
+      entry.myEnrollmentStatus === "confirmed" ||
+      entry.myEnrollmentStatus === "pending_payment" ||
+      entry.myEnrollmentStatus === "waitlisted"
+    ).length;
+    const open = classes.filter((entry) => !entry.myEnrollmentStatus && entry.remainingCapacity > 0).length;
+    return { all: classes.length, booked, open };
+  }, [classes]);
+  const filterOptions = useMemo(
+    () => [
+      {
+        count: classCounts.all,
+        icon: "calendar-outline" as const,
+        label: t("member.classes.filterAll", { count: classCounts.all }),
+        value: "all" as const,
+      },
+      {
+        count: classCounts.booked,
+        icon: "checkmark-circle-outline" as const,
+        label: t("member.classes.filterBooked", { count: classCounts.booked }),
+        value: "booked" as const,
+      },
+      {
+        count: classCounts.open,
+        icon: "add-circle-outline" as const,
+        label: t("member.classes.filterOpen", { count: classCounts.open }),
+        value: "open" as const,
+      },
+    ],
+    [classCounts.all, classCounts.booked, classCounts.open, t],
+  );
+  const filteredClasses = useMemo(() => {
+    if (filter === "booked") {
+      return classes.filter((entry) =>
+        entry.myEnrollmentStatus === "confirmed" ||
+        entry.myEnrollmentStatus === "pending_payment" ||
+        entry.myEnrollmentStatus === "waitlisted"
+      );
+    }
+    if (filter === "open") {
+      return classes.filter((entry) => !entry.myEnrollmentStatus && entry.remainingCapacity > 0);
+    }
+    return classes;
+  }, [classes, filter]);
+  const groups = useMemo(() => groupByDay(filteredClasses, t), [filteredClasses, t]);
 
   async function refresh() {
     setRefreshing(true);
@@ -204,14 +281,9 @@ export default function ClassesRoute() {
             />
           }
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.classes.title")}
-            subtitle={
-              selectedBranch
-                ? t("member.classes.branchSchedule", { branch: selectedBranch.name })
-                : t("member.classes.subtitle")
-            }
-            contextSlot={<BranchSelectorChip />}
+            contextSlot={<BranchSelectorChip variant="inline" style={styles.headerBranchSelector} />}
             showBack
           />
 
@@ -236,6 +308,78 @@ export default function ClassesRoute() {
                 icon="calendar-outline"
                 title={t("member.classes.noClasses")}
                 body={t("member.classes.noClassesBody")}
+              />
+            </Card>
+          ) : null}
+
+          {!classesQuery.isLoading && !classesQuery.isError && classes.length > 0 ? (
+            <View style={styles.filterRail}>
+              {filterOptions.map((option) => {
+                const selected = option.value === filter;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.label}
+                    accessibilityState={{ selected }}
+                    onPress={() => setFilter(option.value)}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      {
+                        backgroundColor: selected ? palette.accent.fill : palette.surface.default,
+                        borderColor: selected ? palette.accent.strong : palette.border.subtle,
+                      },
+                      pressed ? styles.filterChipPressed : null,
+                    ]}
+                  >
+                    <Ionicons
+                      name={option.icon}
+                      size={15}
+                      color={selected ? palette.text.onAccent : palette.text.secondary}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.86}
+                      style={[
+                        styles.filterChipText,
+                        { color: selected ? palette.text.onAccent : palette.text.secondary },
+                      ]}
+                    >
+                      {option.label.replace(String(option.count), "").trim()}
+                    </Text>
+                    <View
+                      style={[
+                        styles.filterCount,
+                        { backgroundColor: selected ? "rgba(0,0,0,0.16)" : palette.bg.sunken },
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.filterCountText,
+                          { color: selected ? palette.text.onAccent : palette.text.tertiary },
+                        ]}
+                      >
+                        {option.count}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {!classesQuery.isLoading && !classesQuery.isError && classes.length > 0 && filteredClasses.length === 0 ? (
+            <Card variant="compact">
+              <EmptyState
+                icon={filter === "booked" ? "checkmark-circle-outline" : "calendar-outline"}
+                title={filter === "booked" ? t("member.classes.noBookedClasses") : t("member.classes.noOpenClasses")}
+                body={
+                  filter === "booked"
+                    ? t("member.classes.noBookedClassesBody")
+                    : t("member.classes.noOpenClassesBody")
+                }
               />
             </Card>
           ) : null}
@@ -281,6 +425,10 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenContentTopPadding,
     width: "100%",
   },
+  headerBranchSelector: {
+    flex: 1,
+    minWidth: 190,
+  },
   group: {
     gap: spacing.sm,
   },
@@ -289,25 +437,76 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   stack: {
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  filterRail: {
+    flexDirection: "row",
+    gap: spacing.xs,
+  },
+  filterChip: {
+    alignItems: "center",
+    borderRadius: 999,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: 5,
+    justifyContent: "center",
+    minHeight: 36,
+    minWidth: 0,
+    paddingHorizontal: 8,
+  },
+  filterChipPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.98 }],
+  },
+  filterChipText: {
+    ...typography.caption,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  filterCount: {
+    alignItems: "center",
+    borderRadius: 999,
+    height: 18,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 5,
+  },
+  filterCountText: {
+    ...typography.navLabel,
   },
   classCard: {
-    borderRadius: radii.card,
+    borderRadius: 16,
     borderCurve: "continuous",
     borderWidth: 1,
     overflow: "hidden",
   },
   classContent: {
-    gap: spacing.sm,
-    padding: spacing.lg,
+    padding: spacing.sm,
   },
   detailPressable: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
     gap: spacing.sm,
+    minWidth: 0,
   },
   classHeader: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  classTimeBlock: {
+    alignItems: "flex-start",
+    minWidth: 48,
+  },
+  classTime: {
+    ...typography.bodyStrong,
+    fontVariant: ["tabular-nums"],
+  },
+  classEndTime: {
+    ...typography.small,
+    fontVariant: ["tabular-nums"],
   },
   classTitleBlock: {
     flex: 1,
@@ -317,24 +516,19 @@ const styles = StyleSheet.create({
   classTitle: {
     ...typography.cardTitle,
   },
-  classTime: {
-    ...typography.body,
-  },
   metaText: {
     ...typography.caption,
   },
-  description: {
-    ...typography.body,
-  },
-  actionRow: {
+  classIconAction: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
+    borderRadius: 13,
+    borderWidth: 1,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
   },
-  bookedBadge: {
-    flex: 1,
-  },
-  cancelButton: {
-    minWidth: 120,
+  classIconActionPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.98 }],
   },
 });

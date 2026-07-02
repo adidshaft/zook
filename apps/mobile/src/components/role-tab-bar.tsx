@@ -48,7 +48,7 @@ export function RoleTabBar({
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
   const { visible } = useContext(BottomNavVisibilityContext);
-  const backdropHeight = 100 + insets.bottom;
+  const backdropHeight = 92 + insets.bottom;
   const focusedOptions = descriptors[state.routes[state.index]?.key ?? ""]?.options;
   const focusedTabBarStyle = focusedOptions?.tabBarStyle;
   const focusedRouteName = state.routes[state.index]?.name;
@@ -144,7 +144,7 @@ export function RoleTabBar({
           {
             bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? insets.bottom + 8 : 16) : 0,
             shadowColor: mode === "dark" ? palette.bg.sunken : palette.text.primary,
-            shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.18 : 0.08) : 0,
+            shadowOpacity: Platform.OS === "ios" ? (mode === "dark" ? 0.12 : 0.06) : 0,
           },
         ]}
       >
@@ -339,15 +339,15 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     borderCurve: "continuous",
-    borderRadius: 36,
-    height: 76,
+    borderRadius: 30,
+    height: 68,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 8,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    borderWidth: 1.5,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    borderWidth: 1,
   },
   androidTabBarContainer: {
     left: 0,
@@ -363,12 +363,12 @@ const styles = StyleSheet.create({
   },
   tabBarMaterial: {
     borderCurve: "continuous",
-    borderRadius: 36,
+    borderRadius: 30,
     overflow: "hidden",
   },
   tabBarOverlay: {
     borderCurve: "continuous",
-    borderRadius: 36,
+    borderRadius: 30,
     overflow: "hidden",
   },
   topHairline: {
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: Platform.OS === "android" ? 56 : 60,
+    height: Platform.OS === "android" ? 56 : 54,
     zIndex: 3,
   },
   tabItemWrapper: {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 6,
     paddingHorizontal: 2,
-    minHeight: 44,
+    minHeight: 40,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
     width: "100%",
@@ -419,18 +419,18 @@ const styles = StyleSheet.create({
     flex: 1.1,
     alignItems: "center",
     justifyContent: "center",
-    height: 64,
+    height: 58,
     zIndex: 4,
   },
   centerActionButton: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -36,
-    borderWidth: 4,
-    shadowRadius: 12,
+    marginTop: -28,
+    borderWidth: 3,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     overflow: "hidden",
   },
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   badgeText: {
-    fontSize: 9,
+    ...typography.eyebrow,
     fontFamily: "Inter_700Bold",
     lineHeight: 11,
   },
