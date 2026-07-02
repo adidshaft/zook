@@ -174,6 +174,30 @@ describe("auth service", () => {
     expect(repo.sessions).toHaveLength(1);
   });
 
+  it("resolves the user only after the otp challenge matches", async () => {
+    const service = new AuthService(repo, emailProvider, () => new Date());
+    await service.requestOtp(email);
+    const resolveVerifiedUserId = vi.fn(async () => "user_1");
+
+    await expect(
+      service.verifyOtp({
+        identifier: email,
+        code: "111111",
+        resolveVerifiedUserId,
+      }),
+    ).rejects.toThrow("Invalid OTP");
+    expect(resolveVerifiedUserId).not.toHaveBeenCalled();
+    expect(repo.sessions).toHaveLength(0);
+
+    await service.verifyOtp({
+      identifier: email,
+      code: "000000",
+      resolveVerifiedUserId,
+    });
+    expect(resolveVerifiedUserId).toHaveBeenCalledTimes(1);
+    expect(repo.sessions).toHaveLength(1);
+  });
+
   it("rejects a leaked fixed otp in production before creating a session", async () => {
     process.env.APP_ENV = "production";
     process.env.OTP_FIXED_CODE_DEV = "000000";

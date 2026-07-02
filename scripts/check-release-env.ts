@@ -33,6 +33,7 @@ function checkHandoffDeploymentArtifacts(profile: ReturnType<typeof resolveEnvPr
   const expectedCrons = [
     ["/api/cron/send-scheduled-notifications", "*/5 * * * *"],
     ["/api/cron/subscription-expiry", "0 * * * *"],
+    ["/api/cron/rewards-settle", "0 * * * *"],
   ] as const;
   for (const [path, schedule] of expectedCrons) {
     results.push(
@@ -87,7 +88,7 @@ function checkHandoffDeploymentArtifacts(profile: ReturnType<typeof resolveEnvPr
     results.push(pass("Marketing website app URL", `VITE_ZOOK_APP_URL is ${websiteAppUrl}.`));
   }
 
-  const ogImagePaths = ["apps/website/public/og-image.jpg", "apps/web/public/og-image.jpg"];
+  const ogImagePaths = ["apps/web/public/og-image.jpg"];
   for (const relativePath of ogImagePaths) {
     const ogImagePath = join(rootDir, relativePath);
     if (!existsSync(ogImagePath)) {

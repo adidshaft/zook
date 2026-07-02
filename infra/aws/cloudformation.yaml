@@ -291,7 +291,20 @@ Resources:
           set -eu
           secret="$(grep '^CRON_SECRET=' /opt/zook/web.env | head -n1 | cut -d= -f2- | sed 's/^"//;s/"$//')"
           path="$1"
-          curl -fsS -X POST -H "Authorization: Bearer ${!secret}" "http://127.0.0.1/api/cron/${!path}" >/dev/null
+          web_container="$(docker ps --filter 'name=zook-web-1' --format '{{.Names}}' | head -n1)"
+          if [ -z "$web_container" ]; then
+            web_container="$(docker ps --filter 'name=zook_web_1' --format '{{.Names}}' | head -n1)"
+          fi
+          if [ -z "$web_container" ]; then
+            echo "Unable to locate running Zook web container." >&2
+            exit 1
+          fi
+          web_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$web_container")"
+          if [ -z "$web_ip" ]; then
+            echo "Unable to resolve Zook web container IP." >&2
+            exit 1
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer ${!secret}" "http://${!web_ip}:3000/api/cron/${!path}" >/dev/null
           CRONRUN
           chmod +x /opt/zook/run-cron.sh
 
