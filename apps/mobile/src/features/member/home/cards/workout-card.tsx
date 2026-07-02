@@ -5,11 +5,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { usePlanExercises } from "@/lib/domains/plans";
 import { useT } from "@/lib/i18n";
-import { glow, gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { fixedSurfaces, glow, gradients, radii, spacing, typography, useTheme } from "@/lib/theme";
 
 // The hero gradient is always dark in both themes, so its text must stay light
 // regardless of light/dark mode (otherwise light mode renders dark-on-dark).
-const ON_DARK_PRIMARY = "#F6FFE9";
+const ON_DARK_PRIMARY = fixedSurfaces.onDarkPrimary;
 const ON_DARK_SECONDARY = "rgba(246,255,233,0.72)";
 const ON_DARK_CHIP_BG = "rgba(255,255,255,0.10)";
 const ON_DARK_CHIP_BORDER = "rgba(255,255,255,0.20)";
@@ -136,8 +136,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   title: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 27,
+    ...typography.screenTitle,
     lineHeight: 31,
   },
   meta: {

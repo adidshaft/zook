@@ -3,7 +3,6 @@ import { resolvePlanName } from "@zook/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   LayoutChangeEvent,
   Pressable,
   RefreshControl,
@@ -22,24 +21,24 @@ import {
   EmptyState,
   Card,
   IconBubble,
-  AppHeader,
+  ScreenHeader,
   BranchSelectorChip,
   Pill,
   ProgressBar,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useRoleContext } from "@/lib/role-context";
 import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
 import {
-  formatActivityDate,
   formatInr,
   formatLongDate,
   formatRoleLabel,
-  formatVisitLimit,
 } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import {
   useActiveMembership,
   useMemberHome,
@@ -51,6 +50,7 @@ import {
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useT } from "@/lib/i18n";
+import { showToast } from "@/lib/toast";
 
 type ActivityItem = {
   id: string;
@@ -92,7 +92,7 @@ function membershipProgressLabel(input: {
   durationDays?: number | null;
   remainingVisits?: number | null;
   visitLimit?: number | null;
-}, t: ReturnType<typeof useT>) {
+}, t: ReturnType<typeof useT>, formatVisitLimit: ReturnType<typeof useFormatters>["formatVisitLimit"]) {
   if (typeof input.remainingVisits === "number" && input.visitLimit) {
     return t("member.profile.visitsRemaining", { remaining: input.remainingVisits, total: formatVisitLimit(input.visitLimit) });
   }
@@ -108,10 +108,12 @@ function membershipProgressLabel(input: {
 export default function ProfileScreen() {
   const router = useRouter();
   const t = useT();
+  const { formatActivityDate, formatVisitLimit } = useFormatters();
   const showQaShortcuts = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const { mode, palette } = useTheme();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
+  const { confirm, sheet } = useConfirmSheet();
   const {
     activeOrgId,
     biometricEnabled,
@@ -176,7 +178,7 @@ export default function ProfileScreen() {
     durationDays: membershipPlan?.durationDays ?? membershipPlan?.validityDays,
     remainingVisits: membership?.remainingVisits,
     visitLimit: membershipPlan?.visitLimit,
-  }, t);
+  }, t, formatVisitLimit);
   const referralCode = referralQuery.data?.referralCodes[0] ?? null;
   const referralPolicy = referralQuery.data?.policy as
     | { referrerRewardType?: string; referrerRewardValue?: number }
@@ -261,7 +263,7 @@ export default function ProfileScreen() {
         icon: "barbell-outline" as const,
       })) ?? [];
     return [...attendanceItems, ...workoutItems].slice(0, 3);
-  }, [attendanceQuery.data?.attendance, plansQuery.data?.plans, t]);
+  }, [attendanceQuery.data?.attendance, formatActivityDate, plansQuery.data?.plans, t]);
   const focusTarget = firstParam(params.focus);
   const profileSections = useMemo(
     () => [
@@ -329,43 +331,49 @@ export default function ProfileScreen() {
 
   function confirmRoleSwitch(role: Role) {
     if (role === activeRole) return;
-    Alert.alert(t("member.profile.switchRoleConfirmTitle", { role: formatRoleLabel(role) }), t("member.profile.switchRoleConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("member.profile.switch"),
-        onPress: () => {
-          setRoleBusy(role);
-          void switchRole(role)
-            .then(() => router.replace(routeForRole(role)))
-            .catch((error) => {
-              Alert.alert(
-                t("member.profile.roleUnavailable"),
-                error instanceof Error ? error.message : t("member.profile.roleUnavailableBody"),
-              );
-            })
-            .finally(() => setRoleBusy(null));
-        },
+    confirm({
+      title: t("member.profile.switchRoleConfirmTitle", { role: formatRoleLabel(role) }),
+      body: t("member.profile.switchRoleConfirmBody"),
+      destructiveLabel: t("member.profile.switch"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: async () => {
+        setRoleBusy(role);
+        try {
+          await switchRole(role);
+          router.replace(routeForRole(role));
+        } catch (error) {
+          showToast({
+            title: t("member.profile.roleUnavailable"),
+            message: error instanceof Error ? error.message : t("member.profile.roleUnavailableBody"),
+            tone: "danger",
+            haptic: "error",
+          });
+        } finally {
+          setRoleBusy(null);
+        }
       },
-    ]);
+    });
   }
 
   function confirmSignOut() {
-    Alert.alert(t("member.profile.signOutConfirmTitle"), t("member.profile.signOutConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("member.profile.signOut"),
-        style: "destructive",
-        onPress: () => {
-          void logout();
-        },
-      },
-    ]);
+    confirm({
+      title: t("member.profile.signOutConfirmTitle"),
+      body: t("member.profile.signOutConfirmBody"),
+      destructiveLabel: t("member.profile.signOut"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => void logout(),
+    });
   }
 
   function toggleBiometricUnlock() {
     void setBiometricEnabled(!biometricEnabled).then((enabled) => {
       if (!enabled && !biometricEnabled) {
-        Alert.alert(t("member.profile.biometricUnlock"), t("member.profile.biometricUnlockBody"));
+        showToast({
+          title: t("member.profile.biometricUnlock"),
+          message: t("member.profile.biometricUnlockBody"),
+          tone: "amber",
+          haptic: "warning",
+        });
       }
     });
   }
@@ -394,7 +402,12 @@ export default function ProfileScreen() {
         : toWebUrl(rawLink)
       : referralCode.code;
     await Clipboard.setStringAsync(link);
-    Alert.alert(t("member.profile.referralCopied"), link === referralCode.code ? t("member.profile.referralCodeCopied") : t("member.profile.referralLinkCopied"));
+    showToast({
+      title: t("member.profile.referralCopied"),
+      message: link === referralCode.code ? t("member.profile.referralCodeCopied") : t("member.profile.referralLinkCopied"),
+      tone: "success",
+      haptic: "success",
+    });
   }
 
   return (
@@ -416,7 +429,7 @@ export default function ProfileScreen() {
           }
         >
           <View style={[styles.stickyHeader, { backgroundColor: palette.bg.app }]}>
-            <AppHeader
+            <ScreenHeader
               title={t("member.profile.title")}
               showProfileShortcut={false}
               leading={
@@ -771,6 +784,7 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

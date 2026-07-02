@@ -26,7 +26,7 @@ import { useTrainerClients } from "@/lib/domains";
 import { useT } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
 import { useSharedValue } from "@/lib/reanimated-lite";
-import { layout, spacing, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function TrainerHomeScreen() {
   const { palette } = useTheme();
@@ -299,8 +299,7 @@ const styles = StyleSheet.create({
   },
   shortcutLabel: {
     flex: 1,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
+    ...typography.button,
     lineHeight: 18,
   },
   stack: { gap: spacing.sm },

@@ -11,7 +11,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AppState,
   type AppStateStatus,
-  type ImageSourcePropType,
   Linking,
   Pressable,
   RefreshControl,
@@ -19,38 +18,38 @@ import {
   Share,
   StyleSheet,
   Text,
-  TextInput,
-  View,
 } from "react-native";
-import { Image } from "expo-image";
 import {
   EmptyState,
   Card,
-  AppHeader,
-  Pill,
+  ScreenHeader,
   PrimaryButton,
   QueryErrorState,
-  SectionHeader,
   useRequestPermissionWithRationale,
   ZookScreen,
 } from "@/components/primitives";
 import { GymDetailSkeleton } from "@/components/skeletons";
-import { AmenityGrid } from "@/components/domain/amenity-grid";
+import { GymBranchSelector } from "@/features/member/gym/gym-branch-selector";
+import { GymHeroCard } from "@/features/member/gym/gym-hero-card";
+import { GymJoinDisclosure } from "@/features/member/gym/gym-join-disclosure";
+import { GymNextActionCard } from "@/features/member/gym/gym-next-action-card";
+import { GymOverviewSection } from "@/features/member/gym/gym-overview-section";
+import {
+  GymProfileTabs,
+  type GymProfileTab,
+} from "@/features/member/gym/gym-profile-tabs";
+import {
+  effectivePlanPrice,
+  GymPlansSection,
+} from "@/features/member/gym/gym-plans-section";
+import {
+  gymImageSource,
+  seededGymImageSource,
+  seededGymMedia,
+} from "@/features/member/gym/gym-profile-media";
 import { GymReviews } from "@/features/member/gym/gym-reviews";
+import { GymTrainerSheetContent } from "@/features/member/gym/gym-trainer-sheet-content";
 import { GalleryViewer } from "@/features/member/gym/gallery-viewer";
-import aarogyaCoverSource from "../../../../web/public/seed/gyms/aarogya-strength/cover.png";
-import aarogyaGallery01Source from "../../../../web/public/seed/gyms/aarogya-strength/gallery-01.png";
-import aarogyaGallery02Source from "../../../../web/public/seed/gyms/aarogya-strength/gallery-02.png";
-import aarogyaGallery03Source from "../../../../web/public/seed/gyms/aarogya-strength/gallery-03.png";
-import aarogyaGallery04Source from "../../../../web/public/seed/gyms/aarogya-strength/gallery-04.png";
-import aarogyaGallery05Source from "../../../../web/public/seed/gyms/aarogya-strength/gallery-05.png";
-import yourFitnessCoverSource from "../../../../web/public/seed/gyms/your-fitness/cover.png";
-import yourFitnessGallery01Source from "../../../../web/public/seed/gyms/your-fitness/gallery-01.png";
-import yourFitnessGallery02Source from "../../../../web/public/seed/gyms/your-fitness/gallery-02.png";
-import yourFitnessGallery03Source from "../../../../web/public/seed/gyms/your-fitness/gallery-03.png";
-import yourFitnessGallery04Source from "../../../../web/public/seed/gyms/your-fitness/gallery-04.png";
-import yourFitnessGallery05Source from "../../../../web/public/seed/gyms/your-fitness/gallery-05.png";
-import { planTypeLabel } from "@/components/membership/helpers";
 import { useGymDistanceKm } from "@/lib/use-gym-distance";
 import { normalizeWebUrl, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -60,7 +59,6 @@ import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
 import {
   formatBranchName,
   formatGymHeaderIdentity,
-  formatInitials,
   formatInr,
   formatLongDate,
   joinModeLabel,
@@ -69,57 +67,11 @@ import {
 import { useGymProfile, type GymProfileData } from "@/lib/domains";
 import { useI18n } from "@/lib/i18n";
 import { usePushNotifications } from "@/lib/push-notifications";
-import { layout, spacing, typography, useTheme } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type PublicTrainer = NonNullable<GymProfileData["trainers"]>[number];
 type Translate = ReturnType<typeof useI18n>["t"];
-type GymProfileTab = "plans" | "overview" | "reviews";
-
-const SEEDED_GYM_IMAGE_SOURCES: Record<string, ImageSourcePropType> = {
-  "/seed/gyms/aarogya-strength/cover.png": aarogyaCoverSource as ImageSourcePropType,
-  "/seed/gyms/aarogya-strength/gallery-01.png": aarogyaGallery01Source as ImageSourcePropType,
-  "/seed/gyms/aarogya-strength/gallery-02.png": aarogyaGallery02Source as ImageSourcePropType,
-  "/seed/gyms/aarogya-strength/gallery-03.png": aarogyaGallery03Source as ImageSourcePropType,
-  "/seed/gyms/aarogya-strength/gallery-04.png": aarogyaGallery04Source as ImageSourcePropType,
-  "/seed/gyms/aarogya-strength/gallery-05.png": aarogyaGallery05Source as ImageSourcePropType,
-  "/seed/gyms/your-fitness/cover.png": yourFitnessCoverSource as ImageSourcePropType,
-  "/seed/gyms/your-fitness/gallery-01.png": yourFitnessGallery01Source as ImageSourcePropType,
-  "/seed/gyms/your-fitness/gallery-02.png": yourFitnessGallery02Source as ImageSourcePropType,
-  "/seed/gyms/your-fitness/gallery-03.png": yourFitnessGallery03Source as ImageSourcePropType,
-  "/seed/gyms/your-fitness/gallery-04.png": yourFitnessGallery04Source as ImageSourcePropType,
-  "/seed/gyms/your-fitness/gallery-05.png": yourFitnessGallery05Source as ImageSourcePropType,
-};
-
-function seededGymMedia(username?: string | null) {
-  if (username === "aarogya-strength" || username === "your-fitness") {
-    const base = `/seed/gyms/${username}`;
-    return {
-      coverImageUrl: `${base}/cover.png`,
-      logoUrl: `${base}/logo.svg`,
-      gallery: [
-        `${base}/gallery-01.png`,
-        `${base}/gallery-02.png`,
-        `${base}/gallery-03.png`,
-        `${base}/gallery-04.png`,
-        `${base}/gallery-05.png`,
-      ],
-    };
-  }
-  return { coverImageUrl: null, logoUrl: null, gallery: [] };
-}
-
-function seededGymImageSource(value?: string | null) {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  const matchedPath = Object.keys(SEEDED_GYM_IMAGE_SOURCES).find((path) => trimmed.endsWith(path));
-  return matchedPath ? SEEDED_GYM_IMAGE_SOURCES[matchedPath] : null;
-}
-
-function gymImageSource(value?: string | null) {
-  const webUrl = normalizeWebUrl(value);
-  return seededGymImageSource(value) ?? (webUrl ? { uri: webUrl } : null);
-}
 
 export default function GymProfileScreen() {
   const router = useRouter();
@@ -131,7 +83,7 @@ export default function GymProfileScreen() {
   const intent = Array.isArray(params.intent) ? params.intent[0] : params.intent;
   const { token } = useAuth();
   const { locale, t } = useI18n();
-  const { mode, palette } = useTheme();
+  const { palette } = useTheme();
   const { selectedBranchId } = useBranchSelection();
   const queryClient = useQueryClient();
   const gymQuery = useGymProfile(username ?? "");
@@ -471,74 +423,23 @@ export default function GymProfileScreen() {
   };
 
   const nextActionCard = viewerState?.activeMembership ? null : (
-    <Card
-      variant={needsApproval || inviteOnlyLocked ? "warning" : "default"}
-      contentStyle={styles.nextActionCard}
-    >
-      <View style={styles.nextActionCopy}>
-        <Text style={[styles.nextActionEyebrow, { color: palette.text.secondary }]}>
-          {needsApproval
-            ? t("gymProfile.reviewed")
-            : inviteOnlyLocked
-              ? t("gymProfile.inviteOnly")
-              : t("gymProfile.readyToJoin")}
-        </Text>
-        <Text numberOfLines={2} style={[styles.nextActionTitle, { color: palette.text.primary }]}>
-          {selectedCheckoutPlan
-            ? planNameForLocale(selectedCheckoutPlan, locale, t)
-            : t("gymProfile.choosePlanToContinue")}
-        </Text>
-        {selectedCheckoutPlan && !needsApproval && !inviteOnlyLocked ? (
-          <Text
-            numberOfLines={1}
-            style={[styles.nextActionBody, { color: palette.text.secondary }]}
-          >
-            {t("gymProfile.tapPlanToChange")}
-          </Text>
-        ) : null}
-      </View>
-      {needsApproval && !viewerState?.pendingJoinRequest && !viewerState?.approvedJoinRequest ? (
-        <PrimaryButton testID="gym-top-request-membership" onPress={() => void requestMembership()}>
-          {busyAction === "join-request"
-            ? t("gymProfile.submitting")
-            : t("gymProfile.sendMembershipRequest")}
-        </PrimaryButton>
-      ) : inviteOnlyLocked ? (
-        <View style={styles.inviteCodeRow}>
-          <TextInput
-            testID="gym-top-invite-code"
-            value={inviteCode}
-            onChangeText={setInviteCode}
-            autoCapitalize="characters"
-            placeholder={t("gymProfile.inviteCode")}
-            placeholderTextColor={palette.text.tertiary}
-            style={[
-              styles.inviteCodeInput,
-              {
-                backgroundColor: mode === "dark" ? palette.bg.sunken : palette.surface.raised,
-                borderColor: palette.border.default,
-                color: palette.text.primary,
-              },
-            ]}
-          />
-          <PrimaryButton testID="gym-top-apply-invite-code" onPress={applyInviteCode}>
-            {t("gymProfile.apply")}
-          </PrimaryButton>
-        </View>
-      ) : selectedCheckoutPlan ? (
-        <PrimaryButton
-          testID="gym-top-choose-plan"
-          onPress={() => void startCheckout(selectedCheckoutPlan.id)}
-          disabled={!canCheckout(selectedCheckoutPlan.id)}
-        >
-          {busyAction === selectedCheckoutPlan.id
-            ? t("gymProfile.openingPayment")
-            : canCheckout(selectedCheckoutPlan.id)
-              ? t("gymProfile.payAmountNow", { amount: formatInr(selectedCheckoutPlanPrice) })
-              : t("gymProfile.completeEarlierStep")}
-        </PrimaryButton>
-      ) : null}
-    </Card>
+    <GymNextActionCard
+      approvedJoinRequest={Boolean(viewerState?.approvedJoinRequest)}
+      busyAction={busyAction}
+      canCheckoutSelectedPlan={
+        selectedCheckoutPlan ? canCheckout(selectedCheckoutPlan.id) : false
+      }
+      inviteCode={inviteCode}
+      inviteOnlyLocked={inviteOnlyLocked}
+      needsApproval={needsApproval}
+      onApplyInviteCode={applyInviteCode}
+      onInviteCodeChange={setInviteCode}
+      onRequestMembership={() => void requestMembership()}
+      onStartCheckout={(planId) => void startCheckout(planId)}
+      pendingJoinRequest={Boolean(viewerState?.pendingJoinRequest)}
+      selectedCheckoutPlan={selectedCheckoutPlan}
+      selectedCheckoutPlanPrice={selectedCheckoutPlanPrice}
+    />
   );
 
   return (
@@ -559,7 +460,7 @@ export default function GymProfileScreen() {
         }
       >
         {!gym ? (
-          <AppHeader
+          <ScreenHeader
             eyebrow={t("gymProfile.eyebrow")}
             title={t("gymProfile.membershipProfile")}
             leading={
@@ -602,632 +503,121 @@ export default function GymProfileScreen() {
 
         {gym ? (
           <>
-            <Card contentStyle={styles.heroCard}>
-              <View style={styles.coverShell}>
-                <View
-                  style={[
-                    styles.coverPlaceholder,
-                    !coverImageSource ? styles.coverPlaceholderFallback : null,
-                    {
-                      backgroundColor: coverImageSource ? palette.surface.raised : gymBrand.soft,
-                      borderColor: palette.border.default,
-                    },
-                  ]}
-                >
-                  {coverImageSource ? (
-                    <Image
-                      source={coverImageSource}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <Text style={[styles.coverFallbackInitial, { color: gymBrand.solid }]}>
-                      {formatInitials(gym.name, gymBrand.initial)}
-                    </Text>
-                  )}
-                  <View style={styles.coverTint} />
-                  <View style={styles.coverActionRow}>
-                    <Pressable
-                      onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("common.back")}
-                      style={({ pressed }) => [
-                        styles.coverIconButton,
-                        pressed ? styles.iconButtonPressed : null,
-                      ]}
-                    >
-                      <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => void shareGym()}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("gymProfile.shareProfile")}
-                      style={({ pressed }) => [
-                        styles.coverIconButton,
-                        pressed ? styles.iconButtonPressed : null,
-                      ]}
-                    >
-                      <Ionicons name="share-outline" size={21} color="#FFFFFF" />
-                    </Pressable>
-                  </View>
-                  <View style={styles.coverTextStack}>
-                    <View style={styles.coverIdentityRow}>
-                      <View
-                        style={[
-                          styles.gymLogoOverlay,
-                          { backgroundColor: palette.accent.base, borderColor: "rgba(255,255,255,0.72)" },
-                        ]}
-                      >
-                        {showLogoImage ? (
-                          <Image
-                            source={{ uri: logoImageUrl }}
-                            style={styles.gymLogoImage}
-                            contentFit="cover"
-                            onError={() => setLogoLoadFailed(true)}
-                          />
-                        ) : (
-                          <Text style={[styles.gymLogoFallbackText, { color: palette.text.onAccent }]}>
-                            {formatInitials(gym.name, gymBrand.initial)}
-                          </Text>
-                        )}
-                      </View>
-                      <View style={styles.coverIdentityCopy}>
-                        <Text
-                          numberOfLines={3}
-                          style={[styles.coverTitle, styles.coverTextOnImage]}
-                        >
-                          {gymIdentity.title}
-                        </Text>
-                        {gymLocalityLabel ? (
-                          <Text
-                            numberOfLines={1}
-                            style={[styles.coverSubtitle, styles.coverTextOnImage]}
-                          >
-                            {gymLocalityLabel}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </View>
-                    <Text
-                      numberOfLines={2}
-                      style={[styles.coverEyebrow, styles.coverTextOnImage]}
-                    >
-                      {localizedGymTagline(
-                        gym.tagline,
-                        gym.gymType,
-                        gym.city,
-                        gym.state,
-                        locale,
-                        t,
-                      )}
-                    </Text>
-                    <View style={styles.coverMetaRow}>
-                      {!viewerState?.activeMembership ? (
-                        <Pill tone={joinModeTone(gym.joinMode)}>
-                          {localizedJoinModeLabel(gym.joinMode, t)}
-                        </Pill>
-                      ) : null}
-                      {leadPlan && !viewerState?.activeMembership ? (
-                        <Pill>{formatInr(effectivePlanPrice(leadPlan))}</Pill>
-                      ) : null}
-                    </View>
-                  </View>
-                  {gym.openingHoursSummary ? (
-                    <Text style={[styles.coverBody, styles.coverTextOnImage]} numberOfLines={1}>
-                      {gym.openingHoursSummary}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={styles.viewerStateStack}>
-                {effectiveReferral && !viewerState?.activeMembership ? (
-                  <Pill tone="blue">{`${t("gymProfile.referralApplied")}: ${effectiveReferral}`}</Pill>
-                ) : null}
-                {viewerState?.activeMembership ? (
-                  <Pill tone="blue">
-                    {viewerState.activeMembership.endsAt
-                      ? t("gymProfile.activeUntil", {
-                          date: formatLongDate(viewerState.activeMembership.endsAt),
-                        })
-                      : t("gymProfile.alreadyActive")}
-                  </Pill>
-                ) : null}
-                {viewerState?.pendingJoinRequest ? (
-                  <Pill tone="amber">
-                    {t("gymProfile.pendingSince", {
+            <GymHeroCard
+              activeMembershipLabel={
+                viewerState?.activeMembership
+                  ? viewerState.activeMembership.endsAt
+                    ? t("gymProfile.activeUntil", {
+                        date: formatLongDate(viewerState.activeMembership.endsAt),
+                      })
+                    : t("gymProfile.alreadyActive")
+                  : null
+              }
+              approvedJoinRequestLabel={
+                viewerState?.approvedJoinRequest
+                  ? viewerState.approvedJoinRequest.reviewedAt
+                    ? t("gymProfile.approvedDate", {
+                        date: formatLongDate(viewerState.approvedJoinRequest.reviewedAt),
+                      })
+                    : t("gymProfile.approvedForPayment")
+                  : null
+              }
+              backLabel={t("common.back")}
+              coverImageSource={coverImageSource}
+              effectiveReferral={effectiveReferral}
+              gymBrand={gymBrand}
+              gymName={gym.name}
+              identityTitle={gymIdentity.title}
+              joinModePill={localizedJoinModeLabel(gym.joinMode, t)}
+              joinModeTone={joinModeTone(gym.joinMode)}
+              leadPlanPriceLabel={leadPlan ? formatInr(effectivePlanPrice(leadPlan)) : null}
+              localityLabel={gymLocalityLabel}
+              logoImageUrl={logoImageUrl}
+              openingHoursSummary={gym.openingHoursSummary}
+              pendingJoinRequestLabel={
+                viewerState?.pendingJoinRequest
+                  ? t("gymProfile.pendingSince", {
                       date: formatLongDate(viewerState.pendingJoinRequest.createdAt),
-                    })}
-                  </Pill>
-                ) : null}
-                {viewerState?.approvedJoinRequest ? (
-                  <Pill tone="lime">
-                    {viewerState.approvedJoinRequest.reviewedAt
-                      ? t("gymProfile.approvedDate", {
-                          date: formatLongDate(viewerState.approvedJoinRequest.reviewedAt),
-                        })
-                      : t("gymProfile.approvedForPayment")}
-                  </Pill>
-                ) : null}
-              </View>
-            </Card>
+                    })
+                  : null
+              }
+              referralAppliedLabel={t("gymProfile.referralApplied")}
+              shareLabel={t("gymProfile.shareProfile")}
+              showLogoImage={showLogoImage}
+              tagline={localizedGymTagline(
+                gym.tagline,
+                gym.gymType,
+                gym.city,
+                gym.state,
+                locale,
+                t,
+              )}
+              viewerHasActiveMembership={Boolean(viewerState?.activeMembership)}
+              onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+              onLogoError={() => setLogoLoadFailed(true)}
+              onShare={() => void shareGym()}
+            />
 
-            <Card variant="compact" contentStyle={styles.branchSelectorCard}>
-              <View style={styles.branchSelectorTopRow}>
-                <View style={styles.branchSelectorCopy}>
-                  <Text style={[styles.branchSelectorEyebrow, { color: palette.text.secondary }]}>
-                    {t("gymProfile.location")}
-                  </Text>
-                  <Text
-                    numberOfLines={2}
-                    style={[styles.branchSelectorTitle, { color: palette.text.primary }]}
-                  >
-                    {selectedLocationTitle}
-                  </Text>
-                  {selectedLocationMeta ? (
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.branchSelectorAddress, { color: palette.text.secondary }]}
-                    >
-                      {selectedLocationMeta}
-                    </Text>
-                  ) : null}
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t("gymProfile.getDirections")}
-                  onPress={openDirections}
-                  style={({ pressed }) => [
-                    styles.branchDirectionsButton,
-                    {
-                      backgroundColor: palette.surface.accentSoft,
-                      borderColor: palette.border.focus,
-                    },
-                    pressed ? styles.branchChoiceChipPressed : null,
-                  ]}
-                >
-                  <Ionicons name="navigate-outline" size={18} color={palette.accent.base} />
-                </Pressable>
-              </View>
-              {branchSelectorVisible && alternateProfileBranches.length ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.branchSelectorRail}
-                >
-                  {alternateProfileBranches.map((branch) => {
-                    const hasMapLocation = Boolean(
-                      normalizeWebUrl(branch.googleMapsUrl) ||
-                        (branch.latitude != null && branch.longitude != null),
-                    );
-                    const branchName =
-                      formatBranchName(gym.name, branch.name, {
-                        collapseOrgMatch: true,
-                        fallback: branch.city ?? t("branch.current"),
-                      }) ?? branch.name;
-                    const branchChipName = compactBranchName(gym.name, branchName);
-                    return (
-                      <Pressable
-                        key={branch.id}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${branchChipName}, ${t("branch.useBranch")}`}
-                        onPress={() => setSelectedProfileBranchId(branch.id)}
-                        style={({ pressed }) => [
-                          styles.branchSelectorChip,
-                          {
-                            backgroundColor: palette.bg.sunken,
-                            borderColor: palette.border.subtle,
-                          },
-                          pressed ? styles.branchChoiceChipPressed : null,
-                        ]}
-                      >
-                        <Ionicons
-                          name={hasMapLocation ? "navigate-outline" : "alert-circle-outline"}
-                          size={13}
-                          color={
-                            hasMapLocation ? palette.text.secondary : palette.feedback.warning
-                          }
-                        />
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.branchSelectorChipText,
-                            { color: palette.text.secondary },
-                          ]}
-                        >
-                          {branchChipName}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              ) : null}
-            </Card>
+            <GymBranchSelector
+              alternateBranches={alternateProfileBranches}
+              branchSelectorVisible={branchSelectorVisible}
+              gymName={gym.name}
+              onOpenDirections={openDirections}
+              onSelectBranch={setSelectedProfileBranchId}
+              selectedLocationMeta={selectedLocationMeta}
+              selectedLocationTitle={selectedLocationTitle}
+            />
 
             {joinIntentActive ? nextActionCard : null}
 
             {joinIntentActive ? null : nextActionCard}
 
-            <View style={[styles.sectionTabs, { backgroundColor: palette.surface.default }]}>
-              {[
-                { key: "plans" as const, label: t("nav.plans") },
-                { key: "overview" as const, label: t("gymProfile.overview") },
-                { key: "reviews" as const, label: t("gymReviews.reviews") },
-              ].map((item) => (
-                <Pressable
-                  key={item.key}
-                  onPress={() => setProfileTab(item.key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: profileTab === item.key }}
-                  style={({ pressed }) => [
-                    styles.sectionTab,
-                    {
-                      backgroundColor:
-                        profileTab === item.key ? palette.surface.accentSoft : "transparent",
-                      borderColor:
-                        profileTab === item.key ? palette.border.focus : palette.border.subtle,
-                    },
-                    pressed ? styles.sectionTabPressed : null,
-                  ]}
-                >
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.sectionTabText,
-                      {
-                        color:
-                          profileTab === item.key ? palette.accent.base : palette.text.secondary,
-                      },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <GymProfileTabs
+              activeTab={profileTab}
+              items={[
+                { key: "plans", label: t("nav.plans") },
+                { key: "overview", label: t("gymProfile.overview") },
+                { key: "reviews", label: t("gymReviews.reviews") },
+              ]}
+              onSelectTab={setProfileTab}
+            />
 
             {profileTab === "plans" ? (
-              <View>
-                <SectionHeader eyebrow={t("nav.plans")} title={t("gymProfile.membershipOptions")} />
-
-                {!plans.length ? <EmptyState title={t("gymProfile.noPublicPlans")} /> : null}
-
-                <View style={styles.planStack}>
-                  {plans.map((plan) => {
-                    const pricedPlan = plan as typeof plan & {
-                      effectivePricePaise?: number | null;
-                      badges?: string[] | null;
-                    };
-                    const effectivePricePaise = pricedPlan.effectivePricePaise ?? plan.pricePaise;
-                    const hasReferralPrice =
-                      effectiveReferral &&
-                      effectivePricePaise !== null &&
-                      effectivePricePaise !== undefined &&
-                      plan.pricePaise !== null &&
-                      plan.pricePaise !== undefined &&
-                      effectivePricePaise < plan.pricePaise;
-                    const badges = [
-                      ...(pricedPlan.badges ?? []),
-                      hasReferralPrice ? t("gymProfile.referralPrice") : null,
-                    ].filter((item): item is string => Boolean(item));
-                    const planName = planNameForLocale(plan, locale, t);
-                    const planDescription = planDescriptionForLocale(plan, locale, t);
-
-                    const selectedForCheckout = selectedCheckoutPlan?.id === plan.id;
-                    const canSelectPlan =
-                      !viewerState?.activeMembership && !needsApproval && !inviteOnlyLocked;
-
-                    return (
-                      <Pressable
-                        key={plan.id}
-                        testID={`gym-plan-row-${plan.id}`}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t("gymProfile.choosePlan")}: ${planName}`}
-                        accessibilityState={{ selected: selectedForCheckout }}
-                        onPress={() =>
-                          canSelectPlan
-                            ? selectCheckoutPlan(plan.id, { revealCheckout: true })
-                            : undefined
-                        }
-                        disabled={!canSelectPlan}
-                        style={({ pressed }) => (pressed && canSelectPlan ? styles.cardPressed : null)}
-                      >
-                        <Card
-                          contentStyle={styles.planCard}
-                          style={[
-                            styles.planCardShell,
-                            {
-                              borderColor: selectedForCheckout
-                                ? palette.border.focus
-                                : palette.border.subtle,
-                              backgroundColor: selectedForCheckout
-                                ? palette.surface.accentSoft
-                                : palette.surface.default,
-                            },
-                          ]}
-                        >
-                          <View style={styles.planHeader}>
-                            <View style={styles.planCopy}>
-                              <Text
-                                style={[styles.planName, { color: palette.text.primary }]}
-                                numberOfLines={1}
-                              >
-                                {planName}
-                              </Text>
-                              <Text
-                                style={[styles.planType, { color: palette.text.secondary }]}
-                                numberOfLines={1}
-                              >
-                                {planTypeLabel(plan.type, t)}
-                              </Text>
-                            </View>
-                            <View style={styles.planPriceBlock}>
-                              {selectedForCheckout && !viewerState?.activeMembership ? (
-                                <View
-                                  style={[
-                                    styles.planSelectedMark,
-                                    { backgroundColor: palette.accent.base },
-                                  ]}
-                                >
-                                  <Ionicons
-                                    name="checkmark"
-                                    size={13}
-                                    color={palette.text.onAccent}
-                                  />
-                                </View>
-                              ) : null}
-                              <Text
-                                style={[styles.planPrice, { color: palette.accent.base }]}
-                                numberOfLines={1}
-                              >
-                                {formatInr(effectivePricePaise)}
-                              </Text>
-                              {hasReferralPrice ? (
-                                <Text
-                                  style={[styles.planOriginalPrice, { color: palette.text.tertiary }]}
-                                  numberOfLines={1}
-                                >
-                                  {formatInr(plan.pricePaise)}
-                                </Text>
-                              ) : null}
-                            </View>
-                          </View>
-                          {badges.length ? (
-                            <View style={styles.planBadgeRow}>
-                              {badges.slice(0, 3).map((badge) => (
-                                <Text
-                                  key={`${plan.id}-${badge}`}
-                                  style={[
-                                    styles.planBadge,
-                                    {
-                                      backgroundColor: palette.surface.accentSoft,
-                                      borderColor: palette.border.focus,
-                                      color: palette.accent.base,
-                                    },
-                                  ]}
-                                >
-                                  {badge}
-                                </Text>
-                              ))}
-                            </View>
-                          ) : null}
-                          {planDescription ? (
-                            <Text
-                              style={[styles.planDescription, { color: palette.text.secondary }]}
-                              numberOfLines={2}
-                            >
-                              {planDescription}
-                            </Text>
-                          ) : null}
-                          <View style={styles.planBenefits}>
-                            {buildPlanHighlights(plan, t).map((item) => (
-                              <View key={`${plan.id}-${item}`} style={styles.planBenefitRow}>
-                                <Ionicons
-                                  name="checkmark-circle-outline"
-                                  size={15}
-                                  color={palette.accent.base}
-                                />
-                                <Text
-                                  style={[styles.planBenefitText, { color: palette.text.secondary }]}
-                                >
-                                  {item}
-                                </Text>
-                              </View>
-                            ))}
-                          </View>
-                        </Card>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
+              <GymPlansSection
+                activeMembership={Boolean(viewerState?.activeMembership)}
+                effectiveReferral={effectiveReferral}
+                inviteOnlyLocked={inviteOnlyLocked}
+                locale={locale}
+                needsApproval={needsApproval}
+                plans={plans}
+                selectedCheckoutPlanId={selectedCheckoutPlan?.id ?? null}
+                onSelectPlan={(planId) => selectCheckoutPlan(planId, { revealCheckout: true })}
+              />
             ) : null}
 
             {profileTab === "overview" ? (
-              <>
-                <SectionHeader
-                  eyebrow={t("gymProfile.atAGlance")}
-                  title={t("gymProfile.whatsInside")}
-                />
-                <Card contentStyle={styles.amenityCard}>
-                  <AmenityGrid
-                    sources={[...(gym.amenities ?? []), ...(gym.equipment ?? []), gym.gymType]}
-                  />
-                </Card>
-
-                {gallery.length ? (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.galleryRow}
-                  >
-                    {gallery.map((imageUrl, index) => (
-                      <Pressable
-                        key={`${imageUrl}-${index}`}
-                        accessibilityRole="imagebutton"
-                        accessibilityLabel={t("gymProfile.photoOf", {
-                          index: index + 1,
-                          count: gallery.length,
-                        })}
-                        onPress={() => setGalleryIndex(index)}
-                        style={({ pressed }) => (pressed ? { opacity: 0.88 } : null)}
-                      >
-                        <Image
-                          source={gymImageSource(imageUrl)}
-                          style={styles.galleryImage}
-                          contentFit="cover"
-                        />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                ) : null}
-
-                <SectionHeader
-                  eyebrow={t("gymProfile.coaches")}
-                  title={t("gymProfile.trainerTeam")}
-                />
-
-                <View style={styles.trainerStack}>
-                  {trainers.length ? (
-                    trainers
-                      .filter((trainer) => trainer.visibleToMembers !== false)
-                      .map((trainer) => (
-                        <Pressable
-                          key={trainer.userId}
-                          onPress={() => openTrainerSheet(trainer)}
-                          accessibilityRole="button"
-                          accessibilityLabel={t("gymProfile.openTrainerProfile", {
-                            name: trainer.name,
-                          })}
-                          style={({ pressed }) => (pressed ? styles.cardPressed : null)}
-                        >
-                          <Card contentStyle={styles.trainerCard}>
-                            {trainer.profilePhotoUrl ? (
-                              <Image
-                                source={{ uri: normalizeWebUrl(trainer.profilePhotoUrl) }}
-                                style={styles.trainerImage}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <View
-                                style={[
-                                  styles.trainerImageFallback,
-                                  {
-                                    backgroundColor: palette.surface.accentSoft,
-                                    borderColor: palette.border.focus,
-                                  },
-                                ]}
-                              >
-                                <Text
-                                  style={[styles.trainerImageText, { color: palette.accent.base }]}
-                                >
-                                  {formatInitials(trainer.name, "T")}
-                                </Text>
-                              </View>
-                            )}
-                            <View style={styles.trainerCopy}>
-                              <Text style={[styles.trainerName, { color: palette.text.primary }]}>
-                                {trainer.name}
-                              </Text>
-                              <Text
-                                style={[styles.sectionBody, { color: palette.text.secondary }]}
-                                numberOfLines={2}
-                              >
-                                {trainer.bio ?? t("gymProfile.noBioAdded")}
-                              </Text>
-                              <View style={styles.trainerSpecialties}>
-                                {normalizeSpecialties(trainer.specialties)
-                                  .slice(0, 3)
-                                  .map((specialty) => (
-                                    <Text
-                                      key={`${trainer.userId}-${specialty}`}
-                                      style={[
-                                        styles.trainerSpecialty,
-                                        { color: palette.feedback.info },
-                                      ]}
-                                    >
-                                      {specialty}
-                                    </Text>
-                                  ))}
-                              </View>
-                            </View>
-                          </Card>
-                        </Pressable>
-                      ))
-                  ) : (
-                    <EmptyState title={t("gymProfile.noPublicTrainerProfiles")} />
-                  )}
-                </View>
-              </>
+              <GymOverviewSection
+                gallery={gallery}
+                gym={gym}
+                imageSource={gymImageSource}
+                trainers={trainers}
+                onOpenGallery={setGalleryIndex}
+                onOpenTrainer={openTrainerSheet}
+              />
             ) : null}
 
             {profileTab === "reviews" ? (
-              <View>
-                <GymReviews orgId={gym.id} />
-              </View>
+              <GymReviews orgId={gym.id} />
             ) : null}
 
             {profileTab === "plans" ? (
-              <>
-                <Card variant="compact" contentStyle={styles.joinDisclosureCard}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t("gymProfile.howToJoin")}
-                    accessibilityState={{ expanded: joinStepsExpanded }}
-                    onPress={() => setJoinStepsExpanded((current) => !current)}
-                    style={({ pressed }) => [
-                      styles.joinDisclosureHeader,
-                      pressed ? styles.branchChoiceChipPressed : null,
-                    ]}
-                  >
-                    <View style={styles.joinDisclosureCopy}>
-                      <Text
-                        style={[styles.joinDisclosureEyebrow, { color: palette.text.secondary }]}
-                      >
-                        {t("gymProfile.joinPath")}
-                      </Text>
-                      <Text style={[styles.joinDisclosureTitle, { color: palette.text.primary }]}>
-                        {t("gymProfile.howToJoin")}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={joinStepsExpanded ? "chevron-up" : "chevron-down"}
-                      size={19}
-                      color={palette.text.secondary}
-                    />
-                  </Pressable>
-                  {joinStepsExpanded ? (
-                    <View style={styles.timelineCard}>
-                      {joinSteps.map((step, index) => (
-                        <View key={step.title} style={styles.timelineRow}>
-                          <View
-                            style={[
-                              styles.timelineMarker,
-                              {
-                                backgroundColor: palette.surface.accentSoft,
-                                borderColor: palette.border.focus,
-                              },
-                            ]}
-                          >
-                            <Text style={[styles.timelineMarkerText, { color: palette.accent.base }]}>
-                              {index + 1}
-                            </Text>
-                          </View>
-                          <View style={styles.timelineCopy}>
-                            <Text style={[styles.timelineTitle, { color: palette.text.primary }]}>
-                              {step.title}
-                            </Text>
-                            <Text style={[styles.timelineBody, { color: palette.text.secondary }]}>
-                              {step.body}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                </Card>
-              </>
+              <GymJoinDisclosure
+                expanded={joinStepsExpanded}
+                onToggle={() => setJoinStepsExpanded((current) => !current)}
+                steps={joinSteps}
+                eyebrow={t("gymProfile.joinPath")}
+                title={t("gymProfile.howToJoin")}
+              />
             ) : null}
 
             {statusMessage ? (
@@ -1253,52 +643,8 @@ export default function GymProfileScreen() {
         handleIndicatorStyle={{ ...styles.sheetHandle, backgroundColor: palette.border.strong }}
         onDismiss={() => setSelectedTrainer(null)}
       >
-        <BottomSheetView style={styles.trainerSheetContent}>
-          {selectedTrainer ? (
-            <>
-              <View style={styles.trainerSheetHeader}>
-                {selectedTrainer.profilePhotoUrl ? (
-                  <Image
-                    source={{ uri: normalizeWebUrl(selectedTrainer.profilePhotoUrl) }}
-                    style={styles.trainerSheetImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.trainerSheetImageFallback,
-                      {
-                        backgroundColor: palette.surface.accentSoft,
-                        borderColor: palette.border.focus,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.trainerImageText, { color: palette.accent.base }]}>
-                      {formatInitials(selectedTrainer.name, "T")}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.trainerCopy}>
-                  <Text style={[styles.trainerName, { color: palette.text.primary }]}>
-                    {selectedTrainer.name}
-                  </Text>
-                  <Text style={[styles.sectionBody, { color: palette.text.secondary }]}>
-                    {selectedTrainer.bio ?? t("gymProfile.noTrainerBioPublished")}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.trainerSpecialties}>
-                {normalizeSpecialties(selectedTrainer.specialties).map((specialty) => (
-                  <Text
-                    key={`${selectedTrainer.userId}-sheet-${specialty}`}
-                    style={[styles.trainerSpecialty, { color: palette.feedback.info }]}
-                  >
-                    {specialty}
-                  </Text>
-                ))}
-              </View>
-            </>
-          ) : null}
+        <BottomSheetView>
+          <GymTrainerSheetContent trainer={selectedTrainer} />
         </BottomSheetView>
       </BottomSheetModal>
       <GalleryViewer
@@ -1445,78 +791,6 @@ function compactAddressPartsExcluding(
   );
 }
 
-function normalizeSpecialties(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string");
-  }
-  if (value && typeof value === "object") {
-    return Object.values(value).filter((item): item is string => typeof item === "string");
-  }
-  return [];
-}
-
-function planNameForLocale(
-  plan: { id?: string | null; name?: string | null; type?: string | null },
-  locale: string,
-  t: Translate,
-) {
-  const fallback = plan.name ?? t("gymProfile.choosePlan");
-  if (locale !== "hi") {
-    return fallback;
-  }
-  const normalizedId = (plan.id ?? "").toLowerCase();
-  const normalizedName = (plan.name ?? "").toLowerCase();
-  const normalizedType = (plan.type ?? "").toUpperCase();
-  if (
-    normalizedType === "TRIAL" ||
-    normalizedId.includes("trial") ||
-    normalizedName.includes("trial")
-  ) {
-    return t("gymProfile.planNameTrial");
-  }
-  if (
-    normalizedType === "HYBRID" ||
-    normalizedId.includes("hybrid") ||
-    normalizedName.includes("hybrid")
-  ) {
-    return t("gymProfile.planNameHybrid");
-  }
-  if (
-    normalizedType === "DURATION" ||
-    normalizedId.includes("monthly") ||
-    normalizedName.includes("monthly")
-  ) {
-    return t("gymProfile.planNameMonthly");
-  }
-  return fallback;
-}
-
-function planDescriptionForLocale(
-  plan: { description?: string | null; id?: string | null; type?: string | null },
-  locale: string,
-  t: Translate,
-) {
-  if (locale !== "hi") {
-    return plan.description ?? null;
-  }
-  const normalizedId = (plan.id ?? "").toLowerCase();
-  const normalizedType = (plan.type ?? "").toUpperCase();
-  if (normalizedType === "TRIAL" || normalizedId.includes("trial")) {
-    return t("gymProfile.planDescriptionTrial");
-  }
-  if (normalizedType === "HYBRID" || normalizedId.includes("hybrid")) {
-    return t("gymProfile.planDescriptionHybrid");
-  }
-  if (normalizedType === "DURATION" || normalizedId.includes("monthly")) {
-    return t("gymProfile.planDescriptionMonthly");
-  }
-  return plan.description ?? null;
-}
-
-function effectivePlanPrice(plan?: { pricePaise?: number | null; effectivePricePaise?: number | null } | null) {
-  return typeof plan?.effectivePricePaise === "number" ? plan.effectivePricePaise : plan?.pricePaise;
-}
-
 function checkoutUrl(value: string) {
   return /^https?:\/\//i.test(value) ? value : toWebUrl(value);
 }
@@ -1534,37 +808,6 @@ function checkoutUrlWithReturnUrl(value: string, sessionId?: string | null) {
   }
 }
 
-function buildPlanHighlights(
-  plan: {
-    durationDays?: number | null;
-    visitLimit?: number | null;
-    validityDays?: number | null;
-    startDate?: string | null;
-    endDate?: string | null;
-  },
-  t: Translate,
-) {
-  const highlights = [
-    plan.durationDays ? t("gymProfile.daysCount", { count: plan.durationDays }) : null,
-    plan.visitLimit
-      ? t(plan.visitLimit === 1 ? "gymProfile.visitCountOne" : "gymProfile.visitCountMany", {
-          count: plan.visitLimit,
-        })
-      : null,
-    plan.validityDays ? t("gymProfile.validityDays", { count: plan.validityDays }) : null,
-    plan.startDate && plan.endDate
-      ? t("gymProfile.dateRange", {
-          start: formatLongDate(plan.startDate),
-          end: formatLongDate(plan.endDate),
-        })
-      : null,
-  ].filter(Boolean) as string[];
-
-  return highlights.length
-    ? highlights
-    : [t("gymProfile.flexibleMembership"), t("gymProfile.securePayment")];
-}
-
 const styles = StyleSheet.create({
   scroller: {
     flex: 1,
@@ -1578,11 +821,6 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: layout.bottomNavContentPadding,
   },
-  headerActions: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
   iconButton: {
     width: 44,
     height: 44,
@@ -1595,455 +833,10 @@ const styles = StyleSheet.create({
     opacity: 0.84,
     transform: [{ scale: 0.985 }],
   },
-  heroCard: {
-    gap: 10,
-  },
-  coverShell: {
-    position: "relative",
-  },
-  coverPlaceholder: {
-    minHeight: 220,
-    borderRadius: 22,
-    padding: 16,
-    paddingTop: 62,
-    borderWidth: 1,
-    overflow: "hidden",
-    gap: 10,
-    justifyContent: "flex-end",
-  },
-  coverPlaceholderFallback: {
-    minHeight: 156,
-  },
-  coverFallbackInitial: {
-    position: "absolute",
-    right: 20,
-    top: 18,
-    fontSize: 54,
-    fontWeight: "900",
-    letterSpacing: 0,
-    opacity: 0.56,
-  },
-  coverTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.42)",
-  },
-  coverActionRow: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    top: 14,
-    zIndex: 2,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  coverIconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.28)",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.34)",
-  },
-  gymLogoOverlay: {
-    width: 54,
-    height: 54,
-    borderRadius: 19,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  gymLogoImage: {
-    width: "100%",
-    height: "100%",
-  },
-  gymLogoFallbackText: {
-    ...typography.headerTitle,
-  },
-  coverIdentityRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    maxWidth: "100%",
-  },
-  coverIdentityCopy: {
-    flex: 1,
-    gap: 3,
-    minWidth: 0,
-  },
-  coverTitle: {
-    ...typography.screenTitle,
-    letterSpacing: 0,
-  },
-  coverSubtitle: {
-    ...typography.body,
-  },
-  coverEyebrow: {
-    ...typography.eyebrow,
-  },
-  coverTextStack: {
-    alignSelf: "stretch",
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    gap: 8,
-    maxWidth: "100%",
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-  },
-  coverMetaRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  coverBody: {
-    ...typography.body,
-  },
-  coverTextOnImage: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.55)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  viewerStateStack: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  branchSelectorCard: {
-    gap: spacing.sm,
-  },
-  branchSelectorTopRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  branchSelectorCopy: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  branchSelectorEyebrow: {
-    ...typography.eyebrow,
-  },
-  branchSelectorTitle: {
-    ...typography.cardTitle,
-  },
-  branchSelectorAddress: {
-    ...typography.small,
-  },
-  branchDirectionsButton: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  branchSelectorRail: {
-    gap: spacing.xs,
-    paddingRight: spacing.lg,
-  },
-  branchSelectorChip: {
-    alignItems: "center",
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 5,
-    justifyContent: "center",
-    maxWidth: 168,
-    minHeight: 34,
-    paddingHorizontal: spacing.md,
-  },
-  branchSelectorChipText: {
-    ...typography.caption,
-    fontFamily: "Inter_700Bold",
-  },
-  branchChoiceChipPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.98 }],
-  },
-  amenityCard: {
-    gap: 10,
-  },
-  galleryRow: {
-    gap: spacing.md,
-    paddingRight: spacing.xl,
-  },
-  galleryImage: {
-    width: 210,
-    height: 126,
-    borderRadius: 20,
-  },
-  trainerStack: {
-    gap: spacing.md,
-  },
-  cardPressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.992 }],
-  },
-  trainerCard: {
-    flexDirection: "row",
-    gap: spacing.md,
-    alignItems: "center",
-  },
-  trainerImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-  },
-  trainerImageFallback: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trainerImageText: {
-    ...typography.headerTitle,
-  },
-  trainerCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  trainerName: {
-    ...typography.headerTitle,
-  },
-  trainerSpecialties: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  trainerSpecialty: {
-    ...typography.small,
-  },
   sheetBackground: {
     borderWidth: 1,
   },
   sheetHandle: {},
-  trainerSheetContent: {
-    gap: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  trainerSheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  trainerSheetImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-  },
-  trainerSheetImageFallback: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  metricRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  metricCard: {
-    flex: 1,
-    gap: 8,
-  },
-  metricLabel: {
-    ...typography.eyebrow,
-  },
-  metricValue: {
-    ...typography.metric,
-  },
-  metricBody: {
-    ...typography.body,
-  },
-  joinDisclosureCard: {
-    gap: 12,
-  },
-  joinDisclosureHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "space-between",
-    minHeight: 42,
-  },
-  joinDisclosureCopy: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  joinDisclosureEyebrow: {
-    ...typography.eyebrow,
-  },
-  joinDisclosureTitle: {
-    ...typography.bodyStrong,
-  },
-  timelineCard: {
-    gap: 16,
-  },
-  timelineRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  timelineMarker: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-  },
-  timelineMarkerText: {
-    ...typography.bodyStrong,
-  },
-  timelineCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  timelineTitle: {
-    ...typography.sectionTitle,
-  },
-  timelineBody: {
-    ...typography.body,
-  },
-  nextActionCard: {
-    gap: spacing.md,
-  },
-  nextActionCopy: {
-    gap: 4,
-  },
-  nextActionEyebrow: {
-    ...typography.eyebrow,
-  },
-  nextActionTitle: {
-    ...typography.cardTitle,
-  },
-  nextActionBody: {
-    ...typography.small,
-  },
-  sectionTabs: {
-    flexDirection: "row",
-    gap: spacing.xs,
-    borderRadius: 18,
-    padding: 4,
-  },
-  sectionTab: {
-    flex: 1,
-    minHeight: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: spacing.xs,
-  },
-  sectionTabPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.98 }],
-  },
-  sectionTabText: {
-    ...typography.small,
-    fontFamily: "Inter_700Bold",
-  },
-  inviteCodeRow: {
-    gap: spacing.sm,
-  },
-  inviteCodeInput: {
-    minHeight: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    ...typography.body,
-  },
-  sectionTitle: {
-    ...typography.screenTitle,
-  },
-  sectionBody: {
-    ...typography.body,
-  },
-  planStack: {
-    gap: 12,
-  },
-  planCard: {
-    gap: 12,
-  },
-  planCardShell: {
-    borderWidth: 1,
-  },
-  planHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-  },
-  planCopy: {
-    flex: 1,
-    gap: 3,
-    minWidth: 0,
-  },
-  planName: {
-    ...typography.headerTitle,
-  },
-  planType: {
-    ...typography.small,
-  },
-  planPrice: {
-    ...typography.cardTitle,
-  },
-  planPriceBlock: {
-    alignItems: "flex-end",
-    flexShrink: 0,
-    gap: 2,
-    maxWidth: 112,
-  },
-  planSelectedMark: {
-    alignItems: "center",
-    borderRadius: 999,
-    height: 24,
-    justifyContent: "center",
-    marginBottom: 2,
-    width: 24,
-  },
-  planOriginalPrice: {
-    textDecorationLine: "line-through",
-    ...typography.small,
-  },
-  planDescription: {
-    ...typography.small,
-  },
-  planBadgeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  planBadge: {
-    minHeight: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingTop: 5,
-    ...typography.caption,
-  },
-  planBenefits: {
-    gap: 6,
-  },
-  planBenefitRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  planBenefitText: {
-    ...typography.small,
-    flex: 1,
-    minWidth: 0,
-  },
   statusMessage: {
     ...typography.body,
   },

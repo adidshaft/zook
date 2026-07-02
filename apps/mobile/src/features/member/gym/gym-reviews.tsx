@@ -5,7 +5,7 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 import { Card, IconBubble, SectionHeader, ZookButton } from "@/components/primitives";
 import { useGymReviews, useSubmitReview, type GymReview } from "@/lib/domains/gym";
 import { gymBrandColor } from "@/lib/gym-brand";
-import { formatRelativeDate } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { useT } from "@/lib/i18n";
 import { radii, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -27,6 +27,7 @@ function Stars({ value, size = 14 }: { value: number; size?: number }) {
 
 function ReviewRow({ review }: { review: GymReview }) {
   const { palette } = useTheme();
+  const { formatRelativeDate } = useFormatters();
   const brand = gymBrandColor(review.name);
   return (
     <Card variant="compact" contentStyle={styles.reviewRow}>
@@ -153,6 +154,7 @@ export function GymReviews({ orgId }: { orgId?: string | null }) {
             <TextInput
               value={body}
               onChangeText={setBody}
+              accessibilityLabel={t("gymReviews.sharePlaceholder")}
               placeholder={t("gymReviews.sharePlaceholder")}
               placeholderTextColor={palette.text.tertiary}
               multiline
@@ -184,7 +186,7 @@ const styles = StyleSheet.create({
   summaryCard: { gap: spacing.md },
   summaryRow: { flexDirection: "row", gap: spacing.lg },
   summaryScore: { alignItems: "center", gap: 4, minWidth: 96 },
-  summaryAvg: { ...typography.display, fontSize: 40 },
+  summaryAvg: { ...typography.display },
   summaryCount: { ...typography.small },
   breakdown: { flex: 1, gap: 6, justifyContent: "center" },
   breakdownRow: { alignItems: "center", flexDirection: "row", gap: 8 },

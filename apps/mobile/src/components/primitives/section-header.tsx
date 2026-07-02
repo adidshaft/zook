@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     flex: 1,
-    fontSize: 15,
+    ...typography.body,
     fontWeight: "700",
     letterSpacing: 0,
     lineHeight: 20,

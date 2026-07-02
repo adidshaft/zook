@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { elevation, gradients, materials, radii, spacing, useTheme } from "@/lib/theme";
+import { elevation, fixedSurfaces, gradients, materials, radii, spacing, useTheme } from "@/lib/theme";
 import type { Palette } from "@/lib/theme";
 import {
   pressWithHaptics,
@@ -40,7 +40,7 @@ type ThemeMode = "light" | "dark";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const zookMarkSource = require("../../../assets/icons/app-icon-512.png");
 const fallbackColors = {
-  bg: "#000000",
+  bg: fixedSurfaces.brandMarkFallbackBg,
   limeBorder: "rgba(185,244,85,0.26)",
   panel: "rgba(255,255,255,0.06)",
 };
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.icon,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "#0F1411",
+    backgroundColor: fixedSurfaces.brandMarkFrameBg,
   },
   brandMarkImage: {
     width: "100%",

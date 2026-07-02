@@ -9,7 +9,7 @@ import {
   Card,
   EmptyState,
   ListRow,
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   SegmentedControl,
   Skeleton,
@@ -219,7 +219,7 @@ export default function TrainerClientOverviewScreen() {
     <>
       <ZookScreen testID="trainer-client-detail-screen">
         <KeyboardAwareScreen scrollViewProps={{ contentInsetAdjustmentBehavior: "never", showsVerticalScrollIndicator: false, contentContainerStyle: styles.content }}>
-          <AppHeader
+          <ScreenHeader
             title={t("trainer.clientSessions.title")}
             leading={
               <Pressable
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  backIcon: { fontSize: 26, lineHeight: 28 },
+  backIcon: { ...typography.screenTitle, lineHeight: 28 },
   notFoundContent: { alignItems: "center", gap: spacing.md },
   nextStepCard: { gap: spacing.md },
   nextStepHeader: { alignItems: "flex-start", flexDirection: "row", gap: spacing.md },
@@ -507,11 +507,11 @@ const styles = StyleSheet.create({
   clientHeroContent: { gap: 18, padding: 20 },
   clientHeroTop: { alignItems: "center", flexDirection: "row", gap: spacing.lg },
   clientAvatar: { alignItems: "center", borderRadius: 48, borderWidth: 2, height: 96, justifyContent: "center", width: 96 },
-  clientAvatarText: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientAvatarText: { ...typography.metric },
   clientHeroCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
-  clientHeroName: { fontFamily: "Inter_700Bold", fontSize: 30, lineHeight: 36 },
+  clientHeroName: { ...typography.metric },
   clientStatusRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
-  clientStatusText: { fontFamily: "Inter_600SemiBold", fontSize: 17, lineHeight: 23 },
+  clientStatusText: { ...typography.sectionTitle },
   clientHeroMetrics: { flexDirection: "row", gap: spacing.lg },
   clientHeroMetric: { flex: 1, gap: 6 },
   heroActions: { alignSelf: "flex-end", flexDirection: "row", gap: 8 },
@@ -523,8 +523,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
-  metricLabel: { fontSize: 15, lineHeight: 20 },
-  metricValue: { fontFamily: "Inter_600SemiBold", fontSize: 18, lineHeight: 24 },
+  metricLabel: { ...typography.body, lineHeight: 20 },
+  metricValue: { ...typography.sectionTitle },
   cardTitle: { ...typography.cardTitle },
   stack: { gap: spacing.sm },
   inlineStateBadge: {

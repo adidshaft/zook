@@ -1,7 +1,7 @@
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader } from "@/components/primitives";
+import { Card, EmptyState, FormField, IconBubble, Pill, PrimaryButton, SectionHeader, useConfirmSheet } from "@/components/primitives";
 import { getTonePalette } from "@/components/primitives/tone-palette";
 import { formatInr, titleCaseFromCode, toneForShopOrderStatus } from "@/lib/formatting";
 import { type TranslationKey, useI18n } from "@/lib/i18n";
@@ -47,6 +47,7 @@ function orderMetaChips(
 export function ReceptionOrdersScreenBody() {
   const { mode, palette } = useTheme();
   const { t } = useI18n();
+  const { confirm, sheet } = useConfirmSheet();
   const {
     canVerifyCode,
     fulfillOrder,
@@ -144,20 +145,16 @@ export function ReceptionOrdersScreenBody() {
                           accessibilityLabel={t("reception.orders.markPickedUp")}
                           disabled={fulfillOrderMutation.isPending}
                           onPress={() => {
-                            Alert.alert(
-                              t("reception.orders.confirmPickedUpTitle"),
-                              t("reception.orders.confirmPickedUpBody", {
+                            confirm({
+                              title: t("reception.orders.confirmPickedUpTitle"),
+                              body: t("reception.orders.confirmPickedUpBody", {
                                 name: order.user?.name ?? t("reception.orders.thisMember"),
                                 amount: formatInr(order.totalPaise),
                               }),
-                              [
-                                { text: t("common.cancel"), style: "cancel" },
-                                {
-                                  text: t("reception.orders.markPickedUp"),
-                                  onPress: () => fulfillOrder(order.id),
-                                },
-                              ],
-                            );
+                              destructiveLabel: t("reception.orders.markPickedUp"),
+                              cancelLabel: t("common.cancel"),
+                              onConfirm: () => fulfillOrder(order.id),
+                            });
                           }}
                           style={({ pressed }) => [
                             styles.pickupCompleteAction,
@@ -217,6 +214,7 @@ export function ReceptionOrdersScreenBody() {
                 {paymentStatus}
               </Text>
             ) : null}
+            {sheet}
     </>
   );
 }

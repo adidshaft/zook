@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   EmptyState,
@@ -15,6 +15,7 @@ import {
   ScreenHeader,
   SectionHeader,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
@@ -62,24 +63,20 @@ export default function OwnerRevenueScreen() {
   const paymentsQuery = useOrgRecentPayments();
   const ordersQuery = useOrgActiveShopOrders();
   const refundPayment = useRefundPayment();
+  const { confirm, sheet } = useConfirmSheet();
 
   function confirmRefund(payment: { id: string; amountPaise?: number; user?: { name?: string | null } | null }) {
-    Alert.alert(
-      t("owner.revenue.refundPaymentTitle"),
-      t("owner.revenue.refundPaymentBody", {
+    confirm({
+      title: t("owner.revenue.refundPaymentTitle"),
+      body: t("owner.revenue.refundPaymentBody", {
         amount: formatInr(payment.amountPaise ?? 0),
         name: payment.user?.name ?? t("owner.revenue.thisMember"),
       }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("owner.revenue.refund"),
-          style: "destructive",
-          onPress: () =>
-            refundPayment.mutate({ paymentId: payment.id, reason: t("owner.revenue.refundedByGym") }),
-        },
-      ],
-    );
+      destructiveLabel: t("owner.revenue.refund"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () =>
+        refundPayment.mutate({ paymentId: payment.id, reason: t("owner.revenue.refundedByGym") }),
+    });
   }
   const isLoading = dashboardQuery.isLoading || paymentsQuery.isLoading || ordersQuery.isLoading;
   const hasDashboardData = !isLoading && !dashboardQuery.isError;
@@ -242,6 +239,7 @@ export default function OwnerRevenueScreen() {
           {hasDashboardData ? <OwnerDashboardCharts charts={dashboardQuery.data?.charts} /> : null}
         </KeyboardAwareScreen>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
   ListRow,
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   SecondaryButton,
   StatusChip,
@@ -82,7 +82,7 @@ export default function PlatformMobile() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader
+          <ScreenHeader
             eyebrow={t("platform.operator")}
             title={t("platform.billing")}
             centered

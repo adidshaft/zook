@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -15,6 +15,7 @@ import {
   ScreenHeader,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgStaff, type StaffAssignment, type StaffUser } from "@/lib/domains/owner/queries";
@@ -36,6 +37,7 @@ export default function OwnerStaff() {
   const invite = useInviteStaff();
   const updateRole = useUpdateStaffRole();
   const removeStaff = useRemoveStaff();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [email, setEmail] = useState("");
@@ -79,10 +81,13 @@ export default function OwnerStaff() {
   }
 
   function confirmRemove(row: StaffAssignment, name: string) {
-    Alert.alert(t("owner.staff.removeTitle"), t("owner.staff.removeBody", { name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.staff.remove"), style: "destructive", onPress: () => removeStaff.mutate(row.id) },
-    ]);
+    confirm({
+      title: t("owner.staff.removeTitle"),
+      body: t("owner.staff.removeBody", { name }),
+      destructiveLabel: t("owner.staff.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => removeStaff.mutate(row.id),
+    });
   }
 
   return (
@@ -260,6 +265,7 @@ export default function OwnerStaff() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

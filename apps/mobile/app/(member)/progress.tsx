@@ -3,11 +3,23 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { AnimatedAppear, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, Skeleton, ZookScreen } from "@/components/primitives";
+import {
+  AnimatedAppear,
+  EmptyState,
+  Card,
+  HeaderActions,
+  QueryErrorState,
+  ScreenHeader,
+  SectionHeader,
+  Skeleton,
+  TrendSparkline,
+  type TrendSparklinePoint,
+  ZookScreen,
+} from "@/components/primitives";
 import { TrackingSummaryTile, WorkoutLogCard } from "@/components/tracking";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { HabitsPanel } from "@/features/member/progress/habits-panel";
-import { useMyTracking, useMyTrackingWorkouts } from "@/lib/domains";
+import { useMyBodyProgress, useMyTracking, useMyTrackingWorkouts, type BodyProgressEntryRecord } from "@/lib/domains";
 import { useT } from "@/lib/i18n";
 import { useSharedValue } from "@/lib/reanimated-lite";
 import { buildTrackingSummaryMetrics, workoutToEntry } from "@/lib/tracking-view";
@@ -15,17 +27,31 @@ import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type TrackingWorkout = Parameters<typeof workoutToEntry>[0];
 
+function bodyWeightTrend(entries: BodyProgressEntryRecord[]): TrendSparklinePoint[] {
+  return entries
+    .map((entry): TrendSparklinePoint | null => {
+      const value = typeof entry.weightKg === "number" ? entry.weightKg : Number(entry.weightKg);
+      if (!Number.isFinite(value) || !entry.measuredAt) {
+        return null;
+      }
+      return { date: entry.measuredAt, value };
+    })
+    .filter((point): point is TrendSparklinePoint => point !== null);
+}
+
 export default function ProgressScreen() {
   const { palette } = useTheme();
   const t = useT();
   const router = useRouter();
   const summaryQuery = useMyTracking();
+  const bodyProgressQuery = useMyBodyProgress();
   const workoutsQuery = useMyTrackingWorkouts();
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
   const summary = summaryQuery.data?.summary;
   const latestBodyProgress = summaryQuery.data?.latestBodyProgress as { weightKg?: string | number | null } | null | undefined;
   const workouts = (workoutsQuery.data?.workouts ?? []) as TrackingWorkout[];
+  const bodyEntries = bodyProgressQuery.data?.entries ?? [];
   const metrics = buildTrackingSummaryMetrics({
     totalDuration: summary?.totalDuration ?? 0,
     weeklyCount: summary?.weeklyCount ?? 0,
@@ -34,12 +60,12 @@ export default function ProgressScreen() {
     habitsCount: summaryQuery.data?.habits?.length ?? 0,
     t,
   });
-  const isLoading = summaryQuery.isLoading || workoutsQuery.isLoading;
+  const isLoading = summaryQuery.isLoading || bodyProgressQuery.isLoading || workoutsQuery.isLoading;
 
   async function onRefresh() {
     setRefreshing(true);
     try {
-      await Promise.all([summaryQuery.refetch(), workoutsQuery.refetch()]);
+      await Promise.all([summaryQuery.refetch(), bodyProgressQuery.refetch(), workoutsQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
@@ -59,8 +85,8 @@ export default function ProgressScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
           <ScreenHeader title={t("member.progress.title")} contextSlot={<RoleSwitcherContextPill />} trailing={<HeaderActions showBell showProfileShortcut={false} />} scrollY={scrollY} />
-          {summaryQuery.isError || workoutsQuery.isError ? (
-            <QueryErrorState error={summaryQuery.error ?? workoutsQuery.error} onRetry={() => void onRefresh()} />
+          {summaryQuery.isError || workoutsQuery.isError || bodyProgressQuery.isError ? (
+            <QueryErrorState error={summaryQuery.error ?? workoutsQuery.error ?? bodyProgressQuery.error} onRetry={() => void onRefresh()} />
           ) : null}
           <AnimatedAppear delay={40}>
             <SectionHeader
@@ -98,6 +124,20 @@ export default function ProgressScreen() {
               </View>
             )}
           </AnimatedAppear>
+          {!isLoading ? (
+            <AnimatedAppear delay={55}>
+              <TrendSparkline
+                label={t("tracking.weight")}
+                labels={{
+                  min: t("tracking.trend.min"),
+                  max: t("tracking.trend.max"),
+                  latest: t("tracking.trend.latest"),
+                }}
+                points={bodyWeightTrend(bodyEntries)}
+                unit="kg"
+              />
+            </AnimatedAppear>
+          ) : null}
           <AnimatedAppear delay={70}>
             <HabitsPanel />
           </AnimatedAppear>

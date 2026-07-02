@@ -34,6 +34,18 @@ function isExpired(membership: HomeSignals["activeMembership"]) {
   );
 }
 
+function isToday(value?: string | null) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
 export function deriveHomeState(home: HomeSignals | undefined): HomeState {
   if (!home) return { kind: "firstRun" };
   if (!home.activeOrganization) return { kind: "noOrg" };
@@ -54,7 +66,7 @@ export function deriveHomeState(home: HomeSignals | undefined): HomeState {
   if (home.activeWorkoutSessionId) {
     return { kind: "workoutInProgress", assignmentId: home.activeWorkoutSessionId };
   }
-  if (home.todayWorkoutLoggedAt) {
+  if (isToday(home.todayWorkoutLoggedAt)) {
     return {
       kind: "workoutLoggedToday",
       nextPlanName: home.tomorrowPlanName ?? undefined,

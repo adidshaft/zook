@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/primitives";
 import { useT } from "@/lib/i18n";
 import { useReduceMotion } from "@/lib/motion";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 
 export default function OnboardingSplash() {
   const router = useRouter();
@@ -132,13 +132,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   wordmarkText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 46,
+    ...typography.timer,
     letterSpacing: 0,
   },
   heroSubtitle: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 15,
+    ...typography.body,
     lineHeight: 22,
   },
   scanMark: {
@@ -155,8 +153,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   scanLabel: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
+    ...typography.button,
     letterSpacing: 0,
   },
 });

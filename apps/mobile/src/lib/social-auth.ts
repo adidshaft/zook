@@ -25,7 +25,32 @@ function googleWebClientId(): string | undefined {
   );
 }
 
+function googleIosClientId(): string | undefined {
+  const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
+  return (
+    (extra.googleIosClientId as string | undefined) ??
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??
+    undefined
+  );
+}
+
+function googleAndroidClientId(): string | undefined {
+  const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
+  return (
+    (extra.googleAndroidClientId as string | undefined) ??
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ??
+    undefined
+  );
+}
+
+function assertNativeSocialRuntime(provider: string) {
+  if (Constants.appOwnership === "expo") {
+    throw new SocialAuthUnavailableError(provider);
+  }
+}
+
 export async function signInWithGoogleNative(): Promise<string> {
+  assertNativeSocialRuntime("Google");
   let mod: typeof import("@react-native-google-signin/google-signin");
   try {
     mod = await import("@react-native-google-signin/google-signin");
@@ -34,8 +59,16 @@ export async function signInWithGoogleNative(): Promise<string> {
   }
   const { GoogleSignin } = mod;
   const webClientId = googleWebClientId();
-  GoogleSignin.configure(webClientId ? { webClientId } : {});
-  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  const iosClientId = googleIosClientId();
+  const androidClientId = googleAndroidClientId();
+  GoogleSignin.configure({
+    ...(webClientId ? { webClientId } : {}),
+    ...(iosClientId ? { iosClientId } : {}),
+    ...(androidClientId ? { androidClientId } : {}),
+  });
+  if (Platform.OS === "android") {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  }
   const result = (await GoogleSignin.signIn()) as {
     idToken?: string | null;
     data?: { idToken?: string | null } | null;
@@ -49,6 +82,7 @@ export async function signInWithGoogleNative(): Promise<string> {
 }
 
 export async function signInWithAppleNative(): Promise<{ identityToken: string; fullName?: string }> {
+  assertNativeSocialRuntime("Apple");
   if (Platform.OS !== "ios") {
     throw new SocialAuthUnavailableError("Apple");
   }

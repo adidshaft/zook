@@ -2,7 +2,7 @@ import { useContext, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { layout, radii, spacing, useTheme, elevation } from "@/lib/theme";
+import { fixedSurfaces, layout, radii, spacing, useTheme, elevation } from "@/lib/theme";
 import { useStickyActionOffset } from "@/lib/use-layout-padding";
 import { BottomNavVisibilityContext } from "@/components/primitives/bottom-nav-context";
 import { useTonePalette, type PillTone } from "./tone-palette";
@@ -16,7 +16,7 @@ function platformSurfaceShadow(
     return null;
   }
 
-  return elevation(2, shadowColor ?? "#000000", {
+  return elevation(2, shadowColor ?? fixedSurfaces.shadowBlack, {
     shadowOpacity: mode === "dark" ? 0.22 : 0.09,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -27,10 +27,12 @@ export function ScannerFrame({
   children,
   size,
   tone = "lime",
+  transparent = false,
 }: {
   children?: ReactNode;
   size?: number;
   tone?: PillTone;
+  transparent?: boolean;
 }) {
   const { palette: themePalette, mode } = useTheme();
   const palette = useTonePalette(tone);
@@ -40,7 +42,11 @@ export function ScannerFrame({
         styles.scannerFrame,
         {
           borderColor: palette.borderColor,
-          backgroundColor: mode === "dark" ? themePalette.surface.default : themePalette.bg.sunken,
+          backgroundColor: transparent
+            ? "transparent"
+            : mode === "dark"
+              ? themePalette.surface.default
+              : themePalette.bg.sunken,
         },
         size ? { width: size, height: size } : null,
       ]}

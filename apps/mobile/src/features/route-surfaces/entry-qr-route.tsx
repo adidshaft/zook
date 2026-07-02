@@ -19,10 +19,10 @@ import { useAttendanceQrToken } from "@/lib/domains/owner/queries";
 import { mobileApiFetch, toWebUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { fixedSurfaces, layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 
-const QR_PAPER = "#FFFFFF";
-const QR_INK = "#11150F";
+const QR_PAPER = fixedSurfaces.qrPaper;
+const QR_INK = fixedSurfaces.qrInk;
 
 function secondsUntil(expiresAt?: string) {
   if (!expiresAt) return 0;
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   qrPlaceholder: { alignItems: "center", height: 232, justifyContent: "center", width: 232 },
   codeBlock: { alignItems: "center", gap: 4 },
   codeLabel: { ...typography.caption },
-  code: { ...typography.display, fontSize: 40, letterSpacing: 4 },
+  code: { ...typography.timer, letterSpacing: 4 },
   refreshRow: {
     alignItems: "center",
     flexDirection: "row",

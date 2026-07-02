@@ -4,18 +4,57 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 
 import {
   Card,
-  AppHeader,
+  ScreenHeader,
   Skeleton,
   QueryErrorState,
+  TrendSparkline,
+  type TrendSparklinePoint,
   ZookScreen,
 } from "@/components/primitives";
 import { WorkoutLogCard } from "@/components/tracking";
-import { useMyBodyProgress, useMyTrackingWorkouts } from "@/lib/domains";
+import { useMyBodyProgress, useMyTrackingWorkouts, type BodyProgressEntryRecord } from "@/lib/domains";
 import { useT } from "@/lib/i18n";
 import { workoutToEntry } from "@/lib/tracking-view";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type TrackingWorkout = Parameters<typeof workoutToEntry>[0];
+type BodyMetricKey = "weightKg" | "waistCm" | "bodyFatPercent";
+
+const bodyMetricConfig: Array<{ key: BodyMetricKey; unit: string }> = [
+  { key: "weightKg", unit: "kg" },
+  { key: "waistCm", unit: "cm" },
+  { key: "bodyFatPercent", unit: "%" },
+];
+
+function bodyMetricLabel(key: BodyMetricKey, t: ReturnType<typeof useT>) {
+  if (key === "weightKg") {
+    return t("tracking.weight");
+  }
+  if (key === "waistCm") {
+    return t("tracking.waist");
+  }
+  return t("tracking.bodyFat");
+}
+
+function bodyMetricValue(entry: BodyProgressEntryRecord, key: BodyMetricKey) {
+  const raw = key === "bodyFatPercent"
+    ? entry.bodyFatPercent ?? entry.bodyFatPct
+    : entry[key];
+  const value = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function bodyMetricTrend(entries: BodyProgressEntryRecord[], key: BodyMetricKey): TrendSparklinePoint[] {
+  return entries
+    .map((entry): TrendSparklinePoint | null => {
+      const value = bodyMetricValue(entry, key);
+      if (value === null || !entry.measuredAt) {
+        return null;
+      }
+      return { date: entry.measuredAt, value };
+    })
+    .filter((point): point is TrendSparklinePoint => point !== null);
+}
 
 export default function TrackingHistoryScreen() {
   const router = useRouter();
@@ -46,7 +85,7 @@ export default function TrackingHistoryScreen() {
             />
           }
         >
-          <AppHeader title={t("tracking.historyTitle")} showBack />
+          <ScreenHeader title={t("tracking.historyTitle")} showBack />
           {workoutsQuery.isError ? <QueryErrorState error={workoutsQuery.error} onRetry={() => void workoutsQuery.refetch()} /> : null}
           {bodyProgressQuery.isError ? <QueryErrorState error={bodyProgressQuery.error} onRetry={() => void bodyProgressQuery.refetch()} /> : null}
           <View style={styles.stack}>
@@ -57,6 +96,23 @@ export default function TrackingHistoryScreen() {
                 <Skeleton height={44} />
                 <Skeleton height={84} />
               </Card>
+            ) : null}
+            {!workoutsQuery.isLoading && !bodyProgressQuery.isLoading ? (
+              <View style={styles.trendStack}>
+                {bodyMetricConfig.map((metric) => (
+                  <TrendSparkline
+                    key={metric.key}
+                    label={bodyMetricLabel(metric.key, t)}
+                    labels={{
+                      min: t("tracking.trend.min"),
+                      max: t("tracking.trend.max"),
+                      latest: t("tracking.trend.latest"),
+                    }}
+                    points={bodyMetricTrend(bodyEntries, metric.key)}
+                    unit={metric.unit}
+                  />
+                ))}
+              </View>
             ) : null}
             {!workoutsQuery.isLoading && !bodyProgressQuery.isLoading ? (
               <Card variant="compact" padding={12} contentStyle={styles.bodyCard}>
@@ -167,6 +223,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   stack: { gap: spacing.md },
+  trendStack: { gap: spacing.sm },
   bodyCard: { gap: 10 },
   cardTitle: typography.cardTitle,
   loadingCard: { gap: spacing.sm },

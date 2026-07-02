@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { Alert, Pressable, RefreshControl, StyleSheet } from "react-native";
+import { Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useState } from "react";
 import { View } from "react-native";
 
 import { ApprovalQueue, type ApprovalItem } from "@/components/domain/approval-queue";
-import { BranchSelectorChip, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen } from "@/components/primitives";
+import { BranchSelectorChip, EmptyState, Card, HeaderActions, QueryErrorState, ScreenHeader, SectionHeader, ZookScreen, useConfirmSheet } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useHasPermission, useAuth } from "@/lib/auth";
@@ -30,6 +30,7 @@ export default function OwnerApprovalsScreen() {
   const approveAttendanceMutation = useApproveAttendance();
   const approveJoinRequestMutation = useApproveJoinRequest();
   const rejectJoinRequestMutation = useRejectJoinRequest();
+  const { confirm, sheet } = useConfirmSheet();
   const [batchApproving, setBatchApproving] = useState(false);
   const joinRequests = (joinRequestsQuery.data?.joinRequests ?? []).filter((request) => String(request.status ?? "").toLowerCase() === "pending");
   // Only scans that still need a decision belong in the review queue, so the
@@ -81,44 +82,36 @@ export default function OwnerApprovalsScreen() {
   }
 
   function confirmApproveAllJoinRequests() {
-    Alert.alert(
-      t("owner.approvals.approveAllTitle"),
-      t("owner.approvals.approveAllBody", { count: joinRequests.length }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        { text: t("owner.approvals.approveAll"), onPress: () => void approveAllJoinRequests() },
-      ],
-    );
+    confirm({
+      title: t("owner.approvals.approveAllTitle"),
+      body: t("owner.approvals.approveAllBody", { count: joinRequests.length }),
+      destructiveLabel: t("owner.approvals.approveAll"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => void approveAllJoinRequests(),
+    });
   }
 
   function confirmRejectJoinRequest(id: string) {
-    Alert.alert(
-      t("owner.approvals.rejectTitle"),
-      t("owner.approvals.rejectBody"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("owner.approvals.reject"),
-          style: "destructive",
-          onPress: () => {
-            void rejectJoinRequestMutation
-              .mutateAsync(id)
-              .then(() => {
-                showToast({
-                  tone: "success",
-                  haptic: "success",
-                  message: t("owner.approvals.rejected"),
-                });
-              })
-              .catch((error) => {
-                const message =
-                  error instanceof Error ? error.message : t("owner.approvals.rejectFailed");
-                showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
-              });
-          },
-        },
-      ],
-    );
+    confirm({
+      title: t("owner.approvals.rejectTitle"),
+      body: t("owner.approvals.rejectBody"),
+      destructiveLabel: t("owner.approvals.reject"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: async () => {
+        try {
+          await rejectJoinRequestMutation.mutateAsync(id);
+          showToast({
+            tone: "success",
+            haptic: "success",
+            message: t("owner.approvals.rejected"),
+          });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : t("owner.approvals.rejectFailed");
+          showToast({ title: t("common.actionFailed"), message, tone: "danger", haptic: "error" });
+        }
+      },
+    });
   }
 
   const onRefresh = async () => {
@@ -219,6 +212,7 @@ export default function OwnerApprovalsScreen() {
           ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

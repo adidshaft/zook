@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   IconBubble,
@@ -19,7 +19,8 @@ import {
 } from "@/components/primitives";
 import { useBrowsePtPlans, useMyCoaching, useRequestPtSubscription } from "@/lib/domains/member";
 import type { PtPlanRecord } from "@/lib/domains/shared/types";
-import { formatInr, formatRelativeDate } from "@/lib/formatting";
+import { formatInr } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { getApiErrorMessage } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -90,6 +91,7 @@ function PtPlanCard({
 export default function MemberCoaching() {
   const { palette } = useTheme();
   const t = useT();
+  const { formatRelativeDate } = useFormatters();
   const router = useRouter();
   const coachingQuery = useMyCoaching();
   const plansQuery = useBrowsePtPlans();
@@ -152,7 +154,7 @@ export default function MemberCoaching() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("member.coaching.title")} showBack />
+          <ScreenHeader title={t("member.coaching.title")} showBack />
 
           {coachingQuery.isError ? (
             <QueryErrorState error={coachingQuery.error} onRetry={() => void coachingQuery.refetch()} />

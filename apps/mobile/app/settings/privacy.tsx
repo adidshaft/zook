@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 
-import { Card, AppHeader, ZookScreen } from "@/components/primitives";
+import { Card, ScreenHeader, ZookScreen, useConfirmSheet } from "@/components/primitives";
+import { getAnalyticsConsent, setAnalyticsConsent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth";
 import { privacyApi } from "@/lib/domain-api";
 import { useT } from "@/lib/i18n";
@@ -14,8 +15,27 @@ export default function PrivacySettingsScreen() {
   const { token } = useAuth();
   const { palette } = useTheme();
   const t = useT();
+  const { confirm, sheet } = useConfirmSheet();
   const [exportBusy, setExportBusy] = useState(false);
   const [deletionBusy, setDeletionBusy] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getAnalyticsConsent().then((enabled) => {
+      if (!cancelled) {
+        setAnalyticsEnabled(enabled);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function toggleAnalyticsConsent(enabled: boolean) {
+    setAnalyticsEnabled(enabled);
+    void setAnalyticsConsent(enabled);
+  }
 
   async function requestExport() {
     if (!token) return;
@@ -46,21 +66,20 @@ export default function PrivacySettingsScreen() {
   }
 
   function confirmDeletionRequest() {
-    Alert.alert(
-      t("settings.deleteConfirmTitle"),
-      t("settings.deleteConfirmBody"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        { text: t("settings.requestDeletion"), style: "destructive", onPress: () => void requestDeletion() },
-      ],
-    );
+    confirm({
+      title: t("settings.deleteConfirmTitle"),
+      body: t("settings.deleteConfirmBody"),
+      destructiveLabel: t("settings.requestDeletion"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => void requestDeletion(),
+    });
   }
 
   return (
     <>
       <ZookScreen testID="settings-privacy-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("member.you.privacy")} showBack />
+          <ScreenHeader title={t("member.you.privacy")} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
             <View style={styles.introRow}>
               <View style={[styles.introIcon, { backgroundColor: palette.surface.accentSoft }]}>
@@ -71,6 +90,26 @@ export default function PrivacySettingsScreen() {
               </Text>
             </View>
             <View style={styles.actionList}>
+              <View style={[styles.actionRow, { backgroundColor: palette.surface.default, borderColor: palette.border.subtle }]}>
+                <View style={[styles.actionIcon, { backgroundColor: palette.surface.default }]}>
+                  <Ionicons name="analytics-outline" size={17} color={palette.text.secondary} />
+                </View>
+                <View style={styles.actionCopy}>
+                  <Text style={[styles.actionTitle, { color: palette.text.primary }]} numberOfLines={1}>
+                    {t("settings.analyticsConsent")}
+                  </Text>
+                  <Text style={[styles.actionBody, { color: palette.text.secondary }]} numberOfLines={2}>
+                    {t("settings.analyticsConsentBody")}
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel={t("settings.analyticsConsent")}
+                  value={analyticsEnabled}
+                  onValueChange={toggleAnalyticsConsent}
+                  trackColor={{ false: palette.border.strong, true: palette.accent.soft }}
+                  thumbColor={analyticsEnabled ? palette.accent.base : palette.text.tertiary}
+                />
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t("settings.requestDataExport")}
@@ -126,6 +165,7 @@ export default function PrivacySettingsScreen() {
           </Card>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

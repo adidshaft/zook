@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   QueryErrorState,
@@ -80,7 +80,7 @@ export default function MembershipReceiptScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <AppHeader
+        <ScreenHeader
           eyebrow={t("member.receipt.membership")}
           title={t("member.receipt.title")}
           subtitle={

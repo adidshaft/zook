@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ZookButton } from "@/components/primitives";
 import { useI18n, type LocalePreference } from "@/lib/i18n";
-import { layout, useTheme } from "@/lib/theme";
+import { layout, typography, useTheme } from "@/lib/theme";
 import { showToast } from "@/lib/toast";
 
 type LanguageOption = {
@@ -124,13 +124,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brand: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 32,
+    ...typography.heroTitle,
     lineHeight: 38,
   },
   kicker: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 15,
+    ...typography.body,
     lineHeight: 22,
   },
   list: {
@@ -154,13 +152,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   optionLabel: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 17,
+    ...typography.sectionTitle,
     lineHeight: 22,
   },
   optionCaption: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
+    ...typography.small,
     lineHeight: 18,
   },
   footer: {

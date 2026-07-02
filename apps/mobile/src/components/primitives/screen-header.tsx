@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
@@ -11,6 +12,8 @@ import Reanimated, { interpolate, useAnimatedStyle } from "@/lib/reanimated-lite
 import { useReduceMotion } from "@/lib/motion";
 import { materials, spacing, typography, useTheme } from "@/lib/theme";
 import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
+import { useT } from "@/lib/i18n";
+import { ProfileShortcut } from "./profile-shortcut";
 
 type HeaderContext = {
   orgName: string;
@@ -20,6 +23,7 @@ type HeaderContext = {
 };
 
 export function ScreenHeader({
+  eyebrow,
   title,
   subtitle,
   titleAccessory,
@@ -29,10 +33,17 @@ export function ScreenHeader({
   contextSlot,
   leading,
   trailing,
+  chip,
   meta,
   scrollY,
+  titleNumberOfLines = 1,
+  centered = false,
+  showProfileShortcut = false,
+  showBack = false,
+  onBack,
   style,
 }: {
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   titleAccessory?: ReactNode;
@@ -42,14 +53,48 @@ export function ScreenHeader({
   contextSlot?: ReactNode;
   leading?: ReactNode;
   trailing?: ReactNode;
+  chip?: ReactNode;
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
+  titleNumberOfLines?: number;
+  centered?: boolean;
+  showProfileShortcut?: boolean;
+  showBack?: boolean;
+  onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const { mode, palette } = useTheme();
+  const router = useRouter();
+  const t = useT();
   const reduceMotion = useReduceMotion();
   const glass = materials.glassBar(mode);
   const tonal = materials.tonalBar(mode);
+  let resolvedLeading = leading;
+  const wantsBack = !resolvedLeading && (showBack || (!centered && router.canGoBack()));
+  if (wantsBack) {
+    resolvedLeading = (
+      <Pressable
+        onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
+        accessibilityRole="button"
+        accessibilityLabel={t("common.back")}
+        hitSlop={12}
+        style={({ pressed }) => [
+          styles.backButton,
+          {
+            backgroundColor: palette.bg.elevated,
+            borderColor: palette.border.default,
+            opacity: pressed ? 0.8 : 1,
+          },
+        ]}
+      >
+        <Ionicons name="chevron-back" size={21} color={palette.text.primary} />
+      </Pressable>
+    );
+  } else if (!resolvedLeading && !centered && showProfileShortcut) {
+    resolvedLeading = (
+      <ProfileShortcut accessibilityLabel={`${t("member.home.open")} ${t("settings.profileTitle")}`} />
+    );
+  }
 
   const titleStyle = useAnimatedStyle(() => {
     const y = scrollY?.value ?? 0;
@@ -98,9 +143,9 @@ export function ScreenHeader({
         </Text>
       </Reanimated.View>
 
-      {leading || contextSlot || context || trailing ? (
-        <View style={styles.utilityRow}>
-          {leading ? <View style={styles.leadingSlot}>{leading}</View> : null}
+      {resolvedLeading || contextSlot || context || trailing ? (
+        <View style={[styles.utilityRow, centered ? styles.utilityRowCentered : null]}>
+          {resolvedLeading ? <View style={styles.leadingSlot}>{resolvedLeading}</View> : null}
           {contextSlot || context ? (
             <View style={styles.utilityLeading}>
               {contextSlot ? contextSlot : context ? <ContextPill context={context} /> : null}
@@ -110,14 +155,21 @@ export function ScreenHeader({
         </View>
       ) : null}
       {hideExpandedTitle ? null : (
-        <Reanimated.View style={[styles.titleBlock, titleStyle]}>
+        <Reanimated.View style={[styles.titleBlock, centered ? styles.titleBlockCentered : null, titleStyle]}>
+          {chip}
+          {eyebrow ? (
+            <Text style={[styles.eyebrow, centered ? styles.centerText : null, { color: palette.text.tertiary }]}>
+              {eyebrow}
+            </Text>
+          ) : null}
           <View style={styles.titleRow}>
             <Text
-              numberOfLines={1}
+              numberOfLines={titleNumberOfLines}
               style={[
                 styles.title,
                 titleScale === "compact" ? styles.titleCompact : null,
                 titleAccessory ? styles.titleWithAccessory : null,
+                centered ? styles.centerText : null,
                 { color: palette.text.primary },
               ]}
             >
@@ -126,7 +178,12 @@ export function ScreenHeader({
             {titleAccessory ? <View style={styles.titleAccessory}>{titleAccessory}</View> : null}
           </View>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: palette.text.secondary }]}>{subtitle}</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.subtitle, centered ? styles.centerText : null, { color: palette.text.secondary }]}
+            >
+              {subtitle}
+            </Text>
           ) : null}
           {meta ? <View style={styles.meta}>{meta}</View> : null}
         </Reanimated.View>
@@ -192,6 +249,8 @@ function GymLogoAvatar({ orgName, logoUrl }: { orgName: string; logoUrl?: string
         source={{ uri: normalizedLogoUrl }}
         style={styles.avatarImage}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        recyclingKey={normalizedLogoUrl}
         transition={120}
         onError={() => setDidFail(true)}
       />
@@ -249,6 +308,9 @@ const styles = StyleSheet.create({
     gap: Platform.OS === "android" ? spacing.xs : spacing.sm,
     minHeight: 0,
   },
+  utilityRowCentered: {
+    justifyContent: "center",
+  },
   leadingSlot: {
     alignItems: "center",
     flexDirection: "row",
@@ -298,8 +360,7 @@ const styles = StyleSheet.create({
     width: 20,
   },
   avatarText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 10,
+    ...typography.eyebrow,
     lineHeight: 12,
   },
   contextCopy: {
@@ -309,7 +370,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   contextText: {
-    fontSize: 13,
+    ...typography.small,
     lineHeight: 15,
     flexShrink: 1,
     fontFamily: "Inter_700Bold",
@@ -318,8 +379,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   roleTag: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 10,
+    ...typography.eyebrow,
     lineHeight: 11.5,
     flexShrink: 1,
     minWidth: 0,
@@ -331,6 +391,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     width: "100%",
   },
+  titleBlockCentered: {
+    alignItems: "center",
+  },
   titleRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -341,7 +404,7 @@ const styles = StyleSheet.create({
   },
   title: {
     // Tab-root screens intentionally use the larger landing-page title scale;
-    // pushed screens route through AppHeader's compact headerTitle token.
+    // pushed screens route through ScreenHeader's compact headerTitle token.
     ...typography.screenTitle,
     flex: 1,
     flexShrink: 1,
@@ -349,6 +412,12 @@ const styles = StyleSheet.create({
   },
   titleCompact: {
     ...typography.headerTitle,
+  },
+  centerText: {
+    textAlign: "center",
+  },
+  eyebrow: {
+    ...typography.eyebrow,
   },
   titleWithAccessory: {
     paddingRight: spacing.sm,
@@ -362,6 +431,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.small,
+  },
+  backButton: {
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
   },
   meta: {
     alignItems: "center",

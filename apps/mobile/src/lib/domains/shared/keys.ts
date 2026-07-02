@@ -37,6 +37,8 @@ export const queryKeys = {
     all: () => ["org"] as const,
     dashboard: (orgId?: string | null, branchId?: string | null) =>
       ["org", orgId, "dashboard", branchId] as const,
+    reportsSummary: (orgId?: string | null, branchId?: string | null) =>
+      ["org", orgId, "reports", "summary", branchId] as const,
     members: (orgId?: string | null, filter?: string | null, branchId?: string | null) =>
       filter
         ? (["org", orgId, "members", filter, branchId] as const)
@@ -97,6 +99,7 @@ export const queryKeys = {
   gym: {
     search: (query?: string | null, city?: string | null) =>
       ["gyms", query ?? "", city ?? ""] as const,
+    cities: () => ["gyms", "cities"] as const,
     profile: (username: string) => ["gym", username] as const,
   },
 } as const;

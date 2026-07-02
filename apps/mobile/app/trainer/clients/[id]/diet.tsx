@@ -1,10 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   FormField,
   IconBubble,
@@ -13,6 +13,7 @@ import {
   Skeleton,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { useClientDietPlans, useCreateClientDietPlan } from "@/lib/domains/trainer/queries";
 import type { TranslationKey } from "@/lib/i18n";
@@ -33,6 +34,7 @@ export default function TrainerClientDiet() {
   const { palette } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
+  const { confirm, sheet } = useConfirmSheet();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const clientId = Array.isArray(params.id) ? params.id[0] : params.id;
   const createPlan = useCreateClientDietPlan(clientId ?? "");
@@ -76,26 +78,26 @@ export default function TrainerClientDiet() {
 
   function publish() {
     if (!canPublish) return;
-    Alert.alert(t("trainer.clientDiet.publishTitle"), t("trainer.clientDiet.publishBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("trainer.clientDiet.publish"),
-        onPress: () =>
-          createPlan.mutate(
-            {
-              title: title.trim(),
-              ...(Number.parseInt(target, 10) ? { calorieTarget: Number.parseInt(target, 10) } : {}),
-              meals: validMeals.map((meal) => ({
-                name: meal.name.trim(),
-                ...(Number.parseInt(meal.calories, 10)
-                  ? { calories: Number.parseInt(meal.calories, 10) }
-                  : {}),
-              })),
-            },
-            { onSuccess: () => router.back() },
-          ),
-      },
-    ]);
+    confirm({
+      title: t("trainer.clientDiet.publishTitle"),
+      body: t("trainer.clientDiet.publishBody"),
+      destructiveLabel: t("trainer.clientDiet.publish"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () =>
+        createPlan.mutate(
+          {
+            title: title.trim(),
+            ...(Number.parseInt(target, 10) ? { calorieTarget: Number.parseInt(target, 10) } : {}),
+            meals: validMeals.map((meal) => ({
+              name: meal.name.trim(),
+              ...(Number.parseInt(meal.calories, 10)
+                ? { calories: Number.parseInt(meal.calories, 10) }
+                : {}),
+            })),
+          },
+          { onSuccess: () => router.back() },
+        ),
+    });
   }
 
   return (
@@ -107,7 +109,7 @@ export default function TrainerClientDiet() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader title={t("trainer.clientDiet.title")} showBack />
+          <ScreenHeader title={t("trainer.clientDiet.title")} showBack />
 
           <SectionHeader title={t("trainer.clientDiet.previousPlan")} />
           {priorPlansQuery.isLoading ? (
@@ -219,6 +221,7 @@ export default function TrainerClientDiet() {
           </ZookButton>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

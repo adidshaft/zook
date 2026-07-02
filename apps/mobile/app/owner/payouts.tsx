@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -17,6 +17,7 @@ import {
   ScreenHeader,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgPayouts, useTrainerPayoutConfig } from "@/lib/domains/owner/queries";
@@ -226,6 +227,7 @@ export default function OwnerPayouts() {
   const { t } = useI18n();
   const payoutsQuery = useOrgPayouts();
   const markPaid = useMarkPayoutPaid();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const payouts = payoutsQuery.data?.payouts ?? [];
   const outstanding = payouts
@@ -239,20 +241,16 @@ export default function OwnerPayouts() {
   }
 
   function confirmMarkPaid(payout: TrainerPayoutRecord) {
-    Alert.alert(
-      t("owner.payouts.confirmTitle", { name: payout.trainerName ?? t("owner.payouts.trainerLower") }),
-      t("owner.payouts.confirmBody", {
+    confirm({
+      title: t("owner.payouts.confirmTitle", { name: payout.trainerName ?? t("owner.payouts.trainerLower") }),
+      body: t("owner.payouts.confirmBody", {
         amount: formatInr(payout.totalPaise),
         period: payout.period ?? t("owner.payouts.thisMonthLower"),
       }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("owner.payouts.markPaid"),
-          onPress: () => markPaid.mutate({ payoutId: payout.id, method: "BANK_TRANSFER" }),
-        },
-      ],
-    );
+      destructiveLabel: t("owner.payouts.markPaid"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => markPaid.mutate({ payoutId: payout.id, method: "BANK_TRANSFER" }),
+    });
   }
 
   return (
@@ -313,6 +311,7 @@ export default function OwnerPayouts() {
           ) : null}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

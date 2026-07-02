@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   FormField,
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   SectionHeader,
   SegmentedControl,
@@ -198,7 +198,7 @@ export default function TrackingEntryScreen() {
             { paddingBottom: bottomPadding + layout.stickyActionHeight },
           ]}
         >
-          <AppHeader title={mode === "workout" ? t("member.progress.logWorkout") : t("tracking.bodyMeasurements")} showBack />
+          <ScreenHeader title={mode === "workout" ? t("member.progress.logWorkout") : t("tracking.bodyMeasurements")} showBack />
           <SegmentedControl
             options={[
               { value: "workout", label: t("tracking.workout") },

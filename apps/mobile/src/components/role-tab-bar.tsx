@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   badgeText: {
-    fontSize: 9,
+    ...typography.eyebrow,
     fontFamily: "Inter_700Bold",
     lineHeight: 11,
   },

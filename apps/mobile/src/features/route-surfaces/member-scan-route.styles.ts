@@ -3,14 +3,6 @@ import { StyleSheet } from "react-native";
 import { layout, spacing, typography } from "@/lib/theme";
 
 export const scanStyles = StyleSheet.create({
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   content: {
     width: "100%",
     maxWidth: layout.contentWidth,
@@ -251,8 +243,7 @@ export const scanStyles = StyleSheet.create({
     ...typography.caption,
   },
   codeValidationHint: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
+    ...typography.caption,
     marginTop: 6,
     paddingLeft: 4,
   },

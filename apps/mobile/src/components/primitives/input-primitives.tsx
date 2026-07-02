@@ -340,7 +340,14 @@ export function ProductCard({
         ]}
       >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.productImage} contentFit="cover" />
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.productImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={imageUrl}
+            transition={150}
+          />
         ) : (
           <>
             <LinearGradient
@@ -468,72 +475,6 @@ export function ProductCard({
         )}
       </View>
     </Card>
-  );
-}
-
-export function ExerciseRow({
-  title,
-  detail,
-  sets,
-  compact = false,
-  complete = false,
-  onPress,
-  style,
-}: {
-  title: string;
-  detail: string;
-  sets?: string;
-  compact?: boolean;
-  complete?: boolean;
-  onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const { palette } = useTheme();
-  return (
-    <Pressable
-      onPress={() => pressWithHaptics(onPress)}
-      accessible
-      accessibilityRole="checkbox"
-      accessibilityLabel={sets ? `${title}, ${sets}, ${detail}` : `${title}, ${detail}`}
-      accessibilityState={{ checked: complete }}
-      style={({ pressed }) => [
-        styles.exerciseRow,
-        {
-          borderColor: palette.border.subtle,
-          backgroundColor: palette.surface.default,
-        },
-        compact ? styles.exerciseRowCompact : null,
-        pressed ? styles.pressed : null,
-        style,
-      ]}
-    >
-      <View
-        style={[
-          styles.exerciseCheck,
-          {
-            borderColor: complete ? palette.accent.strong : palette.border.strong,
-            backgroundColor: complete ? palette.accent.strong : palette.surface.default,
-          },
-          compact ? styles.exerciseCheckCompact : null,
-        ]}
-      >
-        {complete ? <Ionicons name="checkmark" size={15} color={palette.text.onAccent} /> : null}
-      </View>
-      <IconBubble icon="barbell-outline" tone="neutral" size={compact ? 34 : 38} />
-      <View style={styles.exerciseCopy}>
-        <Text
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.84}
-          style={[styles.exerciseTitle, compact ? styles.exerciseTitleCompact : null, { color: palette.text.primary }]}
-        >
-          {sets ? `${title} · ${sets}` : title}
-        </Text>
-        <Text numberOfLines={1} style={[styles.exerciseDetail, compact ? styles.exerciseDetailCompact : null, { color: palette.text.secondary }]}>
-          {detail}
-        </Text>
-      </View>
-    </Pressable>
   );
 }
 
@@ -778,53 +719,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     textAlign: "center",
   },
-  exerciseRow: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    borderRadius: radii.large,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  exerciseRowCompact: {
-    minHeight: 50,
-    gap: spacing.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  exerciseCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exerciseCheckCompact: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  exerciseCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  exerciseTitle: {
-    ...typography.bodyStrong,
-  },
-  exerciseTitleCompact: {
-    fontSize: 15,
-    lineHeight: 19,
-  },
-  exerciseDetail: {
-    ...typography.small,
-  },
-  exerciseDetailCompact: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
+
   segmentedControl: {
     minHeight: 50,
     borderRadius: 20,

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   Card,
   ListRow,
-  AppHeader,
+  ScreenHeader,
   SegmentedControl,
   Skeleton,
   StatusChip,
@@ -21,7 +21,7 @@ import {
 } from "@/features/trainer/helpers";
 import { useTrainerClients } from "@/lib/domains";
 import { useT } from "@/lib/i18n";
-import { layout, spacing, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 export default function TrainerClientSessionsScreen() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function TrainerClientSessionsScreen() {
     <>
       <ZookScreen testID="trainer-client-sessions-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader
+          <ScreenHeader
             title={t("trainer.clientSessions.title")}
             leading={
               <Pressable
@@ -124,14 +124,14 @@ export default function TrainerClientSessionsScreen() {
 const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
-  backIcon: { fontSize: 26, lineHeight: 28 },
+  backIcon: { ...typography.screenTitle, lineHeight: 28 },
   summaryCard: { gap: spacing.sm },
   summaryLead: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  summaryValue: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, minWidth: 76 },
+  summaryValue: { ...typography.display, minWidth: 76 },
   summaryCopy: { flex: 1, gap: 2, minWidth: 0 },
-  summaryTitle: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 21 },
-  summaryBody: { fontSize: 13, lineHeight: 18 },
+  summaryTitle: { ...typography.cardTitle },
+  summaryBody: { ...typography.small, lineHeight: 18 },
   planRail: { alignItems: "center", borderRadius: 16, flexDirection: "row", gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 7 },
-  planRailText: { flex: 1, fontSize: 12, lineHeight: 16 },
+  planRailText: { flex: 1, ...typography.navLabel, lineHeight: 16 },
   stack: { gap: spacing.sm },
 });

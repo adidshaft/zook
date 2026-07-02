@@ -9,7 +9,7 @@ import {
   Card,
   IconBubble,
   ListRow,
-  AppHeader,
+  ScreenHeader,
   Skeleton,
   StatusRing,
   StatusChip,
@@ -183,7 +183,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
+            <ScreenHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <Skeleton width={48} height={48} borderRadius={24} />
               <Skeleton width="62%" height={22} borderRadius={11} />
@@ -204,7 +204,7 @@ export default function AttendanceResultScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.content, styles.contentWithoutNav]}
           >
-            <AppHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
+            <ScreenHeader title={t("member.attendance.title")} leading={dismissButton} showProfileShortcut={false} />
             <Card variant="compact" contentStyle={styles.notFoundContent}>
               <IconBubble icon="alert-circle-outline" tone="amber" size={48} />
               <Text style={[styles.notFoundTitle, { color: palette.text.primary }]}>{t("member.attendance.notFound")}</Text>
@@ -247,7 +247,7 @@ export default function AttendanceResultScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, pending ? styles.contentWithoutNav : null]}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.attendance.title")}
             subtitle={pending ? branchName : undefined}
             leading={dismissButton}

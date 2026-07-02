@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, Linking, LogBox, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { LinearGradient } from "@/components/primitives/linear-gradient";
 import {
   useFonts,
   Inter_400Regular,
@@ -25,7 +26,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider, isQaResetInFlight, setAuthQueryClient, useAuth } from "@/lib/auth";
-import { BrandMark } from "@/components/primitives";
+import { BrandMark, EmptyState } from "@/components/primitives";
 import { TestDataBanner } from "@/components/test-data-banner";
 import { NetworkBanner, OfflineBanner } from "@/components/primitives";
 import { BottomNavVisibilityProvider } from "@/components/primitives/bottom-nav-context";
@@ -41,9 +42,11 @@ import { Sentry, initMobileSentry } from "@/lib/sentry";
 import { enableFreeze } from "react-native-screens";
 import { getStoredValue, setStoredValue } from "@/lib/storage";
 import { memberHomeQueryOptions } from "@/lib/domains";
-import { layout, spacing, ThemeProvider, useTheme } from "@/lib/theme/index";
+import { gradients, gradientsLight, layout, spacing, ThemeProvider, typography, useTheme } from "@/lib/theme/index";
 import { showToast } from "@/lib/toast";
 import { useRoleContext } from "@/lib/role-context";
+import { useRequiredAppUpdate, type RequiredAppUpdate } from "@/lib/app-version-gate";
+import { hydrateAnalyticsConsent, identifyAnalyticsUser } from "@/lib/analytics";
 
 initMobileSentry();
 enableFreeze(true);
@@ -110,6 +113,28 @@ function isPublicUnauthenticatedRoute(pathname: string) {
     pathname.startsWith("/g/") ||
     pathname.startsWith("/join/") ||
     pathname.startsWith("/r/")
+  );
+}
+
+function isNoGymMemberRoute(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname === "/plan" ||
+    pathname === "/plans" ||
+    pathname.startsWith("/plans/") ||
+    pathname === "/scan" ||
+    pathname === "/shop" ||
+    pathname.startsWith("/shop") ||
+    pathname === "/you" ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/membership") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/rewards") ||
+    pathname.startsWith("/tracking") ||
+    pathname.startsWith("/classes") ||
+    pathname.startsWith("/coaching") ||
+    pathname.startsWith("/diet")
   );
 }
 
@@ -180,6 +205,7 @@ function LayoutContent() {
   const isPlatformAdmin = Boolean(roleContext?.isPlatformAdmin ?? session?.user.isPlatformAdmin);
   const searchParams = useGlobalSearchParams() as Record<string, string | string[] | undefined>;
   const [onboardingFlag, setOnboardingFlag] = useState<string | null | undefined>(undefined);
+  const requiredUpdate = useRequiredAppUpdate();
   const isQaHelperRoute =
     pathname === "/__demo-role" ||
     pathname === "/__qa-role" ||
@@ -189,6 +215,17 @@ function LayoutContent() {
   useEffect(() => {
     return setAuthQueryClient(queryClient);
   }, [queryClient]);
+
+  useEffect(() => {
+    void hydrateAnalyticsConsent();
+  }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+    void identifyAnalyticsUser(session?.user.id);
+  }, [session?.user.id, status]);
 
   useEffect(() => {
     return setApiAuthHandlers({
@@ -335,10 +372,10 @@ function LayoutContent() {
           setOnboardingFlag(ONBOARDING_COMPLETED);
         });
       }
-      if (isPublicRoute) {
+      if (isPublicRoute || isNoGymMemberRoute(pathname)) {
         return;
       }
-      router.replace("/gyms" as never);
+      router.replace("/" as never);
       return;
     }
 
@@ -432,6 +469,10 @@ function LayoutContent() {
     return <LaunchSurface subtitle={t("app.loadingSession")} />;
   }
 
+  if (requiredUpdate) {
+    return <RequiredUpdateScreen requiredUpdate={requiredUpdate} />;
+  }
+
   return (
     <>
       <StatusBar
@@ -447,7 +488,7 @@ function LayoutContent() {
       ) : null}
       <Stack
         screenOptions={{
-          // Screens render their own in-content header (AppHeader/ScreenHeader);
+          // Screens render their own in-content header (ScreenHeader/ScreenHeader);
           // no native nav-bar header anywhere. Keeps headers consistent and stops
           // unregistered routes from leaking their raw route name as a title.
           headerShown: false,
@@ -497,6 +538,47 @@ function LayoutContent() {
       </Stack>
       <ToastHost />
     </>
+  );
+}
+
+function RequiredUpdateScreen({ requiredUpdate }: { requiredUpdate: RequiredAppUpdate }) {
+  const { mode, palette } = useTheme();
+  const { t } = useI18n();
+  const body = t("appUpdate.required.body", {
+    currentVersion: requiredUpdate.currentVersion,
+    minimumVersion: requiredUpdate.minimumVersion,
+  });
+  const gradient = mode === "light" ? gradientsLight.screenBackdrop : gradients.screenBackdrop;
+
+  return (
+    <View style={[styles.updateWall, { backgroundColor: palette.bg.app }]}>
+      <LinearGradient
+        colors={gradient}
+        style={[
+          styles.updateCard,
+          {
+            borderColor: palette.border.subtle,
+          },
+        ]}
+      >
+        <View style={styles.updateBrand}>
+          <BrandMark size="lg" />
+        </View>
+        <EmptyState
+          icon="cloud-download-outline"
+          title={t("appUpdate.required.title")}
+          body={body}
+          cta={
+            requiredUpdate.storeUrl
+              ? {
+                  label: t("appUpdate.required.cta"),
+                  onPress: () => void Linking.openURL(requiredUpdate.storeUrl as string),
+                }
+              : undefined
+          }
+        />
+      </LinearGradient>
+    </View>
   );
 }
 
@@ -710,18 +792,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingBrandText: {
-    fontFamily: "Inter_800ExtraBold",
-    fontSize: 46,
-    lineHeight: 56,
-    letterSpacing: -1.2,
+    ...typography.timer,
     includeFontPadding: false,
     minWidth: 176,
     paddingHorizontal: 8,
     textAlign: "center",
   },
   loadingSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    ...typography.body,
     maxWidth: 240,
   },
   loadingFooter: {
@@ -730,7 +808,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: 14,
+    ...typography.button,
   },
   configError: {
     flex: 1,
@@ -739,12 +817,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   configErrorTitle: {
-    fontSize: 22,
-    fontWeight: "800",
+    ...typography.headerTitle,
   },
   configErrorBody: {
-    fontSize: 15,
-    lineHeight: 22,
+    ...typography.body,
   },
   retryButton: {
     marginTop: 12,
@@ -754,8 +830,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   retryButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
+    ...typography.button,
   },
   runtimeBannerHost: {
     alignItems: "flex-start",
@@ -765,5 +840,24 @@ const styles = StyleSheet.create({
     zIndex: 20,
     gap: 6,
     paddingHorizontal: layout.screenPadding,
+  },
+  updateWall: {
+    flex: 1,
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: spacing.lg,
+  },
+  updateCard: {
+    width: "100%",
+    alignSelf: "center",
+    maxWidth: 380,
+    borderRadius: 28,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  updateBrand: {
+    alignItems: "center",
   },
 });

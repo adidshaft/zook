@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   DatePickerField,
   EmptyState,
@@ -194,7 +194,7 @@ export default function TrainerClasses() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title={t("trainer.classes.title")} showBack />
+          <ScreenHeader title={t("trainer.classes.title")} showBack />
 
           <SectionHeader
             title={isEditing ? t("trainer.classes.editClass") : t("trainer.classes.schedule")}
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   classMeta: { ...typography.small },
   classMetaChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: 2 },
   metaChip: { borderRadius: radii.pill, maxWidth: "100%", paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  metaChipText: { fontFamily: "Inter_600SemiBold", fontSize: 11, lineHeight: 14 },
+  metaChipText: { ...typography.eyebrow },
   editButton: { padding: spacing.xs },
   cancelledCard: { opacity: 0.6 },
   cancelledText: { textDecorationLine: "line-through" },

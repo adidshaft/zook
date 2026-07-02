@@ -177,8 +177,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   stateTitleCompact: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
+    ...typography.navLabel,
     letterSpacing: 0,
     lineHeight: 15,
     textAlign: "left",
@@ -189,8 +188,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   stateBodyCompact: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
+    ...typography.navLabel,
     letterSpacing: 0,
     lineHeight: 15,
     marginTop: 1,

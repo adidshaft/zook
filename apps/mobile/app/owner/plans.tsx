@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -16,6 +16,7 @@ import {
   ThemedSwitch,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgMembershipPlans, type MembershipPlanRecord } from "@/lib/domains/owner/queries";
@@ -48,6 +49,7 @@ export default function OwnerPlans() {
   const plansQuery = useOrgMembershipPlans();
   const savePlan = useSaveMembershipPlan();
   const deletePlan = useDeleteMembershipPlan();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -123,10 +125,13 @@ export default function OwnerPlans() {
   }
 
   function confirmDelete(plan: MembershipPlanRecord) {
-    Alert.alert(t("owner.plans.removePlanTitle"), t("owner.plans.removePlanBody", { name: plan.name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.plans.remove"), style: "destructive", onPress: () => deletePlan.mutate(plan.id) },
-    ]);
+    confirm({
+      title: t("owner.plans.removePlanTitle"),
+      body: t("owner.plans.removePlanBody", { name: plan.name }),
+      destructiveLabel: t("owner.plans.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => deletePlan.mutate(plan.id),
+    });
   }
 
   return (
@@ -289,6 +294,7 @@ export default function OwnerPlans() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

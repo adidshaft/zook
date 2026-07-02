@@ -2,7 +2,7 @@ import type { TrackingSummaryMetric, WorkoutLogEntry } from "@zook/core";
 import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { gradients, gradientsLight, radii, useTheme } from "@/lib/theme";
+import { gradients, gradientsLight, radii, typography, useTheme } from "@/lib/theme";
 
 export function TrackingSummaryTile({ metric }: { metric: TrackingSummaryMetric }) {
   const { palette, mode } = useTheme();
@@ -209,16 +209,16 @@ const styles = StyleSheet.create({
     gap: 7
   },
   summaryLabel: {
-    fontSize: 13,
+    ...typography.small,
     fontWeight: "800"
   },
   summaryValue: {
-    fontSize: 32,
+    ...typography.heroTitle,
     fontWeight: "900",
     lineHeight: 34
   },
   summaryDetail: {
-    fontSize: 13,
+    ...typography.small,
     lineHeight: 18
   },
   logCard: {
@@ -238,16 +238,16 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   },
   logDate: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "700"
   },
   logTitle: {
-    fontSize: 24,
+    ...typography.screenTitle,
     fontWeight: "900",
     lineHeight: 28
   },
   logTitleCompact: {
-    fontSize: 20,
+    ...typography.headerTitle,
     lineHeight: 24
   },
   effortPill: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   effortText: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "800"
   },
   metaRow: {
@@ -280,15 +280,15 @@ const styles = StyleSheet.create({
     gap: 2
   },
   metaLabel: {
-    fontSize: 11,
+    ...typography.eyebrow,
     fontWeight: "700"
   },
   metaValue: {
-    fontSize: 16,
+    ...typography.cardTitle,
     fontWeight: "800"
   },
   focusText: {
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "800"
   },
   exerciseList: {
@@ -300,11 +300,11 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   exerciseName: {
-    fontSize: 16,
+    ...typography.cardTitle,
     fontWeight: "800"
   },
   exerciseMeta: {
-    fontSize: 12
+    ...typography.caption
   },
   statusPill: {
     borderRadius: radii.pill,
@@ -313,12 +313,12 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   statusText: {
-    fontSize: 11,
+    ...typography.eyebrow,
     fontWeight: "800"
   },
   moreExercisesText: {
     alignSelf: "flex-start",
-    fontSize: 12,
+    ...typography.caption,
     fontWeight: "800",
   },
   notesText: {

@@ -1,10 +1,10 @@
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   FormField,
@@ -15,6 +15,7 @@ import {
   Skeleton,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import {
   useApprovePtSubscription,
@@ -203,6 +204,7 @@ export default function TrainerPersonalTraining() {
   const recordClient = useRecordPtSubscription();
   const logSession = useLogPtSession();
   const approveSubscription = useApprovePtSubscription();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [showPackageForm, setShowPackageForm] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
@@ -285,14 +287,13 @@ export default function TrainerPersonalTraining() {
   }
 
   function confirmDeletePlan(plan: PtPlanRecord) {
-    Alert.alert(t("trainer.pt.removePackageTitle"), t("trainer.pt.removePackageBody", { name: plan.name }), [
-      { text: t("trainer.pt.keep"), style: "cancel" },
-      {
-        text: t("trainer.pt.remove"),
-        style: "destructive",
-        onPress: () => deletePlan.mutate(plan.id),
-      },
-    ]);
+    confirm({
+      title: t("trainer.pt.removePackageTitle"),
+      body: t("trainer.pt.removePackageBody", { name: plan.name }),
+      destructiveLabel: t("trainer.pt.remove"),
+      cancelLabel: t("trainer.pt.keep"),
+      onConfirm: () => deletePlan.mutate(plan.id),
+    });
   }
 
   function submitClient() {
@@ -328,7 +329,7 @@ export default function TrainerPersonalTraining() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />
           }
         >
-          <AppHeader title={t("trainer.pt.title")} showBack />
+          <ScreenHeader title={t("trainer.pt.title")} showBack />
 
           {plansQuery.isLoading || subscriptionsQuery.isLoading ? (
             <Card variant="compact" contentStyle={styles.loadingCard}>
@@ -580,6 +581,7 @@ export default function TrainerPersonalTraining() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
@@ -602,7 +604,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   summaryItem: { alignItems: "center", flex: 1, gap: 2, minWidth: 0 },
-  summaryValue: { fontFamily: "Inter_700Bold", fontSize: 20, lineHeight: 24 },
+  summaryValue: { ...typography.headerTitle },
   summaryLabel: { ...typography.small },
   summaryDivider: { height: 28, width: StyleSheet.hairlineWidth },
   formCard: { gap: spacing.md },

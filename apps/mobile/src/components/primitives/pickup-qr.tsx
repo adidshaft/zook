@@ -1,10 +1,7 @@
 import QRCode from "react-native-qrcode-svg";
 import { StyleSheet, View } from "react-native";
 import { useT } from "@/lib/i18n";
-import { elevation, radii, spacing, useTheme } from "@/lib/theme";
-
-const qrPaper = "#FFFFFF";
-const qrInk = "#11150F";
+import { elevation, fixedSurfaces, radii, spacing, useTheme } from "@/lib/theme";
 
 export function PickupQrCode({ value, size = 176 }: { value: string; size?: number }) {
   const { mode, palette } = useTheme();
@@ -27,7 +24,12 @@ export function PickupQrCode({ value, size = 176 }: { value: string; size?: numb
       ]}
     >
       <View style={styles.paper}>
-        <QRCode value={value} size={size} backgroundColor={qrPaper} color={qrInk} />
+        <QRCode
+          value={value}
+          size={size}
+          backgroundColor={fixedSurfaces.qrPaper}
+          color={fixedSurfaces.qrInk}
+        />
       </View>
     </View>
   );
@@ -43,7 +45,7 @@ const styles = StyleSheet.create({
   paper: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: qrPaper,
+    backgroundColor: fixedSurfaces.qrPaper,
     borderRadius: 18,
     padding: spacing.md,
   },

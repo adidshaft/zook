@@ -48,6 +48,9 @@ export function MemberListRow({
           source={{ uri: item.avatarUrl }}
           style={[styles.avatarImage, { backgroundColor: palette.surface.default }]}
           contentFit="cover"
+          cachePolicy="memory-disk"
+          recyclingKey={`member-avatar-${item.id}`}
+          transition={150}
         />
       ) : (
         <View style={[styles.avatar, { backgroundColor: palette.accent.base }]}>
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
   copy: { flex: 1, minWidth: 0, gap: 2 },
   name: {
     ...typography.cardTitle,
-    fontSize: 14,
+    ...typography.button,
     lineHeight: 18,
   },
   email: typography.small,

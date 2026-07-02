@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   skipText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
+    ...typography.button,
   },
 });

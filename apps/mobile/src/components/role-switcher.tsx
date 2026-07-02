@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   contextName: {
-    fontSize: 12,
+    ...typography.navLabel,
     lineHeight: 14,
     fontFamily: "Inter_700Bold",
     flexShrink: 1,
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     ...typography.sectionTitle,
   },
   sheetSubtitle: {
-    fontSize: 14,
+    ...typography.button,
     lineHeight: 20,
   },
   optionStack: {
@@ -562,11 +562,11 @@ const styles = StyleSheet.create({
     opacity: 0.84,
   },
   currentText: {
-    fontSize: 13,
+    ...typography.small,
     fontFamily: "Inter_700Bold",
   },
   switchText: {
-    fontSize: 13,
+    ...typography.small,
     fontFamily: "Inter_700Bold",
   },
 });

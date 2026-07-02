@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { ScrollView, StyleSheet } from "react-native";
 
-import { Card, ListRow, AppHeader, ZookScreen } from "@/components/primitives";
+import { Card, ListRow, ScreenHeader, ZookScreen } from "@/components/primitives";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing } from "@/lib/theme";
 
@@ -55,7 +55,7 @@ export default function SettingsIndexScreen() {
     <>
       <ZookScreen testID="settings-index-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("more.settings.title")} showBack />
+          <ScreenHeader title={t("more.settings.title")} showBack />
           <Card variant="compact" contentStyle={styles.list}>
             {sections.map((section) => (
               <ListRow

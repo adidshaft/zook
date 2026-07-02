@@ -6,7 +6,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import {
   Card,
   FormField,
-  AppHeader,
+  ScreenHeader,
   ZookButton,
   ZookScreen,
 } from "@/components/primitives";
@@ -78,7 +78,7 @@ export default function SupportSettingsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.you.helpSupport")}
             showBack
           />

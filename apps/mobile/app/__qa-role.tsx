@@ -5,7 +5,7 @@ import type { Role } from "@zook/core";
 import { isOrgRole } from "@zook/core/permissions";
 
 import { useAuth } from "@/lib/auth";
-import { isMobileFeatureEnabled } from "@/lib/runtime-mode";
+import { isMobileFeatureEnabled, isOfflineDemoEnabled } from "@/lib/runtime-mode";
 import { routeForRole } from "@/lib/route-guards";
 import { useTheme } from "@/lib/theme";
 
@@ -70,7 +70,8 @@ function targetWithView(target: string, view?: string | string[]) {
 
 export default function QaRoleRoute() {
   const { palette } = useTheme();
-  const qaShortcutsEnabled = __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
+  const demoEnabled = isOfflineDemoEnabled();
+  const qaShortcutsEnabled = demoEnabled && __DEV__ && isMobileFeatureEnabled("QA_SHORTCUTS_ENABLED");
   const { payload, role, target, view } = useLocalSearchParams<{
     payload?: string | string[];
     role?: string | string[];
@@ -80,7 +81,7 @@ export default function QaRoleRoute() {
   const { session, status, switchOrg, switchRole } = useAuth();
 
   useEffect(() => {
-    if (!qaShortcutsEnabled) {
+    if (!demoEnabled || !qaShortcutsEnabled) {
       return;
     }
     const decodedPayload = decodePayload(payload);
@@ -133,10 +134,10 @@ export default function QaRoleRoute() {
     })().catch(() => {
       router.replace((`/__demo-role?${fallbackQuery}`) as never);
     });
-  }, [payload, qaShortcutsEnabled, role, session, status, switchOrg, switchRole, target, view]);
+  }, [demoEnabled, payload, qaShortcutsEnabled, role, session, status, switchOrg, switchRole, target, view]);
 
-  if (!qaShortcutsEnabled) {
-    return <Redirect href="/login" />;
+  if (!demoEnabled || !qaShortcutsEnabled) {
+    return <Redirect href="/" />;
   }
 
   return (

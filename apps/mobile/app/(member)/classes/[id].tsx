@@ -3,7 +3,7 @@ import { LinearGradient } from "@/components/primitives/linear-gradient";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   IconBubble,
@@ -148,7 +148,7 @@ export default function MemberClassDetailScreen() {
             />
           }
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.classDetail.classDetails")}
             subtitle={entry?.branchName ?? t("member.classDetail.classFallback")}
             showBack

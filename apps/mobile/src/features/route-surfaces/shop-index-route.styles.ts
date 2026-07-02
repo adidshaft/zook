@@ -426,9 +426,7 @@ export const shopStyles = StyleSheet.create({
     ...typography.eyebrow,
   },
   pickupCode: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontFamily: "Inter_600SemiBold",
+    ...typography.screenTitle,
     fontVariant: ["tabular-nums"],
   },
   copyCodeButton: {

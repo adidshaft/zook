@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -13,6 +13,7 @@ import {
   StatusChip,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
@@ -22,7 +23,8 @@ import {
   useOwnerBillingSubscription,
   useUpgradeSaasSubscription,
 } from "@/lib/domains/owner";
-import { formatInr, formatLongDate, formatUsageLimit, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
+import { formatInr, formatLongDate, titleCaseFromCode, toneForSaasSubscriptionStatus } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { toWebUrl } from "@/lib/api";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
@@ -76,7 +78,11 @@ const CYCLE_PRICE_KEY: Record<BillingCycle, "monthly" | "semiannual" | "yearly">
 
 const tiers: Tier[] = ["STARTER", "GROWTH", "PRO"];
 
-function usageLine(used?: number, limit?: number | null) {
+function usageLine(
+  formatUsageLimit: ReturnType<typeof useFormatters>["formatUsageLimit"],
+  used?: number,
+  limit?: number | null,
+) {
   return `${used ?? 0} / ${formatUsageLimit(limit)}`;
 }
 
@@ -116,11 +122,13 @@ async function openCheckout(value?: string | null) {
 export default function OwnerBillingScreen() {
   const { palette } = useTheme();
   const t = useT();
+  const { formatUsageLimit } = useFormatters();
   const bottomPadding = useBottomScrollPadding({ hasStickyAction: true });
   const billingQuery = useOwnerBillingSubscription();
   const createMandate = useCreateSaasBillingMandate();
   const upgrade = useUpgradeSaasSubscription();
   const cancel = useCancelSaasSubscription();
+  const { confirm, sheet } = useConfirmSheet();
   const [cycle, setCycle] = useState<BillingCycle>("MONTHLY");
   const [showPlanLimits, setShowPlanLimits] = useState(false);
   const data = billingQuery.data;
@@ -157,26 +165,23 @@ export default function OwnerBillingScreen() {
   }
 
   function confirmCancel() {
-    Alert.alert(t("owner.billing.cancelSubscriptionTitle"), t("owner.billing.cancelSubscriptionBody"), [
-      { text: t("owner.billing.keep"), style: "cancel" },
-      {
-        text: t("owner.billing.cancel"),
-        style: "destructive",
-        onPress: () => {
-          void cancel
-            .mutateAsync()
-            .then(() => {
-              showToast({ tone: "success", message: t("owner.billing.cancellationRequested") });
-            })
-            .catch((error) => {
-              showToast({
-                tone: "danger",
-                message: error instanceof Error ? error.message : t("owner.billing.couldNotCancelSubscription"),
-              });
-            });
-        },
+    confirm({
+      title: t("owner.billing.cancelSubscriptionTitle"),
+      body: t("owner.billing.cancelSubscriptionBody"),
+      destructiveLabel: t("owner.billing.cancel"),
+      cancelLabel: t("owner.billing.keep"),
+      onConfirm: async () => {
+        try {
+          await cancel.mutateAsync();
+          showToast({ tone: "success", message: t("owner.billing.cancellationRequested") });
+        } catch (error) {
+          showToast({
+            tone: "danger",
+            message: error instanceof Error ? error.message : t("owner.billing.couldNotCancelSubscription"),
+          });
+        }
       },
-    ]);
+    });
   }
 
   return (
@@ -418,25 +423,26 @@ export default function OwnerBillingScreen() {
                 <Card contentStyle={styles.stack}>
                   <View style={styles.limitGrid}>
                     {[
-                      [t("owner.billing.members"), usageLine(data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
-                      [t("owner.billing.branches"), usageLine(data.usage?.branchCount, data.entitlements?.branchLimit)],
-                      [t("owner.billing.staff"), usageLine(data.usage?.staffCount, data.entitlements?.staffLimit)],
-                      [t("owner.billing.trainers"), usageLine(data.usage?.trainerCount, data.entitlements?.trainerLimit)],
-                      [t("owner.billing.products"), usageLine(data.usage?.productCount, data.entitlements?.productLimit)],
+                      [t("owner.billing.members"), usageLine(formatUsageLimit, data.usage?.activeMemberCount, data.entitlements?.memberLimit)],
+                      [t("owner.billing.branches"), usageLine(formatUsageLimit, data.usage?.branchCount, data.entitlements?.branchLimit)],
+                      [t("owner.billing.staff"), usageLine(formatUsageLimit, data.usage?.staffCount, data.entitlements?.staffLimit)],
+                      [t("owner.billing.trainers"), usageLine(formatUsageLimit, data.usage?.trainerCount, data.entitlements?.trainerLimit)],
+                      [t("owner.billing.products"), usageLine(formatUsageLimit, data.usage?.productCount, data.entitlements?.productLimit)],
                       [
                         t("owner.billing.messages"),
                         usageLine(
+                          formatUsageLimit,
                           data.usage?.notificationMonthlyCount,
                           data.entitlements?.notificationMonthlyLimit,
                         ),
                       ],
                       [
                         t("owner.billing.aiText"),
-                        usageLine(data.usage?.aiTextMonthlyCount, data.entitlements?.aiTextMonthlyLimit),
+                        usageLine(formatUsageLimit, data.usage?.aiTextMonthlyCount, data.entitlements?.aiTextMonthlyLimit),
                       ],
                       [
                         t("owner.billing.aiImages"),
-                        usageLine(data.usage?.aiImageMonthlyCount, data.entitlements?.aiImageMonthlyLimit),
+                        usageLine(formatUsageLimit, data.usage?.aiImageMonthlyCount, data.entitlements?.aiImageMonthlyLimit),
                       ],
                     ].map(([label, value]) => (
                       <View key={label} style={[styles.limitCell, { borderColor: palette.border.subtle }]}>
@@ -479,6 +485,7 @@ export default function OwnerBillingScreen() {
           ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

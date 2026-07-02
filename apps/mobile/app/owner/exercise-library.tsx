@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -18,6 +18,7 @@ import {
   ThemedSwitch,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import {
@@ -56,6 +57,7 @@ export default function OwnerExerciseLibraryScreen() {
   const templatesQuery = useOrgExerciseTemplates();
   const saveTemplate = useSaveExerciseTemplate();
   const deleteTemplate = useDeleteExerciseTemplate();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ExerciseTemplateRecord | null>(null);
@@ -154,10 +156,13 @@ export default function OwnerExerciseLibraryScreen() {
   }
 
   function confirmDelete(template: ExerciseTemplateRecord) {
-    Alert.alert(t("owner.exerciseLibrary.removeTemplateTitle"), t("owner.exerciseLibrary.removeTemplateBody", { name: template.name }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.exerciseLibrary.remove"), style: "destructive", onPress: () => deleteTemplate.mutate(template.id) },
-    ]);
+    confirm({
+      title: t("owner.exerciseLibrary.removeTemplateTitle"),
+      body: t("owner.exerciseLibrary.removeTemplateBody", { name: template.name }),
+      destructiveLabel: t("owner.exerciseLibrary.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => deleteTemplate.mutate(template.id),
+    });
   }
 
   function renderTemplate(template: ExerciseTemplateRecord) {
@@ -346,6 +351,7 @@ export default function OwnerExerciseLibraryScreen() {
           {!templatesQuery.isLoading ? <View style={styles.stack}>{starters.map(renderTemplate)}</View> : null}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

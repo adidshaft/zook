@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   Skeleton,
   ZookButton,
@@ -12,7 +12,7 @@ import {
 } from "@/components/primitives";
 import { mobileApiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatRelativeDate } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { useT } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -39,6 +39,7 @@ export default function NotificationDetailScreen() {
   const { token } = useAuth();
   const { palette } = useTheme();
   const t = useT();
+  const { formatRelativeDate } = useFormatters();
   const router = useRouter();
   const notificationQuery = useQuery({
     queryKey: ["me", "notifications", notificationId],
@@ -58,7 +59,7 @@ export default function NotificationDetailScreen() {
   return (
     <ZookScreen testID="notification-detail-screen">
       <View style={styles.content}>
-        <AppHeader title={fallbackTitle} showBack />
+        <ScreenHeader title={fallbackTitle} showBack />
       {notificationQuery.isLoading ? (
         <View style={styles.stack}>
           <Skeleton width="64%" height={18} borderRadius={9} />

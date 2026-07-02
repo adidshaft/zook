@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   BranchSelectorChip,
@@ -16,6 +16,7 @@ import {
   ThemedSwitch,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { RoleSwitcherContextPill } from "@/components/role-switcher";
 import { useOrgCoupons, type CouponRecord } from "@/lib/domains/owner/queries";
@@ -54,6 +55,7 @@ export default function OwnerCoupons() {
   const couponsQuery = useOrgCoupons();
   const saveCoupon = useSaveCoupon();
   const deleteCoupon = useDeleteCoupon();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -130,10 +132,13 @@ export default function OwnerCoupons() {
   }
 
   function confirmDelete(coupon: CouponRecord) {
-    Alert.alert(t("owner.coupons.removeCouponTitle"), t("owner.coupons.removeCouponBody", { code: coupon.code }), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("owner.coupons.remove"), style: "destructive", onPress: () => deleteCoupon.mutate(coupon.id) },
-    ]);
+    confirm({
+      title: t("owner.coupons.removeCouponTitle"),
+      body: t("owner.coupons.removeCouponBody", { code: coupon.code }),
+      destructiveLabel: t("owner.coupons.remove"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => deleteCoupon.mutate(coupon.id),
+    });
   }
 
   return (
@@ -301,6 +306,7 @@ export default function OwnerCoupons() {
           </View>
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }

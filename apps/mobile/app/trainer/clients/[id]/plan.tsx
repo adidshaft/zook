@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   FormField,
   Card,
-  AppHeader,
+  ScreenHeader,
   QueryErrorState,
   SecondaryButton,
   SegmentedControl,
@@ -14,6 +14,7 @@ import {
   Skeleton,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import {
   clientDetailTabs,
@@ -86,6 +87,7 @@ export default function TrainerClientPlanScreen() {
   const { activeOrgId, token } = useAuth();
   const { palette } = useTheme();
   const { t } = useI18n();
+  const { confirm, sheet } = useConfirmSheet();
   const canPublishAssignedPlan = useHasPermission("PLANS_PUBLISH_ASSIGNED");
   const clientsQuery = useTrainerClients();
   const exerciseTemplatesQuery = useOrgExerciseTemplates();
@@ -292,7 +294,7 @@ export default function TrainerClientPlanScreen() {
     <>
       <ZookScreen testID="trainer-client-plan-screen">
         <ScrollView ref={scrollRef} contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader
+          <ScreenHeader
             title={t("trainer.clientSessions.title")}
             leading={
               <Pressable
@@ -425,7 +427,15 @@ export default function TrainerClientPlanScreen() {
             </View>
             <SecondaryButton
               testID="trainer-publish-plan-button"
-              onPress={() => Alert.alert(t("trainer.clientPlan.publishToClientTitle", { name: clientName }), t("trainer.clientPlan.publishBody"), [{ text: t("common.cancel"), style: "cancel" }, { text: t("trainer.clientDiet.publish"), onPress: () => void assignPlan() }])}
+              onPress={() =>
+                confirm({
+                  title: t("trainer.clientPlan.publishToClientTitle", { name: clientName }),
+                  body: t("trainer.clientPlan.publishBody"),
+                  destructiveLabel: t("trainer.clientDiet.publish"),
+                  cancelLabel: t("common.cancel"),
+                  onConfirm: () => void assignPlan(),
+                })
+              }
               disabled={!canPublishAssignedPlan || savingPlan}
               onLongPress={!canPublishAssignedPlan ? () => showToast({ title: t("owner.approvals.ownerApprovalRequired"), tone: "amber" }) : undefined}
             >
@@ -495,6 +505,7 @@ export default function TrainerClientPlanScreen() {
           ) : null}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
@@ -503,7 +514,7 @@ const styles = StyleSheet.create({
   content: { alignSelf: "center", gap: spacing.sm, maxWidth: layout.contentWidth, paddingBottom: layout.bottomNavContentPadding + 32, paddingTop: layout.screenContentTopPadding, width: "100%" },
   iconButton: { alignItems: "center", borderRadius: 16, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   controlPressed: { opacity: 0.84, transform: [{ scale: 0.985 }] },
-  backIcon: { fontSize: 26, lineHeight: 28 },
+  backIcon: { ...typography.screenTitle, lineHeight: 28 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   sectionLabel: { ...typography.caption },
   templateChip: { alignItems: "center", borderRadius: 20, borderWidth: 1, flexDirection: "row", gap: 6, minHeight: 40, paddingHorizontal: 14 },

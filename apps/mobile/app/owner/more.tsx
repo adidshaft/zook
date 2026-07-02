@@ -18,14 +18,14 @@ import { WebHandoffRow } from "@/components/web-handoff-row";
 import { useHasPermission } from "@/lib/auth";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useBottomScrollPadding } from "@/lib/use-layout-padding";
-import { layout, spacing, useTheme } from "@/lib/theme";
+import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
 type MoreRow = {
   testID?: string;
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  href?: "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/exercise-library" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr" | "/rewards";
+  href?: "/owner/members" | "/owner/approvals" | "/owner/revenue" | "/owner/reports" | "/owner/stock" | "/owner/billing" | "/owner/payouts" | "/owner/referrals" | "/owner/plans" | "/owner/exercise-library" | "/owner/coupons" | "/owner/staff" | "/owner/entry-qr" | "/rewards";
   webPath?: string;
   visible?: boolean;
 };
@@ -97,7 +97,6 @@ export default function OwnerMoreScreen() {
   const canDisplayQr = useHasPermission("ATTENDANCE_QR_DISPLAY");
   const canViewRevenue = useHasPermission("ORG_VIEW_REPORTS");
   const webRows: MoreRow[] = [
-    { title: t("owner.more.reports"), subtitle: t("owner.more.reportsSubtitle"), icon: "document-text-outline", webPath: "/dashboard/reports" },
     { title: t("owner.more.notificationTemplates"), subtitle: t("owner.more.notificationTemplatesSubtitle"), icon: "mail-outline", webPath: "/dashboard/notifications/templates" },
   ];
   const nativeRowGroups: MoreRowGroup[] = [
@@ -125,6 +124,14 @@ export default function OwnerMoreScreen() {
           icon: "trending-up-outline",
           testID: "owner-more-revenue",
           href: "/owner/revenue",
+          visible: canViewRevenue,
+        },
+        {
+          title: t("owner.more.reports"),
+          subtitle: t("owner.more.reportsSubtitle"),
+          icon: "document-text-outline",
+          testID: "owner-more-reports",
+          href: "/owner/reports",
           visible: canViewRevenue,
         },
         {
@@ -255,7 +262,7 @@ export default function OwnerMoreScreen() {
             <Text style={[styles.setupNote, { color: palette.text.secondary }]}>
               {t("branch.gymSubscriptionScope")}
             </Text>
-            <WebHandoffRow title={t("owner.more.branchesSubtitle")} path="/dashboard/branches" />
+            <WebHandoffRow title={t("owner.more.branchesSubtitle")} subtitle={t("webHandoff.opensInBrowser")} path="/dashboard/branches" />
           </Card>
 
           {nativeRowGroups.map((group) => (
@@ -265,7 +272,7 @@ export default function OwnerMoreScreen() {
           <SectionHeader title={t("owner.more.webControlRoom")} />
           <Card variant="compact" contentStyle={styles.list}>
             {webRows.map((row) => (
-              <WebHandoffRow key={row.title} title={row.title} path={row.webPath ?? "/dashboard"} />
+              <WebHandoffRow key={row.title} title={row.title} subtitle={t("webHandoff.opensInBrowser")} path={row.webPath ?? "/dashboard"} />
             ))}
           </Card>
         </ScrollView>
@@ -301,8 +308,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   setupNote: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
+    ...typography.navLabel,
     lineHeight: 17,
   },
   groupHeader: {

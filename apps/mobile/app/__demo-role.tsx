@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { Redirect, useLocalSearchParams, router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { QA_TEST_OTP, type Role } from "@zook/core";
@@ -6,6 +6,7 @@ import { isOrgRole } from "@zook/core/permissions";
 
 import { useAuth } from "@/lib/auth";
 import { isOfflineDemoMode } from "@/lib/demo-mode";
+import { isOfflineDemoEnabled } from "@/lib/runtime-mode";
 import { routeForRole } from "@/lib/route-guards";
 import { useTheme } from "@/lib/theme";
 
@@ -88,8 +89,13 @@ export default function DemoRoleSwitchRoute() {
     view?: string;
   }>();
   const { requestOtp, resetQaSession, session, switchOrg, switchRole, verifyOtp } = useAuth();
+  const demoEnabled = isOfflineDemoEnabled();
 
   useEffect(() => {
+    if (!demoEnabled) {
+      router.replace("/" as never);
+      return;
+    }
     const decodedPayload = decodePayload(payload);
     const nextRole = String(
       decodedPayload?.role ?? (Array.isArray(role) ? role[0] : role ?? ""),
@@ -154,7 +160,12 @@ export default function DemoRoleSwitchRoute() {
     target,
     verifyOtp,
     view,
+    demoEnabled,
   ]);
+
+  if (!demoEnabled) {
+    return <Redirect href="/" />;
+  }
 
   return (
     <View

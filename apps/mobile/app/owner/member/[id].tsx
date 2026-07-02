@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   IconBubble,
-  AppHeader,
+  ScreenHeader,
   Pill,
   QueryErrorState,
   SectionHeader,
@@ -294,7 +294,7 @@ export default function OwnerMemberDetail() {
             />
           }
         >
-          <AppHeader
+          <ScreenHeader
             title={name}
             leading={
               <BackButton

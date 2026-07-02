@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   type ImageSourcePropType,
   Pressable,
   RefreshControl,
@@ -14,12 +13,13 @@ import {
 import { Image } from "expo-image";
 import {
   Card,
-  AppHeader,
+  ScreenHeader,
   Pill,
   Input,
   QueryErrorState,
   SectionHeader,
   ZookScreen,
+  useConfirmSheet,
 } from "@/components/primitives";
 import { FindGymsSkeleton } from "@/components/skeletons";
 import { KeyboardAwareScreen } from "@/components/primitives/keyboard-aware-screen";
@@ -28,9 +28,9 @@ import { formatGymHeaderIdentity, formatInitials, joinModeTone } from "@/lib/for
 import { resolveAmenities } from "@/lib/amenity-catalog";
 import { gymBrandColor, seededGymLogoDataUri } from "@/lib/gym-brand";
 import { useI18n } from "@/lib/i18n";
-import { useGymSearch } from "@/lib/domains";
+import { useGymCities, useGymSearch } from "@/lib/domains";
 import { useAuth } from "@/lib/auth";
-import { layout, radii, spacing, typography, useTheme } from "@/lib/theme";
+import { fixedSurfaces, layout, radii, spacing, typography, useTheme } from "@/lib/theme";
 import aarogyaCoverSource from "../../../web/public/seed/gyms/aarogya-strength/cover.png";
 
 const AAROGYA_COVER_SOURCE = aarogyaCoverSource as ImageSourcePropType;
@@ -69,6 +69,7 @@ export default function FindGyms() {
   const { logout, session } = useAuth();
   const { t } = useI18n();
   const { palette, mode } = useTheme();
+  const { confirm, sheet } = useConfirmSheet();
   const chromeSurface = mode === "dark" ? palette.surface.default : palette.bg.elevated;
   const routeParams = useLocalSearchParams<{ focus?: string; ref?: string }>();
   const referralCode = sanitizeReferralCode(routeParams.ref);
@@ -82,16 +83,15 @@ export default function FindGyms() {
     query: debouncedQuery || undefined,
     city: debouncedCity || undefined,
   });
+  const citiesQuery = useGymCities();
   const gyms = useMemo(() => gymsQuery.data?.gyms ?? [], [gymsQuery.data?.gyms]);
   const showResultCount = !gymsQuery.isError;
   const showResults = !gymsQuery.isLoading && !gymsQuery.isError && gyms.length > 0;
   const showSearchingInline = gymsQuery.isFetching && !gyms.length && !gymsQuery.isError;
   const citySuggestions = useMemo(() => {
-    const values = gyms
-      .map((gym) => gym.city?.trim())
-      .filter((value): value is string => Boolean(value));
+    const values = citiesQuery.data?.cities ?? [];
     return Array.from(new Set(values)).slice(0, 4);
-  }, [gyms]);
+  }, [citiesQuery.data?.cities]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -112,10 +112,13 @@ export default function FindGyms() {
   };
 
   function confirmSignOut() {
-    Alert.alert(t("more.signOutConfirmTitle"), t("more.signOutConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("more.signOut"), style: "destructive", onPress: () => void logout() },
-    ]);
+    confirm({
+      title: t("more.signOutConfirmTitle"),
+      body: t("more.signOutConfirmBody"),
+      destructiveLabel: t("more.signOut"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => void logout(),
+    });
   }
 
   return (
@@ -137,7 +140,7 @@ export default function FindGyms() {
             ),
           }}
         >
-          <AppHeader
+          <ScreenHeader
             title={t("findGyms.title")}
             leading={
               <Pressable
@@ -333,6 +336,9 @@ export default function FindGyms() {
                           source={coverSource}
                           style={StyleSheet.absoluteFill}
                           contentFit="cover"
+                          cachePolicy="memory-disk"
+                          recyclingKey={`gym-cover-${gym.id}`}
+                          transition={150}
                           accessibilityLabel={t("findGyms.coverPhoto", { name: gym.name })}
                         />
                       ) : (
@@ -356,6 +362,9 @@ export default function FindGyms() {
                               source={{ uri: normalizeLogoUrl(gym.logoUrl) }}
                               style={styles.gymLogoImage}
                               contentFit="cover"
+                              cachePolicy="memory-disk"
+                              recyclingKey={`gym-logo-${gym.id}`}
+                              transition={150}
                               accessibilityLabel={t("findGyms.logo", { name: gym.name })}
                             />
                           ) : (
@@ -426,6 +435,7 @@ export default function FindGyms() {
           ) : null}
         </KeyboardAwareScreen>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
@@ -564,7 +574,7 @@ const styles = StyleSheet.create({
     paddingRight: 30,
   },
   fallbackInitial: {
-    fontSize: 54,
+    ...typography.timer,
     fontWeight: "900",
     letterSpacing: 0,
     opacity: 0.34,
@@ -588,7 +598,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   gymInitialText: {
-    fontSize: 18,
+    ...typography.sectionTitle,
     fontWeight: "900",
     letterSpacing: 0,
   },
@@ -598,8 +608,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   gymTitleOnCover: {
-    color: "#FFFFFF",
-    fontSize: 22,
+    color: fixedSurfaces.onImagePrimary,
+    ...typography.headerTitle,
     fontWeight: "900",
     letterSpacing: 0,
     lineHeight: 26,
@@ -609,7 +619,7 @@ const styles = StyleSheet.create({
   },
   gymLocationOnCover: {
     color: "rgba(255,255,255,0.78)",
-    fontSize: 13,
+    ...typography.small,
     fontWeight: "700",
     lineHeight: 16,
   },

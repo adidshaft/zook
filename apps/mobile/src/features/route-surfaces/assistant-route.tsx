@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Card,
   IconBubble,
-  AppHeader,
+  ScreenHeader,
   ZookScreen,
 } from "@/components/primitives";
 import { getApiErrorMessage, useAuth } from "@/lib/auth";
@@ -327,7 +327,7 @@ export default function AssistantScreen() {
           />
         }
       >
-        <AppHeader
+        <ScreenHeader
           eyebrow={isTrainer ? t("assistant.trainerEyebrow") : t("assistant.memberEyebrow")}
           title={isTrainer ? t("assistant.trainerTitle") : t("assistant.memberTitle")}
           subtitle={
@@ -537,6 +537,7 @@ export default function AssistantScreen() {
             testID="assistant-message-input"
             value={draft}
             onChangeText={setDraft}
+            accessibilityLabel={t("assistant.inputPlaceholder")}
             placeholder={t("assistant.inputPlaceholder")}
             placeholderTextColor={palette.text.tertiary}
             multiline

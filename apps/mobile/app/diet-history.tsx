@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   QueryErrorState,
@@ -60,7 +60,7 @@ export default function DietHistoryScreen() {
 
   return (
     <ZookScreen testID="diet-history-screen">
-      <AppHeader title={t("member.diet.historyTitle")} showBack />
+      <ScreenHeader title={t("member.diet.historyTitle")} showBack />
       <Card contentStyle={styles.stack}>
         <View style={styles.dateRow}>
           <Pressable

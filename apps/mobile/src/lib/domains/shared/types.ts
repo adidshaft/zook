@@ -181,6 +181,7 @@ export interface GymSearchResult {
   name: string;
   city: string;
   state: string;
+  pincode?: string | null;
   joinMode: string;
   visibility?: string;
   latitude?: number | null;
@@ -339,6 +340,7 @@ export interface PlanExerciseRecord {
   reps?: string | null;
   day?: string | null;
   raw?: string | null;
+  restSeconds?: number | null;
   orderIndex: number;
   completed: boolean;
 }

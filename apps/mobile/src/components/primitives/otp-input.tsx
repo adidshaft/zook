@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.035 }],
   },
   cellText: {
-    fontSize: 20,
+    ...typography.headerTitle,
     fontWeight: "800",
   },
   hiddenInput: {

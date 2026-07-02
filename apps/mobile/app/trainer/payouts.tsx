@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   hero: { gap: spacing.xs },
   heroTop: { alignItems: "center", flexDirection: "row", gap: spacing.sm, justifyContent: "space-between" },
   label: { ...typography.caption },
-  total: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40 },
+  total: { ...typography.display },
   meta: { ...typography.body },
   loadingCard: { gap: spacing.sm },
   stack: { gap: spacing.sm },

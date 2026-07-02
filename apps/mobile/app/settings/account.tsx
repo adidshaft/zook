@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Card,
   Input,
-  AppHeader,
+  ScreenHeader,
   OtpInput,
   ThemedSwitch,
   ZookButton,
@@ -25,7 +25,7 @@ export default function AccountSettingsScreen() {
     <>
       <ZookScreen testID="settings-account-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("settings.account")} showBack />
+          <ScreenHeader title={t("settings.account")} showBack />
           <Card variant="compact" contentStyle={styles.identityCard}>
             <View style={[styles.identityIcon, { backgroundColor: palette.surface.accentSoft }]}>
               <Ionicons name="person-outline" size={19} color={palette.accent.base} />

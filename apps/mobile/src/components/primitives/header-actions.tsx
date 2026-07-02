@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useMyNotifications } from "@/lib/domains/notifications";
 import { useT } from "@/lib/i18n";
-import { spacing, useTheme } from "@/lib/theme";
+import { spacing, typography, useTheme } from "@/lib/theme";
 import { ProfileShortcut } from "./profile-shortcut";
 
 /**
@@ -110,5 +110,5 @@ const styles = StyleSheet.create({
     right: 4,
     top: 3,
   },
-  badgeText: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },
+  badgeText: { ...typography.eyebrow },
 });

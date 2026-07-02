@@ -1,10 +1,10 @@
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 import {
-  AppHeader,
+  ScreenHeader,
   Card,
   EmptyState,
   IconBubble,
@@ -13,6 +13,7 @@ import {
   SectionHeader,
   ZookButton,
   ZookScreen,
+  useConfirmSheet,
   type PillTone,
 } from "@/components/primitives";
 import {
@@ -21,7 +22,8 @@ import {
   useRewardsWallet,
   type RewardEntry,
 } from "@/lib/domains/rewards/queries";
-import { formatInr, formatRelativeDate } from "@/lib/formatting";
+import { formatInr } from "@/lib/formatting";
+import { useFormatters } from "@/lib/formatting-i18n";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import { layout, spacing, typography, useTheme } from "@/lib/theme";
 
@@ -46,9 +48,11 @@ function statusLabelKey(status: RewardEntry["status"]): TranslationKey {
 export default function RewardsRoute() {
   const { palette } = useTheme();
   const t = useT();
+  const { formatRelativeDate } = useFormatters();
   const walletQuery = useRewardsWallet();
   const referralQuery = useGymReferral();
   const requestWithdrawal = useRequestWithdrawal();
+  const { confirm, sheet } = useConfirmSheet();
   const [refreshing, setRefreshing] = useState(false);
 
   const wallet = walletQuery.data;
@@ -73,14 +77,13 @@ export default function RewardsRoute() {
 
   function confirmWithdraw() {
     if (!canWithdraw) return;
-    Alert.alert(
-      t("rewards.requestWithdrawalTitle"),
-      t("rewards.requestWithdrawalBody", { amount: formatInr(payable) }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        { text: t("rewards.request"), onPress: () => requestWithdrawal.mutate(payable) },
-      ],
-    );
+    confirm({
+      title: t("rewards.requestWithdrawalTitle"),
+      body: t("rewards.requestWithdrawalBody", { amount: formatInr(payable) }),
+      destructiveLabel: t("rewards.request"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: () => requestWithdrawal.mutate(payable),
+    });
   }
 
   return (
@@ -93,7 +96,7 @@ export default function RewardsRoute() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={palette.accent.base} colors={[palette.accent.base]} />}
         >
-          <AppHeader title={t("rewards.title")} showBack />
+          <ScreenHeader title={t("rewards.title")} showBack />
 
           {referralQuery.isError ? (
             <QueryErrorState error={referralQuery.error} onRetry={() => void referralQuery.refetch()} />
@@ -221,6 +224,7 @@ export default function RewardsRoute() {
           )}
         </ScrollView>
       </ZookScreen>
+      {sheet}
     </>
   );
 }
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
   balanceRow: { flexDirection: "row", gap: spacing.md },
   balanceMain: { flex: 1, gap: 4 },
   balanceLabel: { ...typography.caption },
-  balanceValue: { ...typography.display, fontSize: 34 },
+  balanceValue: { ...typography.display },
   balanceSide: { alignItems: "flex-end", gap: 2 },
   sideLabel: { ...typography.small },
   sideValue: { ...typography.bodyStrong },

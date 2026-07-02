@@ -50,10 +50,47 @@ export function formatTime(value?: string | Date | null, fallback = "--") {
   });
 }
 
-export function formatRelativeDate(value?: string | Date | null) {
+export type RelativeDateLabels = {
+  unknownTime: string;
+  today: string;
+  inAboutAnHour: string;
+  aboutAnHourAgo: string;
+  inHours: (hours: number) => string;
+  hoursAgo: (hours: number) => string;
+  inDays: (days: number) => string;
+  daysAgo: (days: number) => string;
+};
+
+const defaultRelativeDateLabels: RelativeDateLabels = {
+  unknownTime: "Unknown time",
+  today: "Today",
+  inAboutAnHour: "In about an hour",
+  aboutAnHourAgo: "About an hour ago",
+  inHours: (hours) => `In ${hours}h`,
+  hoursAgo: (hours) => `${hours}h ago`,
+  inDays: (days) => `In ${days}d`,
+  daysAgo: (days) => `${days}d ago`,
+};
+
+export type ActivityDateLabels = {
+  today: string;
+  yesterday: string;
+  recently: string;
+};
+
+const defaultActivityDateLabels: ActivityDateLabels = {
+  today: "Today",
+  yesterday: "Yesterday",
+  recently: "Recently",
+};
+
+export function formatRelativeDate(
+  value?: string | Date | null,
+  labels: RelativeDateLabels = defaultRelativeDateLabels,
+) {
   const date = toDate(value);
   if (!date) {
-    return "Unknown time";
+    return labels.unknownTime;
   }
 
   const diffMs = date.getTime() - Date.now();
@@ -62,9 +99,9 @@ export function formatRelativeDate(value?: string | Date | null) {
 
   if (absHours < 24) {
     if (absHours <= 1) {
-      return diffHours >= 0 ? "In about an hour" : "About an hour ago";
+      return diffHours >= 0 ? labels.inAboutAnHour : labels.aboutAnHourAgo;
     }
-    return diffHours >= 0 ? `In ${absHours}h` : `${absHours}h ago`;
+    return diffHours >= 0 ? labels.inHours(absHours) : labels.hoursAgo(absHours);
   }
 
   const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
@@ -72,18 +109,21 @@ export function formatRelativeDate(value?: string | Date | null) {
 
   if (absDays <= 7) {
     if (absDays === 0) {
-      return "Today";
+      return labels.today;
     }
-    return diffDays >= 0 ? `In ${absDays}d` : `${absDays}d ago`;
+    return diffDays >= 0 ? labels.inDays(absDays) : labels.daysAgo(absDays);
   }
 
   return formatLongDate(date);
 }
 
-export function formatActivityDate(value?: string | Date | null, fallback = "Recently") {
+export function formatActivityDate(
+  value?: string | Date | null,
+  labels: ActivityDateLabels = defaultActivityDateLabels,
+) {
   const date = toDate(value);
   if (!date) {
-    return fallback;
+    return labels.recently;
   }
 
   const today = new Date();
@@ -91,8 +131,8 @@ export function formatActivityDate(value?: string | Date | null, fallback = "Rec
   yesterday.setDate(today.getDate() - 1);
   const sameDay = (left: Date, right: Date) => left.toDateString() === right.toDateString();
   const time = date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-  if (sameDay(date, today)) return `Today, ${time}`;
-  if (sameDay(date, yesterday)) return `Yesterday, ${time}`;
+  if (sameDay(date, today)) return `${labels.today}, ${time}`;
+  if (sameDay(date, yesterday)) return `${labels.yesterday}, ${time}`;
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
@@ -135,6 +175,21 @@ export function normalizeRupeeInput(value: string) {
   return `${whole}.${fraction}`;
 }
 
+export function rupeesToPaise(input: string) {
+  const normalized = normalizeRupeeInput(input);
+  if (!normalized) {
+    return null;
+  }
+  if (!/^\d+(\.\d{0,2})?$/.test(normalized)) {
+    return null;
+  }
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return null;
+  }
+  return Math.round(amount * 100);
+}
+
 export function formatCompactNumber(value?: number | null) {
   return new Intl.NumberFormat("en-IN", {
     notation: "compact",
@@ -158,11 +213,18 @@ export function formatUsageLimit(
   return options.compact ? formatCompactNumber(limit) : String(limit);
 }
 
-export function formatVisitLimit(limit?: number | null, fallback = "Unlimited") {
+export function formatVisitLimit(
+  limit?: number | null,
+  labels: { unlimited: string; visitOne: string; visitOther: string } = {
+    unlimited: "Unlimited",
+    visitOne: "visit",
+    visitOther: "visits",
+  },
+) {
   if (!limit) {
-    return fallback;
+    return labels.unlimited;
   }
-  return `${limit} ${limit === 1 ? "visit" : "visits"}`;
+  return `${limit} ${limit === 1 ? labels.visitOne : labels.visitOther}`;
 }
 
 export function toneForShopOrderStatus(status?: string | null) {

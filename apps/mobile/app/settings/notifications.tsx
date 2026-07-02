@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { Card, AppHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
+import { Card, ScreenHeader, ThemedSwitch, ZookScreen } from "@/components/primitives";
 import { useAuth } from "@/lib/auth";
 import { notificationsApi } from "@/lib/domain-api";
 import { useT } from "@/lib/i18n";
@@ -49,7 +49,7 @@ export default function NotificationSettingsScreen() {
     <>
       <ZookScreen testID="settings-notifications-screen">
         <ScrollView contentInsetAdjustmentBehavior="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <AppHeader title={t("settings.notifications")} showBack />
+          <ScreenHeader title={t("settings.notifications")} showBack />
           <Card variant="compact" contentStyle={styles.stack}>
             <PreferenceRow
               icon="notifications-outline"

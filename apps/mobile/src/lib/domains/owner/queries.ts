@@ -40,6 +40,24 @@ export function useOwnerDashboard(orgId?: string) {
   });
 }
 
+export function useOwnerReportsSummary(orgId?: string) {
+  const { activeOrgId, status, token } = useAuth();
+  const { selectedBranchId } = useBranchSelection();
+  const resolvedOrgId = orgId ?? activeOrgId;
+  return useQuery({
+    queryKey: queryKeys.owner.reportsSummary(resolvedOrgId, selectedBranchId),
+    queryFn: () =>
+      mobileApiFetch<OwnerDashboardData>(`/orgs/${resolvedOrgId}/reports/summary`, {
+        token,
+        orgId: resolvedOrgId,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      }),
+    enabled: status === "authenticated" && Boolean(token) && Boolean(resolvedOrgId),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
 export function useOwnerBillingSubscription(orgId?: string) {
   const { activeOrgId, status, token } = useAuth();
   const permissions = useActivePermissions();

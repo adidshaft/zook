@@ -287,8 +287,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   exercisePreviewTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
+    ...typography.button,
     lineHeight: 18,
   },
   previewSkeleton: { gap: spacing.sm },

@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 import {
-  AppHeader,
+  ScreenHeader,
   BranchSelectorChip,
   Card,
   EmptyState,
@@ -281,7 +281,7 @@ export default function ClassesRoute() {
             />
           }
         >
-          <AppHeader
+          <ScreenHeader
             title={t("member.classes.title")}
             contextSlot={<BranchSelectorChip variant="inline" style={styles.headerBranchSelector} />}
             showBack
