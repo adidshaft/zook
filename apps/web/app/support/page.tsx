@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { GlassCard } from "@/components/glass-card";
 import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
@@ -55,6 +56,11 @@ const supportCopy = {
       ],
     ],
   },
+};
+
+export const metadata: Metadata = {
+  title: "Support | Zook",
+  description: "Get help with Zook accounts, billing, gym setup, memberships, attendance, payments, refunds, privacy, and app support.",
 };
 
 export default async function SupportPage({

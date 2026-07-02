@@ -201,6 +201,21 @@ function BranchSummaryRow({
   onEdit: (branch: BranchRow) => void;
   onUpdate: (branch: BranchRow, patch: Partial<BranchRow> | BranchFormState) => Promise<void>;
 }) {
+  const branchHoursSummaryLabels = {
+    closedAllWeek: t("closedAllWeek"),
+    workingHoursSet: t("stepHours"),
+    everyDay: t("everyDay"),
+    customWorkingHoursSet: t("customWorkingHoursSet"),
+    days: {
+      mon: t("dayMonShort"),
+      tue: t("dayTueShort"),
+      wed: t("dayWedShort"),
+      thu: t("dayThuShort"),
+      fri: t("dayFriShort"),
+      sat: t("daySatShort"),
+      sun: t("daySunShort"),
+    },
+  };
   const steps = branchSetupSteps(branch, hasReceptionist, hasActivePlan, t);
   const missingSteps = steps.filter((step) => !step.done);
   const statusLabel = branch.isDefault ? t("primary") : branch.active ? t("active") : t("paused");
@@ -255,7 +270,7 @@ function BranchSummaryRow({
             </span>
           ) : null}
           <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-1">
-            {formatBranchHoursSummary(branch.operatingHours)}
+            {formatBranchHoursSummary(branch.operatingHours, branchHoursSummaryLabels)}
           </span>
           <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2.5 py-1 text-[var(--text-tertiary)]">
             {hasPublishedMap ? t("visibleOnAppWeb") : t("addMapToPublish")}

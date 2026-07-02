@@ -63,11 +63,11 @@ export function DashboardSidebar({
         <div className="flex items-center justify-between gap-3">
           <ZookLogo />
           <span className="rounded-full border border-[var(--border-focus)] bg-[var(--surface-accent-soft)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">
-            OS for gyms
+            {copy.dashboard.sidebarBadge}
           </span>
         </div>
 
-        <nav className="mt-8 grid gap-1" aria-label="Dashboard navigation">
+        <nav className="mt-8 grid gap-1" aria-label={copy.dashboard.dashboardNavigation}>
           {visibleNavGroups.map((group) => (
             <div key={group.key} className="grid gap-1">
               <p className="px-3 pb-1 pt-3 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)] opacity-60 first:pt-0">

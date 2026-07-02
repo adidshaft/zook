@@ -16,6 +16,7 @@ import { formatCompactNumber, formatEnumLabel, formatInr } from "@/lib/format";
 import type { AIUsageRow, CoachPlanRow, OrganizationSummary } from "@/components/dashboard/types";
 import { ErrorNotice, formatAiResponseSummary } from "../operational-shared";
 import type { LoadingState } from "./types";
+import { useT } from "@/lib/use-t";
 
 export function AiPanel({
   orgId,
@@ -32,6 +33,11 @@ export function AiPanel({
   coachPlans: CoachPlanRow[];
   misconfiguredAiCount: number;
 }) {
+  const t = useT("ai");
+  const responseSummaryLabels = {
+    noResponseSummary: t("noResponseSummary"),
+    dayPlan: (count: number) => t("dayPlan", { count }),
+  };
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
   const [draftStatus, setDraftStatus] = useState("");
@@ -44,7 +50,7 @@ export function AiPanel({
   async function saveDraft() {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
-      setDraftStatus("Write a prompt before saving a draft.");
+      setDraftStatus(t("writePromptBeforeSaving"));
       return;
     }
     setDraftBusy(true);
@@ -53,13 +59,13 @@ export function AiPanel({
       await webApiFetch("/api/ai/chat", {
         method: "POST",
         body: { orgId, prompt: trimmedPrompt },
-        feedback: { success: "Assistant draft saved.", error: "Unable to save draft." },
+        feedback: { success: t("assistantDraftSavedShort"), error: t("unableSaveDraft") },
       });
       setPrompt("");
-      setDraftStatus("Assistant draft saved.");
+      setDraftStatus(t("assistantDraftSaved"));
       aiUsageState.reload?.();
     } catch (error) {
-      setDraftStatus(error instanceof Error ? error.message : "Unable to save draft.");
+      setDraftStatus(error instanceof Error ? error.message : t("unableSaveDraft"));
     } finally {
       setDraftBusy(false);
     }
@@ -68,24 +74,24 @@ export function AiPanel({
   return (
     <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
       <GlassCard>
-        <SectionHeader eyebrow="Assistant" title="AI assistant activity" />
+        <SectionHeader eyebrow={t("assistantEyebrow")} title={t("assistantActivityTitle")} />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Draft creation lives in trainer mobile workflows; owner web keeps the activity log.
+          {t("managedOnTrainerMobile")}
         </ManagedOn>
         <div className="mt-5 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4">
           <label className="grid gap-2 text-sm font-medium text-[var(--text-secondary)]">
-            Assistant prompt
+            {t("assistantPrompt")}
             <textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={4}
-              placeholder="Draft a retention note, renewal reminder, or staff follow-up."
+              placeholder={t("promptPlaceholder")}
               className="zook-focus min-h-28 resize-y rounded-2xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm leading-6 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
             />
           </label>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-[var(--text-tertiary)]">
-              Saves to the same assistant activity log used by trainer workflows.
+              {t("activityLogHelp")}
             </p>
             <ZookButton
               type="button"
@@ -94,7 +100,7 @@ export function AiPanel({
               disabled={draftBusy}
               state={draftBusy ? "loading" : "idle"}
             >
-              Save draft
+              {t("saveDraft")}
             </ZookButton>
           </div>
           {draftStatus ? (
@@ -105,27 +111,27 @@ export function AiPanel({
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState title="Loading assistant drafts" />
+            <EmptyState title={t("loadingAssistantDrafts")} />
           ) : (
             <DataTable
               columns={[
                 {
                   id: "summary",
-                  header: "Prompt",
+                  header: t("prompt"),
                   render: (usage) => (
                     <div>
                       <p className="font-medium text-[var(--text-primary)]">
                         {usage.promptSummary}
                       </p>
                       <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                        {formatAiResponseSummary(usage.responseSummary)}
+                        {formatAiResponseSummary(usage.responseSummary, responseSummaryLabels)}
                       </p>
                     </div>
                   ),
                 },
                 {
                   id: "shape",
-                  header: "Category",
+                  header: t("category"),
                   render: (usage) => (
                     <div className="flex flex-wrap gap-2">
                       <StatusPill value={formatEnumLabel(usage.requestType)} />
@@ -134,19 +140,19 @@ export function AiPanel({
                 },
                 {
                   id: "tokens",
-                  header: "Detail",
+                  header: t("detail"),
                   align: "right",
-                  render: (usage) => (usage.tokenEstimate > 0 ? "Detailed" : "Short"),
+                  render: (usage) => (usage.tokenEstimate > 0 ? t("detailed") : t("short")),
                 },
                 {
                   id: "cost",
-                  header: "Cost",
+                  header: t("cost"),
                   align: "right",
                   render: (usage) => formatInr(usage.costEstimatePaise),
                 },
                 {
                   id: "details",
-                  header: "Details",
+                  header: t("details"),
                   align: "right",
                   render: (usage) => (
                     <ZookButton
@@ -155,14 +161,14 @@ export function AiPanel({
                       size="sm"
                       onClick={() => setSelectedDraftId(usage.id)}
                     >
-                      View
+                      {t("view")}
                     </ZookButton>
                   ),
                 },
               ]}
               rows={aiUsage}
               rowKey={(usage) => usage.id}
-              empty="No drafts."
+              empty={t("noDrafts")}
             />
           )}
         </div>
@@ -170,13 +176,13 @@ export function AiPanel({
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Assistant draft detail"
+            aria-label={t("assistantDraftDetail")}
             className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  Draft detail
+                  {t("draftDetail")}
                 </p>
                 <p className="mt-1 font-medium text-[var(--text-primary)]">
                   {selectedDraft.promptSummary}
@@ -188,14 +194,16 @@ export function AiPanel({
                 size="sm"
                 onClick={() => setSelectedDraftId(null)}
               >
-                Close
+                {t("close")}
               </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--bg-sunken)] p-3 text-sm leading-6 text-[var(--text-secondary)]">
-              <p>{formatAiResponseSummary(selectedDraft.responseSummary)}</p>
+              <p>{formatAiResponseSummary(selectedDraft.responseSummary, responseSummaryLabels)}</p>
               <p>
-                Category: {formatEnumLabel(selectedDraft.requestType)} · Cost:{" "}
-                {formatInr(selectedDraft.costEstimatePaise)}
+                {t("draftMetadata", {
+                  category: formatEnumLabel(selectedDraft.requestType),
+                  cost: formatInr(selectedDraft.costEstimatePaise),
+                })}
               </p>
             </div>
           </div>
@@ -203,28 +211,30 @@ export function AiPanel({
       </GlassCard>
 
       <GlassCard>
-        <SectionHeader eyebrow="Draft output" title="Launch readiness" />
+        <SectionHeader eyebrow={t("draftOutput")} title={t("launchReadiness")} />
         <ReadoutGrid
           className="mt-5"
           columns={1}
           items={[
             {
-              label: "Usage this month",
+              label: t("usageThisMonth"),
               value: formatCompactNumber(summary.aiUsageThisMonth),
-              meta: "Assisted drafts this month",
+              meta: t("assistedDraftsThisMonth"),
             },
             {
-              label: "Review cues",
+              label: t("reviewCues"),
               value:
-                misconfiguredAiCount > 0 ? `${misconfiguredAiCount} drafts need review` : "Clear",
-              meta: "Based on draft review signals",
+                misconfiguredAiCount > 0
+                  ? t("draftsNeedReview", { count: misconfiguredAiCount })
+                  : t("clear"),
+              meta: t("basedOnReviewSignals"),
             },
             {
-              label: "Assisted plans",
+              label: t("assistedPlans"),
               value: coachPlans.filter((plan) => plan.aiGenerated).length
-                ? `${coachPlans.filter((plan) => plan.aiGenerated).length} plans`
-                : "No assisted plans",
-              meta: "Training content created",
+                ? t("planCount", { count: coachPlans.filter((plan) => plan.aiGenerated).length })
+                : t("noAssistedPlans"),
+              meta: t("trainingContentCreated"),
             },
           ]}
         />

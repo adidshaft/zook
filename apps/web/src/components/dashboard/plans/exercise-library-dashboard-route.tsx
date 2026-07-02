@@ -7,6 +7,7 @@ import { DashboardPageShell, SectionHeader } from "@/components/dashboard-primit
 import { GlassCard, Pill } from "@/components/glass-card";
 import { ZookButton } from "@/components/zook-button";
 import { webApiFetch } from "@/lib/api-client";
+import { useT } from "@/lib/use-t";
 
 type ExerciseTemplate = {
   id: string;
@@ -79,6 +80,7 @@ function templateBody(form: TemplateForm) {
 }
 
 export function ExerciseLibraryDashboardRoute({ orgId }: { orgId: string }) {
+  const t = useT("plans");
   const queryClient = useQueryClient();
   const [form, setForm] = useState<TemplateForm>(() => emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function ExerciseLibraryDashboardRoute({ orgId }: { orgId: string }) {
         {
           method: input.templateId ? "PATCH" : "POST",
           body: input.body,
-          feedback: { success: "Exercise template saved." },
+          feedback: { success: t("exerciseTemplateSaved") },
         },
       ),
     onSuccess: async () => {
@@ -106,7 +108,7 @@ export function ExerciseLibraryDashboardRoute({ orgId }: { orgId: string }) {
     mutationFn: (templateId: string) =>
       webApiFetch(`/api/orgs/${orgId}/exercise-templates/${templateId}`, {
         method: "DELETE",
-        feedback: { success: "Exercise template removed." },
+        feedback: { success: t("exerciseTemplateRemoved") },
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["exercise-templates", orgId] });
@@ -134,50 +136,50 @@ export function ExerciseLibraryDashboardRoute({ orgId }: { orgId: string }) {
 
   return (
     <DashboardPageShell
-      eyebrow="Plans"
-      title="Exercise library"
+      eyebrow={t("membershipPlans")}
+      title={t("exerciseLibrary")}
       action={
         <Pill tone="blue">
           <Dumbbell className="h-3.5 w-3.5" />
-          {orgTemplates.length} shared
+          {t("sharedCount", { count: orgTemplates.length })}
         </Pill>
       }
     >
       <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
         <GlassCard variant="strong" className="p-5">
-          <SectionHeader eyebrow="Shared defaults" title={editingId ? "Edit template" : "New template"} />
+          <SectionHeader eyebrow={t("sharedDefaults")} title={editingId ? t("editTemplate") : t("newTemplate")} />
           <div className="mt-5 grid gap-3">
-            <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Exercise name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("exerciseName")} value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
             <div className="grid gap-3 md:grid-cols-2">
-              <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Muscle group" value={form.muscleGroup} onChange={(event) => setForm((current) => ({ ...current, muscleGroup: event.target.value }))} />
-              <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Equipment" value={form.equipment} onChange={(event) => setForm((current) => ({ ...current, equipment: event.target.value }))} />
+              <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("muscleGroup")} value={form.muscleGroup} onChange={(event) => setForm((current) => ({ ...current, muscleGroup: event.target.value }))} />
+              <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("equipment")} value={form.equipment} onChange={(event) => setForm((current) => ({ ...current, equipment: event.target.value }))} />
             </div>
             <div className="grid gap-3 md:grid-cols-3">
-              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Sets" value={form.defaultSets} onChange={(event) => setForm((current) => ({ ...current, defaultSets: event.target.value }))} />
-              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Reps" value={form.defaultReps} onChange={(event) => setForm((current) => ({ ...current, defaultReps: event.target.value }))} />
-              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Rest seconds" value={form.defaultRestSeconds} onChange={(event) => setForm((current) => ({ ...current, defaultRestSeconds: event.target.value }))} />
+              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("sets")} value={form.defaultSets} onChange={(event) => setForm((current) => ({ ...current, defaultSets: event.target.value }))} />
+              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("reps")} value={form.defaultReps} onChange={(event) => setForm((current) => ({ ...current, defaultReps: event.target.value }))} />
+              <input type="number" className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("restSeconds")} value={form.defaultRestSeconds} onChange={(event) => setForm((current) => ({ ...current, defaultRestSeconds: event.target.value }))} />
             </div>
-            <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder="Tempo" value={form.tempo} onChange={(event) => setForm((current) => ({ ...current, tempo: event.target.value }))} />
-            <textarea className="min-h-24 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none" placeholder="Notes or coaching cues" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
+            <input className="min-h-11 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-primary)] outline-none" placeholder={t("tempo")} value={form.tempo} onChange={(event) => setForm((current) => ({ ...current, tempo: event.target.value }))} />
+            <textarea className="min-h-24 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none" placeholder={t("notesOrCoachingCues")} value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
             <label className="flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-secondary)]">
-              Featured house favorite
+              {t("featuredHouseFavorite")}
               <input type="checkbox" checked={form.featured} onChange={(event) => setForm((current) => ({ ...current, featured: event.target.checked }))} />
             </label>
             <div className="flex flex-wrap gap-2">
               <ZookButton type="button" onClick={() => saveTemplate.mutate({ ...(editingId ? { templateId: editingId } : {}), body: templateBody(form) })} disabled={!form.name.trim() || saveTemplate.isPending} state={saveTemplate.isPending ? "loading" : "idle"}>
-                Save template
+                {t("saveTemplate")}
               </ZookButton>
               {editingId ? (
                 <ZookButton type="button" tone="ghost" onClick={() => { setEditingId(null); setForm(emptyForm()); }}>
-                  Cancel
+                  {t("cancel")}
                 </ZookButton>
               ) : null}
             </div>
           </div>
         </GlassCard>
         <div className="grid gap-4">
-          <TemplateList title="Shared library" templates={orgTemplates} loading={templatesQuery.isLoading} onEdit={startEdit} onDelete={(template) => deleteTemplate.mutate(template.id)} />
-          <TemplateList title="Starters" templates={starterTemplates} loading={templatesQuery.isLoading} onAdopt={adoptStarter} />
+          <TemplateList title={t("sharedLibrary")} templates={orgTemplates} loading={templatesQuery.isLoading} onEdit={startEdit} onDelete={(template) => deleteTemplate.mutate(template.id)} t={t} />
+          <TemplateList title={t("starters")} templates={starterTemplates} loading={templatesQuery.isLoading} onAdopt={adoptStarter} t={t} />
         </div>
       </div>
     </DashboardPageShell>
@@ -191,6 +193,7 @@ function TemplateList({
   onEdit,
   onDelete,
   onAdopt,
+  t,
 }: {
   title: string;
   templates: ExerciseTemplate[];
@@ -198,23 +201,29 @@ function TemplateList({
   onEdit?: (template: ExerciseTemplate) => void;
   onDelete?: (template: ExerciseTemplate) => void;
   onAdopt?: (template: ExerciseTemplate) => void;
+  t: ReturnType<typeof useT>;
 }) {
   return (
     <GlassCard variant="strong" className="p-5">
       <SectionHeader title={title} />
       <div className="mt-4 grid gap-3">
-        {loading ? <p className="text-sm text-[var(--text-secondary)]">Loading templates.</p> : null}
-        {!loading && !templates.length ? <p className="text-sm text-[var(--text-secondary)]">No templates yet.</p> : null}
+        {loading ? <p className="text-sm text-[var(--text-secondary)]">{t("loadingTemplates")}</p> : null}
+        {!loading && !templates.length ? <p className="text-sm text-[var(--text-secondary)]">{t("noTemplatesYet")}</p> : null}
         {templates.map((template) => (
           <div key={template.id} className="rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-[var(--text-primary)]">{template.name}</p>
-                  {template.featured ? <Pill tone="amber"><Star className="h-3.5 w-3.5" /> Featured</Pill> : null}
+                  {template.featured ? <Pill tone="amber"><Star className="h-3.5 w-3.5" /> {t("featured")}</Pill> : null}
                 </div>
                 <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                  {[template.muscleGroup, template.equipment, template.defaultSets ? `${template.defaultSets} sets` : null, template.defaultReps ? `${template.defaultReps} reps` : null].filter(Boolean).join(" · ") || "Custom exercise"}
+                  {[
+                    template.muscleGroup,
+                    template.equipment,
+                    template.defaultSets ? t("setsCount", { count: template.defaultSets }) : null,
+                    template.defaultReps ? t("repsCount", { count: template.defaultReps }) : null,
+                  ].filter(Boolean).join(" · ") || t("customExercise")}
                 </p>
               </div>
               <Pill tone={template.scope === "STARTER" ? "blue" : "neutral"}>
@@ -223,9 +232,9 @@ function TemplateList({
               </Pill>
             </div>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
-              {onAdopt ? <ZookButton type="button" size="sm" tone="ghost" onClick={() => onAdopt(template)}>Add to shared</ZookButton> : null}
-              {onEdit ? <ZookButton type="button" size="sm" tone="ghost" onClick={() => onEdit(template)}>Edit</ZookButton> : null}
-              {onDelete ? <ZookButton type="button" size="sm" tone="danger" onClick={() => onDelete(template)}>Remove</ZookButton> : null}
+              {onAdopt ? <ZookButton type="button" size="sm" tone="ghost" onClick={() => onAdopt(template)}>{t("addToShared")}</ZookButton> : null}
+              {onEdit ? <ZookButton type="button" size="sm" tone="ghost" onClick={() => onEdit(template)}>{t("edit")}</ZookButton> : null}
+              {onDelete ? <ZookButton type="button" size="sm" tone="danger" onClick={() => onDelete(template)}>{t("remove")}</ZookButton> : null}
             </div>
           </div>
         ))}

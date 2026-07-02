@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { GlassCard } from "@/components/glass-card";
 import { AccountAwareNav } from "@/components/public/nav/account-aware-nav";
 import { PublicNav } from "@/components/public/nav/public-nav";
@@ -83,6 +84,11 @@ const termsCopy = {
       ],
     ],
   },
+};
+
+export const metadata: Metadata = {
+  title: "Terms of service | Zook",
+  description: "Terms for using Zook as a gym owner, staff member, trainer, or member.",
 };
 
 export default async function TermsPage({

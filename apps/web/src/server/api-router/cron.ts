@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
-import { getCronSecret } from "@zook/core";
+import { getAppEnv, getCronSecret } from "@zook/core";
 import { getPaymentProvider } from "@zook/core/providers";
 import { prisma, Prisma } from "@zook/db";
 import { draftPayoutsForMonth } from "../domains/payouts";
@@ -13,6 +13,9 @@ import { createDirectNotification, jsonObject, pathMatches } from "./core";
 function requireCronSecret(request: NextRequest) {
   const cronSecret = getCronSecret();
   const authHeader = request.headers.get("authorization");
+  if (!cronSecret && getAppEnv() !== "local") {
+    throw forbiddenError("Cron secret is not configured.");
+  }
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     throw forbiddenError("Invalid cron authorization.");
   }
@@ -20,11 +23,7 @@ function requireCronSecret(request: NextRequest) {
 
 export async function handleCronJobs(request: NextRequest, path: string[]) {
   if (request.method === "POST" && pathMatches(path, ["cron", "account-deletion-purge"])) {
-    const cronSecret = getCronSecret();
-    const authHeader = request.headers.get("authorization");
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      throw forbiddenError("Invalid cron authorization.");
-    }
+    requireCronSecret(request);
 
     const now = new Date();
     const runningCutoff = new Date(now.getTime() - 30 * 60 * 1000);
@@ -121,11 +120,7 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "renewal-reminders"])) {
-    const cronSecret = getCronSecret();
-    const authHeader = request.headers.get("authorization");
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      throw forbiddenError("Invalid cron authorization.");
-    }
+    requireCronSecret(request);
 
     const now = new Date();
     const reminderWindowDays = [7, 3, 1];
@@ -318,11 +313,7 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "refund-reconcile"])) {
-    const cronSecret = getCronSecret();
-    const authHeader = request.headers.get("authorization");
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      throw forbiddenError("Invalid cron authorization.");
-    }
+    requireCronSecret(request);
 
     const provider = getPaymentProvider();
     const cutoff = new Date(Date.now() - 10 * 60 * 1000);
@@ -378,11 +369,7 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "trainer-payouts-draft"])) {
-    const cronSecret = getCronSecret();
-    const authHeader = request.headers.get("authorization");
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      throw forbiddenError("Invalid cron authorization.");
-    }
+    requireCronSecret(request);
 
     const month = request.nextUrl.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
     const orgs = await prisma.organization.findMany({
@@ -415,11 +402,7 @@ export async function handleCronJobs(request: NextRequest, path: string[]) {
   }
 
   if (request.method === "POST" && pathMatches(path, ["cron", "rewards-settle"])) {
-    const cronSecret = getCronSecret();
-    const authHeader = request.headers.get("authorization");
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      throw forbiddenError("Invalid cron authorization.");
-    }
+    requireCronSecret(request);
     const result = await settleReadyRewards();
     return ok({ ok: true, ...result });
   }

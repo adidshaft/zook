@@ -3,7 +3,9 @@ import Link from "next/link";
 import { BranchSwitcher } from "./branch-switcher";
 import { GymSelectClient, type GymSelectOption } from "./gym-select-client";
 import { UserMenu } from "./user-menu";
+import { DashboardLocaleToggle } from "@/components/dashboard-locale-toggle";
 import { ThemeToggleButton } from "@/components/theme-preference-switcher";
+import { interpolate } from "./copy";
 import type { DashboardCopy, DashboardData } from "./types";
 
 export function DashboardHeader({
@@ -41,6 +43,19 @@ export function DashboardHeader({
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
   const showTrialBanner = trialDaysLeft !== null && trialDaysLeft >= 0 && trialDaysLeft < 7;
+  const notificationsLabel =
+    data.summary.notificationQueueCount > 0
+      ? interpolate(copy.dashboard.viewNotificationsPending, {
+          count: data.summary.notificationQueueCount,
+        })
+      : copy.dashboard.viewNotifications;
+  const trialBanner =
+    trialDaysLeft === null
+      ? ""
+      : interpolate(
+          trialDaysLeft === 1 ? copy.dashboard.trialBannerOne : copy.dashboard.trialBannerOther,
+          { count: trialDaysLeft },
+        );
   const headerLocationLabel = selectedBranch?.city ?? activeOrg.city;
   const gymOptions: GymSelectOption[] = organizations.map((organization) => ({
     value: organization.orgId,
@@ -101,17 +116,14 @@ export function DashboardHeader({
             rel="noreferrer"
             className="zook-focus hidden min-h-10 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] sm:inline-flex"
           >
-            Pricing
+            {copy.dashboard.pricing}
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
+          <DashboardLocaleToggle locale={user.preferredLocale ?? undefined} labels={copy.common} />
           <ThemeToggleButton />
           <Link
             href="/dashboard/notifications"
-            aria-label={
-              data.summary.notificationQueueCount > 0
-                ? `View notifications (${data.summary.notificationQueueCount} pending)`
-                : "View notifications"
-            }
+            aria-label={notificationsLabel}
             className="zook-focus relative grid h-10 w-10 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-secondary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
             <Bell className="h-4 w-4" aria-hidden="true" />
@@ -132,8 +144,7 @@ export function DashboardHeader({
 
       {showTrialBanner ? (
         <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--feedback-warning)_34%,transparent)] bg-[var(--surface-warning-soft)] px-4 py-2 text-sm font-medium text-[var(--feedback-warning)]">
-          Trial ends in {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}. Add billing
-          before launch to keep this gym active.
+          {trialBanner}
         </div>
       ) : null}
     </div>

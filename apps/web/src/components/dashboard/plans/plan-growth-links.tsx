@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SectionHeader } from "../../dashboard-primitives";
 import { GlassCard, Pill } from "../../glass-card";
+import { useT } from "@/lib/use-t";
 
 type PlanGrowthLinksProps = {
   activeCouponCount: number;
@@ -13,31 +14,33 @@ export function PlanGrowthLinks({
   activeOfferCount,
   referralCodeCount,
 }: PlanGrowthLinksProps) {
+  const t = useT("plans");
+
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Plan growth"
-        title="Discounts, offers, and referrals"
+        eyebrow={t("planGrowth")}
+        title={t("discountsOffersReferrals")}
       />
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {[
           {
-            label: "Coupons",
+            label: t("coupons"),
             href: "/dashboard/plans/coupons",
-            detail: "Create joining discounts and usage limits.",
-            badge: `${activeCouponCount} active`,
+            detail: t("couponsDetail"),
+            badge: t("activeCount", { count: activeCouponCount }),
           },
           {
-            label: "Offers",
+            label: t("offers"),
             href: "/dashboard/plans/offers",
-            detail: "Publish plan offers for a date window or campaign.",
-            badge: `${activeOfferCount} active`,
+            detail: t("offersDetail"),
+            badge: t("activeCount", { count: activeOfferCount }),
           },
           {
-            label: "Referrals",
+            label: t("referrals"),
             href: "/dashboard/plans/referrals",
-            detail: "Reward member, trainer, and staff referrals.",
-            badge: `${referralCodeCount} codes`,
+            detail: t("referralsDetail"),
+            badge: t("codesCount", { count: referralCodeCount }),
           },
         ].map((item) => (
           <Link

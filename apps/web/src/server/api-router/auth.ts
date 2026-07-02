@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import {
   requestOtpSchema,
   verifyOtpSchema,
-  isQaDemoIdentifier,
   isQaFreshIdentifier,
   isSeededDemoIdentifier,
 } from "@zook/core";
@@ -16,25 +15,17 @@ import { fail, ok, readJson } from "../response";
 import { resolveSessionSummaryFromToken } from "../session";
 import { writeAuditLog } from "../audit";
 import {
-  appleAuthCallbackSchema,
   assertLocalQaIdentityAllowed,
   clearAuthCookies,
-  clean,
   createAuthSessionResponse,
   createSeededDemoOtpChallenge,
   displayNameFromProvider,
   getAppleAuthAudiences,
   getAuthUserForVerifiedIdentifier,
-  getDemoQaUserOrCreate,
-  getEmailProviderOrThrow,
   getGoogleAuthAudiences,
-  getSmsProviderOrThrow,
-  getUserByIdentifierOrCreate,
   getUserBySsoIdentityOrCreate,
-  googleAuthCallbackSchema,
   localSeededSimulatorAuthBypass,
   markUserIdentifierVerified,
-  pathMatches,
   PrismaAuthRepo,
   providerEmailVerified,
   refreshAuthSession,
@@ -42,6 +33,14 @@ import {
   setSessionCookie,
   verifyRemoteJwt,
   serializeUserForClient,
+} from "./auth-helpers";
+import {
+  appleAuthCallbackSchema,
+  clean,
+  getEmailProviderOrThrow,
+  getSmsProviderOrThrow,
+  googleAuthCallbackSchema,
+  pathMatches,
 } from "./core";
 
 export async function handleAuth(request: NextRequest, path: string[]) {
@@ -73,10 +72,6 @@ export async function handleAuth(request: NextRequest, path: string[]) {
     }
     if (isQaFreshIdentifier(body.identifier)) {
       assertLocalQaIdentityAllowed();
-    } else if (isQaDemoIdentifier(body.identifier)) {
-      await getDemoQaUserOrCreate();
-    } else {
-      await getUserByIdentifierOrCreate(body.identifier);
     }
     const auth = new AuthService(
       new PrismaAuthRepo(),
@@ -110,16 +105,22 @@ export async function handleAuth(request: NextRequest, path: string[]) {
         "Too many one-time code attempts from this IP.",
       );
     }
-    const user = await getAuthUserForVerifiedIdentifier(body.identifier);
+    let user: Awaited<ReturnType<typeof getAuthUserForVerifiedIdentifier>> | undefined;
     const session = await auth.verifyOtp(
       clean({
         identifier: body.identifier,
         code: body.code,
-        userId: user.id,
+        resolveVerifiedUserId: async () => {
+          user = await getAuthUserForVerifiedIdentifier(body.identifier);
+          return user.id;
+        },
         userAgent: request.headers.get("user-agent") ?? undefined,
         ipAddress,
       }),
     );
+    if (!user) {
+      throw new Error("Verified user not resolved.");
+    }
     await markUserIdentifierVerified(user.id, body.identifier);
     const sessionSummary = await resolveSessionSummaryFromToken(session.token);
     const response = ok({

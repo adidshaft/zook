@@ -4,13 +4,10 @@ import { DataTable, EmptyState, SectionHeader } from "../../dashboard-primitives
 import { ConfirmActionButton } from "../../confirm-action-button";
 import { GlassCard, Pill } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
-import {
-  formatPlanShape,
-  membershipPlanTypeLabel,
-  type MembershipPlanType,
-} from "@/components/dashboard/types";
+import { type MembershipPlanType, type MembershipPlanRow } from "@/components/dashboard/types";
 import { formatInr } from "@/lib/format";
-import { PlanFormFields } from "./plan-form-fields";
+import { useT } from "@/lib/use-t";
+import { PlanFormFields, planTypeLabel } from "./plan-form-fields";
 import type { PlansSectionProps } from "./types";
 
 type MembershipCatalogSectionProps = Pick<
@@ -31,6 +28,27 @@ type MembershipCatalogSectionProps = Pick<
   | "deleteMembershipPlan"
 >;
 
+type PlansT = ReturnType<typeof useT>;
+
+function formatPlanShapeLabel(plan: MembershipPlanRow, t: PlansT) {
+  if (plan.type === "DURATION" && plan.durationDays) {
+    return t("shapeDays", { count: plan.durationDays });
+  }
+  if (plan.type === "VISIT_PACK" && plan.visitLimit) {
+    return t("shapeVisits", { count: plan.visitLimit });
+  }
+  if (plan.type === "HYBRID") {
+    return t("shapeHybridValue", {
+      days: plan.durationDays ?? t("shapeFlexible"),
+      visits: plan.visitLimit ?? t("shapeOpen"),
+    });
+  }
+  if (plan.validityDays) {
+    return t("shapeValidity", { count: plan.validityDays });
+  }
+  return t("shapeConfigured");
+}
+
 export function MembershipCatalogSection({
   membershipPlans,
   membershipPlansState,
@@ -47,6 +65,7 @@ export function MembershipCatalogSection({
   updateMembershipPlan,
   deleteMembershipPlan,
 }: MembershipCatalogSectionProps) {
+  const t = useT("plans");
   const [showArchived, setShowArchived] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const visiblePlans = useMemo(
@@ -62,7 +81,7 @@ export function MembershipCatalogSection({
 
   function duplicatePlan(plan: (typeof membershipPlans)[number]) {
     setPlanForm({
-      name: `${plan.name} copy`.slice(0, 60),
+      name: `${plan.name} ${t("duplicate").toLowerCase()}`.slice(0, 60),
       type: plan.type as MembershipPlanType,
       priceRupees: (plan.pricePaise / 100).toString(),
       durationDays: plan.durationDays?.toString() ?? "",
@@ -77,9 +96,9 @@ export function MembershipCatalogSection({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Membership plans"
-        title="Membership catalog"
-        badge={<Pill>{visiblePlans.length} offers</Pill>}
+        eyebrow={t("membershipPlans")}
+        title={t("membershipCatalog")}
+        badge={<Pill>{t("offersCount", { count: visiblePlans.length })}</Pill>}
         action={
           <div className="flex items-center gap-2">
             <ZookButton
@@ -88,7 +107,11 @@ export function MembershipCatalogSection({
               size="sm"
               onClick={() => setShowArchived((current) => !current)}
             >
-              {showArchived ? "Hide archived" : `Show archived${archivedCount ? ` (${archivedCount})` : ""}`}
+              {showArchived
+                ? t("hideArchived")
+                : archivedCount
+                  ? t("showArchivedCount", { count: archivedCount })
+                  : t("showArchived")}
             </ZookButton>
             <ZookButton
               type="button"
@@ -96,7 +119,7 @@ export function MembershipCatalogSection({
               size="sm"
               onClick={() => setShowCreateForm((v) => !v)}
             >
-              {showCreateForm ? "Cancel" : "+ New plan"}
+              {showCreateForm ? t("cancel") : t("newPlanCta")}
             </ZookButton>
           </div>
         }
@@ -105,33 +128,33 @@ export function MembershipCatalogSection({
         {membershipPlansState.error ? (
           <ErrorNotice message={membershipPlansState.error} />
         ) : membershipPlansState.loading && membershipPlans.length === 0 ? (
-          <EmptyState title="Loading membership offers" />
+          <EmptyState title={t("loadingMembershipOffers")} />
         ) : (
           <DataTable
             columns={[
               {
                 id: "name",
-                header: "Plan",
+                header: t("plan"),
                 render: (plan) => (
                   <div className="min-w-0">
                     <p className="truncate font-medium text-white">{plan.name}</p>
                     <p className="mt-1 truncate text-xs text-white/45">
-                      {membershipPlanTypeLabel(plan.type)} · {formatPlanShape(plan)}
+                      {planTypeLabel(plan.type, t)} · {formatPlanShapeLabel(plan, t)}
                     </p>
                   </div>
                 ),
               },
               {
                 id: "visibility",
-                header: "Visibility",
+                header: t("visibility"),
                 render: (plan) => (
                   <div className="flex items-center gap-2">
                     <span
-                      aria-label={`${plan.active ? "Active" : "Paused"} · ${
-                        plan.publicVisible ? "Visible on join page" : "Hidden from join page"
+                      aria-label={`${plan.active ? t("active") : t("paused")} · ${
+                        plan.publicVisible ? t("visibleJoinPage") : t("hiddenJoinPage")
                       }`}
-                      title={`${plan.active ? "Active" : "Paused"} · ${
-                        plan.publicVisible ? "Visible on join page" : "Hidden from join page"
+                      title={`${plan.active ? t("active") : t("paused")} · ${
+                        plan.publicVisible ? t("visibleJoinPage") : t("hiddenJoinPage")
                       }`}
                       className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.65rem] font-bold ${
                         !plan.active
@@ -144,14 +167,14 @@ export function MembershipCatalogSection({
                       <span aria-hidden>{statusMark(plan)}</span>
                     </span>
                     <span className="text-xs text-white/45">
-                      {plan.publicVisible ? "Join page" : "Private"}
+                      {plan.publicVisible ? t("joinPage") : t("private")}
                     </span>
                   </div>
                 ),
               },
               {
                 id: "price",
-                header: "Price",
+                header: t("price"),
                 align: "right",
                 render: (plan) => (
                   <span className="font-medium text-white">{formatInr(plan.pricePaise)}</span>
@@ -159,7 +182,7 @@ export function MembershipCatalogSection({
               },
               {
                 id: "actions",
-                header: "Manage",
+                header: t("manage"),
                 align: "right",
                 render: (plan) => (
                   <div className="flex flex-wrap justify-end gap-2">
@@ -171,7 +194,7 @@ export function MembershipCatalogSection({
                         editingPlanId === plan.id ? setEditingPlanId(null) : startPlanEdit(plan)
                       }
                     >
-                      {editingPlanId === plan.id ? "Close" : "Edit"}
+                      {editingPlanId === plan.id ? t("close") : t("edit")}
                     </ZookButton>
                   </div>
                 ),
@@ -179,15 +202,15 @@ export function MembershipCatalogSection({
             ]}
             rows={visiblePlans}
             rowKey={(plan) => plan.id}
-            empty="No plans."
+            empty={t("noPlans")}
           />
         )}
         {editingPlanId ? (
           <div className="mt-4 grid gap-3 rounded-[20px] border border-white/10 bg-black/20 p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="font-medium text-white">Edit membership plan</p>
-                <p className="mt-1 text-xs text-white/45">Pricing and visibility update after save.</p>
+                <p className="font-medium text-white">{t("editMembershipPlan")}</p>
+                <p className="mt-1 text-xs text-white/45">{t("editMembershipPlanHelp")}</p>
               </div>
               <ZookButton
                 type="button"
@@ -195,14 +218,14 @@ export function MembershipCatalogSection({
                 size="sm"
                 onClick={() => setEditingPlanId(null)}
               >
-                Cancel
+                {t("cancel")}
               </ZookButton>
             </div>
             <PlanFormFields form={planEditForm} setForm={setPlanEditForm} />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <details className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
                 <summary className="cursor-pointer list-none text-xs font-semibold text-white/65">
-                  More plan actions
+                  {t("morePlanActions")}
                 </summary>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <ZookButton
@@ -214,7 +237,7 @@ export function MembershipCatalogSection({
                       if (plan) duplicatePlan(plan);
                     }}
                   >
-                    Duplicate
+                    {t("duplicate")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -228,18 +251,18 @@ export function MembershipCatalogSection({
                     state={formBusy === `plan:${editingPlanId}` ? "loading" : "idle"}
                   >
                     {membershipPlans.find((item) => item.id === editingPlanId)?.active
-                      ? "Archive"
-                      : "Restore"}
+                      ? t("archive")
+                      : t("restore")}
                   </ZookButton>
                   <ConfirmActionButton
-                    title="Delete membership plan?"
-                    description="Only plans without subscriptions can be deleted. Archive plans with subscriptions so member history stays intact."
-                    confirmLabel="Delete"
+                    title={t("deleteMembershipPlanTitle")}
+                    description={t("deleteMembershipPlanDescription")}
+                    confirmLabel={t("delete")}
                     onConfirm={() => deleteMembershipPlan(editingPlanId)}
                     disabled={formBusy === `plan:${editingPlanId}:delete`}
                     className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
                   >
-                    Delete
+                    {t("delete")}
                   </ConfirmActionButton>
                 </div>
               </details>
@@ -250,7 +273,7 @@ export function MembershipCatalogSection({
                 state={formBusy === `plan:${editingPlanId}` ? "loading" : "idle"}
                 className="sm:min-w-32"
               >
-                {formBusy === `plan:${editingPlanId}` ? "Saving..." : "Save plan"}
+                {formBusy === `plan:${editingPlanId}` ? t("saving") : t("savePlan")}
               </ZookButton>
             </div>
           </div>
@@ -258,8 +281,8 @@ export function MembershipCatalogSection({
         {showCreateForm ? (
           <div className="mt-4 grid gap-3 rounded-[20px] border border-white/10 bg-black/20 p-3">
             <div>
-              <p className="font-medium text-white">New membership plan</p>
-              <p className="mt-1 text-xs text-white/45">Controls join, sales, and approval flows.</p>
+              <p className="font-medium text-white">{t("newMembershipPlan")}</p>
+              <p className="mt-1 text-xs text-white/45">{t("newMembershipPlanHelp")}</p>
             </div>
             <PlanFormFields form={planForm} setForm={setPlanForm} showShapeHint />
             <ZookButton
@@ -269,7 +292,7 @@ export function MembershipCatalogSection({
               state={formBusy === "plan" ? "loading" : "idle"}
               fullWidth
             >
-              {formBusy === "plan" ? "Creating..." : "Create plan"}
+              {formBusy === "plan" ? t("creating") : t("createPlan")}
             </ZookButton>
             {formError ? <p className="text-sm text-red-200">{formError}</p> : null}
           </div>

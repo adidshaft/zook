@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { SearchableSelect } from "../../ui";
-import { membershipPlanTypeLabel, type MembershipPlanType } from "@/components/dashboard/types";
+import { type MembershipPlanType } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 import type { PlanFormState } from "./types";
 
 const membershipPlanTypes: MembershipPlanType[] = [
@@ -11,16 +12,27 @@ const membershipPlanTypes: MembershipPlanType[] = [
   "TRIAL",
 ];
 
-const planTypeDescription = (type: MembershipPlanType) =>
+type PlansT = ReturnType<typeof useT>;
+
+export function planTypeLabel(type: string | null | undefined, t: PlansT) {
+  if (type === "HYBRID") return t("typeHybrid");
+  if (type === "DURATION") return t("typeDuration");
+  if (type === "VISIT_PACK") return t("typeVisitPack");
+  if (type === "DATE_RANGE") return t("typeDateRange");
+  if (type === "TRIAL") return t("typeTrial");
+  return t("typeMembership");
+}
+
+const planTypeDescription = (type: MembershipPlanType, t: PlansT) =>
   type === "HYBRID"
-    ? "Days or visits, whichever comes first."
+    ? t("shapeHybrid")
     : type === "DURATION"
-      ? "Days only."
+      ? t("shapeDuration")
       : type === "VISIT_PACK"
-        ? "Visits only, no expiry."
+        ? t("shapeVisitPack")
         : type === "DATE_RANGE"
-          ? "Fixed window."
-        : "Free intro period.";
+          ? t("shapeDateRange")
+        : t("shapeTrial");
 
 const usesDurationDays = (type: MembershipPlanType) =>
   type === "HYBRID" || type === "DURATION" || type === "DATE_RANGE" || type === "TRIAL";
@@ -34,6 +46,7 @@ type PlanFormFieldsProps = {
 };
 
 export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFormFieldsProps) {
+  const t = useT("plans");
   const showDurationDays = usesDurationDays(form.type);
   const showVisitLimit = usesVisitLimit(form.type);
   const inputClass =
@@ -44,19 +57,19 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
     <>
       <div className="grid gap-3 md:grid-cols-2">
         <label className={labelClass}>
-          Plan name
+          {t("planName")}
           <input
             value={form.name}
             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            placeholder="Starter 12-week plan"
+            placeholder={t("planNamePlaceholder")}
             maxLength={60}
             pattern="^(?!.*\\d{8,}).{1,60}$"
-            title="Use 60 characters or fewer and avoid raw numeric IDs."
+            title={t("planNameHelp")}
             className={inputClass}
           />
         </label>
         <SearchableSelect
-          label="Plan shape"
+          label={t("planShape")}
           value={form.type}
           onChange={(type) =>
             setForm((current) => ({
@@ -70,17 +83,17 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
           }
           options={membershipPlanTypes.map((type) => ({
             value: type,
-            label: membershipPlanTypeLabel(type),
-            description: showShapeHint ? planTypeDescription(type) : undefined,
+            label: planTypeLabel(type, t),
+            description: showShapeHint ? planTypeDescription(type, t) : undefined,
           }))}
         />
         {showShapeHint ? (
           <p className="md:col-span-2 text-xs text-white/45">
-            Plan shape controls expiry, visits, and public join copy.
+            {t("shapeHint")}
           </p>
         ) : null}
         <label className={labelClass}>
-          Price
+          {t("price")}
           <input
             type="number"
             min="0"
@@ -96,7 +109,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
         </label>
         {showDurationDays ? (
           <label className={labelClass}>
-            Duration days
+            {t("durationDays")}
             <input
               type="number"
               min="1"
@@ -113,7 +126,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
         ) : null}
         {showVisitLimit ? (
           <label className={labelClass}>
-            Visit limit
+            {t("visitLimit")}
             <input
               type="number"
               min="1"
@@ -129,7 +142,7 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
           </label>
         ) : null}
         <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white/55">
-          Public
+          {t("public")}
           <input
             type="checkbox"
             checked={form.publicVisible}
@@ -141,13 +154,13 @@ export function PlanFormFields({ form, setForm, showShapeHint = false }: PlanFor
         </label>
       </div>
       <label className={labelClass}>
-        Short public description
+        {t("shortPublicDescription")}
         <input
           value={form.description}
           onChange={(event) =>
             setForm((current) => ({ ...current, description: event.target.value }))
           }
-          placeholder="Best for regular members who want a monthly routine."
+          placeholder={t("descriptionPlaceholder")}
           className={inputClass}
         />
       </label>

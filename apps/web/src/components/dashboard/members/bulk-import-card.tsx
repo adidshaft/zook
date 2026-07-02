@@ -8,6 +8,7 @@ import { ZookButton } from "../../zook-button";
 import type { MembershipPlanRow } from "@/components/dashboard/types";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
+import { useT } from "@/lib/use-t";
 
 const sampleCsv = "name,email,phone\nRahul Sharma,rahul@example.com,9876543210";
 
@@ -20,6 +21,7 @@ export function BulkImportCard({
   membershipPlans: MembershipPlanRow[];
   onImportComplete: () => void;
 }) {
+  const t = useT("members");
   const [csvText, setCsvText] = useState("");
   const [planId, setPlanId] = useState("");
   const [activateSub, setActivateSub] = useState(false);
@@ -62,8 +64,8 @@ export function BulkImportCard({
           sendWelcomeNotification: sendNotification,
         },
         feedback: {
-          success: "Import completed.",
-          error: "Import failed. Check the CSV format and try again.",
+          success: t("importCompleted"),
+          error: t("importFailed"),
         },
       });
       setImportResult(result);
@@ -82,12 +84,12 @@ export function BulkImportCard({
     <GlassCard>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeader
-          eyebrow="Onboarding"
-          title="Bulk member import"
+          eyebrow={t("bulkImportEyebrow")}
+          title={t("bulkImportTitle")}
           description={
             expanded
-              ? "CSV must include 'name' and 'email' columns. Optional: 'phone'."
-              : "Add many members from a CSV when you are setting up or migrating a roster."
+              ? t("bulkImportDescriptionOpen")
+              : t("bulkImportDescriptionClosed")
           }
         />
         <ZookButton
@@ -96,16 +98,16 @@ export function BulkImportCard({
           size="sm"
           onClick={() => setExpanded((current) => !current)}
         >
-          {expanded ? "Hide import" : "Import CSV"}
+          {expanded ? t("hideImport") : t("importCsv")}
         </ZookButton>
       </div>
       {expanded ? (
         <div className="mt-5 grid gap-4">
           <div className="grid gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm text-white/70 md:grid-cols-3">
             {[
-              ["1", "Use columns: name, email, phone"],
-              ["2", activePlans.length ? "Assign a plan now or import members only" : "Create a plan later to activate memberships"],
-              ["3", sendNotification ? "Welcome notifications will be sent" : "Notifications are off for this import"],
+              ["1", t("importStepColumns")],
+              ["2", activePlans.length ? t("importStepPlanAvailable") : t("importStepPlanMissing")],
+              ["3", sendNotification ? t("importStepNotificationsOn") : t("importStepNotificationsOff")],
             ].map(([step, label]) => (
               <div key={step} className="flex items-start gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">
@@ -118,7 +120,7 @@ export function BulkImportCard({
 
           <div className="flex flex-wrap items-center gap-3">
             <label className="zook-focus flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:bg-white/8">
-              Choose CSV file
+              {t("chooseCsvFile")}
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -128,7 +130,7 @@ export function BulkImportCard({
             </label>
             {csvText ? (
               <span className="text-xs text-white/55">
-                {csvText.split(/\r?\n/).filter(Boolean).length - 1} data rows
+                {t("dataRows", { count: csvText.split(/\r?\n/).filter(Boolean).length - 1 })}
               </span>
             ) : null}
             <ZookButton
@@ -140,7 +142,7 @@ export function BulkImportCard({
                 setImportResult(null);
               }}
             >
-              Use sample format
+              {t("useSampleFormat")}
             </ZookButton>
           </div>
 
@@ -157,13 +159,13 @@ export function BulkImportCard({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <SearchableSelect
-              label="Assign membership plan (optional)"
-              placeholder="No plan"
-              searchPlaceholder="Search plans"
+              label={t("assignPlanOptional")}
+              placeholder={t("noPlan")}
+              searchPlaceholder={t("searchPlans")}
               value={planId}
               onChange={setPlanId}
               options={[
-                { value: "", label: "No plan - add as members only" },
+                { value: "", label: t("noPlanMembersOnly") },
                 ...activePlans.map((plan) => ({
                     value: plan.id,
                     label: plan.name,
@@ -180,7 +182,7 @@ export function BulkImportCard({
                   disabled={!planId}
                   className="h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300"
                 />
-                Activate subscription immediately
+                {t("activateSubscriptionImmediately")}
               </label>
               <label className="flex items-center gap-2 text-sm text-white/70">
                 <input
@@ -189,7 +191,7 @@ export function BulkImportCard({
                   onChange={(event) => setSendNotification(event.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300"
                 />
-                Send welcome notification
+                {t("sendWelcomeNotification")}
               </label>
             </div>
           </div>
@@ -201,7 +203,7 @@ export function BulkImportCard({
               state={busy ? "loading" : "idle"}
               onClick={() => void runImport()}
             >
-              {busy ? "Importing..." : "Import members"}
+              {busy ? t("importing") : t("importMembers")}
             </ZookButton>
             {importResult ? (
               <ZookButton
@@ -214,7 +216,7 @@ export function BulkImportCard({
                   setActivateSub(false);
                 }}
               >
-                Reset
+                {t("reset")}
               </ZookButton>
             ) : null}
           </div>
@@ -223,24 +225,24 @@ export function BulkImportCard({
             <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
               <div className="flex flex-wrap gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">Total</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">{t("total")}</p>
                   <p className="mt-1 text-lg font-bold text-white">{importResult.summary.total}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">Created</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">{t("createdCount")}</p>
                   <p className="mt-1 text-lg font-bold text-white">
                     {importResult.summary.created}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">Existing</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">{t("existing")}</p>
                   <p className="mt-1 text-lg font-bold text-blue-300">
                     {importResult.summary.existing}
                   </p>
                 </div>
                 {importResult.summary.errors > 0 ? (
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">Errors</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">{t("errors")}</p>
                     <p className="mt-1 text-lg font-bold text-red-300">
                       {importResult.summary.errors}
                     </p>
@@ -249,10 +251,10 @@ export function BulkImportCard({
               </div>
               {errorRows.length > 0 ? (
                 <div className="mt-3 max-h-40 overflow-y-auto rounded-xl border border-red-300/15 bg-red-300/8 p-3">
-                  <p className="mb-2 text-xs font-semibold text-red-200">Failed rows</p>
+                  <p className="mb-2 text-xs font-semibold text-red-200">{t("failedRows")}</p>
                   {errorRows.map((row) => (
                     <p key={row.row} className="text-xs text-red-200/70">
-                      Row {row.row}: {row.email ?? "-"} - {row.error}
+                      {t("rowError", { row: row.row, email: row.email ?? "-", error: row.error ?? "" })}
                     </p>
                   ))}
                 </div>

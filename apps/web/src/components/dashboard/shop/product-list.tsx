@@ -11,16 +11,17 @@ import { formatInr } from "@/lib/format";
 import { ProductEditPanel } from "./product-edit-panel";
 import { productImagesFromProduct } from "./product-images";
 import type { ProductFormState, ProductPatch, ResourceState, StockAdjustmentState } from "./types";
+import { useT } from "@/lib/use-t";
 
 const PRODUCT_PAGE_SIZE = 6;
 
-function productCategoryLabel(category: string | null | undefined) {
-  if (category === "WATER") return "Water";
-  if (category === "PROTEIN_SHAKE") return "Protein shake";
-  if (category === "SHAKER") return "Shaker";
-  if (category === "TOWEL") return "Towel";
-  if (category === "SUPPLEMENT") return "Supplement";
-  return "Other";
+function productCategoryLabel(category: string | null | undefined, t: ReturnType<typeof useT>) {
+  if (category === "WATER") return t("categoryWater");
+  if (category === "PROTEIN_SHAKE") return t("categoryProteinShake");
+  if (category === "SHAKER") return t("categoryShaker");
+  if (category === "TOWEL") return t("categoryTowel");
+  if (category === "SUPPLEMENT") return t("categorySupplement");
+  return t("categoryOther");
 }
 
 export function ProductList({
@@ -56,6 +57,7 @@ export function ProductList({
   adjustStock: (productId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
 }) {
+  const t = useT("webUx.shop");
   const [visibleCount, setVisibleCount] = useState(PRODUCT_PAGE_SIZE);
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export function ProductList({
       {productsState.error ? (
         <ErrorNotice message={productsState.error} />
       ) : productsState.loading && inventory.length === 0 ? (
-        <EmptyState title="Loading inventory" />
+        <EmptyState title={t("loadingInventory")} />
       ) : inventory.length ? (
         <>
           {visibleProducts.map((product) => (
@@ -92,6 +94,7 @@ export function ProductList({
               updateProduct={updateProduct}
               adjustStock={adjustStock}
               deleteProduct={deleteProduct}
+              t={t}
             />
           ))}
           <LoadMoreButton
@@ -102,7 +105,7 @@ export function ProductList({
           />
         </>
       ) : (
-        <EmptyState title="Inventory is clear" />
+        <EmptyState title={t("inventoryClear")} />
       )}
     </div>
   );
@@ -123,6 +126,7 @@ function ProductListItem({
   updateProduct,
   adjustStock,
   deleteProduct,
+  t,
 }: {
   orgId: string;
   product: ProductRow;
@@ -138,6 +142,7 @@ function ProductListItem({
   updateProduct: (productId: string, patch?: ProductPatch) => Promise<void>;
   adjustStock: (productId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
+  t: ReturnType<typeof useT>;
 }) {
   const images = productImagesFromProduct(product);
   const lowStock = product.stock <= product.lowStockThreshold;
@@ -150,18 +155,18 @@ function ProductListItem({
           {images.length ? (
             <img
               src={images[0]}
-              alt={`${product.name} product photo`}
+              alt={t("productPhotoAlt", { product: product.name })}
               className="h-16 w-16 shrink-0 rounded-2xl border border-white/10 object-cover"
             />
           ) : (
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/12 bg-black/30 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
-              Photo
+              {t("photo")}
             </div>
           )}
           <div className="min-w-0">
             <p className="truncate font-medium text-white">{product.name}</p>
             <p className="mt-1 text-xs text-white/45">
-              {productCategoryLabel(product.category)} · {formatInr(product.pricePaise)}
+              {productCategoryLabel(product.category, t)} · {formatInr(product.pricePaise)}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span
@@ -171,11 +176,11 @@ function ProductListItem({
                     : "inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.03] px-2 text-xs font-semibold text-white/58"
                 }
               >
-                {product.stock} left
+                {t("stockLeft", { count: product.stock })}
               </span>
               {!product.active ? (
                 <span className="inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.03] px-2 text-xs font-semibold text-amber-100/75">
-                  Archived
+                  {t("archived")}
                 </span>
               ) : null}
             </div>
@@ -188,7 +193,7 @@ function ProductListItem({
             size="sm"
             onClick={() => (isEditing ? setEditingProductId(null) : startProductEdit(product))}
           >
-            {isEditing ? "Close" : "Edit"}
+            {isEditing ? t("close") : t("edit")}
           </ZookButton>
         </div>
       </div>
@@ -202,18 +207,18 @@ function ProductListItem({
             disabled={formBusy === `product:${product.id}`}
             state={formBusy === `product:${product.id}` ? "loading" : "idle"}
           >
-            {product.active ? "Archive" : "Restore"}
+            {product.active ? t("archive") : t("restore")}
           </ZookButton>
           {!product.active ? (
             <ConfirmActionButton
-              title="Delete product?"
-              description="Only products without order history can be deleted. Restore products with history so reports stay consistent."
-              confirmLabel="Delete"
+              title={t("deleteProductTitle")}
+              description={t("deleteProductDescription")}
+              confirmLabel={t("delete")}
               onConfirm={() => deleteProduct(product.id)}
               disabled={formBusy === `product:${product.id}:delete`}
               className="zook-focus rounded-full border border-red-300/20 px-3 py-1 text-xs font-medium text-red-100/80 hover:border-red-300/45 disabled:opacity-50"
             >
-              Delete
+              {t("delete")}
             </ConfirmActionButton>
           ) : null}
         </div>

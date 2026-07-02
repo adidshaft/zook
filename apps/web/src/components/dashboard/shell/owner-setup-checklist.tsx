@@ -19,11 +19,11 @@ export function OwnerSetupChecklist({
   const profileReady = activeOrg.status === "ACTIVE" && hasBranch && Boolean(activeOrg.city);
   const planCreated = (summary.plansCount ?? 0) > 0;
   const profileBlocker = !hasBranch
-    ? "Add a branch before members see accurate attendance and location details."
+    ? copy.dashboard.missingBranchBlocker
     : !activeOrg.city
-      ? "Add the gym city so public discovery and join pages feel complete."
+      ? copy.dashboard.missingCityBlocker
       : activeOrg.status !== "ACTIVE"
-        ? "Resolve gym status before sharing public membership links."
+        ? copy.dashboard.inactiveGymBlocker
         : "";
   const checklist = [
     {
@@ -38,7 +38,7 @@ export function OwnerSetupChecklist({
       detail: copy.dashboard.createFirstPlanDetail,
       blocker: planCreated
         ? ""
-        : "Create at least one active membership plan before inviting members to join.",
+        : copy.dashboard.createFirstPlanBlocker,
       href: "/dashboard/plans",
       done: planCreated,
     },
@@ -48,7 +48,7 @@ export function OwnerSetupChecklist({
       blocker:
         (summary.staffCount ?? 0) > 1
           ? ""
-          : "Invite one staff member so reception, coaching, and approvals are not owner-only.",
+          : copy.dashboard.inviteTeamBlocker,
       href: "/dashboard/staff",
       done: (summary.staffCount ?? 0) > 1,
     },
@@ -58,7 +58,7 @@ export function OwnerSetupChecklist({
       blocker:
         summary.joinRequests > 0 || summary.activeMembers > 0
           ? ""
-          : "Share the gym link or QR once profile and plans are ready.",
+          : copy.dashboard.shareGymLinkBlocker,
       href: "/dashboard/public-profile",
       done: summary.joinRequests > 0 || summary.activeMembers > 0,
     },
@@ -109,7 +109,7 @@ export function OwnerSetupChecklist({
             aria-valuenow={completed}
             aria-valuemin={0}
             aria-valuemax={checklist.length}
-            aria-label="Getting started progress"
+            aria-label={copy.dashboard.setupProgressLabel}
           >
             <div
               className="h-full rounded-full bg-[var(--accent-fill)] transition-all duration-500"
@@ -143,7 +143,7 @@ export function OwnerSetupChecklist({
                       {item.label}
                       {current ? (
                         <span className="ml-2 rounded-full bg-[var(--accent-fill)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--text-on-accent)]">
-                          Next
+                          {copy.dashboard.nextStep}
                         </span>
                       ) : null}
                     </p>

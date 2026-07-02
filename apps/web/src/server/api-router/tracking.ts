@@ -9,6 +9,7 @@ import {
 import { PersonalTrackingService } from "@zook/core/services";
 import { Prisma, prisma } from "@zook/db";
 import { getRequestContext, requireAuth } from "../access";
+import { startOfDayIst } from "../domains/shared/date";
 import { forbiddenError, notFoundError } from "../errors";
 import { ok, readJson } from "../response";
 import {
@@ -445,9 +446,7 @@ export async function handleTracking(request: NextRequest, path: string[]) {
           userId,
           loggedAt: {
             gte: (() => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return today;
+              return startOfDayIst(new Date());
             })(),
           },
         },

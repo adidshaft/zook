@@ -7,19 +7,22 @@ import { ConfirmActionButton } from "../../confirm-action-button";
 import { ManagedOn, SearchableSelect } from "../../ui";
 import type { MemberDetailPayload, MembershipPlanRow } from "@/components/dashboard/types";
 import { formatInr } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 import type { ResourceState } from "./member-list/types";
 
-function membershipStatusLabel(status?: string | null) {
+type MembersT = ReturnType<typeof useT>;
+
+function membershipStatusLabel(status: string | null | undefined, t: MembersT) {
   if (!status) return null;
   const normalized = status.toUpperCase();
-  if (normalized === "ACTIVE") return "Active";
-  if (normalized === "PENDING" || normalized === "PENDING_PAYMENT") return "Pending";
-  if (normalized === "PAUSED") return "Paused";
-  if (normalized === "PAST_DUE" || normalized === "EXPIRED") return "Expired";
+  if (normalized === "ACTIVE") return t("active");
+  if (normalized === "PENDING" || normalized === "PENDING_PAYMENT") return t("statusPending");
+  if (normalized === "PAUSED") return t("statusPaused");
+  if (normalized === "PAST_DUE" || normalized === "EXPIRED") return t("statusExpired");
   if (normalized === "CANCELLED" || normalized === "FAILED" || normalized === "REJECTED") {
-    return "Inactive";
+    return t("statusInactive");
   }
-  return "Review";
+  return t("statusReview");
 }
 
 function daysUntil(value?: string | Date | null) {
@@ -67,6 +70,8 @@ export function MemberDetailDrawer({
   setSelectedMemberId: (memberId: string | null) => void;
   updateSubscription: (action: "switch" | "pause" | "resume") => Promise<void>;
 }) {
+  const t = useT("members");
+
   if (!selectedMemberId) {
     return null;
   }
@@ -75,7 +80,9 @@ export function MemberDetailDrawer({
   const nextPlan = membershipPlans.find((plan) => plan.id === switchPlanId) ?? null;
   const canPause = selectedSubscription?.status === "ACTIVE";
   const canResume = selectedSubscription?.status === "PAUSED";
-  const pauseActionLabel = pauseResumesAt ? `Pause until ${pauseResumesAt}` : "Pause membership";
+  const pauseActionLabel = pauseResumesAt
+    ? t("pauseUntil", { date: pauseResumesAt })
+    : t("pauseMembership");
   const loadedMember = memberDetailState.data?.member ?? null;
   const memberUser = loadedMember?.user ?? null;
   const hasContact = Boolean(memberUser?.email || memberUser?.phone);
@@ -86,33 +93,33 @@ export function MemberDetailDrawer({
   const inactiveDays = daysSince(latestCheckIn);
   const memberAction = !hasContact
     ? {
-        title: "Complete contact details",
-        detail: "Renewal nudges, receipts, and desk callbacks need at least one reliable contact method.",
+        title: t("completeContactDetails"),
+        detail: t("completeContactDetailsDetail"),
         tone: "amber",
       }
     : !selectedSubscription || selectedSubscription.status !== "ACTIVE"
       ? {
-          title: canResume ? "Resume paused access" : "Set up an active plan",
+          title: canResume ? t("resumePausedAccess") : t("setUpActivePlan"),
           detail: canResume
-            ? "This member cannot check in until the paused membership resumes."
-            : "No active membership is ready for attendance or renewal work.",
+            ? t("pausedCannotCheckIn")
+            : t("noActiveMembershipReady"),
           tone: "amber",
         }
       : isSubscriptionExpiring
         ? {
-            title: "Renewal conversation due",
-            detail: `Membership ends in ${subscriptionDaysLeft} days. Confirm renewal before access lapses.`,
+            title: t("renewalConversationDue"),
+            detail: t("membershipEndsInDays", { days: subscriptionDaysLeft ?? 0 }),
             tone: "amber",
           }
         : inactiveDays != null && inactiveDays >= 14
           ? {
-              title: "Check on attendance",
-              detail: `Last check-in was ${inactiveDays} days ago. A trainer or desk follow-up may help.`,
+              title: t("checkOnAttendance"),
+              detail: t("lastCheckInDaysAgo", { days: inactiveDays }),
               tone: "neutral",
             }
           : {
-              title: "Member record is ready",
-              detail: "Contact, membership, and recent activity look ready for daily operations.",
+              title: t("memberRecordReady"),
+              detail: t("memberRecordReadyDetail"),
               tone: "success",
             };
 
@@ -122,14 +129,14 @@ export function MemberDetailDrawer({
         type="button"
         onClick={() => setSelectedMemberId(null)}
         className="zook-focus absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)] transition"
-        aria-label="Close details"
+        aria-label={t("closeDetails")}
       >
         <X size={16} />
       </button>
       {memberDetailState.error ? (
         <ErrorNotice message={memberDetailState.error} />
       ) : memberDetailState.loading || !memberDetailState.data ? (
-        <div className="grid gap-3 lg:grid-cols-4" aria-label="Member detail is loading">
+        <div className="grid gap-3 lg:grid-cols-4" aria-label={t("memberDetailLoading")}>
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
@@ -143,7 +150,7 @@ export function MemberDetailDrawer({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  {memberUser?.name ?? "Member"}
+                  {memberUser?.name ?? t("memberFallback")}
                 </p>
                 <p className="mt-2 text-base font-semibold text-[var(--text-primary)]">
                   {memberAction.title}
@@ -153,13 +160,15 @@ export function MemberDetailDrawer({
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-tertiary)]">
                   <span className="max-w-[240px] truncate">
-                    {memberUser?.phone || memberUser?.email || "Contact missing"}
+                    {memberUser?.phone || memberUser?.email || t("contactMissing")}
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span>{selectedSubscription?.plan?.name ?? "No plan"}</span>
+                  <span>{selectedSubscription?.plan?.name ?? t("noPlan")}</span>
                   <span aria-hidden="true">·</span>
                   <span>
-                    {latestCheckIn ? `${inactiveDays ?? 0} days since check-in` : "No check-ins"}
+                    {latestCheckIn
+                      ? t("daysSinceCheckIn", { days: inactiveDays ?? 0 })
+                      : t("noCheckIns")}
                   </span>
                 </div>
               </div>
@@ -173,32 +182,32 @@ export function MemberDetailDrawer({
                 }`}
               >
                 {memberAction.tone === "success"
-                  ? "Ready"
+                  ? t("ready")
                   : memberAction.tone === "amber"
-                    ? "Needs work"
-                    : "Watch"}
+                    ? t("needsWork")
+                    : t("watch")}
               </span>
             </div>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Subscription
+                {t("subscription")}
               </p>
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                {selectedSubscription?.plan?.name ?? "No plan"}
+                {selectedSubscription?.plan?.name ?? t("noPlan")}
               </p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 {selectedSubscription
-                  ? membershipStatusLabel(selectedSubscription.status)
-                  : "No subscription"}
+                  ? membershipStatusLabel(selectedSubscription.status, t)
+                  : t("noSubscription")}
               </p>
               {selectedSubscription ? (
                 <div className="mt-3 grid gap-2">
                   <SearchableSelect
-                    label="Switch membership plan"
-                    placeholder="Choose plan"
-                    searchPlaceholder="Search plans"
+                    label={t("switchMembershipPlan")}
+                    placeholder={t("choosePlan")}
+                    searchPlaceholder={t("searchPlans")}
                     value={switchPlanId}
                     onChange={setSwitchPlanId}
                     options={membershipPlans
@@ -213,14 +222,14 @@ export function MemberDetailDrawer({
                     value={pauseReason}
                     onChange={(event) => setPauseReason(event.target.value)}
                     maxLength={180}
-                    placeholder="Pause reason"
+                    placeholder={t("pauseReason")}
                     className="zook-focus min-h-16 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                   />
                   <p className="text-[11px] text-[var(--text-tertiary)]">
                     {pauseReason.length}/180
                   </p>
                   <label className="grid gap-1 text-xs text-[var(--text-secondary)]">
-                    Resume date
+                    {t("resumeDate")}
                     <input
                       type="date"
                       value={pauseResumesAt}
@@ -230,49 +239,52 @@ export function MemberDetailDrawer({
                     />
                   </label>
                   <p className="text-[11px] text-[var(--text-tertiary)]">
-                    Pause keeps the membership inactive until the selected resume date.
+                    {t("pauseDateHelp")}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <ConfirmActionButton
-                      title="Switch membership plan?"
+                      title={t("switchMembershipPlanTitle")}
                       description={
                         nextPlan
-                          ? `This changes the active membership immediately to ${nextPlan.name} (${formatInr(nextPlan.pricePaise)}).`
-                          : "Choose a plan before switching this membership."
+                          ? t("switchMembershipPlanDescription", {
+                              plan: nextPlan.name,
+                              price: formatInr(nextPlan.pricePaise),
+                            })
+                          : t("choosePlanBeforeSwitch")
                       }
-                      confirmLabel="Switch plan"
+                      confirmLabel={t("switchPlan")}
                       onConfirm={() => updateSubscription("switch")}
                       disabled={!switchPlanId || Boolean(subscriptionBusy)}
                       className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--accent-fill)] bg-[var(--accent-fill)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] transition duration-200 active:translate-y-px disabled:pointer-events-none disabled:opacity-45"
                     >
-                      {subscriptionBusy === "switch" ? "Switching..." : "Switch"}
+                      {subscriptionBusy === "switch" ? t("switching") : t("switch")}
                     </ConfirmActionButton>
                     {canPause ? (
                       <ConfirmActionButton
-                        title="Pause membership?"
+                        title={t("pauseMembershipTitle")}
                         description={
                           pauseResumesAt
-                            ? `Pause this membership until ${pauseResumesAt}. Check-ins stay inactive until the selected resume date.`
-                            : "Choose a resume date before pausing this membership."
+                            ? t("pauseMembershipDescription", { date: pauseResumesAt })
+                            : t("chooseResumeBeforePause")
                         }
-                        confirmLabel="Pause membership"
+                        confirmLabel={t("pauseMembership")}
                         onConfirm={() => updateSubscription("pause")}
                         disabled={Boolean(subscriptionBusy) || !pauseResumesAt}
                         className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-transparent px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] transition duration-200 active:translate-y-px hover:bg-[var(--surface)] hover:text-[var(--text-primary)] disabled:pointer-events-none disabled:opacity-45"
                       >
-                        {subscriptionBusy === "pause" ? "Pausing..." : pauseActionLabel}
+                        {subscriptionBusy === "pause" ? t("pausing") : pauseActionLabel}
                       </ConfirmActionButton>
                     ) : null}
                     {canResume ? (
                       <ConfirmActionButton
-                        title="Resume membership?"
-                        description="Resume this paused membership now and re-enable member access immediately."
-                        confirmLabel="Resume membership"
+                        title={t("resumeMembershipTitle")}
+                        description={t("resumeMembershipDescription")}
+                        confirmLabel={t("resumeMembership")}
                         onConfirm={() => updateSubscription("resume")}
                         disabled={Boolean(subscriptionBusy)}
                         className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-transparent px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] transition duration-200 active:translate-y-px hover:bg-[var(--surface)] hover:text-[var(--text-primary)] disabled:pointer-events-none disabled:opacity-45"
                       >
-                        {subscriptionBusy === "resume" ? "Resuming..." : "Resume"}
+                        {subscriptionBusy === "resume" ? t("resuming") : t("resume")}
                       </ConfirmActionButton>
                     ) : null}
                   </div>
@@ -294,24 +306,24 @@ export function MemberDetailDrawer({
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Activity
+                {t("activity")}
               </p>
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                {memberDetailState.data.member.attendance.length} recent check-ins
+                {t("recentCheckIns", { count: memberDetailState.data.member.attendance.length })}
               </p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                {memberDetailState.data.member.workouts.length} trainer-visible workouts
+                {t("trainerVisibleWorkouts", { count: memberDetailState.data.member.workouts.length })}
               </p>
               <ManagedOn surface="member-mobile" className="mt-3">
-                Members log workouts, body, and habits in the mobile app.
+                {t("memberMobileManaged")}
               </ManagedOn>
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Payments
+                {t("payments")}
               </p>
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                {memberDetailState.data.member.payments.length} recent records
+                {t("recentRecords", { count: memberDetailState.data.member.payments.length })}
               </p>
             </div>
             <div className="lg:col-span-3">

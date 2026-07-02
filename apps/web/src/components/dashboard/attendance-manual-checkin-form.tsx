@@ -6,6 +6,7 @@ import { GlassCard } from "../glass-card";
 import { SectionHeader } from "../dashboard-primitives";
 import { ZookButton } from "../zook-button";
 import { webApiFetch } from "@/lib/api-client";
+import { useT } from "@/lib/use-t";
 
 type MemberOption = {
   user: {
@@ -25,6 +26,7 @@ export function AttendanceManualCheckinForm({
   branchId?: string | null | undefined;
   onCheckedIn?: () => void;
 }) {
+  const t = useT("attendance");
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [membersError, setMembersError] = useState("");
   const [membersLoading, setMembersLoading] = useState(true);
@@ -51,11 +53,11 @@ export function AttendanceManualCheckinForm({
       );
       setMembers(payload.members);
     } catch (cause) {
-      setMembersError(cause instanceof Error ? cause.message : "Unable to search members.");
+      setMembersError(cause instanceof Error ? cause.message : t("unableSearchMembers"));
     } finally {
       setMembersLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, t]);
 
   useEffect(() => {
     void searchMembers("");
@@ -107,11 +109,11 @@ export function AttendanceManualCheckinForm({
     setSuccess("");
 
     if (!memberUserId) {
-      setError("Select a member to check in.");
+      setError(t("selectMemberToCheckIn"));
       return;
     }
     if (reason.trim().length < 2) {
-      setError("Add a reason for the manual override (at least 2 characters).");
+      setError(t("manualReasonRequired"));
       return;
     }
 
@@ -127,11 +129,11 @@ export function AttendanceManualCheckinForm({
         },
         feedback: { success: false },
       });
-      setSuccess(`Checked in ${selectedMember?.user?.name ?? "member"} successfully.`);
+      setSuccess(t("checkedInSuccessfully", { name: selectedMember?.user?.name ?? t("memberFallback") }));
       resetForm();
       onCheckedIn?.();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to record manual check-in.");
+      setError(cause instanceof Error ? cause.message : t("unableRecordManualCheckIn"));
     } finally {
       setSubmitting(false);
     }
@@ -140,21 +142,21 @@ export function AttendanceManualCheckinForm({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Front desk"
-        title="Manual check-in override"
-        description="Record an entry for a member who can't scan the QR (lost phone, expired token, etc)."
+        eyebrow={t("frontDesk")}
+        title={t("manualCheckInOverride")}
+        description={t("manualCheckInDescription")}
       />
       <form className="mt-5 grid gap-4" onSubmit={(event) => void handleSubmit(event)}>
         <div className="relative">
           <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-            Member
+            {t("member")}
           </label>
           <input
             value={memberQuery}
             onChange={(event) => {
               handleMemberQueryChange(event.target.value);
             }}
-            placeholder="Search by name, email, or phone"
+            placeholder={t("searchMemberPlaceholder")}
             className="zook-focus mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
             autoComplete="off"
           />
@@ -164,7 +166,7 @@ export function AttendanceManualCheckinForm({
           {!memberUserId ? (
             <div className="mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg">
               {membersLoading ? (
-                <p className="px-4 py-3 text-sm text-[var(--text-tertiary)]">Loading members...</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-tertiary)]">{t("loadingMembers")}</p>
               ) : members.length ? (
                 members.map((member) => (
                   <button
@@ -174,7 +176,7 @@ export function AttendanceManualCheckinForm({
                     className="zook-focus flex w-full flex-col items-start gap-0.5 px-4 py-2.5 text-left text-sm hover:bg-[var(--bg-sunken)]"
                   >
                     <span className="font-medium text-[var(--text-primary)]">
-                      {member.user?.name ?? "Member"}
+                      {member.user?.name ?? t("memberFallback")}
                     </span>
                     <span className="text-xs text-[var(--text-tertiary)]">
                       {member.user?.email ?? member.user?.phone ?? ""}
@@ -182,25 +184,25 @@ export function AttendanceManualCheckinForm({
                   </button>
                 ))
               ) : (
-                <p className="px-4 py-3 text-sm text-[var(--text-tertiary)]">No members match.</p>
+                <p className="px-4 py-3 text-sm text-[var(--text-tertiary)]">{t("noMembersMatch")}</p>
               )}
             </div>
           ) : null}
           {memberUserId ? (
             <p className="mt-2 text-xs text-[var(--accent-strong)]">
-              Selected: {selectedMember?.user?.name ?? selectedMember?.user?.email ?? "Member"}
+              {t("selectedMember", { name: selectedMember?.user?.name ?? selectedMember?.user?.email ?? t("memberFallback") })}
             </p>
           ) : null}
         </div>
 
         <div>
           <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-            Reason <span className="text-red-300">*</span>
+            {t("reason")} <span className="text-red-300">*</span>
           </label>
           <input
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="e.g. Member's phone is dead, verified ID at desk"
+            placeholder={t("reasonPlaceholder")}
             maxLength={200}
             className="zook-focus mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
           />
@@ -208,12 +210,12 @@ export function AttendanceManualCheckinForm({
 
         <div>
           <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-            Notes (optional)
+            {t("notesOptional")}
           </label>
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Any extra context for this override"
+            placeholder={t("notesPlaceholder")}
             maxLength={500}
             rows={2}
             className="zook-focus mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none"
@@ -231,7 +233,7 @@ export function AttendanceManualCheckinForm({
             state={submitting ? "loading" : "idle"}
             leadingIcon={<UserCheck size={16} />}
           >
-            {submitting ? "Checking in..." : "Record check-in"}
+            {submitting ? t("checkingIn") : t("recordCheckIn")}
           </ZookButton>
         </div>
       </form>

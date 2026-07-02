@@ -14,6 +14,7 @@ import {
   formatAiResponseSummary,
 } from "../operational-shared";
 import type { LoadingState, PagedState } from "./types";
+import { useT } from "@/lib/use-t";
 
 export function AuditPanel({
   orgId,
@@ -32,6 +33,11 @@ export function AuditPanel({
   aiUsageState: LoadingState;
   misconfiguredAiCount: number;
 }) {
+  const t = useT("audit");
+  const responseSummaryLabels = {
+    noResponseSummary: t("noResponseSummary"),
+    dayPlan: (count: number) => t("dayPlan", { count }),
+  };
   const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null);
   const [selectedAiId, setSelectedAiId] = useState<string | null>(null);
   const [aiFilter, setAiFilter] = useState<"all" | "needs-review">("all");
@@ -55,16 +61,16 @@ export function AuditPanel({
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
       <GlassCard>
         <SectionHeader
-          eyebrow="Activity"
-          title="Admin activity"
-          badge={<Pill>{auditLogs.length || auditLogCount} entries</Pill>}
+          eyebrow={t("activityEyebrow")}
+          title={t("adminActivityTitle")}
+          badge={<Pill>{t("entryCount", { count: auditLogs.length || auditLogCount })}</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/audit-logs.csv`} />}
         />
         <div className="mt-5">
           {auditLogsState.error ? (
             <ErrorNotice message={auditLogsState.error} />
           ) : auditLogsState.loading && auditLogs.length === 0 ? (
-            <EmptyState title="Loading admin activity" />
+            <EmptyState title={t("loadingAdminActivity")} />
           ) : (
             <>
               <DataTable
@@ -72,7 +78,7 @@ export function AuditPanel({
                 columns={[
                   {
                     id: "action",
-                    header: "Action",
+                    header: t("action"),
                     render: (log) => (
                       <div>
                         <p className="font-medium text-[var(--text-primary)]">{formatEnumLabel(log.action)}</p>
@@ -84,22 +90,22 @@ export function AuditPanel({
                   },
                   {
                     id: "actor",
-                    header: "Actor",
-                    render: (log) => (log.actorUserId ? "Team member" : "System"),
+                    header: t("actor"),
+                    render: (log) => (log.actorUserId ? t("teamMember") : t("system")),
                   },
                   {
                     id: "entity",
-                    header: "Record",
-                    render: (log) => (log.entityId ? "Linked record" : "Not attached"),
+                    header: t("record"),
+                    render: (log) => (log.entityId ? t("linkedRecord") : t("notAttached")),
                   },
                   {
                     id: "time",
-                    header: "Created",
+                    header: t("created"),
                     render: (log) => formatDateTime(log.createdAt),
                   },
                   {
                     id: "diff",
-                    header: "Diff",
+                    header: t("diff"),
                     align: "right",
                     render: (log) => (
                       <ZookButton
@@ -109,14 +115,14 @@ export function AuditPanel({
                         onClick={() => setSelectedAuditId(log.id)}
                         trailingIcon={<span aria-hidden="true">→</span>}
                       >
-                        Details
+                        {t("details")}
                       </ZookButton>
                     ),
                   },
                 ]}
                 rows={auditLogs}
                 rowKey={(log) => log.id}
-                empty="No activity."
+                empty={t("noActivity")}
               />
               <LoadMoreButton
                 count={auditLogs.length}
@@ -131,12 +137,12 @@ export function AuditPanel({
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Change details"
+            aria-label={t("changeDetails")}
             className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Change details</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{t("changeDetails")}</p>
                 <p className="mt-1 font-medium text-[var(--text-primary)]">
                   {formatEnumLabel(selectedAuditLog.action)}
                 </p>
@@ -147,13 +153,13 @@ export function AuditPanel({
                 size="sm"
                 onClick={() => setSelectedAuditId(null)}
               >
-                Close
+                {t("close")}
               </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-                  Before
+                  {t("before")}
                 </p>
                 <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-[var(--text-secondary)]">
                   {JSON.stringify(selectedAuditLog.before ?? {}, null, 2)}
@@ -161,7 +167,7 @@ export function AuditPanel({
               </div>
               <div className="rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
-                  After
+                  {t("after")}
                 </p>
                 <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-[var(--text-secondary)]">
                   {JSON.stringify(
@@ -178,8 +184,8 @@ export function AuditPanel({
 
       <GlassCard>
         <SectionHeader
-          eyebrow="Assistant"
-          title="Recent assistant drafts"
+          eyebrow={t("assistantEyebrow")}
+          title={t("recentAssistantDrafts")}
           badge={
             <button
               type="button"
@@ -187,13 +193,13 @@ export function AuditPanel({
               className="zook-focus rounded-full"
             >
               <Pill tone={misconfiguredAiCount > 0 ? "amber" : "neutral"}>
-                {misconfiguredAiCount} need review
+                {t("needReviewCount", { count: misconfiguredAiCount })}
               </Pill>
             </button>
           }
         />
         <ManagedOn surface="trainer-mobile" className="mt-4">
-          Draft review happens in the Trainer app.
+          {t("draftReviewTrainerApp")}
         </ManagedOn>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -205,7 +211,7 @@ export function AuditPanel({
                 : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
             }`}
           >
-            All drafts
+            {t("allDrafts")}
           </button>
           <button
             type="button"
@@ -216,14 +222,14 @@ export function AuditPanel({
                 : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]"
             }`}
           >
-            Needs review
+            {t("needsReview")}
           </button>
         </div>
         <div className="mt-5 grid gap-3">
           {aiUsageState.error ? (
             <ErrorNotice message={aiUsageState.error} />
           ) : aiUsageState.loading && aiUsage.length === 0 ? (
-            <EmptyState title="Loading assistant drafts" />
+            <EmptyState title={t("loadingAssistantDrafts")} />
           ) : visibleAiUsage.length ? (
             visibleAiUsage.slice(0, 8).map((usage) => (
               <button
@@ -239,19 +245,19 @@ export function AuditPanel({
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                  {formatAiResponseSummary(usage.responseSummary)}
+                  {formatAiResponseSummary(usage.responseSummary, responseSummaryLabels)}
                 </p>
                 <p className="mt-3 text-xs text-[var(--text-tertiary)]">
                   {formatEnumLabel(usage.role)} · {formatDateTime(usage.createdAt)}
                 </p>
                 <span className="mt-3 inline-flex text-xs font-semibold text-[var(--accent-strong)]">
-                  Open draft details →
+                  {t("openDraftDetails")} →
                 </span>
               </button>
             ))
           ) : (
             <EmptyState
-              title="No assistant drafts"
+              title={t("noAssistantDrafts")}
             />
           )}
         </div>
@@ -259,12 +265,12 @@ export function AuditPanel({
           <div
             role="dialog"
             aria-modal="false"
-            aria-label="Assistant draft details"
+            aria-label={t("assistantDraftDetails")}
             className="mt-4 rounded-[22px] border border-[var(--border)] bg-[var(--bg-sunken)] p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Draft details</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">{t("draftDetails")}</p>
                 <p className="mt-1 font-medium text-[var(--text-primary)]">{selectedAiUsage.promptSummary}</p>
               </div>
               <ZookButton
@@ -273,11 +279,11 @@ export function AuditPanel({
                 size="sm"
                 onClick={() => setSelectedAiId(null)}
               >
-                Close
+                {t("close")}
               </ZookButton>
             </div>
             <div className="mt-4 grid gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-3 text-sm leading-6 text-[var(--text-secondary)]">
-              <p>{formatAiResponseSummary(selectedAiUsage.responseSummary)}</p>
+              <p>{formatAiResponseSummary(selectedAiUsage.responseSummary, responseSummaryLabels)}</p>
               <p className="text-xs text-[var(--text-tertiary)]">
                 {formatEnumLabel(selectedAiUsage.role)} ·{" "}
                 {formatEnumLabel(selectedAiUsage.requestType)} ·{" "}

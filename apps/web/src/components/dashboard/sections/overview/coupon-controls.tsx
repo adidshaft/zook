@@ -4,6 +4,7 @@ import type { CouponKind, CouponRow } from "@/components/dashboard/types";
 import { EmptyState } from "../../../dashboard-primitives";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
+import { useT } from "@/lib/use-t";
 import type { CouponFormState } from "./types";
 
 type CouponControlsProps = {
@@ -35,11 +36,12 @@ export function CouponControls({
   toggleCoupon,
   startCouponEdit,
 }: CouponControlsProps) {
+  const t = useT("plans");
   const [showCreateForm, setShowCreateForm] = useState(coupons.length === 0);
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium text-white">Coupons</p>
+        <p className="font-medium text-white">{t("coupons")}</p>
         {coupons.length ? (
           <ZookButton
             type="button"
@@ -47,7 +49,7 @@ export function CouponControls({
             size="sm"
             onClick={() => setShowCreateForm((current) => !current)}
           >
-            {showCreateForm ? "Cancel" : "+ Coupon"}
+            {showCreateForm ? t("cancel") : t("couponCta")}
           </ZookButton>
         ) : null}
       </div>
@@ -56,7 +58,7 @@ export function CouponControls({
           <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
             <div className="grid gap-3 md:grid-cols-[1fr_150px]">
               <TextInput
-                label="Coupon code"
+                label={t("couponCode")}
                 value={couponForm.code}
                 onChange={(event) =>
                   setCouponForm((current) => ({
@@ -64,10 +66,10 @@ export function CouponControls({
                     code: event.target.value.toUpperCase(),
                   }))
                 }
-                placeholder="WELCOME10"
+                placeholder={t("couponCodePlaceholder")}
               />
               <Select
-                label="Discount type"
+                label={t("discountType")}
                 value={couponForm.type}
                 onChange={(event) =>
                   setCouponForm((current) => ({
@@ -76,14 +78,14 @@ export function CouponControls({
                   }))
                 }
                 options={[
-                  { value: "PERCENTAGE", label: "Percentage" },
-                  { value: "FIXED_AMOUNT", label: "Fixed amount" },
+                  { value: "PERCENTAGE", label: t("percentage") },
+                  { value: "FIXED_AMOUNT", label: t("fixedAmount") },
                 ]}
               />
             </div>
             <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
               <TextInput
-                label="Discount value"
+                label={t("discountValue")}
                 value={couponForm.value}
                 onChange={(event) =>
                   setCouponForm((current) => ({ ...current, value: event.target.value }))
@@ -92,7 +94,7 @@ export function CouponControls({
                 inputMode="numeric"
               />
               <TextInput
-                label="Max uses"
+                label={t("maxUses")}
                 value={couponForm.maxRedemptions}
                 onChange={(event) =>
                   setCouponForm((current) => ({
@@ -100,7 +102,7 @@ export function CouponControls({
                     maxRedemptions: event.target.value,
                   }))
                 }
-                placeholder="Max uses"
+                placeholder={t("maxUses")}
                 inputMode="numeric"
               />
               <ZookButton
@@ -110,15 +112,15 @@ export function CouponControls({
                 state={formBusy === "coupon" ? "loading" : "idle"}
                 className="self-end"
               >
-                {formBusy === "coupon" ? "Creating..." : "Create coupon"}
+                {formBusy === "coupon" ? t("creating") : t("createCoupon")}
               </ZookButton>
             </div>
           </div>
         ) : null}
         {!coupons.length ? (
           <EmptyState
-            title="No coupons"
-            description="Create a code above to offer a controlled joining discount."
+            title={t("noCoupons")}
+            description={t("noCouponsDescription")}
             className="border-white/10 bg-black/20"
           />
         ) : null}
@@ -127,7 +129,7 @@ export function CouponControls({
             {editingCouponId === coupon.id ? (
               <div className="grid gap-2">
                 <TextInput
-                  label="Coupon code"
+                  label={t("couponCode")}
                   value={couponEditForm.code}
                   onChange={(event) =>
                     setCouponEditForm((current) => ({
@@ -138,7 +140,7 @@ export function CouponControls({
                 />
                 <div className="grid grid-cols-[1fr_1fr] gap-2">
                   <Select
-                    label="Type"
+                    label={t("type")}
                     value={couponEditForm.type}
                     onChange={(event) =>
                       setCouponEditForm((current) => ({
@@ -147,12 +149,12 @@ export function CouponControls({
                       }))
                     }
                     options={[
-                      { value: "PERCENTAGE", label: "Percentage" },
-                      { value: "FIXED_AMOUNT", label: "Fixed" },
+                      { value: "PERCENTAGE", label: t("percentage") },
+                      { value: "FIXED_AMOUNT", label: t("fixed") },
                     ]}
                   />
                   <TextInput
-                    label="Value"
+                    label={t("value")}
                     value={couponEditForm.value}
                     onChange={(event) =>
                       setCouponEditForm((current) => ({
@@ -171,7 +173,7 @@ export function CouponControls({
                     disabled={formBusy === `coupon:${coupon.id}:edit`}
                     state={formBusy === `coupon:${coupon.id}:edit` ? "loading" : "idle"}
                   >
-                    Save
+                    {t("save")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -179,7 +181,7 @@ export function CouponControls({
                     size="sm"
                     onClick={() => setEditingCouponId(null)}
                   >
-                    Cancel
+                    {t("cancel")}
                   </ZookButton>
                 </div>
               </div>
@@ -189,9 +191,9 @@ export function CouponControls({
                   <p className="text-sm font-medium text-white">{coupon.code}</p>
                   <p className="text-xs text-white/45">
                     {coupon.type === "PERCENTAGE"
-                      ? `${(coupon.valuePercentBps ?? 0) / 100}% off`
+                      ? t("percentOff", { value: (coupon.valuePercentBps ?? 0) / 100 })
                       : formatInr(coupon.valuePaise ?? 0)}{" "}
-                    · {coupon.active ? "Active" : "Inactive"}
+                    · {coupon.active ? t("active") : t("inactive")}
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
@@ -201,7 +203,7 @@ export function CouponControls({
                     size="sm"
                     onClick={() => startCouponEdit(coupon)}
                   >
-                    Edit
+                    {t("edit")}
                   </ZookButton>
                   <ZookButton
                     type="button"
@@ -211,7 +213,7 @@ export function CouponControls({
                     disabled={formBusy === `coupon:${coupon.id}`}
                     state={formBusy === `coupon:${coupon.id}` ? "loading" : "idle"}
                   >
-                    {coupon.active ? "Deactivate" : "Restore"}
+                    {coupon.active ? t("deactivate") : t("restore")}
                   </ZookButton>
                 </div>
               </div>

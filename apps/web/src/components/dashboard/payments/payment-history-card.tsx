@@ -11,6 +11,7 @@ import type { PaymentRow } from "@/components/dashboard/types";
 import type { PagedState } from "../read-only/types";
 import { formatPaymentMode, formatPaymentPurpose, formatPaymentStatus } from "./payments-utils";
 import type { PaymentDocumentKind } from "./types";
+import { useT } from "@/lib/use-t";
 
 function paymentStatusTone(status: string) {
   if (status === "SUCCEEDED") return "lime" as const;
@@ -38,7 +39,8 @@ function statusMarkClass(tone: ReturnType<typeof paymentStatusTone>) {
 }
 
 function PaymentStatusMark({ status }: { status: string }) {
-  const label = formatPaymentStatus(status);
+  const t = useT("payments");
+  const label = formatPaymentStatus(status, t);
   const tone = paymentStatusTone(status);
   return (
     <span
@@ -70,6 +72,7 @@ export function PaymentHistoryCard({
   refundBusyId?: string | null;
   onRefundPayment?: (payment: PaymentRow) => void;
 }) {
+  const t = useT("payments");
   const [documentKindByPaymentId, setDocumentKindByPaymentId] = useState<
     Record<string, PaymentDocumentKind>
   >({});
@@ -78,11 +81,13 @@ export function PaymentHistoryCard({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Payments"
-        title="Payment history"
+        eyebrow={t("paymentsEyebrow")}
+        title={t("paymentHistory")}
         badge={
           <Pill>
-            {payments.length} payment{payments.length === 1 ? "" : "s"}
+            {payments.length === 1
+              ? t("paymentCount", { count: payments.length })
+              : t("paymentCountPlural", { count: payments.length })}
           </Pill>
         }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/payments.csv`} />}
@@ -96,50 +101,50 @@ export function PaymentHistoryCard({
         {paymentsState.error ? (
           <ErrorNotice message={paymentsState.error} />
         ) : paymentsState.loading && payments.length === 0 ? (
-          <EmptyState title="Loading payments" />
+          <EmptyState title={t("loadingPayments")} />
         ) : (
           <>
             <DataTable
               columns={[
                 {
                   id: "member",
-                  header: "Member",
+                  header: t("member"),
                   render: (payment) => (
                     <div className="min-w-0">
                       <p className="truncate font-medium text-white">
-                        {payment.user?.name ?? payment.user?.email ?? "Walk-in or system"}
+                        {payment.user?.name ?? payment.user?.email ?? t("walkInSystem")}
                       </p>
                       <p className="mt-1 text-xs text-white/45">
-                        {formatPaymentPurpose(payment.purpose)}
+                        {formatPaymentPurpose(payment.purpose, t)}
                       </p>
                     </div>
                   ),
                 },
                 {
                   id: "status",
-                  header: "Status",
+                  header: t("status"),
                   render: (payment) => (
-                    <div className="flex items-center gap-2" title={formatPaymentStatus(payment.status)}>
+                    <div className="flex items-center gap-2" title={formatPaymentStatus(payment.status, t)}>
                       <PaymentStatusMark status={payment.status} />
                       <span className="hidden text-xs text-white/45 sm:inline">
-                        {formatPaymentStatus(payment.status)}
+                        {formatPaymentStatus(payment.status, t)}
                       </span>
                     </div>
                   ),
                 },
                 {
                   id: "mode",
-                  header: "Mode",
-                  render: (payment) => formatPaymentMode(payment.mode),
+                  header: t("mode"),
+                  render: (payment) => formatPaymentMode(payment.mode, t),
                 },
                 {
                   id: "recorded",
-                  header: "Recorded",
+                  header: t("recorded"),
                   render: (payment) => formatDateTime(payment.recordedAt ?? payment.createdAt),
                 },
                 {
                   id: "amount",
-                  header: "Amount",
+                  header: t("amount"),
                   align: "right",
                   render: (payment) => (
                     <span className="font-medium text-white">{formatInr(payment.amountPaise)}</span>
@@ -147,7 +152,7 @@ export function PaymentHistoryCard({
                 },
                 {
                   id: "documents",
-                  header: "Actions",
+                  header: t("actions"),
                   align: "right",
                   render: (payment) => {
                     const selectedDocumentKind = documentKindByPaymentId[payment.id] ?? "invoice";
@@ -173,12 +178,12 @@ export function PaymentHistoryCard({
                           >
                             <FileText aria-hidden className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">
-                              {receiptBusy ? "Making..." : "Receipt"}
+                              {receiptBusy ? t("making") : t("receipt")}
                             </span>
                           </ZookButton>
                           <button
                             type="button"
-                            aria-label={`More actions for ${payment.user?.name ?? payment.id}`}
+                            aria-label={t("moreActionsFor", { name: payment.user?.name ?? payment.id })}
                             aria-expanded={expanded}
                             onClick={() =>
                               setExpandedPaymentId((current) =>
@@ -200,12 +205,12 @@ export function PaymentHistoryCard({
                                 className="zook-focus inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--feedback-danger)] transition hover:bg-[var(--surface-danger-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 <RotateCcw aria-hidden className="h-3.5 w-3.5" />
-                                {refundBusyId === payment.id ? "Refunding..." : "Refund"}
+                                {refundBusyId === payment.id ? t("refunding") : t("refund")}
                               </button>
                             ) : null}
                             <select
                               value={selectedDocumentKind}
-                              aria-label={`Document type for ${payment.user?.name ?? payment.id}`}
+                              aria-label={t("documentTypeFor", { name: payment.user?.name ?? payment.id })}
                               onChange={(event) =>
                                 setDocumentKindByPaymentId((current) => ({
                                   ...current,
@@ -214,8 +219,8 @@ export function PaymentHistoryCard({
                               }
                               className="zook-focus min-h-9 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--text-secondary)]"
                             >
-                              <option value="receipt">Receipt</option>
-                              <option value="invoice">Invoice</option>
+                              <option value="receipt">{t("receipt")}</option>
+                              <option value="invoice">{t("invoice")}</option>
                             </select>
                             <ZookButton
                               type="button"
@@ -225,7 +230,7 @@ export function PaymentHistoryCard({
                               disabled={documentBusy}
                               state={documentBusy ? "loading" : "idle"}
                             >
-                              {documentBusy ? "Making..." : "Generate"}
+                              {documentBusy ? t("making") : t("generate")}
                             </ZookButton>
                           </div>
                         ) : null}
@@ -236,7 +241,7 @@ export function PaymentHistoryCard({
               ]}
               rows={payments}
               rowKey={(payment) => payment.id}
-              empty={<EmptyState title="No payments" />}
+              empty={<EmptyState title={t("noPayments")} />}
             />
             <LoadMoreButton
               count={payments.length}

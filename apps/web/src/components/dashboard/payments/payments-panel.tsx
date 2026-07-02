@@ -4,9 +4,10 @@ import { useState } from "react";
 import type * as React from "react";
 import { formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
-import { getRupeeAmountError, normalizeRupeeInput } from "@/lib/payment-amount";
+import { getRupeeAmountError, rupeesToPaise } from "@/lib/payment-amount";
 import type { PaymentRow } from "@/components/dashboard/types";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { useT } from "@/lib/use-t";
 import { PaymentHistoryCard } from "./payment-history-card";
 import { PaymentMetricCards } from "./payment-metric-cards";
 import { PaymentReconciliationCard } from "./payment-reconciliation-card";
@@ -26,24 +27,30 @@ type PaymentWorkspaceTab = "review" | "history" | "record" | "growth";
 
 const paymentWorkspaceTabs: Array<{
   id: PaymentWorkspaceTab;
-  label: string;
+  labelKey: string;
   meta: (input: {
     reviewCount: number;
     paymentCount: number;
     expiringMemberships: number;
+    t: ReturnType<typeof useT>;
   }) => string;
 }> = [
   {
     id: "review",
-    label: "Review",
-    meta: ({ reviewCount }) => (reviewCount ? `${reviewCount} need check` : "Clean close"),
+    labelKey: "tabReview",
+    meta: ({ reviewCount, t }) =>
+      reviewCount ? t("needCheck", { count: reviewCount }) : t("cleanClose"),
   },
-  { id: "history", label: "History", meta: ({ paymentCount }) => `${paymentCount} records` },
-  { id: "record", label: "Record", meta: () => "Cash, UPI, card" },
+  {
+    id: "history",
+    labelKey: "tabHistory",
+    meta: ({ paymentCount, t }) => t("recordsCount", { count: paymentCount }),
+  },
+  { id: "record", labelKey: "tabRecord", meta: ({ t }) => t("cashUpiCard") },
   {
     id: "growth",
-    label: "Growth",
-    meta: ({ expiringMemberships }) => `${expiringMemberships} renewals`,
+    labelKey: "tabGrowth",
+    meta: ({ expiringMemberships, t }) => t("renewalsCount", { count: expiringMemberships }),
   },
 ];
 
@@ -67,8 +74,9 @@ export function PaymentsPanel({
   shopOrdersState,
   permissions = [],
 }: PaymentsPanelProps) {
+  const t = useT("payments");
   const canRecordOffline = permissions.includes("PAYMENTS_RECORD_OFFLINE");
-  const permissionMessage = "This action requires Owner or Admin access.";
+  const permissionMessage = t("permissionOwnerAdmin");
   const [manualPayment, setManualPayment] = useState<ManualPaymentForm>({
     memberUserId: "",
     planId: "",
@@ -125,17 +133,17 @@ export function PaymentsPanel({
             method: "POST",
             body: {
               pickupCodeSkipped: true,
-              skipReason: "Bulk settled from owner payment queue after desk verification.",
+              skipReason: t("bulkSettleReason"),
             },
-            feedback: { success: false, error: "Unable to settle selected orders." },
+            feedback: { success: false, error: t("unableSettleSelected") },
           }),
         ),
       );
-      setManualPaymentStatus(`${selectedReadyOrders.length} pickup orders settled.`);
+      setManualPaymentStatus(t("pickupOrdersSettled", { count: selectedReadyOrders.length }));
       setSelectedOrderIds([]);
       shopOrdersState.reload?.();
     } catch (cause) {
-      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to settle orders.");
+      setManualPaymentStatus(cause instanceof Error ? cause.message : t("unableSettleOrders"));
     } finally {
       setBulkBusy(false);
     }
@@ -151,12 +159,16 @@ export function PaymentsPanel({
         setManualPaymentStatus(amountError);
         return;
       }
-      const amountPaise = Math.round(Number(normalizeRupeeInput(manualPayment.amountRupees)) * 100);
+      const amountPaise = rupeesToPaise(manualPayment.amountRupees);
+      if (amountPaise === null || amountPaise <= 0) {
+        setManualPaymentStatus(t("amountGreaterThanZero"));
+        return;
+      }
       const payload = await webApiFetch<{ payment?: PaymentRow }>(
         `/api/orgs/${orgId}/manual-payments`,
         {
           method: "POST",
-          feedback: { success: "Payment recorded.", error: "Unable to record payment." },
+          feedback: { success: t("paymentRecordedToast"), error: t("paymentRecordError") },
           body: {
             memberUserId: manualPayment.memberUserId,
             planId: manualPayment.planId,
@@ -168,9 +180,9 @@ export function PaymentsPanel({
           },
         },
       );
-      setManualPaymentStatus(`Payment recorded for ${formatInr(amountPaise)}.`);
+      setManualPaymentStatus(t("paymentRecordedForAmount", { amount: formatInr(amountPaise) }));
       setLastReceipt({
-        title: "Membership payment",
+        title: t("membershipPayment"),
         amountPaise,
         mode: manualPayment.mode,
         reference: manualPayment.receiptNumber || payload.payment?.receiptNumber || undefined,
@@ -179,7 +191,7 @@ export function PaymentsPanel({
       setManualPayment((current) => ({ ...current, receiptNumber: "", notes: "" }));
       paymentsState.reload?.();
     } catch (cause) {
-      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to record payment.");
+      setManualPaymentStatus(cause instanceof Error ? cause.message : t("paymentRecordError"));
     } finally {
       setManualPaymentBusy(false);
     }
@@ -187,7 +199,7 @@ export function PaymentsPanel({
 
   async function generatePaymentDocument(payment: PaymentRow, kind: PaymentDocumentKind) {
     if (!payment.orgId) {
-      setManualPaymentStatus("This payment is missing its gym link.");
+      setManualPaymentStatus(t("paymentMissingGym"));
       return;
     }
     try {
@@ -198,7 +210,7 @@ export function PaymentsPanel({
         {
           method: "POST",
           feedback: {
-            success: kind === "receipt" ? "Receipt generated." : "Invoice generated.",
+            success: kind === "receipt" ? t("receiptGeneratedToast") : t("invoiceGeneratedToast"),
           },
         },
       );
@@ -207,10 +219,12 @@ export function PaymentsPanel({
       if (url) {
         window.open(url, "_blank", "noopener,noreferrer");
       }
-      setManualPaymentStatus(kind === "receipt" ? "Receipt generated." : "Invoice generated.");
+      setManualPaymentStatus(
+        kind === "receipt" ? t("receiptGeneratedToast") : t("invoiceGeneratedToast"),
+      );
     } catch (cause) {
       setManualPaymentStatus(
-        cause instanceof Error ? cause.message : `Unable to generate ${kind}.`,
+        cause instanceof Error ? cause.message : t("unableGenerateDocument", { kind }),
       );
     } finally {
       setDocumentBusyId(null);
@@ -219,7 +233,7 @@ export function PaymentsPanel({
 
   function openRefundDraft(payment: PaymentRow) {
     if (!payment.orgId) {
-      setManualPaymentStatus("This payment is missing its gym link.");
+      setManualPaymentStatus(t("paymentMissingGym"));
       return;
     }
     const remainingPaise = remainingRefundAmount(payment);
@@ -227,7 +241,7 @@ export function PaymentsPanel({
     setRefundDraft({
       payment,
       amountRupees: (remainingPaise / 100).toFixed(2),
-      reason: "Duplicate payment",
+      reason: t("duplicatePayment"),
     });
   }
 
@@ -241,12 +255,12 @@ export function PaymentsPanel({
       return;
     }
     if (!reason.trim()) {
-      setManualPaymentStatus("Add a refund reason before submitting.");
+      setManualPaymentStatus(t("refundReasonRequired"));
       return;
     }
-    const amountPaise = Math.round(Number(normalizeRupeeInput(amountRupees)) * 100);
-    if (!Number.isFinite(amountPaise) || amountPaise <= 0 || amountPaise > remainingPaise) {
-      setManualPaymentStatus(`Enter an amount between Rs. 1 and Rs. ${(remainingPaise / 100).toFixed(2)}.`);
+    const amountPaise = rupeesToPaise(amountRupees);
+    if (amountPaise === null || amountPaise <= 0 || amountPaise > remainingPaise) {
+      setManualPaymentStatus(t("refundAmountRange", { amount: (remainingPaise / 100).toFixed(2) }));
       return;
     }
     try {
@@ -255,13 +269,13 @@ export function PaymentsPanel({
       await webApiFetch(`/api/orgs/${payment.orgId}/payments/${payment.id}/refund`, {
         method: "POST",
         body: { amountPaise, reason: reason.trim() },
-        feedback: { success: "Refund submitted.", error: "Unable to refund payment." },
+        feedback: { success: t("refundSubmittedToast"), error: t("refundError") },
       });
       paymentsState.reload?.();
       setRefundDraft(null);
-      setManualPaymentStatus("Refund submitted from payment history.");
+      setManualPaymentStatus(t("refundSubmittedHistory"));
     } catch (cause) {
-      setManualPaymentStatus(cause instanceof Error ? cause.message : "Unable to refund payment.");
+      setManualPaymentStatus(cause instanceof Error ? cause.message : t("refundError"));
     } finally {
       setRefundBusyId(null);
     }
@@ -275,14 +289,16 @@ export function PaymentsPanel({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                Refund draft
+                {t("refundDraft")}
               </p>
               <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                {refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? "Payment"} ·{" "}
-                {formatInr(remainingRefundAmount(refundDraft.payment))} refundable
+                {refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? t("paymentFallback")} ·{" "}
+                {t("refundableAmount", {
+                  amount: formatInr(remainingRefundAmount(refundDraft.payment)),
+                })}
               </h3>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Confirming sends an irreversible refund request when this payment supports automatic refunds.
+                {t("refundDraftDescription")}
               </p>
             </div>
             <button
@@ -290,12 +306,12 @@ export function PaymentsPanel({
               onClick={() => setRefundDraft(null)}
               className="zook-focus rounded-full border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-secondary)]"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-[0.6fr_1fr_auto]">
             <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
-              Refund amount
+              {t("refundAmount")}
               <input
                 value={refundDraft.amountRupees}
                 inputMode="decimal"
@@ -308,7 +324,7 @@ export function PaymentsPanel({
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-[var(--text-primary)]">
-              Refund reason
+              {t("refundReason")}
               <input
                 value={refundDraft.reason}
                 onChange={(event) =>
@@ -321,27 +337,34 @@ export function PaymentsPanel({
             </label>
             <ConfirmActionButton
               className="zook-focus self-end rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_38%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
-              title={`Refund ${refundDraft.amountRupees.trim() ? `₹${refundDraft.amountRupees.trim()}` : "this payment"}?`}
-              description={`This will submit a refund for ${refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? "this payment"}. Refund requests cannot be undone from the dashboard.`}
-              confirmLabel="Submit refund"
+              title={t("refundTitle", {
+                amount: refundDraft.amountRupees.trim()
+                  ? `₹${refundDraft.amountRupees.trim()}`
+                  : t("thisPayment"),
+              })}
+              description={t("refundDescription", {
+                target: refundDraft.payment.user?.name ?? refundDraft.payment.user?.email ?? t("thisPayment"),
+              })}
+              confirmLabel={t("submitRefund")}
               confirmTone="danger"
               onConfirm={() => submitRefundDraft()}
               disabled={refundBusyId === refundDraft.payment.id}
             >
-              {refundBusyId === refundDraft.payment.id ? "Submitting..." : "Submit refund"}
+              {refundBusyId === refundDraft.payment.id ? t("submitting") : t("submitRefund")}
             </ConfirmActionButton>
           </div>
         </section>
       ) : null}
 
       <div className="rounded-[26px] border border-white/10 bg-black/20 p-2">
-        <div className="grid gap-2 sm:grid-cols-4" role="tablist" aria-label="Payment workspace">
+        <div className="grid gap-2 sm:grid-cols-4" role="tablist" aria-label={t("paymentWorkspace")}>
           {paymentWorkspaceTabs.map((tab) => {
             const selected = activeTab === tab.id;
             const meta = tab.meta({
               reviewCount,
               paymentCount: payments.length,
               expiringMemberships: summary.expiringMemberships,
+              t,
             });
             return (
               <button
@@ -357,7 +380,7 @@ export function PaymentsPanel({
                     : "text-white/62 hover:bg-white/8 hover:text-white"
                 }`}
               >
-                <span className="block text-sm font-semibold">{tab.label}</span>
+                <span className="block text-sm font-semibold">{t(tab.labelKey)}</span>
                 <span
                   className={`mt-0.5 block truncate text-xs ${
                     selected ? "text-black/55" : "text-white/38"

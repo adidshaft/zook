@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { getRequestContext, requireAuth, requireOrgPermission } from "../access";
 import { writeAuditLog } from "../audit";
+import { startOfDayIst } from "../domains/shared/date";
 import { getOrganizationActiveShopOrders } from "../domains/shop-orders/read-models";
 import { notFoundError, validationError } from "../errors";
 import { assertRateLimit } from "../rate-limit";
@@ -211,8 +212,7 @@ export async function handleShopOrders(request: NextRequest, path: string[]) {
     const ctx = await getRequestContext(request, { orgId });
     requireOrgPermission(ctx, orgId, "SHOP_FULFILL_ORDER");
     const branchId = await assertBranchAccessForContext(ctx, orgId, queryBranchId(request));
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfDayIst(new Date());
     const [orders, fulfilledToday] = await Promise.all([
       getOrganizationActiveShopOrders(orgId, clean({ branchId })),
       prisma.shopOrder.count({

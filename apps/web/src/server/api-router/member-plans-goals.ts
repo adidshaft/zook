@@ -86,6 +86,17 @@ export async function handleMemberPlansGoals(request: NextRequest, path: string[
     const completedExercises = body.exercises.length
       ? body.exercises.filter((exercise) => exercise.completed).map((exercise) => exercise.name)
       : detail.exercises.map((exercise) => exercise.name);
+    const completionPct = detail.exercises.length
+      ? Math.round(
+          (completedExercises.filter((name) =>
+            detail.exercises.some((exercise) => exercise.name.toLowerCase() === name.toLowerCase()),
+          ).length /
+            detail.exercises.length) *
+            100,
+        )
+      : completedExercises.length
+        ? 100
+        : 0;
     const progressJson = {
       ...body.progressJson,
       completedExercises,
@@ -96,7 +107,7 @@ export async function handleMemberPlansGoals(request: NextRequest, path: string[
       where: { assignmentId_userId: { assignmentId: path[2]!, userId } },
       update: clean({
         progressJson: progressJson as Prisma.InputJsonValue,
-        completionPct: 100,
+        completionPct,
         feedback: body.feedback,
       }),
       create: clean({
@@ -104,7 +115,7 @@ export async function handleMemberPlansGoals(request: NextRequest, path: string[
         assignmentId: path[2]!,
         userId,
         progressJson: progressJson as Prisma.InputJsonValue,
-        completionPct: 100,
+        completionPct,
         feedback: body.feedback,
       }),
     });

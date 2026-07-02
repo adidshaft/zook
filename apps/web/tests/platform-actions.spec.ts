@@ -186,4 +186,46 @@ test.describe("platform admin actions", () => {
     await page.goto("/platform/gyms");
     await expect(page.getByRole("button", { name: /activate/i }).first()).toBeVisible();
   });
+
+  test("platform gym actions use custom dialogs instead of native prompts", async ({ page }) => {
+    await loginWithSessionCookie(page, "platform@zook.local");
+
+    const nativeDialogs: string[] = [];
+    page.on("dialog", async (dialog) => {
+      nativeDialogs.push(`${dialog.type()}:${dialog.message()}`);
+      await dialog.dismiss();
+    });
+
+    await page.goto("/platform/gyms");
+    await expect(page.getByRole("heading", { name: /gym accounts/i })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const row = page.getByRole("row", { name: /aarogya-strength/i });
+    await expect(row).toBeVisible();
+    await row.getByRole("button", { name: /details/i }).click();
+    await expect(page.getByText("Gym account details")).toBeVisible();
+
+    async function expectCustomDialog(buttonName: RegExp, title: RegExp) {
+      await page.getByRole("button", { name: buttonName }).click();
+      const dialog = page.getByRole("dialog", { name: title });
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole("button", { name: /cancel/i }).click();
+      await expect(dialog).toBeHidden();
+    }
+
+    await expectCustomDialog(/credit/i, /adjust credit/i);
+    await expectCustomDialog(/^tier$/i, /change tier/i);
+    await expectCustomDialog(/rename/i, /rename gym/i);
+    await expectCustomDialog(/import csv/i, /import members/i);
+    await expectCustomDialog(/transfer owner/i, /transfer owner/i);
+
+    await page.getByRole("button", { name: /^suspend$/i }).last().click();
+    const statusDialog = page.getByRole("dialog", { name: /change to suspended/i });
+    await expect(statusDialog).toBeVisible();
+    await statusDialog.getByRole("button", { name: /cancel/i }).click();
+    await expect(statusDialog).toBeHidden();
+
+    expect(nativeDialogs).toEqual([]);
+  });
 });

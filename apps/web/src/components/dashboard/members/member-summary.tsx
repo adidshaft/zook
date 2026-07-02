@@ -5,6 +5,7 @@ import { UserCheck, Users } from "lucide-react";
 import { KPITile } from "../charts";
 import { GlassCard, Pill } from "../../glass-card";
 import type { JoinRequestRow, MemberRow } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 
 export function MemberSummary({
   members,
@@ -13,6 +14,7 @@ export function MemberSummary({
   members: MemberRow[];
   joinRequests: JoinRequestRow[];
 }) {
+  const t = useT("members");
   const activeCount = members.filter((member) => {
     const status = (member.activeSubscription?.status ?? "").toUpperCase();
     return status === "ACTIVE";
@@ -31,36 +33,36 @@ export function MemberSummary({
     .length;
   const queueItems = [
     {
-      label: "Approve requests",
+      label: t("approveRequests"),
       count: joinRequests.length,
       copy: joinRequests.length
-        ? "New members are waiting before they can continue."
-        : "No approval work waiting.",
+        ? t("approveRequestsWaiting")
+        : t("approveRequestsEmpty"),
       href: "/dashboard/members/join-requests",
       tone: joinRequests.length ? "amber" : "neutral",
     },
     {
-      label: "Renewals due",
+      label: t("renewalsDue"),
       count: expiringCount,
       copy: expiringCount
-        ? "Follow up before access reaches the edge."
-        : "No memberships expire in the next 7 days.",
+        ? t("renewalsDueWaiting")
+        : t("renewalsDueEmpty"),
       href: "/dashboard/members?status=Expiring+Soon",
       tone: expiringCount ? "amber" : "neutral",
     },
     {
-      label: "Missing contact",
+      label: t("missingContact"),
       count: missingContactCount,
       copy: missingContactCount
-        ? "Receipts, renewal nudges, and desk callbacks need a reachable contact."
-        : "Every member has at least one contact method.",
+        ? t("missingContactWaiting")
+        : t("missingContactEmpty"),
       href: "/dashboard/members?status=Missing+Contact",
       tone: missingContactCount ? "amber" : "neutral",
     },
     {
-      label: "Paused access",
+      label: t("pausedAccess"),
       count: pausedCount,
-      copy: pausedCount ? "Review members who may be ready to resume." : "No paused members.",
+      copy: pausedCount ? t("pausedAccessWaiting") : t("pausedAccessEmpty"),
       href: "/dashboard/members?status=Paused",
       tone: pausedCount ? "blue" : "neutral",
     },
@@ -72,43 +74,50 @@ export function MemberSummary({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-            Members
+            {t("eyebrow")}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">Member roster</h1>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{t("rosterTitle")}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
-            {members.length} {members.length === 1 ? "member" : "members"}
+            {members.length} {members.length === 1 ? t("memberOne") : t("memberOther")}
           </span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <KPITile label="Total members" value={members.length} icon={Users} tone="sky" />
         <KPITile
-          label="Active"
+          label={t("totalMembers")}
+          value={members.length}
+          icon={Users}
+          tone="sky"
+          noTrendLabel={t("noTrend")}
+        />
+        <KPITile
+          label={t("active")}
           value={activeCount}
           icon={UserCheck}
           tone="sky"
-          caption={`${
-            members.length > 0 ? Math.round((activeCount / members.length) * 100) : 0
-          }% of roster`}
+          noTrendLabel={t("noTrend")}
+          caption={t("ofRoster", {
+            percent: members.length > 0 ? Math.round((activeCount / members.length) * 100) : 0,
+          })}
         />
       </div>
       <GlassCard className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-              Work queue
+              {t("workQueue")}
             </p>
             <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-              Handle member exceptions before browsing the roster
+              {t("workQueueTitle")}
             </h2>
           </div>
           <Link
             href="/dashboard/members"
             className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
           >
-            Open roster
+            {t("openRoster")}
           </Link>
         </div>
         {activeQueueItems.length ? (
@@ -131,7 +140,7 @@ export function MemberSummary({
           </div>
         ) : (
           <p className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-sm text-[var(--text-secondary)]">
-            No member exceptions need attention right now.
+            {t("noExceptions")}
           </p>
         )}
       </GlassCard>

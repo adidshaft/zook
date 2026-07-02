@@ -6,6 +6,7 @@ import { EmptyState, SectionHeader, StatusPill } from "../../dashboard-primitive
 import { GlassCard, Pill } from "../../glass-card";
 import type { JoinRequestRow } from "@/components/dashboard/types";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { useT } from "@/lib/use-t";
 
 type ResourceState<T> = {
   data: T | undefined;
@@ -20,11 +21,13 @@ function waitingDays(value: string | Date) {
   return Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000));
 }
 
-function joinRequestStatusLabel(status: string | null | undefined) {
-  if (status === "PENDING") return "Pending";
-  if (status === "APPROVED") return "Approved";
-  if (status === "REJECTED") return "Rejected";
-  if (status === "CANCELLED") return "Cancelled";
+type MembersT = ReturnType<typeof useT>;
+
+function joinRequestStatusLabel(status: string | null | undefined, t: MembersT) {
+  if (status === "PENDING") return t("statusPending");
+  if (status === "APPROVED") return t("joinStatusApproved");
+  if (status === "REJECTED") return t("joinStatusRejected");
+  if (status === "CANCELLED") return t("joinStatusCancelled");
   return formatEnumLabel(status ?? "request");
 }
 
@@ -43,6 +46,7 @@ export function JoinRequestQueue({
   planNamesById: Map<string, string>;
   updateJoinRequest: (requestId: string, action: "approve" | "reject") => Promise<void>;
 }) {
+  const t = useT("members");
   const requestsWithNotes = joinRequests.filter((request) => request.message?.trim()).length;
   const referralRequests = joinRequests.filter((request) => request.referralCode).length;
   const missingPlanRequests = joinRequests.filter((request) => !request.planId).length;
@@ -54,9 +58,13 @@ export function JoinRequestQueue({
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Pipeline"
-        title="Join request queue"
-        badge={<Pill tone={joinRequests.length ? "amber" : "neutral"}>{joinRequests.length} pending</Pill>}
+        eyebrow={t("pipeline")}
+        title={t("joinRequestQueue")}
+        badge={
+          <Pill tone={joinRequests.length ? "amber" : "neutral"}>
+            {t("pendingCount", { count: joinRequests.length })}
+          </Pill>
+        }
       />
       {queueError ? (
         <div className="mt-5">
@@ -71,24 +79,27 @@ export function JoinRequestQueue({
             <div className="grid gap-3 md:grid-cols-4">
               {[
                 {
-                  label: "Pending review",
+                  label: t("pendingReview"),
                   value: joinRequests.length,
-                  detail: "Waiting for owner decision",
+                  detail: t("waitingOwnerDecision"),
                 },
                 {
-                  label: "With intake note",
+                  label: t("withIntakeNote"),
                   value: requestsWithNotes,
-                  detail: "Enough context to approve faster",
+                  detail: t("enoughContextApprove"),
                 },
                 {
-                  label: "Referral requests",
+                  label: t("referralRequests"),
                   value: referralRequests,
-                  detail: missingPlanRequests ? `${missingPlanRequests} missing plan` : "Reward attribution ready",
+                  detail: missingPlanRequests
+                    ? t("missingPlanCount", { count: missingPlanRequests })
+                    : t("rewardAttributionReady"),
                 },
                 {
-                  label: "Oldest wait",
-                  value: `${oldestWaitingDays}d`,
-                  detail: oldestWaitingDays > 1 ? "Follow up before lead cools" : "Fresh queue",
+                  label: t("oldestWait"),
+                  value: t("daysShort", { days: oldestWaitingDays }),
+                  detail:
+                    oldestWaitingDays > 1 ? t("followUpBeforeLeadCools") : t("freshQueue"),
                 },
               ].map((item) => (
                 <div
@@ -109,43 +120,46 @@ export function JoinRequestQueue({
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-[var(--text-primary)]">
-                        {planNamesById.get(request.planId ?? "") ?? "Membership request"}
+                        {planNamesById.get(request.planId ?? "") ?? t("membershipRequest")}
                       </p>
-                      <StatusPill value={joinRequestStatusLabel(request.status)} />
-                      {request.message?.trim() ? <Pill tone="blue">Intake note</Pill> : null}
-                      {!request.planId ? <Pill tone="amber">No plan</Pill> : null}
+                      <StatusPill value={joinRequestStatusLabel(request.status, t)} />
+                      {request.message?.trim() ? <Pill tone="blue">{t("intakeNote")}</Pill> : null}
+                      {!request.planId ? <Pill tone="amber">{t("noPlanBadge")}</Pill> : null}
                     </div>
                     <p className="mt-2 text-xs text-[var(--text-tertiary)]">
-                      Created {formatDateTime(request.createdAt)}
-                      {request.referralCode ? ` · Referral ${request.referralCode}` : ""}
+                      {t("createdAt", { date: formatDateTime(request.createdAt) })}
+                      {request.referralCode
+                        ? ` · ${t("referralCode", { code: request.referralCode })}`
+                        : ""}
                     </p>
                     <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                      {request.message ??
-                        "No intake note. Consider WhatsApp-ing the member before approving."}
+                      {request.message ?? t("noIntakeNote")}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <ConfirmActionButton
                       className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60"
-                      title="Approve membership request?"
-                      description={`Approve ${planNamesById.get(request.planId ?? "") ?? "this membership request"} so the member can continue to payment.`}
-                      confirmLabel="Approve"
+                      title={t("approveMembershipRequestTitle")}
+                      description={t("approveMembershipRequestDescription", {
+                        plan: planNamesById.get(request.planId ?? "") ?? t("membershipRequest"),
+                      })}
+                      confirmLabel={t("approve")}
                       onConfirm={() => updateJoinRequest(request.id, "approve")}
                       disabled={queueBusyId === request.id}
                     >
-                      {queueBusyId === request.id ? "Working..." : "Approve"}
+                      {queueBusyId === request.id ? t("working") : t("approve")}
                     </ConfirmActionButton>
                     <ConfirmActionButton
                       className="zook-focus inline-flex min-h-10 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--feedback-danger)_38%,transparent)] bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
-                      title="Reject membership request?"
-                      description="Rejecting sends the member back to the request step. They need to apply again to continue."
-                      confirmLabel="Reject"
+                      title={t("rejectMembershipRequestTitle")}
+                      description={t("rejectMembershipRequestDescription")}
+                      confirmLabel={t("reject")}
                       confirmTone="danger"
-                      aria-label="Reject membership request"
+                      aria-label={t("rejectMembershipRequestTitle")}
                       onConfirm={() => updateJoinRequest(request.id, "reject")}
                       disabled={queueBusyId === request.id}
                     >
-                      {queueBusyId === request.id ? "Working..." : "Reject"}
+                      {queueBusyId === request.id ? t("working") : t("reject")}
                     </ConfirmActionButton>
                   </div>
                 </div>
@@ -154,8 +168,8 @@ export function JoinRequestQueue({
           </>
         ) : (
           <EmptyState
-            title="Queue is clear"
-            description="Open-join and reviewed memberships stay out of this queue."
+            title={t("queueClear")}
+            description={t("queueClearDescription")}
           />
         )}
       </div>

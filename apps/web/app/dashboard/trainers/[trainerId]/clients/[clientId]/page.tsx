@@ -4,6 +4,7 @@ import { prisma } from "@zook/db";
 import { GlassCard, Pill } from "@/components/glass-card";
 import { formatDateTime } from "@/lib/format";
 import { requireDashboardSession } from "@/lib/server-auth";
+import { dashboardMessages } from "@/components/dashboard/shell/copy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function TrainerClientPage({
   if (!session.activeOrgId || !session.activeOrganization?.permissions.includes("TRAINERS_MANAGE")) {
     redirect("/dashboard");
   }
+  const t = dashboardMessages[session.user.preferredLocale === "hi" ? "hi" : "en"].trainers;
   const orgId = session.activeOrgId;
   const { trainerId, clientId } = await params;
   const assignment = await prisma.trainerAssignment.findFirst({
@@ -59,55 +61,57 @@ export default async function TrainerClientPage({
     <main className="mx-auto grid max-w-6xl gap-4 p-4 sm:p-6">
       <GlassCard variant="strong">
         <Link href={`/dashboard/trainers/${trainerId}`} className="text-sm font-semibold text-[var(--accent-strong)]">
-          Back to {trainer?.name ?? "trainer"}
+          {t.backToTrainer.replace("{name}", trainer?.name ?? t.trainerFallback)}
         </Link>
         <h1 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">{member.name}</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">{member.email}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Pill>{subscription?.status ?? "No active membership"}</Pill>
+          <Pill>{subscription?.status ?? t.noActiveMembership}</Pill>
           {profile?.notes ? <Pill>{profile.notes}</Pill> : null}
         </div>
       </GlassCard>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GlassCard>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Membership</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t.membership}</h2>
           <div className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)]">
-            <p>Status: <span className="text-[var(--text-primary)]">{subscription?.status ?? "-"}</span></p>
-            <p>Ends: <span className="text-[var(--text-primary)]">{subscription?.endsAt ? formatDateTime(subscription.endsAt) : "-"}</span></p>
-            <p>Remaining visits: <span className="text-[var(--text-primary)]">{subscription?.remainingVisits ?? "-"}</span></p>
+            <p>{t.status}: <span className="text-[var(--text-primary)]">{subscription?.status ?? "-"}</span></p>
+            <p>{t.ends}: <span className="text-[var(--text-primary)]">{subscription?.endsAt ? formatDateTime(subscription.endsAt) : "-"}</span></p>
+            <p>{t.remainingVisits}: <span className="text-[var(--text-primary)]">{subscription?.remainingVisits ?? "-"}</span></p>
           </div>
         </GlassCard>
 
         <GlassCard>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Recent progress</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t.recentProgress}</h2>
           <div className="mt-4 grid gap-2">
             {progress.map((entry) => (
               <div key={entry.id} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
                 <p className="font-semibold text-[var(--text-primary)]">{formatDateTime(entry.measuredAt)}</p>
                 <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                  Weight {displayDecimal(entry.weightKg)} kg · Body fat {displayDecimal(entry.bodyFatPercent)}%
+                  {t.progressLine
+                    .replace("{weight}", displayDecimal(entry.weightKg))
+                    .replace("{bodyFat}", displayDecimal(entry.bodyFatPercent))}
                 </p>
               </div>
             ))}
-            {!progress.length ? <p className="text-sm text-[var(--text-secondary)]">No progress entries yet.</p> : null}
+            {!progress.length ? <p className="text-sm text-[var(--text-secondary)]">{t.noProgressEntries}</p> : null}
           </div>
         </GlassCard>
       </div>
 
       <GlassCard>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)]">Recent workouts</h2>
+        <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t.recentWorkouts}</h2>
         <div className="mt-4 grid gap-2">
           {workouts.map((workout) => (
             <div key={workout.id} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3">
               <p className="font-semibold text-[var(--text-primary)]">{workout.title}</p>
               <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 {formatDateTime(workout.startedAt)}
-                {workout.durationMinutes ? ` · ${workout.durationMinutes} min` : ""}
+                {workout.durationMinutes ? ` · ${t.minutesShort.replace("{count}", String(workout.durationMinutes))}` : ""}
               </p>
             </div>
           ))}
-          {!workouts.length ? <p className="text-sm text-[var(--text-secondary)]">No trainer-visible workouts yet.</p> : null}
+          {!workouts.length ? <p className="text-sm text-[var(--text-secondary)]">{t.noTrainerVisibleWorkouts}</p> : null}
         </div>
       </GlassCard>
     </main>

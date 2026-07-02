@@ -29,6 +29,7 @@ import type {
 } from "@/components/dashboard/types";
 import { webApiFetch } from "@/lib/api-client";
 import { CsvExportButton } from "../operational-shared";
+import { useT } from "@/lib/use-t";
 
 type TabId = "financials" | "attendance" | "members" | "snapshot";
 
@@ -47,6 +48,7 @@ export function ReportsPanel({
   selectedBranchId?: string | null;
   auditLogCount: number;
 }) {
+  const t = useT("reports");
   const today = new Date().toISOString().slice(0, 10);
   const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const [dateRange, setDateRange] = useState({ from: sevenDaysAgo, to: today });
@@ -78,7 +80,7 @@ export function ReportsPanel({
       })
       .catch((cause) => {
         if (controller.signal.aborted) return;
-        setChartsError(cause instanceof Error ? cause.message : "Unable to load report charts.");
+        setChartsError(cause instanceof Error ? cause.message : t("unableLoadCharts"));
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -86,7 +88,7 @@ export function ReportsPanel({
         }
       });
     return () => controller.abort();
-  }, [dateRange.from, dateRange.to, invalidRange, organization.id, selectedBranchId]);
+  }, [dateRange.from, dateRange.to, invalidRange, organization.id, selectedBranchId, t]);
 
   const revenueRupees = Math.round(summary.revenuePaise / 100);
   const cashRupees = Math.round(summary.cashCollectedPaise / 100);
@@ -95,49 +97,50 @@ export function ReportsPanel({
   const revenuePoints = revenueWindow === "7d" ? reportCharts.revenue7d : reportCharts.revenue30d;
   const revenueSeries = revenuePoints.map((point) => point.value);
   const revenueLabels = revenuePoints.map((point) =>
-    revenueWindow === "30d" && point.label === "30d" ? "30d ago" : point.label,
+    revenueWindow === "30d" && point.label === "30d" ? t("thirtyDaysAgo") : point.label,
   );
   const attendance7d = reportCharts.attendance7d.map((point) => point.value);
   const attendanceLabels = reportCharts.attendance7d.map((point) => point.label);
   const memberGrowth = reportCharts.memberGrowth30d.map((point) => point.value);
-  const memberLabels = reportCharts.memberGrowth30d.map((point) =>
-    point.label === "Today" ? "Now" : point.label,
+  const lastMemberGrowthIndex = reportCharts.memberGrowth30d.length - 1;
+  const memberLabels = reportCharts.memberGrowth30d.map((point, index) =>
+    index === lastMemberGrowthIndex ? t("now") : point.label,
   );
 
   const actionTips = [
     summary.lowStockProducts > 0
-      ? `${summary.lowStockProducts} low-stock items need a shop check.`
-      : "Shop stock is clear for the selected range.",
+      ? t("lowStockTip", { count: summary.lowStockProducts })
+      : t("stockClearTip"),
     summary.notificationQueueCount > 0
-      ? `${summary.notificationQueueCount} messages need delivery follow-up.`
-      : "Notification delivery is clear.",
+      ? t("messagesFollowUpTip", { count: summary.notificationQueueCount })
+      : t("notificationClearTip"),
     summary.expiringMemberships > 0
-      ? `${summary.expiringMemberships} memberships are nearing renewal.`
-      : "No urgent renewal window is visible.",
+      ? t("renewalTip", { count: summary.expiringMemberships })
+      : t("noRenewalTip"),
   ];
 
   const channelTotal = revenueRupees || 1;
   const cashShare = Math.round((cashRupees / channelTotal) * 100);
 
   const tabs = [
-    { id: "financials" as TabId, label: "Financials", icon: IndianRupee },
-    { id: "attendance" as TabId, label: "Attendance", icon: CalendarDays },
-    { id: "members" as TabId, label: "Members & Growth", icon: Users },
-    { id: "snapshot" as TabId, label: "Overview & Records", icon: ClipboardList },
+    { id: "financials" as TabId, label: t("tabFinancials"), icon: IndianRupee },
+    { id: "attendance" as TabId, label: t("tabAttendance"), icon: CalendarDays },
+    { id: "members" as TabId, label: t("tabMembersGrowth"), icon: Users },
+    { id: "snapshot" as TabId, label: t("tabOverviewRecords"), icon: ClipboardList },
   ];
   const exportReports = [
-    { fileName: "members.csv", label: "Members" },
-    { fileName: "attendance.csv", label: "Attendance" },
-    { fileName: "payments.csv", label: "Payments" },
-    { fileName: "revenue.csv", label: "Revenue" },
-    { fileName: "manual-cash.csv", label: "Cash reconciliation" },
-    { fileName: "membership-sales.csv", label: "Membership sales" },
-    { fileName: "expiring-members.csv", label: "Expiry" },
-    { fileName: "invoices.csv", label: "Invoices" },
-    { fileName: "referrals.csv", label: "Referrals" },
-    { fileName: "shop.csv", label: "Shop orders" },
-    { fileName: "trainer-client.csv", label: "Trainer clients" },
-    { fileName: "ai-usage.csv", label: "AI usage" },
+    { fileName: "members.csv", label: t("exportMembers") },
+    { fileName: "attendance.csv", label: t("exportAttendance") },
+    { fileName: "payments.csv", label: t("exportPayments") },
+    { fileName: "revenue.csv", label: t("exportRevenue") },
+    { fileName: "manual-cash.csv", label: t("exportCashReconciliation") },
+    { fileName: "membership-sales.csv", label: t("exportMembershipSales") },
+    { fileName: "expiring-members.csv", label: t("exportExpiry") },
+    { fileName: "invoices.csv", label: t("exportInvoices") },
+    { fileName: "referrals.csv", label: t("exportReferrals") },
+    { fileName: "shop.csv", label: t("exportShopOrders") },
+    { fileName: "trainer-client.csv", label: t("exportTrainerClients") },
+    { fileName: "ai-usage.csv", label: t("exportAiUsage") },
   ];
   const buildExportHref = (fileName: string) => {
     const params = new URLSearchParams({
@@ -154,8 +157,8 @@ export function ReportsPanel({
     <div className="grid gap-4">
       {/* Hero */}
       <SectionHero
-        eyebrow="Operational report pack"
-        title="Reports & insights"
+        eyebrow={t("heroEyebrow")}
+        title={t("heroTitle")}
         icon={BarChart3}
         tone="sky"
         meta={<span className="text-xs text-[var(--text-secondary)]">{selectedBranchName}</span>}
@@ -166,7 +169,7 @@ export function ReportsPanel({
         <div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="grid flex-1 gap-1 text-xs font-medium text-[var(--text-secondary)]">
-              From
+              {t("from")}
               <input
                 type="date"
                 value={dateRange.from}
@@ -178,7 +181,7 @@ export function ReportsPanel({
               />
             </label>
             <label className="grid flex-1 gap-1 text-xs font-medium text-[var(--text-secondary)]">
-              To
+              {t("to")}
               <input
                 type="date"
                 value={dateRange.to}
@@ -197,7 +200,7 @@ export function ReportsPanel({
                 chartsError ? "text-[var(--feedback-danger)]" : "text-[var(--text-secondary)]"
               }`}
             >
-              {chartsError ?? "Updating report charts..."}
+              {chartsError ?? t("updatingReportCharts")}
             </p>
           ) : null}
         </div>
@@ -236,9 +239,9 @@ export function ReportsPanel({
 
       <details className="rounded-[18px] border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2">
         <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--text-primary)]">
-          CSV exports
+          {t("csvExports")}
           <span className="ml-2 text-xs font-normal text-[var(--text-secondary)]">
-            Date range and branch applied
+            {t("dateRangeBranchApplied")}
           </span>
         </summary>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -254,7 +257,7 @@ export function ReportsPanel({
 
       {invalidRange && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-danger-soft)] px-4 py-3 text-xs text-[var(--feedback-danger)]">
-          End date must be after start date.
+          {t("endDateAfterStartDate")}
         </div>
       )}
 
@@ -275,7 +278,7 @@ export function ReportsPanel({
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                        Revenue trend
+                        {t("revenueTrend")}
                       </p>
                       <div className="mt-2 flex items-baseline gap-3">
                         <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
@@ -289,7 +292,7 @@ export function ReportsPanel({
                           }
                         />
                         <span className="text-xs text-[var(--text-tertiary)]">
-                          {revenueWindow === "7d" ? "last 7 days" : "last 30 days"}
+                          {revenueWindow === "7d" ? t("last7Days") : t("last30Days")}
                         </span>
                       </div>
                     </div>
@@ -305,7 +308,7 @@ export function ReportsPanel({
                               : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                           }`}
                         >
-                          {window === "7d" ? "7 days" : "30 days"}
+                          {window === "7d" ? t("sevenDays") : t("thirtyDays")}
                         </button>
                       ))}
                     </div>
@@ -319,7 +322,7 @@ export function ReportsPanel({
                       formatTooltip={(v, label) =>
                         label ? `${label}: ${formatInrCompact(v * 100)}` : formatInrCompact(v * 100)
                       }
-                      ariaLabel={`Revenue across the ${revenueWindow === "7d" ? "last 7 days" : "last 30 days"}`}
+                      ariaLabel={t("revenueAria", { window: revenueWindow === "7d" ? t("last7Days") : t("last30Days") })}
                     />
                   </div>
                 </GlassCard>
@@ -328,10 +331,10 @@ export function ReportsPanel({
                 <GlassCard className="p-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                      Payment channels
+                      {t("paymentChannels")}
                     </p>
                     <h2 className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-                      How money flows in
+                      {t("moneyFlowsIn")}
                     </h2>
                   </div>
                   <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
@@ -346,22 +349,22 @@ export function ReportsPanel({
                           {cashShare}%
                         </span>
                       }
-                      centerSub="cash"
+                      centerSub={t("cash")}
                     />
                     <div className="grid flex-1 gap-2">
                       <LegendItem
                         tone="violet"
-                        label="Cash / desk"
+                        label={t("cashDesk")}
                         value={cashRupees > 0 ? formatInrCompact(cashRupees * 100) : "₹0"}
                       />
                       <LegendItem
                         tone="sky"
-                        label="Online / UPI"
+                        label={t("onlineUpi")}
                         value={onlineRupees > 0 ? formatInrCompact(onlineRupees * 100) : "₹0"}
                       />
                       <LegendItem
                         tone="sky"
-                        label="Total"
+                        label={t("total")}
                         value={formatInrCompact(channelTotal * 100)}
                       />
                     </div>
@@ -375,36 +378,40 @@ export function ReportsPanel({
                 <GlassCard className="p-4">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                      Daily check-ins · last 7 days
+                      {t("dailyCheckInsLast7Days")}
                     </p>
                     <div className="mt-2 flex items-baseline gap-3">
                       <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                         {summary.todayAttendance}
                       </span>
-                      <span className="text-xs text-[var(--text-secondary)]">today</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{t("today")}</span>
                     </div>
                   </div>
                   <div className="mt-4 h-48">
-                    <BarChart series={attendance7d} labels={attendanceLabels} tone="violet" />
+                    <BarChart
+                      series={attendance7d}
+                      labels={attendanceLabels}
+                      tone="violet"
+                      ariaLabel={t("barChartAria")}
+                    />
                   </div>
                 </GlassCard>
 
                 <GlassCard className="p-4 flex flex-col justify-between">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--text-primary)]">
-                      Attendance insights
+                      {t("attendanceInsights")}
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      QR entry points at reception are processing checks smoothly. Active check-ins
-                      peak during late evening and early morning hours.
+                      {t("attendanceInsightsCopy")}
                     </p>
                   </div>
                   <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
                     <p className="text-xs font-medium text-[var(--text-tertiary)]">
-                      Today
+                      {t("today")}
                     </p>
                     <p className="mt-1 text-xl font-bold text-[var(--accent-strong)]">
-                      {summary.todayAttendance} members
+                      {t("membersCount", { count: summary.todayAttendance })}
                     </p>
                   </div>
                 </GlassCard>
@@ -417,40 +424,44 @@ export function ReportsPanel({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                        Member growth · last 30 days
+                        {t("memberGrowthLast30Days")}
                       </p>
                       <div className="mt-2 flex items-baseline gap-3">
                         <span className="text-2xl font-bold tabular-nums text-[var(--text-primary)]">
                           {summary.activeMembers}
                         </span>
-                        <span className="text-xs text-[var(--text-secondary)]">active members</span>
+                        <span className="text-xs text-[var(--text-secondary)]">{t("activeMembersLower")}</span>
                         <DeltaChip delta={reportCharts.deltas.memberGrowth30d} />
                       </div>
                     </div>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-1 text-xs text-[var(--text-secondary)]">
                       <TrendingUp size={12} />
-                      {summary.joinRequests} pending
+                      {t("pendingCount", { count: summary.joinRequests })}
                     </span>
                   </div>
                   <div className="mt-4 h-48">
-                    <BarChart series={memberGrowth} labels={memberLabels} tone="sky" />
+                    <BarChart
+                      series={memberGrowth}
+                      labels={memberLabels}
+                      tone="sky"
+                      ariaLabel={t("barChartAria")}
+                    />
                   </div>
                 </GlassCard>
 
                 <GlassCard className="p-4 flex flex-col justify-between">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--text-primary)]">
-                      Demand funnel
+                      {t("demandFunnel")}
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      Public registration links are generating active join requests. Review pending
-                      inquiries under the member tab.
+                      {t("demandFunnelCopy")}
                     </p>
                   </div>
                   <div className="grid gap-2">
                     <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
                       <span className="font-medium text-[var(--text-secondary)]">
-                        Active memberships
+                        {t("activeMemberships")}
                       </span>
                       <span className="font-bold text-[var(--text-primary)]">
                         {summary.activeMembers}
@@ -458,7 +469,7 @@ export function ReportsPanel({
                     </div>
                     <div className="flex justify-between items-center rounded-xl bg-[var(--bg-sunken)] p-3 text-xs">
                       <span className="font-medium text-[var(--text-secondary)]">
-                        Pending join requests
+                        {t("pendingJoinRequests")}
                       </span>
                       <span className="font-bold text-[var(--feedback-warning)]">
                         {summary.joinRequests}
@@ -473,53 +484,53 @@ export function ReportsPanel({
               <div className="grid gap-5">
                 <div className="grid gap-5 lg:grid-cols-2">
                   <GlassCard className="p-5">
-                    <SectionHeader title="By the numbers" />
+                    <SectionHeader title={t("byTheNumbers")} />
                     <ReadoutGrid
                       className="mt-4"
                       columns={2}
                       items={[
                         {
-                          label: "Branch",
+                          label: t("branch"),
                           value: selectedBranchName,
-                          meta: "Filterable by branch",
+                          meta: t("filterableByBranch"),
                         },
                         {
-                          label: "Active members",
+                          label: t("activeMembers"),
                           value: formatCompactNumber(summary.activeMembers),
-                          meta: `${summary.joinRequests} pending`,
+                          meta: t("pendingCount", { count: summary.joinRequests }),
                         },
                         {
-                          label: "Attendance today",
+                          label: t("attendanceToday"),
                           value: formatCompactNumber(summary.todayAttendance),
-                          meta: "QR entries",
+                          meta: t("qrEntries"),
                         },
                         {
-                          label: "Revenue today",
+                          label: t("revenueToday"),
                           value: formatInr(summary.revenuePaise),
-                          meta: `${formatInr(summary.cashCollectedPaise)} cash`,
+                          meta: t("cashAmount", { amount: formatInr(summary.cashCollectedPaise) }),
                         },
                         {
-                          label: "Assistant drafts",
+                          label: t("assistantDrafts"),
                           value: formatCompactNumber(summary.aiUsageThisMonth),
-                          meta: "This month",
+                          meta: t("thisMonth"),
                         },
                         {
-                          label: "Low stock",
+                          label: t("lowStock"),
                           value: formatCompactNumber(summary.lowStockProducts),
-                          meta: "Below threshold",
+                          meta: t("belowThreshold"),
                         },
                         {
-                          label: "Trial runway",
+                          label: t("trialRunway"),
                           value: formatDaysRemaining(summary.trialDaysRemaining),
                           meta: formatDate(organization.trialEndAt),
                         },
                         {
-                          label: "Notification queue",
+                          label: t("notificationQueue"),
                           value:
                             summary.notificationQueueCount > 0
-                              ? `${summary.notificationQueueCount} pending`
-                              : "Clear",
-                          meta: "Scheduled / failed",
+                              ? t("pendingCount", { count: summary.notificationQueueCount })
+                              : t("clear"),
+                          meta: t("scheduledFailed"),
                         },
                       ]}
                     />
@@ -527,20 +538,20 @@ export function ReportsPanel({
 
                   <div className="grid gap-5">
                     <GlassCard className="p-5">
-                      <SectionHeader eyebrow="Governance" title="Control status" />
+                      <SectionHeader eyebrow={t("governance")} title={t("controlStatus")} />
                       <ReadoutGrid
                         className="mt-4"
                         columns={2}
                         items={[
                           {
-                            label: "Audit log",
+                            label: t("auditLog"),
                             value: formatCompactNumber(auditLogCount),
-                            meta: "Admin changes saved",
+                            meta: t("adminChangesSaved"),
                           },
                           {
-                            label: "Join mode",
+                            label: t("joinMode"),
                             value: formatEnumLabel(organization.joinMode),
-                            meta: "Demand funnel type",
+                            meta: t("demandFunnelType"),
                           },
                         ]}
                       />
@@ -550,7 +561,7 @@ export function ReportsPanel({
                       <div className="flex items-center gap-2">
                         <CircleAlert size={16} className="text-[var(--accent)]" />
                         <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                          What deserves a second look
+                          {t("secondLookTitle")}
                         </h2>
                       </div>
                       <div className="mt-4 grid gap-2">

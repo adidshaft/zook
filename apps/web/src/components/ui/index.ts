@@ -1,3 +1,5 @@
+export { ActionModal } from "./action-modal";
+export { FormDialog, type FormDialogField } from "./form-dialog";
 export { HelpHint, helpHintLabel } from "./help-hint";
 export { ManagedOn, managedOnLabel, type ManagedSurface } from "./managed-on";
 export {

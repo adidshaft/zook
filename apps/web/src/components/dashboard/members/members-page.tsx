@@ -9,6 +9,7 @@ import { JoinRequestQueue } from "./join-requests-page";
 import { MemberList } from "./member-list";
 import { MembershipPlanLadder } from "./membership-plan-ladder";
 import { webApiFetch } from "@/lib/api-client";
+import { useT } from "@/lib/use-t";
 import type { MemberFilter, MembersPageProps } from "./member-list/types";
 import { memberFilters, normalizeMemberText } from "./member-list/types";
 
@@ -33,6 +34,7 @@ export function MembersPage({
   membershipPlansState,
   planNamesById,
 }: MembersPageProps) {
+  const t = useT("members");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -140,13 +142,13 @@ export function MembersPage({
 
   function exportSelectedMembers() {
     const rows = selectedBulkMembers.map((member) => [
-      member.user?.name ?? "Member",
+      member.user?.name ?? t("memberFallback"),
       member.user?.email ?? "",
       member.user?.phone ?? "",
       member.activeSubscription?.status ?? "",
     ]);
     const csv = [
-      ["Name", "Email", "Phone", "Subscription"].join(","),
+      [t("csvName"), t("csvEmail"), t("csvPhone"), t("csvSubscription")].join(","),
       ...rows.map((row) =>
         row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","),
       ),
@@ -169,8 +171,8 @@ export function MembersPage({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
         feedback: {
-          success: status === "active" ? "Member reactivated." : "Member deactivated.",
-          error: "Unable to update member access.",
+          success: status === "active" ? t("reactivatedToast") : t("deactivatedToast"),
+          error: t("accessUpdateError"),
         },
       });
       membersState.reload();
@@ -179,12 +181,12 @@ export function MembersPage({
       }
       setMemberAccessStatusTone("lime");
       setMemberAccessStatus(
-        status === "active" ? "Member can access the gym again." : "Member access is inactive.",
+        status === "active" ? t("accessReactivated") : t("accessInactiveStatus"),
       );
     } catch (error) {
       setMemberAccessStatusTone("red");
       setMemberAccessStatus(
-        error instanceof Error ? error.message : "Unable to update member access.",
+        error instanceof Error ? error.message : t("accessUpdateError"),
       );
     } finally {
       setMemberAccessBusyId(null);
@@ -204,7 +206,7 @@ export function MembersPage({
             method: "PATCH",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ status: "inactive" }),
-            feedback: { success: false, error: "Unable to archive selected members." },
+            feedback: { success: false, error: t("archiveSelectedError") },
           }),
         ),
       );
@@ -215,11 +217,14 @@ export function MembersPage({
       }
       setMemberAccessStatusTone("lime");
       setMemberAccessStatus(
-        `${selectedIds.length} member${selectedIds.length === 1 ? "" : "s"} archived.`,
+        t("archivedSelected", {
+          count: selectedIds.length,
+          memberLabel: selectedIds.length === 1 ? t("memberOne") : t("memberOther"),
+        }),
       );
     } catch (error) {
       setMemberAccessStatusTone("red");
-      setMemberAccessStatus(error instanceof Error ? error.message : "Unable to archive members.");
+      setMemberAccessStatus(error instanceof Error ? error.message : t("archiveMembersError"));
     } finally {
       setMemberAccessBusyId(null);
     }
@@ -232,7 +237,7 @@ export function MembersPage({
       : "";
     if (action === "pause" && !pauseDateIso) {
       setSubscriptionStatusTone("danger");
-      setSubscriptionStatus("Choose a resume date before pausing.");
+      setSubscriptionStatus(t("chooseResumeDate"));
       return;
     }
     setSubscriptionBusy(action);
@@ -254,11 +259,11 @@ export function MembersPage({
         feedback: {
           success:
             action === "switch"
-              ? "Membership plan switched."
+              ? t("membershipSwitchedToast")
               : action === "pause"
-                ? "Membership paused."
-                : "Membership resumed.",
-          error: "Unable to update membership.",
+                ? t("membershipPausedToast")
+                : t("membershipResumedToast"),
+          error: t("membershipUpdateError"),
         },
       });
       memberDetailState.reload();
@@ -266,15 +271,15 @@ export function MembersPage({
       setSubscriptionStatusTone("success");
       setSubscriptionStatus(
         action === "switch"
-          ? "Membership switched to the new plan."
+          ? t("membershipSwitched")
           : action === "pause"
-            ? `Membership paused until ${pauseResumesAt}.`
-            : "Membership resumed.",
+            ? t("membershipPausedUntil", { date: pauseResumesAt })
+            : t("membershipResumed"),
       );
     } catch (error) {
       setSubscriptionStatusTone("danger");
       setSubscriptionStatus(
-        error instanceof Error ? error.message : "Unable to update membership.",
+        error instanceof Error ? error.message : t("membershipUpdateError"),
       );
     } finally {
       setSubscriptionBusy(null);

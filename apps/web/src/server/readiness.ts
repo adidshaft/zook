@@ -66,8 +66,11 @@ export async function getReadinessPayload() {
     databaseErrorCode = error instanceof Error ? error.name : "DatabaseReadinessError";
   }
 
+  const providers = summarizeProviderDiagnostics();
+  const rateLimitReady = providers.rateLimit.status !== "misconfigured";
+
   return {
-    ready: dbReachable && schemaReady,
+    ready: dbReachable && schemaReady && rateLimitReady,
     version: buildVersion(),
     envProfile: safeEnvProfile(),
     timestamp: new Date().toISOString(),
@@ -89,7 +92,7 @@ export async function getReadinessPayload() {
         ? { error: "Database readiness check failed.", errorCode: databaseErrorCode }
         : {}),
     },
-    providers: summarizeProviderDiagnostics(),
+    providers,
   };
 }
 

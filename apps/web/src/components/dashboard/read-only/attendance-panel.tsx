@@ -24,23 +24,26 @@ import type {
   OrganizationSnapshot,
   OrganizationSummary,
 } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 import { CsvExportButton, ErrorNotice, LoadMoreButton } from "../operational-shared";
 import type { PagedState } from "./types";
 
-function attendanceJoinModeLabel(mode: string | null | undefined) {
-  if (mode === "AUTO_APPROVE") return "Auto approve";
-  if (mode === "APPROVAL_REQUIRED") return "Approval required";
-  if (mode === "INVITE_ONLY") return "Invite only";
+type AttendanceT = ReturnType<typeof useT>;
+
+function attendanceJoinModeLabel(mode: string | null | undefined, t: AttendanceT) {
+  if (mode === "AUTO_APPROVE") return t("joinModeAutoApprove");
+  if (mode === "APPROVAL_REQUIRED") return t("joinModeApprovalRequired");
+  if (mode === "INVITE_ONLY") return t("joinModeInviteOnly");
   return formatEnumLabel(mode ?? "join");
 }
 
-function attendanceStatusLabel(status: string | null | undefined) {
-  if (status === "APPROVED") return "Approved";
-  if (status === "PENDING_APPROVAL") return "Needs review";
-  if (status === "REJECTED") return "Rejected";
-  if (status === "FLAGGED") return "Flagged";
-  if (status === "FAILED") return "Failed";
-  if (status === "RECORDED") return "Recorded";
+function attendanceStatusLabel(status: string | null | undefined, t: AttendanceT) {
+  if (status === "APPROVED") return t("statusApproved");
+  if (status === "PENDING_APPROVAL") return t("statusNeedsReview");
+  if (status === "REJECTED") return t("statusRejected");
+  if (status === "FLAGGED") return t("statusFlagged");
+  if (status === "FAILED") return t("statusFailed");
+  if (status === "RECORDED") return t("statusRecorded");
   return formatEnumLabel(status ?? "recorded");
 }
 
@@ -61,6 +64,7 @@ export function AttendancePanel({
   attendanceRecords: AttendanceRecordRow[];
   attendanceState: PagedState;
 }) {
+  const t = useT("attendance");
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
@@ -81,10 +85,10 @@ export function AttendancePanel({
           />
           <GlassCard>
             <SectionHeader
-              eyebrow="Entry & attendance"
-              title="QR code and entry codes"
-              description="Members scan the gym QR, receive a unique entry code, and present it at the floor or desk."
-              badge={<StatusPill value="Member QR" />}
+              eyebrow={t("entryAttendance")}
+              title={t("qrCodeEntryCodes")}
+              description={t("qrCodeEntryDescription")}
+              badge={<StatusPill value={t("memberQr")} />}
               action={
                 <a
                   href={branchScope.selectedBranch?.id ? `/dashboard/attendance/qr-display?branchId=${encodeURIComponent(branchScope.selectedBranch.id)}` : "/dashboard/attendance/qr-display"}
@@ -92,7 +96,7 @@ export function AttendancePanel({
                   rel="noreferrer"
                   className="zook-focus inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--bg-sunken)] px-3 py-1.5 text-xs font-semibold text-[var(--accent-strong)] transition shadow-sm"
                 >
-                  Open QR in New Tab
+                  {t("openQrNewTab")}
                 </a>
               }
             />
@@ -100,24 +104,24 @@ export function AttendancePanel({
               className="mt-5"
               items={[
                 {
-                  label: "Branch",
+                  label: t("branch"),
                   value: selectedBranchName,
                   meta: branchScope.selectedBranch
-                    ? "Branch for QR and member attendance"
-                    : "Set up your branch to start accepting members",
+                    ? t("branchQrMeta")
+                    : t("setupBranchMeta"),
                 },
                 {
-                  label: "Today scans",
+                  label: t("todayScans"),
                   value: formatCompactNumber(summary.todayAttendance),
-                  meta: "Members receive visible entry codes",
+                  meta: t("visibleEntryCodes"),
                 },
                 {
-                  label: "Join mode",
-                  value: attendanceJoinModeLabel(organization.joinMode),
-                  meta: "Used during membership requests",
+                  label: t("joinMode"),
+                  value: attendanceJoinModeLabel(organization.joinMode, t),
+                  meta: t("usedDuringMembershipRequests"),
                 },
                 {
-                  label: "Trial window",
+                  label: t("trialWindow"),
                   value: formatDaysRemaining(summary.trialDaysRemaining),
                   meta: formatDate(organization.trialEndAt),
                 },
@@ -129,58 +133,58 @@ export function AttendancePanel({
       </div>
       <GlassCard>
         <SectionHeader
-          eyebrow="Attendance"
-          title="Recent attendance scans"
-          badge={<Pill>{attendanceRecords.length} scan{attendanceRecords.length === 1 ? "" : "s"}</Pill>}
+          eyebrow={t("attendance")}
+          title={t("recentAttendanceScans")}
+          badge={<Pill>{t("scanCount", { count: attendanceRecords.length })}</Pill>}
           action={<CsvExportButton href={`/api/orgs/${orgId}/reports/attendance.csv`} />}
         />
         <div className="mt-5">
           {attendanceState.error ? (
             <ErrorNotice message={attendanceState.error} />
           ) : attendanceState.loading && attendanceRecords.length === 0 ? (
-            <EmptyState title="Loading attendance" />
+            <EmptyState title={t("loadingAttendance")} />
           ) : (
             <>
               <DataTable
                 columns={[
                   {
                     id: "member",
-                    header: "Member",
+                    header: t("member"),
                     render: (record) => (
                       <div>
                         <p className="font-medium text-[var(--text-primary)]">
-                          {record.user?.name ?? record.user?.email ?? "Member"}
+                          {record.user?.name ?? record.user?.email ?? t("memberFallback")}
                         </p>
                         <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                          {record.plan?.name ?? record.planName ?? "Membership"}
+                          {record.plan?.name ?? record.planName ?? t("membershipFallback")}
                         </p>
                       </div>
                     ),
                   },
                   {
                     id: "status",
-                    header: "Status",
-                    render: (record) => <StatusPill value={attendanceStatusLabel(record.status)} />,
+                    header: t("status"),
+                    render: (record) => <StatusPill value={attendanceStatusLabel(record.status, t)} />,
                   },
                   {
                     id: "remaining",
-                    header: "Visits",
+                    header: t("visits"),
                     align: "right",
                     render: (record) =>
                       record.subscription?.remainingVisits === null ||
                       record.subscription?.remainingVisits === undefined
-                        ? "Open"
+                        ? t("open")
                         : record.subscription.remainingVisits.toString(),
                   },
                   {
                     id: "time",
-                    header: "Checked in",
+                    header: t("checkedIn"),
                     render: (record) => formatDateTime(record.checkedInAt),
                   },
                 ]}
                 rows={attendanceRecords}
                 rowKey={(record) => record.id}
-                empty="No scans."
+                empty={t("noScans")}
               />
               <LoadMoreButton
                 count={attendanceRecords.length}

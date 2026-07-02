@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { GuardianConsentRetiredPage } from "@/components/guardian-consent-retired-page";
 import { resolvePublicLocale } from "@/lib/public-i18n";
+
+export const metadata: Metadata = {
+  title: "Guardian consent | Zook",
+  description: "Private guardian consent status for a Zook member account.",
+  robots: { index: false, follow: false },
+};
 
 export default async function GuardianConsentPage({
   params,

@@ -349,7 +349,7 @@ export function ReportsDashboardRoute(props: DashboardRoutePanelBaseProps) {
       selectedBranchName={
         props.branchScope.selectedBranch?.name ??
         props.branchScope.branches[0]?.name ??
-        "Selected branch"
+        props.organization.name
       }
       selectedBranchId={props.branchScope.selectedBranch?.id ?? null}
       auditLogCount={props.auditLogCount}

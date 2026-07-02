@@ -1,5 +1,6 @@
 import { formatCompactNumber, formatInr } from "@/lib/format";
 import type { OrganizationSummary, ShopOrderRow } from "@/components/dashboard/types";
+import { useT } from "@/lib/use-t";
 
 export function PaymentMetricCards({
   summary,
@@ -8,13 +9,15 @@ export function PaymentMetricCards({
   summary: OrganizationSummary;
   queuedOrders: ShopOrderRow[];
 }) {
+  const t = useT("payments");
+
   return (
     <div className="grid gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-2 xl:grid-cols-4">
       {[
-        ["Desk", formatInr(summary.cashCollectedPaise), "Today"],
-        ["Revenue", formatInr(summary.revenuePaise), "Settled"],
-        ["Shop queue", formatCompactNumber(queuedOrders.length), "Payment or pickup"],
-        ["Renewals", formatCompactNumber(summary.expiringMemberships), "Expiring"],
+        [t("metricsDesk"), formatInr(summary.cashCollectedPaise), t("metricsToday")],
+        [t("metricsRevenue"), formatInr(summary.revenuePaise), t("metricsSettled")],
+        [t("metricsShopQueue"), formatCompactNumber(queuedOrders.length), t("metricsPaymentOrPickup")],
+        [t("metricsRenewals"), formatCompactNumber(summary.expiringMemberships), t("metricsExpiring")],
       ].map(([label, value, meta]) => (
         <div
           key={label}

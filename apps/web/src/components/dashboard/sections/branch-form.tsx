@@ -215,7 +215,7 @@ export function BranchForm({
           </div>
           {form.latitude && form.longitude ? (
             <iframe
-              title="Branch map pin"
+              title={t("branchMapPin")}
               src={`https://maps.google.com/maps?q=${form.latitude},${form.longitude}&z=15&output=embed`}
               className="h-40 w-full rounded-2xl border border-[var(--border)]"
             />

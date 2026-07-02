@@ -3,11 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, ChevronDown } from "lucide-react";
 import { ApiError, parseApiResponse } from "@zook/core";
 import type { AuthSessionSummary } from "@zook/core";
 import { toast } from "sonner";
-import { ZookButton } from "./zook-button";
+import { MoreSignInOptions, OtpActionButtons } from "./login-panel-actions";
+import {
+  isValidEmail,
+  isValidPhone,
+  loginErrorMessage,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  rateLimitMessage,
+} from "./login-panel-auth-helpers";
+import { LoginIdentifierFields, LoginOtpFields, LoginResendCooldown } from "./login-panel-form";
+import { useLoginPanelLifecycle } from "./login-panel-lifecycle";
+import { LoginStatusMessage, LoginSubmitButton } from "./login-panel-shell";
+import {
+  googleOAuthRedirectKey,
+  googleOAuthStateKey,
+  loadScript,
+  randomOAuthValue,
+} from "./login-panel-sso";
 import { destinationToHref, resolvePostLoginDestination } from "@/lib/auth-destinations";
 import type { WebHost } from "@/lib/host-routing";
 import { loginRedirectMessage } from "@/lib/login-destination-labels";
@@ -20,104 +35,8 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } },
 };
 
-declare global {
-  interface Window {
-    google?: {
-      accounts?: {
-        id?: {
-          initialize: (options: {
-            client_id: string;
-            callback: (response: { credential?: string }) => void;
-            ux_mode?: "popup";
-          }) => void;
-          prompt: () => void;
-        };
-      };
-    };
-    AppleID?: {
-      auth?: {
-        init: (options: {
-          clientId: string;
-          scope: string;
-          redirectURI: string;
-          usePopup: boolean;
-        }) => void;
-        signIn: () => Promise<{ authorization?: { id_token?: string } }>;
-      };
-    };
-  }
-}
-
-const OTP_RESEND_COOLDOWN_SECONDS = 30;
-const googleOAuthStateKey = "zook.googleOAuthState";
-const googleOAuthRedirectKey = "zook.googleOAuthRedirect";
 type LoginSession = Parameters<typeof resolvePostLoginDestination>[0];
 type LoginMethod = "phone" | "email";
-
-function loadScript(src: string, errorMessage: string) {
-  return new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-    if (existing?.dataset.loaded === "true") {
-      resolve();
-      return;
-    }
-    const script = existing ?? document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      script.dataset.loaded = "true";
-      resolve();
-    };
-    script.onerror = () => reject(new Error(errorMessage));
-    if (!existing) {
-      document.head.appendChild(script);
-    }
-  });
-}
-
-function isValidEmail(value: string) {
-  return /^\S+@\S+\.\S+$/.test(value.trim());
-}
-
-function isValidPhone(value: string) {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  if (!digits) {
-    return false;
-  }
-  if (trimmed.startsWith("+")) {
-    return /^\+[1-9]\d{7,14}$/.test(`+${digits}`);
-  }
-  return digits.length === 10 || (digits.length === 12 && digits.startsWith("91"));
-}
-
-function randomOAuthValue() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function rateLimitMessage(response: Response, locale: PublicLocale) {
-  const retryAfter = Number(response.headers.get("retry-after"));
-  const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60;
-  return { seconds, message: publicT(locale, "tooManyAttempts", { seconds }) };
-}
-
-function isInternalAuthError(error: unknown) {
-  if (error instanceof ApiError && error.status >= 500) {
-    return true;
-  }
-  const message = error instanceof Error ? error.message : "";
-  return /prisma|database server|localhost:5432|invocation|stack|sql|connection/i.test(message);
-}
-
-function loginErrorMessage(error: unknown, fallback: string) {
-  if (isInternalAuthError(error)) {
-    return fallback;
-  }
-  return error instanceof Error && error.message.trim() ? error.message : fallback;
-}
 
 export function LoginPanel({
   locale = "en",
@@ -176,10 +95,6 @@ export function LoginPanel({
     stage !== "identifier" ||
     (message !== t("signInDefault") && message !== redirectMessage);
 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
   const redirectHrefForSession = useCallback((session: LoginSession, redirect: string | null) => {
     const resolvedOrigins = origins ?? getOrigins();
     const resolvedCurrentHost =
@@ -222,6 +137,17 @@ export function LoginPanel({
     [redirectHrefForSession, searchParams, t],
   );
 
+  useLoginPanelLifecycle({
+    emailRef,
+    loginMethod,
+    otpRef,
+    phoneRef,
+    resendCooldown,
+    setHydrated,
+    setResendCooldown,
+    stage,
+  });
+
   useEffect(() => {
     if (!window.location.hash.includes("id_token=") && !window.location.hash.includes("error=")) {
       return;
@@ -254,33 +180,6 @@ export function LoginPanel({
     }
     void completeSsoSignIn("google", { idToken }, redirect);
   }, [completeSsoSignIn, t]);
-
-  useEffect(() => {
-    if (stage === "identifier") {
-      const timer = window.setTimeout(() => {
-        if (loginMethod === "email") {
-          emailRef.current?.focus();
-        } else {
-          phoneRef.current?.focus();
-        }
-      }, 80);
-      return () => window.clearTimeout(timer);
-    }
-    if (stage === "otp") {
-      otpRef.current?.focus();
-    }
-    return undefined;
-  }, [loginMethod, stage]);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setResendCooldown((current) => Math.max(0, current - 1));
-    }, 1000);
-    return () => window.clearTimeout(timer);
-  }, [resendCooldown]);
 
   function selectedIdentifier() {
     return loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
@@ -445,17 +344,7 @@ export function LoginPanel({
       initial={false}
       className="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-md)] sm:p-5"
     >
-      {showStatusMessage ? (
-        <motion.p
-          variants={itemVariants}
-          id="login-status"
-          className="mb-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-sm leading-5 text-[var(--text-secondary)]"
-          role="alert"
-          aria-live="polite"
-        >
-          {message}
-        </motion.p>
-      ) : null}
+      <LoginStatusMessage itemVariants={itemVariants} message={message} show={showStatusMessage} />
       <motion.form
         initial={false}
         className="grid gap-3"
@@ -469,201 +358,88 @@ export function LoginPanel({
         }}
       >
         {stage === "identifier" ? (
-          <>
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-1">
-              {(["phone", "email"] as const).map((method) => {
-                const active = method === loginMethod;
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    data-testid={`login-method-${method}`}
-                    aria-pressed={active}
-                    className={`zook-focus rounded-xl px-3 py-2 text-sm font-medium transition ${
-                      active
-                        ? "bg-[var(--accent-fill)] text-[var(--text-on-accent)]"
-                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                    }`}
-                    disabled={!hydrated || submitting !== null}
-                    onClick={() => {
-                      setLoginMethod(method);
-                      setMessage(t("signInDefault"));
-                    }}
-                  >
-                    {method === "phone" ? t("mobileNumber") : t("emailAddress")}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="grid gap-2">
-              {loginMethod === "email" ? (
-                <input
-                  id="login-email"
-                  data-testid="login-email"
-                  aria-label={t("emailAddress")}
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  ref={emailRef}
-                  required
-                  disabled={!hydrated || submitting !== null}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
-                />
-              ) : (
-                <input
-                  id="login-phone"
-                  data-testid="login-phone"
-                  aria-label={t("mobileNumber")}
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="+91 98765 43210"
-                  value={phone}
-                  ref={phoneRef}
-                  required
-                  disabled={!hydrated || submitting !== null}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="zook-focus min-h-12 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
-                />
-              )}
-              <p className="text-xs leading-5 text-[var(--text-tertiary)]">
-                {loginMethod === "email" ? t("emailHint") : t("mobileHint")}
-              </p>
-            </div>
-          </>
+          <LoginIdentifierFields
+            disabled={!hydrated || submitting !== null}
+            email={email}
+            emailRef={emailRef}
+            labels={{
+              emailAddress: t("emailAddress"),
+              emailHint: t("emailHint"),
+              mobileHint: t("mobileHint"),
+              mobileNumber: t("mobileNumber"),
+              signInDefault: t("signInDefault"),
+            }}
+            loginMethod={loginMethod}
+            phone={phone}
+            phoneRef={phoneRef}
+            setEmail={setEmail}
+            setLoginMethod={setLoginMethod}
+            setMessage={setMessage}
+            setPhone={setPhone}
+          />
         ) : null}
         {stage === "otp" ? (
-          <>
-            <label htmlFor="login-otp" className="text-xs font-medium uppercase text-[var(--text-secondary)]">
-              {t("otp")}
-            </label>
-            <input
-              id="login-otp"
-              data-testid="login-otp"
-              ref={otpRef}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              aria-describedby="login-status login-otp-helper"
-              aria-required="true"
-              placeholder={t("otpPlaceholder")}
-              value={code}
-              onChange={(event) => handleOtpChange(event.target.value)}
-              maxLength={6}
-              required
-              className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
-            />
-            <p id="login-otp-helper" className="text-xs leading-5 text-[var(--text-secondary)]">
-              {t("otpHint", { identifier })}
-            </p>
-          </>
+          <LoginOtpFields
+            code={code}
+            handleOtpChange={handleOtpChange}
+            identifier={identifier}
+            labels={{
+              otp: t("otp"),
+              otpHint: t("otpHint", { identifier }),
+              otpPlaceholder: t("otpPlaceholder"),
+            }}
+            otpRef={otpRef}
+          />
         ) : null}
-        {stage === "otp" && resendCooldown > 0 ? (
-          <div className="grid gap-2" aria-live="polite">
-            <p className="text-xs leading-5 text-[var(--text-secondary)]">
-              {t("resendAvailable", { seconds: resendCooldown })}
-            </p>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--border-subtle)]">
-              <div
-                className="h-full rounded-full bg-[var(--accent-fill)] transition-all"
-                style={{
-                  width: `${((OTP_RESEND_COOLDOWN_SECONDS - resendCooldown) / OTP_RESEND_COOLDOWN_SECONDS) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
+        {stage === "otp" ? (
+          <LoginResendCooldown
+            cooldownSeconds={resendCooldown}
+            label={t("resendAvailable", { seconds: resendCooldown })}
+            totalSeconds={OTP_RESEND_COOLDOWN_SECONDS}
+          />
         ) : null}
-        <ZookButton
-          type="submit"
-          data-testid={stage === "identifier" ? "login-send-code" : "login-verify-code"}
-          className="mt-2"
-          disabled={
-            !hydrated ||
-            submitting !== null ||
-            ssoSubmitting !== null ||
-            (stage === "otp" && !code.trim())
-          }
-          fullWidth
-          state={submitting === null ? "idle" : "loading"}
-          trailingIcon={<ArrowRight size={18} />}
-        >
-          {submitting === "request"
-            ? t("sendingOtp")
-            : submitting === "verify"
-              ? t("verifying")
-              : stage === "identifier"
-                ? t("sendOtp")
-                : t("verifyContinue")}
-        </ZookButton>
+        <LoginSubmitButton
+          code={code}
+          hydrated={hydrated}
+          labels={{
+            sendOtp: t("sendOtp"),
+            sendingOtp: t("sendingOtp"),
+            verifying: t("verifying"),
+            verifyContinue: t("verifyContinue"),
+          }}
+          ssoSubmitting={ssoSubmitting}
+          stage={stage}
+          submitting={submitting}
+        />
       </motion.form>
       {stage === "identifier" ? (
-        <motion.div variants={itemVariants} className="mt-3 grid gap-3">
-          <details className="group rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
-            <summary className="zook-focus flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl text-xs font-semibold text-[var(--text-secondary)]">
-              <span>{t("moreSignInOptions")}</span>
-              <ChevronDown
-                size={14}
-                aria-hidden="true"
-                className="text-[var(--text-tertiary)] transition group-open:rotate-180"
-              />
-            </summary>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <ZookButton
-                type="button"
-                data-testid="login-apple"
-                tone="secondary"
-                fullWidth
-                onClick={() => void signInWithApple()}
-                disabled={!hydrated || submitting !== null || ssoSubmitting !== null}
-                state={ssoSubmitting === "apple" ? "loading" : "idle"}
-              >
-                Apple
-              </ZookButton>
-              <ZookButton
-                type="button"
-                data-testid="login-google"
-                tone="secondary"
-                fullWidth
-                onClick={() => void signInWithGoogle()}
-                disabled={!hydrated || submitting !== null || ssoSubmitting !== null}
-                state={ssoSubmitting === "google" ? "loading" : "idle"}
-              >
-                Google
-              </ZookButton>
-            </div>
-          </details>
-        </motion.div>
+        <MoreSignInOptions
+          itemVariants={itemVariants}
+          hydrated={hydrated}
+          submitting={submitting !== null}
+          ssoSubmitting={ssoSubmitting}
+          labels={{ moreSignInOptions: t("moreSignInOptions") }}
+          onApple={() => void signInWithApple()}
+          onGoogle={() => void signInWithGoogle()}
+        />
       ) : null}
       {stage === "otp" ? (
-        <motion.div variants={itemVariants} className="mt-3">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <ZookButton
-              type="button"
-              onClick={() => void requestOtp({ resend: true })}
-              disabled={submitting !== null || resendCooldown > 0}
-              fullWidth
-              size="md"
-              tone="secondary"
-            >
-              {resendCooldown > 0 ? t("resendUnavailable") : t("resendOtp")}
-            </ZookButton>
-            <ZookButton
-              type="button"
-              tone="ghost"
-              fullWidth
-              onClick={() => {
-                setStage("identifier");
-                setCode("");
-                setResendCooldown(0);
-              }}
-              disabled={submitting !== null}
-            >
-              {t("changeSignIn")}
-            </ZookButton>
-          </div>
-        </motion.div>
+        <OtpActionButtons
+          itemVariants={itemVariants}
+          submitting={submitting !== null}
+          resendCooldown={resendCooldown}
+          labels={{
+            resendUnavailable: t("resendUnavailable"),
+            resendOtp: t("resendOtp"),
+            changeSignIn: t("changeSignIn"),
+          }}
+          onResend={() => void requestOtp({ resend: true })}
+          onChangeSignIn={() => {
+            setStage("identifier");
+            setCode("");
+            setResendCooldown(0);
+          }}
+        />
       ) : null}
     </motion.div>
   );

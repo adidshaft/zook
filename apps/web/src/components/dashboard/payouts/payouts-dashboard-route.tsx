@@ -6,6 +6,8 @@ import { EmptyState, SectionHeader } from "@/components/dashboard-primitives";
 import { GlassCard } from "@/components/glass-card";
 import { webApiFetch } from "@/lib/api-client";
 import { formatInr } from "@/lib/format";
+import { rupeesToPaise } from "@/lib/payment-amount";
+import { useT } from "@/lib/use-t";
 import type { DashboardRoutePanelBaseProps } from "../route-panels";
 
 type StaffUser = { id: string; name: string; email: string };
@@ -22,6 +24,7 @@ type Payout = {
 };
 
 export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
+  const t = useT("payouts");
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [staff, setStaff] = useState<StaffState>({
     staff: [],
@@ -55,11 +58,11 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
       setStaff(staffJson);
       setPayouts(payoutsJson.payouts ?? []);
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to load payouts.");
+      setStatus(cause instanceof Error ? cause.message : t("unableLoadPayouts"));
     } finally {
       setLoading(false);
     }
-  }, [month, orgId]);
+  }, [month, orgId, t]);
 
   useEffect(() => {
     void load();
@@ -71,23 +74,29 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
 
   async function saveConfig() {
     if (!selectedTrainerId) return;
+    const baseMonthlyPaise = rupeesToPaise(baseMonthly);
+    const perSessionFeePaise = rupeesToPaise(perSession);
+    if (baseMonthlyPaise === null || perSessionFeePaise === null) {
+      setStatus(t("enterValidAmounts"));
+      return;
+    }
     try {
       setConfigBusy(true);
-      setStatus("Saving payout config...");
+      setStatus(t("savingPayoutConfig"));
       await webApiFetch(`/api/orgs/${orgId}/trainers/${selectedTrainerId}/payout-config`, {
         method: "PUT",
         body: {
-          baseMonthlyPaise: Math.round(Number(baseMonthly || 0) * 100),
+          baseMonthlyPaise,
           ptCommissionPercent: Number.parseInt(commission, 10) || 0,
-          perSessionFeePaise: Math.round(Number(perSession || 0) * 100),
+          perSessionFeePaise,
           payDay: 5,
         },
-        feedback: { success: "Payout config saved." },
+        feedback: { success: t("payoutConfigSavedToast") },
       });
       await load();
-      setStatus("Payout config saved.");
+      setStatus(t("payoutConfigSaved"));
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to save payout config.");
+      setStatus(cause instanceof Error ? cause.message : t("unableSavePayoutConfig"));
     } finally {
       setConfigBusy(false);
     }
@@ -95,16 +104,16 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
   async function markPaid(payout: Payout) {
     try {
       setBusyPayoutId(payout.id);
-      setStatus("Marking payout paid...");
+      setStatus(t("markingPayoutPaid"));
       await webApiFetch(`/api/orgs/${orgId}/payouts/${payout.id}/mark-paid`, {
         method: "POST",
-        body: { method: "UPI", note: "Closed from dashboard" },
-        feedback: { success: "Payout marked paid." },
+        body: { method: "UPI", note: t("closedFromDashboardNote") },
+        feedback: { success: t("payoutMarkedPaidToast") },
       });
       await load();
-      setStatus("Payout marked paid.");
+      setStatus(t("payoutMarkedPaid"));
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to mark payout paid.");
+      setStatus(cause instanceof Error ? cause.message : t("unableMarkPayoutPaid"));
     } finally {
       setBusyPayoutId(null);
     }
@@ -114,38 +123,38 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
     <div className="grid gap-4">
       <GlassCard className="p-5">
         <SectionHeader
-          eyebrow="Trainer payouts"
-          title="Monthly payout setup"
-          description="Choose a trainer, set the formula, then close generated payouts below."
-          badge={payouts.length ? <span className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">{payouts.length} payouts</span> : null}
+          eyebrow={t("eyebrow")}
+          title={t("monthlyPayoutSetup")}
+          description={t("monthlyPayoutDescription")}
+          badge={payouts.length ? <span className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)]">{t("payoutCount", { count: payouts.length })}</span> : null}
         />
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(9rem,0.8fr)_minmax(12rem,1.1fr)_repeat(3,minmax(8rem,0.8fr))_auto] xl:items-end">
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
-            Month
+            {t("month")}
             <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
-            Trainer
+            {t("trainer")}
             <select className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" value={selectedTrainerId} onChange={(event) => setSelectedTrainerId(event.target.value)}>
               {trainers.map((trainer) => <option key={trainer.id} value={trainer.id}>{trainer.name}</option>)}
             </select>
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
-            Base monthly ₹
+            {t("baseMonthly")}
             <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="decimal" value={baseMonthly} onChange={(event) => setBaseMonthly(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
-            PT commission %
+            {t("ptCommission")}
             <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="numeric" value={commission} onChange={(event) => setCommission(event.target.value)} />
           </label>
           <label className="grid gap-1 text-sm text-[var(--text-secondary)]">
-            Per session ₹
+            {t("perSession")}
             <input className="zook-focus rounded-lg border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2 text-[var(--text-primary)]" inputMode="decimal" value={perSession} onChange={(event) => setPerSession(event.target.value)} />
           </label>
-          <button className="zook-focus rounded-lg bg-[var(--accent-fill)] px-4 py-2 font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={configBusy || !selectedTrainerId} onClick={() => void saveConfig()}>{configBusy ? "Saving..." : "Save"}</button>
+          <button className="zook-focus rounded-lg bg-[var(--accent-fill)] px-4 py-2 font-semibold text-[var(--text-on-accent)] disabled:cursor-not-allowed disabled:opacity-60" disabled={configBusy || !selectedTrainerId} onClick={() => void saveConfig()}>{configBusy ? t("saving") : t("save")}</button>
         </div>
         <p className="mt-3 text-xs text-[var(--text-tertiary)]">
-          Leave per-session blank if the trainer does not earn a fixed fee per session.
+          {t("perSessionHelp")}
         </p>
         {status ? (
           <p className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-sm text-[var(--text-secondary)]">
@@ -156,14 +165,14 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
       <div className="grid gap-3 md:grid-cols-2">
         {loading && payouts.length === 0 ? (
           <GlassCard className="p-5">
-            <EmptyState title="Loading payouts" />
+            <EmptyState title={t("loadingPayouts")} />
           </GlassCard>
         ) : null}
         {!loading && payouts.length === 0 ? (
           <GlassCard className="p-5">
             <EmptyState
-              title="No payouts"
-              description="Save a trainer payout config or record PT activity to generate monthly payouts."
+              title={t("noPayouts")}
+              description={t("noPayoutsDescription")}
             />
           </GlassCard>
         ) : null}
@@ -188,12 +197,12 @@ export function PayoutsDashboardRoute({ orgId }: DashboardRoutePanelBaseProps) {
               <ConfirmActionButton
                 className="zook-focus mt-4 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={busyPayoutId === payout.id}
-                title={`Mark ${payout.trainer?.name ?? "trainer"} paid?`}
-                description={`This records ${formatInr(payout.totalPaise)} as paid and cannot be undone from the dashboard.`}
-                confirmLabel="Mark paid"
+                title={t("markPaidTitle", { name: payout.trainer?.name ?? t("trainerFallback") })}
+                description={t("markPaidDescription", { amount: formatInr(payout.totalPaise) })}
+                confirmLabel={t("markPaid")}
                 onConfirm={() => markPaid(payout)}
               >
-                {busyPayoutId === payout.id ? "Marking..." : "Mark paid"}
+                {busyPayoutId === payout.id ? t("marking") : t("markPaid")}
               </ConfirmActionButton>
             ) : null}
           </GlassCard>

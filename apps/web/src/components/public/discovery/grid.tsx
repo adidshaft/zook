@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Eye } from "lucide-react";
 import { AvatarInitials } from "@/components/dashboard-primitives";
 import { GlassCard, Pill } from "@/components/glass-card";
@@ -62,11 +63,11 @@ export function GymDiscoveryGrid({
           >
             <div className="relative h-28 overflow-hidden bg-white/[0.03] sm:h-32">
               {gym.coverImageUrl ? (
-                <img
+                <Image
                   src={gym.coverImageUrl}
                   alt={coverAlt(gym.name)}
-                  loading="lazy"
-                  decoding="async"
+                  fill
+                  sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
                   className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                 />
               ) : (
@@ -87,11 +88,12 @@ export function GymDiscoveryGrid({
             <div className="grid gap-3 p-4">
               <div className="flex min-w-0 items-start gap-3">
                 {gym.logoUrl ? (
-                  <img
+                  <Image
                     src={gym.logoUrl}
                     alt={logoAlt(gym.name)}
-                    loading="lazy"
-                    decoding="async"
+                    width={48}
+                    height={48}
+                    sizes="48px"
                     className="h-12 w-12 shrink-0 rounded-2xl border border-white/12 bg-black/25 object-cover shadow-sm"
                   />
                 ) : (

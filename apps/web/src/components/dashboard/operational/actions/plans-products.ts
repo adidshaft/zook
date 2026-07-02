@@ -1,4 +1,5 @@
 import { webApiFetch } from "@/lib/api-client";
+import { rupeesToPaise } from "@/lib/payment-amount";
 import {
   type MembershipPlanRow,
   type MembershipPlanType,
@@ -17,7 +18,7 @@ function payloadForPlanForm(form: PlanForm) {
     name: form.name,
     description: form.description || undefined,
     type: form.type,
-    pricePaise: Math.round(Number(form.priceRupees || 0) * 100),
+    pricePaise: rupeesToPaise(form.priceRupees) ?? 0,
     durationDays: form.durationDays ? Number(form.durationDays) : undefined,
     visitLimit: form.visitLimit ? Number(form.visitLimit) : undefined,
     validityDays: form.durationDays ? Number(form.durationDays) : undefined,
@@ -43,7 +44,7 @@ function payloadForProductForm(form: ProductForm, branchId?: string | null) {
     name: form.name,
     description: form.description || undefined,
     category: form.category,
-    pricePaise: Math.round(Number(form.priceRupees || 0) * 100),
+    pricePaise: rupeesToPaise(form.priceRupees) ?? 0,
     stock: Number(form.stock || 0),
     lowStockThreshold: Number(form.lowStockThreshold || 0),
     imageAssetId: form.imageAssetId || undefined,
@@ -51,6 +52,14 @@ function payloadForProductForm(form: ProductForm, branchId?: string | null) {
     imageUrls: form.imagePreviewUrls,
     active: form.active,
   };
+}
+
+function validateRupeeAmount(value: string, label: string) {
+  const amountPaise = rupeesToPaise(value);
+  if (amountPaise === null || amountPaise <= 0) {
+    return `Enter a valid ${label} amount.`;
+  }
+  return "";
 }
 
 function appendBranchParam(path: string, branchId?: string | null) {
@@ -76,6 +85,11 @@ export function createPlansProductsActions({
       const planNameError = validatePlanName(state.planForm.name);
       if (planNameError) {
         state.setFormError(planNameError);
+        return;
+      }
+      const planAmountError = validateRupeeAmount(state.planForm.priceRupees, "plan");
+      if (planAmountError) {
+        state.setFormError(planAmountError);
         return;
       }
       state.setFormBusy("plan");
@@ -123,6 +137,11 @@ export function createPlansProductsActions({
         const planNameError = validatePlanName(state.planEditForm.name);
         if (planNameError) {
           state.setFormError(planNameError);
+          return;
+        }
+        const planAmountError = validateRupeeAmount(state.planEditForm.priceRupees, "plan");
+        if (planAmountError) {
+          state.setFormError(planAmountError);
           return;
         }
       }
@@ -175,6 +194,11 @@ export function createPlansProductsActions({
 
   async function createProduct() {
     try {
+      const productAmountError = validateRupeeAmount(state.productForm.priceRupees, "product");
+      if (productAmountError) {
+        state.setFormError(productAmountError);
+        return;
+      }
       state.setFormBusy("product");
       state.setFormError("");
       state.setFormStatus("");
@@ -223,6 +247,16 @@ export function createPlansProductsActions({
     patch?: Partial<ReturnType<typeof payloadForProductForm>>,
   ) {
     try {
+      if (!patch) {
+        const productAmountError = validateRupeeAmount(
+          state.productEditForm.priceRupees,
+          "product",
+        );
+        if (productAmountError) {
+          state.setFormError(productAmountError);
+          return;
+        }
+      }
       state.setFormBusy(`product:${productId}`);
       state.setFormError("");
       state.setFormStatus("");

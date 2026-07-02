@@ -8,22 +8,23 @@ import { CsvExportButton, ErrorNotice } from "../operational-shared";
 import type { ShopOrderRow } from "@/components/dashboard/types";
 import type { LoadingState, PagedState } from "../read-only/types";
 import { ShopOrderPaymentControl } from "./shop-order-payment-control";
-import type { PaymentReceiptState } from "./payments-utils";
+import type { PaymentReceiptState, PaymentsT } from "./payments-utils";
+import { useT } from "@/lib/use-t";
 
-function settlementOrderStatusLabel(status: string | null | undefined) {
-  if (status === "PAYMENT_PENDING") return "Payment pending";
-  if (status === "PAID") return "Paid";
-  if (status === "READY_FOR_PICKUP") return "Ready for pickup";
-  if (status === "PICKED_UP") return "Picked up";
-  if (status === "CANCELLED") return "Cancelled";
-  if (status === "FAILED") return "Failed";
-  if (status === "REFUNDED") return "Refunded";
+function settlementOrderStatusLabel(status: string | null | undefined, t: PaymentsT) {
+  if (status === "PAYMENT_PENDING" || status === "PENDING_PAYMENT") return t("statusPaymentPending");
+  if (status === "PAID") return t("statusPaidPast");
+  if (status === "READY_FOR_PICKUP") return t("statusReadyForPickup");
+  if (status === "PICKED_UP") return t("statusPickedUp");
+  if (status === "CANCELLED") return t("statusCancelled");
+  if (status === "FAILED") return t("statusFailed");
+  if (status === "REFUNDED") return t("statusRefunded");
   return formatEnumLabel(status ?? "order");
 }
 
-function settlementOrderNote(order: ShopOrderRow) {
-  if (order.status === "READY_FOR_PICKUP") return "Ready for desk handover";
-  if (order.status === "PENDING_PAYMENT" && !order.paymentId) return "Payment still needed";
+function settlementOrderNote(order: ShopOrderRow, t: PaymentsT) {
+  if (order.status === "READY_FOR_PICKUP") return t("readyDeskHandover");
+  if (order.status === "PENDING_PAYMENT" && !order.paymentId) return t("paymentStillNeeded");
   return "";
 }
 
@@ -66,26 +67,28 @@ export function SettlementQueueCard({
   setManualPaymentStatus: React.Dispatch<React.SetStateAction<string>>;
   setLastReceipt: React.Dispatch<React.SetStateAction<PaymentReceiptState | null>>;
 }) {
+  const t = useT("payments");
+
   return (
     <GlassCard>
       <SectionHeader
-        eyebrow="Settlement Queue"
-        title="Orders affecting cashflow"
+        eyebrow={t("settlementQueue")}
+        title={t("ordersAffectingCashflow")}
         badge={
           <Pill tone={queuedOrders.length ? "amber" : "neutral"}>
-            {queuedOrders.length} unsettled
+            {t("unsettledCount", { count: queuedOrders.length })}
           </Pill>
         }
         action={<CsvExportButton href={`/api/orgs/${orgId}/reports/shop.csv`} />}
       />
       <ManagedOn surface="desk" className="mt-4">
-        Pickup is completed in Desk after identity verification.
+        {t("deskPickupManaged")}
       </ManagedOn>
       <div className="mt-5">
         {shopOrdersState.error ? (
           <ErrorNotice message={shopOrdersState.error} />
         ) : shopOrdersState.loading && shopOrders.length === 0 ? (
-          <EmptyState title="Loading settlement queue" />
+          <EmptyState title={t("loadingSettlementQueue")} />
         ) : (
           <>
             <SettlementFilters
@@ -94,26 +97,27 @@ export function SettlementQueueCard({
               selectedReadyOrders={selectedReadyOrders}
               bulkBusy={bulkBusy}
               onBulkFulfillReadyOrders={onBulkFulfillReadyOrders}
+              t={t}
             />
             <DataTable
               columns={[
                 {
                   id: "select",
-                  header: "Select",
+                  header: t("select"),
                   render: (order) => (
                     <input
                       type="checkbox"
                       checked={selectedOrderIds.includes(order.id)}
                       onChange={() => onToggleOrder(order.id)}
                       disabled={order.status !== "READY_FOR_PICKUP"}
-                      aria-label={`Select order ${order.id.slice(-8).toUpperCase()}`}
+                      aria-label={t("selectOrder", { order: order.id.slice(-8).toUpperCase() })}
                       className="zook-focus h-4 w-4 rounded border-white/20 bg-black/40 accent-lime-300 disabled:opacity-40"
                     />
                   ),
                 },
                 {
                   id: "order",
-                  header: "Order",
+                  header: t("order"),
                   render: (order) => (
                     <div>
                       <p className="font-medium text-white">{order.id.slice(-8).toUpperCase()}</p>
@@ -125,21 +129,21 @@ export function SettlementQueueCard({
                 },
                 {
                   id: "status",
-                  header: "Status",
-                  render: (order) => <StatusPill value={settlementOrderStatusLabel(order.status)} />,
+                  header: t("status"),
+                  render: (order) => <StatusPill value={settlementOrderStatusLabel(order.status, t)} />,
                 },
                 {
                   id: "items",
-                  header: "Items",
+                  header: t("items"),
                   align: "right",
                   render: (order) =>
                     order.items.reduce((sum, item) => sum + item.quantity, 0).toString(),
                 },
                 {
                   id: "notes",
-                  header: "Notes",
+                  header: t("notesColumn"),
                   render: (order) => {
-                    const note = settlementOrderNote(order);
+                    const note = settlementOrderNote(order, t);
                     return note ? (
                       <span className="text-xs font-medium text-white/62">{note}</span>
                     ) : (
@@ -149,7 +153,7 @@ export function SettlementQueueCard({
                 },
                 {
                   id: "amount",
-                  header: "Amount",
+                  header: t("amount"),
                   align: "right",
                   render: (order) => (
                     <span className="font-medium text-white">{formatInr(order.totalPaise)}</span>
@@ -168,7 +172,7 @@ export function SettlementQueueCard({
                         disabledTitle={!canRecordOffline ? permissionMessage : undefined}
                         onRecorded={(receipt) => {
                           setManualPaymentStatus(
-                            `Shop payment recorded for ${formatInr(order.totalPaise)}.`,
+                            t("shopPaymentRecorded", { amount: formatInr(order.totalPaise) }),
                           );
                           setLastReceipt(receipt);
                           paymentsState.reload?.();
@@ -182,7 +186,7 @@ export function SettlementQueueCard({
               ]}
               rows={filteredShopOrders}
               rowKey={(order) => order.id}
-              empty={<EmptyState title="No shop orders" />}
+              empty={<EmptyState title={t("noShopOrders")} />}
             />
           </>
         )}
@@ -197,21 +201,23 @@ function SettlementFilters({
   selectedReadyOrders,
   bulkBusy,
   onBulkFulfillReadyOrders,
+  t,
 }: {
   orderStatusFilter: string;
   setOrderStatusFilter: React.Dispatch<React.SetStateAction<string>>;
   selectedReadyOrders: ShopOrderRow[];
   bulkBusy: boolean;
   onBulkFulfillReadyOrders: () => void | Promise<void>;
+  t: PaymentsT;
 }) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       {(
         [
-          ["ALL", "All"],
-          ["PENDING_PAYMENT", "Pending Payment"],
-          ["READY_FOR_PICKUP", "Ready for Pickup"],
-          ["FULFILLED", "Settled"],
+          ["ALL", t("filterAll")],
+          ["PENDING_PAYMENT", t("filterPendingPayment")],
+          ["READY_FOR_PICKUP", t("filterReadyPickup")],
+          ["FULFILLED", t("filterSettled")],
         ] as Array<[string, string]>
       ).map(([value, label]) => (
         <button
@@ -230,14 +236,19 @@ function SettlementFilters({
       <ConfirmActionButton
         disabled={!selectedReadyOrders.length || bulkBusy}
         onConfirm={() => onBulkFulfillReadyOrders()}
-        title={`Settle ${selectedReadyOrders.length} ${
-          selectedReadyOrders.length === 1 ? "order" : "orders"
-        }?`}
-        description="Each order is marked as fulfilled without a pickup code. This action is logged."
-        confirmLabel="Settle"
+        title={t("settleOrdersTitle", {
+          count: selectedReadyOrders.length,
+          orderLabel: selectedReadyOrders.length === 1 ? t("orderOne") : t("orderOther"),
+        })}
+        description={t("settleDescription")}
+        confirmLabel={t("settle")}
         className="zook-focus ml-auto rounded-full bg-lime-300 px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
       >
-        {bulkBusy ? "Settling..." : `Settle ${selectedReadyOrders.length || ""}`.trim()}
+        {bulkBusy
+          ? t("settling")
+          : selectedReadyOrders.length
+            ? `${t("settle")} ${selectedReadyOrders.length}`
+            : t("settle")}
       </ConfirmActionButton>
     </div>
   );

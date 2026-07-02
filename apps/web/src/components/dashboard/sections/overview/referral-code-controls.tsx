@@ -6,6 +6,7 @@ import type {
 } from "@/components/dashboard/types";
 import { Select, TextInput } from "../../primitives";
 import { ZookButton } from "../../../zook-button";
+import { useT } from "@/lib/use-t";
 import type { ReferralFormState } from "./types";
 
 type ReferralCodeControlsProps = {
@@ -29,11 +30,12 @@ export function ReferralCodeControls({
   createReferral,
   updateReferral,
 }: ReferralCodeControlsProps) {
+  const t = useT("plans");
   const [showCreateForm, setShowCreateForm] = useState(referrals.length === 0);
   return (
     <div className="rounded-[24px] border border-white/10 bg-black/20 p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium text-white">Referral codes</p>
+        <p className="font-medium text-white">{t("referralCodes")}</p>
         {referrals.length ? (
           <ZookButton
             type="button"
@@ -41,20 +43,19 @@ export function ReferralCodeControls({
             size="sm"
             onClick={() => setShowCreateForm((current) => !current)}
           >
-            {showCreateForm ? "Cancel" : "+ Code"}
+            {showCreateForm ? t("cancel") : t("codeCta")}
           </ZookButton>
         ) : null}
       </div>
       <p className="mt-1 text-xs leading-5 text-white/45">
-        Share a code or checkout link with a member. The referred member applies it during plan
-        checkout; rewards are applied only after a successful redemption.
+        {t("referralCodeHelp")}
       </p>
       <div className="mt-3 grid gap-3">
         {showCreateForm ? (
           <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
             <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
               <TextInput
-                label="Referral code"
+                label={t("referralCode")}
                 value={referralForm.code}
                 onChange={(event) =>
                   setReferralForm((current) => ({
@@ -62,16 +63,16 @@ export function ReferralCodeControls({
                     code: event.target.value.toUpperCase(),
                   }))
                 }
-                placeholder="Optional custom code"
+                placeholder={t("optionalCustomCode")}
               />
               <Select
-                label="Attached coupon"
+                label={t("attachedCoupon")}
                 value={referralForm.couponId}
                 onChange={(event) =>
                   setReferralForm((current) => ({ ...current, couponId: event.target.value }))
                 }
                 options={[
-                  { value: "", label: "No coupon" },
+                  { value: "", label: t("noCoupon") },
                   ...coupons
                     .filter((coupon) => coupon.active)
                     .map((coupon) => ({ value: coupon.id, label: coupon.code })),
@@ -80,12 +81,12 @@ export function ReferralCodeControls({
             </div>
             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
               <TextInput
-                label="Max uses"
+                label={t("maxUses")}
                 value={referralForm.maxUses}
                 onChange={(event) =>
                   setReferralForm((current) => ({ ...current, maxUses: event.target.value }))
                 }
-                placeholder="Max uses"
+                placeholder={t("maxUses")}
                 inputMode="numeric"
               />
               <ZookButton
@@ -94,7 +95,7 @@ export function ReferralCodeControls({
                 disabled={formBusy === "referral"}
                 state={formBusy === "referral" ? "loading" : "idle"}
               >
-                {formBusy === "referral" ? "Creating..." : "Create code"}
+                {formBusy === "referral" ? t("creating") : t("createCode")}
               </ZookButton>
             </div>
           </div>
@@ -108,7 +109,10 @@ export function ReferralCodeControls({
               <p className="text-sm font-medium text-white">{referral.code}</p>
               <p className="text-xs text-white/45">
                 {referralUsersById.get(referral.referrerUserId)?.email ?? referral.createdByRole} ·{" "}
-                {referral.redemptionCount}/{referral.maxUses ?? "∞"} used · {referral.status}
+                {t("usageCount", {
+                  used: referral.redemptionCount,
+                  max: referral.maxUses ?? "∞",
+                })} · {referral.status}
               </p>
             </div>
             <ZookButton
@@ -121,7 +125,7 @@ export function ReferralCodeControls({
               disabled={formBusy === `referral:${referral.id}`}
               state={formBusy === `referral:${referral.id}` ? "loading" : "idle"}
             >
-              {referral.status === "active" ? "Pause" : "Restore"}
+              {referral.status === "active" ? t("pause") : t("restore")}
             </ZookButton>
           </div>
         ))}

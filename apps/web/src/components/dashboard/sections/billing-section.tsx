@@ -1,56 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { formatDate, formatEnumLabel, formatInr, formatUsageLimit } from "@/lib/format";
+import { formatDate, formatEnumLabel, formatInr } from "@/lib/format";
 import { webApiFetch } from "@/lib/api-client";
-import { ConfirmActionButton } from "../../confirm-action-button";
-import { GlassCard, Pill } from "../../glass-card";
+import { GlassCard } from "../../glass-card";
 import { ZookButton } from "../../zook-button";
 import type { OrganizationSnapshot, OrganizationSummary } from "@/components/dashboard/types";
-
-const copy = {
-  billingEyebrow: "Billing",
-  billingTitle: "Receipts and invoices",
-  billingDescription: "Complete billing details before receipts and GST invoices are created.",
-  trialBillingTitle: "Two-month free trial",
-  trialBillingDescription:
-    "Set up autopay once so the gym keeps running after the free trial. The first charge is scheduled after the trial end date.",
-  gymStatus: "Gym status",
-  trialEnds: "Trial ends",
-  documentReadiness: "Document readiness",
-  invoicesTitle: "Invoices",
-  invoicesDescription: "Invoices start after the first paid billing cycle.",
-};
-
-type BillingProfile = {
-  legalName: string;
-  gstNumber: string;
-  billingEmail: string;
-  contactEmail: string;
-  contactPhone: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  receiptReady: boolean;
-  invoiceReady: boolean;
-  receiptMissing: string[];
-  invoiceMissing: string[];
-};
-
-type InvoiceRow = {
-  id: string;
-  invoiceNumber?: string | null;
-  invoiceNo?: string | null;
-  issueDate?: string | Date | null;
-  issuedAt?: string | Date | null;
-  totalPaise: number;
-  status: string;
-  invoiceUrl?: string | null;
-  user?: { name?: string | null; email?: string | null } | null;
-};
+import { BillingInvoiceList } from "./billing-invoice-list";
+import { BillingPaymentMethodCard } from "./billing-payment-method-card";
+import { BillingPlanCard } from "./billing-plan-card";
+import { BillingProfileCard } from "./billing-profile-card";
+import { BillingSetupCard } from "./billing-setup-card";
+import { BillingUsageLimitsCard } from "./billing-usage-limits-card";
+import type { BillingProfile, InvoiceRow, SubscriptionDetail } from "./billing-section-types";
+import { useT } from "@/lib/use-t";
 
 type BillingMandateResponse = {
   checkoutUrl?: string | null;
@@ -62,147 +26,6 @@ type BillingMandateResponse = {
   };
 };
 
-type SaasEntitlements = {
-  memberLimit: number | null;
-  branchLimit: number | null;
-  staffLimit: number | null;
-  trainerLimit: number | null;
-  productLimit: number | null;
-  notificationMonthlyLimit: number | null;
-  aiTextMonthlyLimit: number;
-  aiImageMonthlyLimit: number;
-  reports: "basic" | "advanced" | "custom";
-  referrals: "basic" | "advanced" | "custom";
-  support: "standard" | "priority" | "premium";
-  onboarding: "self_serve" | "assisted" | "white_glove";
-  multiBranch: boolean;
-  apiAccess: boolean;
-};
-
-type SaasUsage = {
-  activeMemberCount: number;
-  branchCount: number;
-  staffCount: number;
-  trainerCount: number;
-  productCount: number;
-  notificationMonthlyCount: number;
-  aiTextMonthlyCount: number;
-  aiImageMonthlyCount: number;
-};
-
-type SubscriptionDetail = {
-  subscription: {
-    orgStatus: string;
-    trialStartAt: string | Date;
-    trialEndAt: string | Date;
-    status: string;
-    tier: "FREE" | "STARTER" | "GROWTH" | "PRO";
-    billingCycle: "MONTHLY" | "YEARLY";
-    priceLockedPaise: number | null;
-    billingEmail: string | null;
-    nextBillingAt: string | Date | null;
-    nextRenewalAt: string | Date | null;
-    cancelledAt: string | Date | null;
-    cancelAtPeriodEnd: boolean;
-  };
-  activeMemberCount: number;
-  pricing: Record<
-    "STARTER" | "GROWTH" | "PRO",
-    {
-      monthly: number;
-      yearly: number;
-      memberLimit: number | null;
-      entitlements: SaasEntitlements;
-    }
-  >;
-  entitlements: SaasEntitlements;
-  usage: SaasUsage;
-  mandate: {
-    id: string;
-    status: string;
-    provider: string;
-    providerMandateId: string | null;
-    amountPaise: number;
-    currency: string;
-    billingPeriod: string;
-    billingInterval: number;
-    paidCount: number;
-    totalCount: number;
-    nextChargeAt: string | Date | null;
-    currentEndAt: string | Date | null;
-    authenticatedAt: string | Date | null;
-    activatedAt: string | Date | null;
-    cancelledAt: string | Date | null;
-    checkoutUrl: string | null;
-  } | null;
-  platformReferral: {
-    code: string;
-    referredCount: number;
-    recent: Array<{
-      id: string;
-      targetOrgId: string;
-      status: string;
-      createdAt: string | Date;
-    }>;
-  };
-};
-
-const billingProfileFields: Array<
-  [
-    string,
-    keyof Pick<
-      BillingProfile,
-      | "legalName"
-      | "gstNumber"
-      | "billingEmail"
-      | "contactPhone"
-      | "address"
-      | "city"
-      | "state"
-      | "pincode"
-    >,
-  ]
-> = [
-  ["Legal business name", "legalName"],
-  ["GST number", "gstNumber"],
-  ["Billing email", "billingEmail"],
-  ["Phone", "contactPhone"],
-  ["Address", "address"],
-  ["City", "city"],
-  ["State", "state"],
-  ["Pincode", "pincode"],
-];
-
-function usageLine(used: number, limit: number | null) {
-  return `${formatEnumLabel(String(used))} / ${formatUsageLimit(limit)}`;
-}
-
-function missingFieldLabel(field: string) {
-  return formatEnumLabel(field.replace(/([a-z])([A-Z])/g, "$1 $2"));
-}
-
-function CompactStatusMark({
-  label,
-  ready,
-}: {
-  label: string;
-  ready: boolean;
-}) {
-  return (
-    <span
-      aria-label={label}
-      title={label}
-      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-semibold ${
-        ready
-          ? "border-[color-mix(in_srgb,var(--accent)_42%,transparent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
-          : "border-[color-mix(in_srgb,var(--feedback-warning)_42%,transparent)] bg-[var(--surface-warning-soft)] text-[var(--feedback-warning)]"
-      }`}
-    >
-      {ready ? "✓" : "!"}
-    </span>
-  );
-}
-
 export function BillingSection({
   orgId,
   organization,
@@ -212,6 +35,7 @@ export function BillingSection({
   organization: OrganizationSnapshot;
   summary: OrganizationSummary;
 }) {
+  const t = useT("billing");
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<BillingProfile | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
@@ -235,34 +59,34 @@ export function BillingSection({
         ? "#billing-autopay"
         : "/dashboard/payments";
   const nextInvoiceStepLabel = !billingProfileReady
-    ? "Complete receipt details"
+    ? t("completeReceiptDetails")
     : !invoiceProfileReady
-      ? "Complete GST details"
+      ? t("completeGstDetails")
       : !autopayReady
-        ? "Set up autopay"
-        : "Go to payments";
+        ? t("setUpAutopay")
+        : t("goToPayments");
   const setupSteps = [
     {
-      label: "Billing profile",
+      label: t("billingProfile"),
       body: billingProfileReady
-        ? "Receipts can use your saved business details."
-        : "Add legal name, billing email, phone, and address.",
+        ? t("billingProfileReadyBody")
+        : t("billingProfileMissingBody"),
       ready: billingProfileReady,
       href: "#billing-details",
     },
     {
-      label: "GST invoices",
+      label: t("gstInvoices"),
       body: invoiceProfileReady
-        ? "Tax invoices have the GST fields they need."
-        : "Add GST number and complete invoice fields.",
+        ? t("gstInvoicesReadyBody")
+        : t("gstInvoicesMissingBody"),
       ready: invoiceProfileReady,
       href: "#billing-details",
     },
     {
-      label: "Autopay",
+      label: t("autopay"),
       body: autopayReady
-        ? "The subscription mandate is active."
-        : "Choose plan and complete the Razorpay mandate.",
+        ? t("autopayReadyBody")
+        : t("autopayMissingBody"),
       ready: autopayReady,
       href: "#billing-autopay",
     },
@@ -272,8 +96,8 @@ export function BillingSection({
       ? (subscription?.pricing[selectedTier].yearly ?? 0)
       : (subscription?.pricing[selectedTier].monthly ?? 0);
   const selectedPlanMemberLimit = subscription?.pricing[selectedTier].memberLimit ?? null;
-  const selectedPlanCycleLabel = billingCycle === "YEARLY" ? "/ year" : "/ month";
-  const firstChargeLabel = organization.trialEndAt ? formatDate(organization.trialEndAt) : "After trial";
+  const selectedPlanCycleLabel = billingCycle === "YEARLY" ? t("perYear") : t("perMonth");
+  const firstChargeLabel = organization.trialEndAt ? formatDate(organization.trialEndAt) : t("afterTrial");
 
   useEffect(() => {
     const requestedTier = searchParams.get("tier")?.trim().toUpperCase();
@@ -297,22 +121,22 @@ export function BillingSection({
       })
       .catch((cause) => {
         if (!mounted) return;
-        setStatus(cause instanceof Error ? cause.message : "Unable to load billing details.");
+        setStatus(cause instanceof Error ? cause.message : t("unableLoadBillingDetails"));
       });
     return () => {
       mounted = false;
     };
-  }, [orgId]);
+  }, [orgId, t]);
 
   async function copyReferralCode() {
     const code = subscription?.platformReferral?.code;
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
-      setCopyStatus("Referral code copied. Share it with another gym owner.");
+      setCopyStatus(t("referralCodeCopied"));
       window.setTimeout(() => setCopyStatus(""), 4000);
     } catch {
-      setCopyStatus("Could not copy. Select the code manually.");
+      setCopyStatus(t("couldNotCopyReferral"));
     }
   }
 
@@ -335,13 +159,13 @@ export function BillingSection({
             state: profile.state,
             pincode: profile.pincode,
           },
-          feedback: { success: "Billing details saved." },
+          feedback: { success: t("billingDetailsSavedShort") },
         },
       );
       setProfile(payload.billingProfile);
-      setStatus("Billing details saved. Receipts and tax invoices can now be generated.");
+      setStatus(t("billingDetailsSaved"));
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to save billing details.");
+      setStatus(cause instanceof Error ? cause.message : t("unableSaveBillingDetails"));
     } finally {
       setBusy(false);
     }
@@ -356,16 +180,16 @@ export function BillingSection({
         {
           method: "POST",
           body: { tier: selectedTier, billingCycle },
-          feedback: { success: "Billing started." },
+          feedback: { success: t("billingStarted") },
         },
       );
       if (payload.checkoutUrl) {
         window.location.assign(payload.checkoutUrl);
         return;
       }
-      setStatus(`Billing mandate is ${formatEnumLabel(payload.mandate.status)}.`);
+      setStatus(t("billingMandateStatus", { status: formatEnumLabel(payload.mandate.status) }));
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to start billing.");
+      setStatus(cause instanceof Error ? cause.message : t("unableStartBilling"));
     } finally {
       setMandateBusy(false);
     }
@@ -380,13 +204,13 @@ export function BillingSection({
         {
           method: "POST",
           body: {},
-          feedback: { success: "Subscription will cancel after this billing period." },
+          feedback: { success: t("subscriptionCancelAfterPeriod") },
         },
       );
       setSubscription((current) => (current ? { ...current, ...payload } : payload));
-      setStatus("Subscription will cancel after this billing period.");
+      setStatus(t("subscriptionCancelAfterPeriod"));
     } catch (cause) {
-      setStatus(cause instanceof Error ? cause.message : "Unable to cancel subscription.");
+      setStatus(cause instanceof Error ? cause.message : t("unableCancelSubscription"));
     } finally {
       setMandateBusy(false);
     }
@@ -394,61 +218,31 @@ export function BillingSection({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
-      <GlassCard className="xl:col-span-2">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <Pill tone={setupSteps.every((step) => step.ready) ? "lime" : "amber"}>
-              {setupSteps.filter((step) => step.ready).length} of {setupSteps.length} ready
-            </Pill>
-            <h1 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">
-              Finish billing setup
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-              Complete these steps once so paid billing, receipts, and GST invoices work without
-              desk follow-up later.
-            </p>
-          </div>
-          <Link
-            href={nextInvoiceStepHref}
-            className="zook-focus inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--accent-fill)] px-5 py-2.5 text-sm font-semibold text-[var(--text-on-accent)] transition hover:brightness-105"
-          >
-            {nextInvoiceStepLabel}
-          </Link>
-        </div>
-        <div className="mt-5 grid gap-2 md:grid-cols-3">
-          {setupSteps.map((step) => {
-            return (
-              <a
-                key={step.label}
-                href={step.href}
-                className="zook-focus flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]"
-              >
-                <CompactStatusMark label={step.ready ? `${step.label} ready` : `${step.label} needed`} ready={step.ready} />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-[var(--text-primary)]">
-                    {step.label}
-                  </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-[var(--text-secondary)]">
-                    {step.ready ? "Ready" : step.body}
-                  </span>
-                </span>
-              </a>
-            );
-          })}
-        </div>
-      </GlassCard>
+      <BillingSetupCard
+        nextStepHref={nextInvoiceStepHref}
+        nextStepLabel={nextInvoiceStepLabel}
+        setupSteps={setupSteps}
+        labels={{
+          finishBillingSetup: t("finishBillingSetup"),
+          finishBillingSetupDescription: t("finishBillingSetupDescription"),
+          ready: t("ready"),
+          setupReadyCount: (values) => t("setupReadyCount", values),
+          stepNeededLabel: (values) => t("stepNeededLabel", values),
+          stepReadyLabel: (values) => t("stepReadyLabel", values),
+        }}
+      />
 
       <GlassCard>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Billing snapshot</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t("billingSnapshot")}</h2>
           <span className="text-xs text-[var(--text-tertiary)]">
-            {formatInr(summary.revenuePaise)} recorded
+            {t("recordedRevenue", { amount: formatInr(summary.revenuePaise) })}
           </span>
         </div>
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
             <p className="truncate text-[11px] text-[var(--text-tertiary)]">
-              {copy.gymStatus}
+              {t("gymStatus")}
             </p>
             <p className="mt-1 truncate text-sm font-semibold text-[var(--text-primary)]">
               {formatEnumLabel(organization.status)}
@@ -456,367 +250,65 @@ export function BillingSection({
           </div>
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
             <p className="truncate text-[11px] text-[var(--text-tertiary)]">
-              {copy.trialEnds}
+              {t("trialEnds")}
             </p>
             <p className="mt-1 truncate text-sm font-semibold text-[var(--text-primary)]">
-              {organization.trialEndAt ? formatDate(organization.trialEndAt) : "Active"}
+              {organization.trialEndAt ? formatDate(organization.trialEndAt) : t("active")}
             </p>
           </div>
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2">
             <p className="truncate text-[11px] text-[var(--text-tertiary)]">
-              {copy.documentReadiness}
+              {t("documentReadiness")}
             </p>
             <p className="mt-1 truncate text-sm font-semibold text-[var(--text-primary)]">
               {profile?.invoiceReady
-                ? "Invoices available"
+                ? t("invoicesAvailable")
                 : profile?.receiptReady
-                  ? "Receipts available"
-                  : "Add details"}
+                  ? t("receiptsAvailable")
+                  : t("addDetails")}
             </p>
           </div>
         </div>
       </GlassCard>
-      <GlassCard id="billing-details">
-        <h2 className="text-base font-semibold text-[var(--text-primary)]">Billing details</h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-          Required for receipts and GST invoices.
-        </p>
-        {profile ? (
-          <div className="mt-5 grid gap-3">
-            {billingProfileFields.map(([label, key]) => (
-              <label
-                key={key}
-                className="grid gap-1 text-xs font-medium text-[var(--text-secondary)]"
-              >
-                {label}
-                <input
-                  value={String(profile[key as keyof BillingProfile] ?? "")}
-                  onChange={(event) =>
-                    setProfile((current) =>
-                      current ? { ...current, [key]: event.target.value } : current,
-                    )
-                  }
-                  className="zook-focus rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none"
-                />
-              </label>
-            ))}
-            <ZookButton
-              type="button"
-              disabled={busy}
-              state={busy ? "loading" : "idle"}
-              onClick={() => void saveBillingProfile()}
-            >
-              {busy ? "Saving..." : "Save billing details"}
-            </ZookButton>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">
-                <CompactStatusMark label={profile.receiptReady ? "Receipts enabled" : "Receipts need details"} ready={profile.receiptReady} />
-                {profile.receiptReady ? "Receipts enabled" : "Receipts need details"}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">
-                <CompactStatusMark label={profile.invoiceReady ? "Invoices enabled" : "Invoices need GST details"} ready={profile.invoiceReady} />
-                {profile.invoiceReady ? "Invoices enabled" : "Invoices need GST details"}
-              </span>
-            </div>
-            {!profile.receiptReady || !profile.invoiceReady ? (
-              <details className="rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--text-primary)]">
-                  Needed before documents are ready
-                </summary>
-                <div className="mt-3 grid gap-3 text-xs leading-5 text-[var(--text-secondary)] sm:grid-cols-2">
-                  <div>
-                    <p className="font-semibold text-[var(--text-primary)]">Receipts</p>
-                    <p className="mt-1">
-                      {missingReceiptFields.length > 0
-                        ? missingReceiptFields.map(missingFieldLabel).join(", ")
-                        : "Ready for member receipts."}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-[var(--text-primary)]">GST invoices</p>
-                    <p className="mt-1">
-                      {missingInvoiceFields.length > 0
-                        ? missingInvoiceFields.map(missingFieldLabel).join(", ")
-                        : "Ready for tax invoices."}
-                    </p>
-                  </div>
-                </div>
-              </details>
-            ) : null}
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-[var(--text-tertiary)]">Loading billing fields...</p>
-        )}
-        {status ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{status}</p> : null}
-      </GlassCard>
-      <GlassCard id="billing-autopay" className="xl:col-span-2">
-        <div className="grid gap-5 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
-          <div className="min-w-0">
-            <Pill tone={autopayReady ? "lime" : "amber"}>
-              {autopayReady ? "Autopay active" : "Autopay needed"}
-            </Pill>
-            <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
-              {autopayReady ? "Billing plan is ready" : copy.trialBillingTitle}
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-secondary)]">
-              {autopayReady
-                ? "Your mandate is active. Update the plan only when limits or billing cycle change."
-                : "Pick a plan and enable autopay once. First charge happens after the trial, so the gym keeps running without a desk follow-up."}
-            </p>
-            <div className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5">
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
-                  First charge
-                </p>
-                <p className="mt-1 font-semibold text-[var(--text-primary)]">{firstChargeLabel}</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2.5">
-                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
-                  Selected limit
-                </p>
-                <p className="mt-1 font-semibold text-[var(--text-primary)]">
-                  {formatUsageLimit(selectedPlanMemberLimit, { unlimitedLabel: "Unlimited" })} members
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-sunken)] p-3">
-            <div className="grid grid-cols-3 gap-1.5">
-              {(["STARTER", "GROWTH", "PRO"] as const).map((tier) => (
-                <button
-                  key={tier}
-                  type="button"
-                  onClick={() => setSelectedTier(tier)}
-                  className={`zook-focus min-h-10 rounded-xl border px-2 text-xs font-semibold transition ${
-                    selectedTier === tier
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-                      : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {tier}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-1.5">
-              {(["MONTHLY", "YEARLY"] as const).map((cycle) => (
-                <button
-                  key={cycle}
-                  type="button"
-                  onClick={() => setBillingCycle(cycle)}
-                  className={`zook-focus min-h-10 rounded-xl border px-3 text-xs font-semibold transition ${
-                    billingCycle === cycle
-                      ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--bg)]"
-                      : "border-[var(--border)] bg-[var(--bg-sunken)] text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {cycle === "MONTHLY" ? "Monthly" : "Yearly"}
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
-              <div>
-                <p className="text-xs font-medium text-[var(--text-tertiary)]">Selected plan</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                  {formatEnumLabel(selectedTier)} · {billingCycle === "YEARLY" ? "Yearly" : "Monthly"}
-                </p>
-              </div>
-              <p className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-                {formatInr(selectedPlanPrice)}
-                <span className="ml-1 text-sm font-medium text-[var(--text-tertiary)]">
-                  {selectedPlanCycleLabel}
-                </span>
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label={autopayReady ? "Update billing plan" : "Set up autopay"}
-              disabled={mandateBusy}
-              onClick={() => void setupBillingMandate()}
-              className="zook-focus mt-3 min-h-12 w-full rounded-full bg-[var(--text-primary)] px-5 text-sm font-semibold text-[var(--bg)] transition hover:brightness-110 active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
-            >
-              {mandateBusy ? "Opening autopay..." : autopayReady ? "Update plan" : "Set up autopay"}
-            </button>
-          </div>
-        </div>
-      </GlassCard>
-      {subscription ? (
-        <details className="xl:col-span-2 rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3">
-          <summary className="cursor-pointer list-none">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Pill>{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
-                <span className="ml-2 text-sm font-semibold text-[var(--text-primary)]">
-                  Plan packaging
-                </span>
-                <span className="ml-2 text-xs text-[var(--text-secondary)]">
-                  Usage and limits
-                </span>
-              </div>
-              <span className="text-xs font-semibold text-[var(--accent-strong)]">View</span>
-            </div>
-          </summary>
-          <div className="mt-4">
-            <div className="mb-3">
-              <Pill>{formatEnumLabel(subscription.subscription.tier)} limits</Pill>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                Check before changing package or diagnosing a limit warning.
-              </p>
-            </div>
-            <div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                [
-                  "Members",
-                  usageLine(
-                    subscription.usage.activeMemberCount,
-                    subscription.entitlements.memberLimit,
-                  ),
-                ],
-                [
-                  "Branches",
-                  usageLine(subscription.usage.branchCount, subscription.entitlements.branchLimit),
-                ],
-                [
-                  "Staff",
-                  usageLine(subscription.usage.staffCount, subscription.entitlements.staffLimit),
-                ],
-                [
-                  "Trainers",
-                  usageLine(
-                    subscription.usage.trainerCount,
-                    subscription.entitlements.trainerLimit,
-                  ),
-                ],
-                [
-                  "Products",
-                  usageLine(
-                    subscription.usage.productCount,
-                    subscription.entitlements.productLimit,
-                  ),
-                ],
-                [
-                  "Notifications/month",
-                  usageLine(
-                    subscription.usage.notificationMonthlyCount,
-                    subscription.entitlements.notificationMonthlyLimit,
-                  ),
-                ],
-                [
-                  "AI text/month",
-                  usageLine(
-                    subscription.usage.aiTextMonthlyCount,
-                    subscription.entitlements.aiTextMonthlyLimit,
-                  ),
-                ],
-                [
-                  "AI images/month",
-                  usageLine(
-                    subscription.usage.aiImageMonthlyCount,
-                    subscription.entitlements.aiImageMonthlyLimit,
-                  ),
-                ],
-                ["Reports", formatEnumLabel(subscription.entitlements.reports)],
-                ["Support", formatEnumLabel(subscription.entitlements.support)],
-                ["Referrals", formatEnumLabel(subscription.entitlements.referrals)],
-                ["Onboarding", formatEnumLabel(subscription.entitlements.onboarding)],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-4 py-3"
-                >
-                  <p className="truncate text-xs text-[var(--text-tertiary)]">
-                    {label}
-                  </p>
-                  <p className="mt-1 truncate font-semibold text-[var(--text-primary)]">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </details>
-      ) : null}
+      <BillingProfileCard
+        busy={busy}
+        missingInvoiceFields={missingInvoiceFields}
+        missingReceiptFields={missingReceiptFields}
+        onSave={() => void saveBillingProfile()}
+        profile={profile}
+        setProfile={setProfile}
+        status={status}
+      />
+      <BillingPlanCard
+        autopayReady={autopayReady}
+        billingCycle={billingCycle}
+        firstChargeLabel={firstChargeLabel}
+        mandateBusy={mandateBusy}
+        selectedPlanCycleLabel={selectedPlanCycleLabel}
+        selectedPlanMemberLimit={selectedPlanMemberLimit}
+        selectedPlanPrice={selectedPlanPrice}
+        selectedTier={selectedTier}
+        onBillingCycleChange={setBillingCycle}
+        onSelectedTierChange={setSelectedTier}
+        onSetupBillingMandate={() => void setupBillingMandate()}
+      />
+      {subscription ? <BillingUsageLimitsCard subscription={subscription} /> : null}
       {subscription?.mandate ? (
-        <GlassCard className="xl:col-span-2">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <Pill
-                tone={
-                  subscription.mandate.status === "ACTIVE"
-                    ? "lime"
-                    : subscription.mandate.status === "CANCELLED"
-                      ? "amber"
-                      : "neutral"
-                }
-              >
-                Autopay {formatEnumLabel(subscription.mandate.status || "")}
-              </Pill>
-              <h2 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">
-                Active subscription
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-                {formatEnumLabel(subscription.subscription.tier)} plan ·{" "}
-                {formatInr(subscription.mandate.amountPaise)} per{" "}
-                {subscription.mandate.billingPeriod} via{" "}
-                {formatEnumLabel(subscription.mandate.provider || "")} mandate.
-              </p>
-              <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Next charge
-                  </dt>
-                  <dd className="font-medium text-[var(--text-primary)]">
-                    {subscription.mandate.nextChargeAt
-                      ? formatDate(subscription.mandate.nextChargeAt)
-                      : "Pending activation"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                    Cycles paid
-                  </dt>
-                  <dd className="font-medium text-[var(--text-primary)]">
-                    {subscription.mandate.paidCount} of {subscription.mandate.totalCount}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            {subscription.mandate.checkoutUrl &&
-            subscription.mandate.status !== "ACTIVE" &&
-            subscription.mandate.status !== "CANCELLED" ? (
-              <a
-                href={subscription.mandate.checkoutUrl}
-                className="zook-focus rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--bg)]"
-              >
-                Complete billing
-              </a>
-            ) : null}
-            {subscription.subscription.status === "ACTIVE" &&
-            !subscription.subscription.cancelAtPeriodEnd ? (
-              <ConfirmActionButton
-                type="button"
-                disabled={mandateBusy}
-                className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-sunken)] disabled:cursor-wait disabled:opacity-60"
-                title="Cancel after this billing period?"
-                description="Your gym keeps access until this paid period ends, then Zook stops future subscription charges."
-                confirmLabel="Cancel after period"
-                confirmTone="danger"
-                onConfirm={() => cancelAtPeriodEnd()}
-              >
-                {mandateBusy ? "Cancelling..." : "Cancel after period"}
-              </ConfirmActionButton>
-            ) : null}
-          </div>
-        </GlassCard>
+        <BillingPaymentMethodCard
+          mandateBusy={mandateBusy}
+          subscription={subscription}
+          onCancelAtPeriodEnd={() => void cancelAtPeriodEnd()}
+        />
       ) : null}
       {subscription?.platformReferral ? (
         <GlassCard className="xl:col-span-2">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-                Your platform referral code
+                {t("platformReferralCode")}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-                Share this code with another gym owner. When they sign up using it, both gyms get an
-                extended free trial.
+                {t("platformReferralDescription")}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <code className="rounded-xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-2 font-mono text-base text-[var(--accent-strong)]">
@@ -828,7 +320,7 @@ export function BillingSection({
                   size="sm"
                   onClick={() => void copyReferralCode()}
                 >
-                  Copy code
+                  {t("copyCode")}
                 </ZookButton>
               </div>
               {copyStatus ? (
@@ -837,7 +329,7 @@ export function BillingSection({
             </div>
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-3 py-2 text-sm md:min-w-[150px]">
               <p className="text-xs text-[var(--text-tertiary)]">
-                Gyms referred
+                {t("gymsReferred")}
               </p>
               <p className="mt-1 text-xl font-semibold tabular-nums text-[var(--text-primary)]">
                 {subscription.platformReferral.referredCount}
@@ -846,72 +338,11 @@ export function BillingSection({
           </div>
         </GlassCard>
       ) : null}
-      <GlassCard className="xl:col-span-2">
-        <h2 className="text-xl font-semibold text-[var(--text-primary)]">{copy.invoicesTitle}</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          {invoices.length > 0 ? "Recent generated invoices." : copy.invoicesDescription}
-        </p>
-        {invoices.length > 0 ? (
-          <div className="mt-5 grid gap-2">
-            {invoices.slice(0, 10).map((invoice) => (
-              <div
-                key={invoice.id}
-                className="flex flex-col gap-2 rounded-2xl border border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {invoice.invoiceNumber ?? invoice.invoiceNo ?? invoice.id}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                    {invoice.user?.name ?? invoice.user?.email ?? "Member"} ·{" "}
-                    {formatDate(invoice.issueDate ?? invoice.issuedAt)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-[var(--text-primary)]">
-                    {formatInr(invoice.totalPaise)}
-                  </span>
-                  {invoice.invoiceUrl ? (
-                    <a
-                      href={invoice.invoiceUrl}
-                      target="_blank"
-                      className="zook-focus rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)]/80"
-                    >
-                      Download PDF
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-            {invoices.length > 10 ? (
-              <Link
-                href="/dashboard/payments"
-                className="mt-2 block text-right text-xs font-semibold text-[var(--accent-strong)] hover:underline"
-              >
-                {invoices.length - 10} more invoices →
-              </Link>
-            ) : null}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--bg-sunken)] px-4 py-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--text-primary)]">No invoices yet</p>
-                <p className="mt-1 text-xs leading-5 text-[var(--text-tertiary)]">
-                  Save billing details, GST fields, and autopay before the first paid billing cycle
-                  creates an invoice.
-                </p>
-              </div>
-              <Link
-                href={nextInvoiceStepHref}
-                className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full border border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-raised)]"
-              >
-                {nextInvoiceStepLabel}
-              </Link>
-            </div>
-          </div>
-        )}
-      </GlassCard>
+      <BillingInvoiceList
+        invoices={invoices}
+        nextInvoiceStepHref={nextInvoiceStepHref}
+        nextInvoiceStepLabel={nextInvoiceStepLabel}
+      />
     </div>
   );
 }

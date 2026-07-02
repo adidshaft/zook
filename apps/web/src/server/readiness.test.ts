@@ -40,12 +40,29 @@ vi.mock("./request-logger", () => ({
       mode: "mock",
       configured: true,
     },
+    rateLimit: {
+      selectedProvider: "memory",
+      activeProvider: "memory",
+      status: process.env.TEST_RATE_LIMIT_STATUS ?? "ready",
+      configured: true,
+      missingEnv: [],
+      mode: "test",
+    },
+    serverCache: {
+      selectedProvider: "memory",
+      activeProvider: "memory",
+      status: "ready",
+      configured: true,
+      missingEnv: [],
+      mode: "test",
+    },
   }),
 }));
 
 describe("readiness payload", () => {
   afterEach(() => {
     vi.resetModules();
+    delete process.env.TEST_RATE_LIMIT_STATUS;
     queryHandler = async () => {
       throw new Error("postgresql://zook:secret@db.internal:5432/zook");
     };
@@ -138,6 +155,36 @@ describe("readiness payload", () => {
         reachable: true,
         schemaReady: true,
         migrationStatus: "applied",
+      },
+    });
+  });
+
+  it("fails readiness when rate limiting is misconfigured", async () => {
+    process.env.TEST_RATE_LIMIT_STATUS = "misconfigured";
+    queryHandler = async (query: string) => {
+      if (query.includes("select 1")) {
+        return [{ ready: 1 }];
+      }
+      return [
+        { migration_name: "20260524160000_phase2_platform_console" },
+        { migration_name: "20260524200000_phase5_saas_upgrade" },
+        { migration_name: "20260524210000_phase6_invoice_sequences" },
+        { migration_name: "20260524220000_phase7_branch_backfill" },
+        { migration_name: "20260524230000_phase9_trainer_payouts" },
+        { migration_name: "20260524233000_phase10_referral_polish" },
+      ];
+    };
+    const { getReadinessPayload } = await import("./readiness");
+
+    await expect(getReadinessPayload()).resolves.toMatchObject({
+      ready: false,
+      database: {
+        reachable: true,
+        schemaReady: true,
+        migrationStatus: "applied",
+      },
+      providers: {
+        rateLimit: { status: "misconfigured" },
       },
     });
   });

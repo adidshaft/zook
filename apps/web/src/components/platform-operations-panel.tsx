@@ -1,25 +1,35 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { type PillTone } from "./glass-card";
 import {
-  DataTable,
-  EmptyState,
-  ReadoutGrid,
-  SectionHeader,
-  StatusPill,
-  toneFromStatus,
-} from "./dashboard-primitives";
-import { ConfirmActionButton } from "./confirm-action-button";
-import { GlassCard, Pill, type PillTone } from "./glass-card";
-import { ZookButton } from "./zook-button";
+  PlatformContentSections,
+  type PlatformBroadcastRow,
+  type PlatformModerationRow,
+} from "./platform/content-sections";
+import { PlatformHealthCockpit } from "./platform/health-cockpit";
+import { PlatformImpersonationsSection } from "./platform/impersonations-section";
+import { PlatformOpsSections } from "./platform/ops-sections";
+import {
+  PlatformOperationDialogs,
+  previewMemberCsv,
+  type BroadcastComposeDialog,
+  type ModerationDecisionDialog,
+  type OrganizationActionDialog,
+  type OrganizationActionKind,
+  type OrganizationStatusDialog,
+  type SupportActionDialog,
+} from "./platform/operation-dialogs";
+import { PlatformOrganizationsSection } from "./platform/organizations-section";
+import { PlatformReadinessSections } from "./platform/readiness-sections";
+import { PlatformAssistantSection, PlatformSafetySection } from "./platform/signals-sections";
+import { PlatformSubscriptionsSection } from "./platform/subscriptions-section";
+import { PlatformSupportConsoleSection } from "./platform/support-console-section";
 import {
   formatCompactNumber,
-  formatDate,
   formatDateTime,
   formatEnumLabel,
   formatInr,
-  formatUsageLimit,
 } from "@/lib/format";
 import { useOperationalResource } from "@/lib/use-operational-resource";
 import { webApiFetch } from "@/lib/api-client";
@@ -69,10 +79,6 @@ type PlatformUserRow = {
   isPlatformAdmin?: boolean;
   createdAt?: string | Date;
 };
-
-function typedConfirmation(prompt: string, expected: string) {
-  return window.prompt(`${prompt}\n\nType ${expected} to continue.`)?.trim() === expected;
-}
 
 type PlatformPaymentRow = {
   id: string;
@@ -149,31 +155,6 @@ type PlatformPaymentDetail = {
       errorMessage?: string | null;
     }>;
   }>;
-};
-
-type PlatformBroadcastRow = {
-  id: string;
-  title: string;
-  body: string;
-  severity: string;
-  status: string;
-  targetOrgIds: string[];
-  targetRoles: string[];
-  scheduledAt?: string | Date | null;
-  expiresAt?: string | Date | null;
-  publishedAt?: string | Date | null;
-  createdAt: string | Date;
-};
-
-type PlatformModerationRow = {
-  id: string;
-  orgId: string;
-  kind: string;
-  targetId?: string | null;
-  status: string;
-  reason?: string | null;
-  createdAt: string | Date;
-  reviewedAt?: string | Date | null;
 };
 
 type PlatformImpersonationRow = {
@@ -260,6 +241,15 @@ export function PlatformOperationsPanel({
     message: string;
     tone: PillTone;
   } | null>(null);
+  const [organizationActionDialog, setOrganizationActionDialog] =
+    useState<OrganizationActionDialog | null>(null);
+  const [organizationStatusDialog, setOrganizationStatusDialog] =
+    useState<OrganizationStatusDialog | null>(null);
+  const [broadcastComposeDialog, setBroadcastComposeDialog] =
+    useState<BroadcastComposeDialog | null>(null);
+  const [supportActionDialog, setSupportActionDialog] = useState<SupportActionDialog | null>(null);
+  const [moderationDecisionDialog, setModerationDecisionDialog] =
+    useState<ModerationDecisionDialog | null>(null);
   const [broadcastBusyId, setBroadcastBusyId] = useState<string | null>(null);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const activeSection = initialSection;
@@ -355,7 +345,6 @@ export function PlatformOperationsPanel({
   const impersonations = impersonationsState.data?.impersonations ?? [];
   const userRows = userSearchRows ?? usersState.data?.users ?? [];
   const paymentRows = paymentSearchRows ?? paymentsState.data?.payments ?? [];
-
   const misconfiguredProviders = useMemo(
     () =>
       providerEntries.filter(
@@ -447,12 +436,21 @@ export function PlatformOperationsPanel({
     },
   ], [misconfiguredProviders, openFlags.length, suspendedOrganizations.length, trialRiskOrganizations.length]);
 
-  async function updateOrganizationStatus(
+  function openOrganizationStatusDialog(
     org: PlatformOrganization,
     status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
   ) {
+    setStatusError("");
+    setOrganizationStatusDialog({ org, status, confirmation: "" });
+  }
+
+  async function submitOrganizationStatus() {
+    const dialog = organizationStatusDialog;
+    if (!dialog) return;
+    const { org, status } = dialog;
     const expected = `${status} ${org.username}`;
-    if (!typedConfirmation(`Change ${org.name} to ${formatEnumLabel(status)}?`, expected)) {
+    if (dialog.confirmation.trim() !== expected) {
+      setStatusError(`Type ${expected} to change this gym status.`);
       return;
     }
     try {
@@ -473,17 +471,12 @@ export function PlatformOperationsPanel({
   }
 
   async function softDeleteOrganization(org: PlatformOrganization) {
-    if (!typedConfirmation(`Archive ${org.name}? This keeps an audit trail but removes normal access.`, `DELETE ${org.username}`)) {
-      return;
-    }
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
     try {
       setStatusError("");
       setBusyOrgId(org.id);
       await webApiFetch(`/api/platform/orgs/${org.id}/soft-delete`, {
         method: "POST",
-        body: { reason },
+        body: { reason: organizationActionDialog?.reason.trim() },
       });
       organizationsState.reload();
     } catch (cause) {
@@ -495,65 +488,127 @@ export function PlatformOperationsPanel({
     }
   }
 
-  async function extendOrganizationTrial(orgId: string) {
-    const days = Number(window.prompt("Days to extend")?.trim());
-    if (!Number.isInteger(days) || days < 1) return;
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/trial/extend`, "POST", {
-      days,
-      reason,
+  function openOrganizationAction(kind: OrganizationActionKind, org: PlatformOrganization) {
+    setStatusError("");
+    setOrganizationActionDialog({
+      kind,
+      org,
+      name: org.name,
+      username: org.username,
+      tier: "GROWTH",
+      days: "",
+      rupees: "",
+      newOwnerUserId: "",
+      csv: "",
+      reason: "",
+      confirmation: "",
     });
   }
 
-  async function adjustOrganizationCredit(orgId: string) {
-    const rupees = Number(window.prompt("Credit adjustment in rupees. Use negative for debit.")?.trim());
-    if (!Number.isFinite(rupees) || rupees === 0) return;
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/credit`, "POST", {
-      paise: Math.round(rupees * 100),
-      reason,
-    });
-  }
-
-  async function changeOrganizationTier(orgId: string) {
-    const tier = window.prompt("Tier: FREE, STARTER, GROWTH, PRO")?.trim().toUpperCase();
-    if (!tier || !["FREE", "STARTER", "GROWTH", "PRO"].includes(tier)) return;
-    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/tier`, "PATCH", { tier });
-  }
-
-  async function renameOrganization(org: PlatformOrganization) {
-    const name = window.prompt("New gym name", org.name)?.trim();
-    if (!name) return;
-    const username = window.prompt("New username", org.username)?.trim();
-    if (!username) return;
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await runOrgAction(org.id, `/api/platform/orgs/${org.id}/rename`, "POST", {
-      name,
-      username,
-      reason,
-    });
-  }
-
-  async function transferOrganizationOwnership(orgId: string) {
-    const newOwnerUserId = window.prompt("New owner user ID")?.trim();
-    if (!newOwnerUserId) return;
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/transfer-ownership`, "POST", {
-      newOwnerUserId,
-      reason,
-    });
-  }
-
-  async function bulkImportOrganizationMembers(orgId: string) {
-    const csv = window.prompt("CSV with name,email header")?.trim();
-    if (!csv) return;
-    await runOrgAction(orgId, `/api/platform/orgs/${orgId}/bulk-import-members`, "POST", {
-      csv,
-    });
+  async function submitOrganizationAction() {
+    const dialog = organizationActionDialog;
+    if (!dialog) return;
+    const orgId = dialog.org.id;
+    const reason = dialog.reason.trim();
+    try {
+      setStatusError("");
+      if (dialog.kind === "extend-trial") {
+        const days = Number(dialog.days.trim());
+        if (!Number.isInteger(days) || days < 1) {
+          setStatusError("Enter a whole number of trial days.");
+          return;
+        }
+        if (!reason) {
+          setStatusError("Add a reason for the trial extension.");
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/trial/extend`, "POST", {
+          days,
+          reason,
+        });
+      } else if (dialog.kind === "credit") {
+        const rupees = Number(dialog.rupees.trim());
+        const expected = `CREDIT ${dialog.org.username}`;
+        if (!Number.isFinite(rupees) || rupees === 0) {
+          setStatusError("Enter a non-zero rupee amount.");
+          return;
+        }
+        if (dialog.confirmation.trim() !== expected) {
+          setStatusError(`Type ${expected} to adjust credit.`);
+          return;
+        }
+        if (!reason) {
+          setStatusError("Add a reason for the credit adjustment.");
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/credit`, "POST", {
+          paise: Math.round(rupees * 100),
+          reason,
+        });
+      } else if (dialog.kind === "tier") {
+        const tier = dialog.tier.trim().toUpperCase();
+        if (!["FREE", "STARTER", "GROWTH", "PRO"].includes(tier)) {
+          setStatusError("Choose a valid tier.");
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/tier`, "PATCH", { tier });
+      } else if (dialog.kind === "rename") {
+        const name = dialog.name.trim();
+        const username = dialog.username.trim();
+        if (!name || !username || !reason) {
+          setStatusError("Name, username, and reason are required.");
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/rename`, "POST", {
+          name,
+          username,
+          reason,
+        });
+      } else if (dialog.kind === "import-members") {
+        const csv = dialog.csv.trim();
+        if (!csv) {
+          setStatusError("Paste a CSV with a name,email header.");
+          return;
+        }
+        const preview = previewMemberCsv(csv);
+        if (preview.error || !preview.rows.length) {
+          setStatusError(preview.error ?? "CSV must contain at least one data row.");
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/bulk-import-members`, "POST", {
+          csv,
+        });
+      } else if (dialog.kind === "transfer-owner") {
+        const newOwnerUserId = dialog.newOwnerUserId.trim();
+        const expected = `TRANSFER ${dialog.org.username}`;
+        if (!newOwnerUserId || !reason) {
+          setStatusError("New owner user ID and reason are required.");
+          return;
+        }
+        if (dialog.confirmation.trim() !== expected) {
+          setStatusError(`Type ${expected} to transfer ownership.`);
+          return;
+        }
+        await runOrgAction(orgId, `/api/platform/orgs/${orgId}/transfer-ownership`, "POST", {
+          newOwnerUserId,
+          reason,
+        });
+      } else if (dialog.kind === "archive") {
+        const expected = `DELETE ${dialog.org.username}`;
+        if (dialog.confirmation.trim() !== expected) {
+          setStatusError(`Type ${expected} to archive this gym.`);
+          return;
+        }
+        if (!reason) {
+          setStatusError("Add a reason for archiving this gym.");
+          return;
+        }
+        await softDeleteOrganization(dialog.org);
+      }
+      setOrganizationActionDialog(null);
+    } catch (cause) {
+      setStatusError(cause instanceof Error ? cause.message : "Unable to complete gym action.");
+    }
   }
 
   async function runOrgAction(
@@ -604,17 +659,15 @@ export function PlatformOperationsPanel({
     setSupportNotice("Sessions revoked");
   }
 
-  async function startImpersonation(userId: string) {
-    if (!typedConfirmation("Start a 15-minute impersonation session? Use only for support debugging.", "IMPERSONATE")) {
-      return;
-    }
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await webApiFetch(`/api/platform/users/${userId}/impersonate`, {
-      method: "POST",
-      body: { reason, ttlMinutes: 15 },
+  function openImpersonationDialog(user: PlatformUserRow) {
+    setStatusError("");
+    setSupportActionDialog({
+      kind: "impersonate",
+      userId: user.id,
+      label: user.email,
+      reason: "",
+      confirmation: "",
     });
-    setSupportNotice("Impersonation started");
   }
 
   async function searchPayments() {
@@ -639,16 +692,47 @@ export function PlatformOperationsPanel({
     }
   }
 
-  async function refundPayment(paymentId: string) {
-    if (!typedConfirmation("Submit a refund for this payment?", "REFUND")) {
+  function openRefundDialog(payment: PlatformPaymentRow) {
+    setStatusError("");
+    setSupportActionDialog({
+      kind: "refund",
+      paymentId: payment.id,
+      label: `${payment.id} · ${formatInr(payment.amountPaise)}`,
+      reason: "",
+      confirmation: "",
+    });
+  }
+
+  async function submitSupportAction() {
+    const dialog = supportActionDialog;
+    if (!dialog) return;
+    const reason = dialog.reason.trim();
+    if (!reason) {
+      setStatusError("Add a reason before continuing.");
       return;
     }
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
-    await webApiFetch(`/api/platform/payments/${paymentId}/refund`, {
+    if (dialog.kind === "impersonate") {
+      if (dialog.confirmation.trim() !== "IMPERSONATE") {
+        setStatusError("Type IMPERSONATE to start the support session.");
+        return;
+      }
+      await webApiFetch(`/api/platform/users/${dialog.userId}/impersonate`, {
+        method: "POST",
+        body: { reason, ttlMinutes: 15 },
+      });
+      setSupportActionDialog(null);
+      setSupportNotice("Impersonation started");
+      return;
+    }
+    if (dialog.confirmation.trim() !== "REFUND") {
+      setStatusError("Type REFUND to submit the refund.");
+      return;
+    }
+    await webApiFetch(`/api/platform/payments/${dialog.paymentId}/refund`, {
       method: "POST",
       body: { reason },
     });
+    setSupportActionDialog(null);
     setSupportNotice("Refund submitted");
     await searchPayments();
   }
@@ -673,28 +757,45 @@ export function PlatformOperationsPanel({
     webhooksState.reload();
   }
 
-  async function createBroadcast() {
-    const title = window.prompt("Broadcast title")?.trim();
-    if (!title) return;
-    const body = window.prompt("Broadcast body")?.trim();
-    if (!body) return;
-    const severity =
-      window.prompt("Severity: INFO, WARN, CRITICAL", "INFO")?.trim().toUpperCase() || "INFO";
-    const status =
-      window.prompt("Status: DRAFT, SCHEDULED, LIVE", "DRAFT")?.trim().toUpperCase() || "DRAFT";
-    await webApiFetch("/api/platform/broadcasts", {
-      method: "POST",
-      body: {
-        title,
-        body,
-        severity: ["INFO", "WARN", "CRITICAL"].includes(severity) ? severity : "INFO",
-        status: ["DRAFT", "SCHEDULED", "LIVE"].includes(status) ? status : "DRAFT",
-        targetOrgIds: [],
-        targetRoles: [],
-      },
+  function openBroadcastComposer() {
+    setStatusError("");
+    setBroadcastComposeDialog({
+      title: "",
+      body: "",
+      severity: "INFO",
+      status: "DRAFT",
     });
-    setSupportNotice("Broadcast saved");
-    broadcastsState.reload();
+  }
+
+  async function submitBroadcast() {
+    const dialog = broadcastComposeDialog;
+    if (!dialog) return;
+    const title = dialog.title.trim();
+    const body = dialog.body.trim();
+    if (!title || !body) {
+      setStatusError("Broadcast title and body are required.");
+      return;
+    }
+    try {
+      setStatusError("");
+      setBroadcastBusyId("new");
+      await webApiFetch("/api/platform/broadcasts", {
+        method: "POST",
+        body: {
+          title,
+          body,
+          severity: dialog.severity,
+          status: dialog.status,
+          targetOrgIds: [],
+          targetRoles: [],
+        },
+      });
+      setBroadcastComposeDialog(null);
+      setSupportNotice("Broadcast saved");
+      broadcastsState.reload();
+    } finally {
+      setBroadcastBusyId(null);
+    }
   }
 
   async function updateBroadcastStatus(broadcast: PlatformBroadcastRow, status: "DRAFT" | "LIVE" | "EXPIRED") {
@@ -724,15 +825,31 @@ export function PlatformOperationsPanel({
     }
   }
 
-  async function decideModeration(flagId: string, decision: "APPROVED" | "REMOVED") {
-    const reason = window.prompt("Reason")?.trim();
-    if (!reason) return;
+  function openModerationDecision(flag: PlatformModerationRow, decision: "APPROVED" | "REMOVED") {
+    setStatusError("");
+    setModerationDecisionDialog({
+      flagId: flag.id,
+      label: `${formatEnumLabel(flag.kind)} · ${flag.targetId ?? flag.orgId}`,
+      decision,
+      reason: "",
+    });
+  }
+
+  async function submitModerationDecision() {
+    const dialog = moderationDecisionDialog;
+    if (!dialog) return;
+    const reason = dialog.reason.trim();
+    if (!reason) {
+      setStatusError("Add a reason for the moderation decision.");
+      return;
+    }
     try {
-      setModerationBusyId(flagId);
+      setModerationBusyId(dialog.flagId);
       await webApiFetch("/api/platform/moderation", {
         method: "POST",
-        body: { id: flagId, decision, reason },
+        body: { id: dialog.flagId, decision: dialog.decision, reason },
       });
+      setModerationDecisionDialog(null);
       setSupportNotice("Moderation decision saved");
       moderationState.reload();
     } finally {
@@ -742,1132 +859,109 @@ export function PlatformOperationsPanel({
 
   return (
     <div className="grid gap-4">
-      {showReadiness ? (
-      <GlassCard>
-        <SectionHeader
-          eyebrow="Command"
-          title="Platform health cockpit"
-          badge={
-            <Pill tone={misconfiguredProviders.length || openFlags.length ? "amber" : "neutral"}>
-              {misconfiguredProviders.length || openFlags.length ? "Review needed" : "Healthy"}
-            </Pill>
-          }
-        />
-        <ReadoutGrid className="mt-5" items={cockpitItems} columns={4} />
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {[
-            {
-              title: "Service alerts",
-              body: misconfiguredProviders.length
-                ? `${misconfiguredProviders.length} service${misconfiguredProviders.length === 1 ? "" : "s"} need review before launch.`
-                : "Core services are not reporting issues.",
-              tone: misconfiguredProviders.length ? "amber" : "neutral",
-            },
-            {
-              title: "Gym activation",
-              body: `${organizations.length} gym account${organizations.length === 1 ? "" : "s"} visible. ${trialRiskOrganizations.length} active trial${trialRiskOrganizations.length === 1 ? "" : "s"} need renewal follow-up.`,
-              tone: trialRiskOrganizations.length ? "amber" : "blue",
-            },
-            {
-              title: "Safety queue",
-              body: openFlags.length
-                ? "Review open reports before inviting more gyms."
-                : "No unresolved safety reports.",
-              tone: openFlags.length ? "amber" : "neutral",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-[22px] border border-white/10 bg-black/20 p-4"
-            >
-              <StatusPill value={item.title} tone={item.tone as "amber" | "blue" | "neutral"} />
-              <p className="mt-3 text-sm leading-6 text-white/58">{item.body}</p>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-      ) : null}
+      <PlatformHealthCockpit
+        show={showReadiness}
+        items={cockpitItems}
+        misconfiguredProviderCount={misconfiguredProviders.length}
+        organizationCount={organizations.length}
+        trialRiskCount={trialRiskOrganizations.length}
+        openFlagCount={openFlags.length}
+      />
 
-      {showUsers || showPayments ? (
-      <div id="support-console" className="scroll-mt-5">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Support"
-            title="Platform support console"
-            badge={supportNotice ? <Pill tone={supportNotice.tone}>{supportNotice.message}</Pill> : undefined}
-          />
-          <div className={`mt-5 grid gap-4 ${showUsers && showPayments ? "xl:grid-cols-2" : ""}`}>
-            {showUsers ? (
-            <div id="users" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <SectionHeader
-                eyebrow="Users"
-                title="User search and details"
-                badge={
-                  <Pill tone={usersState.loading ? "amber" : "neutral"}>
-                    {usersState.loading && !userRows.length ? "Loading" : `${userRows.length} visible`}
-                  </Pill>
-                }
-              />
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
-                  value={userQuery}
-                  onChange={(event) => setUserQuery(event.target.value)}
-                  placeholder="Email, phone, or name"
-                />
-                <ZookButton size="sm" onClick={() => void searchUsers()}>
-                  Search users
-                </ZookButton>
-              </div>
-              <div className="mt-4">
-                <DataTable
-                  columns={[
-                    {
-                      id: "user",
-                      header: "User",
-                      render: (user) => (
-                        <div>
-                          <p className="font-medium text-white">{user.name}</p>
-                          <p className="mt-1 text-xs text-white/45">{user.email}</p>
-                          {user.phone ? <p className="mt-1 text-xs text-white/45">{user.phone}</p> : null}
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "kind",
-                      header: "Kind",
-                      render: (user) => (
-                        <StatusPill
-                          value={user.isPlatformAdmin ? "Platform admin" : "User"}
-                          tone={user.isPlatformAdmin ? "amber" : "blue"}
-                        />
-                      ),
-                    },
-                    {
-                      id: "actions",
-                      header: "Actions",
-                      align: "right",
-                      render: (user) => (
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <ZookButton
-                            size="sm"
-                            tone="ghost"
-                            disabled={userDetailBusyId === user.id}
-                            onClick={() => void loadUserDetails(user.id)}
-                          >
-                            Details
-                          </ZookButton>
-                          <ZookButton size="sm" tone="ghost" onClick={() => void revokeUserSessions(user.id)}>
-                            Revoke
-                          </ZookButton>
-                          <ZookButton
-                            size="sm"
-                            tone="danger"
-                            disabled={Boolean(user.isPlatformAdmin)}
-                            onClick={() => void startImpersonation(user.id)}
-                          >
-                            Impersonate
-                          </ZookButton>
-                        </div>
-                      ),
-                    },
-                  ]}
-                  rows={userRows}
-                  rowKey={(user) => user.id}
-                  empty={usersState.error || "No users match this search."}
-                />
-              </div>
-              {selectedUser ? (
-                <div className="mt-4 rounded-[22px] border border-white/10 bg-black/25 p-4">
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                        User details
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{selectedUser.user.name}</h3>
-                      <p className="mt-1 text-sm text-white/55">{selectedUser.user.email}</p>
-                      {selectedUser.user.phone ? (
-                        <p className="mt-1 text-sm text-white/45">{selectedUser.user.phone}</p>
-                      ) : null}
-                    </div>
-                    <button
-                      type="button"
-                      className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 hover:bg-white/8 hover:text-white"
-                      onClick={() => setSelectedUser(null)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <ReadoutGrid
-                    className="mt-4"
-                    columns={3}
-                    items={[
-                      {
-                        label: "Gym links",
-                        value: formatCompactNumber(selectedUser.organizations.length),
-                        meta: "Active and historical links",
-                      },
-                      {
-                        label: "Payments",
-                        value: formatCompactNumber(selectedUser.payments.length),
-                        meta: "Recent payment records",
-                      },
-                      {
-                        label: "Sessions",
-                        value: formatCompactNumber(selectedUser.sessions.length),
-                        meta: "Recent auth sessions",
-                      },
-                    ]}
-                  />
-                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                        Gym access
-                      </p>
-                      <div className="mt-3 grid gap-2">
-                        {selectedUser.organizations.length ? (
-                          selectedUser.organizations.slice(0, 6).map((membership) => (
-                            <div key={membership.orgId} className="rounded-2xl bg-white/[0.04] p-3">
-                              <p className="font-medium text-white">
-                                {membership.organization?.name ?? membership.orgId}
-                              </p>
-                              <p className="mt-1 text-xs text-white/45">
-                                {membership.roles.map(formatEnumLabel).join(", ") || "No roles"} ·{" "}
-                                {formatEnumLabel(membership.status)}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-white/45">No gym access.</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                        Recent payments
-                      </p>
-                      <div className="mt-3 grid gap-2">
-                        {selectedUser.payments.length ? (
-                          selectedUser.payments.slice(0, 6).map((payment) => (
-                            <button
-                              type="button"
-                              key={payment.id}
-                              className="zook-focus rounded-2xl bg-white/[0.04] p-3 text-left"
-                              onClick={() => void loadPaymentDetails(payment.id)}
-                            >
-                              <p className="font-medium text-white">{formatInr(payment.amountPaise)}</p>
-                              <p className="mt-1 text-xs text-white/45">
-                                {formatEnumLabel(payment.status)} · {formatDateTime(payment.createdAt)}
-                              </p>
-                            </button>
-                          ))
-                        ) : (
-                          <p className="text-sm text-white/45">No payments for this user.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-            ) : null}
+      <PlatformSupportConsoleSection
+        showUsers={showUsers}
+        showPayments={showPayments}
+        supportNotice={supportNotice}
+        usersLoading={usersState.loading}
+        usersError={usersState.error}
+        userRows={userRows}
+        userQuery={userQuery}
+        selectedUser={selectedUser}
+        userDetailBusyId={userDetailBusyId}
+        paymentsLoading={paymentsState.loading}
+        paymentsError={paymentsState.error}
+        paymentRows={paymentRows}
+        paymentQuery={paymentQuery}
+        selectedPayment={selectedPayment}
+        paymentDetailBusyId={paymentDetailBusyId}
+        onUserQueryChange={setUserQuery}
+        onPaymentQueryChange={setPaymentQuery}
+        onSearchUsers={() => void searchUsers()}
+        onSearchPayments={() => void searchPayments()}
+        onLoadUserDetails={(userId) => void loadUserDetails(userId)}
+        onCloseUserDetails={() => setSelectedUser(null)}
+        onRevokeUserSessions={(userId) => void revokeUserSessions(userId)}
+        onOpenImpersonationDialog={openImpersonationDialog}
+        onLoadPaymentDetails={(paymentId) => void loadPaymentDetails(paymentId)}
+        onClosePaymentDetails={() => setSelectedPayment(null)}
+        onOpenRefundDialog={openRefundDialog}
+      />
 
-            {showPayments ? (
-            <div id="payments" className="scroll-mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
-              <SectionHeader
-                eyebrow="Payments"
-                title="Payment records"
-                badge={
-                  <Pill tone={paymentsState.loading ? "amber" : "neutral"}>
-                    {paymentsState.loading && !paymentRows.length
-                      ? "Loading"
-                      : `${paymentRows.length} visible`}
-                  </Pill>
-                }
-              />
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  className="min-h-10 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none"
-                  value={paymentQuery}
-                  onChange={(event) => setPaymentQuery(event.target.value)}
-                  placeholder="Payment id, phone, amount"
-                />
-                <ZookButton size="sm" onClick={() => void searchPayments()}>
-                  Search payments
-                </ZookButton>
-              </div>
-              <div className="mt-4">
-                <DataTable
-                  columns={[
-                    {
-                      id: "payment",
-                      header: "Payment",
-                      render: (payment) => (
-                        <div>
-                          <p className="font-medium text-white">{payment.id}</p>
-                          <p className="mt-1 text-xs text-white/45">
-                            {payment.providerRef ?? payment.provider ?? "Manual entry"}
-                          </p>
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "amount",
-                      header: "Amount",
-                      render: (payment) => formatInr(payment.amountPaise),
-                    },
-                    {
-                      id: "status",
-                      header: "Status",
-                      render: (payment) => <StatusPill value={formatEnumLabel(payment.status)} />,
-                    },
-                    {
-                      id: "actions",
-                      header: "Actions",
-                      align: "right",
-                      render: (payment) => (
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <ZookButton
-                            size="sm"
-                            tone="ghost"
-                            disabled={paymentDetailBusyId === payment.id}
-                            onClick={() => void loadPaymentDetails(payment.id)}
-                          >
-                            Details
-                          </ZookButton>
-                          <ZookButton size="sm" tone="ghost" onClick={() => void refundPayment(payment.id)}>
-                            Refund
-                          </ZookButton>
-                        </div>
-                      ),
-                    },
-                  ]}
-                  rows={paymentRows}
-                  rowKey={(payment) => payment.id}
-                  empty={paymentsState.error || "No payments match this search."}
-                />
-              </div>
-              {selectedPayment ? (
-                <div className="mt-4 rounded-[22px] border border-white/10 bg-black/25 p-4">
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                        Payment details
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">
-                        {formatInr(selectedPayment.payment.amountPaise)}
-                      </h3>
-                      <p className="mt-1 text-sm text-white/55">{selectedPayment.payment.id}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="zook-focus rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/65 hover:bg-white/8 hover:text-white"
-                      onClick={() => setSelectedPayment(null)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <ReadoutGrid
-                    className="mt-4"
-                    columns={3}
-                    items={[
-                      {
-                        label: "Status",
-                        value: formatEnumLabel(selectedPayment.payment.status),
-                        meta: selectedPayment.payment.provider ?? "Manual entry",
-                      },
-                      {
-                        label: "Refunds",
-                        value: formatCompactNumber(selectedPayment.refunds.length),
-                        meta: selectedPayment.refunds.length
-                          ? `${formatInr(
-                              selectedPayment.refunds.reduce((sum, refund) => sum + refund.amountPaise, 0),
-                            )} total`
-                          : "No refund records",
-                      },
-                      {
-                        label: "Events",
-                        value: formatCompactNumber(selectedPayment.events.length),
-                        meta: "Payment events",
-                      },
-                    ]}
-                  />
-                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                        Context
-                      </p>
-                      <div className="mt-3 grid gap-2 text-sm text-white/60">
-                        <p>
-                          Gym:{" "}
-                          <span className="text-white">
-                            {selectedPayment.organization?.name ?? selectedPayment.payment.orgId ?? "None"}
-                          </span>
-                        </p>
-                        <p>
-                          User:{" "}
-                          <span className="text-white">
-                            {selectedPayment.user?.email ?? selectedPayment.payment.userId ?? "None"}
-                          </span>
-                        </p>
-                        <p>
-                          Created:{" "}
-                          <span className="text-white">{formatDateTime(selectedPayment.payment.createdAt)}</span>
-                        </p>
-                        {selectedPayment.payment.receiptNumber ? (
-                          <p>
-                            Receipt: <span className="text-white">{selectedPayment.payment.receiptNumber}</span>
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                        Events
-                      </p>
-                      <div className="mt-3 grid gap-2">
-                        {selectedPayment.events.length ? (
-                          selectedPayment.events.slice(0, 6).map((event) => (
-                            <div key={event.id} className="rounded-2xl bg-white/[0.04] p-3">
-                              <p className="font-medium text-white">
-                                {formatEnumLabel(event.type ?? event.status ?? "event")}
-                              </p>
-                              <p className="mt-1 text-xs text-white/45">
-                                {event.providerEventId ?? event.id} · {formatDateTime(event.createdAt)}
-                              </p>
-                              {event.processingError ? (
-                                <p className="mt-1 text-xs text-red-100">{event.processingError}</p>
-                              ) : null}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-white/45">No payment events recorded.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-            ) : null}
-          </div>
-        </GlassCard>
-      </div>
-      ) : null}
-
-      {showBroadcasts || showModeration ? (
-      <div className={`grid gap-4 ${showBroadcasts && showModeration ? "xl:grid-cols-[1.1fr_0.9fr]" : ""}`}>
-        {showBroadcasts ? (
-        <div id="broadcasts" className="scroll-mt-5">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Broadcasts"
-              title="Platform broadcasts"
-              badge={<Pill>{broadcasts.length} broadcast{broadcasts.length === 1 ? "" : "s"}</Pill>}
-              action={
-                <ZookButton size="sm" onClick={() => void createBroadcast()}>
-                  New broadcast
-                </ZookButton>
-              }
-            />
-            <div className="mt-5">
-              <DataTable
-                columns={[
-                  {
-                    id: "title",
-                    header: "Broadcast",
-                    render: (broadcast) => (
-                      <div>
-                        <p className="font-medium text-white">{broadcast.title}</p>
-                        <p className="mt-1 line-clamp-2 text-xs text-white/45">{broadcast.body}</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "severity",
-                    header: "Severity",
-                    render: (broadcast) => <StatusPill value={formatEnumLabel(broadcast.severity)} />,
-                  },
-                  {
-                    id: "status",
-                    header: "Status",
-                    render: (broadcast) => <StatusPill value={formatEnumLabel(broadcast.status)} />,
-                  },
-                  {
-                    id: "created",
-                    header: "Created",
-                    render: (broadcast) => formatDateTime(broadcast.createdAt),
-                  },
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    align: "right",
-                    render: (broadcast) => (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <ZookButton
-                          size="sm"
-                          tone="ghost"
-                          disabled={broadcastBusyId === broadcast.id || broadcast.status === "LIVE"}
-                          onClick={() => void updateBroadcastStatus(broadcast, "LIVE")}
-                        >
-                          Publish
-                        </ZookButton>
-                        <ZookButton
-                          size="sm"
-                          tone="ghost"
-                          disabled={broadcastBusyId === broadcast.id || broadcast.status === "EXPIRED"}
-                          onClick={() => void updateBroadcastStatus(broadcast, "EXPIRED")}
-                        >
-                          Expire
-                        </ZookButton>
-                        <ConfirmActionButton
-                          className="zook-focus inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--surface-danger-soft)] px-4 py-2 text-sm font-semibold text-[var(--feedback-danger)] disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={broadcastBusyId === broadcast.id}
-                          title="Delete this broadcast?"
-                          description="This removes the broadcast from this console. Published recipients may have seen it."
-                          confirmLabel="Delete"
-                          confirmTone="danger"
-                          onConfirm={() => deleteBroadcast(broadcast.id)}
-                        >
-                          Delete
-                        </ConfirmActionButton>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={broadcasts}
-                rowKey={(broadcast) => broadcast.id}
-                empty="No entries."
-              />
-            </div>
-          </GlassCard>
-        </div>
-        ) : null}
-
-        {showModeration ? (
-        <div id="moderation" className="scroll-mt-5">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Moderation"
-              title="Content moderation queue"
-              badge={<Pill tone={moderationFlags.some((flag) => flag.status === "PENDING") ? "amber" : "neutral"}>{moderationFlags.length} flags</Pill>}
-            />
-            <div className="mt-5">
-              <DataTable
-                columns={[
-                  {
-                    id: "flag",
-                    header: "Flag",
-                    render: (flag) => (
-                      <div>
-                        <p className="font-medium text-white">{formatEnumLabel(flag.kind)}</p>
-                        <p className="mt-1 text-xs text-white/45">{flag.targetId ?? flag.orgId}</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "status",
-                    header: "Status",
-                    render: (flag) => <StatusPill value={formatEnumLabel(flag.status)} />,
-                  },
-                  {
-                    id: "created",
-                    header: "Created",
-                    render: (flag) => formatDateTime(flag.createdAt),
-                  },
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    align: "right",
-                    render: (flag) => (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <ZookButton
-                          size="sm"
-                          tone="ghost"
-                          disabled={moderationBusyId === flag.id || flag.status !== "PENDING"}
-                          onClick={() => void decideModeration(flag.id, "APPROVED")}
-                        >
-                          Approve
-                        </ZookButton>
-                        <ZookButton
-                          size="sm"
-                          tone="danger"
-                          disabled={moderationBusyId === flag.id || flag.status !== "PENDING"}
-                          onClick={() => void decideModeration(flag.id, "REMOVED")}
-                        >
-                          Remove
-                        </ZookButton>
-                      </div>
-                    ),
-                  },
-                ]}
-                rows={moderationFlags}
-                rowKey={(flag) => flag.id}
-                empty="No flags."
-              />
-            </div>
-          </GlassCard>
-        </div>
-        ) : null}
-      </div>
-      ) : null}
+      <PlatformContentSections
+        showBroadcasts={showBroadcasts}
+        showModeration={showModeration}
+        broadcasts={broadcasts}
+        moderationFlags={moderationFlags}
+        broadcastBusyId={broadcastBusyId}
+        moderationBusyId={moderationBusyId}
+        formatDateTime={formatDateTime}
+        formatEnumLabel={formatEnumLabel}
+        onOpenBroadcastComposer={openBroadcastComposer}
+        onUpdateBroadcastStatus={(broadcast, status) => void updateBroadcastStatus(broadcast, status)}
+        onDeleteBroadcast={(broadcastId) => void deleteBroadcast(broadcastId)}
+        onOpenModerationDecision={openModerationDecision}
+      />
 
       {showImpersonations ? (
-      <div id="impersonations" className="scroll-mt-5">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Impersonations"
-            title="Support access log"
-            badge={<Pill>{impersonations.length} sessions</Pill>}
-          />
-          <div className="mt-5">
-            <DataTable
-              columns={[
-                {
-                  id: "target",
-                  header: "Account",
-                  render: (session) => (
-                    <div>
-                      <p className="font-medium text-white">{session.targetUserId}</p>
-                      <p className="mt-1 text-xs text-white/45">{session.targetOrgId ?? "No gym selected"}</p>
-                    </div>
-                  ),
-                },
-                {
-                  id: "reason",
-                  header: "Reason",
-                  render: (session) => session.reason,
-                },
-                {
-                  id: "started",
-                  header: "Started",
-                  render: (session) => formatDateTime(session.startedAt),
-                },
-                {
-                  id: "status",
-                  header: "Status",
-                  render: (session) => (
-                    <StatusPill
-                      value={session.endedAt ? "Ended" : new Date(session.expiresAt).getTime() < Date.now() ? "Expired" : "Active"}
-                      tone={!session.endedAt && new Date(session.expiresAt).getTime() < Date.now() ? "amber" : "blue"}
-                    />
-                  ),
-                },
-              ]}
-              rows={impersonations}
-              rowKey={(session) => session.id}
-              empty="No sessions."
-            />
-          </div>
-        </GlassCard>
-      </div>
+      <PlatformImpersonationsSection
+        impersonations={impersonations}
+        formatDateTime={formatDateTime}
+      />
       ) : null}
 
-      {showFeatureFlags || showWebhooks || showAudit ? (
-      <div
-        className={`grid gap-4 ${
-          [showFeatureFlags, showWebhooks, showAudit].filter(Boolean).length > 1 ? "xl:grid-cols-3" : ""
-        }`}
-      >
-        {showFeatureFlags ? (
-        <GlassCard id="feature-flags">
-          <SectionHeader eyebrow="Flags" title="Feature flags" />
-          <div className="mt-5 grid gap-3">
-            {featureFlags.slice(0, 8).map((flag) => (
-              <div key={flag.key} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-white">{flag.key}</p>
-                    <p className="mt-1 text-xs text-white/45">{flag.rolloutPercent}% rollout</p>
-                  </div>
-                  <ZookButton
-                    size="sm"
-                    tone={flag.enabled ? "danger" : "ghost"}
-                    aria-label={`${flag.enabled ? "Disable" : "Enable"} ${flag.key}`}
-                    onClick={() => void toggleFeatureFlag(flag)}
-                  >
-                    {flag.enabled ? "Disable" : "Enable"}
-                  </ZookButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-        ) : null}
+      <PlatformOpsSections
+        showFeatureFlags={showFeatureFlags}
+        showWebhooks={showWebhooks}
+        showAudit={showAudit}
+        featureFlags={featureFlags}
+        webhooks={webhooks}
+        auditLogs={auditLogs}
+        formatDateTime={formatDateTime}
+        formatEnumLabel={formatEnumLabel}
+        onToggleFeatureFlag={(flag) => void toggleFeatureFlag(flag)}
+        onReplayWebhook={(attemptId) => void replayWebhook(attemptId)}
+      />
 
-        {showWebhooks ? (
-        <GlassCard id="webhooks">
-          <SectionHeader eyebrow="Webhooks" title="Webhook monitor" />
-          <div className="mt-5 grid gap-3">
-            {webhooks.slice(0, 8).map((attempt) => (
-              <div key={attempt.id} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <StatusPill value={formatEnumLabel(attempt.status)} />
-                    <p className="mt-2 text-xs text-white/45">{formatDateTime(attempt.startedAt)}</p>
-                  </div>
-                  <ZookButton size="sm" tone="ghost" onClick={() => void replayWebhook(attempt.id)}>
-                    Replay
-                  </ZookButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-        ) : null}
+      <PlatformReadinessSections
+        showReadiness={showReadiness}
+        showIncidentChecklist={showIncidentChecklist}
+        providerEntries={providerEntries}
+        readyProviderCount={readyProviders.length}
+        defaultProviderCount={defaultProviders.length}
+        misconfiguredProviderCount={misconfiguredProviders.length}
+        openFlagCount={openFlags.length}
+        incidentChecklist={incidentChecklist}
+        formatDateTime={formatDateTime}
+        formatEnumLabel={formatEnumLabel}
+        onReloadProviders={() => providersState.reload()}
+      />
 
-        {showAudit ? (
-        <GlassCard id="audit">
-          <SectionHeader eyebrow="Audit" title="Global audit" />
-          <div className="mt-5 grid gap-3">
-            {auditLogs.slice(0, 8).map((log) => (
-              <div key={log.id} className="rounded-[18px] border border-white/10 bg-black/20 p-3">
-                <p className="font-medium text-white">{log.action}</p>
-                <p className="mt-1 text-xs text-white/45">
-                  {formatEnumLabel(log.riskLevel)} · {formatDateTime(log.createdAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-        ) : null}
-      </div>
-      ) : null}
-
-      {showReadiness ? (
-      <div id="readiness" className="scroll-mt-5">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="System checks"
-            title="Service status"
-            description="Services Zook depends on, with sensitive settings hidden."
-            badge={
-              <Pill tone={misconfiguredProviders.length ? "red" : "lime"}>
-                {misconfiguredProviders.length} need setup
-              </Pill>
-            }
-            action={
-              <ZookButton size="sm" onClick={() => providersState.reload()}>
-                Check again
-              </ZookButton>
-            }
-          />
-          <div className="mt-5 grid gap-4">
-            <ReadoutGrid
-              items={[
-                {
-                  label: "Active services",
-                  value: formatCompactNumber(readyProviders.length),
-                  meta: "Configured for use",
-                },
-                {
-                  label: "Standard settings",
-                  value: formatCompactNumber(defaultProviders.length),
-                  meta: "Services using standard settings",
-                },
-                {
-                  label: "Needs attention",
-                  value: formatCompactNumber(misconfiguredProviders.length),
-                  meta: "Services needing review",
-                },
-                {
-                  label: "Open safety reviews",
-                  value: formatCompactNumber(openFlags.length),
-                  meta: "Reports still needing review",
-                },
-              ]}
-              columns={4}
-            />
-            <DataTable
-              columns={[
-                {
-                  id: "provider",
-                  header: "Service",
-                  render: ([category, provider]) => (
-                    <div>
-                      <p className="font-medium text-white">{formatEnumLabel(category)}</p>
-                      <p className="mt-1 text-xs text-white/45">
-                        {provider.configured ? "Configured" : "Review needed"} · Service{" "}
-                        {provider.activeProvider ? "active" : "inactive"}
-                      </p>
-                    </div>
-                  ),
-                },
-                {
-                  id: "status",
-                  header: "Status",
-                  render: ([, provider]) => (
-                    <StatusPill
-                      value={formatEnumLabel(provider.status)}
-                      tone={
-                        provider.status === "misconfigured" || provider.status === "unsupported"
-                          ? "red"
-                          : provider.status === "default"
-                            ? "blue"
-                            : toneFromStatus(provider.status)
-                      }
-                    />
-                  ),
-                },
-                {
-                  id: "mode",
-                  header: "Mode",
-                  render: ([category, provider]) =>
-                    formatEnumLabel(provider.mode ?? provider.selectedProvider ?? category),
-                },
-                {
-                  id: "env",
-                  header: "Needs",
-                  render: ([, provider]) =>
-                    (provider.missingEnv?.length ?? 0) ? "Review needed" : "Nothing",
-                },
-                {
-                  id: "last",
-                  header: "Checked",
-                  render: ([, provider]) =>
-                    provider.lastCheckedAt ? formatDateTime(provider.lastCheckedAt) : "Not checked",
-                },
-              ]}
-              rows={providerEntries}
-              rowKey={([category]) => category}
-              empty="No checks."
-            />
-          </div>
-        </GlassCard>
-      </div>
-      ) : null}
-
-      {showIncidentChecklist ? (
-      <div id="incident-checklist" className="scroll-mt-5">
-        <GlassCard>
-          <SectionHeader
-            eyebrow="Incident mode"
-            title="Production incident checklist"
-            description="First-response steps for service outages, payment trouble, safety escalations, and gym-impacting issues."
-          />
-          <div className="mt-5 grid gap-3">
-            {incidentChecklist.map((item, index) => (
-              <div
-                key={item.step}
-                className="grid gap-3 rounded-[22px] border border-white/10 bg-black/20 p-4 md:grid-cols-[80px_1fr_0.85fr]"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                  Step {index + 1}
-                </p>
-                <div>
-                  <p className="font-medium text-white">{item.step}</p>
-                  <p className="mt-1 text-xs text-white/45">Owner: {item.owner}</p>
-                </div>
-                <p className="text-sm leading-6 text-white/58">{item.signal}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 rounded-[22px] border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-50/82">
-            In production, keep destructive gym actions paused until service status, audit
-            trail, customer impact, and rollback owner are all known.
-          </div>
-        </GlassCard>
-      </div>
-      ) : null}
-
-      {showOrganizations ? (
-      <div className="grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
-        <div id="organizations" className="scroll-mt-5">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Organizations"
-              title="Gym accounts"
-              badge={
-                <Pill tone={suspendedOrganizations.length ? "amber" : "neutral"}>
-                  {suspendedOrganizations.length} suspended
-                </Pill>
-              }
-            />
-            {statusError ? (
-              <div className="mt-5">
-                <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-                  {statusError}
-                </p>
-              </div>
-            ) : null}
-            {organizationsState.error ? (
-              <div className="mt-5">
-                <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-                  {organizationsState.error}
-                </p>
-              </div>
-            ) : null}
-            <div className="mt-5">
-              <DataTable
-                columns={[
-                  {
-                    id: "org",
-                    header: "Gym",
-                    render: (org) => (
-                      <div>
-                        <p className="font-medium text-white">{org.name}</p>
-                        <p className="mt-1 text-xs text-white/45">@{org.username}</p>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "city",
-                    header: "Location",
-                    render: (org) => `${org.city}${org.state ? `, ${org.state}` : ""}`,
-                  },
-                  {
-                    id: "join",
-                    header: "Join mode",
-                    render: (org) => formatEnumLabel(org.joinMode),
-                  },
-                  {
-                    id: "status",
-                    header: "Status",
-                    render: (org) => <StatusPill value={formatEnumLabel(org.status)} />,
-                  },
-                  {
-                    id: "trial",
-                    header: "Trial end",
-                    render: (org) => formatDate(org.trialEndAt),
-                  },
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    render: (org) => (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <ZookButton
-                          tone="ghost"
-                          size="sm"
-                          onClick={() => setSelectedOrganization(org)}
-                        >
-                          Details
-                        </ZookButton>
-                        {org.status !== "ACTIVE" ? (
-                          <ZookButton
-                            tone="ghost"
-                            size="sm"
-                            onClick={() => void updateOrganizationStatus(org, "ACTIVE")}
-                            disabled={busyOrgId === org.id}
-                          >
-                            Activate
-                          </ZookButton>
-                        ) : (
-                          <ZookButton
-                            tone="ghost"
-                            size="sm"
-                            onClick={() => void updateOrganizationStatus(org, "SUSPENDED")}
-                            disabled={busyOrgId === org.id}
-                          >
-                            Suspend
-                          </ZookButton>
-                        )}
-                      </div>
-                    ),
-                    align: "right",
-                  },
-                ]}
-                rows={organizations}
-                rowKey={(org) => org.id}
-                empty="No accounts."
-              />
-            </div>
-            {selectedOrganization ? (
-              <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
-                      Gym account details
-                    </p>
-                    <h3 className="mt-2 text-lg font-semibold text-white">
-                      {selectedOrganization.name}
-                    </h3>
-                    <p className="mt-1 text-sm text-white/55">@{selectedOrganization.username}</p>
-                  </div>
-                  <ZookButton
-                    tone="ghost"
-                    size="sm"
-                    onClick={() => setSelectedOrganization(null)}
-                  >
-                    Close
-                  </ZookButton>
-                </div>
-                <ReadoutGrid
-                  className="mt-4"
-                  columns={3}
-                  items={[
-                    {
-                      label: "Status",
-                      value: formatEnumLabel(selectedOrganization.status),
-                      meta: "Platform account status",
-                    },
-                    {
-                      label: "Join mode",
-                      value: formatEnumLabel(selectedOrganization.joinMode),
-                      meta: "How members enter the gym",
-                    },
-                    {
-                      label: "Trial end",
-                      value: formatDate(selectedOrganization.trialEndAt),
-                      meta: trialRiskOrganizations.some((org) => org.id === selectedOrganization.id)
-                        ? "Needs renewal follow-up"
-                        : "No immediate trial risk",
-                    },
-                    {
-                      label: "Location",
-                      value: `${selectedOrganization.city}${
-                        selectedOrganization.state ? `, ${selectedOrganization.state}` : ""
-                      }`,
-                      meta: "Primary market",
-                    },
-                    {
-                      label: "Contact",
-                      value:
-                        selectedOrganization.contactEmail ??
-                        selectedOrganization.contactPhone ??
-                        "Not captured",
-                      meta: "Support handoff",
-                    },
-                    {
-                      label: "Created",
-                      value: formatDate(selectedOrganization.createdAt),
-                      meta: openFlags.some((flag) => flag.orgId === selectedOrganization.id)
-                        ? "Has open safety review"
-                        : "No open safety review",
-                    },
-                  ]}
-                />
-                <div className="mt-4 rounded-[18px] border border-white/10 bg-black/20 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
-                    Account actions
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(["ACTIVE", "SUSPENDED", "CANCELLED"] as const).map((nextStatus) => (
-                      <ZookButton
-                        key={nextStatus}
-                        tone={nextStatus === "CANCELLED" ? "danger" : "ghost"}
-                        size="sm"
-                        onClick={() => void updateOrganizationStatus(selectedOrganization, nextStatus)}
-                        disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === nextStatus}
-                      >
-                        {nextStatus === "ACTIVE"
-                          ? "Activate"
-                          : nextStatus === "SUSPENDED"
-                            ? "Suspend"
-                            : "Cancel"}
-                      </ZookButton>
-                    ))}
-                    <ZookButton
-                      tone="ghost"
-                      size="sm"
-                      onClick={() => void extendOrganizationTrial(selectedOrganization.id)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Extend trial
-                    </ZookButton>
-                    <ZookButton
-                      tone="ghost"
-                      size="sm"
-                      onClick={() => void adjustOrganizationCredit(selectedOrganization.id)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Credit
-                    </ZookButton>
-                    <ZookButton
-                      tone="ghost"
-                      size="sm"
-                      onClick={() => void changeOrganizationTier(selectedOrganization.id)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Tier
-                    </ZookButton>
-                    <ZookButton
-                      tone="ghost"
-                      size="sm"
-                      onClick={() => void renameOrganization(selectedOrganization)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Rename
-                    </ZookButton>
-                    <ZookButton
-                      tone="ghost"
-                      size="sm"
-                      onClick={() => void bulkImportOrganizationMembers(selectedOrganization.id)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Import CSV
-                    </ZookButton>
-                    <ZookButton
-                      tone="danger"
-                      size="sm"
-                      onClick={() => void transferOrganizationOwnership(selectedOrganization.id)}
-                      disabled={busyOrgId === selectedOrganization.id}
-                    >
-                      Transfer owner
-                    </ZookButton>
-                    <ZookButton
-                      tone="danger"
-                      size="sm"
-                      onClick={() => void softDeleteOrganization(selectedOrganization)}
-                      disabled={busyOrgId === selectedOrganization.id || selectedOrganization.status === "DELETED"}
-                    >
-                      Archive
-                    </ZookButton>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </GlassCard>
-        </div>
-
-        <div className="grid gap-4">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Watchlist"
-              title="Safety review"
-            />
-            <ReadoutGrid
-              className="mt-5"
-              columns={1}
-              items={[
-                {
-                  label: "Open safety reviews",
-                  value: formatCompactNumber(openFlags.length),
-                  meta: "Reports still waiting for review",
-                },
-                {
-                  label: "Paused gyms",
-                  value: formatCompactNumber(suspendedOrganizations.length),
-                  meta: "Paused by the platform team",
-                },
-                {
-                  label: "Recent assistant activity",
-                  value: formatCompactNumber(usage.length),
-                  meta: "Recent assisted drafts across gyms",
-                },
-              ]}
-            />
-          </GlassCard>
-
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Contacts"
-              title="Gym contact list"
-            />
-            <div className="mt-5 grid gap-3">
-              {organizations.slice(0, 4).map((org) => (
-                <div key={org.id} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                  <p className="font-medium text-white">{org.name}</p>
-                  <p className="mt-2 text-sm text-white/55">
-                    {org.contactEmail ?? org.contactPhone ?? "No contact captured"}
-                  </p>
-                  <p className="mt-2 text-xs text-white/40">Created {formatDate(org.createdAt)}</p>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        </div>
-      </div>
-      ) : null}
+      <PlatformOrganizationsSection
+        show={showOrganizations}
+        organizations={organizations}
+        selectedOrganization={selectedOrganization}
+        suspendedOrganizations={suspendedOrganizations}
+        trialRiskOrganizations={trialRiskOrganizations}
+        openFlags={openFlags}
+        usage={usage}
+        statusError={statusError}
+        organizationsError={organizationsState.error}
+        busyOrgId={busyOrgId}
+        onSelectOrganization={setSelectedOrganization}
+        onCloseOrganization={() => setSelectedOrganization(null)}
+        onOpenStatusDialog={openOrganizationStatusDialog}
+        onOpenOrganizationAction={openOrganizationAction}
+      />
 
       {showAssistant || showSubscriptions || showSafety ? (
       <div
@@ -1877,67 +971,13 @@ export function PlatformOperationsPanel({
             : ""
         }`}
       >
-        {showAssistant ? (
-        <div id="ai-traffic" className="scroll-mt-5">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Assistant"
-              title="Recent assistant activity"
-              badge={<Pill>{usage.length} events</Pill>}
-            />
-            <div className="mt-5">
-              {usageState.error ? (
-                <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-                  {usageState.error}
-                </p>
-              ) : usageState.loading && usage.length === 0 ? (
-                <EmptyState title="Loading assistant activity" />
-              ) : (
-                <DataTable
-                  columns={[
-                    {
-                      id: "prompt",
-                      header: "Draft",
-                      render: (row) => (
-                        <div>
-                          <p className="font-medium text-white">{row.promptSummary}</p>
-                          <p className="mt-1 text-xs text-white/45">
-                            {row.orgId ? "Gym account" : "Platform account"}
-                          </p>
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "type",
-                      header: "Category",
-                      render: (row) => (
-                        <div className="flex flex-wrap gap-2">
-                          <StatusPill value={formatEnumLabel(row.requestType)} />
-                        </div>
-                      ),
-                    },
-                    {
-                      id: "tokens",
-                      header: "Size",
-                      align: "right",
-                      render: (row) => (row.tokenEstimate > 0 ? "Detailed" : "Short"),
-                    },
-                    {
-                      id: "cost",
-                      header: "Cost",
-                      align: "right",
-                      render: (row) => formatInr(row.costEstimatePaise),
-                    },
-                  ]}
-                  rows={usage}
-                  rowKey={(row) => row.id}
-                  empty="No activity."
-                />
-              )}
-            </div>
-          </GlassCard>
-        </div>
-        ) : null}
+        <PlatformAssistantSection
+          show={showAssistant}
+          usage={usage}
+          loading={usageState.loading}
+          error={usageState.error}
+          formatEnumLabel={formatEnumLabel}
+        />
 
         {showSubscriptions ? (
           <PlatformSubscriptionsSection
@@ -1952,970 +992,36 @@ export function PlatformOperationsPanel({
           />
         ) : null}
 
-        {showSafety ? (
-        <div id="abuse-flags" className="scroll-mt-5">
-          <GlassCard>
-            <SectionHeader
-              eyebrow="Safety"
-              title="Recent reports"
-              badge={
-                <Pill tone={openFlags.length ? "amber" : "neutral"}>{openFlags.length} open</Pill>
-              }
-            />
-            <div className="mt-5 grid gap-3">
-              {flagsState.error ? (
-                <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-                  {flagsState.error}
-                </p>
-              ) : flags.length ? (
-                flags.slice(0, 10).map((flag) => (
-                  <div
-                    key={flag.id}
-                    className="rounded-[22px] border border-white/10 bg-black/20 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-white">{formatEnumLabel(flag.type)}</p>
-                        <p className="mt-2 text-xs text-white/45">
-                          {flag.userId ? "Member report" : "Gym report"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <StatusPill
-                          value={formatEnumLabel(flag.severity)}
-                          tone={
-                            flag.severity.toLowerCase().includes("high")
-                              ? "red"
-                              : flag.severity.toLowerCase().includes("medium")
-                                ? "amber"
-                                : "blue"
-                          }
-                        />
-                        <StatusPill
-                          value={formatEnumLabel(flag.status)}
-                          tone={toneFromStatus(flag.status)}
-                        />
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs text-white/40">
-                      {formatDateTime(flag.createdAt)}
-                      {flag.resolvedAt ? ` · Resolved ${formatDateTime(flag.resolvedAt)}` : ""}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <EmptyState title="No reports" />
-              )}
-            </div>
-          </GlassCard>
-        </div>
-        ) : null}
-      </div>
-      ) : null}
-    </div>
-  );
-}
-
-type SubscriptionSummary = {
-  totalOrgs: number;
-  onTrial: number;
-  active: number;
-  suspended: number;
-  cancelled: number;
-  totalReferrals: number;
-};
-
-type SubscriptionRow = {
-  orgId: string;
-  orgName: string;
-  username: string;
-  orgStatus: string;
-  trialEndAt: string | Date | null;
-  createdAt: string | Date;
-  contactEmail: string | null;
-  subscriptionStatus: string | null;
-  tier?: string | null;
-  billingCycle?: string | null;
-  priceLockedPaise?: number | null;
-  creditPaise?: number | null;
-  noteForPlatform?: string | null;
-  nextBillingAt: string | Date | null;
-  mandateStatus: string | null;
-  mandateNextChargeAt: string | Date | null;
-  mandatePaidCount: number;
-  referredCount: number;
-  usage?: {
-    activeMemberCount?: number;
-    branchCount?: number;
-    staffCount?: number;
-    trainerCount?: number;
-    productCount?: number;
-  };
-  entitlements?: {
-    memberLimit?: number | null;
-    branchLimit?: number | null;
-    staffLimit?: number | null;
-    trainerLimit?: number | null;
-    productLimit?: number | null;
-    notificationMonthlyLimit?: number | null;
-    aiTextMonthlyLimit?: number | null;
-    aiImageMonthlyLimit?: number | null;
-    reports?: string;
-    support?: string;
-    referrals?: string;
-  };
-};
-
-type PlatformPlanCatalog = Record<
-  string,
-  {
-    name: string;
-    monthly: number;
-    semiannual?: number;
-    yearly: number;
-    entitlements: NonNullable<SubscriptionRow["entitlements"]>;
-  }
->;
-
-type PlatformReferralPolicy = {
-  enabled: boolean;
-  referrerRewardType: "TRIAL_DAYS" | "CREDIT_PAISE" | "NONE";
-  referrerRewardValue: number;
-  referredRewardType: "TRIAL_DAYS" | "DISCOUNT_PERCENT_BPS" | "CREDIT_PAISE" | "NONE";
-  referredRewardValue: number;
-  nonOwnerSemiannualRewardPaise: number;
-  nonOwnerYearlyRewardPaise: number;
-  ownerRewardDays: number;
-  qualifyingCycles: Array<"SEMIANNUAL" | "YEARLY">;
-  clawbackWindowDays: number;
-  minWithdrawalPaise: number;
-  maxRewardsPerUserPerMonth: number;
-  maxRedemptionsPerOrg: number;
-  expiresInDays: number;
-};
-
-const REFERRER_REWARD_TYPES = [
-  { value: "TRIAL_DAYS", label: "Free trial days" },
-  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
-  { value: "NONE", label: "No reward" },
-] as const;
-
-const REFERRED_REWARD_TYPES = [
-  { value: "TRIAL_DAYS", label: "Free trial days" },
-  { value: "DISCOUNT_PERCENT_BPS", label: "Discount (%)" },
-  { value: "CREDIT_PAISE", label: "Account credit (₹)" },
-  { value: "NONE", label: "No reward" },
-] as const;
-
-/** Converts a stored reward value to the unit shown in the input. */
-function rewardToDisplay(type: string, value: number) {
-  if (type === "CREDIT_PAISE") return Math.round(value / 100);
-  if (type === "DISCOUNT_PERCENT_BPS") return Math.round(value / 100);
-  return value;
-}
-/** Converts an edited input value back to the stored unit. */
-function rewardToStored(type: string, value: number) {
-  if (type === "CREDIT_PAISE") return value * 100;
-  if (type === "DISCOUNT_PERCENT_BPS") return value * 100;
-  return value;
-}
-function rewardCostPaise(type: string, value: number) {
-  return type === "CREDIT_PAISE" ? value : 0;
-}
-function rewardLabel(type: string, value: number) {
-  if (type === "NONE") return "No reward";
-  if (type === "CREDIT_PAISE") return formatInr(value);
-  if (type === "DISCOUNT_PERCENT_BPS") return `${Math.round(value / 100)}%`;
-  return `${value} days`;
-}
-function defaultRewardValueForType(type: string) {
-  if (type === "CREDIT_PAISE" || type === "NONE") return 0;
-  if (type === "DISCOUNT_PERCENT_BPS") return 1_000;
-  return 30;
-}
-
-const platformInputClass =
-  "min-h-10 w-full rounded-2xl border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-white/25";
-
-/**
- * Platform-owner control for how gyms referring *other gyms* to Zook are
- * rewarded. Backend: GET/PATCH /api/platform/referral-policy. Self-contained
- * (loads + saves its own data) so it can drop into the Subscriptions section.
- */
-function PlatformReferralPolicyCard({ monthlyPayoutExposurePaise = 0 }: { monthlyPayoutExposurePaise?: number }) {
-  const [policy, setPolicy] = useState<PlatformReferralPolicy | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    webApiFetch<{ policy: PlatformReferralPolicy }>("/api/platform/referral-policy")
-      .then((payload) => {
-        if (mounted) setPolicy(payload.policy);
-      })
-      .catch((cause) => {
-        if (mounted)
-          setNotice({
-            message: cause instanceof Error ? cause.message : "Unable to load referral policy.",
-            tone: "red",
-          });
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  function patch(next: Partial<PlatformReferralPolicy>) {
-    setPolicy((current) => (current ? { ...current, ...next } : current));
-  }
-  function num(value: string) {
-    return Number.parseInt(value, 10) || 0;
-  }
-
-  async function save() {
-    if (!policy) return;
-    setSaving(true);
-    setNotice(null);
-    try {
-      await webApiFetch("/api/platform/referral-policy", { method: "PATCH", body: policy });
-      setNotice({ message: "Referral policy saved.", tone: "lime" });
-    } catch (cause) {
-      setNotice({
-        message: cause instanceof Error ? cause.message : "Unable to save referral policy.",
-        tone: "red",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const costPerReferralPaise = policy
-    ? rewardCostPaise(policy.referrerRewardType, policy.referrerRewardValue) +
-      rewardCostPaise(policy.referredRewardType, policy.referredRewardValue)
-    : 0;
-
-  return (
-    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-            Gym-to-gym referrals
-          </p>
-          <p className="mt-1 text-sm font-semibold text-white">When a gym refers a new gym to Zook</p>
-          <p className="mt-1 max-w-xl text-xs leading-5 text-white/45">
-            Platform default that applies across all gyms. Sets what the referring gym earns and what
-            the new gym gets when they join.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => patch({ enabled: !policy?.enabled })}
-          disabled={!policy}
-          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-            policy?.enabled
-              ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
-              : "border-white/10 bg-white/5 text-white/55"
-          }`}
-        >
-          {policy?.enabled ? "Enabled" : "Disabled"}
-        </button>
-      </div>
-
-      {loading ? (
-        <p className="mt-4 text-sm text-white/45">Loading referral policy...</p>
-      ) : policy ? (
-        <div className="mt-4 grid gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                Cost / gym referral
-              </p>
-              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
-                {costPerReferralPaise ? formatInr(costPerReferralPaise) : "Non-cash"}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-white/45">
-                {rewardLabel(policy.referrerRewardType, policy.referrerRewardValue)} referrer ·{" "}
-                {rewardLabel(policy.referredRewardType, policy.referredRewardValue)} new gym
-              </p>
-            </div>
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                Monthly payout exposure
-              </p>
-              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
-                {formatInr(monthlyPayoutExposurePaise)}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-white/45">
-                Pending member/trainer withdrawal cash.
-              </p>
-            </div>
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                Reward limits
-              </p>
-              <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
-                {policy.maxRewardsPerUserPerMonth}/user
-              </p>
-              <p className="mt-1 text-xs leading-5 text-white/45">
-                {policy.maxRedemptionsPerOrg} redemptions/gym · {policy.clawbackWindowDays}d clawback
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-sm font-semibold text-white">Referring gym earns</p>
-              <label className="mt-3 block text-xs text-white/55">Reward type</label>
-              <select
-                className={`${platformInputClass} mt-1`}
-                value={policy.referrerRewardType}
-                onChange={(event) => {
-                  const referrerRewardType = event.target.value as PlatformReferralPolicy["referrerRewardType"];
-                  patch({
-                    referrerRewardType,
-                    referrerRewardValue: defaultRewardValueForType(referrerRewardType),
-                  });
-                }}
-              >
-                {REFERRER_REWARD_TYPES.map((option) => (
-                  <option key={option.value} value={option.value} className="bg-black">
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {policy.referrerRewardType !== "NONE" ? (
-                <>
-                  <label className="mt-3 block text-xs text-white/55">
-                    {policy.referrerRewardType === "CREDIT_PAISE" ? "Credit (₹)" : "Days"}
-                  </label>
-                  <input
-                    className={`${platformInputClass} mt-1`}
-                    inputMode="numeric"
-                    value={String(rewardToDisplay(policy.referrerRewardType, policy.referrerRewardValue))}
-                    onChange={(event) =>
-                      patch({ referrerRewardValue: rewardToStored(policy.referrerRewardType, num(event.target.value)) })
-                    }
-                  />
-                </>
-              ) : null}
-            </div>
-
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-sm font-semibold text-white">New gym gets</p>
-              <label className="mt-3 block text-xs text-white/55">Reward type</label>
-              <select
-                className={`${platformInputClass} mt-1`}
-                value={policy.referredRewardType}
-                onChange={(event) => {
-                  const referredRewardType = event.target.value as PlatformReferralPolicy["referredRewardType"];
-                  patch({
-                    referredRewardType,
-                    referredRewardValue: defaultRewardValueForType(referredRewardType),
-                  });
-                }}
-              >
-                {REFERRED_REWARD_TYPES.map((option) => (
-                  <option key={option.value} value={option.value} className="bg-black">
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {policy.referredRewardType !== "NONE" ? (
-                <>
-                  <label className="mt-3 block text-xs text-white/55">
-                    {policy.referredRewardType === "CREDIT_PAISE"
-                      ? "Credit (₹)"
-                      : policy.referredRewardType === "DISCOUNT_PERCENT_BPS"
-                        ? "Discount (%)"
-                        : "Days"}
-                  </label>
-                  <input
-                    className={`${platformInputClass} mt-1`}
-                    inputMode="numeric"
-                    value={String(rewardToDisplay(policy.referredRewardType, policy.referredRewardValue))}
-                    onChange={(event) =>
-                      patch({ referredRewardValue: rewardToStored(policy.referredRewardType, num(event.target.value)) })
-                    }
-                  />
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-sm font-semibold text-white">Member / trainer refers a gym</p>
-              <p className="mt-1 text-xs leading-5 text-white/45">
-                Cash a non-owner earns when a gym they refer subscribes (paid out after the clawback
-                window).
-              </p>
-              <label className="mt-3 block text-xs text-white/55">6-month sub → cash (₹)</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(Math.round(policy.nonOwnerSemiannualRewardPaise / 100))}
-                onChange={(event) => patch({ nonOwnerSemiannualRewardPaise: num(event.target.value) * 100 })}
-              />
-              <label className="mt-3 block text-xs text-white/55">Yearly sub → cash (₹)</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(Math.round(policy.nonOwnerYearlyRewardPaise / 100))}
-                onChange={(event) => patch({ nonOwnerYearlyRewardPaise: num(event.target.value) * 100 })}
-              />
-            </div>
-
-            <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
-              <p className="text-sm font-semibold text-white">Gym owner refers a gym</p>
-              <p className="mt-1 text-xs leading-5 text-white/45">
-                Free Zook subscription days the owner earns (no cash).
-              </p>
-              <label className="mt-3 block text-xs text-white/55">Free Zook days</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(policy.ownerRewardDays)}
-                onChange={(event) => patch({ ownerRewardDays: num(event.target.value) })}
-              />
-              <label className="mt-3 block text-xs text-white/55">Qualifying commitments</label>
-              <div className="mt-1 flex gap-2">
-                {(["SEMIANNUAL", "YEARLY"] as const).map((cycle) => {
-                  const active = policy.qualifyingCycles.includes(cycle);
-                  return (
-                    <button
-                      key={cycle}
-                      type="button"
-                      onClick={() =>
-                        patch({
-                          qualifyingCycles: active
-                            ? policy.qualifyingCycles.filter((value) => value !== cycle)
-                            : [...policy.qualifyingCycles, cycle],
-                        })
-                      }
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                        active
-                          ? "border-lime-300/30 bg-lime-300/10 text-lime-100"
-                          : "border-white/10 bg-white/5 text-white/55"
-                      }`}
-                    >
-                      {cycle === "SEMIANNUAL" ? "6-month" : "Yearly"}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className="block text-xs text-white/55">Clawback window (days)</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(policy.clawbackWindowDays)}
-                onChange={(event) => patch({ clawbackWindowDays: num(event.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/55">Min withdrawal (₹)</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(Math.round(policy.minWithdrawalPaise / 100))}
-                onChange={(event) => patch({ minWithdrawalPaise: num(event.target.value) * 100 })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/55">Max rewards / user / month</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(policy.maxRewardsPerUserPerMonth)}
-                onChange={(event) => patch({ maxRewardsPerUserPerMonth: Math.max(1, num(event.target.value)) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/55">Max referrals per gym</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(policy.maxRedemptionsPerOrg)}
-                onChange={(event) => patch({ maxRedemptionsPerOrg: Math.max(1, num(event.target.value)) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/55">Reward expires in (days)</label>
-              <input
-                className={`${platformInputClass} mt-1`}
-                inputMode="numeric"
-                value={String(policy.expiresInDays)}
-                onChange={(event) => patch({ expiresInDays: Math.max(1, num(event.target.value)) })}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <ZookButton size="sm" onClick={() => void save()} disabled={saving}>
-              {saving ? "Saving..." : "Save referral policy"}
-            </ZookButton>
-            {notice ? <Pill tone={notice.tone}>{notice.message}</Pill> : null}
-          </div>
-        </div>
-      ) : notice ? (
-        <p className="mt-4 rounded-[18px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-          {notice.message}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-type RewardWithdrawalRow = {
-  id: string;
-  userId: string;
-  amountPaise: number;
-  status: string;
-  requestedAt: string;
-  paidAt?: string | null;
-  paidMethod?: string | null;
-  user: { id: string; name: string | null; email: string } | null;
-};
-
-/**
- * Platform-owner review + payout of member/trainer reward-cash withdrawals
- * (the manual-payout step of "accrue + manual"). Backend:
- * GET /api/platform/rewards/withdrawals, POST .../:id/mark-paid.
- */
-function PlatformWithdrawalsCard() {
-  const [rows, setRows] = useState<RewardWithdrawalRow[] | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ message: string; tone: PillTone } | null>(null);
-
-  const load = useCallback(() => {
-    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
-      .then((payload) => setRows(payload.withdrawals))
-      .catch((cause) =>
-        setNotice({ message: cause instanceof Error ? cause.message : "Unable to load withdrawals.", tone: "red" }),
-      );
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function markPaid(id: string) {
-    setBusyId(id);
-    setNotice(null);
-    try {
-      await webApiFetch(`/api/platform/rewards/withdrawals/${id}/mark-paid`, {
-        method: "POST",
-        body: { method: "Manual payout" },
-      });
-      setNotice({ message: "Marked paid.", tone: "lime" });
-      load();
-    } catch (cause) {
-      setNotice({ message: cause instanceof Error ? cause.message : "Unable to mark paid.", tone: "red" });
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  const pending = (rows ?? []).filter((row) => row.status === "REQUESTED");
-
-  return (
-    <div className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Reward payouts</p>
-          <p className="mt-1 text-sm font-semibold text-white">Member / trainer withdrawal requests</p>
-        </div>
-        {pending.length ? <Pill tone="amber">{pending.length} to pay</Pill> : <Pill tone="neutral">Clear</Pill>}
-      </div>
-      {rows === null ? (
-        <p className="mt-4 text-sm text-white/45">Loading withdrawals…</p>
-      ) : rows.length === 0 ? (
-        <p className="mt-4 text-sm text-white/45">No withdrawal requests yet.</p>
-      ) : (
-        <div className="mt-4 grid gap-2">
-          {rows.map((row) => (
-            <div
-              key={row.id}
-              className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-black/25 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{row.user?.name ?? row.user?.email ?? "Member"}</p>
-                <p className="truncate text-xs text-white/45">{formatDateTime(row.requestedAt)}</p>
-              </div>
-              <p className="text-sm font-semibold text-white">{formatInr(row.amountPaise)}</p>
-              {row.status === "REQUESTED" ? (
-                <ZookButton size="sm" onClick={() => void markPaid(row.id)} disabled={busyId === row.id}>
-                  {busyId === row.id ? "…" : "Mark paid"}
-                </ZookButton>
-              ) : (
-                <StatusPill value={row.status} tone={row.status === "PAID" ? "lime" : "neutral"} />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {notice ? <div className="mt-3"><Pill tone={notice.tone}>{notice.message}</Pill></div> : null}
-    </div>
-  );
-}
-
-/**
- * Owner-first business overview: the at-a-glance numbers + the money that
- * needs the Zook owner to act (reward payouts to release), so viewing and
- * acting live together at the top of the console.
- */
-function PlatformBusinessOverview({
-  summary,
-  rows,
-  planCatalog,
-  withdrawals,
-  flags,
-  loading,
-}: {
-  summary: SubscriptionSummary | null;
-  rows: SubscriptionRow[];
-  planCatalog: PlatformPlanCatalog | null;
-  withdrawals: RewardWithdrawalRow[] | null;
-  flags: PlatformAbuseFlag[];
-  loading: boolean;
-}) {
-  const pending = (withdrawals ?? []).filter((w) => w.status === "REQUESTED");
-  const pendingPaise = pending.reduce((t, w) => t + w.amountPaise, 0);
-  const suspendedRows = rows.filter((row) => row.orgStatus === "SUSPENDED");
-  const openFlags = flags.filter((flag) => !flag.resolvedAt && flag.status.toLowerCase() !== "resolved");
-  const payingRows = rows.filter((row) => row.subscriptionStatus === "ACTIVE" || row.orgStatus === "ACTIVE");
-  const mrrPaise = payingRows.reduce((total, row) => {
-    const plan = planCatalog?.[row.tier ?? "FREE"];
-    const monthly = row.priceLockedPaise ?? plan?.monthly ?? 0;
-    if (row.billingCycle === "YEARLY") return total + Math.round((row.priceLockedPaise ?? plan?.yearly ?? 0) / 12);
-    if (row.billingCycle === "SEMIANNUAL") return total + Math.round((row.priceLockedPaise ?? plan?.semiannual ?? monthly * 6) / 6);
-    return total + monthly;
-  }, 0);
-  const trialToPaid =
-    summary && summary.active + summary.onTrial > 0
-      ? Math.round((summary.active / (summary.active + summary.onTrial)) * 100)
-      : 0;
-  const needsYou = [
-    {
-      label: "Reward payouts to release",
-      value: pending.length ? `${pending.length} · ${formatInr(pendingPaise)}` : "Clear",
-      href: "/platform/referrals",
-      tone: pending.length ? "amber" : "neutral",
-    },
-    {
-      label: "Refunds to reconcile",
-      value: "Open ledger",
-      href: "/platform/payments",
-      tone: "neutral",
-    },
-    {
-      label: "Suspended gyms",
-      value: suspendedRows.length ? String(suspendedRows.length) : "Clear",
-      href: "/platform/gyms",
-      tone: suspendedRows.length ? "amber" : "neutral",
-    },
-    {
-      label: "Open abuse flags",
-      value: openFlags.length ? String(openFlags.length) : "Clear",
-      href: "/platform/safety",
-      tone: openFlags.length ? "amber" : "neutral",
-    },
-  ] as const;
-
-  const kpis: Array<{ label: string; value: string; meta: string }> = summary
-    ? [
-        { label: "MRR estimate", value: formatInr(mrrPaise), meta: "Active subs × tier monthly" },
-        { label: "Paying gyms", value: formatCompactNumber(summary.active), meta: `${trialToPaid}% trial → paid` },
-        { label: "On trial", value: formatCompactNumber(summary.onTrial), meta: "Follow up before expiry" },
-        { label: "Gym referrals", value: formatCompactNumber(summary.totalReferrals), meta: "Partnerships created" },
-        { label: "Payout exposure", value: formatInr(pendingPaise), meta: "Requested withdrawals" },
-      ]
-    : [];
-
-  return (
-    <GlassCard className="rounded-[24px] p-5">
-      <SectionHeader eyebrow="Business" title="Command overview" />
-      {summary ? (
-        <ReadoutGrid className="mt-5" items={kpis} columns={4} />
-      ) : loading ? (
-        <p className="mt-4 text-sm text-white/45">Loading business overview...</p>
-      ) : (
-        <EmptyState title="No business data" />
-      )}
-      <div className="mt-5 rounded-[20px] border border-white/10 bg-black/20 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Needs you</p>
-            <p className="mt-1 text-sm text-white/55">One queue for owner decisions and money movement.</p>
-          </div>
-          <Pill tone={needsYou.some((item) => item.tone === "amber") ? "amber" : "neutral"}>
-            {needsYou.filter((item) => item.tone === "amber").length || "Clear"}
-          </Pill>
-        </div>
-        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {needsYou.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="zook-focus rounded-[16px] border border-white/10 bg-white/[0.03] p-3 transition hover:bg-white/[0.06]"
-            >
-              <StatusPill value={item.label} tone={item.tone} />
-              <p className="mt-3 text-lg font-semibold tabular-nums text-white">{item.value}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
-
-function PlatformSubscriptionsSection({
-  mode,
-  initialFlags,
-}: {
-  mode: "overview" | "subscriptions" | "referrals";
-  initialFlags: PlatformAbuseFlag[];
-}) {
-  const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
-  const [rows, setRows] = useState<SubscriptionRow[]>([]);
-  const [planCatalog, setPlanCatalog] = useState<PlatformPlanCatalog | null>(null);
-  const [withdrawals, setWithdrawals] = useState<RewardWithdrawalRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const limitFormatOptions = { compact: true, unlimitedLabel: "unlimited" };
-
-  useEffect(() => {
-    let mounted = true;
-    webApiFetch<{ summary: SubscriptionSummary; rows: SubscriptionRow[]; planCatalog?: PlatformPlanCatalog }>(
-      "/api/platform/subscriptions",
-    )
-      .then((payload) => {
-        if (!mounted) return;
-        setSummary(payload.summary);
-        setRows(payload.rows);
-        setPlanCatalog(payload.planCatalog ?? null);
-      })
-      .catch((cause) => {
-        if (!mounted) return;
-        setError(cause instanceof Error ? cause.message : "Unable to load subscriptions.");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    void webApiFetch<{ withdrawals: RewardWithdrawalRow[] }>("/api/platform/rewards/withdrawals")
-      .then((payload) => {
-        if (mounted) setWithdrawals(payload.withdrawals);
-      })
-      .catch(() => undefined);
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const pendingWithdrawalExposurePaise = (withdrawals ?? [])
-    .filter((row) => row.status === "REQUESTED")
-    .reduce((total, row) => total + row.amountPaise, 0);
-
-  return (
-    <div id="subscriptions" className="scroll-mt-5">
-      <PlatformBusinessOverview
-        summary={summary}
-        rows={rows}
-        planCatalog={planCatalog}
-        withdrawals={withdrawals}
-        flags={initialFlags}
-        loading={loading}
-      />
-      {mode !== "overview" ? (
-      <GlassCard className="mt-5">
-        <SectionHeader
-          eyebrow={mode === "referrals" ? "Referral economics" : "Subscriptions"}
-          title={mode === "referrals" ? "Rewards, payouts, and policy" : "Gym subscriptions"}
+        <PlatformSafetySection
+          show={showSafety}
+          flags={flags}
+          openFlagCount={openFlags.length}
+          error={flagsState.error}
+          formatDateTime={formatDateTime}
+          formatEnumLabel={formatEnumLabel}
         />
-        {summary ? (
-          <ReadoutGrid
-            className="mt-5"
-            items={[
-              {
-                label: "Total gyms",
-                value: formatCompactNumber(summary.totalOrgs),
-                meta: "All accounts",
-              },
-              {
-                label: "On trial",
-                value: formatCompactNumber(summary.onTrial),
-                meta: "Active + expiring",
-              },
-              {
-                label: "Paying",
-                value: formatCompactNumber(summary.active),
-                meta: "Status active",
-              },
-              {
-                label: "Suspended",
-                value: formatCompactNumber(summary.suspended),
-                meta: "Needs review",
-              },
-              {
-                label: "Cancelled",
-                value: formatCompactNumber(summary.cancelled),
-                meta: "Off platform",
-              },
-              {
-                label: "Referrals",
-                value: formatCompactNumber(summary.totalReferrals),
-                meta: "Gym-to-gym",
-              },
-            ]}
-            columns={3}
-          />
-        ) : null}
-        <PlatformReferralPolicyCard monthlyPayoutExposurePaise={pendingWithdrawalExposurePaise} />
-        <PlatformWithdrawalsCard />
-        {mode === "referrals" ? null : (
-        <div className="mt-5">
-          {planCatalog ? (
-            <div className="mb-5 grid gap-3 lg:grid-cols-3">
-              {(["STARTER", "GROWTH", "PRO"] as const).map((tier) => {
-                const plan = planCatalog[tier];
-                if (!plan) return null;
-                return (
-                  <div key={tier} className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-white">{plan.name ?? formatEnumLabel(tier)}</p>
-                        <p className="mt-1 text-xs text-white/45">
-                          {formatInr(plan.monthly)} / mo · {formatInr(plan.yearly)} / yr
-                        </p>
-                      </div>
-                      <StatusPill value={tier} tone={tier === "PRO" ? "lime" : "blue"} />
-                    </div>
-                    <p className="mt-3 text-xs leading-5 text-white/52">
-                      {formatUsageLimit(plan.entitlements.memberLimit, limitFormatOptions)} members ·{" "}
-                      {formatUsageLimit(plan.entitlements.branchLimit, limitFormatOptions)} branches ·{" "}
-                      {formatUsageLimit(plan.entitlements.staffLimit, limitFormatOptions)} staff ·{" "}
-                      {formatUsageLimit(plan.entitlements.productLimit, limitFormatOptions)} products
-                    </p>
-                    <p className="mt-2 text-xs leading-5 text-white/42">
-                      {formatUsageLimit(plan.entitlements.notificationMonthlyLimit, limitFormatOptions)} message recipients/mo ·{" "}
-                      {formatUsageLimit(plan.entitlements.aiTextMonthlyLimit, limitFormatOptions)} AI text/mo ·{" "}
-                      {formatEnumLabel(plan.entitlements.support ?? "standard")} support
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-          {error ? (
-            <p className="rounded-[22px] border border-red-300/20 bg-red-300/10 px-4 py-3 text-sm text-red-100">
-              {error}
-            </p>
-          ) : loading ? (
-            <p className="text-sm text-white/45">Loading subscriptions...</p>
-          ) : rows.length ? (
-            <DataTable<SubscriptionRow>
-              columns={[
-                {
-                  id: "name",
-                  header: "Gym",
-                  render: (row: SubscriptionRow) => (
-                    <div>
-                      <p className="font-medium text-white">{row.orgName}</p>
-                        <p className="mt-1 text-xs text-white/45">
-                          {row.username} · {row.contactEmail ?? "no email"}
-                        </p>
-                        <p className="mt-1 text-xs text-white/45">
-                          {formatEnumLabel(row.tier ?? "FREE")} · {formatEnumLabel(row.billingCycle ?? "MONTHLY")}
-                          {row.creditPaise ? ` · ${formatInr(row.creditPaise)} credit` : ""}
-                        </p>
-                        {row.noteForPlatform ? (
-                          <p className="mt-1 max-w-xs truncate text-xs text-white/45">
-                            Note: {row.noteForPlatform}
-                          </p>
-                        ) : null}
-                        {row.usage ? (
-                          <p className="mt-1 text-xs text-white/45">
-                            {formatCompactNumber(row.usage.activeMemberCount ?? 0)} /{" "}
-                            {formatUsageLimit(row.entitlements?.memberLimit, limitFormatOptions)} members ·{" "}
-                            {formatCompactNumber(row.usage.branchCount ?? 0)} /{" "}
-                            {formatUsageLimit(row.entitlements?.branchLimit, limitFormatOptions)} branches
-                          </p>
-                        ) : null}
-                      </div>
-                  ),
-                },
-                {
-                  id: "status",
-                  header: "Status",
-                  render: (row: SubscriptionRow) => (
-                    <StatusPill
-                      value={formatEnumLabel(row.orgStatus)}
-                      tone={toneFromStatus(row.orgStatus)}
-                    />
-                  ),
-                },
-                {
-                  id: "trial",
-                  header: "Trial end",
-                  render: (row: SubscriptionRow) => (row.trialEndAt ? formatDate(row.trialEndAt) : "—"),
-                },
-                {
-                  id: "mandate",
-                  header: "Autopay",
-                  render: (row: SubscriptionRow) =>
-                    row.mandateStatus ? (
-                      <div>
-                        <StatusPill
-                          value={formatEnumLabel(row.mandateStatus)}
-                          tone={toneFromStatus(row.mandateStatus)}
-                        />
-                        <p className="mt-1 text-xs text-white/45">
-                          {row.mandatePaidCount} cycles paid
-                        </p>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-white/45">Not set up</span>
-                    ),
-                },
-                {
-                  id: "nextCharge",
-                  header: "Next charge",
-                  render: (row: SubscriptionRow) =>
-                    row.mandateNextChargeAt
-                      ? formatDate(row.mandateNextChargeAt)
-                      : row.nextBillingAt
-                        ? formatDate(row.nextBillingAt)
-                        : "—",
-                },
-                {
-                  id: "referred",
-                  header: "Gyms referred",
-                  render: (row: SubscriptionRow) =>
-                    row.referredCount > 0 ? (
-                      <Pill>{row.referredCount}</Pill>
-                    ) : (
-                      <span className="text-xs text-white/45">0</span>
-                    ),
-                },
-              ]}
-              rows={rows}
-              rowKey={(row) => row.orgId}
-              empty={<EmptyState title="No subscriptions" />}
-            />
-          ) : (
-            <EmptyState title="No subscriptions" />
-          )}
-        </div>
-        )}
-      </GlassCard>
+      </div>
       ) : null}
+      <PlatformOperationDialogs
+        organizationActionDialog={organizationActionDialog}
+        organizationStatusDialog={organizationStatusDialog}
+        broadcastComposeDialog={broadcastComposeDialog}
+        supportActionDialog={supportActionDialog}
+        moderationDecisionDialog={moderationDecisionDialog}
+        busyOrgId={busyOrgId}
+        broadcastBusyId={broadcastBusyId}
+        moderationBusyId={moderationBusyId}
+        setOrganizationActionDialog={setOrganizationActionDialog}
+        setOrganizationStatusDialog={setOrganizationStatusDialog}
+        setBroadcastComposeDialog={setBroadcastComposeDialog}
+        setSupportActionDialog={setSupportActionDialog}
+        setModerationDecisionDialog={setModerationDecisionDialog}
+        onSubmitOrganizationAction={() => void submitOrganizationAction()}
+        onSubmitOrganizationStatus={() => void submitOrganizationStatus()}
+        onSubmitBroadcast={() => void submitBroadcast()}
+        onSubmitSupportAction={() => void submitSupportAction()}
+        onSubmitModerationDecision={() => void submitModerationDecision()}
+      />
     </div>
   );
 }
